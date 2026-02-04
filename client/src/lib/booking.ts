@@ -1,23 +1,42 @@
 import axiosInstance from "./axios";
-import { ApiResponse, Booking, Availability } from "@/types";
+import {
+  ApiResponse,
+  Booking,
+  Availability,
+  InitiateBookingResponse,
+} from "@/types";
 
 export const bookingApi = {
-  createBooking: async (data: {
+  // Initiate booking with split payments
+  initiateBooking: async (data: {
     venueId: string;
+    coachId?: string;
     date: string;
     startTime: string;
     endTime: string;
+  }): Promise<InitiateBookingResponse> => {
+    const response = await axiosInstance.post("/bookings/initiate", data);
+    return response.data.data;
+  },
+
+  // Mock payment processing (for testing)
+  processMockPayment: async (data: {
+    bookingId: string;
+    userId: string;
+    userType: "VENUE_LISTER" | "COACH";
   }): Promise<ApiResponse<Booking>> => {
-    const response = await axiosInstance.post("/bookings", data);
+    const response = await axiosInstance.post("/bookings/mock-payment", data);
     return response.data;
   },
 
+  // Get user's bookings
   getMyBookings: async (): Promise<ApiResponse<Booking[]>> => {
     const response = await axiosInstance.get("/bookings/my-bookings");
     return response.data;
   },
 
-  getAvailability: async (
+  // Get venue availability
+  getVenueAvailability: async (
     venueId: string,
     date: string,
   ): Promise<ApiResponse<Availability>> => {
@@ -30,8 +49,15 @@ export const bookingApi = {
     return response.data;
   },
 
+  // Cancel booking
   cancelBooking: async (bookingId: string): Promise<ApiResponse<null>> => {
     const response = await axiosInstance.delete(`/bookings/${bookingId}`);
+    return response.data;
+  },
+
+  // Verify booking with QR code
+  verifyBooking: async (token: string): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.get(`/bookings/verify/${token}`);
     return response.data;
   },
 };

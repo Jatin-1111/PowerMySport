@@ -44,11 +44,19 @@ export default function LoginPage() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
-        router.push(
-          response.data.user.role === "vendor"
-            ? "/vendor/inventory"
-            : "/bookings",
-        );
+
+        // Redirect based on role
+        if (response.data.user.role === "PLAYER") {
+          router.push("/dashboard/my-bookings");
+        } else if (response.data.user.role === "VENUE_LISTER") {
+          router.push("/venue-lister/inventory");
+        } else if (response.data.user.role === "COACH") {
+          router.push("/coach/profile");
+        } else if (response.data.user.role === "ADMIN") {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard/my-bookings");
+        }
       } else {
         setError(response.message || "Login failed");
       }

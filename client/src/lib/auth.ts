@@ -7,7 +7,7 @@ export const authApi = {
     email: string;
     phone: string;
     password: string;
-    role: "user" | "vendor";
+    role: "PLAYER" | "VENUE_LISTER" | "COACH";
   }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/register", data);
     return response.data;

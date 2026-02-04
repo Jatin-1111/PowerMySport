@@ -9,14 +9,14 @@ import { useAuthStore } from "@/store/authStore";
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roleParam = searchParams.get("role") || "user";
+  const roleParam = searchParams.get("role") || "PLAYER";
   const { setUser, setToken, setLoading, setError } = useAuthStore();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    role: roleParam as "user" | "vendor",
+    role: roleParam as "PLAYER" | "VENUE_LISTER" | "COACH",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,10 +57,16 @@ function RegisterContent() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+
+        // Route based on role
+        const roleRoutes = {
+          PLAYER: "/dashboard/my-bookings",
+          VENUE_LISTER: "/venue-lister/inventory",
+          COACH: "/coach/profile",
+          ADMIN: "/admin",
+        };
         router.push(
-          response.data.user.role === "vendor"
-            ? "/vendor/inventory"
-            : "/bookings",
+          roleRoutes[response.data.user.role] || "/dashboard/my-bookings",
         );
       } else {
         setError(response.message || "Registration failed");
@@ -166,9 +172,18 @@ function RegisterContent() {
             onChange={handleChange}
             className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
           >
-            <option value="user">Sports Enthusiast</option>
-            <option value="vendor">Venue Owner</option>
+            <option value="PLAYER">Player (Book Venues & Coaches)</option>
+            <option value="COACH">Coach (Offer Coaching Services)</option>
           </select>
+          <p className="text-xs text-muted-foreground mt-1">
+            Want to list your venue?{" "}
+            <a
+              href="/venue-inquiry"
+              className="text-power-orange hover:underline"
+            >
+              Submit an inquiry
+            </a>
+          </p>
         </div>
 
         <button

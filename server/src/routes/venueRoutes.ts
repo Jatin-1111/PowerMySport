@@ -4,6 +4,7 @@ import {
   getVenue,
   getMyVenues,
   searchVenues,
+  discoverNearby,
   updateVenueDetails,
   deleteVenueById,
 } from "../controllers/venueController";
@@ -20,7 +21,13 @@ router.post(
   validateRequest(venueSchema),
   createNewVenue,
 );
+
+// Discovery endpoint (public) - returns venues AND coaches
+router.get("/discover", discoverNearby);
+
+// Legacy search endpoint (public)
 router.get("/search", searchVenues);
+
 router.get("/my-venues", authMiddleware, vendorMiddleware, getMyVenues);
 router.get("/:venueId", getVenue);
 router.put("/:venueId", authMiddleware, vendorMiddleware, updateVenueDetails);

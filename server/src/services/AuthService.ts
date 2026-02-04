@@ -7,7 +7,7 @@ export interface RegisterPayload {
   email: string;
   phone: string;
   password: string;
-  role: "user" | "vendor";
+  role: "PLAYER" | "VENUE_LISTER" | "COACH";
 }
 
 export interface LoginPayload {

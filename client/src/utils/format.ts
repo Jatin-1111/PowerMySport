@@ -42,3 +42,14 @@ export const doTimesOverlap = (
 
   return start1Min < end2Min && start2Min < end1Min;
 };
+
+/**
+ * Format currency
+ */
+export const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+};

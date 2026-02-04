@@ -42,10 +42,10 @@ export const vendorMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "vendor") {
+  if (req.user?.role !== "VENUE_LISTER") {
     res.status(403).json({
       success: false,
-      message: "Access denied. Vendor role required.",
+      message: "Access denied. Venue Lister role required.",
     });
     return;
   }
@@ -57,7 +57,7 @@ export const adminMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "admin") {
+  if (req.user?.role !== "ADMIN") {
     res.status(403).json({
       success: false,
       message: "Access denied. Admin role required.",

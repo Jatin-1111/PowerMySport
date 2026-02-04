@@ -1,14 +1,17 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { IGeoLocation } from "../types";
 
 export interface VenueDocument extends Document {
   name: string;
   ownerId: mongoose.Types.ObjectId;
-  location: string;
+  location: IGeoLocation;
   sports: string[];
   pricePerHour: number;
   amenities: string[];
   description: string;
   images: string[];
+  allowExternalCoaches: boolean;
+  requiresLocationUpdate?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,8 +29,19 @@ const venueSchema = new Schema<VenueDocument>(
       required: [true, "Owner ID is required"],
     },
     location: {
-      type: String,
-      required: [true, "Location is required"],
+      type: {
+        type: String,
+        enum: ["Point"],
+        required: true,
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+        validate: {
+          validator: (v: number[]) => v.length === 2,
+          message: "Coordinates must be [longitude, latitude]",
+        },
+      },
     },
     sports: {
       type: [String],
@@ -51,8 +65,19 @@ const venueSchema = new Schema<VenueDocument>(
       type: [String],
       default: [],
     },
+    allowExternalCoaches: {
+      type: Boolean,
+      default: true,
+    },
+    requiresLocationUpdate: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );
+
+// Geo-spatial index for $near queries
+venueSchema.index({ location: "2dsphere" });
 
 export const Venue = mongoose.model<VenueDocument>("Venue", venueSchema);

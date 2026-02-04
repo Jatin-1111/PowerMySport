@@ -1,12 +1,15 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
+import { UserRole, IPlayerProfile, IVenueListerProfile } from "../types";
 
 export interface UserDocument extends Document {
   name: string;
   email: string;
   phone: string;
-  role: "user" | "vendor" | "admin";
+  role: UserRole;
   password: string;
+  playerProfile?: IPlayerProfile;
+  venueListerProfile?: IVenueListerProfile;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -36,8 +39,32 @@ const userSchema = new Schema<UserDocument>(
     },
     role: {
       type: String,
-      enum: ["user", "vendor", "admin"],
-      default: "user",
+      enum: ["PLAYER", "VENUE_LISTER", "COACH", "ADMIN"],
+      default: "PLAYER",
+    },
+    playerProfile: {
+      paymentHistory: [
+        {
+          bookingId: {
+            type: Schema.Types.ObjectId,
+            ref: "Booking",
+          },
+          amount: Number,
+          date: Date,
+        },
+      ],
+    },
+    venueListerProfile: {
+      businessDetails: {
+        name: String,
+        gstNumber: String,
+        address: String,
+      },
+      payoutInfo: {
+        accountNumber: String,
+        ifsc: String,
+        bankName: String,
+      },
     },
     password: {
       type: String,

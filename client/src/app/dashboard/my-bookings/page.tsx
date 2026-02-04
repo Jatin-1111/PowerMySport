@@ -47,7 +47,7 @@ export default function BookingsPage() {
         <div className="text-center py-12 bg-card rounded-lg border border-border">
           <p className="text-muted-foreground mb-4">No bookings yet</p>
           <a
-            href="/search"
+            href="/dashboard/search"
             className="text-power-orange font-semibold hover:underline"
           >
             Search venues to book
@@ -75,7 +75,7 @@ export default function BookingsPage() {
                   </p>
                   <span
                     className={`inline-block mt-2 px-3 py-1 rounded text-sm font-semibold ${
-                      booking.status === "confirmed"
+                      booking.status === "CONFIRMED"
                         ? "bg-turf-green/10 text-turf-green border border-turf-green"
                         : "bg-error-red/10 text-error-red border border-error-red"
                     }`}
@@ -84,7 +84,7 @@ export default function BookingsPage() {
                       booking.status.slice(1)}
                   </span>
                 </div>
-                {booking.status === "confirmed" && (
+                {booking.status === "CONFIRMED" && (
                   <button
                     onClick={() => handleCancel(booking.id)}
                     className="bg-error-red text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-semibold"

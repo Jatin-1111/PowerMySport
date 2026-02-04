@@ -1,13 +1,25 @@
 import { Request, Response } from "express";
 import {
-  createBooking,
+  initiateBooking,
+  updatePaymentStatus,
   getUserBookings,
   getVenueBookings,
+  getVenueListerBookings,
   cancelBooking,
+  verifyBooking,
 } from "../services/BookingService";
+import {
+  processMockPayment,
+  handlePaymentWebhook,
+} from "../services/PaymentService";
 import { generateHourlySlots } from "../utils/booking";
+import { Booking } from "../models/Booking";
 
-export const createNewBooking = async (
+/**
+ * Initiate a new booking with split payments
+ * POST /api/bookings/initiate
+ */
+export const initiateNewBooking = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -20,7 +32,7 @@ export const createNewBooking = async (
       return;
     }
 
-    const booking = await createBooking({
+    const result = await initiateBooking({
       userId: req.user.id,
       ...req.body,
       date: new Date(req.body.date),
@@ -28,18 +40,119 @@ export const createNewBooking = async (
 
     res.status(201).json({
       success: true,
-      message: "Booking created successfully",
-      data: booking,
+      message: "Booking initiated successfully",
+      data: {
+        booking: result.booking,
+        paymentLinks: result.paymentLinks,
+      },
     });
   } catch (error) {
     res.status(400).json({
       success: false,
       message:
-        error instanceof Error ? error.message : "Failed to create booking",
+        error instanceof Error ? error.message : "Failed to initiate booking",
     });
   }
 };
 
+/**
+ * Process mock payment (for testing without real payment gateway)
+ * POST /api/bookings/mock-payment
+ */
+export const processMockPaymentHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { userId, bookingId, amount } = req.body;
+
+    if (!userId || !bookingId || !amount) {
+      res.status(400).json({
+        success: false,
+        message: "userId, bookingId, and amount are required",
+      });
+      return;
+    }
+
+    const result = await processMockPayment({ userId, bookingId, amount });
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Payment processing failed",
+    });
+  }
+};
+
+/**
+ * Payment webhook handler
+ * POST /api/bookings/webhook
+ */
+export const paymentWebhookHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    // In production, verify webhook signature here
+    await handlePaymentWebhook(req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "Webhook processed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Webhook processing failed",
+    });
+  }
+};
+
+/**
+ * Verify booking with verification token
+ * GET /api/bookings/verify/:token
+ */
+export const verifyBookingByToken = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const token = (req.params as Record<string, unknown>).token as string;
+
+    const booking = await verifyBooking(token);
+
+    if (!booking) {
+      res.status(404).json({
+        success: false,
+        message: "Invalid or expired verification token",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Booking verified successfully",
+      data: booking,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Verification failed",
+    });
+  }
+};
+
+/**
+ * Get user's bookings
+ * GET /api/bookings/my-bookings
+ */
+/**
+ * Get user's bookings
+ * GET /api/bookings/my-bookings
+ */
 export const getMyBookings = async (
   req: Request,
   res: Response,
@@ -53,7 +166,15 @@ export const getMyBookings = async (
       return;
     }
 
-    const bookings = await getUserBookings(req.user.id);
+    let bookings;
+
+    // Different logic based on role
+    if (req.user.role === "VENUE_LISTER") {
+      bookings = await getVenueListerBookings(req.user.id);
+    } else {
+      // For PLAYER and others, get bookings they made
+      bookings = await getUserBookings(req.user.id);
+    }
 
     res.status(200).json({
       success: true,
@@ -69,6 +190,10 @@ export const getMyBookings = async (
   }
 };
 
+/**
+ * Get venue availability
+ * GET /api/bookings/availability/:venueId
+ */
 export const getVenueAvailability = async (
   req: Request,
   res: Response,
@@ -129,6 +254,10 @@ export const getVenueAvailability = async (
   }
 };
 
+/**
+ * Cancel a booking
+ * DELETE /api/bookings/:bookingId
+ */
 export const cancelBookingById = async (
   req: Request,
   res: Response,
@@ -160,3 +289,6 @@ export const cancelBookingById = async (
     });
   }
 };
+
+// Legacy endpoint for backward compatibility
+export const createNewBooking = initiateNewBooking;

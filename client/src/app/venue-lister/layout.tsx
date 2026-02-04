@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { authApi } from "@/lib/auth";
 
-export default function DashboardLayout({
+export default function VendorLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -26,25 +26,32 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
+      {/* Vendor Sidebar */}
       <aside className="w-64 bg-deep-slate shadow-lg">
         <div className="p-6 border-b border-border">
           <h1 className="text-2xl font-bold text-power-orange">PowerMySport</h1>
-          <p className="text-ghost-white text-sm mt-2">{user?.name}</p>
+          <p className="text-muted-foreground text-sm mt-2">Vendor Portal</p>
+          <p className="text-ghost-white font-semibold mt-4">{user?.name}</p>
         </div>
 
         <nav className="mt-8">
           <Link
-            href="/bookings"
+            href="/venue-lister"
             className="block px-6 py-3 text-ghost-white hover:bg-power-orange/10 hover:border-l-4 hover:border-power-orange transition-all"
           >
-            📅 My Bookings
+            📊 Dashboard
           </Link>
           <Link
-            href="/profile"
+            href="/venue-lister/inventory"
             className="block px-6 py-3 text-ghost-white hover:bg-power-orange/10 hover:border-l-4 hover:border-power-orange transition-all"
           >
-            👤 Profile
+            🏟️ Inventory
+          </Link>
+          <Link
+            href="/venue-lister/vendor-bookings"
+            className="block px-6 py-3 text-ghost-white hover:bg-power-orange/10 hover:border-l-4 hover:border-power-orange transition-all"
+          >
+            📅 Bookings
           </Link>
         </nav>
 

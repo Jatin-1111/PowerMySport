@@ -15,6 +15,11 @@ export const venueApi = {
     return response.data;
   },
 
+  getAllVenues: async (): Promise<ApiResponse<Venue[]>> => {
+    const response = await axiosInstance.get("/venues");
+    return response.data;
+  },
+
   getVenue: async (venueId: string): Promise<ApiResponse<Venue>> => {
     const response = await axiosInstance.get(`/venues/${venueId}`);
     return response.data;

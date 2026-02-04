@@ -6,7 +6,9 @@ import {
   getAllVenues,
   updateVenue,
   deleteVenue,
+  findVenuesNearby,
 } from "../services/VenueService";
+import { findCoachesNearby } from "../services/CoachService";
 
 export const createNewVenue = async (
   req: Request,
@@ -96,21 +98,67 @@ export const getMyVenues = async (
   }
 };
 
+/**
+ * Discovery endpoint: Search for venues AND coaches near a location
+ * GET /api/search?lat=28.6139&lng=77.2090&radius=5000&sport=cricket
+ */
+export const discoverNearby = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { lat, lng, radius, sport } = req.query;
+
+    if (!lat || !lng) {
+      res.status(400).json({
+        success: false,
+        message: "lat and lng are required parameters",
+      });
+      return;
+    }
+
+    const latitude = parseFloat(lat as string);
+    const longitude = parseFloat(lng as string);
+    const radiusMeters = radius ? parseInt(radius as string, 10) : 5000;
+    const sportFilter = sport as string | undefined;
+
+    // Search for venues and coaches in parallel
+    const [venues, coaches] = await Promise.all([
+      findVenuesNearby(latitude, longitude, radiusMeters, sportFilter),
+      findCoachesNearby(latitude, longitude, radiusMeters / 1000, sportFilter), // Convert to km
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Discovery results retrieved successfully",
+      data: {
+        venues,
+        coaches,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Discovery failed",
+    });
+  }
+};
+
+/**
+ * Legacy search endpoint (for backward compatibility)
+ */
 export const searchVenues = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const { sports, location } = req.query;
+    const { sports } = req.query;
 
-    const filters: { sports?: string[]; location?: string } = {};
+    const filters: { sports?: string[] } = {};
     if (sports) {
       filters.sports = Array.isArray(sports)
         ? (sports as string[])
         : [sports as string];
-    }
-    if (location) {
-      filters.location = location as string;
     }
 
     const venues = await getAllVenues(filters);

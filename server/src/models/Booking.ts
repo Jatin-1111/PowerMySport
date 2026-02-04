@@ -1,14 +1,19 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { IPayment, BookingStatus } from "../types";
 
 export interface BookingDocument extends Document {
   userId: mongoose.Types.ObjectId;
   venueId: mongoose.Types.ObjectId;
+  coachId?: mongoose.Types.ObjectId;
   date: Date;
   startTime: string;
   endTime: string;
+  payments: IPayment[];
   totalAmount: number;
-  status: "confirmed" | "cancelled";
-  paymentStatus: "pending" | "paid";
+  status: BookingStatus;
+  expiresAt: Date;
+  verificationToken?: string;
+  qrCode?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +29,10 @@ const bookingSchema = new Schema<BookingDocument>(
       type: Schema.Types.ObjectId,
       ref: "Venue",
       required: [true, "Venue ID is required"],
+    },
+    coachId: {
+      type: Schema.Types.ObjectId,
+      ref: "Coach",
     },
     date: {
       type: Date,
@@ -45,6 +54,35 @@ const bookingSchema = new Schema<BookingDocument>(
         "End time must be in HH:mm format",
       ],
     },
+    payments: {
+      type: [
+        {
+          userId: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+          },
+          userType: {
+            type: String,
+            enum: ["VENUE_LISTER", "COACH"],
+            required: true,
+          },
+          amount: {
+            type: Number,
+            required: true,
+            min: 0,
+          },
+          status: {
+            type: String,
+            enum: ["PENDING", "PAID"],
+            default: "PENDING",
+          },
+          paymentLink: String,
+          paidAt: Date,
+        },
+      ],
+      default: [],
+    },
     totalAmount: {
       type: Number,
       required: [true, "Total amount is required"],
@@ -52,20 +90,35 @@ const bookingSchema = new Schema<BookingDocument>(
     },
     status: {
       type: String,
-      enum: ["confirmed", "cancelled"],
-      default: "confirmed",
+      enum: ["PENDING_PAYMENT", "CONFIRMED", "CANCELLED", "EXPIRED"],
+      default: "PENDING_PAYMENT",
     },
-    paymentStatus: {
+    expiresAt: {
+      type: Date,
+      required: [true, "Expiration time is required"],
+    },
+    verificationToken: {
       type: String,
-      enum: ["pending", "paid"],
-      default: "pending",
+      select: false, // Hidden by default for security
+    },
+    qrCode: {
+      type: String,
     },
   },
   { timestamps: true },
 );
 
-// Index for faster booking conflict checks
+// Index for faster booking conflict checks (venue)
 bookingSchema.index({ venueId: 1, date: 1, startTime: 1, endTime: 1 });
+
+// Index for coach booking conflicts
+bookingSchema.index({ coachId: 1, date: 1, startTime: 1, endTime: 1 });
+
+// Index for expiration cleanup job
+bookingSchema.index({ expiresAt: 1, status: 1 });
+
+// Index for verification token lookup
+bookingSchema.index({ verificationToken: 1 }, { unique: true, sparse: true });
 
 export const Booking = mongoose.model<BookingDocument>(
   "Booking",

@@ -14,18 +14,24 @@ export default function HomePage() {
           Discover and book badminton courts, cricket grounds, and more in your
           locality
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-4 justify-center flex-wrap">
           <Link
-            href="/register?role=user"
+            href="/register?role=PLAYER"
             className="bg-power-orange text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors shadow-md"
           >
             Book Now
           </Link>
           <Link
-            href="/register?role=vendor"
+            href="/venue-inquiry"
             className="bg-deep-slate text-ghost-white px-8 py-3 rounded-lg font-semibold hover:bg-slate-800 transition-colors shadow-md"
           >
-            Become a Vendor
+            List Your Venue
+          </Link>
+          <Link
+            href="/register?role=COACH"
+            className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md"
+          >
+            Become a Coach
           </Link>
         </div>
       </section>

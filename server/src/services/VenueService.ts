@@ -1,14 +1,16 @@
 import { Venue, VenueDocument } from "../models/Venue";
+import { IGeoLocation } from "../types";
 
 export interface CreateVenuePayload {
   name: string;
   ownerId: string;
-  location: string;
+  location: IGeoLocation;
   sports: string[];
   pricePerHour: number;
   amenities?: string[];
   description?: string;
   images?: string[];
+  allowExternalCoaches?: boolean;
 }
 
 export const createVenue = async (
@@ -31,18 +33,51 @@ export const getVenuesByOwner = async (
   return Venue.find({ ownerId });
 };
 
+/**
+ * Find venues near a location using geo-spatial query
+ */
+export const findVenuesNearby = async (
+  lat: number,
+  lng: number,
+  radiusMeters: number = 5000,
+  sport?: string,
+): Promise<VenueDocument[]> => {
+  try {
+    const query: any = {
+      location: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [lng, lat], // [longitude, latitude]
+          },
+          $maxDistance: radiusMeters,
+        },
+      },
+    };
+
+    // Filter by sport if provided
+    if (sport) {
+      query.sports = sport;
+    }
+
+    return Venue.find(query).populate("ownerId");
+  } catch (error) {
+    throw new Error(
+      `Failed to find venues: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+};
+
+/**
+ * Get all venues with optional filters (legacy method)
+ */
 export const getAllVenues = async (filters?: {
   sports?: string[];
-  location?: string;
 }): Promise<VenueDocument[]> => {
   const query: any = {};
 
   if (filters?.sports && filters.sports.length > 0) {
     query.sports = { $in: filters.sports };
-  }
-
-  if (filters?.location) {
-    query.location = { $regex: filters.location, $options: "i" };
   }
 
   return Venue.find(query).populate("ownerId");

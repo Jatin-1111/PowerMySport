@@ -1,10 +1,21 @@
-// User Types
+// ============================================
+// USER & AUTH TYPES
+// ============================================
+export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
+export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
+export type PaymentStatus = "PENDING" | "PAID";
+export type BookingStatus =
+  | "PENDING_PAYMENT"
+  | "CONFIRMED"
+  | "CANCELLED"
+  | "EXPIRED";
+
 export interface User {
   id: string;
   name: string;
   email: string;
   phone: string;
-  role: "user" | "vendor" | "admin";
+  role: UserRole;
 }
 
 export interface AuthResponse {
@@ -16,36 +27,90 @@ export interface AuthResponse {
   };
 }
 
-// Venue Types
+// ============================================
+// COACH TYPES
+// ============================================
+export interface IAvailability {
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  startTime: string; // "09:00"
+  endTime: string; // "18:00"
+}
+
+export interface Coach {
+  id: string;
+  userId: string;
+  bio: string;
+  certifications: string[];
+  sports: string[];
+  hourlyRate: number;
+  serviceMode: ServiceMode;
+  venueId?: string;
+  serviceRadiusKm?: number;
+  travelBufferTime?: number;
+  availability: IAvailability[];
+  rating: number;
+  reviewCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// VENUE TYPES
+// ============================================
+export interface IGeoLocation {
+  type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
 export interface Venue {
   id: string;
   name: string;
   ownerId: string;
-  location: string;
+  location: IGeoLocation;
   sports: string[];
   pricePerHour: number;
   amenities: string[];
   description: string;
   images: string[];
+  allowExternalCoaches: boolean;
+  requiresLocationUpdate?: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-// Booking Types
+// ============================================
+// BOOKING & PAYMENT TYPES
+// ============================================
+export interface IPayment {
+  userId: string;
+  userType: "VENUE_LISTER" | "COACH";
+  amount: number;
+  status: PaymentStatus;
+  paymentLink?: string;
+  paidAt?: string;
+}
+
 export interface Booking {
   id: string;
   userId: string;
   venueId: string;
+  coachId?: string;
   date: string;
   startTime: string;
   endTime: string;
+  payments: IPayment[];
   totalAmount: number;
-  status: "confirmed" | "cancelled";
-  paymentStatus: "pending" | "paid";
+  status: BookingStatus;
+  expiresAt: string;
+  verificationToken?: string;
+  qrCode?: string;
   createdAt: string;
   updatedAt: string;
 }
 
+// ============================================
+// API RESPONSE TYPES
+// ============================================
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -57,5 +122,20 @@ export interface Availability {
   bookedSlots: Array<{
     startTime: string;
     endTime: string;
+  }>;
+}
+
+export interface DiscoveryResponse {
+  venues: Venue[];
+  coaches: Coach[];
+}
+
+export interface InitiateBookingResponse {
+  booking: Booking;
+  paymentLinks: Array<{
+    userId: string;
+    userType: "VENUE_LISTER" | "COACH";
+    amount: number;
+    paymentLink: string;
   }>;
 }
