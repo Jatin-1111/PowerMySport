@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Booking } from "@/types";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { bookingApi } from "@/lib/booking";
+import { Booking } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
+import { useEffect, useState } from "react";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -41,43 +43,43 @@ export default function BookingsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-deep-slate">My Bookings</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">My Bookings</h1>
 
       {bookings.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-lg border border-border">
-          <p className="text-muted-foreground mb-4">No bookings yet</p>
+        <Card className="text-center bg-white">
+          <p className="text-slate-600 mb-4">No bookings yet</p>
           <a
             href="/dashboard/search"
-            className="text-power-orange font-semibold hover:underline"
+            className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
           >
             Search venues to book
           </a>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {bookings.map((booking) => (
-            <div
+            <Card
               key={booking.id}
-              className="bg-card rounded-lg p-6 shadow border border-border hover:shadow-lg transition-shadow"
+              className="bg-white hover:shadow-lg transition-shadow"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2 text-deep-slate">
+                  <h3 className="text-lg font-semibold mb-2 text-slate-900">
                     Venue ID: {booking.venueId}
                   </h3>
-                  <p className="text-muted-foreground">
+                  <p className="text-slate-600">
                     📅 {formatDate(booking.date)} • ⏰{" "}
                     {formatTime(booking.startTime)} -{" "}
                     {formatTime(booking.endTime)}
                   </p>
-                  <p className="text-deep-slate font-semibold mt-2">
+                  <p className="text-slate-900 font-semibold mt-2">
                     💰 ₹{booking.totalAmount}
                   </p>
                   <span
                     className={`inline-block mt-2 px-3 py-1 rounded text-sm font-semibold ${
                       booking.status === "CONFIRMED"
-                        ? "bg-turf-green/10 text-turf-green border border-turf-green"
-                        : "bg-error-red/10 text-error-red border border-error-red"
+                        ? "bg-green-100 text-green-700 border border-green-300"
+                        : "bg-red-100 text-red-700 border border-red-300"
                     }`}
                   >
                     {booking.status.charAt(0).toUpperCase() +
@@ -85,15 +87,15 @@ export default function BookingsPage() {
                   </span>
                 </div>
                 {booking.status === "CONFIRMED" && (
-                  <button
+                  <Button
                     onClick={() => handleCancel(booking.id)}
-                    className="bg-error-red text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-semibold"
+                    variant="danger"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

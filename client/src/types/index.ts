@@ -10,12 +10,27 @@ export type BookingStatus =
   | "CANCELLED"
   | "EXPIRED";
 
+export interface VenueListerProfile {
+  businessDetails?: {
+    name?: string;
+    gstNumber?: string;
+    address?: string;
+  };
+  payoutInfo?: {
+    accountNumber?: string;
+    ifsc?: string;
+    bankName?: string;
+  };
+  canAddMoreVenues?: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   phone: string;
   role: UserRole;
+  venueListerProfile?: VenueListerProfile;
 }
 
 export interface AuthResponse {

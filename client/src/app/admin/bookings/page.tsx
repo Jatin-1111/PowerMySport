@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { Card } from "@/components/ui/Card";
 import { statsApi } from "@/lib/stats";
 import { Booking } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
+import { useEffect, useState } from "react";
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -32,30 +33,27 @@ export default function AdminBookingsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-deep-slate">All Bookings</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">All Bookings</h1>
 
       {bookings.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-lg border border-border">
-          <p className="text-muted-foreground">No bookings yet</p>
-        </div>
+        <Card className="text-center bg-white">
+          <p className="text-slate-600">No bookings yet</p>
+        </Card>
       ) : (
         <div className="space-y-4">
           {bookings.map((booking) => (
-            <div
-              key={booking.id}
-              className="bg-card rounded-lg p-6 border border-border"
-            >
+            <Card key={booking.id} className="bg-white">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-lg font-semibold">
+                    <h3 className="text-lg font-semibold text-slate-900">
                       Booking #{booking.id.slice(-6)}
                     </h3>
                     <span
                       className={`px-3 py-1 rounded text-sm font-semibold ${
                         booking.status === "CONFIRMED"
-                          ? "bg-turf-green/10 text-turf-green border border-turf-green"
-                          : "bg-yellow-500/10 text-yellow-600 border border-yellow-500"
+                          ? "bg-green-100 text-green-700 border border-green-300"
+                          : "bg-yellow-100 text-yellow-700 border border-yellow-300"
                       }`}
                     >
                       {booking.status}
@@ -64,24 +62,26 @@ export default function AdminBookingsPage() {
 
                   <div className="grid md:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">
-                        Date & Time
-                      </p>
-                      <p className="font-semibold">
+                      <p className="text-sm text-slate-600">Date & Time</p>
+                      <p className="font-semibold text-slate-900">
                         {formatDate(booking.date)}
                       </p>
-                      <p className="text-sm">
+                      <p className="text-sm text-slate-900">
                         {formatTime(booking.startTime)} -{" "}
                         {formatTime(booking.endTime)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Venue</p>
-                      <p className="font-semibold">ID: {booking.venueId}</p>
+                      <p className="text-sm text-slate-600">Venue</p>
+                      <p className="font-semibold text-slate-900">
+                        ID: {booking.venueId}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Player</p>
-                      <p className="font-semibold">ID: {booking.userId}</p>
+                      <p className="text-sm text-slate-600">Player</p>
+                      <p className="font-semibold text-slate-900">
+                        ID: {booking.userId}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -92,7 +92,7 @@ export default function AdminBookingsPage() {
                   </p>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

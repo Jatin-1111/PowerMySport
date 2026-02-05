@@ -1,14 +1,11 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IVenueInquiry extends Document {
   venueName: string;
   ownerName: string;
-  email: string;
   phone: string;
   address: string;
-  city: string;
   sports: string;
-  facilities?: string;
   message?: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   reviewedBy?: mongoose.Types.ObjectId;
@@ -30,12 +27,6 @@ const VenueInquirySchema: Schema = new Schema(
       required: true,
       trim: true,
     },
-    email: {
-      type: String,
-      required: true,
-      trim: true,
-      lowercase: true,
-    },
     phone: {
       type: String,
       required: true,
@@ -46,18 +37,9 @@ const VenueInquirySchema: Schema = new Schema(
       required: true,
       trim: true,
     },
-    city: {
-      type: String,
-      required: true,
-      trim: true,
-    },
     sports: {
       type: String,
       required: true,
-      trim: true,
-    },
-    facilities: {
-      type: String,
       trim: true,
     },
     message: {
@@ -87,7 +69,7 @@ const VenueInquirySchema: Schema = new Schema(
 );
 
 // Index for faster queries
-VenueInquirySchema.index({ email: 1 });
+VenueInquirySchema.index({ phone: 1 });
 VenueInquirySchema.index({ status: 1 });
 VenueInquirySchema.index({ createdAt: -1 });
 

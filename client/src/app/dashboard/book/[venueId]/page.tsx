@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { venueApi } from "@/lib/venue";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { bookingApi } from "@/lib/booking";
+import { venueApi } from "@/lib/venue";
 import { Venue } from "@/types";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 export default function BookVenuePage() {
   const params = useParams();
@@ -102,7 +104,7 @@ export default function BookVenuePage() {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Loading venue details...</p>
+        <p className="text-slate-600">Loading venue details...</p>
       </div>
     );
   }
@@ -110,7 +112,7 @@ export default function BookVenuePage() {
   if (!venue) {
     return (
       <div className="text-center py-12">
-        <p className="text-error-red">Venue not found</p>
+        <p className="text-red-600">Venue not found</p>
       </div>
     );
   }
@@ -120,12 +122,12 @@ export default function BookVenuePage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-deep-slate">Book Venue</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">Book Venue</h1>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Venue Details */}
-        <div className="bg-card rounded-lg p-6 border border-border">
-          <h2 className="text-xl font-bold mb-4 text-deep-slate">
+        <Card className="bg-white">
+          <h2 className="text-xl font-bold mb-4 text-slate-900">
             {venue.name}
           </h2>
 
@@ -139,7 +141,7 @@ export default function BookVenuePage() {
 
           <div className="space-y-3">
             <div>
-              <p className="text-sm text-muted-foreground">Sports</p>
+              <p className="text-sm text-slate-600">Sports</p>
               <div className="flex flex-wrap gap-2 mt-1">
                 {venue.sports.map((sport, index) => (
                   <span
@@ -153,21 +155,21 @@ export default function BookVenuePage() {
             </div>
 
             <div>
-              <p className="text-sm text-muted-foreground">Price</p>
+              <p className="text-sm text-slate-600">Price</p>
               <p className="text-2xl font-bold text-power-orange">
                 ₹{venue.pricePerHour}
-                <span className="text-sm text-muted-foreground">/hour</span>
+                <span className="text-sm text-slate-600">/hour</span>
               </p>
             </div>
 
             {venue.amenities && venue.amenities.length > 0 && (
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Amenities</p>
+                <p className="text-sm text-slate-600 mb-1">Amenities</p>
                 <div className="flex flex-wrap gap-1">
                   {venue.amenities.map((amenity, index) => (
                     <span
                       key={index}
-                      className="text-xs bg-muted px-2 py-1 rounded"
+                      className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700"
                     >
                       {amenity}
                     </span>
@@ -176,18 +178,18 @@ export default function BookVenuePage() {
               </div>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Booking Form */}
-        <div className="bg-card rounded-lg p-6 border border-border">
-          <h2 className="text-xl font-bold mb-4 text-deep-slate">
+        <Card className="bg-white">
+          <h2 className="text-xl font-bold mb-4 text-slate-900">
             Select Date & Time
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Date */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
                 Date *
               </label>
               <input
@@ -197,13 +199,13 @@ export default function BookVenuePage() {
                 onChange={handleChange}
                 min={new Date().toISOString().split("T")[0]}
                 required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
               />
             </div>
 
             {/* Start Time */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
                 Start Time *
               </label>
               <input
@@ -212,13 +214,13 @@ export default function BookVenuePage() {
                 value={bookingData.startTime}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
               />
             </div>
 
             {/* End Time */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
                 End Time *
               </label>
               <input
@@ -227,28 +229,28 @@ export default function BookVenuePage() {
                 value={bookingData.endTime}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
               />
             </div>
 
             {/* Price Summary */}
             {duration > 0 && (
-              <div className="bg-muted rounded-lg p-4">
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">
-                    Duration
+                  <span className="text-sm text-slate-600">Duration</span>
+                  <span className="font-semibold text-slate-900">
+                    {duration} hours
                   </span>
-                  <span className="font-semibold">{duration} hours</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">
-                    Price per hour
+                  <span className="text-sm text-slate-600">Price per hour</span>
+                  <span className="font-semibold text-slate-900">
+                    ₹{venue.pricePerHour}
                   </span>
-                  <span className="font-semibold">₹{venue.pricePerHour}</span>
                 </div>
-                <div className="border-t border-border pt-2 mt-2">
+                <div className="border-t border-slate-300 pt-2 mt-2">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold">Total</span>
+                    <span className="font-bold text-slate-900">Total</span>
                     <span className="text-2xl font-bold text-power-orange">
                       ₹{total}
                     </span>
@@ -259,29 +261,31 @@ export default function BookVenuePage() {
 
             {/* Error Message */}
             {error && (
-              <div className="bg-error-red/10 border border-error-red text-error-red px-4 py-3 rounded-lg">
+              <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
                 {error}
               </div>
             )}
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting || duration <= 0}
-              className="w-full bg-power-orange text-white py-3 rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              variant="primary"
+              className="w-full"
             >
               {isSubmitting ? "Processing..." : "Confirm Booking"}
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
               onClick={() => router.back()}
-              className="w-full bg-muted text-foreground py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+              variant="secondary"
+              className="w-full"
             >
               Cancel
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );

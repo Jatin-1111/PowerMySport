@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { coachApi } from "@/lib/coach";
-import { Coach, IAvailability } from "@/types";
+import { Coach } from "@/types";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 export default function CoachProfilePage() {
   const router = useRouter();
@@ -98,28 +100,28 @@ export default function CoachProfilePage() {
 
   if (loading) {
     return (
-      <div className="bg-card rounded-lg p-8 text-center">
-        <p className="text-muted-foreground">Loading profile...</p>
-      </div>
+      <Card className="text-center bg-white">
+        <p className="text-slate-600">Loading profile...</p>
+      </Card>
     );
   }
 
   return (
-    <div className="bg-card rounded-lg p-8 border border-border">
-      <h2 className="text-2xl font-bold mb-6 text-deep-slate">
+    <Card className="bg-white">
+      <h2 className="text-3xl font-bold mb-6 text-slate-900">
         {hasProfile ? "Edit Coach Profile" : "Create Coach Profile"}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Bio */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label className="block text-sm font-semibold text-slate-900 mb-2">
             Bio
           </label>
           <textarea
             value={formData.bio}
             onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all resize-none"
             rows={4}
             placeholder="Tell us about your coaching experience..."
             required
@@ -128,7 +130,7 @@ export default function CoachProfilePage() {
 
         {/* Certifications */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label className="block text-sm font-semibold text-slate-900 mb-2">
             Certifications (comma-separated)
           </label>
           <input
@@ -137,14 +139,14 @@ export default function CoachProfilePage() {
             onChange={(e) =>
               setFormData({ ...formData, certifications: e.target.value })
             }
-            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
             placeholder="e.g., Level 2 Cricket Coach, BCCI Certified"
           />
         </div>
 
         {/* Sports */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label className="block text-sm font-semibold text-slate-900 mb-2">
             Sports (comma-separated)
           </label>
           <input
@@ -153,7 +155,7 @@ export default function CoachProfilePage() {
             onChange={(e) =>
               setFormData({ ...formData, sports: e.target.value })
             }
-            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
             placeholder="e.g., Cricket, Badminton"
             required
           />
@@ -161,7 +163,7 @@ export default function CoachProfilePage() {
 
         {/* Hourly Rate */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label className="block text-sm font-semibold text-slate-900 mb-2">
             Hourly Rate (₹)
           </label>
           <input
@@ -170,7 +172,7 @@ export default function CoachProfilePage() {
             onChange={(e) =>
               setFormData({ ...formData, hourlyRate: Number(e.target.value) })
             }
-            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
             min="0"
             required
           />
@@ -178,7 +180,7 @@ export default function CoachProfilePage() {
 
         {/* Service Mode */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label className="block text-sm font-semibold text-slate-900 mb-2">
             Service Mode
           </label>
           <select
@@ -189,7 +191,7 @@ export default function CoachProfilePage() {
                 serviceMode: e.target.value as any,
               })
             }
-            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
           >
             <option value="OWN_VENUE">Own Venue (I have my own venue)</option>
             <option value="FREELANCE">Freelance (I travel to venues)</option>
@@ -200,7 +202,7 @@ export default function CoachProfilePage() {
         {/* Conditional Fields */}
         {formData.serviceMode !== "FREELANCE" && (
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label className="block text-sm font-semibold text-slate-900 mb-2">
               Venue ID (optional)
             </label>
             <input
@@ -209,7 +211,7 @@ export default function CoachProfilePage() {
               onChange={(e) =>
                 setFormData({ ...formData, venueId: e.target.value })
               }
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
               placeholder="Enter your venue ID"
             />
           </div>
@@ -218,7 +220,7 @@ export default function CoachProfilePage() {
         {formData.serviceMode !== "OWN_VENUE" && (
           <>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
                 Service Radius (km)
               </label>
               <input
@@ -230,13 +232,13 @@ export default function CoachProfilePage() {
                     serviceRadiusKm: Number(e.target.value),
                   })
                 }
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                 min="1"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-semibold text-slate-900 mb-2">
                 Travel Buffer Time (minutes)
               </label>
               <input
@@ -248,7 +250,7 @@ export default function CoachProfilePage() {
                     travelBufferTime: Number(e.target.value),
                   })
                 }
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                 min="0"
               />
             </div>
@@ -256,18 +258,19 @@ export default function CoachProfilePage() {
         )}
 
         {/* Submit Button */}
-        <button
+        <Button
           type="submit"
           disabled={saving}
-          className="w-full bg-power-orange text-white py-3 rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          variant="primary"
+          className="w-full"
         >
           {saving
             ? "Saving..."
             : hasProfile
               ? "Update Profile"
               : "Create Profile"}
-        </button>
+        </Button>
       </form>
-    </div>
+    </Card>
   );
 }

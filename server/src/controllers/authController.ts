@@ -1,5 +1,12 @@
 import { Request, Response } from "express";
-import { registerUser, loginUser, getUserById } from "../services/AuthService";
+import {
+  getUserById,
+  googleLogin,
+  loginUser,
+  registerUser,
+  requestPasswordReset,
+  resetPassword,
+} from "../services/AuthService";
 import { generateToken } from "../utils/jwt";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
@@ -31,6 +38,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           name: user.name,
           email: user.email,
           role: user.role,
+          venueListerProfile: user.venueListerProfile,
         },
       },
     });
@@ -68,6 +76,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           name: user.name,
           email: user.email,
           role: user.role,
+          venueListerProfile: user.venueListerProfile,
         },
       },
     });
@@ -119,6 +128,7 @@ export const getProfile = async (
         email: user.email,
         phone: user.phone,
         role: user.role,
+        venueListerProfile: user.venueListerProfile,
       },
     });
   } catch (error) {
@@ -126,6 +136,97 @@ export const getProfile = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch profile",
+    });
+  }
+};
+
+export const forgotPassword = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+    const resetToken = await requestPasswordReset(email);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset instructions sent to your email",
+      data: { resetToken }, // In production, don't send this, only email it
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Request failed",
+    });
+  }
+};
+
+export const resetPasswordHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { token, newPassword } = req.body;
+    await resetPassword(token, newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Password reset failed",
+    });
+  }
+};
+
+export const googleAuth = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { googleId, email, name, photoUrl, role } = req.body;
+
+    const user = await googleLogin({
+      googleId,
+      email,
+      name,
+      photoUrl,
+      role,
+    });
+
+    const token = generateToken({
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          photoUrl: user.photoUrl,
+          venueListerProfile: user.venueListerProfile,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Google login failed",
     });
   }
 };

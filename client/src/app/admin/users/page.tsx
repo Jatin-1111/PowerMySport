@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { Card } from "@/components/ui/Card";
 import { statsApi, UserData } from "@/lib/stats";
+import { useEffect, useState } from "react";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserData[]>([]);
@@ -30,41 +31,41 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-deep-slate">All Users</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">All Users</h1>
 
-      <div className="bg-card rounded-lg border border-border overflow-hidden">
+      <Card className="p-0 bg-white overflow-hidden">
         <table className="w-full">
-          <thead className="bg-muted">
+          <thead className="bg-slate-100">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-semibold">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody className="divide-y divide-slate-200">
             {users.map((user) => (
-              <tr key={user.id} className="hover:bg-muted/50">
-                <td className="px-6 py-4">{user.name}</td>
-                <td className="px-6 py-4 text-sm text-muted-foreground">
+              <tr key={user.id} className="hover:bg-slate-50">
+                <td className="px-6 py-4 text-slate-900">{user.name}</td>
+                <td className="px-6 py-4 text-sm text-slate-600">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4">{user.email}</td>
+                <td className="px-6 py-4 text-slate-900">{user.email}</td>
                 <td className="px-6 py-4">
                   <span className="px-2 py-1 bg-power-orange/10 text-power-orange text-xs rounded-full">
                     {user.role}
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <button className="text-power-orange hover:underline text-sm">
+                  <button className="text-power-orange hover:text-orange-600 transition-colors text-sm">
                     View Details
                   </button>
                 </td>
@@ -72,7 +73,7 @@ export default function AdminUsersPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

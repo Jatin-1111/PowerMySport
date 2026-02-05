@@ -1,5 +1,5 @@
+import { ApiResponse, AuthResponse, User } from "@/types";
 import axiosInstance from "./axios";
-import { AuthResponse, User, ApiResponse } from "@/types";
 
 export const authApi = {
   register: async (data: {
@@ -28,6 +28,37 @@ export const authApi = {
 
   getProfile: async (): Promise<ApiResponse<User>> => {
     const response = await axiosInstance.get("/auth/profile");
+    return response.data;
+  },
+
+  forgotPassword: async (
+    email: string,
+  ): Promise<ApiResponse<{ resetToken: string }>> => {
+    const response = await axiosInstance.post("/auth/forgot-password", {
+      email,
+    });
+    return response.data;
+  },
+
+  resetPassword: async (
+    token: string,
+    newPassword: string,
+  ): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.post("/auth/reset-password", {
+      token,
+      newPassword,
+    });
+    return response.data;
+  },
+
+  googleLogin: async (data: {
+    googleId: string;
+    email: string;
+    name: string;
+    photoUrl?: string;
+    role?: "PLAYER" | "VENUE_LISTER" | "COACH";
+  }): Promise<AuthResponse> => {
+    const response = await axiosInstance.post("/auth/google", data);
     return response.data;
   },
 };

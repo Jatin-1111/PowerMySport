@@ -1,13 +1,17 @@
-import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
-import { UserRole, IPlayerProfile, IVenueListerProfile } from "../types";
+import mongoose, { Document, Schema } from "mongoose";
+import { IPlayerProfile, IVenueListerProfile, UserRole } from "../types";
 
 export interface UserDocument extends Document {
   name: string;
   email: string;
   phone: string;
   role: UserRole;
-  password: string;
+  password?: string;
+  googleId?: string;
+  photoUrl?: string;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   playerProfile?: IPlayerProfile;
   venueListerProfile?: IVenueListerProfile;
   createdAt: Date;
@@ -65,11 +69,33 @@ const userSchema = new Schema<UserDocument>(
         ifsc: String,
         bankName: String,
       },
+      canAddMoreVenues: {
+        type: Boolean,
+        default: false,
+      },
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function (this: UserDocument) {
+        return !this.googleId;
+      },
       minlength: 6,
+      select: false,
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    photoUrl: {
+      type: String,
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
       select: false,
     },
   },
@@ -78,7 +104,7 @@ const userSchema = new Schema<UserDocument>(
 
 // Hash password before saving
 userSchema.pre<UserDocument>("save", async function () {
-  if (!this.isModified("password")) {
+  if (!this.isModified("password") || !this.password) {
     return;
   }
 

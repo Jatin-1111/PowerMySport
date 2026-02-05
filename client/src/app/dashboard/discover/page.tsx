@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { discoveryApi } from "@/lib/discovery";
-import { Venue, Coach } from "@/types";
+import { Coach, Venue } from "@/types";
+import { useState } from "react";
 
 export default function DiscoverPage() {
   const [loading, setLoading] = useState(false);
@@ -33,15 +35,15 @@ export default function DiscoverPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-deep-slate">
+      <h1 className="text-3xl font-bold mb-8 text-slate-900">
         Discover Venues & Coaches
       </h1>
 
       {/* Search Form */}
-      <div className="bg-card rounded-lg p-6 border border-border mb-8">
+      <Card className="bg-white mb-8">
         <div className="grid md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label className="block text-sm font-medium text-slate-900 mb-2">
               Latitude
             </label>
             <input
@@ -54,12 +56,12 @@ export default function DiscoverPage() {
                   latitude: Number(e.target.value),
                 })
               }
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label className="block text-sm font-medium text-slate-900 mb-2">
               Longitude
             </label>
             <input
@@ -72,12 +74,12 @@ export default function DiscoverPage() {
                   longitude: Number(e.target.value),
                 })
               }
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label className="block text-sm font-medium text-slate-900 mb-2">
               Distance (km)
             </label>
             <input
@@ -89,12 +91,12 @@ export default function DiscoverPage() {
                   maxDistance: Number(e.target.value),
                 })
               }
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label className="block text-sm font-medium text-slate-900 mb-2">
               Sport (optional)
             </label>
             <input
@@ -104,84 +106,83 @@ export default function DiscoverPage() {
                 setSearchParams({ ...searchParams, sport: e.target.value })
               }
               placeholder="e.g., Cricket"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
             />
           </div>
         </div>
 
-        <button
+        <Button
           onClick={handleSearch}
           disabled={loading}
-          className="mt-4 bg-power-orange text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          variant="primary"
+          className="mt-4"
         >
           {loading ? "Searching..." : "Search"}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {/* Results */}
       <div className="grid md:grid-cols-2 gap-8">
         {/* Venues */}
         <div>
-          <h2 className="text-2xl font-bold mb-4 text-deep-slate">
+          <h2 className="text-2xl font-bold mb-4 text-slate-900">
             Venues ({venues.length})
           </h2>
           <div className="space-y-4">
             {venues.map((venue) => (
-              <div
+              <Card
                 key={venue.id}
-                className="bg-card border border-border rounded-lg p-4 hover:shadow-lg transition-shadow"
+                className="bg-white hover:shadow-lg transition-shadow"
               >
-                <h3 className="text-lg font-semibold text-foreground">
+                <h3 className="text-lg font-semibold text-slate-900">
                   {venue.name}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-sm text-slate-600 mb-2">
                   {venue.sports.join(", ")}
                 </p>
                 <p className="text-power-orange font-bold">
                   ₹{venue.pricePerHour}/hour
                 </p>
-              </div>
+              </Card>
             ))}
             {venues.length === 0 && !loading && (
-              <p className="text-muted-foreground text-center py-8">
-                No venues found
-              </p>
+              <p className="text-slate-600 text-center py-8">No venues found</p>
             )}
           </div>
         </div>
 
         {/* Coaches */}
         <div>
-          <h2 className="text-2xl font-bold mb-4 text-deep-slate">
+          <h2 className="text-2xl font-bold mb-4 text-slate-900">
             Coaches ({coaches.length})
           </h2>
           <div className="space-y-4">
             {coaches.map((coach) => (
-              <div
+              <Card
                 key={coach.id}
-                className="bg-card border border-border rounded-lg p-4 hover:shadow-lg transition-shadow"
+                className="bg-white hover:shadow-lg transition-shadow"
               >
-                <h3 className="text-lg font-semibold text-foreground">
+                <h3 className="text-lg font-semibold text-slate-900">
                   Coach ID: {coach.id}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-sm text-slate-600 mb-2">
                   {coach.sports.join(", ")}
                 </p>
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-sm text-slate-600 mb-2">
                   {coach.serviceMode}
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-power-orange font-bold">
                     ₹{coach.hourlyRate}/hour
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-slate-600">
                     ⭐ {coach.rating.toFixed(1)} ({coach.reviewCount})
                   </p>
                 </div>
-              </div>
+              </Card>
             ))}
             {coaches.length === 0 && !loading && (
-              <p className="text-muted-foreground text-center py-8">
+              <p className="text-slate-600 text-center py-8">
                 No coaches found
               </p>
             )}

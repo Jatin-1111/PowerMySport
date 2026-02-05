@@ -1,19 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { venueInquiryApi } from "@/lib/venueInquiry";
+import Link from "next/link";
+import React, { useState } from "react";
 
 export default function VenueInquiryPage() {
   const [formData, setFormData] = useState({
     venueName: "",
     ownerName: "",
-    email: "",
     phone: "",
     address: "",
-    city: "",
     sports: "",
-    facilities: "",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,130 +47,115 @@ export default function VenueInquiryPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-card rounded-lg p-8 border border-border text-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full text-center">
           <div className="mb-6">
-            <div className="w-16 h-16 bg-turf-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">✅</span>
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-5xl">✅</span>
             </div>
-            <h2 className="text-2xl font-bold text-deep-slate mb-2">
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">
               Thank You!
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-slate-600 text-lg">
               Your inquiry has been submitted successfully.
             </p>
           </div>
 
-          <div className="bg-muted rounded-lg p-4 mb-6 text-left">
-            <h3 className="font-semibold text-foreground mb-2">
+          <div className="bg-slate-100 rounded-lg p-6 mb-6 text-left">
+            <h3 className="font-semibold text-slate-900 mb-3 text-lg">
               What happens next?
             </h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-power-orange">1.</span>
+            <ul className="space-y-3 text-sm text-slate-600">
+              <li className="flex items-start gap-3">
+                <span className="font-bold text-power-orange text-lg">1.</span>
                 <span>
                   Our team will review your venue details within 24-48 hours
                 </span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-power-orange">2.</span>
+              <li className="flex items-start gap-3">
+                <span className="font-bold text-power-orange text-lg">2.</span>
                 <span>
-                  We'll contact you via email/phone to verify your venue
+                  We&apos;ll contact you via email/phone to verify your venue
                 </span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-power-orange">3.</span>
+              <li className="flex items-start gap-3">
+                <span className="font-bold text-power-orange text-lg">3.</span>
                 <span>
-                  After verification, you'll receive login credentials to list
-                  your venue
+                  After verification, you&apos;ll receive login credentials to
+                  list your venue
                 </span>
               </li>
             </ul>
           </div>
 
-          <Link
-            href="/"
-            className="block w-full bg-power-orange text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-          >
-            Back to Home
+          <Link href="/" className="block">
+            <Button variant="primary" className="w-full">
+              Back to Home
+            </Button>
           </Link>
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4">
+    <div className="min-h-screen bg-slate-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="text-power-orange font-bold text-2xl">
+        <div className="text-center mb-10">
+          <Link
+            href="/"
+            className="text-power-orange font-bold text-3xl hover:text-orange-600 transition-colors"
+          >
             PowerMySport
           </Link>
-          <h1 className="text-3xl font-bold text-deep-slate mt-6 mb-2">
+          <h1 className="text-4xl font-bold text-slate-900 mt-8 mb-3">
             List Your Venue
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-slate-600 text-lg">
             Fill out the form below and our team will get in touch with you
           </p>
         </div>
 
         {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="bg-card rounded-lg p-8 border border-border"
-        >
-          <div className="space-y-6">
-            {/* Venue Name */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Venue Name *
-              </label>
-              <input
-                type="text"
-                name="venueName"
-                value={formData.venueName}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
-                placeholder="e.g., Elite Sports Arena"
-              />
-            </div>
-
-            {/* Owner Name */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Owner/Manager Name *
-              </label>
-              <input
-                type="text"
-                name="ownerName"
-                value={formData.ownerName}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
-                placeholder="Your full name"
-              />
-            </div>
-
-            {/* Contact Details */}
-            <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <form onSubmit={handleSubmit}>
+            <div className="space-y-6">
+              {/* Venue Name */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Email *
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Venue Name *
                 </label>
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                  type="text"
+                  name="venueName"
+                  value={formData.venueName}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
-                  placeholder="your@email.com"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                  placeholder="e.g., Elite Sports Arena"
                 />
               </div>
+
+              {/* Owner Name */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Owner/Manager Name *
+                </label>
+                <input
+                  type="text"
+                  name="ownerName"
+                  value={formData.ownerName}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                  placeholder="Your full name"
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Phone *
                 </label>
                 <input
@@ -180,107 +164,80 @@ export default function VenueInquiryPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                   placeholder="+91 98765 43210"
                 />
               </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Venue Address (including city) *
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                  placeholder="e.g., 123 Main Street, Andheri, Mumbai, Maharashtra"
+                />
+              </div>
+
+              {/* Sports */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Sports Available *
+                </label>
+                <input
+                  type="text"
+                  name="sports"
+                  value={formData.sports}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                  placeholder="e.g., Cricket, Football, Badminton"
+                />
+              </div>
+
+              {/* Message */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Additional Information
+                </label>
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all resize-none"
+                  placeholder="Tell us more about your venue..."
+                />
+              </div>
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                variant="primary"
+                className="w-full"
+              >
+                {isSubmitting ? "Submitting..." : "Submit Inquiry"}
+              </Button>
+
+              <p className="text-sm text-slate-600 text-center">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="text-power-orange hover:text-orange-600 transition-colors"
+                >
+                  Login here
+                </Link>
+              </p>
             </div>
-
-            {/* Address */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Venue Address *
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
-                placeholder="Street address"
-              />
-            </div>
-
-            {/* City */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                City *
-              </label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
-                placeholder="e.g., Mumbai"
-              />
-            </div>
-
-            {/* Sports */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Sports Available *
-              </label>
-              <input
-                type="text"
-                name="sports"
-                value={formData.sports}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
-                placeholder="e.g., Cricket, Football, Badminton"
-              />
-            </div>
-
-            {/* Facilities */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Facilities & Amenities
-              </label>
-              <input
-                type="text"
-                name="facilities"
-                value={formData.facilities}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
-                placeholder="e.g., Parking, Changing rooms, Cafeteria"
-              />
-            </div>
-
-            {/* Message */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Additional Information
-              </label>
-              <textarea
-                name="message"
-                value={formData.message}
-                onChange={handleChange}
-                rows={4}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
-                placeholder="Tell us more about your venue..."
-              />
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-power-orange text-white py-3 rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
-            >
-              {isSubmitting ? "Submitting..." : "Submit Inquiry"}
-            </button>
-
-            <p className="text-sm text-muted-foreground text-center">
-              Already have an account?{" "}
-              <Link href="/login" className="text-power-orange hover:underline">
-                Login here
-              </Link>
-            </p>
-          </div>
-        </form>
+          </form>
+        </Card>
       </div>
     </div>
   );

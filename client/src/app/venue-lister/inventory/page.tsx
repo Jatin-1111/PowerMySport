@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { venueApi } from "@/lib/venue";
+import { useAuthStore } from "@/store/authStore";
 import { Venue } from "@/types";
-import Link from "next/link";
+import React, { useEffect, useState } from "react";
 
 export default function VenueInventoryPage() {
+  const { user } = useAuthStore();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -19,6 +22,9 @@ export default function VenueInventoryPage() {
     description: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check if user can add more venues (defaults to false for venue listers from inquiry)
+  const canAddMoreVenues = user?.venueListerProfile?.canAddMoreVenues ?? true;
 
   useEffect(() => {
     loadVenues();
@@ -129,7 +135,7 @@ export default function VenueInventoryPage() {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Loading venues...</p>
+        <p className="text-slate-600">Loading venues...</p>
       </div>
     );
   }
@@ -137,28 +143,35 @@ export default function VenueInventoryPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-deep-slate">My Venues</h1>
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-power-orange text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-          >
+        <h1 className="text-3xl font-bold text-slate-900">My Venues</h1>
+        {!showForm && canAddMoreVenues && (
+          <Button onClick={() => setShowForm(true)} variant="primary">
             + Add Venue
-          </button>
+          </Button>
         )}
       </div>
 
+      {/* Restriction message for venue listers who cannot add more */}
+      {!canAddMoreVenues && !showForm && (
+        <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-6">
+          <p className="text-yellow-800">
+            <strong>Note:</strong> You can only manage your approved venue. To
+            add more venues, please contact our admin team.
+          </p>
+        </div>
+      )}
+
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="bg-card rounded-lg p-6 border border-border mb-6">
-          <h2 className="text-xl font-bold mb-4 text-deep-slate">
+        <Card className="bg-white mb-6">
+          <h2 className="text-xl font-bold mb-4 text-slate-900">
             {editingVenue ? "Edit Venue" : "Add New Venue"}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-slate-900 mb-2">
                   Venue Name *
                 </label>
                 <input
@@ -167,13 +180,13 @@ export default function VenueInventoryPage() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                   placeholder="e.g., Elite Sports Arena"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-slate-900 mb-2">
                   Location *
                 </label>
                 <input
@@ -182,7 +195,7 @@ export default function VenueInventoryPage() {
                   value={formData.location}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                   placeholder="e.g., Mumbai, Maharashtra"
                 />
               </div>
@@ -190,7 +203,7 @@ export default function VenueInventoryPage() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-slate-900 mb-2">
                   Sports (comma-separated) *
                 </label>
                 <input
@@ -199,13 +212,13 @@ export default function VenueInventoryPage() {
                   value={formData.sports}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                   placeholder="e.g., Cricket, Football, Badminton"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-slate-900 mb-2">
                   Price per Hour (₹) *
                 </label>
                 <input
@@ -216,14 +229,14 @@ export default function VenueInventoryPage() {
                   required
                   min="0"
                   step="0.01"
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                   placeholder="e.g., 1500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
                 Amenities (comma-separated)
               </label>
               <input
@@ -231,13 +244,13 @@ export default function VenueInventoryPage() {
                 name="amenities"
                 value={formData.amenities}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                 placeholder="e.g., Parking, Changing rooms, Cafeteria"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
                 Description
               </label>
               <textarea
@@ -245,60 +258,52 @@ export default function VenueInventoryPage() {
                 value={formData.description}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                 placeholder="Describe your venue..."
               />
             </div>
 
             <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-power-orange text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
-              >
+              <Button type="submit" disabled={isSubmitting} variant="primary">
                 {isSubmitting
                   ? "Saving..."
                   : editingVenue
                     ? "Update Venue"
                     : "Add Venue"}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="bg-muted text-foreground px-6 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-              >
+              </Button>
+              <Button type="button" onClick={handleCancel} variant="secondary">
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
       {/* Venues List */}
       {venues.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-lg border border-border">
-          <p className="text-muted-foreground mb-4">No venues added yet</p>
+        <Card className="text-center bg-white">
+          <p className="text-slate-600 mb-4">No venues added yet</p>
           {!showForm && (
             <button
               onClick={() => setShowForm(true)}
-              className="text-power-orange font-semibold hover:underline"
+              className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
             >
               Add your first venue
             </button>
           )}
-        </div>
+        </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {venues.map((venue) => (
-            <div
+            <Card
               key={venue.id}
-              className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow"
+              className="bg-white hover:shadow-lg transition-shadow p-0 overflow-hidden"
             >
               <div className="p-4">
-                <h3 className="text-xl font-bold mb-2 text-deep-slate">
+                <h3 className="text-xl font-bold mb-2 text-slate-900">
                   {venue.name}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-slate-600 mb-3">
                   📍 {venue.location}
                 </p>
 
@@ -315,25 +320,27 @@ export default function VenueInventoryPage() {
 
                 <p className="text-2xl font-bold text-power-orange mb-4">
                   ₹{venue.pricePerHour}
-                  <span className="text-sm text-muted-foreground">/hour</span>
+                  <span className="text-sm text-slate-600">/hour</span>
                 </p>
 
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={() => handleEdit(venue)}
-                    className="flex-1 bg-deep-slate text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                    variant="secondary"
+                    className="flex-1"
                   >
                     Edit
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleDelete(venue.id)}
-                    className="flex-1 bg-error-red text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors"
+                    variant="danger"
+                    className="flex-1"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

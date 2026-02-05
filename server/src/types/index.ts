@@ -38,6 +38,7 @@ export interface IPayoutInfo {
 export interface IVenueListerProfile {
   businessDetails: IBusinessDetails;
   payoutInfo: IPayoutInfo;
+  canAddMoreVenues?: boolean;
 }
 
 export interface IUser {

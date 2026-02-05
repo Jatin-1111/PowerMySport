@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { venueInquiryApi, VenueInquiry } from "@/lib/venueInquiry";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { VenueInquiry, venueInquiryApi } from "@/lib/venueInquiry";
+import { useEffect, useState } from "react";
 
 export default function VenueInquiriesPage() {
   const [inquiries, setInquiries] = useState<VenueInquiry[]>([]);
@@ -65,7 +67,7 @@ export default function VenueInquiriesPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-deep-slate">
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">
         Venue Inquiries
       </h1>
 
@@ -78,7 +80,7 @@ export default function VenueInquiriesPage() {
             className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
               filter === status
                 ? "bg-power-orange text-white"
-                : "bg-muted text-foreground hover:bg-gray-200"
+                : "bg-slate-100 text-slate-900 hover:bg-slate-200"
             }`}
           >
             {status}
@@ -88,34 +90,27 @@ export default function VenueInquiriesPage() {
 
       {/* Inquiries List */}
       {inquiries.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-lg border border-border">
-          <p className="text-muted-foreground">
-            No {filter.toLowerCase()} inquiries
-          </p>
-        </div>
+        <Card className="text-center bg-white">
+          <p className="text-slate-600">No {filter.toLowerCase()} inquiries</p>
+        </Card>
       ) : (
         <div className="space-y-4">
           {inquiries.map((inquiry) => (
-            <div
-              key={inquiry.id}
-              className="bg-card rounded-lg p-6 border border-border"
-            >
+            <Card key={inquiry.id} className="bg-white">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-deep-slate mb-1">
+                  <h3 className="text-xl font-bold text-slate-900 mb-1">
                     {inquiry.venueName}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
-                    📍 {inquiry.address}, {inquiry.city}
-                  </p>
+                  <p className="text-sm text-slate-600">📍 {inquiry.address}</p>
                 </div>
                 <span
                   className={`px-3 py-1 rounded text-sm font-semibold ${
                     inquiry.status === "PENDING"
-                      ? "bg-yellow-500/10 text-yellow-600 border border-yellow-500"
+                      ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
                       : inquiry.status === "APPROVED"
-                        ? "bg-turf-green/10 text-turf-green border border-turf-green"
-                        : "bg-error-red/10 text-error-red border border-error-red"
+                        ? "bg-green-100 text-green-700 border border-green-300"
+                        : "bg-red-100 text-red-700 border border-red-300"
                   }`}
                 >
                   {inquiry.status}
@@ -124,37 +119,39 @@ export default function VenueInquiriesPage() {
 
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Owner</p>
-                  <p className="font-semibold">{inquiry.ownerName}</p>
+                  <p className="text-sm text-slate-600">Owner</p>
+                  <p className="font-semibold text-slate-900">
+                    {inquiry.ownerName}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Contact</p>
-                  <p className="font-semibold">{inquiry.email}</p>
-                  <p className="text-sm">{inquiry.phone}</p>
+                  <p className="text-sm text-slate-600">Contact</p>
+                  <p className="font-semibold text-slate-900">
+                    {inquiry.phone}
+                  </p>
+                  <p className="text-xs text-slate-600">
+                    Email will be: venue_{inquiry.phone.replace(/\s+/g, "")}
+                    @powermysport.com
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Sports</p>
-                  <p className="font-semibold">{inquiry.sports}</p>
+                  <p className="text-sm text-slate-600">Sports</p>
+                  <p className="font-semibold text-slate-900">
+                    {inquiry.sports}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Submitted</p>
-                  <p className="font-semibold">
+                  <p className="text-sm text-slate-600">Submitted</p>
+                  <p className="font-semibold text-slate-900">
                     {new Date(inquiry.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
 
-              {inquiry.facilities && (
-                <div className="mb-4">
-                  <p className="text-sm text-muted-foreground">Facilities</p>
-                  <p className="font-semibold">{inquiry.facilities}</p>
-                </div>
-              )}
-
               {inquiry.message && (
                 <div className="mb-4">
-                  <p className="text-sm text-muted-foreground">Message</p>
-                  <p className="text-sm bg-muted p-3 rounded">
+                  <p className="text-sm text-slate-600">Message</p>
+                  <p className="text-sm bg-slate-50 p-3 rounded border border-slate-200 text-slate-900">
                     {inquiry.message}
                   </p>
                 </div>
@@ -162,7 +159,7 @@ export default function VenueInquiriesPage() {
 
               {/* Review Section */}
               {inquiry.status === "PENDING" && (
-                <div className="border-t border-border pt-4 mt-4">
+                <div className="border-t border-slate-200 pt-4 mt-4">
                   {selectedInquiry?.id === inquiry.id ? (
                     <div className="space-y-3">
                       <textarea
@@ -170,54 +167,54 @@ export default function VenueInquiriesPage() {
                         onChange={(e) => setReviewNotes(e.target.value)}
                         placeholder="Add review notes (optional)..."
                         rows={3}
-                        className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                       />
                       <div className="flex gap-2">
-                        <button
+                        <Button
                           onClick={() => handleReview(inquiry.id, "APPROVED")}
                           disabled={isProcessing}
-                          className="bg-turf-green text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-600 disabled:opacity-50 transition-colors"
+                          className="bg-green-600 hover:bg-green-700 text-white"
                         >
                           {isProcessing ? "Processing..." : "✓ Approve"}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleReview(inquiry.id, "REJECTED")}
                           disabled={isProcessing}
-                          className="bg-error-red text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 disabled:opacity-50 transition-colors"
+                          variant="danger"
                         >
                           ✗ Reject
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => {
                             setSelectedInquiry(null);
                             setReviewNotes("");
                           }}
-                          className="bg-muted text-foreground px-6 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                          variant="secondary"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
-                    <button
+                    <Button
                       onClick={() => setSelectedInquiry(inquiry)}
-                      className="bg-power-orange text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+                      variant="primary"
                     >
                       Review Inquiry
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
 
               {inquiry.reviewNotes && (
-                <div className="border-t border-border pt-4 mt-4">
-                  <p className="text-sm text-muted-foreground">Review Notes</p>
-                  <p className="text-sm bg-muted p-3 rounded">
+                <div className="border-t border-slate-200 pt-4 mt-4">
+                  <p className="text-sm text-slate-600">Review Notes</p>
+                  <p className="text-sm bg-slate-50 p-3 rounded border border-slate-200 text-slate-900">
                     {inquiry.reviewNotes}
                   </p>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}

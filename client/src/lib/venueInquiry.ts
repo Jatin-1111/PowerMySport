@@ -1,15 +1,12 @@
-import axiosInstance from "./axios";
 import { ApiResponse } from "@/types";
+import axiosInstance from "./axios";
 
 export interface VenueInquiryData {
   venueName: string;
   ownerName: string;
-  email: string;
   phone: string;
   address: string;
-  city: string;
   sports: string;
-  facilities?: string;
   message?: string;
 }
 

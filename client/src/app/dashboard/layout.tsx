@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import { authApi } from "@/lib/auth";
+import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
-import { authApi } from "@/lib/auth";
+import React from "react";
 
 export default function DashboardLayout({
   children,
@@ -25,39 +25,42 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-slate-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-deep-slate shadow-lg">
-        <div className="p-6 border-b border-border">
+      <aside className="w-64 bg-slate-900 shadow-xl flex flex-col relative">
+        <div className="p-6 border-b border-slate-700">
           <h1 className="text-2xl font-bold text-power-orange">PowerMySport</h1>
-          <p className="text-ghost-white text-sm mt-2">{user?.name}</p>
+          <p className="text-slate-300 text-sm mt-2">{user?.name}</p>
         </div>
 
-        <nav className="mt-8">
+        <nav className="mt-8 flex-1">
           <Link
             href="/dashboard/search"
-            className="block px-6 py-3 text-ghost-white hover:bg-power-orange/10 hover:border-l-4 hover:border-power-orange transition-all"
+            className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
           >
-            🔍 Search Venues
+            <span>🔍</span>
+            <span>Search Venues</span>
           </Link>
           <Link
             href="/dashboard/my-bookings"
-            className="block px-6 py-3 text-ghost-white hover:bg-power-orange/10 hover:border-l-4 hover:border-power-orange transition-all"
+            className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
           >
-            📅 My Bookings
+            <span>📅</span>
+            <span>My Bookings</span>
           </Link>
           <Link
             href="/dashboard/my-profile"
-            className="block px-6 py-3 text-ghost-white hover:bg-power-orange/10 hover:border-l-4 hover:border-power-orange transition-all"
+            className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
           >
-            👤 Profile
+            <span>👤</span>
+            <span>Profile</span>
           </Link>
         </nav>
 
-        <div className="absolute bottom-6 left-6 right-6">
+        <div className="p-6 mt-auto border-t border-slate-700">
           <button
             onClick={handleLogout}
-            className="w-full bg-error-red text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors"
+            className="w-full bg-red-600 text-white py-2.5 rounded-lg font-semibold hover:bg-red-700 transition-colors"
           >
             Logout
           </button>

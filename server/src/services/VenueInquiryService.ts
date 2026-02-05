@@ -1,18 +1,13 @@
-import VenueInquiry, { IVenueInquiry } from "../models/VenueInquiry";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
-import { generateToken } from "../utils/jwt";
-import bcrypt from "bcryptjs";
+import VenueInquiry, { IVenueInquiry } from "../models/VenueInquiry";
 
 interface CreateInquiryPayload {
   venueName: string;
   ownerName: string;
-  email: string;
   phone: string;
   address: string;
-  city: string;
   sports: string;
-  facilities?: string;
   message?: string;
 }
 
@@ -25,15 +20,15 @@ interface ReviewInquiryPayload {
 export const createVenueInquiry = async (
   data: CreateInquiryPayload,
 ): Promise<IVenueInquiry> => {
-  // Check if inquiry already exists for this email
+  // Check if inquiry already exists for this phone
   const existingInquiry = await VenueInquiry.findOne({
-    email: data.email,
+    phone: data.phone,
     status: "PENDING",
   });
 
   if (existingInquiry) {
     throw new Error(
-      "An inquiry with this email is already pending review. Please wait for our team to contact you.",
+      "An inquiry with this phone number is already pending review. Please wait for our team to contact you.",
     );
   }
 
@@ -83,11 +78,16 @@ export const reviewInquiry = async (
 
   // If approved, create venue lister account
   if (reviewData.status === "APPROVED") {
+    // Generate email from phone number
+    const generatedEmail = `venue_${inquiry.phone.replace(/\s+/g, "")}@powermysport.com`;
+
     // Check if user already exists
-    const existingUser = await User.findOne({ email: inquiry.email });
+    const existingUser = await User.findOne({
+      $or: [{ email: generatedEmail }, { phone: inquiry.phone }],
+    });
 
     if (existingUser) {
-      throw new Error("User with this email already exists");
+      throw new Error("User with this phone number already exists");
     }
 
     // Generate temporary password
@@ -96,17 +96,18 @@ export const reviewInquiry = async (
     // Create venue lister account (User model will hash the password)
     const user = new User({
       name: inquiry.ownerName,
-      email: inquiry.email,
+      email: generatedEmail,
       phone: inquiry.phone,
       password: tempPassword, // Pass plain password, User model will hash it
       role: "VENUE_LISTER",
+      venueListerProfile: {
+        canAddMoreVenues: false, // Restrict to only the approved venue
+      },
     });
 
     const savedUser = await user.save();
 
     // Create the first venue automatically
-    // Using default coordinates [0,0] as we don't have geo-location yet
-    // The user will need to update this later
     const venue = new Venue({
       name: inquiry.venueName,
       ownerId: savedUser._id,
@@ -114,13 +115,11 @@ export const reviewInquiry = async (
         type: "Point",
         coordinates: [0, 0], // Default coordinates
       },
-      sports: inquiry.sports.split(",").map((s) => s.trim()), // Assuming comma-separated
-      amenities: inquiry.facilities
-        ? inquiry.facilities.split(",").map((f) => f.trim())
-        : [],
-      description: `${inquiry.message || ""} \n\nAddress: ${inquiry.address}, ${inquiry.city}`,
+      sports: inquiry.sports.split(",").map((s) => s.trim()),
+      amenities: [],
+      description: `${inquiry.message || ""} \n\nAddress: ${inquiry.address}`,
       pricePerHour: 0, // Default price, user must update
-      requiresLocationUpdate: true, // Flag to prompt user for update
+      requiresLocationUpdate: true,
     });
 
     await venue.save();
@@ -128,7 +127,7 @@ export const reviewInquiry = async (
     return {
       inquiry,
       credentials: {
-        email: inquiry.email,
+        email: generatedEmail,
         password: tempPassword,
       },
     };

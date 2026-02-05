@@ -1,14 +1,15 @@
 import { Request, Response } from "express";
+import { User } from "../models/User";
+import { findCoachesNearby } from "../services/CoachService";
 import {
   createVenue,
-  getVenueById,
-  getVenuesByOwner,
-  getAllVenues,
-  updateVenue,
   deleteVenue,
   findVenuesNearby,
+  getAllVenues,
+  getVenueById,
+  getVenuesByOwner,
+  updateVenue,
 } from "../services/VenueService";
-import { findCoachesNearby } from "../services/CoachService";
 
 export const createNewVenue = async (
   req: Request,
@@ -21,6 +22,29 @@ export const createNewVenue = async (
         message: "Unauthorized",
       });
       return;
+    }
+
+    // Check if user is venue lister and has permission to add more venues
+    if (req.user.role === "VENUE_LISTER") {
+      const user = await User.findById(req.user.id);
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+        return;
+      }
+
+      // Check if user can add more venues (defaults to false for approved venue listers)
+      if (!user.venueListerProfile?.canAddMoreVenues) {
+        res.status(403).json({
+          success: false,
+          message:
+            "You are only allowed to manage your approved venue. Contact admin to add more venues.",
+        });
+        return;
+      }
     }
 
     const venue = await createVenue({

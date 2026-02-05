@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { User } from "@/types";
+import { Card } from "@/components/ui/Card";
 import { authApi } from "@/lib/auth";
+import { User } from "@/types";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -35,37 +36,39 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">My Profile</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">My Profile</h1>
 
-      <div className="bg-white rounded-lg p-6 shadow max-w-md">
-        <div className="mb-4">
-          <label className="block text-gray-600 text-sm font-semibold">
-            Name
-          </label>
-          <p className="text-gray-900">{user.name}</p>
-        </div>
+      <Card className="max-w-md bg-white">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-slate-600 text-sm font-semibold mb-1">
+              Name
+            </label>
+            <p className="text-slate-900 text-lg">{user.name}</p>
+          </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-600 text-sm font-semibold">
-            Email
-          </label>
-          <p className="text-gray-900">{user.email}</p>
-        </div>
+          <div>
+            <label className="block text-slate-600 text-sm font-semibold mb-1">
+              Email
+            </label>
+            <p className="text-slate-900 text-lg">{user.email}</p>
+          </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-600 text-sm font-semibold">
-            Phone
-          </label>
-          <p className="text-gray-900">{user.phone}</p>
-        </div>
+          <div>
+            <label className="block text-slate-600 text-sm font-semibold mb-1">
+              Phone
+            </label>
+            <p className="text-slate-900 text-lg">{user.phone}</p>
+          </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-600 text-sm font-semibold">
-            Account Type
-          </label>
-          <p className="text-gray-900 capitalize">{user.role}</p>
+          <div>
+            <label className="block text-slate-600 text-sm font-semibold mb-1">
+              Account Type
+            </label>
+            <p className="text-slate-900 text-lg capitalize">{user.role}</p>
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -1,13 +1,16 @@
 import { Router } from "express";
 import {
-  register,
+  forgotPassword,
+  getProfile,
+  googleAuth,
   login,
   logout,
-  getProfile,
+  register,
+  resetPasswordHandler,
 } from "../controllers/authController";
 import { authMiddleware } from "../middleware/auth";
+import { loginSchema, registerSchema } from "../middleware/schemas";
 import { validateRequest } from "../middleware/validation";
-import { registerSchema, loginSchema } from "../middleware/schemas";
 
 const router = Router();
 
@@ -15,5 +18,8 @@ router.post("/register", validateRequest(registerSchema), register);
 router.post("/login", validateRequest(loginSchema), login);
 router.post("/logout", authMiddleware, logout);
 router.get("/profile", authMiddleware, getProfile);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPasswordHandler);
+router.post("/google", googleAuth);
 
 export default router;

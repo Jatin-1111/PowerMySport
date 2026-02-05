@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Booking } from "@/types";
 import { bookingApi } from "@/lib/booking";
 import { formatDate, formatTime } from "@/utils/format";
+import { Card } from "@/components/ui/Card";
 
 export default function CoachBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -52,56 +53,54 @@ export default function CoachBookingsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-deep-slate">My Bookings</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">My Bookings</h1>
 
       {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-card rounded-lg p-4 border border-border">
-          <p className="text-sm text-muted-foreground mb-1">Total Bookings</p>
-          <p className="text-3xl font-bold text-deep-slate">{stats.total}</p>
-        </div>
-        <div className="bg-card rounded-lg p-4 border border-border">
-          <p className="text-sm text-muted-foreground mb-1">Confirmed</p>
-          <p className="text-3xl font-bold text-turf-green">
-            {stats.confirmed}
-          </p>
-        </div>
-        <div className="bg-card rounded-lg p-4 border border-border">
-          <p className="text-sm text-muted-foreground mb-1">Total Earnings</p>
+        <Card className="bg-white">
+          <p className="text-sm text-slate-600 mb-1">Total Bookings</p>
+          <p className="text-3xl font-bold text-slate-900">{stats.total}</p>
+        </Card>
+        <Card className="bg-white">
+          <p className="text-sm text-slate-600 mb-1">Confirmed</p>
+          <p className="text-3xl font-bold text-green-600">{stats.confirmed}</p>
+        </Card>
+        <Card className="bg-white">
+          <p className="text-sm text-slate-600 mb-1">Total Earnings</p>
           <p className="text-3xl font-bold text-power-orange">
             ₹{stats.totalEarnings}
           </p>
-        </div>
+        </Card>
       </div>
 
       {/* Bookings List */}
       {bookings.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-lg border border-border">
-          <p className="text-muted-foreground mb-4">No bookings yet</p>
-          <p className="text-sm text-muted-foreground">
+        <Card className="text-center bg-white">
+          <p className="text-slate-600 mb-4">No bookings yet</p>
+          <p className="text-sm text-slate-500">
             Bookings will appear here once players book sessions with you
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {bookings.map((booking) => (
-            <div
+            <Card
               key={booking.id}
-              className="bg-card rounded-lg p-6 shadow border border-border hover:shadow-lg transition-shadow"
+              className="bg-white hover:shadow-lg transition-shadow"
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-lg font-semibold text-deep-slate">
+                    <h3 className="text-lg font-semibold text-slate-900">
                       Session #{booking.id.slice(-6)}
                     </h3>
                     <span
                       className={`px-3 py-1 rounded text-sm font-semibold ${
                         booking.status === "CONFIRMED"
-                          ? "bg-turf-green/10 text-turf-green border border-turf-green"
+                          ? "bg-green-100 text-green-700 border border-green-300"
                           : booking.status === "PENDING"
-                            ? "bg-yellow-500/10 text-yellow-600 border border-yellow-500"
-                            : "bg-error-red/10 text-error-red border border-error-red"
+                            ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                            : "bg-red-100 text-red-700 border border-red-300"
                       }`}
                     >
                       {booking.status}
@@ -110,21 +109,19 @@ export default function CoachBookingsPage() {
 
                   <div className="grid md:grid-cols-2 gap-4 mb-3">
                     <div>
-                      <p className="text-sm text-muted-foreground">
-                        Date & Time
-                      </p>
-                      <p className="font-semibold">
+                      <p className="text-sm text-slate-600">Date & Time</p>
+                      <p className="font-semibold text-slate-900">
                         📅 {formatDate(booking.date)}
                       </p>
-                      <p className="text-sm">
+                      <p className="text-sm text-slate-700">
                         ⏰ {formatTime(booking.startTime)} -{" "}
                         {formatTime(booking.endTime)}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-sm text-muted-foreground">Venue</p>
-                      <p className="font-semibold">
+                      <p className="text-sm text-slate-600">Venue</p>
+                      <p className="font-semibold text-slate-900">
                         Venue ID: {booking.venueId}
                       </p>
                     </div>
@@ -132,8 +129,8 @@ export default function CoachBookingsPage() {
 
                   {/* Payment Details */}
                   {booking.coachPayment && (
-                    <div className="bg-muted rounded-lg p-4 mt-3">
-                      <p className="text-sm font-semibold mb-2">
+                    <div className="bg-slate-50 rounded-lg p-4 mt-3 border border-slate-200">
+                      <p className="text-sm font-semibold mb-2 text-slate-900">
                         Your Earnings
                       </p>
                       <div className="flex justify-between items-center">
@@ -146,8 +143,8 @@ export default function CoachBookingsPage() {
                           <span
                             className={`px-3 py-1 rounded text-sm font-semibold ${
                               booking.coachPayment.status === "COMPLETED"
-                                ? "bg-turf-green/10 text-turf-green border border-turf-green"
-                                : "bg-yellow-500/10 text-yellow-600 border border-yellow-500"
+                                ? "bg-green-100 text-green-700 border border-green-300"
+                                : "bg-yellow-100 text-yellow-700 border border-yellow-300"
                             }`}
                           >
                             {booking.coachPayment.status}
@@ -158,7 +155,7 @@ export default function CoachBookingsPage() {
                   )}
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

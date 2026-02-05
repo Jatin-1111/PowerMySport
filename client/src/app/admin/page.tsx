@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { statsApi, PlatformStats } from "@/lib/stats";
+import { Card } from "@/components/ui/Card";
+import { PlatformStats, statsApi } from "@/lib/stats";
+import { useEffect, useState } from "react";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<PlatformStats>({
@@ -36,63 +37,63 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-deep-slate">
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">
         Admin Dashboard
       </h1>
 
       {/* Stats Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-card rounded-lg p-6 border border-border">
+        <Card className="bg-white">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Total Users</p>
+            <p className="text-sm text-slate-600">Total Users</p>
             <span className="text-2xl">👥</span>
           </div>
-          <p className="text-3xl font-bold text-deep-slate">
+          <p className="text-3xl font-bold text-slate-900">
             {stats.totalUsers}
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-card rounded-lg p-6 border border-border">
+        <Card className="bg-white">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Total Venues</p>
+            <p className="text-sm text-slate-600">Total Venues</p>
             <span className="text-2xl">🏟️</span>
           </div>
-          <p className="text-3xl font-bold text-deep-slate">
+          <p className="text-3xl font-bold text-slate-900">
             {stats.totalVenues}
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-card rounded-lg p-6 border border-border">
+        <Card className="bg-white">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Total Bookings</p>
+            <p className="text-sm text-slate-600">Total Bookings</p>
             <span className="text-2xl">📅</span>
           </div>
-          <p className="text-3xl font-bold text-deep-slate">
+          <p className="text-3xl font-bold text-slate-900">
             {stats.totalBookings}
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-card rounded-lg p-6 border border-border">
+        <Card className="bg-white">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
+            <p className="text-sm text-slate-600">Total Revenue</p>
             <span className="text-2xl">💰</span>
           </div>
           <p className="text-3xl font-bold text-power-orange">
             ₹{stats.revenue.toLocaleString()}
           </p>
-        </div>
+        </Card>
       </div>
 
       {/* Pending Inquiries Alert */}
       {stats.pendingInquiries > 0 && (
-        <div className="bg-yellow-500/10 border border-yellow-500 rounded-lg p-4 mb-6">
+        <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚠️</span>
             <div>
-              <p className="font-semibold text-yellow-700">
+              <p className="font-semibold text-yellow-800">
                 {stats.pendingInquiries} Pending Venue Inquiries
               </p>
-              <p className="text-sm text-yellow-600">
+              <p className="text-sm text-yellow-700">
                 Review and approve venue listing requests
               </p>
             </div>

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { venueApi } from "@/lib/venue";
+import { Card } from "@/components/ui/Card";
 import { bookingApi } from "@/lib/booking";
-import { Venue, Booking } from "@/types";
-import Link from "next/link";
+import { venueApi } from "@/lib/venue";
+import { Booking } from "@/types";
 import { formatCurrency } from "@/utils/format";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function VenueListerDashboard() {
   const [stats, setStats] = useState({
@@ -70,49 +71,49 @@ export default function VenueListerDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-deep-slate">Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-900">Dashboard</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-          <p className="text-sm text-muted-foreground mb-1">Total Venues</p>
-          <p className="text-3xl font-bold text-deep-slate">
+        <Card className="bg-white">
+          <p className="text-sm text-slate-600 mb-1">Total Venues</p>
+          <p className="text-3xl font-bold text-slate-900">
             {stats.totalVenues}
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-          <p className="text-sm text-muted-foreground mb-1">Total Bookings</p>
-          <p className="text-3xl font-bold text-deep-slate">
+        <Card className="bg-white">
+          <p className="text-sm text-slate-600 mb-1">Total Bookings</p>
+          <p className="text-3xl font-bold text-slate-900">
             {stats.totalBookings}
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-          <p className="text-sm text-muted-foreground mb-1">Total Earnings</p>
+        <Card className="bg-white">
+          <p className="text-sm text-slate-600 mb-1">Total Earnings</p>
           <p className="text-3xl font-bold text-power-orange">
             {formatCurrency(stats.totalEarnings)}
           </p>
-        </div>
+        </Card>
 
-        <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
-          <p className="text-sm text-muted-foreground mb-1">Pending Bookings</p>
+        <Card className="bg-white">
+          <p className="text-sm text-slate-600 mb-1">Pending Bookings</p>
           <p className="text-3xl font-bold text-yellow-600">
             {stats.pendingBookings}
           </p>
-        </div>
+        </Card>
       </div>
 
       {/* Quick Actions */}
-      <h2 className="text-xl font-bold mb-4 text-deep-slate">Quick Actions</h2>
+      <h2 className="text-xl font-bold mb-4 text-slate-900">Quick Actions</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <Link
           href="/venue-lister/inventory"
-          className="flex items-center justify-between p-6 bg-deep-slate text-white rounded-lg hover:bg-gray-800 transition-colors group"
+          className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors group"
         >
           <div>
             <h3 className="text-lg font-bold mb-1">Manage Inventory</h3>
-            <p className="text-gray-300 text-sm">Add or edit your venues</p>
+            <p className="text-slate-300 text-sm">Add or edit your venues</p>
           </div>
           <span className="text-2xl group-hover:translate-x-2 transition-transform">
             →
