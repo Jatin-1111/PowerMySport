@@ -126,10 +126,19 @@ export interface Booking {
 // ============================================
 // API RESPONSE TYPES
 // ============================================
+export interface PaginationMetadata {
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data?: T;
+  pagination?: { // Allow nested pagination or top-level
+    [key: string]: PaginationMetadata | undefined; 
+  } & PaginationMetadata; // Or just top-level
 }
 
 export interface Availability {

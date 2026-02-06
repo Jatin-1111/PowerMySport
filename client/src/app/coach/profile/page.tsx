@@ -57,6 +57,20 @@ export default function CoachProfilePage() {
     setSaving(true);
 
     try {
+      // Validate Venue ID format if present
+      if (
+        formData.serviceMode !== "FREELANCE" &&
+        formData.venueId &&
+        formData.venueId.trim() !== ""
+      ) {
+        const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+        if (!objectIdPattern.test(formData.venueId.trim())) {
+          alert("Invalid Venue ID. It must be a 24-character hexadecimal string.");
+          setSaving(false);
+          return;
+        }
+      }
+
       const payload = {
         bio: formData.bio,
         certifications: formData.certifications
@@ -70,7 +84,9 @@ export default function CoachProfilePage() {
         hourlyRate: Number(formData.hourlyRate),
         serviceMode: formData.serviceMode,
         venueId:
-          formData.serviceMode !== "FREELANCE" ? formData.venueId : undefined,
+          formData.serviceMode !== "FREELANCE" && formData.venueId.trim() !== ""
+            ? formData.venueId
+            : undefined,
         serviceRadiusKm:
           formData.serviceMode !== "OWN_VENUE"
             ? formData.serviceRadiusKm

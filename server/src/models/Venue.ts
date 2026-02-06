@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation } from "../types";
 
 export interface VenueDocument extends Document {
@@ -8,6 +8,8 @@ export interface VenueDocument extends Document {
   sports: string[];
   pricePerHour: number;
   amenities: string[];
+  address: string;
+  openingHours: string;
   description: string;
   images: string[];
   allowExternalCoaches: boolean;
@@ -56,6 +58,14 @@ const venueSchema = new Schema<VenueDocument>(
     amenities: {
       type: [String],
       default: [],
+    },
+    address: {
+      type: String,
+      default: "",
+    },
+    openingHours: {
+      type: String,
+      default: "9:00 AM - 9:00 PM",
     },
     description: {
       type: String,

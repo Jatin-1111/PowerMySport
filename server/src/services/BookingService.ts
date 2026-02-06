@@ -1,16 +1,15 @@
+import { v4 as uuidv4 } from "uuid";
 import { Booking, BookingDocument } from "../models/Booking";
-import { Venue } from "../models/Venue";
 import { Coach } from "../models/Coach";
-import { User } from "../models/User";
+import { Venue } from "../models/Venue";
 import { doTimesOverlap } from "../utils/booking";
 import {
-  calculateSplitAmounts,
-  validatePaymentStatus,
-  generateMockPaymentLink,
+    calculateSplitAmounts,
+    generateMockPaymentLink,
+    validatePaymentStatus,
 } from "../utils/payment";
-import { getBookingExpirationTime } from "../utils/timer";
 import { generateQRCode, generateVerificationURL } from "../utils/qrcode";
-import { v4 as uuidv4 } from "uuid";
+import { getBookingExpirationTime } from "../utils/timer";
 
 export interface InitiateBookingPayload {
   userId: string;
@@ -267,12 +266,25 @@ export const updatePaymentStatus = async (
 /**
  * Get all bookings for a user
  */
+/**
+ * Get all bookings for a user
+ */
 export const getUserBookings = async (
   userId: string,
-): Promise<BookingDocument[]> => {
-  return Booking.find({ userId })
+  page: number = 1,
+  limit: number = 20
+): Promise<{ bookings: BookingDocument[]; total: number; page: number; totalPages: number }> => {
+  const skip = (page - 1) * limit;
+  const query = { userId };
+  
+  const total = await Booking.countDocuments(query);
+  const bookings = await Booking.find(query)
     .populate("venueId coachId")
-    .sort({ date: -1 });
+    .sort({ date: -1 })
+    .skip(skip)
+    .limit(limit);
+    
+  return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
 
 /**
@@ -280,13 +292,46 @@ export const getUserBookings = async (
  */
 export const getVenueBookings = async (
   venueId: string,
-): Promise<BookingDocument[]> => {
-  return Booking.find({
+  page: number = 1,
+  limit: number = 20
+): Promise<{ bookings: BookingDocument[]; total: number; page: number; totalPages: number }> => {
+  const query = {
     venueId,
     status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
-  })
+  };
+  const skip = (page - 1) * limit;
+  
+  const total = await Booking.countDocuments(query);
+  const bookings = await Booking.find(query)
     .populate("userId coachId")
-    .sort({ date: 1 });
+    .sort({ date: 1 })
+    .skip(skip)
+    .limit(limit);
+
+  return { bookings, total, page, totalPages: Math.ceil(total / limit) };
+};
+
+/**
+ * Get bookings for a venue on a specific date (optimized for availability check)
+ */
+export const getVenueBookingsForDate = async (
+  venueId: string,
+  date: Date
+): Promise<BookingDocument[]> => {
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  return Booking.find({
+    venueId,
+    date: {
+      $gte: startOfDay,
+      $lte: endOfDay,
+    },
+    status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
+  }).select("startTime endTime");
 };
 
 /**
@@ -294,18 +339,28 @@ export const getVenueBookings = async (
  */
 export const getVenueListerBookings = async (
   ownerId: string,
-): Promise<BookingDocument[]> => {
+  page: number = 1,
+  limit: number = 20
+): Promise<{ bookings: BookingDocument[]; total: number; page: number; totalPages: number }> => {
   // Find all venues owned by this user
   const venues = await Venue.find({ ownerId });
   const venueIds = venues.map((v) => v._id);
 
-  // Find all bookings for these venues
-  return Booking.find({
+  const query = {
     venueId: { $in: venueIds },
     status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
-  })
+  };
+  const skip = (page - 1) * limit;
+
+  // Find all bookings for these venues
+  const total = await Booking.countDocuments(query);
+  const bookings = await Booking.find(query)
     .populate("userId venueId coachId")
-    .sort({ date: -1 });
+    .sort({ date: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
 
 /**

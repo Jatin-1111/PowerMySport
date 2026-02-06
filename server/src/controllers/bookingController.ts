@@ -1,19 +1,17 @@
 import { Request, Response } from "express";
 import {
-  initiateBooking,
-  updatePaymentStatus,
-  getUserBookings,
-  getVenueBookings,
-  getVenueListerBookings,
-  cancelBooking,
-  verifyBooking,
+    cancelBooking,
+    getUserBookings,
+    getVenueBookingsForDate,
+    getVenueListerBookings,
+    initiateBooking,
+    verifyBooking,
 } from "../services/BookingService";
 import {
-  processMockPayment,
-  handlePaymentWebhook,
+    handlePaymentWebhook,
+    processMockPayment,
 } from "../services/PaymentService";
 import { generateHourlySlots } from "../utils/booking";
-import { Booking } from "../models/Booking";
 
 /**
  * Initiate a new booking with split payments
@@ -166,20 +164,28 @@ export const getMyBookings = async (
       return;
     }
 
-    let bookings;
+    const page = parseInt(req.query.page as string || "1", 10);
+    const limit = parseInt(req.query.limit as string || "20", 10);
+
+    let result;
 
     // Different logic based on role
     if (req.user.role === "VENUE_LISTER") {
-      bookings = await getVenueListerBookings(req.user.id);
+      result = await getVenueListerBookings(req.user.id, page, limit);
     } else {
       // For PLAYER and others, get bookings they made
-      bookings = await getUserBookings(req.user.id);
+      result = await getUserBookings(req.user.id, page, limit);
     }
 
     res.status(200).json({
       success: true,
       message: "Bookings retrieved successfully",
-      data: bookings,
+      data: result.bookings,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -211,14 +217,11 @@ export const getVenueAvailability = async (
     }
 
     // Get all bookings for this venue on the specified date
-    const bookings = await getVenueBookings(venueId);
-    const bookedSlots = bookings
-      .filter(
-        (b) =>
-          new Date(b.date).toDateString() ===
-          new Date(date as string).toDateString(),
-      )
-      .map((b) => ({
+    const bookedSlots = await getVenueBookingsForDate(venueId, new Date(date as string));
+    
+    // Map to simple {startTime, endTime} objects if not already (select already does partial)
+    // But result is Mongoose documents, safest to map explicitly just in case
+    const bookedTimeSlots = bookedSlots.map((b) => ({
         startTime: b.startTime,
         endTime: b.endTime,
       }));
@@ -229,7 +232,7 @@ export const getVenueAvailability = async (
       const slotHour = parseInt(slotParts[0] || "0", 10);
       const nextHour = String(slotHour + 1).padStart(2, "0") + ":00";
 
-      return !bookedSlots.some((booked) => {
+      return !bookedTimeSlots.some((booked) => {
         return (
           (slot >= booked.startTime && slot < booked.endTime) ||
           (nextHour > booked.startTime && nextHour <= booked.endTime)

@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
-import { findCoachesNearby } from "../services/CoachService";
+import { findCoachesNearby, getAllCoaches } from "../services/CoachService";
 import {
-  createVenue,
-  deleteVenue,
-  findVenuesNearby,
-  getAllVenues,
-  getVenueById,
-  getVenuesByOwner,
-  updateVenue,
+    createVenue,
+    deleteVenue,
+    findVenuesNearby,
+    getAllVenues,
+    getVenueById,
+    getVenuesByOwner,
+    updateVenue,
 } from "../services/VenueService";
 
 export const createNewVenue = async (
@@ -106,12 +106,20 @@ export const getMyVenues = async (
       return;
     }
 
-    const venues = await getVenuesByOwner(req.user.id);
+    const page = parseInt(req.query.page as string || "1", 10);
+    const limit = parseInt(req.query.limit as string || "20", 10);
+
+    const result = await getVenuesByOwner(req.user.id, page, limit);
 
     res.status(200).json({
       success: true,
       message: "Venues retrieved successfully",
-      data: venues,
+      data: result.venues,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -132,11 +140,34 @@ export const discoverNearby = async (
 ): Promise<void> => {
   try {
     const { lat, lng, radius, sport } = req.query;
+    const sportFilter = sport as string | undefined;
 
+    // If no location provided, return all venues and coaches (Universal Feed)
+    // If no location provided, return all venues and coaches (Universal Feed)
     if (!lat || !lng) {
-      res.status(400).json({
-        success: false,
-        message: "lat and lng are required parameters",
+      const page = parseInt(req.query.page as string || "1", 10);
+      const limit = parseInt(req.query.limit as string || "20", 10);
+      const venueFilters = sportFilter ? { sports: [sportFilter] } : {};
+      
+      const [venuesResult, coaches] = await Promise.all([
+        getAllVenues(venueFilters, page, limit),
+        getAllCoaches(sportFilter),
+      ]);
+
+      res.status(200).json({
+        success: true,
+        message: "Discovery feed retrieved successfully",
+        data: {
+          venues: venuesResult.venues,
+          coaches,
+        },
+        pagination: {
+          venues: {
+            total: venuesResult.total,
+            page: venuesResult.page,
+            totalPages: venuesResult.totalPages,
+          },
+        },
       });
       return;
     }
@@ -144,11 +175,13 @@ export const discoverNearby = async (
     const latitude = parseFloat(lat as string);
     const longitude = parseFloat(lng as string);
     const radiusMeters = radius ? parseInt(radius as string, 10) : 5000;
-    const sportFilter = sport as string | undefined;
 
     // Search for venues and coaches in parallel
-    const [venues, coaches] = await Promise.all([
-      findVenuesNearby(latitude, longitude, radiusMeters, sportFilter),
+    const page = parseInt(req.query.page as string || "1", 10);
+    const limit = parseInt(req.query.limit as string || "20", 10);
+
+    const [venuesResult, coaches] = await Promise.all([
+      findVenuesNearby(latitude, longitude, radiusMeters, sportFilter, page, limit),
       findCoachesNearby(latitude, longitude, radiusMeters / 1000, sportFilter), // Convert to km
     ]);
 
@@ -156,8 +189,15 @@ export const discoverNearby = async (
       success: true,
       message: "Discovery results retrieved successfully",
       data: {
-        venues,
+        venues: venuesResult.venues,
         coaches,
+      },
+      pagination: {
+        venues: {
+          total: venuesResult.total,
+          page: venuesResult.page,
+          totalPages: venuesResult.totalPages,
+        },
       },
     });
   } catch (error) {
@@ -176,7 +216,7 @@ export const searchVenues = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { sports } = req.query;
+    const { sports, page: queryPage, limit: queryLimit } = req.query;
 
     const filters: { sports?: string[] } = {};
     if (sports) {
@@ -184,13 +224,21 @@ export const searchVenues = async (
         ? (sports as string[])
         : [sports as string];
     }
+    
+    const page = parseInt(queryPage as string || "1", 10);
+    const limit = parseInt(queryLimit as string || "20", 10);
 
-    const venues = await getAllVenues(filters);
+    const result = await getAllVenues(filters, page, limit);
 
     res.status(200).json({
       success: true,
       message: "Search results retrieved successfully",
-      data: venues,
+      data: result.venues,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      },
     });
   } catch (error) {
     res.status(500).json({

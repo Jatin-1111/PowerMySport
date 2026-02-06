@@ -35,11 +35,11 @@ export default function DashboardLayout({
 
         <nav className="mt-8 flex-1">
           <Link
-            href="/dashboard/search"
+            href="/dashboard/discover"
             className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
           >
-            <span>🔍</span>
-            <span>Search Venues</span>
+            <span>🧭</span>
+            <span>Discover</span>
           </Link>
           <Link
             href="/dashboard/my-bookings"

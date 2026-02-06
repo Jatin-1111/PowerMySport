@@ -1,16 +1,16 @@
 import { Router } from "express";
 import {
-  createNewVenue,
-  getVenue,
-  getMyVenues,
-  searchVenues,
-  discoverNearby,
-  updateVenueDetails,
-  deleteVenueById,
+    createNewVenue,
+    deleteVenueById,
+    discoverNearby,
+    getMyVenues,
+    getVenue,
+    searchVenues,
+    updateVenueDetails,
 } from "../controllers/venueController";
 import { authMiddleware, vendorMiddleware } from "../middleware/auth";
-import { validateRequest } from "../middleware/validation";
 import { venueSchema } from "../middleware/schemas";
+import { validateRequest } from "../middleware/validation";
 
 const router = Router();
 
@@ -21,6 +21,9 @@ router.post(
   validateRequest(venueSchema),
   createNewVenue,
 );
+
+// Get all venues
+router.get("/", searchVenues);
 
 // Discovery endpoint (public) - returns venues AND coaches
 router.get("/discover", discoverNearby);

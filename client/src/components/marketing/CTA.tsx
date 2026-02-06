@@ -38,7 +38,7 @@ export const CTA: React.FC<CTAProps> = ({
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
             {title}
           </h2>
-          <p className="text-lg sm:text-xl text-gray-300 mb-10">
+          <p className="text-lg sm:text-xl text-white/90 mb-10">
             {description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -107,7 +107,7 @@ export const CTA: React.FC<CTAProps> = ({
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
             {title}
           </h2>
-          <p className="text-lg sm:text-xl text-gray-200 mb-10">
+          <p className="text-lg sm:text-xl text-white/95 mb-10">
             {description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

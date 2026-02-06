@@ -297,3 +297,107 @@ export const sendPasswordResetEmail = async (
     html,
   });
 };
+
+interface CredentialsEmailOptions {
+  name: string;
+  email: string;
+  password: string;
+  loginUrl: string;
+}
+
+export const sendCredentialsEmail = async (
+  options: CredentialsEmailOptions,
+): Promise<void> => {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+      border-radius: 10px 10px 0 0;
+    }
+    .content {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 0 0 10px 10px;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background: #ff6b35;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .credentials-box {
+      background: #e8f4fd;
+      border: 1px solid #b6d4fe;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎉 Inquiry Approved!</h1>
+  </div>
+  
+  <div class="content">
+    <h2>Hi ${options.name},</h2>
+    
+    <p>Good news! Your venue inquiry has been approved. You can now login to your Venue Lister Dashboard and start managing your venue.</p>
+    
+    <div class="credentials-box">
+      <h3>🔐 Your Login Credentials</h3>
+      <p><strong>Email:</strong> ${options.email}</p>
+      <p><strong>Password:</strong> ${options.password}</p>
+      <p><em>Please change your password after your first login.</em></p>
+    </div>
+    
+    <center>
+      <a href="${options.loginUrl}" class="button">
+        Login to Dashboard
+      </a>
+    </center>
+    
+    <p>Best regards,<br>
+    <strong>The PowerMySport Team</strong></p>
+  </div>
+  
+  <div class="footer">
+    <p>This email was sent to ${options.email}</p>
+    <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+  </div>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.email,
+    subject: "Your Venue Lister Account Approved! 🏟️",
+    html,
+  });
+};

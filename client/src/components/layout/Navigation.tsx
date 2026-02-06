@@ -3,9 +3,11 @@
 import { Button } from "@/components/ui/Button";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/utils/cn";
+import { AnimatePresence, motion } from "framer-motion";
+import { LayoutDashboard, LogOut, Menu, Settings, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export interface NavProps {
   variant?: "light" | "dark";
@@ -20,8 +22,22 @@ export const Navigation: React.FC<NavProps> = ({
   sticky = true,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const navigationLinks = [
     { href: "/", label: "Home" },
@@ -87,16 +103,67 @@ export const Navigation: React.FC<NavProps> = ({
           {/* Auth Buttons (Desktop) */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <>
-                <Link href={getDashboardLink() || "/"}>
-                  <Button variant="ghost" size="sm">
-                    Dashboard
-                  </Button>
-                </Link>
-                <span className="text-sm text-muted-foreground">
-                  {user.name}
-                </span>
-              </>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-power-orange hover:bg-orange-600 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-2"
+                  aria-label="User menu"
+                >
+                  <User className="w-5 h-5" />
+                </button>
+
+                <AnimatePresence>
+                  {userDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-56 bg-card rounded-lg shadow-lg border border-border overflow-hidden"
+                    >
+                      <div className="px-4 py-3 border-b border-border">
+                        <p className="text-sm font-medium text-card-foreground">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {user.email}
+                        </p>
+                      </div>
+
+                      <div className="py-1">
+                        <Link
+                          href={getDashboardLink() || "/"}
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+                        >
+                          <LayoutDashboard className="w-4 h-4 mr-3" />
+                          Dashboard
+                        </Link>
+
+                        <Link
+                          href="/settings"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+                        >
+                          <Settings className="w-4 h-4 mr-3" />
+                          Settings
+                        </Link>
+
+                        <button
+                          onClick={() => {
+                            logout();
+                            setUserDropdownOpen(false);
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-error-red hover:bg-muted transition-colors"
+                        >
+                          <LogOut className="w-4 h-4 mr-3" />
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ) : (
               <>
                 <Link href="/login">
@@ -121,33 +188,9 @@ export const Navigation: React.FC<NavProps> = ({
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <X className="h-6 w-6" />
               ) : (
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
+                <Menu className="h-6 w-6" />
               )}
             </button>
           </div>
@@ -178,19 +221,54 @@ export const Navigation: React.FC<NavProps> = ({
             <div className="pt-4 pb-2 space-y-2">
               {user ? (
                 <>
+                  <div className="px-3 py-2 border-b border-border">
+                    <p className="text-sm font-medium text-foreground">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {user.email}
+                    </p>
+                  </div>
+
                   <Link href={getDashboardLink() || "/"}>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       fullWidth
                       onClick={() => setMobileMenuOpen(false)}
+                      className="justify-start"
                     >
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
                       Dashboard
                     </Button>
                   </Link>
-                  <p className="text-center text-sm text-muted-foreground">
-                    {user.name}
-                  </p>
+
+                  <Link href="/settings">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="justify-start"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Button>
+                  </Link>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="justify-start text-error-red"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
                 </>
               ) : (
                 <>

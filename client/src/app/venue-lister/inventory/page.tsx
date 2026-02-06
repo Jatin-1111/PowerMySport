@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { venueApi } from "@/lib/venue";
 import { useAuthStore } from "@/store/authStore";
 import { Venue } from "@/types";
+import { MapPin } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 export default function VenueInventoryPage() {
@@ -15,13 +16,16 @@ export default function VenueInventoryPage() {
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    location: "",
+    address: "",
+    location: null as { lat: number; lng: number } | null,
     sports: "",
     pricePerHour: "",
     amenities: "",
     description: "",
+    openingHours: "9:00 AM - 9:00 PM",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<string>("");
 
   // Check if user can add more venues (defaults to false for venue listers from inquiry)
   const canAddMoreVenues = user?.venueListerProfile?.canAddMoreVenues ?? true;
@@ -52,21 +56,66 @@ export default function VenueInventoryPage() {
     });
   };
 
+  const handleGetLocation = () => {
+    setLocationStatus("Getting location...");
+    if (!navigator.geolocation) {
+      setLocationStatus("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData((prev) => ({
+          ...prev,
+          location: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          },
+        }));
+        setLocationStatus("Location captured! ✅");
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        setLocationStatus("Unable to retrieve your location");
+      },
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const venueData = {
+      // Validate location for new venues
+      if (!formData.location && !editingVenue) {
+        // If we are editing, we might keep existing location if not updated
+        // But for new venues, we require it OR we default to something? 
+        // User asked to fix the crash. Safest is to REQUIRE it or default to 0,0 if really needed.
+        // But better to ask user.
+        alert("Please capture the GPS location of the venue using the button.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const venueData: any = {
         name: formData.name,
-        location: formData.location,
+        address: formData.address, // Send address string
         sports: formData.sports.split(",").map((s) => s.trim()),
         pricePerHour: parseFloat(formData.pricePerHour),
         amenities: formData.amenities
           ? formData.amenities.split(",").map((a) => a.trim())
           : [],
         description: formData.description,
+        openingHours: formData.openingHours,
       };
+
+      // Transform location to GeoJSON if present
+      if (formData.location) {
+        venueData.location = {
+          type: "Point",
+          coordinates: [formData.location.lng, formData.location.lat],
+        };
+      }
 
       if (editingVenue) {
         await venueApi.updateVenue(editingVenue.id, venueData);
@@ -77,12 +126,15 @@ export default function VenueInventoryPage() {
       // Reset form and reload
       setFormData({
         name: "",
-        location: "",
+        address: "",
+        location: null,
         sports: "",
         pricePerHour: "",
         amenities: "",
         description: "",
+        openingHours: "9:00 AM - 9:00 PM",
       });
+      setLocationStatus("");
       setShowForm(false);
       setEditingVenue(null);
       loadVenues();
@@ -96,15 +148,31 @@ export default function VenueInventoryPage() {
 
   const handleEdit = (venue: Venue) => {
     setEditingVenue(venue);
+    // Extract coordinates if available
+    let loc = null;
+    if (
+      venue.location &&
+      venue.location.coordinates &&
+      venue.location.coordinates.length === 2
+    ) {
+      loc = {
+        lng: venue.location.coordinates[0],
+        lat: venue.location.coordinates[1],
+      };
+    }
+
     setFormData({
       name: venue.name,
-      location: venue.location,
+      address: venue.address || "", 
+      location: loc,
       sports: venue.sports.join(", "),
       pricePerHour: venue.pricePerHour.toString(),
       amenities: venue.amenities?.join(", ") || "",
       description: venue.description || "",
+      openingHours: venue.openingHours || "9:00 AM - 9:00 PM",
     });
     setShowForm(true);
+    setLocationStatus(loc ? "Location matched from saved data" : "");
   };
 
   const handleDelete = async (venueId: string) => {
@@ -124,12 +192,15 @@ export default function VenueInventoryPage() {
     setEditingVenue(null);
     setFormData({
       name: "",
-      location: "",
+      address: "",
+      location: null,
       sports: "",
       pricePerHour: "",
       amenities: "",
       description: "",
+      openingHours: "9:00 AM - 9:00 PM",
     });
+    setLocationStatus("");
   };
 
   if (loading) {
@@ -187,18 +258,55 @@ export default function VenueInventoryPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-900 mb-2">
-                  Location *
+                  Address (Display Only) *
                 </label>
                 <input
                   type="text"
-                  name="location"
-                  value={formData.location}
+                  name="address"
+                  value={formData.address}
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                   placeholder="e.g., Mumbai, Maharashtra"
                 />
               </div>
+            </div>
+
+            {/* GPS Location Section */}
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
+                GPS Location (Required for Search) *
+              </label>
+              <div className="flex items-center gap-4">
+                <Button
+                  type="button"
+                  onClick={handleGetLocation}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <MapPin size={18} />
+                  {formData.location
+                    ? "Update Location"
+                    : "Get Current Location"}
+                </Button>
+                {locationStatus && (
+                  <span
+                    className={`text-sm ${
+                      locationStatus.includes("✅")
+                        ? "text-green-600 font-medium"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    {locationStatus}
+                  </span>
+                )}
+              </div>
+              {formData.location && (
+                <p className="text-xs text-slate-500 mt-2">
+                  Lat: {formData.location.lat.toFixed(6)}, Lng:{" "}
+                  {formData.location.lng.toFixed(6)}
+                </p>
+              )}
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -233,6 +341,20 @@ export default function VenueInventoryPage() {
                   placeholder="e.g., 1500"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">
+                Opening Hours
+              </label>
+              <input
+                type="text"
+                name="openingHours"
+                value={formData.openingHours}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                placeholder="e.g., Mon-Sun: 9 AM - 10 PM"
+              />
             </div>
 
             <div>
@@ -303,8 +425,11 @@ export default function VenueInventoryPage() {
                 <h3 className="text-xl font-bold mb-2 text-slate-900">
                   {venue.name}
                 </h3>
-                <p className="text-sm text-slate-600 mb-3">
-                  📍 {venue.location}
+                <p className="text-sm text-slate-600 mb-1">
+                  📍 {venue.address || "Address not set"}
+                </p>
+                <p className="text-xs text-slate-500 mb-3">
+                   🕒 {venue.openingHours || "Hours not set"}
                 </p>
 
                 <div className="flex flex-wrap gap-2 mb-3">

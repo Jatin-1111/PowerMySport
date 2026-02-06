@@ -1,7 +1,6 @@
-import { Coach, CoachDocument } from "../models/Coach";
-import { Venue } from "../models/Venue";
 import { Booking } from "../models/Booking";
-import { ServiceMode, ICoach } from "../types";
+import { Coach, CoachDocument } from "../models/Coach";
+import { ICoach, ServiceMode } from "../types";
 
 export interface CreateCoachPayload {
   userId: string;
@@ -79,6 +78,28 @@ export const findCoachesNearby = async (
   } catch (error) {
     throw new Error(
       `Failed to find coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+};
+
+/**
+ * Get all coaches with optional sport filter
+ */
+export const getAllCoaches = async (sport?: string): Promise<CoachDocument[]> => {
+  try {
+    const query: any = {
+      // You might want to filter by serviceMode or just return all
+      // For now, let's return all coaches
+    };
+
+    if (sport) {
+      query.sports = sport;
+    }
+
+    return Coach.find(query).populate("userId venueId");
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 };

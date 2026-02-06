@@ -1,6 +1,7 @@
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import VenueInquiry, { IVenueInquiry } from "../models/VenueInquiry";
+import { sendCredentialsEmail } from "../utils/email";
 
 interface CreateInquiryPayload {
   venueName: string;
@@ -117,12 +118,26 @@ export const reviewInquiry = async (
       },
       sports: inquiry.sports.split(",").map((s) => s.trim()),
       amenities: [],
-      description: `${inquiry.message || ""} \n\nAddress: ${inquiry.address}`,
+      address: inquiry.address,
+      description: inquiry.message || "",
       pricePerHour: 0, // Default price, user must update
       requiresLocationUpdate: true,
     });
 
-    await venue.save();
+
+
+    // Send credentials via email
+    try {
+      await sendCredentialsEmail({
+        name: inquiry.ownerName,
+        email: generatedEmail,
+        password: tempPassword,
+        loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
+      });
+    } catch (error) {
+      console.error("Failed to send credentials email:", error);
+      // Continue execution, don't fail the approval
+    }
 
     return {
       inquiry,

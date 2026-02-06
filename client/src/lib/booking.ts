@@ -1,10 +1,10 @@
-import axiosInstance from "./axios";
 import {
-  ApiResponse,
-  Booking,
-  Availability,
-  InitiateBookingResponse,
+    ApiResponse,
+    Availability,
+    Booking,
+    InitiateBookingResponse,
 } from "@/types";
+import axiosInstance from "./axios";
 
 export const bookingApi = {
   // Initiate booking with split payments
@@ -30,8 +30,15 @@ export const bookingApi = {
   },
 
   // Get user's bookings
-  getMyBookings: async (): Promise<ApiResponse<Booking[]>> => {
-    const response = await axiosInstance.get("/bookings/my-bookings");
+  getMyBookings: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<Booking[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(`/bookings/my-bookings?${params.toString()}`);
     return response.data;
   },
 

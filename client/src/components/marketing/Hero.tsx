@@ -98,7 +98,7 @@ export const Hero: React.FC<HeroProps> = ({
               {title}
             </h1>
             {description && (
-              <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              <p className="text-lg text-white/90 max-w-2xl mx-auto">
                 {description}
               </p>
             )}

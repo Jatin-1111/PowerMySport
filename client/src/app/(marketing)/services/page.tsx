@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardTitle,
 } from "@/components/ui/Card";
+import { Check } from "lucide-react";
 
 export default function ServicesPage() {
   // Main services for players
@@ -234,19 +235,7 @@ export default function ServicesPage() {
               <Card key={index} variant="elevated">
                 <CardContent className="pt-6">
                   <div className="w-12 h-12 bg-turf-green text-white rounded-lg flex items-center justify-center mb-4">
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+                    <Check className="h-6 w-6" />
                   </div>
                   <CardTitle className="text-xl mb-3">
                     {feature.title}
@@ -277,7 +266,7 @@ export default function ServicesPage() {
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               Additional Features
             </h2>
-            <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+            <p className="text-lg text-white/90 max-w-3xl mx-auto">
               More ways we add value to your sports experience
             </p>
           </div>
@@ -286,7 +275,7 @@ export default function ServicesPage() {
             <div className="text-center">
               <div className="text-4xl mb-4">📱</div>
               <h3 className="text-xl font-bold mb-2">Mobile QR Codes</h3>
-              <p className="text-gray-300">
+              <p className="text-white/90">
                 Digital check-in with QR codes. No paperwork, no hassle.
               </p>
             </div>
@@ -294,7 +283,7 @@ export default function ServicesPage() {
             <div className="text-center">
               <div className="text-4xl mb-4">🔔</div>
               <h3 className="text-xl font-bold mb-2">Smart Notifications</h3>
-              <p className="text-gray-300">
+              <p className="text-white/90">
                 Booking reminders, availability alerts, and session updates.
               </p>
             </div>
@@ -302,7 +291,7 @@ export default function ServicesPage() {
             <div className="text-center">
               <div className="text-4xl mb-4">📊</div>
               <h3 className="text-xl font-bold mb-2">Analytics Dashboard</h3>
-              <p className="text-gray-300">
+              <p className="text-white/90">
                 Track your bookings, spending, and sports activity over time.
               </p>
             </div>

@@ -29,10 +29,19 @@ export const getVenueById = async (
 
 export const getVenuesByOwner = async (
   ownerId: string,
-): Promise<VenueDocument[]> => {
-  return Venue.find({ ownerId });
+  page: number = 1,
+  limit: number = 20
+): Promise<{ venues: VenueDocument[]; total: number; page: number; totalPages: number }> => {
+  const query = { ownerId };
+  const skip = (page - 1) * limit;
+  const total = await Venue.countDocuments(query);
+  const venues = await Venue.find(query).skip(skip).limit(limit);
+  return { venues, total, page, totalPages: Math.ceil(total / limit) };
 };
 
+/**
+ * Find venues near a location using geo-spatial query
+ */
 /**
  * Find venues near a location using geo-spatial query
  */
@@ -41,7 +50,9 @@ export const findVenuesNearby = async (
   lng: number,
   radiusMeters: number = 5000,
   sport?: string,
-): Promise<VenueDocument[]> => {
+  page: number = 1,
+  limit: number = 20
+): Promise<{ venues: VenueDocument[]; total: number; page: number; totalPages: number }> => {
   try {
     const query: any = {
       location: {
@@ -60,7 +71,23 @@ export const findVenuesNearby = async (
       query.sports = sport;
     }
 
-    return Venue.find(query).populate("ownerId");
+    const skip = (page - 1) * limit;
+    
+    // Note: $near does not support countDocuments correctly in all cases with other filters, 
+    // but works for basic cases. However, separate count might be needed if complex.
+    // For $near, countDocuments matches the query.
+    const total = await Venue.countDocuments(query);
+    const venues = await Venue.find(query)
+      .populate("ownerId")
+      .skip(skip)
+      .limit(limit);
+
+    return {
+      venues,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
   } catch (error) {
     throw new Error(
       `Failed to find venues: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -71,16 +98,30 @@ export const findVenuesNearby = async (
 /**
  * Get all venues with optional filters (legacy method)
  */
-export const getAllVenues = async (filters?: {
-  sports?: string[];
-}): Promise<VenueDocument[]> => {
+export const getAllVenues = async (
+  filters?: { sports?: string[] },
+  page: number = 1,
+  limit: number = 20
+): Promise<{ venues: VenueDocument[]; total: number; page: number; totalPages: number }> => {
   const query: any = {};
 
   if (filters?.sports && filters.sports.length > 0) {
     query.sports = { $in: filters.sports };
   }
 
-  return Venue.find(query).populate("ownerId");
+  const skip = (page - 1) * limit;
+  const total = await Venue.countDocuments(query);
+  const venues = await Venue.find(query)
+    .populate("ownerId")
+    .skip(skip)
+    .limit(limit);
+
+  return {
+    venues,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 export const updateVenue = async (
