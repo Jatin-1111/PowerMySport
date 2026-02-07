@@ -48,6 +48,18 @@ export interface OnboardingVenue {
   approvalStatus?: VenueApprovalStatus;
 }
 
+// Lightweight type for admin pending venues list
+export interface PendingVenueListItem {
+  id: string;
+  name: string;
+  ownerEmail: string;
+  ownerPhone: string;
+  sports: string[];
+  approvalStatus: VenueApprovalStatus;
+  submittedAt: string;
+  lastReviewedAt?: string;
+}
+
 export interface PresignedUrl {
   field: string;
   uploadUrl: string;
@@ -97,6 +109,12 @@ export interface OnboardingStep3Payload {
     url: string;
     fileName: string;
   }>;
+}
+
+export interface ConfirmImagesPayload {
+  venueId: string;
+  images: string[];
+  coverPhotoUrl: string;
 }
 
 export interface UploadedImage {

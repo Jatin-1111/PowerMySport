@@ -1,10 +1,10 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { OnboardingStep1Payload } from "@/types/onboarding";
+import { OnboardingStep2Payload } from "@/types/onboarding";
 
 interface Step1VenueDetailsProps {
-  onSubmit: (data: OnboardingStep1Payload) => Promise<void>;
+  onSubmit: (data: OnboardingStep2Payload) => Promise<void>;
   loading?: boolean;
   error?: string;
 }
@@ -40,7 +40,8 @@ export default function Step1VenueDetails({
   loading,
   error,
 }: Step1VenueDetailsProps) {
-  const [formData, setFormData] = useState<OnboardingStep1Payload>({
+  const [formData, setFormData] = useState<OnboardingStep2Payload>({
+    venueId: "",
     name: "",
     sports: [],
     pricePerHour: 0,
@@ -51,7 +52,7 @@ export default function Step1VenueDetails({
     allowExternalCoaches: true,
     location: {
       type: "Point",
-      coordinates: [77.2, 28.7], // Default Delhi coordinates
+      coordinates: [77.2, 28.7],
     },
   });
 
@@ -355,4 +356,3 @@ export default function Step1VenueDetails({
     </div>
   );
 }
-

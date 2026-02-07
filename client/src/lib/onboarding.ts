@@ -3,8 +3,10 @@ import {
   OnboardingStep1Payload,
   OnboardingStep2Payload,
   OnboardingStep3Payload,
+  ConfirmImagesPayload,
   PresignedUrl,
   OnboardingVenue,
+  PendingVenueListItem,
 } from "@/types/onboarding";
 
 const API_BASE = "/venues/onboarding";
@@ -66,7 +68,7 @@ export const onboardingApi = {
    * STEP 3B: Confirm images after upload
    */
   confirmImagesStep3: async (
-    payload: OnboardingStep2Payload,
+    payload: ConfirmImagesPayload,
   ): Promise<ApiResponse<OnboardingVenue>> => {
     const response = await axiosInstance.post(
       `${API_BASE}/step3/confirm`,
@@ -148,15 +150,7 @@ export const onboardingApi = {
     status?: string,
   ): Promise<
     ApiResponse<{
-      venues: Array<{
-        id: string;
-        name: string;
-        ownerEmail: string;
-        ownerPhone: string;
-        sports: string[];
-        approvalStatus: string;
-        submittedAt: string;
-      }>;
+      venues: PendingVenueListItem[];
       total: number;
       page: number;
       totalPages: number;

@@ -55,7 +55,7 @@ export default function OnboardingContainer() {
 
   // ============ STEP 1: Submit contact info ============
   const handleStep1SubmitContactInfo = useCallback(
-    async (data: OnboardingStep1Payload) => {
+    async (data: OnboardingStep1Payload): Promise<{ venueId: string }> => {
       setGlobalError("");
       setLoading(true);
 
@@ -70,10 +70,12 @@ export default function OnboardingContainer() {
         setVenueId(newVenueId);
         setContactInfo(data);
         setCurrentStep(2);
+        return { venueId: newVenueId };
       } catch (err) {
         setGlobalError(
           err instanceof Error ? err.message : "Failed to proceed",
         );
+        throw err;
       } finally {
         setLoading(false);
       }
@@ -122,19 +124,18 @@ export default function OnboardingContainer() {
 
   // ============ STEP 3: Confirm images and get document URLs ============
   const handleStep3ImagesConfirmed = useCallback(
-    async (images: UploadedImage[], coverPhotoUrl: string) => {
+    async (images: string[], coverPhotoUrl: string) => {
       setGlobalError("");
       setLoading(true);
 
       try {
         if (!venueId) throw new Error("Venue ID not found");
 
-        setUploadedImages(images);
-
-        // Confirm images with server
+        // images is now array of strings (URLs)
+        // Confirm images with server (images is now array of strings)
         const confirmResponse = await onboardingApi.confirmImagesStep3({
           venueId,
-          images: images.map((img) => img.url),
+          images,
           coverPhotoUrl,
         });
 
@@ -146,11 +147,31 @@ export default function OnboardingContainer() {
 
         // Get document presigned URLs for step 4
         const docTypes = [
-          { type: "OWNERSHIP_PROOF", fileName: "ownership.pdf" },
-          { type: "BUSINESS_REGISTRATION", fileName: "registration.pdf" },
-          { type: "TAX_DOCUMENT", fileName: "tax.pdf" },
-          { type: "INSURANCE", fileName: "insurance.pdf" },
-          { type: "CERTIFICATE", fileName: "certificate.pdf" },
+          {
+            type: "OWNERSHIP_PROOF",
+            fileName: "ownership.pdf",
+            contentType: "application/pdf",
+          },
+          {
+            type: "BUSINESS_REGISTRATION",
+            fileName: "registration.pdf",
+            contentType: "application/pdf",
+          },
+          {
+            type: "TAX_DOCUMENT",
+            fileName: "tax.pdf",
+            contentType: "application/pdf",
+          },
+          {
+            type: "INSURANCE",
+            fileName: "insurance.pdf",
+            contentType: "application/pdf",
+          },
+          {
+            type: "CERTIFICATE",
+            fileName: "certificate.pdf",
+            contentType: "application/pdf",
+          },
         ];
 
         const docUrlsResponse = await onboardingApi.getDocumentUploadUrls(

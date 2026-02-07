@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { onboardingApi } from "@/lib/onboarding";
-import { OnboardingVenue } from "@/types/onboarding";
+import { OnboardingVenue, PendingVenueListItem } from "@/types/onboarding";
 
 interface AdminVenueApprovalPanelProps {
-  initialVenues?: OnboardingVenue[];
+  initialVenues?: PendingVenueListItem[];
 }
 
 type ViewMode = "list" | "details";
@@ -15,7 +15,7 @@ export default function AdminVenueApprovalPanel({
   initialVenues = [],
 }: AdminVenueApprovalPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [venues, setVenues] = useState<OnboardingVenue[]>(initialVenues);
+  const [venues, setVenues] = useState<PendingVenueListItem[]>(initialVenues);
   const [selectedVenue, setSelectedVenue] = useState<OnboardingVenue | null>(
     null,
   );
@@ -42,7 +42,7 @@ export default function AdminVenueApprovalPanel({
       if (!response.success || !response.data) {
         throw new Error("Failed to fetch pending venues");
       }
-      setVenues(response.data);
+      setVenues(response.data.venues);
       setError("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load venues");
@@ -75,6 +75,13 @@ export default function AdminVenueApprovalPanel({
   const handleApprove = async () => {
     if (!selectedVenue) return;
 
+    const venueId =
+      selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
+    if (!venueId) {
+      setError("Venue ID not found");
+      return;
+    }
+
     const confirmed = confirm(
       `Approve venue "${selectedVenue.name}"? This will activate the venue immediately.`,
     );
@@ -82,13 +89,13 @@ export default function AdminVenueApprovalPanel({
 
     setActionLoading(true);
     try {
-      const response = await onboardingApi.approveVenue(selectedVenue._id);
+      const response = await onboardingApi.approveVenue(venueId);
       if (!response.success) {
         throw new Error(response.message || "Failed to approve venue");
       }
 
       setSuccessMessage(`Venue "${selectedVenue.name}" has been approved!`);
-      setVenues(venues.filter((v) => v._id !== selectedVenue._id));
+      setVenues(venues.filter((v) => v.id !== venueId));
       setViewMode("list");
       setSelectedVenue(null);
 
@@ -107,11 +114,19 @@ export default function AdminVenueApprovalPanel({
       return;
     }
 
+    const venueId =
+      selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
+    if (!venueId) {
+      setError("Venue ID not found");
+      return;
+    }
+
     setActionLoading(true);
     try {
-      const response = await onboardingApi.rejectVenue(selectedVenue._id, {
-        reason: rejectionReason,
-      });
+      const response = await onboardingApi.rejectVenue(
+        venueId,
+        rejectionReason,
+      );
 
       if (!response.success) {
         throw new Error(response.message || "Failed to reject venue");
@@ -120,7 +135,7 @@ export default function AdminVenueApprovalPanel({
       setSuccessMessage(
         `Venue "${selectedVenue.name}" has been rejected. Notification sent to owner.`,
       );
-      setVenues(venues.filter((v) => v._id !== selectedVenue._id));
+      setVenues(venues.filter((v) => v.id !== venueId));
       setViewMode("list");
       setSelectedVenue(null);
       setRejectionReason("");
@@ -140,13 +155,18 @@ export default function AdminVenueApprovalPanel({
       return;
     }
 
+    const venueId =
+      selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
+    if (!venueId) {
+      setError("Venue ID not found");
+      return;
+    }
+
     setActionLoading(true);
     try {
       const response = await onboardingApi.markVenueForReview(
-        selectedVenue._id,
-        {
-          notes: reviewNotes,
-        },
+        venueId,
+        reviewNotes,
       );
 
       if (!response.success) {
@@ -156,7 +176,7 @@ export default function AdminVenueApprovalPanel({
       setSuccessMessage(
         `Venue "${selectedVenue.name}" marked for review. Owner will be notified.`,
       );
-      setVenues(venues.filter((v) => v._id !== selectedVenue._id));
+      setVenues(venues.filter((v) => v.id !== venueId));
       setViewMode("list");
       setSelectedVenue(null);
       setReviewNotes("");
@@ -228,7 +248,7 @@ export default function AdminVenueApprovalPanel({
             <div className="grid gap-4">
               {venues.map((venue) => (
                 <div
-                  key={venue._id}
+                  key={venue.id}
                   className="bg-white rounded-lg shadow hover:shadow-lg transition"
                 >
                   <div className="p-6 flex items-start justify-between">
@@ -236,21 +256,24 @@ export default function AdminVenueApprovalPanel({
                       <h3 className="text-xl font-semibold text-gray-900">
                         {venue.name}
                       </h3>
-                      <p className="text-gray-600 mt-1">{venue.address}</p>
+                      <p className="text-gray-600 mt-1 text-sm">
+                        Owner: {venue.ownerEmail} | {venue.ownerPhone}
+                      </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">
-                          {venue.sports.length} sports
-                        </span>
-                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
-                          ${venue.pricePerHour}/hour
+                          {venue.sports.join(", ")}
                         </span>
                         <span className="inline-block px-3 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">
-                          {venue.documents?.length || 0} docs uploaded
+                          Status: {venue.approvalStatus}
+                        </span>
+                        <span className="inline-block px-3 py-1 bg-gray-100 text-gray-800 text-xs rounded-full font-medium">
+                          Submitted:{" "}
+                          {new Date(venue.submittedAt).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleViewDetails(venue._id)}
+                      onClick={() => handleViewDetails(venue.id)}
                       className="ml-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     >
                       Review
@@ -329,7 +352,8 @@ export default function AdminVenueApprovalPanel({
                   <div>
                     <dt className="text-gray-600">Location:</dt>
                     <dd className="font-medium text-gray-900">
-                      {selectedVenue.latitude}, {selectedVenue.longitude}
+                      {selectedVenue.location?.coordinates[1]},{" "}
+                      {selectedVenue.location?.coordinates[0]}
                     </dd>
                   </div>
                 </dl>
@@ -349,7 +373,7 @@ export default function AdminVenueApprovalPanel({
                   <div>
                     <dt className="text-gray-600">Amenities:</dt>
                     <dd className="font-medium text-gray-900">
-                      {selectedVenue.amenities.join(", ")}
+                      {selectedVenue.amenities?.join(", ") || "None"}
                     </dd>
                   </div>
                   <div>
@@ -373,13 +397,13 @@ export default function AdminVenueApprovalPanel({
             </div>
 
             {/* Photos */}
-            {selectedVenue.photos && selectedVenue.photos.length > 0 && (
+            {selectedVenue.images && selectedVenue.images.length > 0 && (
               <div className="p-8 border-b">
                 <h3 className="font-semibold text-gray-900 mb-4">
                   Uploaded Photos
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
-                  {selectedVenue.photos.map((photo, idx) => (
+                  {selectedVenue.images.map((photo, idx) => (
                     <div
                       key={idx}
                       className="relative aspect-square rounded-lg overflow-hidden"
@@ -510,4 +534,3 @@ export default function AdminVenueApprovalPanel({
 
   return null;
 }
-

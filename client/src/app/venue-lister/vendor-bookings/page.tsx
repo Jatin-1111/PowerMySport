@@ -57,9 +57,11 @@ export default function VenueBookingsPage() {
                     </h3>
                     <span
                       className={`px-3 py-1 rounded text-sm font-semibold ${
-                        booking.status === "CONFIRMED"
+                        booking.status === "CONFIRMED" ||
+                        booking.status === "IN_PROGRESS" ||
+                        booking.status === "COMPLETED"
                           ? "bg-green-100 text-green-700 border border-green-300"
-                          : booking.status === "PENDING"
+                          : booking.status === "PENDING_PAYMENT"
                             ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
                             : "bg-red-100 text-red-700 border border-red-300"
                       }`}
@@ -131,5 +133,3 @@ export default function VenueBookingsPage() {
     </div>
   );
 }
-
-

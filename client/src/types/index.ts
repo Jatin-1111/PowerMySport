@@ -7,6 +7,9 @@ export type PaymentStatus = "PENDING" | "PAID";
 export type BookingStatus =
   | "PENDING_PAYMENT"
   | "CONFIRMED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "NO_SHOW"
   | "CANCELLED"
   | "EXPIRED";
 
