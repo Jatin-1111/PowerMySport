@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { CTA } from "@/components/marketing/CTA";
 import { Hero } from "@/components/marketing/Hero";
@@ -258,7 +258,7 @@ export default function HowItWorksPage() {
 
           <div className="text-center mt-12">
             <a
-              href="/venue-inquiry"
+              href="/onboarding"
               className="inline-block bg-deep-slate text-white px-8 py-4 rounded-lg font-semibold hover:bg-slate-800 transition-colors text-lg"
             >
               List Your Venue
@@ -416,3 +416,5 @@ export default function HowItWorksPage() {
     </main>
   );
 }
+
+

@@ -22,7 +22,7 @@ export const Footer: React.FC = () => {
       title: "Services",
       links: [
         { label: "Book Venues", href: "/register?role=PLAYER" },
-        { label: "List Your Venue", href: "/venue-inquiry" },
+        { label: "List Your Venue", href: "/onboarding" },
         { label: "Become a Coach", href: "/register?role=COACH" },
         { label: "Services", href: "/services" },
       ],

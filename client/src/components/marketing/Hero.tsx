@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/Button";
+﻿import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 import Image from "next/image";
 import Link from "next/link";
@@ -166,3 +166,4 @@ export const Hero: React.FC<HeroProps> = ({
 
   return null;
 };
+

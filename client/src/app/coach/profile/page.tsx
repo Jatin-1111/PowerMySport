@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -65,7 +65,9 @@ export default function CoachProfilePage() {
       ) {
         const objectIdPattern = /^[0-9a-fA-F]{24}$/;
         if (!objectIdPattern.test(formData.venueId.trim())) {
-          alert("Invalid Venue ID. It must be a 24-character hexadecimal string.");
+          alert(
+            "Invalid Venue ID. It must be a 24-character hexadecimal string.",
+          );
           setSaving(false);
           return;
         }
@@ -290,3 +292,5 @@ export default function CoachProfilePage() {
     </Card>
   );
 }
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,7 +13,7 @@ export default function AdminLayout({
 
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: "📊" },
-    { href: "/admin/inquiries", label: "Venue Inquiries", icon: "📝" },
+    { href: "/admin/venue-approval", label: "Venue Approvals", icon: "✅" },
     { href: "/admin/users", label: "Users", icon: "👥" },
     { href: "/admin/venues", label: "All Venues", icon: "🏟️" },
     { href: "/admin/bookings", label: "All Bookings", icon: "📅" },
@@ -62,3 +62,4 @@ export default function AdminLayout({
     </div>
   );
 }
+

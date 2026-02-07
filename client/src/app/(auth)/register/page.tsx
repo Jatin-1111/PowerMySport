@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
@@ -248,7 +248,7 @@ function RegisterContent() {
               <p className="text-xs text-slate-500 mt-2">
                 Want to list your venue?{" "}
                 <a
-                  href="/venue-inquiry"
+                  href="/onboarding"
                   className="text-power-orange hover:text-orange-600 transition-colors"
                 >
                   Submit an inquiry
@@ -306,3 +306,5 @@ export default function RegisterPage() {
     </Suspense>
   );
 }
+
+

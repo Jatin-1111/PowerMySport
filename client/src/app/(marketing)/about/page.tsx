@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { CTA } from "@/components/marketing/CTA";
 import { FeatureIcons, Features } from "@/components/marketing/Features";
@@ -77,21 +77,21 @@ export default function AboutPage() {
             </h2>
             <p className="text-lg text-muted-foreground mb-6">
               PowerMySport was born from a simple observation: booking sports
-              venues shouldn&apos;t be complicated. We saw players struggling to find
-              available courts, venue owners missing out on bookings, and
+              venues shouldn&apos;t be complicated. We saw players struggling to
+              find available courts, venue owners missing out on bookings, and
               coaches unable to reach serious athletes.
             </p>
             <p className="text-lg text-muted-foreground mb-6">
               We built PowerMySport to solve these problems with a unified
               platform that brings the entire sports ecosystem together. Whether
               you&apos;re a casual player looking for a badminton court or a
-              professional athlete seeking expert coaching, we&apos;re here to power
-              your sports journey.
+              professional athlete seeking expert coaching, we&apos;re here to
+              power your sports journey.
             </p>
             <p className="text-lg text-muted-foreground">
-              Today, we&apos;re proud to be India&apos;s fastest-growing sports booking
-              platform, serving thousands of users across major cities and
-              helping the sports community thrive.
+              Today, we&apos;re proud to be India&apos;s fastest-growing sports
+              booking platform, serving thousands of users across major cities
+              and helping the sports community thrive.
             </p>
           </div>
         </div>
@@ -249,3 +249,4 @@ export default function AboutPage() {
     </main>
   );
 }
+

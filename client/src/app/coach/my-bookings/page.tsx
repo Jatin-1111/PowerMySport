@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import { Booking } from "@/types";
@@ -28,8 +28,17 @@ export default function CoachBookingsPage() {
             (b) => b.status === "CONFIRMED",
           ).length;
           const earnings = coachBookings
-            .filter((b) => b.coachPayment?.status === "COMPLETED")
-            .reduce((sum, b) => sum + (b.coachPayment?.amount || 0), 0);
+            .filter((b) =>
+              b.payments?.some(
+                (p) => p.userType === "COACH" && p.status === "PAID",
+              ),
+            )
+            .reduce((sum, b) => {
+              const coachPayment = b.payments?.find(
+                (p) => p.userType === "COACH",
+              );
+              return sum + (coachPayment?.amount || 0);
+            }, 0);
 
           setStats({
             total: coachBookings.length,
@@ -98,7 +107,7 @@ export default function CoachBookingsPage() {
                       className={`px-3 py-1 rounded text-sm font-semibold ${
                         booking.status === "CONFIRMED"
                           ? "bg-green-100 text-green-700 border border-green-300"
-                          : booking.status === "PENDING"
+                          : booking.status === "PENDING_PAYMENT"
                             ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
                             : "bg-red-100 text-red-700 border border-red-300"
                       }`}
@@ -128,31 +137,38 @@ export default function CoachBookingsPage() {
                   </div>
 
                   {/* Payment Details */}
-                  {booking.coachPayment && (
-                    <div className="bg-slate-50 rounded-lg p-4 mt-3 border border-slate-200">
-                      <p className="text-sm font-semibold mb-2 text-slate-900">
-                        Your Earnings
-                      </p>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-2xl font-bold text-power-orange">
-                            ₹{booking.coachPayment.amount}
-                          </span>
-                        </div>
-                        <div>
-                          <span
-                            className={`px-3 py-1 rounded text-sm font-semibold ${
-                              booking.coachPayment.status === "COMPLETED"
-                                ? "bg-green-100 text-green-700 border border-green-300"
-                                : "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                            }`}
-                          >
-                            {booking.coachPayment.status}
-                          </span>
+                  {(() => {
+                    const coachPayment = booking.payments?.find(
+                      (p) => p.userType === "COACH",
+                    );
+                    return coachPayment ? (
+                      <div className="bg-slate-50 rounded-lg p-4 mt-3 border border-slate-200">
+                        <p className="text-sm font-semibold mb-2 text-slate-900">
+                          Your Earnings
+                        </p>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-2xl font-bold text-power-orange">
+                              ₹{coachPayment.amount}
+                            </span>
+                          </div>
+                          <div>
+                            <span
+                              className={`px-3 py-1 rounded text-sm font-semibold ${
+                                coachPayment.status === "PAID"
+                                  ? "bg-green-100 text-green-700 border border-green-300"
+                                  : "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                              }`}
+                            >
+                              {coachPayment.status === "PAID"
+                                ? "Paid"
+                                : "Pending"}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    ) : null;
+                  })()}
                 </div>
               </div>
             </Card>
@@ -162,3 +178,5 @@ export default function CoachBookingsPage() {
     </div>
   );
 }
+
+

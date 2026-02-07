@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { CTA } from "@/components/marketing/CTA";
 import { FeatureIcons, Features } from "@/components/marketing/Features";
@@ -205,7 +205,7 @@ export default function ServicesPage() {
 
           <div className="mt-12 text-center">
             <a
-              href="/venue-inquiry"
+              href="/onboarding"
               className="inline-block bg-deep-slate text-white px-8 py-4 rounded-lg font-semibold hover:bg-slate-800 transition-colors text-lg"
             >
               List Your Venue Today
@@ -316,3 +316,5 @@ export default function ServicesPage() {
     </main>
   );
 }
+
+

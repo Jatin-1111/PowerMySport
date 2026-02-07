@@ -88,7 +88,6 @@ export interface Venue {
   description: string;
   images: string[];
   allowExternalCoaches: boolean;
-  requiresLocationUpdate?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -114,6 +113,10 @@ export interface Booking {
   startTime: string;
   endTime: string;
   payments: IPayment[];
+  venuePayment?: {
+    amount: number;
+    status: string;
+  };
   totalAmount: number;
   status: BookingStatus;
   expiresAt: string;
@@ -136,8 +139,9 @@ export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data?: T;
-  pagination?: { // Allow nested pagination or top-level
-    [key: string]: PaginationMetadata | undefined; 
+  pagination?: {
+    // Allow nested pagination or top-level
+    [key: string]: PaginationMetadata | undefined;
   } & PaginationMetadata; // Or just top-level
 }
 

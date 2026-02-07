@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Card } from "@/components/ui/Card";
 import { statsApi } from "@/lib/stats";
@@ -48,7 +48,13 @@ export default function AdminVenuesPage() {
               <h3 className="text-lg font-bold mb-2 text-slate-900">
                 {venue.name}
               </h3>
-              <p className="text-sm text-slate-600 mb-3">📍 {venue.location}</p>
+              <p className="text-sm text-slate-600 mb-3">
+                📍{" "}
+                {typeof venue.location === "object" &&
+                venue.location.coordinates
+                  ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
+                  : "Location not available"}
+              </p>
 
               <div className="flex flex-wrap gap-2 mb-3">
                 {venue.sports.map((sport, index) => (
@@ -72,3 +78,5 @@ export default function AdminVenuesPage() {
     </div>
   );
 }
+
+

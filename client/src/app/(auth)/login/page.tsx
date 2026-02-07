@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
@@ -116,10 +116,8 @@ export default function LoginPage() {
     >
       <Card className="max-w-md w-full">
         <CardHeader>
-          <h1 className="text-3xl font-bold text-center text-slate-900">
-            Welcome Back
-          </h1>
-          <p className="text-center text-slate-600 mt-2">
+          <h1 className="text-3xl font-bold text-center">Welcome Back</h1>
+          <p className="text-center mt-2">
             Sign in to continue to PowerMySport
           </p>
         </CardHeader>
@@ -127,9 +125,7 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email
-              </label>
+              <label className="block text-sm font-medium mb-2">Email</label>
               <input
                 type="email"
                 name="email"
@@ -146,9 +142,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Password
-              </label>
+              <label className="block text-sm font-medium mb-2">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -210,7 +204,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <p className="text-center mt-6 text-slate-600">
+          <p className="text-center mt-6">
             Don&apos;t have an account?{" "}
             <Link
               href="/register"
@@ -224,3 +218,5 @@ export default function LoginPage() {
     </GoogleOAuthProvider>
   );
 }
+
+

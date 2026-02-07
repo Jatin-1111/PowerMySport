@@ -3,7 +3,7 @@ import { Booking } from "../models/Booking";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import VenueInquiry from "../models/VenueInquiry";
-import { getAllVenues } from "../services/VenueService";
+import { getAllVenues as getAllVenuesService } from "../services/VenueService";
 
 // Get platform statistics
 export const getPlatformStats = async (
@@ -73,16 +73,16 @@ export const getAllUsers = async (
 };
 
 // Get all venues
-export const getAllVenuesHandler = async (
+export const getAllVenues = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const page = parseInt(req.query.page as string || "1", 10);
-    const limit = parseInt(req.query.limit as string || "20", 10);
-    
+    const page = parseInt((req.query.page as string) || "1", 10);
+    const limit = parseInt((req.query.limit as string) || "20", 10);
+
     // Using the service method matching the new signature
-    const result = await getAllVenues({}, page, limit);
+    const result = await getAllVenuesService({}, page, limit);
 
     res.status(200).json({
       success: true,
@@ -91,32 +91,33 @@ export const getAllVenuesHandler = async (
       pagination: {
         total: result.total,
         page: result.page,
-        totalPages: result.totalPages
-      }
+        totalPages: result.totalPages,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch venues",
+      message:
+        error instanceof Error ? error.message : "Failed to fetch venues",
     });
   }
 };
 
-export const getAllBookingsHandler = async (
+export const getAllBookings = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
     // Assuming we need a service method for ALL bookings (admin view)
-    // Currently BookingService doesn't have a distinct "getAllBookings" for admin, 
-    // it has getUserBookings, getVenueBookings. 
+    // Currently BookingService doesn't have a distinct "getAllBookings" for admin,
+    // it has getUserBookings, getVenueBookings.
     // But statsController probably used Booking.find({}) directly or similar.
-    // Let's check the original content again. 
+    // Let's check the original content again.
     // Ah, previous code was: const bookings = await Booking.find().populate(...);
     // I should use pagination here.
-    
-    const page = parseInt(req.query.page as string || "1", 10);
-    const limit = parseInt(req.query.limit as string || "20", 10);
+
+    const page = parseInt((req.query.page as string) || "1", 10);
+    const limit = parseInt((req.query.limit as string) || "20", 10);
     const skip = (page - 1) * limit;
 
     const total = await Booking.countDocuments();
@@ -133,13 +134,14 @@ export const getAllBookingsHandler = async (
       pagination: {
         total,
         page,
-        totalPages: Math.ceil(total / limit)
-      }
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch bookings",
+      message:
+        error instanceof Error ? error.message : "Failed to fetch bookings",
     });
   }
 };

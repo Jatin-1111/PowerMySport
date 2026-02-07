@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -89,7 +89,7 @@ export default function VenueInventoryPage() {
       // Validate location for new venues
       if (!formData.location && !editingVenue) {
         // If we are editing, we might keep existing location if not updated
-        // But for new venues, we require it OR we default to something? 
+        // But for new venues, we require it OR we default to something?
         // User asked to fix the crash. Safest is to REQUIRE it or default to 0,0 if really needed.
         // But better to ask user.
         alert("Please capture the GPS location of the venue using the button.");
@@ -163,13 +163,15 @@ export default function VenueInventoryPage() {
 
     setFormData({
       name: venue.name,
-      address: venue.address || "", 
+      address:
+        `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}` ||
+        "",
       location: loc,
       sports: venue.sports.join(", "),
       pricePerHour: venue.pricePerHour.toString(),
       amenities: venue.amenities?.join(", ") || "",
       description: venue.description || "",
-      openingHours: venue.openingHours || "9:00 AM - 9:00 PM",
+      openingHours: "9:00 AM - 9:00 PM",
     });
     setShowForm(true);
     setLocationStatus(loc ? "Location matched from saved data" : "");
@@ -426,11 +428,12 @@ export default function VenueInventoryPage() {
                   {venue.name}
                 </h3>
                 <p className="text-sm text-slate-600 mb-1">
-                  📍 {venue.address || "Address not set"}
+                  📍{" "}
+                  {venue.location?.coordinates
+                    ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
+                    : "Location not set"}
                 </p>
-                <p className="text-xs text-slate-500 mb-3">
-                   🕒 {venue.openingHours || "Hours not set"}
-                </p>
+                <p className="text-xs text-slate-500 mb-3">🕒 Hours not set</p>
 
                 <div className="flex flex-wrap gap-2 mb-3">
                   {venue.sports.map((sport, index) => (
@@ -472,3 +475,5 @@ export default function VenueInventoryPage() {
     </div>
   );
 }
+
+

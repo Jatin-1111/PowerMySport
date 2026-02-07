@@ -1,7 +1,4 @@
-import React from "react";
-import Image from "next/image";
-
-interface QRCodeDisplayProps {
+﻿interface QRCodeDisplayProps {
   qrCode: string;
   bookingId: string;
 }
@@ -27,3 +24,4 @@ export default function QRCodeDisplay({
     </div>
   );
 }
+

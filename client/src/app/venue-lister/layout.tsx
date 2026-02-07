@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { authApi } from "@/lib/auth";
 import { useAuthStore } from "@/store/authStore";
@@ -43,6 +43,13 @@ export default function VendorLayout({
             <span>Dashboard</span>
           </Link>
           <Link
+            href="/onboarding"
+            className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
+          >
+            <span>🚀</span>
+            <span>Onboarding</span>
+          </Link>
+          <Link
             href="/venue-lister/inventory"
             className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
           >
@@ -75,3 +82,4 @@ export default function VendorLayout({
     </div>
   );
 }
+

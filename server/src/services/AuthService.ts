@@ -144,12 +144,15 @@ export const googleLogin = async (
       await user.save();
     } else {
       // Create new user
+      // Generate unique phone from Google ID to avoid phone field collision
+      const uniquePhoneId = `goog_${payload.googleId.slice(0, 15)}_${Date.now()}`;
+
       user = new User({
         name: payload.name,
         email: payload.email,
         googleId: payload.googleId,
         photoUrl: payload.photoUrl,
-        phone: `google_${payload.googleId}`, // Placeholder, can be updated later
+        phone: uniquePhoneId, // Unique ID instead of fake phone number
         role: payload.role || "PLAYER",
       });
       await user.save();

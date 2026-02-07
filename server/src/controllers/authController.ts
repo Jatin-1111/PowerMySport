@@ -146,12 +146,11 @@ export const forgotPassword = async (
 ): Promise<void> => {
   try {
     const { email } = req.body;
-    const resetToken = await requestPasswordReset(email);
+    await requestPasswordReset(email);
 
     res.status(200).json({
       success: true,
       message: "Password reset instructions sent to your email",
-      data: { resetToken }, // In production, don't send this, only email it
     });
   } catch (error) {
     res.status(400).json({

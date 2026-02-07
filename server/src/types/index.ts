@@ -7,6 +7,9 @@ export type PaymentStatus = "PENDING" | "PAID";
 export type BookingStatus =
   | "PENDING_PAYMENT"
   | "CONFIRMED"
+  | "IN_PROGRESS" // Booking started, check-in completed
+  | "COMPLETED" // Booking finished successfully
+  | "NO_SHOW" // User didn't show up
   | "CANCELLED"
   | "EXPIRED";
 
@@ -78,9 +81,26 @@ export interface ICoach {
   hourlyRate: number;
   serviceMode: ServiceMode;
   venueId?: string; // Required if OWN_VENUE
+  baseLocation?: {
+    // For FREELANCE coaches: their home/office location
+    type: "Point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
   serviceRadiusKm?: number; // Required if FREELANCE/HYBRID
   travelBufferTime?: number; // Minutes, required if FREELANCE/HYBRID
   availability: IAvailability[];
+  verificationDocuments?: Array<{
+    type:
+      | "CERTIFICATION"
+      | "ID_PROOF"
+      | "BACKGROUND_CHECK"
+      | "INSURANCE"
+      | "OTHER";
+    url: string;
+    fileName: string;
+    uploadedAt: Date;
+  }>;
+  isVerified: boolean;
   rating: number;
   reviewCount: number;
   createdAt?: Date;
@@ -105,10 +125,90 @@ export interface IVenue {
   amenities: string[];
   description: string;
   images: string[];
+  coverPhotoUrl?: string;
   allowExternalCoaches: boolean;
-  requiresLocationUpdate?: boolean; // Migration flag
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+  documents?: IVenueDocument[];
+  rating: number;
+  reviewCount: number;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+// ============================================
+// VENUE ONBOARDING TYPES
+// ============================================
+export interface IVenueDocument {
+  type:
+    | "OWNERSHIP_PROOF"
+    | "BUSINESS_REGISTRATION"
+    | "TAX_DOCUMENT"
+    | "INSURANCE"
+    | "CERTIFICATE";
+  url: string;
+  fileName: string;
+  uploadedAt: Date;
+}
+
+export interface IVenueOnboardingStep1 {
+  ownerName: string;
+  ownerEmail: string;
+  ownerPhone: string;
+}
+
+export interface IVenueOnboardingStep2 {
+  venueId: string;
+  name: string;
+  sports: string[];
+  pricePerHour: number;
+  amenities: string[];
+  address: string;
+  openingHours: string;
+  description: string;
+  allowExternalCoaches: boolean;
+  location: IGeoLocation;
+}
+
+export interface IVenueOnboardingStep3 {
+  venueId: string;
+  images: string[]; // S3 URLs from client upload
+  coverPhotoUrl: string; // S3 URL for cover shot
+}
+
+export interface IVenueOnboardingStep4 {
+  venueId: string;
+  images: string[]; // S3 URLs from client upload
+  coverPhotoUrl: string; // S3 URL for cover shot
+  documents: {
+    type:
+      | "OWNERSHIP_PROOF"
+      | "BUSINESS_REGISTRATION"
+      | "TAX_DOCUMENT"
+      | "INSURANCE"
+      | "CERTIFICATE";
+    url: string;
+    fileName: string;
+  }[];
+}
+
+export interface IOnboardingUploadUrl {
+  field: string; // image_0, document_OWNERSHIP_PROOF, etc.
+  uploadUrl: string;
+  downloadUrl: string;
+  fileName: string;
+  contentType: string;
+  maxSizeBytes: number;
+}
+
+export interface IPendingVenue {
+  id: string;
+  name: string;
+  ownerEmail: string;
+  ownerPhone: string;
+  sports: string[];
+  approvalStatus: "PENDING" | "REVIEW" | "REJECTED";
+  submittedAt: Date;
+  lastReviewedAt?: Date;
 }
 
 // ============================================

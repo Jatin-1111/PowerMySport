@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { adminApi } from "@/lib/admin";
 import { Eye, EyeOff } from "lucide-react";
@@ -138,3 +138,4 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+

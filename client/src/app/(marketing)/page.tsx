@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { CTA } from "@/components/marketing/CTA";
 import { FeatureIcons, Features } from "@/components/marketing/Features";
@@ -110,7 +110,7 @@ export default function HomePage() {
         }}
         secondaryCTA={{
           label: "List Your Venue",
-          href: "/venue-inquiry",
+          href: "/onboarding",
         }}
         gradient
       />
@@ -234,7 +234,7 @@ export default function HomePage() {
                 List your facility and reach thousands of players
               </p>
               <a
-                href="/venue-inquiry"
+                href="/onboarding"
                 className="inline-block bg-deep-slate text-white px-6 py-3 rounded-lg font-semibold hover:bg-slate-800 transition-colors"
               >
                 List Your Venue
@@ -278,3 +278,5 @@ export default function HomePage() {
     </main>
   );
 }
+
+

@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion } from "framer-motion";
@@ -8,6 +7,7 @@ import { LayoutDashboard, LogOut, Menu, Settings, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import { Button } from "../ui/Button";
 
 export interface NavProps {
   variant?: "light" | "dark";
@@ -30,7 +30,10 @@ export const Navigation: React.FC<NavProps> = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setUserDropdownOpen(false);
       }
     };
@@ -66,8 +69,8 @@ export const Navigation: React.FC<NavProps> = ({
   return (
     <nav
       className={cn(
-        "border-b border-border bg-background",
-        sticky && "sticky top-0 z-50 backdrop-blur-sm bg-background/95",
+        "border-b border-border bg-deep-slate text-white",
+        sticky && "sticky top-0 z-50 backdrop-blur-sm bg-deep-slate text-white",
         variant === "dark" && "bg-deep-slate text-white",
       )}
     >
@@ -90,7 +93,7 @@ export const Navigation: React.FC<NavProps> = ({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "text-foreground hover:text-power-orange transition-colors font-medium",
+                  "text-white hover:text-power-orange transition-colors font-medium",
                   isActive(link.href) &&
                     "text-power-orange border-b-2 border-power-orange",
                 )}

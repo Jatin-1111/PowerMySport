@@ -1,11 +1,14 @@
 import { Router } from "express";
 import {
-  initiateNewBooking,
+  cancelBookingById,
+  checkInBookingByToken,
+  completeBookingById,
   getMyBookings,
   getVenueAvailability,
-  cancelBookingById,
-  processMockPaymentHandler,
+  initiateNewBooking,
+  markBookingNoShow,
   paymentWebhookHandler,
+  processMockPaymentHandler,
   verifyBookingByToken,
 } from "../controllers/bookingController";
 import { authMiddleware } from "../middleware/auth";
@@ -30,6 +33,15 @@ router.post("/webhook", paymentWebhookHandler);
 
 // Verify booking with token
 router.get("/verify/:token", verifyBookingByToken);
+
+// Check-in to booking with QR code
+router.post("/check-in/:token", checkInBookingByToken);
+
+// Mark booking as completed (venue owner or admin only)
+router.post("/:bookingId/complete", authMiddleware, completeBookingById);
+
+// Mark booking as no-show (venue owner or admin only)
+router.post("/:bookingId/no-show", authMiddleware, markBookingNoShow);
 
 // Get user's bookings
 router.get("/my-bookings", authMiddleware, getMyBookings);

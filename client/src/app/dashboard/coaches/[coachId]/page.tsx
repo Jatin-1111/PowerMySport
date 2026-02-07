@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -49,16 +49,16 @@ export default function BookCoachPage() {
   };
 
   const loadVenue = async (venueId: string) => {
-      try {
-          const response = await venueApi.getVenue(venueId);
-          if (response.success && response.data) {
-              setVenue(response.data);
-          }
-      } catch (err) {
-          console.error("Failed to load venue for coach", err);
-      } finally {
-          setLoading(false);
+    try {
+      const response = await venueApi.getVenue(venueId);
+      if (response.success && response.data) {
+        setVenue(response.data);
       }
+    } catch (err) {
+      console.error("Failed to load venue for coach", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +81,7 @@ export default function BookCoachPage() {
     const duration = calculateDuration();
     let total = duration * coach.hourlyRate;
     if (venue) {
-        total += duration * venue.pricePerHour;
+      total += duration * venue.pricePerHour;
     }
     return total;
   };
@@ -102,8 +102,8 @@ export default function BookCoachPage() {
     }
 
     if (!venue) {
-        setError("This coach does not have an associated venue for booking.");
-        return;
+      setError("This coach does not have an associated venue for booking.");
+      return;
     }
 
     setIsSubmitting(true);
@@ -158,14 +158,16 @@ export default function BookCoachPage() {
           <h2 className="text-xl font-bold mb-4 text-slate-900">
             Coach Details
           </h2>
-          
-          <div className="space-y-4">
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
-                  <span className="font-semibold text-slate-700">Service Mode</span>
-                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">{coach.serviceMode}</span>
-              </div>
 
-              <div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+              <span className="font-semibold text-slate-700">Service Mode</span>
+              <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                {coach.serviceMode}
+              </span>
+            </div>
+
+            <div>
               <p className="text-sm text-slate-600">Sports</p>
               <div className="flex flex-wrap gap-2 mt-1">
                 {coach.sports.map((sport, index) => (
@@ -186,20 +188,27 @@ export default function BookCoachPage() {
                 <span className="text-sm text-slate-600">/hour</span>
               </p>
             </div>
-            
-             {venue && (
-                <div className="border-t pt-4">
-                    <h3 className="font-semibold text-slate-900 mb-2">Venue: {venue.name}</h3>
-                    <p className="text-sm text-slate-600">Venue Rate: ₹{venue.pricePerHour}/hour</p>
-                    <p className="text-xs text-slate-500 mt-1">Note: Total price includes both coach and venue fees.</p>
-                </div>
-             )}
-             
-             {!venue && (
-                 <div className="bg-yellow-50 text-yellow-800 p-3 rounded-md text-sm">
-                     Warning: This coach does not have a linked venue. Booking may not be possible.
-                 </div>
-             )}
+
+            {venue && (
+              <div className="border-t pt-4">
+                <h3 className="font-semibold text-slate-900 mb-2">
+                  Venue: {venue.name}
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Venue Rate: ₹{venue.pricePerHour}/hour
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Note: Total price includes both coach and venue fees.
+                </p>
+              </div>
+            )}
+
+            {!venue && (
+              <div className="bg-yellow-50 text-yellow-800 p-3 rounded-md text-sm">
+                Warning: This coach does not have a linked venue. Booking may
+                not be possible.
+              </div>
+            )}
           </div>
         </Card>
 
@@ -261,10 +270,10 @@ export default function BookCoachPage() {
                     {duration} hours
                   </span>
                 </div>
-                 <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-slate-600">Rate / hr</span>
                   <span className="font-semibold text-slate-900">
-                    ₹{ coach.hourlyRate + (venue ? venue.pricePerHour : 0) }
+                    ₹{coach.hourlyRate + (venue ? venue.pricePerHour : 0)}
                   </span>
                 </div>
                 <div className="border-t border-slate-300 pt-2 mt-2">
@@ -307,3 +316,4 @@ export default function BookCoachPage() {
     </div>
   );
 }
+

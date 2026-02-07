@@ -40,18 +40,5 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 }));
 
-// Hydrate auth store from localStorage on mount
-if (typeof window !== "undefined") {
-  const token = localStorage.getItem("token");
-  const user = localStorage.getItem("user");
-  if (token) {
-    useAuthStore.setState({ token });
-  }
-  if (user) {
-    try {
-      useAuthStore.setState({ user: JSON.parse(user) });
-    } catch {
-      localStorage.removeItem("user");
-    }
-  }
-}
+// Note: Hydration is now handled by HydrationBoundary component
+// This ensures proper client-side initialization without SSR hydration mismatches

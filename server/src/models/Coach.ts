@@ -9,13 +9,33 @@ export interface CoachDocument extends Document {
   hourlyRate: number;
   serviceMode: ServiceMode;
   venueId?: mongoose.Types.ObjectId;
+  baseLocation?: {
+    // For FREELANCE coaches: their home/office location
+    type: "Point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
   serviceRadiusKm?: number;
   travelBufferTime?: number;
   availability: IAvailability[];
+  verificationDocuments?: CoachDocumentFile[]; // Certification proofs, ID verification
+  isVerified: boolean;
   rating: number;
   reviewCount: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CoachDocumentFile {
+  id?: string;
+  type:
+    | "CERTIFICATION"
+    | "ID_PROOF"
+    | "BACKGROUND_CHECK"
+    | "INSURANCE"
+    | "OTHER";
+  url: string;
+  fileName: string;
+  uploadedAt: Date;
 }
 
 const coachSchema = new Schema<CoachDocument>(
@@ -58,6 +78,19 @@ const coachSchema = new Schema<CoachDocument>(
     venueId: {
       type: Schema.Types.ObjectId,
       ref: "Venue",
+    },
+    baseLocation: {
+      type: {
+        type: String,
+        enum: ["Point"],
+      },
+      coordinates: {
+        type: [Number],
+        validate: {
+          validator: (v: number[]) => v.length === 2,
+          message: "Coordinates must be [longitude, latitude]",
+        },
+      },
     },
     serviceRadiusKm: {
       type: Number,
@@ -107,6 +140,36 @@ const coachSchema = new Schema<CoachDocument>(
       default: 0,
       min: 0,
     },
+    verificationDocuments: [
+      {
+        type: {
+          type: String,
+          enum: [
+            "CERTIFICATION",
+            "ID_PROOF",
+            "BACKGROUND_CHECK",
+            "INSURANCE",
+            "OTHER",
+          ],
+        },
+        url: {
+          type: String,
+          required: true,
+        },
+        fileName: {
+          type: String,
+          required: true,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );
@@ -133,9 +196,10 @@ coachSchema.pre<CoachDocument>("save", function () {
   }
 });
 
-// Index for geo-spatial queries (will be used with venue location)
-coachSchema.index({ userId: 1 });
+// Index for geo-spatial queries on baseLocation (for FREELANCE coaches)
+coachSchema.index({ baseLocation: "2dsphere" });
 coachSchema.index({ sports: 1 });
 coachSchema.index({ serviceMode: 1 });
+coachSchema.index({ isVerified: 1 });
 
 export const Coach = mongoose.model<CoachDocument>("Coach", coachSchema);

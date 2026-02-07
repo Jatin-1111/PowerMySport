@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Card } from "@/components/ui/Card";
 import { authApi } from "@/lib/auth";
@@ -72,3 +72,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

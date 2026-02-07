@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { authApi } from "@/lib/auth";
 import { useAuthStore } from "@/store/authStore";
@@ -74,3 +74,4 @@ export default function DashboardLayout({
     </div>
   );
 }
+

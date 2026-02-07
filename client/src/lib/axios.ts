@@ -35,7 +35,16 @@ axiosInstance.interceptors.response.use(
         window.location.href = "/login";
       }
     }
-    return Promise.reject(error);
+
+    // Preserve the response data for error handling
+    const errorWithData = new Error(
+      (error.response?.data as any)?.message ||
+        error.message ||
+        "Request failed",
+    ) as Error & { response?: any };
+    errorWithData.response = error.response;
+
+    return Promise.reject(errorWithData);
   },
 );
 

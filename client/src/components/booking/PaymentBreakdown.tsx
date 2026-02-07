@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { IPayment } from "@/types";
 
 interface PaymentBreakdownProps {
@@ -55,3 +55,4 @@ export default function PaymentBreakdown({
     </div>
   );
 }
+

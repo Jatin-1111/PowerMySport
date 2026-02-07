@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/Card";
+﻿import { Card, CardContent } from "@/components/ui/Card";
 import { cn } from "@/utils/cn";
 import { Star } from "lucide-react";
 import Image from "next/image";
@@ -91,7 +91,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold text-deep-slate">
+                    <div className="font-semibold text-white">
                       {testimonial.author}
                     </div>
                     <div className="text-sm text-muted-foreground">
@@ -107,3 +107,4 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
     </section>
   );
 };
+

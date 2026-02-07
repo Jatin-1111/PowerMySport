@@ -86,7 +86,6 @@ AdminSchema.methods.comparePassword = async function (
 };
 
 // Index for faster queries
-AdminSchema.index({ email: 1 });
 AdminSchema.index({ isActive: 1 });
 
 export default mongoose.model<IAdmin>("Admin", AdminSchema);

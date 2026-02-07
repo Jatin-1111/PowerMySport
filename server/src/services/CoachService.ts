@@ -33,6 +33,7 @@ export const createCoach = async (
 
 /**
  * Find coaches near a location (for FREELANCE and HYBRID coaches)
+ * Uses MongoDB aggregation pipeline for efficient geo-filtering
  */
 export const findCoachesNearby = async (
   lat: number,
@@ -41,40 +42,78 @@ export const findCoachesNearby = async (
   sport?: string,
 ): Promise<CoachDocument[]> => {
   try {
-    // Build query
-    const query: any = {
-      serviceMode: { $in: ["FREELANCE", "HYBRID"] },
-    };
+    const radiusMeters = radiusKm * 1000;
 
-    // Filter by sport if provided
-    if (sport) {
-      query.sports = sport;
-    }
+    // Build aggregation pipeline for efficient geo-filtering
+    const pipeline: any[] = [
+      // Match by service mode and sport
+      {
+        $match: {
+          serviceMode: { $in: ["FREELANCE", "HYBRID"] },
+          ...(sport ? { sports: sport } : {}),
+        },
+      },
+      // Lookup venue data for HYBRID coaches
+      {
+        $lookup: {
+          from: "venues",
+          localField: "venueId",
+          foreignField: "_id",
+          as: "venueData",
+        },
+      },
+      // Add computed location field (baseLocation for FREELANCE, venue location for HYBRID)
+      {
+        $addFields: {
+          effectiveLocation: {
+            $cond: {
+              if: { $eq: ["$serviceMode", "HYBRID"] },
+              then: { $arrayElemAt: ["$venueData.location", 0] },
+              else: "$baseLocation",
+            },
+          },
+        },
+      },
+      // Filter out coaches without a location
+      {
+        $match: {
+          effectiveLocation: { $exists: true, $ne: null },
+        },
+      },
+      // Geo-spatial filter: coaches within service radius of the search location
+      {
+        $match: {
+          effectiveLocation: {
+            $geoWithin: {
+              $centerSphere: [[lng, lat], radiusMeters / 6378100], // Earth radius in meters
+            },
+          },
+        },
+      },
+      // Populate userId
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      // Clean up: remove temporary fields and reshape
+      {
+        $project: {
+          effectiveLocation: 0,
+          venueData: 0,
+        },
+      },
+    ];
 
-    // Get all FREELANCE/HYBRID coaches
-    let coaches = await Coach.find(query).populate("userId venueId");
+    const coaches = await Coach.aggregate(pipeline);
 
-    // Filter by service radius
-    // For each coach, check if the requested location is within their service radius
-    coaches = coaches.filter((coach) => {
-      if (!coach.serviceRadiusKm) return false;
-
-      // If coach has a venue (HYBRID mode), calculate distance from venue
-      if (coach.venueId) {
-        const venue = coach.venueId as any;
-        if (venue.location && venue.location.coordinates) {
-          const [venueLng, venueLat] = venue.location.coordinates;
-          const distance = calculateDistance(lat, lng, venueLat, venueLng);
-          return distance <= coach.serviceRadiusKm;
-        }
-      }
-
-      // For pure FREELANCE coaches without a fixed venue,
-      // we can't determine distance, so include them if within the search radius
-      return coach.serviceRadiusKm >= radiusKm;
-    });
-
-    return coaches;
+    // Populate the final documents (aggregate doesn't return full mongoose documents)
+    return Coach.populate(coaches, { path: "userId venueId" }) as Promise<
+      CoachDocument[]
+    >;
   } catch (error) {
     throw new Error(
       `Failed to find coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -85,7 +124,9 @@ export const findCoachesNearby = async (
 /**
  * Get all coaches with optional sport filter
  */
-export const getAllCoaches = async (sport?: string): Promise<CoachDocument[]> => {
+export const getAllCoaches = async (
+  sport?: string,
+): Promise<CoachDocument[]> => {
   try {
     const query: any = {
       // You might want to filter by serviceMode or just return all
@@ -138,13 +179,14 @@ export const checkCoachAvailability = async (
     }
 
     // Check for existing bookings
+    // Only active bookings block slots: PENDING_PAYMENT, CONFIRMED, IN_PROGRESS
     const existingBooking = await Booking.findOne({
       coachId,
       date: {
         $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
         $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
       },
-      status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
+      status: { $in: ["PENDING_PAYMENT", "CONFIRMED", "IN_PROGRESS"] },
       $or: [
         // Requested slot starts during existing booking
         { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
@@ -195,38 +237,19 @@ export const updateCoach = async (
 };
 
 /**
- * Delete coach profile
+ * Delete coach profile (with cascade: delete all associated bookings)
  */
 export const deleteCoach = async (coachId: string): Promise<boolean> => {
-  const result = await Coach.findByIdAndDelete(coachId);
-  return !!result;
-};
+  try {
+    // First, delete all bookings associated with this coach
+    await Booking.deleteMany({ coachId });
 
-/**
- * Calculate distance between two coordinates using Haversine formula
- * Returns distance in kilometers
- */
-const calculateDistance = (
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number => {
-  const R = 6371; // Earth's radius in km
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
-const toRad = (degrees: number): number => {
-  return (degrees * Math.PI) / 180;
+    // Then delete the coach
+    const result = await Coach.findByIdAndDelete(coachId);
+    return !!result;
+  } catch (error) {
+    throw new Error(
+      `Failed to delete coach: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
 };

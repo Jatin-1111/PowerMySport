@@ -114,17 +114,14 @@ export const reviewInquiry = async (
       ownerId: savedUser._id,
       location: {
         type: "Point",
-        coordinates: [0, 0], // Default coordinates
+        coordinates: [0, 0], // Default coordinates - user must update
       },
       sports: inquiry.sports.split(",").map((s) => s.trim()),
       amenities: [],
       address: inquiry.address,
       description: inquiry.message || "",
-      pricePerHour: 0, // Default price, user must update
-      requiresLocationUpdate: true,
+      pricePerHour: 0, // Default price - user must update
     });
-
-
 
     // Send credentials via email
     try {

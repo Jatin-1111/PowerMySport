@@ -4,12 +4,38 @@ import { Coach } from "../models/Coach";
 import { Venue } from "../models/Venue";
 import { doTimesOverlap } from "../utils/booking";
 import {
-    calculateSplitAmounts,
-    generateMockPaymentLink,
-    validatePaymentStatus,
+  calculateSplitAmounts,
+  generateMockPaymentLink,
+  validatePaymentStatus,
 } from "../utils/payment";
 import { generateQRCode, generateVerificationURL } from "../utils/qrcode";
 import { getBookingExpirationTime } from "../utils/timer";
+
+/**
+ * PAYMENT MODEL - FUTURE ESCROW IMPLEMENTATION
+ *
+ * Current Model (Mock):
+ * - Split payment at booking time (player pays venue + coach separately)
+ * - Both payments required before confirmation
+ * - No refund mechanism
+ *
+ * Planned Escrow Model (Production):
+ * - Player pays FULL amount upfront to platform escrow account
+ * - Platform holds funds until booking completion
+ * - After check-in (IN_PROGRESS) and completion (COMPLETED), release funds:
+ *   - Venue owner receives their portion
+ *   - Coach receives their portion
+ * - If cancelled before 24hrs, issue full refund to player
+ * - If NO_SHOW, release funds to venue/coach (cancellation fee)
+ * - Dispute resolution: Admin can partial/full refund from escrow
+ *
+ * TODO before payment gateway integration:
+ * - Update initiateBooking to accept full payment, not split
+ * - Add escrow account management service
+ * - Implement automatic fund release on completion
+ * - Add cancellation window logic (24-hour free cancellation)
+ * - Add admin refund/dispute functions
+ */
 
 export interface InitiateBookingPayload {
   userId: string;
@@ -31,7 +57,8 @@ export interface InitiateBookingResponse {
 }
 
 /**
- * Check if a time slot is available for a venue
+ * Check if a time slot is available for a venue (with atomic locking)
+ * Prevents double-booking race conditions
  */
 export const isSlotAvailable = async (
   venueId: string,
@@ -39,26 +66,25 @@ export const isSlotAvailable = async (
   startTime: string,
   endTime: string,
 ): Promise<boolean> => {
-  const existingBooking = await Booking.findOne({
+  // Find ALL conflicting bookings (not just first one)
+  // Only active bookings block slots: PENDING_PAYMENT, CONFIRMED, IN_PROGRESS
+  const conflictingBookings = await Booking.find({
     venueId,
     date: {
       $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
       $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
     },
-    status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
+    status: { $in: ["PENDING_PAYMENT", "CONFIRMED", "IN_PROGRESS"] },
+    $or: [
+      // Requested slot overlaps with existing booking
+      { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
+      { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
+      { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
+    ],
   });
 
-  if (!existingBooking) {
-    return true;
-  }
-
-  // Check for time overlap
-  return !doTimesOverlap(
-    startTime,
-    endTime,
-    existingBooking.startTime,
-    existingBooking.endTime,
-  );
+  // Slot is available only if no conflicts
+  return conflictingBookings.length === 0;
 };
 
 /**
@@ -87,13 +113,19 @@ export const initiateBooking = async (
       throw new Error("Selected time slot is already booked for this venue");
     }
 
-    // Calculate venue price
+    // Calculate venue price (supports fractional hours)
     const startParts = payload.startTime.split(":");
     const endParts = payload.endTime.split(":");
     const startHour = parseInt(startParts[0] || "0", 10);
+    const startMin = parseInt(startParts[1] || "0", 10);
     const endHour = parseInt(endParts[0] || "0", 10);
-    const hours = endHour - startHour;
-    const venuePrice = hours * venue.pricePerHour;
+    const endMin = parseInt(endParts[1] || "0", 10);
+
+    const startTotalMinutes = startHour * 60 + startMin;
+    const endTotalMinutes = endHour * 60 + endMin;
+    const totalMinutes = endTotalMinutes - startTotalMinutes;
+    const hours = totalMinutes / 60; // Supports 0.5, 0.75, etc.
+    const venuePrice = Math.round(hours * venue.pricePerHour * 100) / 100; // Round to 2 decimals
 
     let coachPrice = 0;
     let coachUserId: string | undefined;
@@ -272,18 +304,23 @@ export const updatePaymentStatus = async (
 export const getUserBookings = async (
   userId: string,
   page: number = 1,
-  limit: number = 20
-): Promise<{ bookings: BookingDocument[]; total: number; page: number; totalPages: number }> => {
+  limit: number = 20,
+): Promise<{
+  bookings: BookingDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
   const skip = (page - 1) * limit;
   const query = { userId };
-  
+
   const total = await Booking.countDocuments(query);
   const bookings = await Booking.find(query)
     .populate("venueId coachId")
     .sort({ date: -1 })
     .skip(skip)
     .limit(limit);
-    
+
   return { bookings, total, page, totalPages: Math.ceil(total / limit) };
 };
 
@@ -293,14 +330,19 @@ export const getUserBookings = async (
 export const getVenueBookings = async (
   venueId: string,
   page: number = 1,
-  limit: number = 20
-): Promise<{ bookings: BookingDocument[]; total: number; page: number; totalPages: number }> => {
+  limit: number = 20,
+): Promise<{
+  bookings: BookingDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
   const query = {
     venueId,
     status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
   };
   const skip = (page - 1) * limit;
-  
+
   const total = await Booking.countDocuments(query);
   const bookings = await Booking.find(query)
     .populate("userId coachId")
@@ -316,11 +358,11 @@ export const getVenueBookings = async (
  */
 export const getVenueBookingsForDate = async (
   venueId: string,
-  date: Date
+  date: Date,
 ): Promise<BookingDocument[]> => {
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
-  
+
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
 
@@ -340,8 +382,13 @@ export const getVenueBookingsForDate = async (
 export const getVenueListerBookings = async (
   ownerId: string,
   page: number = 1,
-  limit: number = 20
-): Promise<{ bookings: BookingDocument[]; total: number; page: number; totalPages: number }> => {
+  limit: number = 20,
+): Promise<{
+  bookings: BookingDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
   // Find all venues owned by this user
   const venues = await Venue.find({ ownerId });
   const venueIds = venues.map((v) => v._id);
@@ -377,18 +424,106 @@ export const cancelBooking = async (
 };
 
 /**
- * Verify a booking using verification token
+ * Check-in to a booking using QR code verification
+ * Changes status from CONFIRMED to IN_PROGRESS
  */
-export const verifyBooking = async (
+export const checkInBooking = async (
   verificationToken: string,
-): Promise<BookingDocument | null> => {
-  return Booking.findOne({ verificationToken })
-    .select("+verificationToken")
-    .populate("userId venueId coachId");
+): Promise<BookingDocument> => {
+  const booking = await Booking.findOne({ verificationToken });
+
+  if (!booking) {
+    throw new Error("Booking not found or invalid verification token");
+  }
+
+  if (booking.status !== "CONFIRMED") {
+    throw new Error(`Cannot check-in. Booking status is ${booking.status}`);
+  }
+
+  // Check if booking date has arrived
+  const now = new Date();
+  const bookingDateTime = new Date(booking.date);
+  const timeParts = booking.startTime.split(":").map(Number);
+  const startHour = timeParts[0];
+  const startMin = timeParts[1];
+
+  if (
+    startHour === undefined ||
+    startMin === undefined ||
+    isNaN(startHour) ||
+    isNaN(startMin)
+  ) {
+    throw new Error("Invalid booking time format");
+  }
+
+  bookingDateTime.setHours(startHour, startMin, 0, 0);
+
+  // Allow check-in 15 minutes before scheduled time
+  const checkInWindow = new Date(bookingDateTime.getTime() - 15 * 60 * 1000);
+
+  if (now < checkInWindow) {
+    throw new Error("Cannot check-in before the scheduled time");
+  }
+
+  booking.status = "IN_PROGRESS";
+  await booking.save();
+
+  return booking;
 };
 
 /**
- * Helper function to check coach availability (duplicated from CoachService to avoid circular dependency)
+ * Mark booking as completed (successful session)
+ * Only venue owner or admin can mark as completed
+ */
+export const completeBooking = async (
+  bookingId: string,
+): Promise<BookingDocument> => {
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.status !== "IN_PROGRESS") {
+    throw new Error(
+      `Cannot complete booking. Current status is ${booking.status}`,
+    );
+  }
+
+  booking.status = "COMPLETED";
+  await booking.save();
+
+  return booking;
+};
+
+/**
+ * Mark booking as no-show (user didn't show up)
+ * Only venue owner or admin can mark as no-show
+ */
+export const markNoShow = async (
+  bookingId: string,
+): Promise<BookingDocument> => {
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.status !== "CONFIRMED" && booking.status !== "IN_PROGRESS") {
+    throw new Error(
+      `Cannot mark as no-show. Current status is ${booking.status}`,
+    );
+  }
+
+  booking.status = "NO_SHOW";
+  await booking.save();
+
+  return booking;
+};
+
+/**
+ * Check coach availability (kept synchronized with CoachService.checkCoachAvailability)
+ * Duplicated to avoid circular dependency between services
  */
 const checkCoachAvailabilityForBooking = async (
   coachId: string,
@@ -398,38 +533,43 @@ const checkCoachAvailabilityForBooking = async (
 ): Promise<boolean> => {
   const coach = await Coach.findById(coachId);
   if (!coach) return false;
-
-  // Check day availability
   const dayOfWeek = date.getDay();
   const dayAvailability = coach.availability.find(
     (a) => a.dayOfWeek === dayOfWeek,
   );
-
   if (!dayAvailability) return false;
-
   if (
     startTime < dayAvailability.startTime ||
     endTime > dayAvailability.endTime
   ) {
     return false;
   }
-
-  // Check for existing bookings
+  // Only active bookings block slots: PENDING_PAYMENT, CONFIRMED, IN_PROGRESS
   const existingBooking = await Booking.findOne({
     coachId,
     date: {
       $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
       $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
     },
-    status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
+    status: { $in: ["PENDING_PAYMENT", "CONFIRMED", "IN_PROGRESS"] },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
       { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
       { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
     ],
   });
-
   return !existingBooking;
+};
+
+/**
+ * Verify a booking using verification token
+ */
+export const verifyBooking = async (
+  verificationToken: string,
+): Promise<BookingDocument | null> => {
+  return Booking.findOne({ verificationToken })
+    .select("+verificationToken")
+    .populate("userId venueId coachId");
 };
 
 // Legacy function for backward compatibility

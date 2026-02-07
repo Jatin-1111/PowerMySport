@@ -30,8 +30,13 @@ export const getVenueById = async (
 export const getVenuesByOwner = async (
   ownerId: string,
   page: number = 1,
-  limit: number = 20
-): Promise<{ venues: VenueDocument[]; total: number; page: number; totalPages: number }> => {
+  limit: number = 20,
+): Promise<{
+  venues: VenueDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
   const query = { ownerId };
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
@@ -40,10 +45,8 @@ export const getVenuesByOwner = async (
 };
 
 /**
- * Find venues near a location using geo-spatial query
- */
-/**
- * Find venues near a location using geo-spatial query
+ * Find venues near a location using geo-spatial query with aggregation pipeline
+ * Fixes pagination issues with $near by using aggregation instead of find()
  */
 export const findVenuesNearby = async (
   lat: number,
@@ -51,39 +54,60 @@ export const findVenuesNearby = async (
   radiusMeters: number = 5000,
   sport?: string,
   page: number = 1,
-  limit: number = 20
-): Promise<{ venues: VenueDocument[]; total: number; page: number; totalPages: number }> => {
+  limit: number = 20,
+): Promise<{
+  venues: VenueDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
   try {
-    const query: any = {
+    const skip = (page - 1) * limit;
+
+    // Build match stage
+    const matchStage: any = {
       location: {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [lng, lat], // [longitude, latitude]
-          },
-          $maxDistance: radiusMeters,
+        $geoWithin: {
+          $centerSphere: [[lng, lat], radiusMeters / 6378100], // Earth radius in meters
         },
       },
     };
 
     // Filter by sport if provided
     if (sport) {
-      query.sports = sport;
+      matchStage.sports = sport;
     }
 
-    const skip = (page - 1) * limit;
-    
-    // Note: $near does not support countDocuments correctly in all cases with other filters, 
-    // but works for basic cases. However, separate count might be needed if complex.
-    // For $near, countDocuments matches the query.
-    const total = await Venue.countDocuments(query);
-    const venues = await Venue.find(query)
-      .populate("ownerId")
-      .skip(skip)
-      .limit(limit);
+    // Use aggregation pipeline for proper pagination with geo-queries
+    const pipeline = [
+      { $match: matchStage },
+      { $sort: { _id: 1 as const } }, // Add sort for consistent pagination
+    ];
+
+    // Get total count
+    const countPipeline = [...pipeline, { $count: "total" as const }];
+    const countResult = await Venue.aggregate(countPipeline);
+    const total = countResult.length > 0 ? countResult[0].total : 0;
+
+    // Get paginated results
+    const dataPipeline = [
+      ...pipeline,
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "users" as const,
+          localField: "ownerId" as const,
+          foreignField: "_id" as const,
+          as: "ownerInfo" as const,
+        },
+      },
+    ];
+
+    const venues = await Venue.aggregate(dataPipeline);
 
     return {
-      venues,
+      venues: venues as VenueDocument[],
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -101,8 +125,13 @@ export const findVenuesNearby = async (
 export const getAllVenues = async (
   filters?: { sports?: string[] },
   page: number = 1,
-  limit: number = 20
-): Promise<{ venues: VenueDocument[]; total: number; page: number; totalPages: number }> => {
+  limit: number = 20,
+): Promise<{
+  venues: VenueDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
   const query: any = {};
 
   if (filters?.sports && filters.sports.length > 0) {

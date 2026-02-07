@@ -1,15 +1,18 @@
 import { Request, Response } from "express";
 import {
-    cancelBooking,
-    getUserBookings,
-    getVenueBookingsForDate,
-    getVenueListerBookings,
-    initiateBooking,
-    verifyBooking,
+  cancelBooking,
+  checkInBooking,
+  completeBooking,
+  getUserBookings,
+  getVenueBookingsForDate,
+  getVenueListerBookings,
+  initiateBooking,
+  markNoShow,
+  verifyBooking,
 } from "../services/BookingService";
 import {
-    handlePaymentWebhook,
-    processMockPayment,
+  handlePaymentWebhook,
+  processMockPayment,
 } from "../services/PaymentService";
 import { generateHourlySlots } from "../utils/booking";
 
@@ -164,8 +167,8 @@ export const getMyBookings = async (
       return;
     }
 
-    const page = parseInt(req.query.page as string || "1", 10);
-    const limit = parseInt(req.query.limit as string || "20", 10);
+    const page = parseInt((req.query.page as string) || "1", 10);
+    const limit = parseInt((req.query.limit as string) || "20", 10);
 
     let result;
 
@@ -217,14 +220,17 @@ export const getVenueAvailability = async (
     }
 
     // Get all bookings for this venue on the specified date
-    const bookedSlots = await getVenueBookingsForDate(venueId, new Date(date as string));
-    
+    const bookedSlots = await getVenueBookingsForDate(
+      venueId,
+      new Date(date as string),
+    );
+
     // Map to simple {startTime, endTime} objects if not already (select already does partial)
     // But result is Mongoose documents, safest to map explicitly just in case
     const bookedTimeSlots = bookedSlots.map((b) => ({
-        startTime: b.startTime,
-        endTime: b.endTime,
-      }));
+      startTime: b.startTime,
+      endTime: b.endTime,
+    }));
 
     const allSlots = generateHourlySlots(6, 23);
     const availableSlots = allSlots.filter((slot) => {
@@ -289,6 +295,90 @@ export const cancelBookingById = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to cancel booking",
+    });
+  }
+};
+
+/**
+ * Check-in to booking using QR code
+ * POST /api/bookings/check-in/:token
+ */
+export const checkInBookingByToken = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const token = (req.params as Record<string, unknown>).token as string;
+
+    const booking = await checkInBooking(token);
+
+    res.status(200).json({
+      success: true,
+      message: "Checked in successfully",
+      data: booking,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Check-in failed",
+    });
+  }
+};
+
+/**
+ * Mark booking as completed
+ * POST /api/bookings/:bookingId/complete
+ */
+export const completeBookingById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+
+    // TODO: Verify that user is venue owner or admin
+    const booking = await completeBooking(bookingId);
+
+    res.status(200).json({
+      success: true,
+      message: "Booking marked as completed",
+      data: booking,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to complete booking",
+    });
+  }
+};
+
+/**
+ * Mark booking as no-show
+ * POST /api/bookings/:bookingId/no-show
+ */
+export const markBookingNoShow = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+
+    // TODO: Verify that user is venue owner or admin
+    const booking = await markNoShow(bookingId);
+
+    res.status(200).json({
+      success: true,
+      message: "Booking marked as no-show",
+      data: booking,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to mark as no-show",
     });
   }
 };

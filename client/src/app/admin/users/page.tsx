@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Card } from "@/components/ui/Card";
 import { statsApi, UserData } from "@/lib/stats";
@@ -77,3 +77,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
