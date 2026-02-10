@@ -42,10 +42,10 @@ export const vendorMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "VENUE_LISTER") {
+  if (req.user?.role !== "VENUE_LISTER" && req.user?.role !== "COACH") {
     res.status(403).json({
       success: false,
-      message: "Access denied. Venue Lister role required.",
+      message: "Access denied. Venue Lister or Coach role required.",
     });
     return;
   }

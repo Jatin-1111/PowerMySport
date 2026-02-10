@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 
 /**
  * HydrationBoundary
@@ -36,3 +36,4 @@ export function HydrationBoundary({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+

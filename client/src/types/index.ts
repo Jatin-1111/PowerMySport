@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // USER & AUTH TYPES
 // ============================================
 export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
@@ -27,13 +27,24 @@ export interface VenueListerProfile {
   canAddMoreVenues?: boolean;
 }
 
+export interface Dependent {
+  _id?: string;
+  name: string;
+  dob: string; // ISO date string
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  relation?: string;
+  sports?: string[];
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   phone: string;
+  dob?: string;
   role: UserRole;
   venueListerProfile?: VenueListerProfile;
+  dependents?: Dependent[];
 }
 
 export interface AuthResponse {

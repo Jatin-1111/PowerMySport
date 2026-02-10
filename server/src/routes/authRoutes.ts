@@ -3,6 +3,11 @@ import {
   forgotPassword,
   getProfile,
   googleAuth,
+  graduateDependentHandler,
+  addDependentHandler,
+  updateDependentHandler,
+  deleteDependentHandler,
+  updateProfileHandler,
   login,
   logout,
   register,
@@ -18,8 +23,19 @@ router.post("/register", validateRequest(registerSchema), register);
 router.post("/login", validateRequest(loginSchema), login);
 router.post("/logout", authMiddleware, logout);
 router.get("/profile", authMiddleware, getProfile);
+router.put("/profile", authMiddleware, updateProfileHandler);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPasswordHandler);
 router.post("/google", googleAuth);
+router.post("/graduate", authMiddleware, graduateDependentHandler);
+
+// Dependent management endpoints
+router.post("/dependents", authMiddleware, addDependentHandler);
+router.put("/dependents/:dependentId", authMiddleware, updateDependentHandler);
+router.delete(
+  "/dependents/:dependentId",
+  authMiddleware,
+  deleteDependentHandler,
+);
 
 export default router;

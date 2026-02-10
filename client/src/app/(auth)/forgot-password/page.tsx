@@ -1,8 +1,8 @@
 ﻿"use client";
 
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
-import { authApi } from "@/lib/auth";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
+import { authApi } from "@/modules/auth/services/auth";
 import Link from "next/link";
 import React, { useState } from "react";
 

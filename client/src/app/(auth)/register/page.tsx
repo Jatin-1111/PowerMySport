@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
-import { authApi } from "@/lib/auth";
-import { useAuthStore } from "@/store/authStore";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
+import { authApi } from "@/modules/auth/services/auth";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +21,7 @@ function RegisterContent() {
     phone: "",
     password: "",
     role: roleParam as "PLAYER" | "VENUE_LISTER" | "COACH",
+    serviceMode: "OWN_VENUE" as "OWN_VENUE" | "FREELANCE" | "HYBRID",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,6 +63,11 @@ function RegisterContent() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+
+        // Store serviceMode for coaches to pre-fill on profile page
+        if (formData.role === "COACH") {
+          localStorage.setItem("coachServiceMode", formData.serviceMode);
+        }
 
         // Route based on role
         const roleRoutes = {
@@ -137,7 +143,7 @@ function RegisterContent() {
     >
       <Card className="max-w-md w-full">
         <CardHeader>
-          <h1 className="text-3xl font-bold text-center text-slate-900">
+          <h1 className="text-3xl font-bold text-center text-white">
             Create Account
           </h1>
           <p className="text-center text-slate-600 mt-2">
@@ -256,6 +262,38 @@ function RegisterContent() {
               </p>
             </div>
 
+            {formData.role === "COACH" && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Coaching Service Mode
+                </label>
+                <select
+                  name="serviceMode"
+                  value={formData.serviceMode}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                >
+                  <option value="OWN_VENUE">
+                    Own Venue (Create and manage your own venue)
+                  </option>
+                  <option value="FREELANCE">
+                    Freelance (Travel to player locations)
+                  </option>
+                  <option value="HYBRID">
+                    Hybrid (Use existing venue or travel)
+                  </option>
+                </select>
+                <p className="text-xs text-slate-500 mt-2">
+                  {formData.serviceMode === "OWN_VENUE" &&
+                    "You'll automatically get a coaching venue to manage bookings."}
+                  {formData.serviceMode === "FREELANCE" &&
+                    "Travel to players for coaching sessions."}
+                  {formData.serviceMode === "HYBRID" &&
+                    "Offer coaching at venues and/or travel to players."}
+                </p>
+              </div>
+            )}
+
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -306,5 +344,3 @@ export default function RegisterPage() {
     </Suspense>
   );
 }
-
-

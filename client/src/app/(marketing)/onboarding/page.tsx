@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { OnboardingContainer } from "@/components/onboarding";
+import { OnboardingContainer } from "@/modules/onboarding/components/onboarding";
 
 export default function PublicOnboardingPage() {
   return (
@@ -9,3 +9,4 @@ export default function PublicOnboardingPage() {
     </div>
   );
 }
+

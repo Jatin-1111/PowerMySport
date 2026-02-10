@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Booking, BookingDocument } from "../models/Booking";
 import { Coach } from "../models/Coach";
+import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import { doTimesOverlap } from "../utils/booking";
 import {
@@ -44,6 +45,7 @@ export interface InitiateBookingPayload {
   date: Date;
   startTime: string;
   endTime: string;
+  dependentId?: string;
 }
 
 export interface InitiateBookingResponse {
@@ -95,6 +97,35 @@ export const initiateBooking = async (
   payload: InitiateBookingPayload,
 ): Promise<InitiateBookingResponse> => {
   try {
+    // Fetch user for participant information
+    const user = await User.findById(payload.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Determine participant details
+    let participantName = user.name;
+    let participantId: any = user._id;
+    let participantAge: number | undefined = undefined;
+
+    if (payload.dependentId) {
+      // Booking is for a dependent (child)
+      const dependent = user.dependents.find(
+        (d) => d._id?.toString() === payload.dependentId,
+      );
+      if (!dependent) {
+        throw new Error("Dependent not found");
+      }
+      participantName = dependent.name;
+      participantId = dependent._id;
+      // Calculate age from DOB
+      const ageInMs = Date.now() - dependent.dob.getTime();
+      participantAge = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 365.25));
+    } else {
+      // Booking is for the parent/user themselves
+      participantId = user._id;
+    }
+
     // Fetch venue to get price and owner
     const venue = await Venue.findById(payload.venueId).populate("ownerId");
     if (!venue) {
@@ -199,6 +230,9 @@ export const initiateBooking = async (
       totalAmount: venuePrice + coachPrice,
       status: "PENDING_PAYMENT",
       expiresAt: getBookingExpirationTime(),
+      participantName,
+      participantId,
+      participantAge,
     });
 
     await booking.save();

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Format time string for display
  */
 export const formatTime = (timeStr: string): string => {
@@ -53,3 +53,4 @@ export const formatCurrency = (amount: number): string => {
     maximumFractionDigits: 0,
   }).format(amount);
 };
+

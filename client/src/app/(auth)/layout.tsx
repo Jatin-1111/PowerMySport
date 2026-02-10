@@ -28,11 +28,12 @@ export default function AuthLayout({
         {/* Footer */}
         <div className="text-center mt-6 text-sm text-muted-foreground">
           <Link href="/" className="hover:text-power-orange transition-colors">
-            ← Back to Home
+            ? Back to Home
           </Link>
         </div>
       </div>
     </div>
   );
 }
+
 

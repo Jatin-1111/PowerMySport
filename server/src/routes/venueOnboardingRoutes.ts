@@ -12,6 +12,7 @@ import {
   approveVenueHandler,
   rejectVenueHandler,
   markVenueForReviewHandler,
+  addVenueCoaches,
 } from "../controllers/venueOnboardingController";
 import {
   authMiddleware,
@@ -95,6 +96,12 @@ router.post(
   validateRequest(venueOnboardingStep4Schema),
   finalizeOnboardingStep3,
 );
+
+/**
+ * STEP 5: Add in-house coaches to venue
+ * POST /api/venues/onboarding/step5/coaches
+ */
+router.post("/step5/coaches", addVenueCoaches);
 
 /**
  * Cancel/Delete onboarding

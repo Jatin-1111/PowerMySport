@@ -14,6 +14,9 @@ export interface BookingDocument extends Document {
   expiresAt: Date;
   verificationToken?: string;
   qrCode?: string;
+  participantName: string;
+  participantId?: mongoose.Types.ObjectId;
+  participantAge?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -103,6 +106,16 @@ const bookingSchema = new Schema<BookingDocument>(
     },
     qrCode: {
       type: String,
+    },
+    participantName: {
+      type: String,
+      required: [true, "Participant name is required"],
+    },
+    participantId: {
+      type: Schema.Types.ObjectId,
+    },
+    participantAge: {
+      type: Number,
     },
   },
   { timestamps: true },

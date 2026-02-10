@@ -2,10 +2,15 @@ import { Request, Response } from "express";
 import {
   getUserById,
   googleLogin,
+  graduateDependent,
   loginUser,
   registerUser,
   requestPasswordReset,
   resetPassword,
+  addDependent,
+  updateDependent,
+  deleteDependent,
+  updateProfile,
 } from "../services/AuthService";
 import { generateToken } from "../utils/jwt";
 
@@ -128,7 +133,9 @@ export const getProfile = async (
         email: user.email,
         phone: user.phone,
         role: user.role,
+        dob: user.dob,
         venueListerProfile: user.venueListerProfile,
+        dependents: user.dependents,
       },
     });
   } catch (error) {
@@ -136,6 +143,51 @@ export const getProfile = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch profile",
+    });
+  }
+};
+
+export const updateProfileHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { name, email, phone, dob } = req.body;
+
+    const updatedUser = await updateProfile(req.user.id, {
+      name,
+      email,
+      phone,
+      dob,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+        dob: updatedUser.dob,
+        venueListerProfile: updatedUser.venueListerProfile,
+        dependents: updatedUser.dependents,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update profile",
     });
   }
 };
@@ -226,6 +278,152 @@ export const googleAuth = async (
     res.status(400).json({
       success: false,
       message: error instanceof Error ? error.message : "Google login failed",
+    });
+  }
+};
+
+export const graduateDependentHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { dependentId, email, password, phone } = req.body;
+
+    const newUser = await graduateDependent({
+      parentId: req.user.id,
+      dependentId,
+      email,
+      password,
+      phone,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Dependent graduated to independent user successfully",
+      data: {
+        user: {
+          id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          phone: newUser.phone,
+          role: newUser.role,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Graduation failed",
+    });
+  }
+};
+
+export const addDependentHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const dependent = await addDependent(req.user.id, req.body);
+
+    res.status(201).json({
+      success: true,
+      message: "Dependent added successfully",
+      data: dependent,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to add dependent",
+    });
+  }
+};
+
+export const updateDependentHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { dependentId } = req.params;
+    if (!dependentId || typeof dependentId !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid dependent ID",
+      });
+      return;
+    }
+    const dependent = await updateDependent(req.user.id, dependentId, req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "Dependent updated successfully",
+      data: dependent,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update dependent",
+    });
+  }
+};
+
+export const deleteDependentHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { dependentId } = req.params;
+    if (!dependentId || typeof dependentId !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid dependent ID",
+      });
+      return;
+    }
+    await deleteDependent(req.user.id, dependentId);
+
+    res.status(200).json({
+      success: true,
+      message: "Dependent deleted successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to delete dependent",
     });
   }
 };

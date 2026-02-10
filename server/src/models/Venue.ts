@@ -1,6 +1,13 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation } from "../types";
 
+export interface VenueCoach {
+  name: string;
+  sport: string;
+  hourlyRate: number;
+  bio?: string;
+}
+
 export interface VenueDocument extends Document {
   // Venue Lister Contact Info
   ownerName: string;
@@ -26,6 +33,8 @@ export interface VenueDocument extends Document {
   reviewNotes?: string;
   rating: number;
   reviewCount: number;
+  hasCoaches: boolean;
+  venueCoaches: VenueCoach[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -132,6 +141,31 @@ const venueSchema = new Schema<VenueDocument>(
       enum: ["PENDING", "APPROVED", "REJECTED", "REVIEW"],
       default: "PENDING",
     },
+    hasCoaches: {
+      type: Boolean,
+      default: false,
+    },
+    venueCoaches: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+        sport: {
+          type: String,
+          required: true,
+        },
+        hourlyRate: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        bio: {
+          type: String,
+          optional: true,
+        },
+      },
+    ],
     documents: [
       {
         type: {

@@ -1,13 +1,13 @@
-"use client";
+﻿"use client";
 
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion } from "framer-motion";
 import { LayoutDashboard, LogOut, Menu, Settings, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { Button } from "../ui/Button";
+import { Button } from "@/modules/shared/ui/Button";
 
 export interface NavProps {
   variant?: "light" | "dark";

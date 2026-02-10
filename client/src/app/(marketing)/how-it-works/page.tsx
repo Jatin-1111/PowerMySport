@@ -1,13 +1,14 @@
 ﻿"use client";
 
-import { CTA } from "@/components/marketing/CTA";
-import { Hero } from "@/components/marketing/Hero";
+import { CTA } from "@/modules/marketing/components/marketing/CTA";
+import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import {
   Card,
   CardContent,
   CardDescription,
   CardTitle,
-} from "@/components/ui/Card";
+} from "@/modules/shared/ui/Card";
+import { CheckCircle, CreditCard, MapPin, Play, UserPlus } from "lucide-react";
 
 export default function HowItWorksPage() {
   return (
@@ -49,22 +50,33 @@ export default function HowItWorksPage() {
                 </p>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Simple registration with email or Google</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Complete your profile with basic information</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Verify your account via email</span>
                   </li>
                 </ul>
               </div>
               <div className="order-1 lg:order-2">
                 <div className="bg-linear-to-br from-orange-100 to-orange-200 rounded-2xl p-12 text-center">
-                  <div className="text-6xl mb-4">👤</div>
+                  <div className="text-6xl mb-4 flex justify-center">
+                    <UserPlus size={60} className="text-orange-600" />
+                  </div>
                   <p className="text-xl font-semibold text-deep-slate">
                     Account Registration
                   </p>
@@ -76,7 +88,9 @@ export default function HowItWorksPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               <div className="order-1">
                 <div className="bg-linear-to-br from-blue-100 to-blue-200 rounded-2xl p-12 text-center">
-                  <div className="text-6xl mb-4">🔍</div>
+                  <div className="text-6xl mb-4 flex justify-center">
+                    <MapPin size={60} className="text-blue-600" />
+                  </div>
                   <p className="text-xl font-semibold text-deep-slate">
                     Search & Discover
                   </p>
@@ -96,19 +110,31 @@ export default function HowItWorksPage() {
                 </p>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Filter by sport, city, and neighborhood</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Check real-time availability</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>View venue details, photos, and amenities</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>See optional coach availability at venues</span>
                   </li>
                 </ul>
@@ -131,26 +157,40 @@ export default function HowItWorksPage() {
                 </p>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Choose date, time, and duration</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Optionally add coach booking</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>See transparent pricing breakdown</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Secure payment with instant confirmation</span>
                   </li>
                 </ul>
               </div>
               <div className="order-1 lg:order-2">
                 <div className="bg-linear-to-br from-green-100 to-green-200 rounded-2xl p-12 text-center">
-                  <div className="text-6xl mb-4">💳</div>
+                  <div className="text-6xl mb-4 flex justify-center">
+                    <CreditCard size={60} className="text-green-600" />
+                  </div>
                   <p className="text-xl font-semibold text-deep-slate">
                     Secure Payment
                   </p>
@@ -162,7 +202,12 @@ export default function HowItWorksPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
               <div className="order-1">
                 <div className="bg-linear-to-br from-purple-100 to-purple-200 rounded-2xl p-12 text-center">
-                  <div className="text-6xl mb-4">🎾</div>
+                  <div className="text-6xl mb-4 flex justify-center">
+                    <Play
+                      size={60}
+                      className="text-purple-600 fill-purple-600"
+                    />
+                  </div>
                   <p className="text-xl font-semibold text-deep-slate">
                     Play & Enjoy
                   </p>
@@ -181,19 +226,31 @@ export default function HowItWorksPage() {
                 </p>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Receive instant booking confirmation email</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Get QR code for check-in</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Show QR code at venue entrance</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-turf-green mr-2">✓</span>
+                    <CheckCircle
+                      size={20}
+                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                    />
                     <span>Enjoy your game!</span>
                   </li>
                 </ul>
@@ -416,5 +473,3 @@ export default function HowItWorksPage() {
     </main>
   );
 }
-
-

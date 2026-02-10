@@ -582,3 +582,63 @@ export const markVenueForReviewHandler = async (
     });
   }
 };
+
+/**
+ * STEP 5: Add in-house coaches to venue
+ * POST /api/venues/onboarding/step5/coaches
+ * Body: { venueId, coaches }
+ */
+export const addVenueCoaches = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { venueId, coaches } = req.body;
+
+    if (!venueId) {
+      res.status(400).json({
+        success: false,
+        message: "Venue ID is required",
+      });
+      return;
+    }
+
+    const { Venue } = require("../models/Venue");
+
+    // Update venue with coaches
+    const venue = await Venue.findByIdAndUpdate(
+      venueId,
+      {
+        hasCoaches: coaches && coaches.length > 0,
+        venueCoaches: coaches || [],
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Venue coaches saved successfully",
+      data: {
+        venueId: venue._id,
+        hasCoaches: venue.hasCoaches,
+        coachCount: venue.venueCoaches?.length || 0,
+        approvalStatus: venue.approvalStatus,
+        nextStep: "Onboarding completed! Awaiting admin approval.",
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to save coaches",
+    });
+  }
+};

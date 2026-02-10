@@ -1,10 +1,7 @@
-import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+﻿import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
-/**
- * Global Footer component for all pages
- */
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
@@ -21,7 +18,7 @@ export const Footer: React.FC = () => {
     services: {
       title: "Services",
       links: [
-        { label: "Book Venues", href: "/register?role=PLAYER" },
+        { label: "Book Venues", href: "/venues" },
         { label: "List Your Venue", href: "/onboarding" },
         { label: "Become a Coach", href: "/register?role=COACH" },
         { label: "Services", href: "/services" },
@@ -30,7 +27,6 @@ export const Footer: React.FC = () => {
     support: {
       title: "Support",
       links: [
-        { label: "Help Center", href: "/help" },
         { label: "FAQ", href: "/faq" },
         { label: "Terms of Service", href: "/terms" },
         { label: "Privacy Policy", href: "/privacy" },
@@ -120,7 +116,7 @@ export const Footer: React.FC = () => {
         <div className="border-t border-gray-700 pt-8 mt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-sm text-white/60">
-              © {currentYear} PowerMySport. All rights reserved.
+              (c) {currentYear} PowerMySport. All rights reserved.
             </p>
             <div className="flex space-x-6">
               <Link
@@ -134,12 +130,6 @@ export const Footer: React.FC = () => {
                 className="text-sm text-gray-400 hover:text-power-orange transition-colors"
               >
                 Terms of Service
-              </Link>
-              <Link
-                href="/cookies"
-                className="text-sm text-gray-400 hover:text-power-orange transition-colors"
-              >
-                Cookie Policy
               </Link>
             </div>
           </div>

@@ -1,41 +1,44 @@
 ﻿"use client";
 
-import { CTA } from "@/components/marketing/CTA";
-import { FeatureIcons, Features } from "@/components/marketing/Features";
-import { Hero } from "@/components/marketing/Hero";
+import { CTA } from "@/modules/marketing/components/marketing/CTA";
+import {
+  FeatureIcons,
+  Features,
+} from "@/modules/marketing/components/marketing/Features";
+import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import {
   Card,
   CardContent,
   CardDescription,
   CardTitle,
-} from "@/components/ui/Card";
-import { Check } from "lucide-react";
+} from "@/modules/shared/ui/Card";
+import { Check, QrCode, Bell, BarChart3 } from "lucide-react";
 
 export default function ServicesPage() {
   // Main services for players
   const playerServices = [
     {
-      title: "Venue Booking",
+      title: "Premium Venue Booking",
       description:
-        "Search and book sports venues with real-time availability. From badminton courts to cricket grounds, find the perfect facility near you.",
+        "Browse and instantly book from thousands of verified sports venues nationwide. Real-time availability, transparent pricing, and verified facility details. Book badminton courts, cricket grounds, football fields, and more.",
       icon: FeatureIcons.Location,
     },
     {
-      title: "Coach Booking",
+      title: "Professional Coach Booking",
       description:
-        "Connect with certified coaches for personalized training. Book lessons alongside your venue bookings for seamless sessions.",
+        "Connect with certified coaches offering personalized training. Book coaching lessons at your chosen venue or their facility. Add coaches to your venue booking for integrated sessions.",
       icon: FeatureIcons.Users,
     },
     {
-      title: "Flexible Scheduling",
+      title: "Manage Kids' Sports Activities",
       description:
-        "Book by the hour with flexible time slots. See available times instantly and reschedule easily when plans change.",
-      icon: FeatureIcons.Calendar,
+        "Add unlimited dependents (children) to your account. Manage each child's profile, sports interests, and bookings separately. Track progress and coordinate all their training sessions in one place.",
+      icon: FeatureIcons.Users,
     },
     {
-      title: "Secure Payments",
+      title: "Secure Integrated Payments",
       description:
-        "Pay safely with our integrated payment system. Transparent pricing with automated split payments to venues and coaches.",
+        "Pay securely with automatic split payments to venues and coaches. Transparent pricing breakdown, no hidden fees, and instant booking confirmations via email and SMS.",
       icon: FeatureIcons.CreditCard,
     },
   ];
@@ -43,27 +46,27 @@ export default function ServicesPage() {
   // Services for venue owners
   const venueOwnerFeatures = [
     {
-      title: "Online Booking Management",
+      title: "Booking Management Dashboard",
       description:
-        "Comprehensive dashboard to manage all bookings, track revenue, and monitor facility usage in real-time.",
+        "Comprehensive real-time dashboard showing all bookings, occupancy rates, and revenue. Manage slots, set dynamic pricing, and track facility utilization across all courts/fields.",
       icon: FeatureIcons.Chart,
     },
     {
-      title: "Automated Scheduling",
+      title: "Coach Integration Programs",
       description:
-        "Set up your availability once and let the system handle bookings automatically. No more phone calls or manual updates.",
+        "List certified coaches on your venue profile. Enable combo bookings (venue + coach) to attract more players and increase average revenue per booking.",
       icon: FeatureIcons.Lightning,
     },
     {
-      title: "Payment Processing",
+      title: "Automated Payment System",
       description:
-        "Receive payments directly with automatic settlement. Track earnings with detailed financial reports.",
+        "Receive instant payouts after each booking. Automatic settlement with transparent breakdowns. No payment delays or manual processing needed.",
       icon: FeatureIcons.Shield,
     },
     {
-      title: "Marketing Exposure",
+      title: "Marketing & Visibility",
       description:
-        "Get discovered by thousands of players searching for venues. Boost your bookings with our growing user base.",
+        "Get discovered by thousands of players searching on PowerMySport. Featured listings, reviews, and ratings help you stand out and attract more bookings.",
       icon: FeatureIcons.Star,
     },
   ];
@@ -71,24 +74,24 @@ export default function ServicesPage() {
   // Coach services
   const coachFeatures = [
     {
-      title: "Profile & Portfolio",
+      title: "Professional Coaching Profile",
       description:
-        "Showcase your credentials, experience, certifications, and coaching style to attract serious athletes.",
+        "Showcase your credentials, experience, certifications, and specialties. Set your coaching rates, availability, and service areas to attract serious students.",
     },
     {
-      title: "Flexible Service Models",
+      title: "Venue Partnership Integration",
       description:
-        "Offer coaching at your own venue, as a freelancer at any facility, or both—whatever fits your style.",
+        "Partner with premium venues to offer coaching sessions. Tap into venues' existing player base and increase your client reach exponentially.",
     },
     {
-      title: "Client Management",
+      title: "Session Management System",
       description:
-        "Manage your coaching sessions, track student progress, and maintain session history all in one place.",
+        "Manage all coaching sessions, track student progress, maintain learning history, and schedule follow-ups all in one platform.",
     },
     {
-      title: "Revenue Tracking",
+      title: "Automated Revenue Tracking",
       description:
-        "Monitor your earnings with detailed reports. Get paid automatically after each coaching session.",
+        "Monitor earnings in real-time with detailed reports. Get paid automatically after each coaching session with transparent commission structures.",
     },
   ];
 
@@ -134,47 +137,161 @@ export default function ServicesPage() {
             ))}
           </div>
 
+          {/* Venue + Coach Combo Booking */}
+          <div className="bg-gradient-to-r from-indigo-600 to-power-orange rounded-2xl p-8 md:p-12 mb-8 text-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div>
+                <h3 className="text-3xl font-bold mb-4">
+                  Premium Combo: Venue + Coach
+                </h3>
+                <p className="text-lg text-white/90 mb-6">
+                  Book a venue and professional coach in one seamless
+                  transaction. Get the complete sports experience with facility
+                  access and personalized training.
+                </p>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3">
+                    <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
+                      ✓
+                    </span>
+                    <span>Find venues with available coaches</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
+                      ✓
+                    </span>
+                    <span>Book both in one transaction</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
+                      ✓
+                    </span>
+                    <span>Get specialized training + premium facility</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
+                      ✓
+                    </span>
+                    <span>Perfect for beginners & serious athletes</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-white/10 rounded-xl p-6">
+                <p className="text-white/80 text-center mb-4">
+                  Combo Booking Flow
+                </p>
+                <div className="space-y-3">
+                  <div className="bg-white/20 rounded-lg p-4 text-center font-semibold">
+                    1. Select Venue
+                  </div>
+                  <div className="text-center text-2xl">↓</div>
+                  <div className="bg-white/20 rounded-lg p-4 text-center font-semibold">
+                    2. Choose Coach
+                  </div>
+                  <div className="text-center text-2xl">↓</div>
+                  <div className="bg-white/20 rounded-lg p-4 text-center font-semibold">
+                    3. Single Payment
+                  </div>
+                  <div className="text-center text-2xl">↓</div>
+                  <div className="bg-turf-green rounded-lg p-4 text-center font-bold">
+                    Start Training!
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* How it works for players */}
           <div className="bg-linear-to-br from-orange-50 to-orange-100 rounded-2xl p-8 md:p-12">
             <h3 className="text-2xl font-bold text-deep-slate mb-6 text-center">
-              How It Works for Players
+              Three Ways to Book on PowerMySport
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-power-orange text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">
-                  1
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl p-8 border-2 border-power-orange shadow-md hover:shadow-lg transition-shadow">
+                <div className="inline-block bg-power-orange text-white px-3 py-1 rounded-full text-xs font-bold mb-4">
+                  OPTION 1
                 </div>
-                <p className="font-semibold text-deep-slate mb-1">
-                  Create Account
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Sign up as a player
-                </p>
+                <h4 className="text-lg font-bold text-deep-slate mb-6">
+                  Venue Booking
+                </h4>
+                <ul className="space-y-3 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-3">
+                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      1
+                    </span>
+                    <span>Search venues by sport</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      2
+                    </span>
+                    <span>Check availability</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      3
+                    </span>
+                    <span>Book & play</span>
+                  </li>
+                </ul>
               </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-power-orange text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">
-                  2
+
+              <div className="bg-white rounded-xl p-8 border-2 border-turf-green shadow-md hover:shadow-lg transition-shadow">
+                <div className="inline-block bg-turf-green text-white px-3 py-1 rounded-full text-xs font-bold mb-4">
+                  OPTION 2
                 </div>
-                <p className="font-semibold text-deep-slate mb-1">Search</p>
-                <p className="text-sm text-muted-foreground">
-                  Find venues & coaches
-                </p>
+                <h4 className="text-lg font-bold text-deep-slate mb-6">
+                  Coach Booking
+                </h4>
+                <ul className="space-y-3 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-3">
+                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      1
+                    </span>
+                    <span>Find coaches near you</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      2
+                    </span>
+                    <span>Check their availability</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      3
+                    </span>
+                    <span>Book training session</span>
+                  </li>
+                </ul>
               </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-power-orange text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">
-                  3
+
+              <div className="bg-white rounded-xl p-8 border-2 border-indigo-600 shadow-md hover:shadow-lg transition-shadow">
+                <div className="inline-block bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold mb-4">
+                  OPTION 3 ⭐
                 </div>
-                <p className="font-semibold text-deep-slate mb-1">Book</p>
-                <p className="text-sm text-muted-foreground">
-                  Select time & pay
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-power-orange text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">
-                  4
-                </div>
-                <p className="font-semibold text-deep-slate mb-1">Play</p>
-                <p className="text-sm text-muted-foreground">Show QR & enjoy</p>
+                <h4 className="text-lg font-bold text-deep-slate mb-6">
+                  Combo Booking
+                </h4>
+                <ul className="space-y-3 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-3">
+                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      1
+                    </span>
+                    <span>Search venue + coach</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      2
+                    </span>
+                    <span>One unified checkout</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      3
+                    </span>
+                    <span>Complete experience</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -260,38 +377,50 @@ export default function ServicesPage() {
       </section>
 
       {/* Additional Services */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-linear-to-br from-deep-slate to-slate-800 text-white">
+      <section className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
               Additional Features
             </h2>
-            <p className="text-lg text-white/90 max-w-3xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               More ways we add value to your sports experience
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="text-4xl mb-4">📱</div>
-              <h3 className="text-xl font-bold mb-2">Mobile QR Codes</h3>
-              <p className="text-white/90">
+            <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <QrCode size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
+                Mobile QR Codes
+              </h3>
+              <p className="text-sm text-muted-foreground text-center">
                 Digital check-in with QR codes. No paperwork, no hassle.
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="text-4xl mb-4">🔔</div>
-              <h3 className="text-xl font-bold mb-2">Smart Notifications</h3>
-              <p className="text-white/90">
+            <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-power-orange/10 text-power-orange rounded-full flex items-center justify-center mb-6 mx-auto">
+                <Bell size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
+                Smart Notifications
+              </h3>
+              <p className="text-sm text-muted-foreground text-center">
                 Booking reminders, availability alerts, and session updates.
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-xl font-bold mb-2">Analytics Dashboard</h3>
-              <p className="text-white/90">
+            <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
+              <div className="w-16 h-16 bg-turf-green/10 text-turf-green rounded-full flex items-center justify-center mb-6 mx-auto">
+                <BarChart3 size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
+                Analytics Dashboard
+              </h3>
+              <p className="text-sm text-muted-foreground text-center">
                 Track your bookings, spending, and sports activity over time.
               </p>
             </div>
@@ -316,5 +445,3 @@ export default function ServicesPage() {
     </main>
   );
 }
-
-

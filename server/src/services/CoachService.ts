@@ -1,6 +1,8 @@
 import { Booking } from "../models/Booking";
 import { Coach, CoachDocument } from "../models/Coach";
-import { ICoach, ServiceMode } from "../types";
+import mongoose from "mongoose";
+import { Venue } from "../models/Venue";
+import { ICoach, ServiceMode, IGeoLocation } from "../types";
 
 export interface CreateCoachPayload {
   userId: string;
@@ -17,18 +19,74 @@ export interface CreateCoachPayload {
     startTime: string;
     endTime: string;
   }>;
+  venueDetails?: {
+    name: string;
+    address: string;
+    location: IGeoLocation;
+    sports?: string[];
+    pricePerHour?: number;
+    amenities?: string[];
+    description?: string;
+    allowExternalCoaches?: boolean;
+  };
 }
 
 /**
  * Create a new coach profile
+ * Supports automatic "Ghost Venue" creation for OWN_VENUE coaches
  */
 export const createCoach = async (
   payload: CreateCoachPayload,
 ): Promise<CoachDocument> => {
-  // Validation is handled by the Coach model's pre-save hook
-  const coach = new Coach(payload);
-  await coach.save();
-  return coach;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    let venueId = payload.venueId;
+
+    // Auto-create "Ghost Venue" if coach has OWN_VENUE mode without a venueId
+    if (
+      payload.serviceMode === "OWN_VENUE" &&
+      !venueId &&
+      payload.venueDetails
+    ) {
+      // Create the venue automatically
+      const venue = new Venue({
+        name: payload.venueDetails.name,
+        ownerId: payload.userId,
+        location: payload.venueDetails.location,
+        address: payload.venueDetails.address,
+        sports: payload.venueDetails.sports || payload.sports,
+        pricePerHour: payload.venueDetails.pricePerHour || payload.hourlyRate,
+        amenities: payload.venueDetails.amenities || [],
+        description: payload.venueDetails.description || "",
+        allowExternalCoaches: payload.venueDetails.allowExternalCoaches ?? true,
+        openingHours: "09:00-17:00", // Default opening hours
+        images: [],
+        approvalStatus: "PENDING",
+      });
+
+      await venue.save({ session });
+      venueId = venue._id.toString();
+    }
+
+    // Create the coach profile with the venue ID (either provided or auto-created)
+    const coach = new Coach({
+      ...payload,
+      venueId,
+    });
+
+    // Validation is handled by the Coach model's pre-save hook
+    await coach.save({ session });
+
+    await session.commitTransaction();
+    return coach;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
 };
 
 /**

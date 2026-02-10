@@ -10,10 +10,19 @@ export interface UserDocument extends Document {
   password?: string;
   googleId?: string;
   photoUrl?: string;
+  dob?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   playerProfile?: IPlayerProfile;
   venueListerProfile?: IVenueListerProfile;
+  dependents: Array<{
+    _id?: mongoose.Types.ObjectId;
+    name: string;
+    dob: Date;
+    gender?: "MALE" | "FEMALE" | "OTHER";
+    relation?: string;
+    sports?: string[];
+  }>;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -90,6 +99,9 @@ const userSchema = new Schema<UserDocument>(
     photoUrl: {
       type: String,
     },
+    dob: {
+      type: Date,
+    },
     resetPasswordToken: {
       type: String,
       select: false,
@@ -98,6 +110,27 @@ const userSchema = new Schema<UserDocument>(
       type: Date,
       select: false,
     },
+    dependents: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+        dob: {
+          type: Date,
+          required: true,
+        },
+        gender: {
+          type: String,
+          enum: ["MALE", "FEMALE", "OTHER"],
+        },
+        relation: {
+          type: String,
+          default: "CHILD",
+        },
+        sports: [String],
+      },
+    ],
   },
   { timestamps: true },
 );

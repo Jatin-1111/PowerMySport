@@ -2,13 +2,13 @@ import { Request, Response } from "express";
 import { User } from "../models/User";
 import { findCoachesNearby, getAllCoaches } from "../services/CoachService";
 import {
-    createVenue,
-    deleteVenue,
-    findVenuesNearby,
-    getAllVenues,
-    getVenueById,
-    getVenuesByOwner,
-    updateVenue,
+  createVenue,
+  deleteVenue,
+  findVenuesNearby,
+  getAllVenues,
+  getVenueById,
+  getVenuesByOwner,
+  updateVenue,
 } from "../services/VenueService";
 
 export const createNewVenue = async (
@@ -24,7 +24,7 @@ export const createNewVenue = async (
       return;
     }
 
-    // Check if user is venue lister and has permission to add more venues
+    // Check venue creation permissions based on role
     if (req.user.role === "VENUE_LISTER") {
       const user = await User.findById(req.user.id);
 
@@ -46,6 +46,7 @@ export const createNewVenue = async (
         return;
       }
     }
+    // Coaches can create their single academy venue without restrictions
 
     const venue = await createVenue({
       ...req.body,
@@ -106,8 +107,8 @@ export const getMyVenues = async (
       return;
     }
 
-    const page = parseInt(req.query.page as string || "1", 10);
-    const limit = parseInt(req.query.limit as string || "20", 10);
+    const page = parseInt((req.query.page as string) || "1", 10);
+    const limit = parseInt((req.query.limit as string) || "20", 10);
 
     const result = await getVenuesByOwner(req.user.id, page, limit);
 
@@ -145,10 +146,10 @@ export const discoverNearby = async (
     // If no location provided, return all venues and coaches (Universal Feed)
     // If no location provided, return all venues and coaches (Universal Feed)
     if (!lat || !lng) {
-      const page = parseInt(req.query.page as string || "1", 10);
-      const limit = parseInt(req.query.limit as string || "20", 10);
+      const page = parseInt((req.query.page as string) || "1", 10);
+      const limit = parseInt((req.query.limit as string) || "20", 10);
       const venueFilters = sportFilter ? { sports: [sportFilter] } : {};
-      
+
       const [venuesResult, coaches] = await Promise.all([
         getAllVenues(venueFilters, page, limit),
         getAllCoaches(sportFilter),
@@ -177,11 +178,18 @@ export const discoverNearby = async (
     const radiusMeters = radius ? parseInt(radius as string, 10) : 5000;
 
     // Search for venues and coaches in parallel
-    const page = parseInt(req.query.page as string || "1", 10);
-    const limit = parseInt(req.query.limit as string || "20", 10);
+    const page = parseInt((req.query.page as string) || "1", 10);
+    const limit = parseInt((req.query.limit as string) || "20", 10);
 
     const [venuesResult, coaches] = await Promise.all([
-      findVenuesNearby(latitude, longitude, radiusMeters, sportFilter, page, limit),
+      findVenuesNearby(
+        latitude,
+        longitude,
+        radiusMeters,
+        sportFilter,
+        page,
+        limit,
+      ),
       findCoachesNearby(latitude, longitude, radiusMeters / 1000, sportFilter), // Convert to km
     ]);
 
@@ -224,9 +232,9 @@ export const searchVenues = async (
         ? (sports as string[])
         : [sports as string];
     }
-    
-    const page = parseInt(queryPage as string || "1", 10);
-    const limit = parseInt(queryLimit as string || "20", 10);
+
+    const page = parseInt((queryPage as string) || "1", 10);
+    const limit = parseInt((queryLimit as string) || "20", 10);
 
     const result = await getAllVenues(filters, page, limit);
 

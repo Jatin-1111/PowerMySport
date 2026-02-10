@@ -1,8 +1,8 @@
 ﻿"use client";
 
-import { Hero } from "@/components/marketing/Hero";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Hero } from "@/modules/marketing/components/marketing/Hero";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
 import {
   Facebook,
   Instagram,
@@ -92,7 +92,7 @@ export default function ContactPage() {
               {submitStatus === "success" && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-green-800 font-medium">
-                    ✓ Message sent successfully! We&apos;ll be in touch soon.
+                    ? Message sent successfully! We&apos;ll be in touch soon.
                   </p>
                 </div>
               )}
@@ -100,7 +100,7 @@ export default function ContactPage() {
               {submitStatus === "error" && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-red-800 font-medium">
-                    ✗ Something went wrong. Please try again.
+                    ? Something went wrong. Please try again.
                   </p>
                 </div>
               )}
@@ -256,7 +256,7 @@ export default function ContactPage() {
                         <Mail className="h-6 w-6 text-power-orange" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-semibold mb-1">Email</h3>
+                        <h3 className="text-lg font-semibold mb-1 text-white">Email</h3>
                         <p className="text-muted-foreground">
                           General Inquiries:{" "}
                           <a
@@ -288,7 +288,7 @@ export default function ContactPage() {
                         <Phone className="h-6 w-6 text-power-orange" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-semibold mb-1">Phone</h3>
+                        <h3 className="text-lg font-semibold mb-1 text-white">Phone</h3>
                         <p className="text-muted-foreground">
                           Customer Support:{" "}
                           <a
@@ -314,7 +314,7 @@ export default function ContactPage() {
                         <MapPin className="h-6 w-6 text-power-orange" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-semibold mb-1">
+                        <h3 className="text-lg font-semibold mb-1 text-white">
                           Office Address
                         </h3>
                         <p className="text-muted-foreground">
@@ -334,7 +334,7 @@ export default function ContactPage() {
                 {/* Social Media */}
                 <Card variant="elevated">
                   <CardContent className="pt-6">
-                    <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
+                    <h3 className="text-lg font-semibold mb-4 text-white">Follow Us</h3>
                     <div className="flex space-x-4">
                       <a
                         href="#"
@@ -406,5 +406,4 @@ export default function ContactPage() {
     </main>
   );
 }
-
 

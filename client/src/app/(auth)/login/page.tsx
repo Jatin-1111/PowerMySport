@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
-import { authApi } from "@/lib/auth";
-import { useAuthStore } from "@/store/authStore";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
+import { authApi } from "@/modules/auth/services/auth";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
@@ -116,8 +116,10 @@ export default function LoginPage() {
     >
       <Card className="max-w-md w-full">
         <CardHeader>
-          <h1 className="text-3xl font-bold text-center">Welcome Back</h1>
-          <p className="text-center mt-2">
+          <h1 className="text-3xl font-bold text-center text-white">
+            Welcome Back
+          </h1>
+          <p className="text-center mt-2 text-white">
             Sign in to continue to PowerMySport
           </p>
         </CardHeader>
@@ -125,7 +127,9 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
+              <label className="block text-sm font-medium mb-2 text-white">
+                Email
+              </label>
               <input
                 type="email"
                 name="email"
@@ -142,7 +146,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
+              <label className="block text-sm font-medium mb-2 text-white">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -204,7 +210,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <p className="text-center mt-6">
+          <p className="text-center mt-6 text-white">
             Don&apos;t have an account?{" "}
             <Link
               href="/register"
@@ -218,5 +224,4 @@ export default function LoginPage() {
     </GoogleOAuthProvider>
   );
 }
-
 

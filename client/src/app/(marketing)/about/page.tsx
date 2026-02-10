@@ -1,9 +1,12 @@
 ﻿"use client";
 
-import { CTA } from "@/components/marketing/CTA";
-import { FeatureIcons, Features } from "@/components/marketing/Features";
-import { Hero } from "@/components/marketing/Hero";
-import { Stats } from "@/components/marketing/Stats";
+import { CTA } from "@/modules/marketing/components/marketing/CTA";
+import {
+  FeatureIcons,
+  Features,
+} from "@/modules/marketing/components/marketing/Features";
+import { Hero } from "@/modules/marketing/components/marketing/Hero";
+import { Stats } from "@/modules/marketing/components/marketing/Stats";
 
 export default function AboutPage() {
   // Core values
@@ -192,7 +195,7 @@ export default function AboutPage() {
               </p>
               <p className="text-lg text-muted-foreground">
                 Join us on this journey to make India a more active, healthier
-                nation—one booking at a time.
+                nation - one booking at a time.
               </p>
             </div>
 
@@ -249,4 +252,3 @@ export default function AboutPage() {
     </main>
   );
 }
-
