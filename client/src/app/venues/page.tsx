@@ -14,13 +14,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function VenuesPage() {
   const [loading, setLoading] = useState(true);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [filteredVenues, setFilteredVenues] = useState<Venue[]>([]);
   const [sportFilter, setSportFilter] = useState("");
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     loadVenues();
@@ -53,10 +54,6 @@ export default function VenuesPage() {
     } else {
       setFilteredVenues(venues);
     }
-  };
-
-  const handleBookClick = () => {
-    setShowLoginModal(true);
   };
 
   const getDisplayPrice = (venue: Venue) => {
@@ -178,7 +175,9 @@ export default function VenuesPage() {
                     <Button
                       className="w-full"
                       variant="primary"
-                      onClick={handleBookClick}
+                      onClick={() =>
+                        router.push(`/venues/${venue.id || venue._id}`)
+                      }
                     >
                       <span>Book Now</span>
                       <ArrowRight size={16} />
@@ -198,41 +197,6 @@ export default function VenuesPage() {
           )}
         </div>
       </div>
-
-      {/* Login Modal */}
-      {showLoginModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4 animate-in fade-in zoom-in-95 border border-slate-200">
-            <h2 className="text-2xl font-bold text-slate-900 mb-3">
-              Sign In to Book
-            </h2>
-            <p className="text-slate-600 mb-6">
-              Create an account or sign in to book this venue and start playing
-              today.
-            </p>
-
-            <div className="space-y-3 mb-4">
-              <Link href="/login">
-                <Button className="w-full" variant="primary">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/register?role=PLAYER">
-                <Button className="w-full" variant="outline">
-                  Create Account
-                </Button>
-              </Link>
-            </div>
-
-            <button
-              onClick={() => setShowLoginModal(false)}
-              className="w-full text-slate-600 hover:text-slate-900 font-medium py-2 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Continue Browsing
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

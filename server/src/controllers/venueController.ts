@@ -374,6 +374,12 @@ export const getVenueImageUploadUrls = async (
 
     for (let i = 0; i < files.length; i += 1) {
       const file = files[i];
+
+      // Type guard to ensure file exists
+      if (!file) {
+        continue;
+      }
+
       const field = `image_${i}`;
       const isCover = i === coverPhotoIndex;
       const uploadResponse = await s3Service.generateImageUploadUrl(

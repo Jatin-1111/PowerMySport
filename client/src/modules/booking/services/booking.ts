@@ -60,6 +60,20 @@ export const bookingApi = {
     return response.data;
   },
 
+  // Get coach availability
+  getCoachAvailability: async (
+    coachId: string,
+    date: string,
+  ): Promise<ApiResponse<Availability>> => {
+    const response = await axiosInstance.get(
+      `/coaches/availability/${coachId}`,
+      {
+        params: { date },
+      },
+    );
+    return response.data;
+  },
+
   // Cancel booking
   cancelBooking: async (bookingId: string): Promise<ApiResponse<null>> => {
     const response = await axiosInstance.delete(`/bookings/${bookingId}`);

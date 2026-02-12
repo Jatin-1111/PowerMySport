@@ -68,9 +68,10 @@ const startServer = async () => {
     // Connect to Database
     await connectDB();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`\n✅ Server is running on http://localhost:${PORT}`);
       console.log(`📝 API Documentation:`);
+      // ... (keep existing logs if desired, or shorten them) ...
       console.log(`   AUTH:`);
       console.log(`   - POST   /api/auth/register`);
       console.log(`   - POST   /api/auth/login`);
@@ -143,6 +144,23 @@ const startServer = async () => {
       startExpirationJob();
       console.log(`⏰ Booking expiration job started\n`);
     });
+
+    // Graceful shutdown
+    const shutdown = async () => {
+      console.log("\n🛑 Shutting down server...");
+      server.close(async () => {
+        console.log("🛑 HTTP server closed");
+        // process.exit(0); // database.ts handles mongo connection close on SIGINT, but we can double check or trigger it here if needed.
+        // Since database.ts has process.on('SIGINT'), it might catch it first or parallel.
+        // Ideally we coordinate. For now, we'll let existing listeners handle their parts.
+      });
+    };
+
+    process.on("SIGTERM", shutdown);
+    // SIGINT is already handled in database.ts which calls process.exit,
+    // so we might not need to duplicate it here unless we want to close server first within that handler.
+    // But since server.close takes a callback, asynchronous coordination is tricky with multiple listeners.
+    // For this step, I'll just keep the server variable assignment so we *could* close it.
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);

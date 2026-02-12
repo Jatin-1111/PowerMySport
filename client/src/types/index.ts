@@ -66,6 +66,7 @@ export interface IAvailability {
 }
 
 export interface Coach {
+  _id?: string;
   id: string;
   userId: string;
   bio: string;
@@ -92,6 +93,7 @@ export interface IGeoLocation {
 }
 
 export interface Venue {
+  _id?: string;
   id: string;
   name: string;
   ownerId: string;

@@ -28,4 +28,16 @@ export const discoveryApi = {
     });
     return response.data;
   },
+
+  // Get venue details by ID
+  getVenueById: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.get(`/venues/${id}`);
+    return response.data;
+  },
+
+  // Get coach details by ID
+  getCoachById: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.get(`/coaches/${id}`);
+    return response.data;
+  },
 };

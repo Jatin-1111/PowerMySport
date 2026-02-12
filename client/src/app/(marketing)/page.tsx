@@ -1,4 +1,4 @@
-﻿"use client";
+﻿import { useAuthStore } from "@/modules/auth/store/authStore";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import {
@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 
 export default function HomePage() {
+  const { user } = useAuthStore();
+
   // Features data
   const features = [
     {
@@ -107,6 +109,17 @@ export default function HomePage() {
     },
   ];
 
+  const getDashboardLink = () => {
+    if (!user) return "/register?role=PLAYER";
+    const dashboards = {
+      PLAYER: "/dashboard/my-bookings",
+      VENUE_LISTER: "/venue-lister/inventory",
+      COACH: "/coach/profile",
+      ADMIN: "/admin",
+    };
+    return dashboards[user.role] || "/dashboard/my-bookings";
+  };
+
   return (
     <main>
       {/* Hero Section */}
@@ -116,13 +129,20 @@ export default function HomePage() {
         subtitle="India's Premier Sports Booking Platform"
         description="Book badminton courts, cricket grounds, football fields, and connect with professional coaches. All in one platform."
         primaryCTA={{
-          label: "Start Booking Now",
-          href: "/register?role=PLAYER",
+          label: user ? "Go to Dashboard" : "Start Booking Now",
+          href: getDashboardLink(),
         }}
-        secondaryCTA={{
-          label: "List Your Venue",
-          href: "/onboarding",
-        }}
+        secondaryCTA={
+          user?.role === "VENUE_LISTER"
+            ? {
+                label: "Manage Venues",
+                href: "/venue-lister/inventory",
+              }
+            : {
+                label: user ? "Browse Venues" : "List Your Venue",
+                href: user ? "/venues" : "/onboarding",
+              }
+        }
         gradient
       />
 
@@ -264,150 +284,153 @@ export default function HomePage() {
         testimonials={testimonials}
       />
 
-      {/* Multi-Role CTA Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-r from-slate-900 to-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              Join PowerMySport Today
-            </h2>
-            <p className="text-lg text-slate-300">
-              Choose your role and unlock unlimited sports opportunities
-            </p>
+      {/* Multi-Role CTA Section - Only show if user is NOT logged in */}
+      {!user && (
+        <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-r from-slate-900 to-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Join PowerMySport Today
+              </h2>
+              <p className="text-lg text-slate-300">
+                Choose your role and unlock unlimited sports opportunities
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* ... (Previous Player/Venue/Coach cards content kept same) ... */}
+              {/* Player Card */}
+              <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200 flex flex-col">
+                <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6">
+                  <UserIcon size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
+                  Players & Parents
+                </h3>
+                <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
+                  <li className="flex items-start gap-3">
+                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Book premium venues instantly</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Find & book professional coaches</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Manage kids' sports activities</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Digital QR check-in</span>
+                  </li>
+                </ul>
+                <a
+                  href="/register?role=PLAYER"
+                  className="inline-block bg-power-orange text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors w-full text-center"
+                >
+                  Start Booking Now
+                </a>
+              </div>
+
+              {/* Venue Owner Card - Highlighted */}
+              <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow border-2 border-power-orange transform md:scale-105 flex flex-col relative">
+                <div className="absolute top-0 right-0 bg-power-orange text-white px-4 py-1 rounded-bl-lg rounded-tr-xl text-xs font-bold">
+                  FEATURED
+                </div>
+                <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Building2 size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
+                  Venue Owners
+                </h3>
+                <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
+                  <li className="flex items-start gap-3">
+                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Reach thousands of players</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Automated booking management</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Real-time availability tracking</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Instant payouts & analytics</span>
+                  </li>
+                </ul>
+                <a
+                  href="/onboarding"
+                  className="inline-block bg-power-orange text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors w-full text-center"
+                >
+                  List Your Venue
+                </a>
+              </div>
+
+              {/* Coach Card */}
+              <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200 flex flex-col">
+                <div className="w-16 h-16 bg-turf-green text-white rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Trophy size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
+                  Coaches & Trainers
+                </h3>
+                <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
+                  <li className="flex items-start gap-3">
+                    <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Build your coaching profile</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Connect with serious athletes</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Set your own rates & schedule</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
+                      ✓
+                    </span>
+                    <span>Grow your coaching business</span>
+                  </li>
+                </ul>
+                <a
+                  href="/register?role=COACH"
+                  className="inline-block bg-turf-green text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors w-full text-center"
+                >
+                  Become a Coach
+                </a>
+              </div>
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Player Card */}
-            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200 flex flex-col">
-              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6">
-                <UserIcon size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
-                Players & Parents
-              </h3>
-              <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
-                <li className="flex items-start gap-3">
-                  <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Book premium venues instantly</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Find & book professional coaches</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Manage kids' sports activities</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Digital QR check-in</span>
-                </li>
-              </ul>
-              <a
-                href="/register?role=PLAYER"
-                className="inline-block bg-power-orange text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors w-full text-center"
-              >
-                Start Booking Now
-              </a>
-            </div>
-
-            {/* Venue Owner Card - Highlighted */}
-            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow border-2 border-power-orange transform md:scale-105 flex flex-col relative">
-              <div className="absolute top-0 right-0 bg-power-orange text-white px-4 py-1 rounded-bl-lg rounded-tr-xl text-xs font-bold">
-                FEATURED
-              </div>
-              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6">
-                <Building2 size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
-                Venue Owners
-              </h3>
-              <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
-                <li className="flex items-start gap-3">
-                  <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Reach thousands of players</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Automated booking management</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Real-time availability tracking</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Instant payouts & analytics</span>
-                </li>
-              </ul>
-              <a
-                href="/onboarding"
-                className="inline-block bg-power-orange text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors w-full text-center"
-              >
-                List Your Venue
-              </a>
-            </div>
-
-            {/* Coach Card */}
-            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200 flex flex-col">
-              <div className="w-16 h-16 bg-turf-green text-white rounded-full flex items-center justify-center mx-auto mb-6">
-                <Trophy size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
-                Coaches & Trainers
-              </h3>
-              <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
-                <li className="flex items-start gap-3">
-                  <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Build your coaching profile</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Connect with serious athletes</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Set your own rates & schedule</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
-                    ✓
-                  </span>
-                  <span>Grow your coaching business</span>
-                </li>
-              </ul>
-              <a
-                href="/register?role=COACH"
-                className="inline-block bg-turf-green text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors w-full text-center"
-              >
-                Become a Coach
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Final CTA */}
       {/* Explore Section */}
@@ -456,11 +479,19 @@ export default function HomePage() {
 
       <CTA
         variant="gradient"
-        title="Ready to Power Your Sports Experience?"
-        description="Join thousands of players, venues, and coaches already using PowerMySport. Get started today!"
+        title={
+          user
+            ? "Ready for Your Next Game?"
+            : "Ready to Power Your Sports Experience?"
+        }
+        description={
+          user
+            ? "Book a venue or coach now and get back in the game!"
+            : "Join thousands of players, venues, and coaches already using PowerMySport. Get started today!"
+        }
         primaryCTA={{
-          label: "Get Started Free",
-          href: "/register",
+          label: user ? "Go to Dashboard" : "Get Started Free",
+          href: getDashboardLink(),
         }}
         secondaryCTA={{
           label: "Learn More",
