@@ -3,7 +3,6 @@ import { Booking, BookingDocument } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
-import { doTimesOverlap } from "../utils/booking";
 import {
   calculateSplitAmounts,
   generateMockPaymentLink,
@@ -200,11 +199,31 @@ export const initiateBooking = async (
       }
 
       coachPrice = hours * coach.hourlyRate;
-      coachUserId = (coach.userId as any)._id.toString();
+      // Handle both populated and non-populated userId
+      if (coach.userId) {
+        if (typeof coach.userId === "object" && "_id" in coach.userId) {
+          coachUserId = (coach.userId as any)._id.toString();
+        } else {
+          coachUserId = (coach.userId as any).toString();
+        }
+      }
     }
 
     // Calculate split payments
-    const venueOwnerId = (venue.ownerId as any)._id.toString();
+    // Handle both populated and non-populated ownerId
+    let venueOwnerId: string | null = null;
+    if (venue.ownerId) {
+      if (typeof venue.ownerId === "object" && "_id" in venue.ownerId) {
+        venueOwnerId = (venue.ownerId as any)._id.toString();
+      } else {
+        venueOwnerId = (venue.ownerId as any).toString();
+      }
+    }
+
+    if (!venueOwnerId) {
+      throw new Error("Venue owner not found");
+    }
+
     const payments = calculateSplitAmounts(
       venuePrice,
       venueOwnerId,

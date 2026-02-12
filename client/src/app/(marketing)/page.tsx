@@ -1,4 +1,5 @@
-﻿import { useAuthStore } from "@/modules/auth/store/authStore";
+﻿"use client";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import {
@@ -16,7 +17,6 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-
 export default function HomePage() {
   const { user } = useAuthStore();
 

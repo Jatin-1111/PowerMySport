@@ -1,12 +1,12 @@
 ﻿"use client";
 
+import { authApi } from "@/modules/auth/services/auth";
+import { bookingApi } from "@/modules/booking/services/booking";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { bookingApi } from "@/modules/booking/services/booking";
 import { venueApi } from "@/modules/venue/services/venue";
-import { authApi } from "@/modules/auth/services/auth";
-import { Venue, User } from "@/types";
+import { User, Venue } from "@/types";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -112,10 +112,13 @@ export default function BookVenuePage() {
     setIsSubmitting(true);
 
     try {
+      // Convert date to ISO datetime format
+      const bookingDate = new Date(bookingData.date).toISOString();
+
       const response = await bookingApi.initiateBooking({
         venueId,
         sport: bookingData.sport,
-        date: bookingData.date,
+        date: bookingDate,
         startTime: bookingData.startTime,
         endTime: bookingData.endTime,
         dependentId: bookingData.dependentId || undefined,

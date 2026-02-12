@@ -1,25 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { discoveryApi } from "@/modules/discovery/services/discovery";
-import { Coach, Availability } from "@/types";
+import { Navigation } from "@/components/layout/Navigation";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { bookingApi } from "@/modules/booking/services/booking";
+import { discoveryApi } from "@/modules/discovery/services/discovery";
+import PublicPageHeader from "@/modules/shared/components/PublicPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import PublicPageHeader from "@/modules/shared/components/PublicPageHeader";
+import { Availability, Coach } from "@/types";
 import {
-  Users,
+  Award,
   Calendar,
-  IndianRupee,
   Check,
-  User,
+  IndianRupee,
   Info,
   Star,
-  Award,
+  User,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
-import { bookingApi } from "@/modules/booking/services/booking";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function CoachDetailsPage() {
   const params = useParams();
@@ -100,11 +101,14 @@ export default function CoachDetailsPage() {
 
     setBookingLoading(true);
     try {
+      // Convert date to ISO datetime format
+      const bookingDate = new Date(selectedDate).toISOString();
+
       const response = await bookingApi.initiateBooking({
         venueId: coach?.venueId || "freelance", // Handle freelance or venue-based
         coachId: coachId,
         sport: selectedSport,
-        date: selectedDate,
+        date: bookingDate,
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
       });
@@ -144,6 +148,7 @@ export default function CoachDetailsPage() {
 
   return (
     <>
+      <Navigation variant="dark" sticky />
       <PublicPageHeader
         title={`${coach.sports[0]} Coach`}
         subtitle={`Train with a professional ${coach.sports.join(", ")} coach`}

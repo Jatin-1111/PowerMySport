@@ -1,25 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { discoveryApi } from "@/modules/discovery/services/discovery";
-import { Venue, Availability } from "@/types";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { bookingApi } from "@/modules/booking/services/booking";
+import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import PublicPageHeader from "@/modules/shared/components/PublicPageHeader";
+import { Availability, Venue } from "@/types";
 import {
-  Building2,
-  MapPin,
+  ArrowLeft,
   Calendar,
+  Check,
   Clock,
   IndianRupee,
-  Check,
-  User,
-  Info,
+  MapPin,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
-import { bookingApi } from "@/modules/booking/services/booking";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function VenueDetailsPage() {
   const params = useParams();
@@ -100,10 +98,13 @@ export default function VenueDetailsPage() {
 
     setBookingLoading(true);
     try {
+      // Convert date to ISO datetime format
+      const bookingDate = new Date(selectedDate).toISOString();
+
       const response = await bookingApi.initiateBooking({
         venueId,
         sport: selectedSport,
-        date: selectedDate,
+        date: bookingDate,
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
       });
@@ -125,7 +126,7 @@ export default function VenueDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen bg-slate-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-power-orange"></div>
       </div>
     );
@@ -133,87 +134,156 @@ export default function VenueDetailsPage() {
 
   if (!venue) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <h1 className="text-2xl font-bold mb-4">Venue not found</h1>
-        <Link href="/venues">
-          <Button variant="outline">Back to Venues</Button>
-        </Link>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="text-2xl font-bold text-slate-900">Venue not found</h1>
+          <p className="text-slate-600">
+            The venue you're looking for doesn't exist or has been removed.
+          </p>
+          <Link href="/venues">
+            <Button variant="primary">Browse All Venues</Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <PublicPageHeader
-        title={venue.name}
-        subtitle={venue.address || "Sports Venue"}
-        icon={Building2}
-      />
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Link href="/venues">
+            <Button variant="ghost" className="mb-4 -ml-2">
+              <ArrowLeft size={18} className="mr-2" />
+              Back to Venues
+            </Button>
+          </Link>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+            <div className="relative z-10">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex-1">
+                  <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+                    {venue.name}
+                  </h1>
+                  {venue.address && (
+                    <p className="text-slate-200 flex items-center gap-2 text-sm sm:text-base">
+                      <MapPin size={18} />
+                      {venue.address}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-4 mt-4">
+                    <div className="flex items-center gap-1">
+                      <Star
+                        size={18}
+                        className="text-yellow-400 fill-yellow-400"
+                      />
+                      <span className="font-semibold">
+                        {venue.rating?.toFixed(1) || "5.0"}
+                      </span>
+                      <span className="text-slate-300 text-sm">
+                        ({venue.reviewCount || 0} reviews)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-xs uppercase tracking-wide text-slate-300 mb-1">
+                    Starting from
+                  </p>
+                  <div className="flex items-center justify-end gap-1 text-3xl font-bold text-power-orange">
+                    <IndianRupee size={24} />
+                    {venue.pricePerHour}
+                    <span className="text-sm text-slate-300">/hr</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-turf-green/20 blur-3xl" />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Details */}
+          <div className="lg:col-span-2 space-y-6">
             {/* Images */}
             {venue.images && venue.images.length > 0 && (
-              <div className="rounded-xl overflow-hidden shadow-lg h-96 relative bg-slate-100">
-                <img
-                  src={venue.images[0]}
-                  alt={venue.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <Card className="overflow-hidden bg-white">
+                <div className="h-80 sm:h-96 w-full overflow-hidden bg-slate-100">
+                  <img
+                    src={venue.images[0]}
+                    alt={venue.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+              </Card>
             )}
 
             {/* Description */}
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Info size={20} className="text-power-orange" />
+            <Card className="p-6 bg-white">
+              <h2 className="text-xl font-bold mb-4 text-slate-900">
                 About this Venue
               </h2>
               <p className="text-slate-600 leading-relaxed">
-                {venue.description || "No description available."}
+                {venue.description ||
+                  "Experience world-class sports facilities at this premium venue. Perfect for athletes of all levels looking for quality training and play spaces."}
               </p>
+            </Card>
 
-              <div className="mt-6">
-                <h3 className="font-semibold mb-3">Amenities</h3>
-                <div className="flex flex-wrap gap-2">
-                  {venue.amenities?.map((amenity, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm"
-                    >
-                      {amenity}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <h3 className="font-semibold mb-3">Sports Available</h3>
-                <div className="flex flex-wrap gap-2">
-                  {venue.sports?.map((sport, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 border border-slate-200 text-slate-700 rounded-full text-sm font-medium"
-                    >
-                      {sport}
-                    </span>
-                  ))}
-                </div>
+            {/* Sports Available */}
+            <Card className="p-6 bg-white">
+              <h2 className="text-lg font-semibold mb-4 text-slate-900">
+                Sports Available
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {venue.sports?.map((sport, index) => (
+                  <span
+                    key={index}
+                    className="px-4 py-2 bg-linear-to-br from-power-orange/10 to-power-orange/5 border border-power-orange/20 text-power-orange rounded-lg text-sm font-semibold"
+                  >
+                    {sport}
+                  </span>
+                ))}
               </div>
             </Card>
+
+            {/* Amenities */}
+            {venue.amenities && venue.amenities.length > 0 && (
+              <Card className="p-6 bg-white">
+                <h2 className="text-lg font-semibold mb-4 text-slate-900">
+                  Amenities & Facilities
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {venue.amenities.map((amenity, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-700 rounded-lg text-sm"
+                    >
+                      <Check size={16} className="text-turf-green shrink-0" />
+                      <span>{amenity}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
           </div>
 
-          {/* Booking Sidebar */}
+          {/* Right Column - Booking Widget */}
           <div className="lg:col-span-1">
-            <Card className="p-6 sticky top-24 border-power-orange/20 shadow-lg">
-              <h2 className="text-xl font-bold mb-6">Book a Slot</h2>
+            <Card className="p-6 bg-white sticky top-6 border-2 border-slate-100 shadow-xl">
+              <h2 className="text-xl font-bold mb-6 text-slate-900">
+                Book Your Slot
+              </h2>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {/* Sport Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-semibold text-slate-700 mb-3">
                     Select Sport
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -221,10 +291,10 @@ export default function VenueDetailsPage() {
                       <button
                         key={sport}
                         onClick={() => setSelectedSport(sport)}
-                        className={`px-3 py-2 text-sm rounded-lg border transition-all ${
+                        className={`px-4 py-3 text-sm font-semibold rounded-lg border-2 transition-all ${
                           selectedSport === sport
-                            ? "bg-power-orange text-white border-power-orange"
-                            : "bg-white text-slate-700 border-slate-200 hover:border-power-orange"
+                            ? "bg-power-orange text-white border-power-orange shadow-md"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-power-orange hover:bg-power-orange/5"
                         }`}
                       >
                         {sport}
@@ -235,12 +305,12 @@ export default function VenueDetailsPage() {
 
                 {/* Date Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-semibold text-slate-700 mb-3">
                     Select Date
                   </label>
                   <div className="relative">
                     <Calendar
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                       size={18}
                     />
                     <input
@@ -248,27 +318,21 @@ export default function VenueDetailsPage() {
                       value={selectedDate}
                       min={new Date().toISOString().split("T")[0]}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 font-medium"
                     />
                   </div>
                 </div>
 
-                {/* Slots */}
+                {/* Time Slots */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Available Slots
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
+                    <Clock size={16} />
+                    Available Time Slots
                   </label>
                   {availability ? (
-                    <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                       {availability.availableSlots?.length > 0 ? (
                         availability.availableSlots.map((slot: any) => {
-                          // Handle different slot formats if necessary, assuming string "HH:mm" like "09:00"
-                          // But type says availableSlots string[].
-                          // We need start/end. Assuming backend sends "HH:mm-HH:mm" or just start time?
-                          // Checking type: availableSlots: string[].
-                          // Let's assume it's "HH:mm" start time and 1 hour duration or similar constraint.
-                          // Actually, let's parse it if it is a range or just start.
-                          // For now, assume simple string
                           const startTime = slot.split("-")[0] || slot;
                           const endTime =
                             slot.split("-")[1] ||
@@ -283,68 +347,98 @@ export default function VenueDetailsPage() {
                               onClick={() =>
                                 setSelectedSlot({ startTime, endTime })
                               }
-                              className={`px-3 py-2 text-sm rounded-lg border transition-all ${
+                              className={`px-3 py-2.5 text-sm font-semibold rounded-lg border-2 transition-all ${
                                 isSelected
-                                  ? "bg-green-600 text-white border-green-600"
-                                  : "bg-white text-slate-700 border-slate-200 hover:border-green-500"
+                                  ? "bg-turf-green text-white border-turf-green shadow-md"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-turf-green hover:bg-turf-green/5"
                               }`}
                             >
-                              {startTime} - {endTime}
+                              {startTime}
                             </button>
                           );
                         })
                       ) : (
-                        <p className="text-sm text-slate-500 col-span-2 text-center py-4">
-                          No slots available for this date.
-                        </p>
+                        <div className="col-span-2 text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                          <p className="text-sm text-slate-500">
+                            No slots available
+                          </p>
+                        </div>
                       )}
                     </div>
                   ) : (
-                    <div className="flex justify-center py-4">
+                    <div className="flex justify-center py-8">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-power-orange"></div>
                     </div>
                   )}
                 </div>
 
-                {/* Price Display */}
-                <div className="pt-4 border-t border-slate-200">
+                {/* Summary & CTA */}
+                <div className="pt-5 border-t-2 border-slate-100">
                   {error && (
-                    <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+                    <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border-2 border-red-100 font-medium">
                       {error}
                     </div>
                   )}
                   {success && (
-                    <div className="mb-4 p-3 bg-green-50 text-green-600 text-sm rounded-lg border border-green-100">
+                    <div className="mb-4 p-3 bg-green-50 text-green-700 text-sm rounded-lg border-2 border-green-100 font-medium">
                       {success}
                     </div>
                   )}
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-slate-600">Price per hour</span>
-                    <span className="text-xl font-bold text-slate-900 flex items-center">
-                      <IndianRupee size={18} />
-                      {venue.sportPricing?.[selectedSport] ||
-                        venue.pricePerHour}
-                    </span>
-                  </div>
+
+                  {selectedSport && selectedSlot && (
+                    <div className="mb-4 p-4 bg-slate-50 rounded-lg space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Sport:</span>
+                        <span className="font-semibold text-slate-900">
+                          {selectedSport}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-600">Time:</span>
+                        <span className="font-semibold text-slate-900">
+                          {selectedSlot.startTime} - {selectedSlot.endTime}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                        <span className="text-slate-600 font-medium">
+                          Total:
+                        </span>
+                        <span className="text-xl font-bold text-slate-900 flex items-center">
+                          <IndianRupee size={18} />
+                          {venue.sportPricing?.[selectedSport] ||
+                            venue.pricePerHour}
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {user ? (
                     <Button
                       variant="primary"
-                      className="w-full h-12 text-lg"
+                      className="w-full h-12 text-base font-semibold shadow-lg"
                       onClick={handleBooking}
-                      disabled={bookingLoading || !selectedSlot}
+                      disabled={
+                        bookingLoading || !selectedSlot || !selectedSport
+                      }
                     >
                       {bookingLoading ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Processing...
+                        </>
                       ) : (
-                        <Check size={20} className="mr-2" />
+                        <>
+                          <Check size={20} className="mr-2" />
+                          Confirm Booking
+                        </>
                       )}
-                      Confirm Booking
                     </Button>
                   ) : (
                     <Link href={`/login?redirect=/venues/${venueId}`}>
-                      <Button variant="secondary" className="w-full h-12">
-                        <User size={20} className="mr-2" />
+                      <Button
+                        variant="secondary"
+                        className="w-full h-12 text-base font-semibold"
+                      >
                         Sign In to Book
                       </Button>
                     </Link>
@@ -355,6 +449,6 @@ export default function VenueDetailsPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
