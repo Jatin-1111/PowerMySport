@@ -1,5 +1,5 @@
-﻿import { ApiResponse, AuthResponse, User } from "@/types";
-import axiosInstance from "@/lib/api/axios";
+﻿import axiosInstance from "@/lib/api/axios";
+import { ApiResponse, AuthResponse, User } from "@/types";
 
 export const authApi = {
   register: async (data: {
@@ -121,5 +121,66 @@ export const authApi = {
       `/auth/dependents/${dependentId}`,
     );
     return response.data;
+  },
+
+  /**
+   * Get presigned URL for profile picture upload
+   */
+  getProfilePictureUploadUrl: async (
+    fileName: string,
+    contentType: string,
+  ): Promise<
+    ApiResponse<{
+      uploadUrl: string;
+      downloadUrl: string;
+      key: string;
+    }>
+  > => {
+    const response = await axiosInstance.post(
+      "/auth/profile-picture/upload-url",
+      {
+        fileName,
+        contentType,
+      },
+    );
+    return response.data;
+  },
+
+  /**
+   * Confirm profile picture upload
+   */
+  confirmProfilePicture: async (
+    photoUrl: string,
+    photoS3Key: string,
+  ): Promise<ApiResponse<User>> => {
+    const response = await axiosInstance.post("/auth/profile-picture/confirm", {
+      photoUrl,
+      photoS3Key,
+    });
+    return response.data;
+  },
+
+  /**
+   * Upload profile picture to presigned URL
+   * Uses raw fetch (not axios) to avoid extra headers that break presigned URL signature
+   */
+  uploadProfilePictureToS3: async (
+    file: File,
+    uploadUrl: string,
+    contentType: string,
+  ): Promise<void> => {
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+      },
+      body: file,
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `S3 upload failed: ${response.status} ${response.statusText}`,
+      );
+    }
   },
 };

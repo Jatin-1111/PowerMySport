@@ -1,11 +1,13 @@
 ﻿"use client";
 
+import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
+import { authApi } from "@/modules/auth/services/auth";
+import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { coachApi } from "@/modules/coach/services/coach";
-import { Coach } from "@/types";
-import { useRouter } from "next/navigation";
+import { Coach, User } from "@/types";
 import { LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 export default function CoachProfilePage() {
@@ -14,6 +16,7 @@ export default function CoachProfilePage() {
   const [saving, setSaving] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     bio: "",
     certifications: "",
@@ -27,7 +30,19 @@ export default function CoachProfilePage() {
 
   useEffect(() => {
     loadProfile();
+    loadUser();
   }, []);
+
+  const loadUser = async () => {
+    try {
+      const response = await authApi.getProfile();
+      if (response.success && response.data) {
+        setUser(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to load user:", error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -153,6 +168,17 @@ export default function CoachProfilePage() {
       <h2 className="text-3xl font-bold mb-6 text-slate-900">
         {hasProfile ? "Edit Coach Profile" : "Create Coach Profile"}
       </h2>
+
+      {/* Profile Picture */}
+      <div className="flex justify-center pb-6 mb-6 border-b border-slate-200">
+        <ProfilePictureUpload
+          currentPhotoUrl={user?.photoUrl}
+          onUploadSuccess={(updatedUser) => {
+            setUser(updatedUser);
+          }}
+          size="xl"
+        />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Bio */}

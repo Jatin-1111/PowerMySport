@@ -25,8 +25,10 @@ export interface VenueDocument extends Document {
   address: string;
   openingHours: string;
   description: string;
-  images: string[];
-  coverPhotoUrl?: string;
+  images: string[]; // Presigned URLs (regenerated on-demand)
+  imageKeys: string[]; // S3 keys for images
+  coverPhotoUrl?: string; // Presigned URL (regenerated on-demand)
+  coverPhotoKey?: string; // S3 key for cover photo
   allowExternalCoaches: boolean;
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
   documents: VenueDocumentFile[];
@@ -38,6 +40,11 @@ export interface VenueDocument extends Document {
   venueCoaches: VenueCoach[];
   createdAt: Date;
   updatedAt: Date;
+
+  // Instance methods
+  refreshDocumentUrls(): Promise<VenueDocument>;
+  refreshImageUrls(): Promise<VenueDocument>;
+  refreshAllUrls(): Promise<VenueDocument>;
 }
 
 export interface VenueDocumentFile {
@@ -48,7 +55,8 @@ export interface VenueDocumentFile {
     | "TAX_DOCUMENT"
     | "INSURANCE"
     | "CERTIFICATE";
-  url: string;
+  url: string; // For backward compatibility
+  s3Key: string; // S3 object key for regenerating URLs
   fileName: string;
   uploadedAt: Date;
 }
@@ -134,7 +142,15 @@ const venueSchema = new Schema<VenueDocument>(
       type: [String],
       default: [],
     },
+    imageKeys: {
+      type: [String],
+      default: [],
+    },
     coverPhotoUrl: {
+      type: String,
+      optional: true,
+    },
+    coverPhotoKey: {
       type: String,
       optional: true,
     },
@@ -189,6 +205,10 @@ const venueSchema = new Schema<VenueDocument>(
           type: String,
           required: true,
         },
+        s3Key: {
+          type: String,
+          required: false, // Optional for backward compatibility
+        },
         fileName: {
           type: String,
           required: true,
@@ -224,6 +244,85 @@ const venueSchema = new Schema<VenueDocument>(
 
 // Geo-spatial index for $near queries
 venueSchema.index({ location: "2dsphere" });
+
+/**
+ * Instance method to regenerate presigned URLs for documents
+ * Valid for 24 hours
+ */
+venueSchema.methods.refreshDocumentUrls = async function () {
+  const { s3Service } = await import("../services/S3Service");
+
+  for (const doc of this.documents) {
+    if (doc.s3Key) {
+      try {
+        doc.url = await s3Service.generateDownloadUrl(
+          doc.s3Key,
+          "verification",
+          86400,
+        );
+      } catch (error) {
+        console.error(
+          `Failed to refresh URL for document ${doc.fileName}:`,
+          error,
+        );
+      }
+    }
+  }
+
+  return this;
+};
+
+/**
+ * Instance method to regenerate presigned URLs for images
+ * Valid for 7 days
+ */
+venueSchema.methods.refreshImageUrls = async function () {
+  const { s3Service } = await import("../services/S3Service");
+
+  // Refresh gallery images
+  if (this.imageKeys && this.imageKeys.length > 0) {
+    const freshImages: string[] = [];
+    for (const key of this.imageKeys) {
+      try {
+        const url = await s3Service.generateDownloadUrl(
+          key,
+          "verification",
+          604800,
+        ); // 7 days
+        freshImages.push(url);
+      } catch (error) {
+        console.error(`Failed to refresh URL for image ${key}:`, error);
+        freshImages.push(""); // Placeholder for failed image
+      }
+    }
+    this.images = freshImages;
+  }
+
+  // Refresh cover photo
+  if (this.coverPhotoKey) {
+    try {
+      this.coverPhotoUrl = await s3Service.generateDownloadUrl(
+        this.coverPhotoKey,
+        "verification",
+        604800, // 7 days
+      );
+    } catch (error) {
+      console.error(`Failed to refresh cover photo URL:`, error);
+    }
+  }
+
+  return this;
+};
+
+/**
+ * Instance method to regenerate ALL presigned URLs (images + documents)
+ * Call this before sending venue data to frontend
+ */
+venueSchema.methods.refreshAllUrls = async function () {
+  await this.refreshImageUrls();
+  await this.refreshDocumentUrls();
+  return this;
+};
 
 export const Venue = mongoose.model<VenueDocument>(
   "Venue",

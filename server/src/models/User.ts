@@ -10,6 +10,7 @@ export interface UserDocument extends Document {
   password?: string;
   googleId?: string;
   photoUrl?: string;
+  photoS3Key?: string; // S3 key for profile picture
   dob?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -26,6 +27,7 @@ export interface UserDocument extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
+  refreshPhotoUrl(): Promise<void>;
 }
 
 const userSchema = new Schema<UserDocument>(
@@ -99,6 +101,9 @@ const userSchema = new Schema<UserDocument>(
     photoUrl: {
       type: String,
     },
+    photoS3Key: {
+      type: String,
+    },
     dob: {
       type: Date,
     },
@@ -154,6 +159,25 @@ userSchema.methods.comparePassword = async function (
   password: string,
 ): Promise<boolean> {
   return bcrypt.compare(password, this.password);
+};
+
+// Method to refresh profile photo URL from S3 key
+userSchema.methods.refreshPhotoUrl = async function (
+  this: UserDocument,
+): Promise<void> {
+  if (!this.photoS3Key) return;
+
+  try {
+    const { S3Service } = require("../services/S3Service");
+    const s3Service = new S3Service();
+    this.photoUrl = await s3Service.generateDownloadUrl(
+      this.photoS3Key,
+      "images",
+      604800, // 7 days
+    );
+  } catch (error) {
+    console.error("Failed to refresh profile photo URL:", error);
+  }
 };
 
 export const User = mongoose.model<UserDocument>("User", userSchema);

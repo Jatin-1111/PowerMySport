@@ -1,13 +1,14 @@
 ﻿"use client";
 
-import { Card } from "@/modules/shared/ui/Card";
-import { Button } from "@/modules/shared/ui/Button";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
+import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
 import { authApi } from "@/modules/auth/services/auth";
+import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card } from "@/modules/shared/ui/Card";
 import { User } from "@/types";
+import { Edit2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Plus, Edit2, Trash2 } from "lucide-react";
 
 type Dependent = NonNullable<User["dependents"]>[number];
 
@@ -100,7 +101,7 @@ export default function ProfilePage() {
     setError("");
     setGraduateMessage("");
     setGraduationForm({
-      dependentId: dependent._id,
+      dependentId: dependent._id?.toString() || "",
       dependentName: dependent.name,
       email: "",
       password: "",
@@ -125,6 +126,12 @@ export default function ProfilePage() {
     setGraduateMessage("");
 
     try {
+      console.log("Graduating dependent with data:", {
+        dependentId: graduationForm.dependentId,
+        email: graduationForm.email,
+        phone: graduationForm.phone,
+      });
+
       const response = await authApi.graduateDependent({
         dependentId: graduationForm.dependentId,
         email: graduationForm.email,
@@ -148,7 +155,12 @@ export default function ProfilePage() {
         setError(response.message || "Failed to graduate dependent");
       }
     } catch (error: any) {
-      setError(error.response?.data?.message || "Failed to graduate dependent");
+      console.error("Graduation error:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to graduate dependent";
+      setError(errorMessage);
     } finally {
       setGraduatingDependentId(null);
     }
@@ -295,126 +307,192 @@ export default function ProfilePage() {
         </div>
 
         {isEditingProfile ? (
-          <div className="grid gap-6 px-6 py-6 sm:grid-cols-2">
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                value={profileForm.name}
-                onChange={(e) =>
-                  setProfileForm({ ...profileForm, name: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <div className="px-6 py-6">
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Profile Picture Section */}
+              <div className="flex flex-col items-center lg:items-start space-y-3">
+                <ProfilePictureUpload
+                  currentPhotoUrl={user.photoUrl}
+                  onUploadSuccess={(updatedUser) => {
+                    setUser(updatedUser);
+                  }}
+                  size="xl"
+                />
+                <div className="text-center lg:text-left">
+                  <p className="text-sm font-medium text-slate-700">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-slate-500 capitalize">
+                    {user.role} Account
+                  </p>
+                </div>
+              </div>
 
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={profileForm.email}
-                onChange={(e) =>
-                  setProfileForm({ ...profileForm, email: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+              {/* Profile Form */}
+              <div className="flex-1">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileForm.name}
+                      onChange={(e) =>
+                        setProfileForm({ ...profileForm, name: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-2">
-                Phone
-              </label>
-              <input
-                type="tel"
-                value={profileForm.phone}
-                onChange={(e) =>
-                  setProfileForm({ ...profileForm, phone: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+                  <div>
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(e) =>
+                        setProfileForm({
+                          ...profileForm,
+                          email: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-2">
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                value={profileForm.dob}
-                onChange={(e) =>
-                  setProfileForm({ ...profileForm, dob: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+                  <div>
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={profileForm.phone}
+                      onChange={(e) =>
+                        setProfileForm({
+                          ...profileForm,
+                          phone: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-2">
-                Account Type
-              </label>
-              <p className="text-slate-900 text-lg capitalize">{user.role}</p>
-            </div>
+                  <div>
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      value={profileForm.dob}
+                      onChange={(e) =>
+                        setProfileForm({ ...profileForm, dob: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
 
-            <div className="flex gap-3 items-end">
-              <button
-                onClick={handleSaveProfile}
-                disabled={isSavingProfile}
-                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400"
-              >
-                {isSavingProfile ? "Saving..." : "Save"}
-              </button>
-              <button
-                onClick={() => setIsEditingProfile(false)}
-                disabled={isSavingProfile}
-                className="px-4 py-2 bg-slate-300 text-slate-900 text-sm font-medium rounded-lg hover:bg-slate-400 transition-colors disabled:bg-gray-400"
-              >
-                Cancel
-              </button>
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Account Type
+                    </label>
+                    <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                      <p className="text-slate-900 capitalize">{user.role}</p>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2 flex gap-3 pt-4 border-t border-slate-200">
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={isSavingProfile}
+                      className="px-6 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {isSavingProfile ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button
+                      onClick={() => setIsEditingProfile(false)}
+                      disabled={isSavingProfile}
+                      className="px-6 py-2.5 bg-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-300 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 px-6 py-6 sm:grid-cols-2">
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-1">
-                Name
-              </label>
-              <p className="text-slate-900 text-lg">{user.name}</p>
-            </div>
+          <div className="px-6 py-6">
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Profile Picture Section */}
+              <div className="flex flex-col items-center lg:items-start space-y-3">
+                <ProfilePictureUpload
+                  currentPhotoUrl={user.photoUrl}
+                  onUploadSuccess={(updatedUser) => {
+                    setUser(updatedUser);
+                  }}
+                  size="xl"
+                />
+                <div className="text-center lg:text-left">
+                  <p className="text-sm font-medium text-slate-700">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-slate-500 capitalize">
+                    {user.role} Account
+                  </p>
+                </div>
+              </div>
 
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-1">
-                Email
-              </label>
-              <p className="text-slate-900 text-lg">{user.email}</p>
-            </div>
+              {/* Profile Info */}
+              <div className="flex-1">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Name
+                    </label>
+                    <p className="text-slate-900 text-lg font-medium">
+                      {user.name}
+                    </p>
+                  </div>
 
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-1">
-                Phone
-              </label>
-              <p className="text-slate-900 text-lg">{user.phone}</p>
-            </div>
+                  <div>
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Email
+                    </label>
+                    <p className="text-slate-900 text-lg">{user.email}</p>
+                  </div>
 
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-1">
-                Age
-              </label>
-              <p className="text-slate-900 text-lg">
-                {user.dob
-                  ? (getDependentAge(user.dob) ?? "Not provided")
-                  : "Not provided"}
-              </p>
-            </div>
+                  <div>
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Phone
+                    </label>
+                    <p className="text-slate-900 text-lg">{user.phone}</p>
+                  </div>
 
-            <div>
-              <label className="block text-slate-600 text-sm font-semibold mb-1">
-                Account Type
-              </label>
-              <p className="text-slate-900 text-lg capitalize">{user.role}</p>
+                  <div>
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Age
+                    </label>
+                    <p className="text-slate-900 text-lg">
+                      {user.dob
+                        ? (getDependentAge(user.dob) ?? "Not provided")
+                        : "Not provided"}
+                    </p>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-600 text-sm font-semibold mb-2">
+                      Account Type
+                    </label>
+                    <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+                      <span className="capitalize font-medium">
+                        {user.role}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

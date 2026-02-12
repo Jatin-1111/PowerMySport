@@ -1,17 +1,19 @@
 import { Router } from "express";
 import {
+  addDependentHandler,
+  confirmProfilePictureUploadHandler,
+  deleteDependentHandler,
   forgotPassword,
   getProfile,
+  getProfilePictureUploadUrlHandler,
   googleAuth,
   graduateDependentHandler,
-  addDependentHandler,
-  updateDependentHandler,
-  deleteDependentHandler,
-  updateProfileHandler,
   login,
   logout,
   register,
   resetPasswordHandler,
+  updateDependentHandler,
+  updateProfileHandler,
 } from "../controllers/authController";
 import { authMiddleware } from "../middleware/auth";
 import { loginSchema, registerSchema } from "../middleware/schemas";
@@ -28,6 +30,18 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPasswordHandler);
 router.post("/google", googleAuth);
 router.post("/graduate", authMiddleware, graduateDependentHandler);
+
+// Profile picture endpoints
+router.post(
+  "/profile-picture/upload-url",
+  authMiddleware,
+  getProfilePictureUploadUrlHandler,
+);
+router.post(
+  "/profile-picture/confirm",
+  authMiddleware,
+  confirmProfilePictureUploadHandler,
+);
 
 // Dependent management endpoints
 router.post("/dependents", authMiddleware, addDependentHandler);

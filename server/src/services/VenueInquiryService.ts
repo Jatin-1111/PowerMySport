@@ -102,6 +102,15 @@ export const reviewInquiry = async (
       password: tempPassword, // Pass plain password, User model will hash it
       role: "VENUE_LISTER",
       venueListerProfile: {
+        businessDetails: {
+          name: inquiry.ownerName,
+          address: inquiry.address || "",
+        },
+        payoutInfo: {
+          accountNumber: "",
+          ifsc: "",
+          bankName: "",
+        },
         canAddMoreVenues: false, // Restrict to only the approved venue
       },
     });

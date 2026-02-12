@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { ServiceMode, IAvailability } from "../types";
+import mongoose, { Document, Schema } from "mongoose";
+import { IAvailability, ServiceMode } from "../types";
 
 export interface CoachDocument extends Document {
   userId: mongoose.Types.ObjectId;
@@ -34,6 +34,7 @@ export interface CoachDocumentFile {
     | "INSURANCE"
     | "OTHER";
   url: string;
+  s3Key?: string; // S3 key for document
   fileName: string;
   uploadedAt: Date;
 }
@@ -155,6 +156,9 @@ const coachSchema = new Schema<CoachDocument>(
         url: {
           type: String,
           required: true,
+        },
+        s3Key: {
+          type: String,
         },
         fileName: {
           type: String,

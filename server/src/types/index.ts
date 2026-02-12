@@ -51,6 +51,8 @@ export interface IUser {
   phone: string;
   role: UserRole;
   password: string;
+  photoUrl?: string;
+  photoS3Key?: string; // S3 key for profile picture
   playerProfile?: IPlayerProfile;
   venueListerProfile?: IVenueListerProfile;
   createdAt?: Date;
@@ -97,6 +99,7 @@ export interface ICoach {
       | "INSURANCE"
       | "OTHER";
     url: string;
+    s3Key?: string; // S3 key for document
     fileName: string;
     uploadedAt: Date;
   }>;
@@ -147,6 +150,7 @@ export interface IVenueDocument {
     | "INSURANCE"
     | "CERTIFICATE";
   url: string;
+  s3Key?: string; // S3 object key for regenerating presigned URLs
   fileName: string;
   uploadedAt: Date;
 }
@@ -174,13 +178,17 @@ export interface IVenueOnboardingStep2 {
 export interface IVenueOnboardingStep3 {
   venueId: string;
   images: string[]; // S3 URLs from client upload
+  imageKeys: string[]; // S3 keys for regenerating URLs
   coverPhotoUrl: string; // S3 URL for cover shot
+  coverPhotoKey: string; // S3 key for cover photo
 }
 
 export interface IVenueOnboardingStep4 {
   venueId: string;
   images: string[]; // S3 URLs from client upload
+  imageKeys: string[]; // S3 keys for regenerating URLs
   coverPhotoUrl: string; // S3 URL for cover shot
+  coverPhotoKey: string; // S3 key for cover photo
   documents: {
     type:
       | "OWNERSHIP_PROOF"
@@ -189,6 +197,7 @@ export interface IVenueOnboardingStep4 {
       | "INSURANCE"
       | "CERTIFICATE";
     url: string;
+    s3Key?: string; // S3 object key for regenerating URLs
     fileName: string;
   }[];
 }
@@ -197,6 +206,7 @@ export interface IOnboardingUploadUrl {
   field: string; // image_0, document_OWNERSHIP_PROOF, etc.
   uploadUrl: string;
   downloadUrl: string;
+  s3Key?: string; // S3 object key (for documents)
   fileName: string;
   contentType: string;
   maxSizeBytes: number;

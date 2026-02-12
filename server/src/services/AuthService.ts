@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
 import { User, UserDocument } from "../models/User";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "../utils/email";
+import { S3Service } from "./S3Service";
 
 export interface RegisterPayload {
   name: string;
@@ -409,5 +410,56 @@ export const updateProfile = async (
   if (payload.dob) user.dob = new Date(payload.dob);
 
   await user.save();
+  return user;
+};
+
+/**
+ * Get presigned URL for profile picture upload
+ */
+export const getProfilePictureUploadUrl = async (
+  userId: string,
+  fileName: string,
+  contentType: string,
+): Promise<{
+  uploadUrl: string;
+  downloadUrl: string;
+  key: string;
+}> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const s3Service = new S3Service();
+  const result = await s3Service.generateProfilePictureUploadUrl(
+    fileName,
+    contentType,
+    userId,
+  );
+
+  return {
+    uploadUrl: result.uploadUrl,
+    downloadUrl: result.downloadUrl,
+    key: result.key,
+  };
+};
+
+/**
+ * Confirm profile picture upload and save to user
+ */
+export const confirmProfilePictureUpload = async (
+  userId: string,
+  photoUrl: string,
+  photoS3Key: string,
+): Promise<UserDocument> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  user.photoUrl = photoUrl;
+  user.photoS3Key = photoS3Key;
+  await user.save();
+
   return user;
 };

@@ -6,12 +6,12 @@
  */
 
 import {
-  S3Client,
-  S3ClientConfig,
-  PutObjectCommand,
-  GetObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -114,6 +114,42 @@ export class S3Service {
     const key = `venues/${venueId}/images/${sanitizedFileName}`;
 
     const putCommand = new PutObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600, // 1 hour
+    });
+
+    const downloadUrl = `https://${this.documentsBucket}.s3.${this.region}.amazonaws.com/${key}`;
+
+    return {
+      uploadUrl,
+      downloadUrl,
+      fileName: sanitizedFileName,
+      key,
+    };
+  }
+
+  /**
+   * Generate presigned upload URL for user profile pictures
+   * @param fileName - Original file name
+   * @param contentType - MIME type for image
+   * @param userId - User ID for folder organization
+   * @returns Presigned URL and metadata
+   */
+  async generateProfilePictureUploadUrl(
+    fileName: string,
+    contentType: string,
+    userId: string,
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = fileName.split(".").pop();
+    const sanitizedFileName = `profile_${Date.now()}.${fileExtension}`;
+    const key = `users/${userId}/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
       Bucket: this.imagesBucket,
       Key: key,
       ContentType: contentType,
@@ -123,7 +159,15 @@ export class S3Service {
       expiresIn: 3600, // 1 hour
     });
 
-    const downloadUrl = `https://${this.imagesBucket}.s3.${this.region}.amazonaws.com/${key}`;
+    // Generate presigned download URL (valid for 7 days) for private bucket
+    const getCommand = new GetObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800, // 7 days
+    });
 
     return {
       uploadUrl,
@@ -136,17 +180,17 @@ export class S3Service {
   /**
    * Generate presigned download URL for existing file
    * @param key - S3 object key
-   * @param bucketType - Type of bucket ("documents" or "images")
+   * @param bucketType - Type of bucket ("verification" for venues/documents, "images" for user profiles)
    * @param expiresIn - Expiration time in seconds (default 1 hour)
    * @returns Presigned download URL
    */
   async generateDownloadUrl(
     key: string,
-    bucketType: "documents" | "images" = "images",
+    bucketType: "verification" | "images" = "images",
     expiresIn: number = 3600,
   ): Promise<string> {
     const bucket =
-      bucketType === "documents" ? this.documentsBucket : this.imagesBucket;
+      bucketType === "verification" ? this.documentsBucket : this.imagesBucket;
 
     const getCommand = new GetObjectCommand({
       Bucket: bucket,

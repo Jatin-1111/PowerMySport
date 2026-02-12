@@ -2,8 +2,8 @@
 
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { useState } from "react";
 import { X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Dependent {
   _id?: string;
@@ -42,6 +42,34 @@ export default function DependentManagementModal({
   );
   const [sportInput, setSportInput] = useState("");
   const [error, setError] = useState("");
+
+  // Update form data when modal opens or initialDependent changes
+  useEffect(() => {
+    if (isOpen) {
+      if (initialDependent) {
+        // Convert date to YYYY-MM-DD format for input field
+        const dobValue = initialDependent.dob
+          ? new Date(initialDependent.dob).toISOString().split("T")[0]
+          : "";
+
+        setFormData({
+          ...initialDependent,
+          dob: dobValue,
+        });
+      } else {
+        // Reset form for add mode
+        setFormData({
+          name: "",
+          dob: "",
+          gender: "MALE",
+          relation: "CHILD",
+          sports: [],
+        });
+      }
+      setError("");
+      setSportInput("");
+    }
+  }, [isOpen, initialDependent]);
 
   const handleChange = (field: keyof Dependent, value: any) => {
     setFormData((prev) => ({
@@ -141,11 +169,7 @@ export default function DependentManagementModal({
             </label>
             <input
               type="date"
-              value={
-                formData.dob
-                  ? new Date(formData.dob).toISOString().split("T")[0]
-                  : ""
-              }
+              value={formData.dob as string}
               onChange={(e) => handleChange("dob", e.target.value)}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
             />

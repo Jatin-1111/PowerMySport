@@ -25,7 +25,12 @@ export const createVenue = async (
 export const getVenueById = async (
   id: string,
 ): Promise<VenueDocument | null> => {
-  return Venue.findById(id).populate("ownerId");
+  const venue = await Venue.findById(id).populate("ownerId");
+  if (venue) {
+    // Refresh all presigned URLs before returning
+    await venue.refreshAllUrls();
+  }
+  return venue;
 };
 
 export const getVenuesByOwner = async (
@@ -42,6 +47,10 @@ export const getVenuesByOwner = async (
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
   const venues = await Venue.find(query).skip(skip).limit(limit);
+
+  // Refresh URLs for all venues
+  await Promise.all(venues.map((v) => v.refreshAllUrls()));
+
   return { venues, total, page, totalPages: Math.ceil(total / limit) };
 };
 
@@ -107,8 +116,19 @@ export const findVenuesNearby = async (
 
     const venues = await Venue.aggregate(dataPipeline);
 
+    // Convert aggregation results to Mongoose documents and refresh URLs
+    const venueDocuments = await Promise.all(
+      venues.map(async (v) => {
+        const doc = await Venue.findById(v._id);
+        if (doc) {
+          await doc.refreshAllUrls();
+        }
+        return doc;
+      }),
+    );
+
     return {
-      venues: venues as VenueDocument[],
+      venues: venueDocuments.filter(Boolean) as VenueDocument[],
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -145,7 +165,8 @@ export const getAllVenues = async (
     .populate("ownerId")
     .skip(skip)
     .limit(limit);
-
+  // Refresh URLs for all venues
+  await Promise.all(venues.map((v) => v.refreshAllUrls()));
   return {
     venues,
     total,

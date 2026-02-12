@@ -1,17 +1,22 @@
 ﻿"use client";
 
-import { useState, useCallback } from "react";
-import Image from "next/image";
+import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import {
   PresignedUrl,
   UploadedImage,
 } from "@/modules/onboarding/types/onboarding";
-import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
+import Image from "next/image";
+import { useState } from "react";
 
 interface Step2ImageUploadProps {
   venueId: string;
   presignedUrls: PresignedUrl[];
-  onImagesConfirmed: (images: string[], coverPhotoUrl: string) => Promise<void>;
+  onImagesConfirmed: (
+    images: string[],
+    imageKeys: string[],
+    coverPhotoUrl: string,
+    coverPhotoKey: string,
+  ) => Promise<void>;
   loading?: boolean;
   error?: string;
   onSkip?: () => Promise<void>;
@@ -105,15 +110,23 @@ export default function Step2ImageUpload({
     }
 
     try {
-      // Get S3 URLs from presigned upload URLs
-      const imageUrls = presignedUrls
-        .filter((url) => url.field.startsWith("image_"))
-        .map((url) => url.downloadUrl);
+      // Extract S3 URLs and keys from presigned upload URLs
+      const imagePresignedUrls = presignedUrls.filter((url) =>
+        url.field.startsWith("image_"),
+      );
+      const imageUrls = imagePresignedUrls.map((url) => url.downloadUrl);
+      const imageKeys = imagePresignedUrls.map((url) => url.key);
 
       const coverPhotoUrl =
         presignedUrls[coverPhotoIndex]?.downloadUrl || imageUrls[0];
+      const coverPhotoKey = presignedUrls[coverPhotoIndex]?.key || imageKeys[0];
 
-      await onImagesConfirmed(imageUrls, coverPhotoUrl);
+      await onImagesConfirmed(
+        imageUrls,
+        imageKeys,
+        coverPhotoUrl,
+        coverPhotoKey,
+      );
     } catch (err) {
       console.error("Failed to confirm images:", err);
     }

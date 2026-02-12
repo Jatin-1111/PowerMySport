@@ -8,6 +8,8 @@
 import { migrateUserRoles } from "./01_migrate_user_roles";
 import { migrateVenueLocations } from "./02_migrate_venue_locations";
 import { migrateBookingPayments } from "./03_migrate_booking_payments";
+import { linkVenuesToOwners } from "./04_link_venues_to_owners";
+import { addS3KeysToDocuments } from "./05_add_s3_keys_to_documents";
 
 const runAllMigrations = async () => {
   console.log("=".repeat(60));
@@ -32,6 +34,18 @@ const runAllMigrations = async () => {
     console.log("📋 Running Migration 3: Booking Payments");
     console.log("-".repeat(60));
     await migrateBookingPayments();
+    console.log();
+
+    // Migration 4: Link Venues to Owners
+    console.log("📋 Running Migration 4: Link Venues to Owners");
+    console.log("-".repeat(60));
+    await linkVenuesToOwners();
+    console.log();
+
+    // Migration 5: Add S3 Keys
+    console.log("📋 Running Migration 5: Add S3 Keys to Images & Documents");
+    console.log("-".repeat(60));
+    await addS3KeysToDocuments();
     console.log();
 
     console.log("=".repeat(60));

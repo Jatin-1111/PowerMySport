@@ -23,6 +23,7 @@ export interface VenueDocument {
     | "INSURANCE"
     | "CERTIFICATE";
   url: string;
+  s3Key: string; // Permanent S3 key for regenerating presigned URLs
   fileName: string;
   uploadedAt: Date;
 }
@@ -51,7 +52,9 @@ export interface OnboardingVenue {
     coordinates: [number, number];
   };
   images?: string[];
+  imageKeys?: string[]; // S3 keys for venue images
   coverPhotoUrl?: string;
+  coverPhotoKey?: string; // S3 key for cover photo
   documents?: VenueDocument[];
   approvalStatus?: VenueApprovalStatus;
 }
@@ -72,6 +75,7 @@ export interface PresignedUrl {
   field: string;
   uploadUrl: string;
   downloadUrl: string;
+  key: string; // S3 key - must be stored in DB for URL regeneration
   fileName: string;
   contentType: string;
   maxSizeBytes: number;
@@ -108,7 +112,9 @@ export interface OnboardingStep2Payload {
 export interface OnboardingStep3Payload {
   venueId: string;
   images: string[];
+  imageKeys: string[]; // S3 keys for images
   coverPhotoUrl: string;
+  coverPhotoKey: string; // S3 key for cover photo
   documents: Array<{
     type:
       | "OWNERSHIP_PROOF"
@@ -117,6 +123,7 @@ export interface OnboardingStep3Payload {
       | "INSURANCE"
       | "CERTIFICATE";
     url: string;
+    s3Key: string; // S3 key for document
     fileName: string;
   }>;
 }
@@ -124,7 +131,9 @@ export interface OnboardingStep3Payload {
 export interface ConfirmImagesPayload {
   venueId: string;
   images: string[];
+  imageKeys: string[]; // S3 keys for images
   coverPhotoUrl: string;
+  coverPhotoKey: string; // S3 key for cover photo
 }
 
 export interface UploadedImage {

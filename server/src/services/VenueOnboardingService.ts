@@ -1,16 +1,16 @@
-import { Venue, VenueDocument } from "../models/Venue";
 import { User } from "../models/User";
-import { s3Service } from "./S3Service";
-import { sendEmail } from "../utils/email";
+import { Venue, VenueDocument } from "../models/Venue";
 import {
+  IOnboardingUploadUrl,
+  IPendingVenue,
+  IVenueDocument,
   IVenueOnboardingStep1,
   IVenueOnboardingStep2,
   IVenueOnboardingStep3,
   IVenueOnboardingStep4,
-  IOnboardingUploadUrl,
-  IPendingVenue,
-  IVenueDocument,
 } from "../types";
+import { sendEmail } from "../utils/email";
+import { s3Service } from "./S3Service";
 
 /**
  * VenueOnboardingService
@@ -158,6 +158,7 @@ export const getImageUploadPresignedUrls = async (
       field: `image_${i}`,
       uploadUrl: uploadResponse.uploadUrl,
       downloadUrl: uploadResponse.downloadUrl,
+      s3Key: uploadResponse.key, // Store S3 key for regenerating URLs
       fileName: uploadResponse.fileName,
       contentType: "image/jpeg",
       maxSizeBytes: UPLOAD_CONSTRAINTS.IMAGES.MAX_SIZE_BYTES,
@@ -185,12 +186,14 @@ export const confirmVenueImages = async (
     );
   }
 
-  // Update venue with images
+  // Update venue with images and their S3 keys
   const venue = await Venue.findByIdAndUpdate(
     payload.venueId,
     {
-      images: payload.images,
-      coverPhotoUrl: payload.coverPhotoUrl,
+      images: payload.images, // URLs (will be regenerated on fetch)
+      imageKeys: payload.imageKeys, // S3 keys for regeneration
+      coverPhotoUrl: payload.coverPhotoUrl, // URL (will be regenerated on fetch)
+      coverPhotoKey: payload.coverPhotoKey, // S3 key for regeneration
     },
     { new: true },
   );
@@ -240,6 +243,7 @@ export const getDocumentUploadPresignedUrls = async (
       field: `document_${doc.type}`,
       uploadUrl: uploadResponse.uploadUrl,
       downloadUrl: uploadResponse.downloadUrl,
+      s3Key: uploadResponse.key, // Store S3 key for regenerating URLs later
       fileName: uploadResponse.fileName,
       contentType: doc.contentType,
       maxSizeBytes: UPLOAD_CONSTRAINTS.DOCUMENTS.MAX_SIZE_BYTES,
@@ -279,6 +283,7 @@ export const finalizeVenueOnboarding = async (
         | "INSURANCE"
         | "CERTIFICATE",
       url: doc.url,
+      ...(doc.s3Key !== undefined && { s3Key: doc.s3Key }), // Only include s3Key if defined
       fileName: doc.fileName,
       uploadedAt: new Date(),
     }),
@@ -288,8 +293,10 @@ export const finalizeVenueOnboarding = async (
   const venue = await Venue.findByIdAndUpdate(
     payload.venueId,
     {
-      images: payload.images,
-      coverPhotoUrl: payload.coverPhotoUrl,
+      images: payload.images, // URLs (will be regenerated on fetch)
+      imageKeys: payload.imageKeys, // S3 keys for regeneration
+      coverPhotoUrl: payload.coverPhotoUrl, // URL (will be regenerated on fetch)
+      coverPhotoKey: payload.coverPhotoKey, // S3 key for regeneration
       documents: documentsToSave,
       approvalStatus: "PENDING", // Ready for admin review
     },
@@ -361,27 +368,82 @@ export const getVenueOnboardingDetails = async (
 
 /**
  * Admin: Approve venue
+ * Creates user account for venue lister and links venue to that user
  * Updates approval status to APPROVED and sends credentials to venue lister
  */
 export const approveVenue = async (
   venueId: string,
 ): Promise<VenueDocument | null> => {
-  const venue = await Venue.findByIdAndUpdate(
-    venueId,
-    {
-      approvalStatus: "APPROVED",
-      rejectionReason: undefined,
-      reviewNotes: undefined,
-    },
-    { new: true },
-  );
+  const venue = await Venue.findById(venueId);
 
   if (!venue) {
     throw new Error("Venue not found");
   }
 
-  // Send approval email with credentials
+  // Check if user already exists for this venue owner
+  let user = await User.findOne({
+    $or: [{ email: venue.ownerEmail }, { phone: venue.ownerPhone }],
+  });
+
+  let tempPassword: string | undefined;
+  let isNewUser = false;
+
+  // If user doesn't exist, create a new VENUE_LISTER account
+  if (!user) {
+    // Generate temporary password
+    tempPassword = Math.random().toString(36).slice(-8) + "!A1";
+    isNewUser = true;
+
+    user = new User({
+      name: venue.ownerName,
+      email: venue.ownerEmail,
+      phone: venue.ownerPhone,
+      password: tempPassword, // User model will hash this
+      role: "VENUE_LISTER",
+      venueListerProfile: {
+        businessDetails: {
+          name: venue.ownerName,
+          address: venue.address || "",
+        },
+        payoutInfo: {
+          accountNumber: "",
+          ifsc: "",
+          bankName: "",
+        },
+        canAddMoreVenues: false, // Restrict to only the approved venue
+      },
+    });
+
+    await user.save();
+  }
+
+  // Link venue to user account
+  venue.ownerId = user._id as any;
+  venue.approvalStatus = "APPROVED";
+  // Clear rejection/review fields
+  if (venue.rejectionReason) {
+    venue.rejectionReason = "";
+  }
+  if (venue.reviewNotes) {
+    venue.reviewNotes = "";
+  }
+
+  await venue.save();
+
+  // Send approval email with credentials (if new user)
   try {
+    const credentialsSection =
+      isNewUser && tempPassword
+        ? `
+          <div class="info-box" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+            <strong>🔐 Your Login Credentials:</strong>
+            <p><strong>Email:</strong> ${venue.ownerEmail}</p>
+            <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+            <p><em>Please login and change your password immediately for security.</em></p>
+          </div>
+        `
+        : "";
+
     const approvalEmailHtml = `
       <!DOCTYPE html>
       <html>
@@ -460,6 +522,8 @@ export const approveVenue = async (
           
           <p>We're thrilled to inform you that your venue <strong>"${venue.name}"</strong> has been approved and is now live on PowerMySport!</p>
 
+          ${credentialsSection}
+
           <div class="venue-details">
             <h3>Approved Venue Details:</h3>
             <p><strong>Venue Name:</strong> ${venue.name}</p>
@@ -474,8 +538,8 @@ export const approveVenue = async (
           </div>
 
           <p style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || "https://powermysport.com"}/venue-lister/dashboard" class="cta-button">
-              Go to Your Dashboard →
+            <a href="${process.env.FRONTEND_URL || "https://powermysport.com"}/login" class="cta-button">
+              ${isNewUser ? "Login Now →" : "Go to Your Dashboard →"}
             </a>
           </p>
 

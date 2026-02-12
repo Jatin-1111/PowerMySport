@@ -1,14 +1,15 @@
 ﻿"use client";
 
-import { useState } from "react";
-import { ClipboardCheck, Mail, Zap, CheckCircle } from "lucide-react";
-import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
+import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
+import { CheckCircle, ClipboardCheck, Mail, Zap } from "lucide-react";
+import { useState } from "react";
 
 interface UploadedDoc {
   type: string;
   fileName: string;
-  url: string;
+  url: string; // Current presigned URL
+  s3Key: string; // S3 key for regenerating presigned URLs
 }
 
 interface Step3DocumentUploadProps {
@@ -84,6 +85,7 @@ export default function Step3DocumentUpload({
           type: docType,
           fileName: file.name,
           url: presignedUrl.downloadUrl,
+          s3Key: presignedUrl.key, // Store S3 key for URL regeneration
         },
       ]);
 

@@ -1,30 +1,31 @@
 ﻿"use client";
 
-import { useState, useCallback } from "react";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
 import {
-  PresignedUrl,
   OnboardingStep1Payload,
   OnboardingStep2Payload,
+  PresignedUrl,
   VenueCoach,
 } from "@/modules/onboarding/types/onboarding";
+import { useCallback, useState } from "react";
 import Step1ContactInfo from "./Step1ContactInfo";
-import Step2VenueDetails from "./Step2VenueDetails";
 import Step2ImageUpload from "./Step2ImageUpload";
+import Step2VenueDetails from "./Step2VenueDetails";
 import Step3DocumentUpload from "./Step3DocumentUpload";
 import Step5CoachList from "./Step5CoachList";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
 interface UploadedImage {
-  key: string;
-  url: string;
+  key: string; // S3 key for regenerating presigned URLs
+  url: string; // Current presigned URL (expires in 7 days)
 }
 
 interface UploadedDoc {
   type: string;
   fileName: string;
-  url: string;
+  url: string; // Current presigned URL (expires in 24 hours)
+  s3Key: string; // S3 key for regenerating presigned URLs
 }
 
 export default function OnboardingContainer() {
@@ -129,19 +130,34 @@ export default function OnboardingContainer() {
 
   // ============ STEP 3: Confirm images and get document URLs ============
   const handleStep3ImagesConfirmed = useCallback(
-    async (images: string[], coverPhotoUrl: string) => {
+    async (
+      images: string[],
+      imageKeys: string[],
+      coverPhotoUrl: string,
+      coverPhotoKey: string,
+    ) => {
       setGlobalError("");
       setLoading(true);
 
       try {
         if (!venueId) throw new Error("Venue ID not found");
 
-        // images is now array of strings (URLs)
-        // Confirm images with server (images is now array of strings)
+        // Store uploaded images with S3 keys
+        const uploadedImagesData: UploadedImage[] = images.map(
+          (url, index) => ({
+            key: imageKeys[index],
+            url,
+          }),
+        );
+        setUploadedImages(uploadedImagesData);
+
+        // Confirm images with server (now includes S3 keys)
         const confirmResponse = await onboardingApi.confirmImagesStep3({
           venueId,
           images,
+          imageKeys,
           coverPhotoUrl,
+          coverPhotoKey,
         });
 
         if (!confirmResponse.success) {
@@ -212,14 +228,17 @@ export default function OnboardingContainer() {
 
         setUploadedDocuments(documents);
 
-        // Finalize onboarding
+        // Finalize onboarding with S3 keys
         const finalizeResponse = await onboardingApi.finalizeOnboarding({
           venueId,
           images: uploadedImages.map((img) => img.url),
+          imageKeys: uploadedImages.map((img) => img.key),
           coverPhotoUrl: uploadedImages[0]?.url || "",
+          coverPhotoKey: uploadedImages[0]?.key || "",
           documents: documents.map((doc) => ({
             type: doc.type as any,
             url: doc.url,
+            s3Key: doc.s3Key,
             fileName: doc.fileName,
           })),
         });
@@ -383,19 +402,30 @@ export default function OnboardingContainer() {
         dummyImageUrl,
         dummyImageUrl,
       ];
+      const dummyImageKeys = [
+        "dev/dummy-image-1.jpg",
+        "dev/dummy-image-2.jpg",
+        "dev/dummy-image-3.jpg",
+        "dev/dummy-image-4.jpg",
+        "dev/dummy-image-5.jpg",
+      ];
 
       // Confirm images
       const confirmResponse = await onboardingApi.confirmImagesStep3({
         venueId,
         images: dummyImages,
+        imageKeys: dummyImageKeys,
         coverPhotoUrl: dummyImageUrl,
+        coverPhotoKey: dummyImageKeys[0],
       });
 
       if (!confirmResponse.success || !confirmResponse.data) {
         throw new Error("Failed to confirm images");
       }
 
-      setUploadedImages(dummyImages.map((url) => ({ key: url, url })));
+      setUploadedImages(
+        dummyImages.map((url, i) => ({ key: dummyImageKeys[i], url })),
+      );
 
       // Get document presigned URLs for step 4
       const docUrlsResponse = await onboardingApi.getDocumentUploadUrls(
@@ -472,11 +502,13 @@ export default function OnboardingContainer() {
         {
           type: "OWNERSHIP_PROOF" as const,
           url: "https://via.placeholder.com/150?text=Ownership+Proof",
+          s3Key: "dev/dummy-ownership-proof.pdf",
           fileName: "ownership_proof.pdf",
         },
         {
           type: "BUSINESS_REGISTRATION" as const,
           url: "https://via.placeholder.com/150?text=Business+Reg",
+          s3Key: "dev/dummy-business-registration.pdf",
           fileName: "business_registration.pdf",
         },
       ];
@@ -485,7 +517,18 @@ export default function OnboardingContainer() {
       const finalizeResponse = await onboardingApi.finalizeOnboarding({
         venueId,
         images: imagesToSubmit,
+        imageKeys:
+          uploadedImages.length > 0
+            ? uploadedImages.map((img) => img.key)
+            : [
+                "dev/dummy-image-1.jpg",
+                "dev/dummy-image-2.jpg",
+                "dev/dummy-image-3.jpg",
+                "dev/dummy-image-4.jpg",
+                "dev/dummy-image-5.jpg",
+              ],
         coverPhotoUrl,
+        coverPhotoKey: uploadedImages[0]?.key || "dev/dummy-image-1.jpg",
         documents: dummyDocuments,
       });
 
