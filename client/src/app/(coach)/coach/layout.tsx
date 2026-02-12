@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Calendar } from "lucide-react";
+import { User, Calendar, Store, LogOut } from "lucide-react";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import React from "react";
 
 export default function CoachLayout({
@@ -11,6 +12,16 @@ export default function CoachLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { user } = useAuthStore();
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   const navItems = [
     { href: "/coach/profile", label: "Profile", icon: <User size={20} /> },
@@ -20,6 +31,15 @@ export default function CoachLayout({
       icon: <Calendar size={20} />,
     },
   ];
+
+  // If user is a coach, show option to manage venue
+  if (user?.role === "COACH") {
+    navItems.push({
+      href: "/venue-lister/inventory",
+      label: "Manage Venue",
+      icon: <Store size={20} />,
+    });
+  }
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -47,13 +67,14 @@ export default function CoachLayout({
           ))}
         </nav>
 
-        <div className="p-6 mt-auto border-t border-slate-700">
-          <Link
-            href="/"
-            className="block w-full text-center px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+        <div className="p-6 mt-auto border-t border-slate-700 space-y-3">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
           >
-            ? Back to Home
-          </Link>
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
 

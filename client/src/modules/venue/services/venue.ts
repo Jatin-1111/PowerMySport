@@ -7,6 +7,7 @@ export const venueApi = {
     location: string | { type: string; coordinates: number[] };
     sports: string[];
     pricePerHour: number;
+    sportPricing?: Record<string, number>;
     amenities?: string[];
     description?: string;
     images?: string[];
@@ -85,9 +86,34 @@ export const venueApi = {
     return response.data;
   },
 
+  getVenueImageUploadUrls: async (
+    venueId: string,
+    files: Array<{ fileName: string; contentType: string }>,
+    coverPhotoIndex: number,
+  ): Promise<
+    ApiResponse<{
+      uploadUrls: Array<{
+        field: string;
+        uploadUrl: string;
+        downloadUrl: string;
+        fileName: string;
+        contentType: string;
+        maxSizeBytes: number;
+      }>;
+    }>
+  > => {
+    const response = await axiosInstance.post(
+      `/venues/${venueId}/image-upload-urls`,
+      {
+        files,
+        coverPhotoIndex,
+      },
+    );
+    return response.data;
+  },
+
   deleteVenue: async (venueId: string): Promise<ApiResponse<null>> => {
     const response = await axiosInstance.delete(`/venues/${venueId}`);
     return response.data;
   },
 };
-

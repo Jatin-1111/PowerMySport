@@ -22,6 +22,7 @@ export default function BookVenuePage() {
     date: "",
     startTime: "",
     endTime: "",
+    sport: "",
     dependentId: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,10 +70,22 @@ export default function BookVenuePage() {
     return end - start;
   };
 
+  const getSportPrice = (sport: string) => {
+    if (!venue) return 0;
+    if (
+      sport &&
+      venue.sportPricing &&
+      venue.sportPricing[sport] !== undefined
+    ) {
+      return venue.sportPricing[sport];
+    }
+    return venue.pricePerHour;
+  };
+
   const calculateTotal = () => {
     if (!venue) return 0;
     const duration = calculateDuration();
-    return duration * venue.pricePerHour;
+    return duration * getSportPrice(bookingData.sport);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,7 +93,12 @@ export default function BookVenuePage() {
     setError("");
 
     // Validation
-    if (!bookingData.date || !bookingData.startTime || !bookingData.endTime) {
+    if (
+      !bookingData.date ||
+      !bookingData.startTime ||
+      !bookingData.endTime ||
+      !bookingData.sport
+    ) {
       setError("Please fill in all fields");
       return;
     }
@@ -96,6 +114,7 @@ export default function BookVenuePage() {
     try {
       const response = await bookingApi.initiateBooking({
         venueId,
+        sport: bookingData.sport,
         date: bookingData.date,
         startTime: bookingData.startTime,
         endTime: bookingData.endTime,
@@ -175,7 +194,7 @@ export default function BookVenuePage() {
             <div>
               <p className="text-sm text-slate-600">Price</p>
               <p className="text-2xl font-bold text-power-orange">
-                ?{venue.pricePerHour}
+                ?{getSportPrice(bookingData.sport || venue.sports[0] || "")}
                 <span className="text-sm text-slate-600">/hour</span>
               </p>
             </div>
@@ -205,6 +224,26 @@ export default function BookVenuePage() {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Sport Selection */}
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">
+                Sport *
+              </label>
+              <select
+                name="sport"
+                value={bookingData.sport}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+              >
+                <option value="">Select a sport</option>
+                {venue.sports.map((sport) => (
+                  <option key={sport} value={sport}>
+                    {sport}
+                  </option>
+                ))}
+              </select>
+            </div>
             {/* Date */}
             <div>
               <label className="block text-sm font-medium text-slate-900 mb-2">

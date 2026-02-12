@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
+import { Venue } from "../models/Venue";
+import { s3Service } from "../services/S3Service";
 import { findCoachesNearby, getAllCoaches } from "../services/CoachService";
 import {
   createVenue,
@@ -313,6 +315,98 @@ export const deleteVenueById = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to delete venue",
+    });
+  }
+};
+
+export const getVenueImageUploadUrls = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const venueId = (req.params as Record<string, unknown>).venueId as string;
+    const { files, coverPhotoIndex } = req.body as {
+      files: Array<{ fileName: string; contentType: string }>;
+      coverPhotoIndex: number;
+    };
+
+    const venue = await Venue.findById(venueId);
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+      return;
+    }
+
+    if (venue.ownerId?.toString() !== req.user.id) {
+      res.status(403).json({
+        success: false,
+        message: "Access denied. You do not own this venue.",
+      });
+      return;
+    }
+
+    if (coverPhotoIndex < 0 || coverPhotoIndex >= files.length) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid cover photo index",
+      });
+      return;
+    }
+
+    const uploadUrls = [] as Array<{
+      field: string;
+      uploadUrl: string;
+      downloadUrl: string;
+      fileName: string;
+      contentType: string;
+      maxSizeBytes: number;
+    }>;
+
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i];
+      const field = `image_${i}`;
+      const isCover = i === coverPhotoIndex;
+      const uploadResponse = await s3Service.generateImageUploadUrl(
+        file.fileName,
+        file.contentType,
+        venueId,
+        isCover,
+      );
+
+      uploadUrls.push({
+        field,
+        uploadUrl: uploadResponse.uploadUrl,
+        downloadUrl: uploadResponse.downloadUrl,
+        fileName: uploadResponse.fileName,
+        contentType: file.contentType,
+        maxSizeBytes: 5 * 1024 * 1024,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Image upload URLs generated",
+      data: {
+        uploadUrls,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to generate image upload URLs",
     });
   }
 };

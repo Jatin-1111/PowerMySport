@@ -122,6 +122,7 @@ export interface IVenue {
   location: IGeoLocation;
   sports: string[];
   pricePerHour: number;
+  sportPricing?: Record<string, number>;
   amenities: string[];
   description: string;
   images: string[];
@@ -161,6 +162,7 @@ export interface IVenueOnboardingStep2 {
   name: string;
   sports: string[];
   pricePerHour: number;
+  sportPricing?: Record<string, number>;
   amenities: string[];
   address: string;
   openingHours: string;

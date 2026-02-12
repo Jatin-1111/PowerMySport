@@ -5,6 +5,7 @@ import { Card } from "@/modules/shared/ui/Card";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Coach } from "@/types";
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 export default function CoachProfilePage() {
@@ -103,10 +104,6 @@ export default function CoachProfilePage() {
           .filter((s) => s),
         hourlyRate: Number(formData.hourlyRate),
         serviceMode: formData.serviceMode,
-        venueId:
-          formData.serviceMode !== "FREELANCE" && formData.venueId.trim() !== ""
-            ? formData.venueId
-            : undefined,
         serviceRadiusKm:
           formData.serviceMode !== "OWN_VENUE"
             ? formData.serviceRadiusKm
@@ -131,6 +128,15 @@ export default function CoachProfilePage() {
       alert(error.response?.data?.message || "Failed to save profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
     }
   };
 
@@ -246,25 +252,20 @@ export default function CoachProfilePage() {
               .
             </p>
           )}
+          {formData.serviceMode === "HYBRID" && (
+            <p className="text-xs text-slate-500 mt-2">
+              ✓ You'll have both your own dedicated venue and the ability to
+              travel to other venues. Manage your venue in{" "}
+              <a
+                href="/venue-lister/inventory"
+                className="text-power-orange hover:underline"
+              >
+                venue inventory
+              </a>
+              .
+            </p>
+          )}
         </div>
-
-        {/* Conditional Fields */}
-        {formData.serviceMode !== "FREELANCE" && (
-          <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
-              Venue ID (optional)
-            </label>
-            <input
-              type="text"
-              value={formData.venueId}
-              onChange={(e) =>
-                setFormData({ ...formData, venueId: e.target.value })
-              }
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
-              placeholder="Enter your venue ID"
-            />
-          </div>
-        )}
 
         {formData.serviceMode !== "OWN_VENUE" && (
           <>
@@ -307,18 +308,29 @@ export default function CoachProfilePage() {
         )}
 
         {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={saving}
-          variant="primary"
-          className="w-full"
-        >
-          {saving
-            ? "Saving..."
-            : hasProfile
-              ? "Update Profile"
-              : "Create Profile"}
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            type="submit"
+            disabled={saving}
+            variant="primary"
+            className="flex-1"
+          >
+            {saving
+              ? "Saving..."
+              : hasProfile
+                ? "Update Profile"
+                : "Create Profile"}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleLogout}
+            variant="secondary"
+            className="flex items-center justify-center gap-2 px-6"
+          >
+            <LogOut size={18} />
+            <span>Logout</span>
+          </Button>
+        </div>
       </form>
     </Card>
   );

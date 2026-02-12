@@ -11,6 +11,7 @@ export const bookingApi = {
   initiateBooking: async (data: {
     venueId: string;
     coachId?: string;
+    sport: string;
     date: string;
     startTime: string;
     endTime: string;

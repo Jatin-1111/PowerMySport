@@ -21,13 +21,28 @@ export const venueSchema = z.object({
   location: z.string().min(1, "Location is required"),
   sports: z.array(z.string()).min(1, "At least one sport is required"),
   pricePerHour: z.number().min(0, "Price must be non-negative"),
+  sportPricing: z.record(z.string(), z.number().min(0)).optional(),
   amenities: z.array(z.string()).optional().default([]),
   description: z.string().optional().default(""),
   images: z.array(z.string()).optional().default([]),
 });
 
+export const venueImageUploadSchema = z.object({
+  files: z
+    .array(
+      z.object({
+        fileName: z.string().min(1),
+        contentType: z.string().min(1),
+      }),
+    )
+    .min(1)
+    .max(20),
+  coverPhotoIndex: z.number().min(0).max(19),
+});
+
 export const bookingSchema = z.object({
   venueId: z.string().min(1, "Venue ID is required"),
+  sport: z.string().min(1, "Sport is required"),
   date: z.string().datetime(),
   startTime: z
     .string()
@@ -72,6 +87,7 @@ export const venueOnboardingStep2Schema = z.object({
     .max(100, "Venue name cannot exceed 100 characters"),
   sports: z.array(z.string().min(1)).min(1, "At least one sport is required"),
   pricePerHour: z.number().min(0, "Price must be non-negative"),
+  sportPricing: z.record(z.string(), z.number().min(0)).optional(),
   amenities: z.array(z.string()).optional().default([]),
   address: z.string().min(5, "Address must be at least 5 characters"),
   openingHours: z.string().optional().default("9:00 AM - 9:00 PM"),

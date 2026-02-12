@@ -7,6 +7,7 @@ export interface CreateVenuePayload {
   location: IGeoLocation;
   sports: string[];
   pricePerHour: number;
+  sportPricing?: Record<string, number>;
   amenities?: string[];
   description?: string;
   images?: string[];

@@ -20,6 +20,7 @@ export interface VenueDocument extends Document {
   location: IGeoLocation;
   sports: string[];
   pricePerHour: number;
+  sportPricing?: Record<string, number>;
   amenities: string[];
   address: string;
   openingHours: string;
@@ -107,6 +108,11 @@ const venueSchema = new Schema<VenueDocument>(
       type: Number,
       required: [true, "Price per hour is required"],
       min: 0,
+    },
+    sportPricing: {
+      type: Map,
+      of: Number,
+      default: {},
     },
     amenities: {
       type: [String],

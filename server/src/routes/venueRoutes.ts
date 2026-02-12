@@ -1,15 +1,16 @@
 import { Router } from "express";
 import {
-    createNewVenue,
-    deleteVenueById,
-    discoverNearby,
-    getMyVenues,
-    getVenue,
-    searchVenues,
-    updateVenueDetails,
+  createNewVenue,
+  deleteVenueById,
+  discoverNearby,
+  getVenueImageUploadUrls,
+  getMyVenues,
+  getVenue,
+  searchVenues,
+  updateVenueDetails,
 } from "../controllers/venueController";
 import { authMiddleware, vendorMiddleware } from "../middleware/auth";
-import { venueSchema } from "../middleware/schemas";
+import { venueImageUploadSchema, venueSchema } from "../middleware/schemas";
 import { validateRequest } from "../middleware/validation";
 
 const router = Router();
@@ -32,6 +33,13 @@ router.get("/discover", discoverNearby);
 router.get("/search", searchVenues);
 
 router.get("/my-venues", authMiddleware, vendorMiddleware, getMyVenues);
+router.post(
+  "/:venueId/image-upload-urls",
+  authMiddleware,
+  vendorMiddleware,
+  validateRequest(venueImageUploadSchema),
+  getVenueImageUploadUrls,
+);
 router.get("/:venueId", getVenue);
 router.put("/:venueId", authMiddleware, vendorMiddleware, updateVenueDetails);
 router.delete("/:venueId", authMiddleware, vendorMiddleware, deleteVenueById);

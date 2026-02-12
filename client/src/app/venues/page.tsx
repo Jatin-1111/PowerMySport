@@ -59,6 +59,18 @@ export default function VenuesPage() {
     setShowLoginModal(true);
   };
 
+  const getDisplayPrice = (venue: Venue) => {
+    if (venue.sportPricing) {
+      const values = Object.values(venue.sportPricing).filter(
+        (value) => typeof value === "number" && value >= 0,
+      );
+      if (values.length > 0) {
+        return Math.min(...values);
+      }
+    }
+    return venue.pricePerHour;
+  };
+
   return (
     <>
       <PublicPageHeader
@@ -158,7 +170,7 @@ export default function VenuesPage() {
                         </p>
                         <p className="text-2xl font-bold text-power-orange flex items-center gap-1 mt-1">
                           <IndianRupee size={20} />
-                          {venue.pricePerHour}
+                          {getDisplayPrice(venue)}
                         </p>
                       </div>
                     </div>

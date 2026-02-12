@@ -101,6 +101,7 @@ export const updateVenueDetails = async (
   venue.location = payload.location;
   venue.sports = payload.sports;
   venue.pricePerHour = payload.pricePerHour;
+  venue.sportPricing = payload.sportPricing || {};
   venue.amenities = payload.amenities;
   venue.address = payload.address;
   venue.openingHours = payload.openingHours;

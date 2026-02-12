@@ -70,6 +70,16 @@ export default function VendorLayout({
             <Calendar size={20} />
             <span>Bookings</span>
           </Link>
+
+          {/* Show "Back to Coach" if user is a coach */}
+          {user?.role === "COACH" && (
+            <Link
+              href="/coach/profile"
+              className="flex items-center gap-3 px-6 py-3 mt-4 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-turf-green transition-all border-l-4 border-turf-green"
+            >
+              <span className="text-turf-green">← Back to Coach Profile</span>
+            </Link>
+          )}
         </nav>
 
         <div className="p-6 mt-auto border-t border-slate-700">

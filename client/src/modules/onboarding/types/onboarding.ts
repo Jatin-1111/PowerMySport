@@ -40,6 +40,7 @@ export interface OnboardingVenue {
   name: string;
   sports: string[];
   pricePerHour: number;
+  sportPricing?: Record<string, number>;
   amenities?: string[];
   address: string;
   openingHours?: string;
@@ -89,6 +90,7 @@ export interface OnboardingStep2Payload {
   name: string;
   sports: string[];
   pricePerHour: number;
+  sportPricing?: Record<string, number>;
   amenities: string[];
   address: string;
   openingHours: string;
@@ -157,4 +159,3 @@ export interface OnboardingFormState {
   error?: string;
   success?: string;
 }
-

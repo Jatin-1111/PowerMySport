@@ -54,6 +54,7 @@ export default function Step1VenueDetails({
     name: "",
     sports: [],
     pricePerHour: 0,
+    sportPricing: {},
     amenities: [],
     address: "",
     openingHours: "9:00 AM - 9:00 PM",
@@ -68,6 +69,9 @@ export default function Step1VenueDetails({
 
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [samePriceForAll, setSamePriceForAll] = useState(true);
+  const [basePricePerHour, setBasePricePerHour] = useState(0);
+  const [sportPricing, setSportPricing] = useState<Record<string, number>>({});
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [autocompleteLoading, setAutocompleteLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -142,11 +146,6 @@ export default function Step1VenueDetails({
         ...prev,
         [name]: checked,
       }));
-    } else if (name === "pricePerHour") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: parseFloat(value) || 0,
-      }));
     } else if (name === "lat" || name === "lng") {
       const coord = parseFloat(value) || 0;
       const newCoords: [number, number] = [
@@ -183,8 +182,39 @@ export default function Step1VenueDetails({
         ...prev,
         sports: updated,
       }));
+      setSportPricing((prevPricing) => {
+        const nextPricing: Record<string, number> = {};
+        updated.forEach((item) => {
+          if (item === sport && !prev.includes(sport)) {
+            nextPricing[item] = samePriceForAll ? basePricePerHour : 0;
+          } else {
+            nextPricing[item] = prevPricing[item] ?? 0;
+          }
+        });
+        return nextPricing;
+      });
       return updated;
     });
+  };
+
+  const handleBasePriceChange = (value: number) => {
+    setBasePricePerHour(value);
+    if (samePriceForAll) {
+      setSportPricing(() => {
+        const nextPricing: Record<string, number> = {};
+        formData.sports.forEach((sport) => {
+          nextPricing[sport] = value;
+        });
+        return nextPricing;
+      });
+    }
+  };
+
+  const handleSportPriceChange = (sport: string, value: number) => {
+    setSportPricing((prev) => ({
+      ...prev,
+      [sport]: value,
+    }));
   };
 
   const toggleAmenity = (amenity: string) => {
@@ -212,9 +242,19 @@ export default function Step1VenueDetails({
       alert("Please select at least one sport");
       return;
     }
-    if (formData.pricePerHour <= 0) {
-      alert("Please enter valid price per hour");
-      return;
+    if (samePriceForAll) {
+      if (basePricePerHour <= 0) {
+        alert("Please enter valid price per hour");
+        return;
+      }
+    } else {
+      const invalidSport = formData.sports.find(
+        (sport) => (sportPricing[sport] || 0) <= 0,
+      );
+      if (invalidSport) {
+        alert(`Please enter a valid price for ${invalidSport}`);
+        return;
+      }
     }
     if (!formData.address.trim()) {
       alert("Please enter venue address");
@@ -222,7 +262,24 @@ export default function Step1VenueDetails({
     }
 
     try {
-      await onSubmit(formData);
+      const pricingMap = samePriceForAll
+        ? Object.fromEntries(
+            formData.sports.map((sport) => [sport, basePricePerHour]),
+          )
+        : formData.sports.reduce<Record<string, number>>((acc, sport) => {
+            acc[sport] = sportPricing[sport] || 0;
+            return acc;
+          }, {});
+
+      const effectiveBasePrice = samePriceForAll
+        ? basePricePerHour
+        : Math.min(...Object.values(pricingMap));
+
+      await onSubmit({
+        ...formData,
+        pricePerHour: effectiveBasePrice,
+        sportPricing: pricingMap,
+      });
     } catch (err) {
       console.error("Form submission error:", err);
     }
@@ -281,38 +338,98 @@ export default function Step1VenueDetails({
           </div>
         </div>
 
-        {/* Price Per Hour */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Price per Hour (?) <span className="text-red-500">*</span>
+        {/* Pricing */}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <label className="block text-sm font-medium text-gray-700">
+              Pricing (per hour) <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
-              name="pricePerHour"
-              value={formData.pricePerHour}
-              onChange={handleInputChange}
-              placeholder="500"
-              min="0"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={samePriceForAll}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setSamePriceForAll(checked);
+                  if (checked) {
+                    const nextPricing: Record<string, number> = {};
+                    formData.sports.forEach((sport) => {
+                      nextPricing[sport] = basePricePerHour;
+                    });
+                    setSportPricing(nextPricing);
+                  }
+                }}
+                className="w-4 h-4 text-blue-600 rounded"
+              />
+              Same price for all sports
+            </label>
           </div>
 
-          {/* Opening Hours */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Opening Hours
-            </label>
-            <input
-              type="text"
-              name="openingHours"
-              value={formData.openingHours}
-              onChange={handleInputChange}
-              placeholder="9:00 AM - 9:00 PM"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Base price per hour
+              </label>
+              <input
+                type="number"
+                value={basePricePerHour}
+                onChange={(e) =>
+                  handleBasePriceChange(parseFloat(e.target.value) || 0)
+                }
+                placeholder="500"
+                min="0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
           </div>
+
+          {formData.sports.length === 0 && (
+            <p className="text-sm text-gray-500">
+              Select sports to set specific prices.
+            </p>
+          )}
+
+          {!samePriceForAll && formData.sports.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {formData.sports.map((sport) => (
+                <div key={sport}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {sport} price per hour
+                  </label>
+                  <input
+                    type="number"
+                    value={sportPricing[sport] ?? ""}
+                    onChange={(e) =>
+                      handleSportPriceChange(
+                        sport,
+                        parseFloat(e.target.value) || 0,
+                      )
+                    }
+                    placeholder="500"
+                    min="0"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Opening Hours */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Opening Hours
+          </label>
+          <input
+            type="text"
+            name="openingHours"
+            value={formData.openingHours}
+            onChange={handleInputChange}
+            placeholder="9:00 AM - 9:00 PM"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
 
         {/* Address */}

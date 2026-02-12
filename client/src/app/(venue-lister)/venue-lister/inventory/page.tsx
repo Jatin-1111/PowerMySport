@@ -4,6 +4,8 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { Venue } from "@/types";
 import { MapPin } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -24,8 +26,22 @@ export default function VenueInventoryPage() {
     description: "",
     openingHours: "9:00 AM - 9:00 PM",
   });
+  const [samePriceForAll, setSamePriceForAll] = useState(true);
+  const [basePricePerHour, setBasePricePerHour] = useState(0);
+  const [sportPricing, setSportPricing] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [locationStatus, setLocationStatus] = useState<string>("");
+  const [addressQuery, setAddressQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [hasSelectedLocation, setHasSelectedLocation] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<
+    Array<{ file: File; preview: string }>
+  >([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [coverPhotoIndex, setCoverPhotoIndex] = useState(0);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [imageError, setImageError] = useState("");
 
   // Check if user can add more venues (defaults to false for venue listers from inquiry)
   const canAddMoreVenues = user?.venueListerProfile?.canAddMoreVenues ?? true;
@@ -33,6 +49,34 @@ export default function VenueInventoryPage() {
   useEffect(() => {
     loadVenues();
   }, []);
+
+  useEffect(() => {
+    setAddressQuery(formData.address);
+  }, [formData.address]);
+
+  useEffect(() => {
+    const query = addressQuery.trim();
+    if (query.length < 3) {
+      setSuggestions([]);
+      setSearchError("");
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setIsSearching(true);
+      setSearchError("");
+      try {
+        const results = await geoApi.autocomplete(query);
+        setSuggestions(results);
+      } catch (err) {
+        setSearchError("Unable to fetch suggestions");
+      } finally {
+        setIsSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [addressQuery]);
 
   const loadVenues = async () => {
     try {
@@ -50,35 +94,118 @@ export default function VenueInventoryPage() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
+    if (e.target.name === "sports") {
+      const nextSports = parseSportsInput(e.target.value);
+      setSportPricing((prevPricing) => {
+        const nextPricing: Record<string, number> = {};
+        nextSports.forEach((sport) => {
+          nextPricing[sport] =
+            prevPricing[sport] ?? (samePriceForAll ? basePricePerHour : 0);
+        });
+        return nextPricing;
+      });
+    }
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleGetLocation = () => {
-    setLocationStatus("Getting location...");
-    if (!navigator.geolocation) {
-      setLocationStatus("Geolocation is not supported by your browser");
-      return;
+  const parseSportsInput = (value: string) =>
+    value
+      .split(",")
+      .map((sport) => sport.trim())
+      .filter((sport) => sport.length > 0);
+
+  const handleBasePriceChange = (value: number) => {
+    setBasePricePerHour(value);
+    if (samePriceForAll) {
+      const sportsList = parseSportsInput(formData.sports);
+      setSportPricing(() => {
+        const nextPricing: Record<string, number> = {};
+        sportsList.forEach((sport) => {
+          nextPricing[sport] = value;
+        });
+        return nextPricing;
+      });
+    }
+  };
+
+  const handleSportPriceChange = (sport: string, value: number) => {
+    setSportPricing((prev) => ({
+      ...prev,
+      [sport]: value,
+    }));
+  };
+
+  const handleImageSelection = (files: FileList | null) => {
+    if (!files) return;
+    const maxImages = 10;
+    const selected = Array.from(files).slice(0, maxImages);
+    if (selected.length < files.length) {
+      setImageError("You can upload up to 10 images.");
+    } else {
+      setImageError("");
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setFormData((prev) => ({
-          ...prev,
-          location: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          },
-        }));
-        setLocationStatus("Location captured! ?");
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const maxSizeBytes = 5 * 1024 * 1024;
+    const valid = selected.filter((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        return false;
+      }
+      if (file.size > maxSizeBytes) {
+        return false;
+      }
+      return true;
+    });
+
+    if (valid.length !== selected.length) {
+      setImageError("Only JPG, PNG, or WebP files under 5MB are allowed.");
+    }
+
+    const previews = valid.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+
+    setSelectedImages(previews);
+    setCoverPhotoIndex(0);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (coverPhotoIndex >= next.length) {
+        setCoverPhotoIndex(0);
+      }
+      return next;
+    });
+  };
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAddressQuery(value);
+    setHasSelectedLocation(false);
+    setFormData((prev) => ({
+      ...prev,
+      address: value,
+    }));
+  };
+
+  const handleSelectSuggestion = (suggestion: GeoSuggestion) => {
+    setHasSelectedLocation(true);
+    setSuggestions([]);
+    setSearchError("");
+    setAddressQuery(suggestion.label);
+    setFormData((prev) => ({
+      ...prev,
+      address: suggestion.label,
+      location: {
+        lat: suggestion.lat,
+        lng: suggestion.lon,
       },
-      (error) => {
-        console.error("Error getting location:", error);
-        setLocationStatus("Unable to retrieve your location");
-      },
-    );
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,22 +213,85 @@ export default function VenueInventoryPage() {
     setIsSubmitting(true);
 
     try {
-      // Validate location for new venues
-      if (!formData.location && !editingVenue) {
-        // If we are editing, we might keep existing location if not updated
-        // But for new venues, we require it OR we default to something?
-        // User asked to fix the crash. Safest is to REQUIRE it or default to 0,0 if really needed.
-        // But better to ask user.
-        alert("Please capture the GPS location of the venue using the button.");
+      if (!formData.address.trim()) {
+        alert("Please enter a venue address");
         setIsSubmitting(false);
         return;
       }
 
+      if (!hasSelectedLocation) {
+        setIsSearching(true);
+        setSearchError("");
+        try {
+          const result = await geoApi.geocode(formData.address);
+          if (!result) {
+            alert("We couldn't find this address. Please pick a suggestion.");
+            setIsSubmitting(false);
+            return;
+          }
+
+          setHasSelectedLocation(true);
+          setAddressQuery(result.label);
+          setFormData((prev) => ({
+            ...prev,
+            address: result.label,
+            location: {
+              lat: result.lat,
+              lng: result.lon,
+            },
+          }));
+        } catch (error) {
+          setSearchError("Unable to resolve address");
+          setIsSubmitting(false);
+          return;
+        } finally {
+          setIsSearching(false);
+        }
+      }
+
+      const sportsList = parseSportsInput(formData.sports);
+      if (sportsList.length === 0) {
+        alert("Please add at least one sport");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (samePriceForAll) {
+        if (basePricePerHour <= 0) {
+          alert("Please enter a valid base price");
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        const invalidSport = sportsList.find(
+          (sport) => (sportPricing[sport] || 0) <= 0,
+        );
+        if (invalidSport) {
+          alert(`Please enter a valid price for ${invalidSport}`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const pricingMap = samePriceForAll
+        ? Object.fromEntries(
+            sportsList.map((sport) => [sport, basePricePerHour]),
+          )
+        : sportsList.reduce<Record<string, number>>((acc, sport) => {
+            acc[sport] = sportPricing[sport] || 0;
+            return acc;
+          }, {});
+
+      const effectiveBasePrice = samePriceForAll
+        ? basePricePerHour
+        : Math.min(...Object.values(pricingMap));
+
       const venueData: any = {
         name: formData.name,
         address: formData.address, // Send address string
-        sports: formData.sports.split(",").map((s) => s.trim()),
-        pricePerHour: parseFloat(formData.pricePerHour),
+        sports: sportsList,
+        pricePerHour: effectiveBasePrice,
+        sportPricing: pricingMap,
         amenities: formData.amenities
           ? formData.amenities.split(",").map((a) => a.trim())
           : [],
@@ -117,10 +307,47 @@ export default function VenueInventoryPage() {
         };
       }
 
+      let savedVenueId = editingVenue?.id;
       if (editingVenue) {
         await venueApi.updateVenue(editingVenue.id, venueData);
       } else {
-        await venueApi.createVenue(venueData);
+        const created = await venueApi.createVenue(venueData);
+        savedVenueId = created.data?.id;
+      }
+
+      if (savedVenueId && selectedImages.length > 0) {
+        setIsUploadingImages(true);
+        const imageUploadResponse = await venueApi.getVenueImageUploadUrls(
+          savedVenueId,
+          selectedImages.map((image) => ({
+            fileName: image.file.name,
+            contentType: image.file.type,
+          })),
+          coverPhotoIndex,
+        );
+        const uploadUrls = imageUploadResponse.data?.uploadUrls || [];
+        if (uploadUrls.length !== selectedImages.length) {
+          throw new Error("Failed to generate image upload URLs");
+        }
+
+        await Promise.all(
+          uploadUrls.map((uploadUrl, index) =>
+            uploadFileToPresignedUrl(
+              selectedImages[index].file,
+              uploadUrl.uploadUrl,
+              uploadUrl.contentType,
+            ),
+          ),
+        );
+
+        const imageUrls = uploadUrls.map((url) => url.downloadUrl);
+        const coverPhotoUrl = imageUrls[coverPhotoIndex] || imageUrls[0];
+        await venueApi.updateVenue(savedVenueId, {
+          images: imageUrls,
+          coverPhotoUrl,
+        });
+      } else if (!savedVenueId && selectedImages.length > 0) {
+        throw new Error("Unable to upload images without a venue ID");
       }
 
       // Reset form and reload
@@ -134,7 +361,17 @@ export default function VenueInventoryPage() {
         description: "",
         openingHours: "9:00 AM - 9:00 PM",
       });
-      setLocationStatus("");
+      setSamePriceForAll(true);
+      setBasePricePerHour(0);
+      setSportPricing({});
+      setAddressQuery("");
+      setSuggestions([]);
+      setSearchError("");
+      setHasSelectedLocation(false);
+      setSelectedImages([]);
+      setExistingImages([]);
+      setCoverPhotoIndex(0);
+      setImageError("");
       setShowForm(false);
       setEditingVenue(null);
       loadVenues();
@@ -142,6 +379,7 @@ export default function VenueInventoryPage() {
       console.error("Failed to save venue:", error);
       alert(error.response?.data?.message || "Failed to save venue");
     } finally {
+      setIsUploadingImages(false);
       setIsSubmitting(false);
     }
   };
@@ -161,11 +399,30 @@ export default function VenueInventoryPage() {
       };
     }
 
+    const pricingForEdit =
+      venue.sportPricing && Object.keys(venue.sportPricing).length > 0
+        ? venue.sportPricing
+        : venue.sports.reduce<Record<string, number>>((acc, sport) => {
+            acc[sport] = venue.pricePerHour;
+            return acc;
+          }, {});
+    const allSamePrice = Object.values(pricingForEdit).every(
+      (value) => value === venue.pricePerHour,
+    );
+
+    setSamePriceForAll(allSamePrice);
+    setBasePricePerHour(venue.pricePerHour);
+    setSportPricing(pricingForEdit);
+
+    const resolvedAddress =
+      venue.address ||
+      (venue.location?.coordinates
+        ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
+        : "");
+
     setFormData({
       name: venue.name,
-      address:
-        `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}` ||
-        "",
+      address: resolvedAddress,
       location: loc,
       sports: venue.sports.join(", "),
       pricePerHour: venue.pricePerHour.toString(),
@@ -173,8 +430,13 @@ export default function VenueInventoryPage() {
       description: venue.description || "",
       openingHours: "9:00 AM - 9:00 PM",
     });
+    setAddressQuery(resolvedAddress);
+    setHasSelectedLocation(Boolean(loc));
+    setExistingImages(venue.images || []);
+    setSelectedImages([]);
+    setImageError("");
+    setCoverPhotoIndex(0);
     setShowForm(true);
-    setLocationStatus(loc ? "Location matched from saved data" : "");
   };
 
   const handleDelete = async (venueId: string) => {
@@ -202,7 +464,17 @@ export default function VenueInventoryPage() {
       description: "",
       openingHours: "9:00 AM - 9:00 PM",
     });
-    setLocationStatus("");
+    setSamePriceForAll(true);
+    setBasePricePerHour(0);
+    setSportPricing({});
+    setAddressQuery("");
+    setSuggestions([]);
+    setSearchError("");
+    setHasSelectedLocation(false);
+    setSelectedImages([]);
+    setExistingImages([]);
+    setCoverPhotoIndex(0);
+    setImageError("");
   };
 
   if (loading) {
@@ -258,57 +530,42 @@ export default function VenueInventoryPage() {
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-slate-900 mb-2">
-                  Address (Display Only) *
+                  Address *
                 </label>
                 <input
                   type="text"
                   name="address"
-                  value={formData.address}
-                  onChange={handleChange}
+                  value={addressQuery}
+                  onChange={handleAddressChange}
                   required
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
-                  placeholder="e.g., Mumbai, Maharashtra"
+                  placeholder="Search your venue location"
                 />
-              </div>
-            </div>
-
-            {/* GPS Location Section */}
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <label className="block text-sm font-medium text-slate-900 mb-2">
-                GPS Location (Required for Search) *
-              </label>
-              <div className="flex items-center gap-4">
-                <Button
-                  type="button"
-                  onClick={handleGetLocation}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <MapPin size={18} />
-                  {formData.location
-                    ? "Update Location"
-                    : "Get Current Location"}
-                </Button>
-                {locationStatus && (
-                  <span
-                    className={`text-sm ${
-                      locationStatus.includes("?")
-                        ? "text-green-600 font-medium"
-                        : "text-slate-500"
-                    }`}
-                  >
-                    {locationStatus}
+                {isSearching && (
+                  <span className="absolute right-3 top-12 text-xs text-slate-500">
+                    Searching...
                   </span>
                 )}
+                {searchError && (
+                  <p className="text-xs text-red-600 mt-2">{searchError}</p>
+                )}
+                {suggestions.length > 0 && (
+                  <div className="absolute z-10 mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                    {suggestions.map((suggestion) => (
+                      <button
+                        type="button"
+                        key={suggestion.label}
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        {suggestion.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              {formData.location && (
-                <p className="text-xs text-slate-500 mt-2">
-                  Lat: {formData.location.lat.toFixed(6)}, Lng:{" "}
-                  {formData.location.lng.toFixed(6)}
-                </p>
-              )}
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -327,21 +584,86 @@ export default function VenueInventoryPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-900 mb-2">
-                  Price per Hour (?) *
-                </label>
-                <input
-                  type="number"
-                  name="pricePerHour"
-                  value={formData.pricePerHour}
-                  onChange={handleChange}
-                  required
-                  min="0"
-                  step="0.01"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
-                  placeholder="e.g., 1500"
-                />
+              <div className="md:col-span-2 space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="block text-sm font-medium text-slate-900">
+                    Pricing (per hour) *
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={samePriceForAll}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSamePriceForAll(checked);
+                        if (checked) {
+                          const sportsList = parseSportsInput(formData.sports);
+                          const nextPricing: Record<string, number> = {};
+                          sportsList.forEach((sport) => {
+                            nextPricing[sport] = basePricePerHour;
+                          });
+                          setSportPricing(nextPricing);
+                        }
+                      }}
+                      className="w-4 h-4 accent-power-orange rounded"
+                    />
+                    Same price for all sports
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                      Base price per hour
+                    </label>
+                    <input
+                      type="number"
+                      value={basePricePerHour}
+                      onChange={(e) =>
+                        handleBasePriceChange(parseFloat(e.target.value) || 0)
+                      }
+                      required
+                      min="0"
+                      step="0.01"
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                      placeholder="e.g., 1500"
+                    />
+                  </div>
+                </div>
+
+                {formData.sports.length === 0 && (
+                  <p className="text-sm text-slate-500">
+                    Add sports to set specific prices.
+                  </p>
+                )}
+
+                {!samePriceForAll &&
+                  parseSportsInput(formData.sports).length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {parseSportsInput(formData.sports).map((sport) => (
+                        <div key={sport}>
+                          <label className="block text-sm font-medium text-slate-900 mb-2">
+                            {sport} price per hour
+                          </label>
+                          <input
+                            type="number"
+                            value={sportPricing[sport] ?? ""}
+                            onChange={(e) =>
+                              handleSportPriceChange(
+                                sport,
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
+                            required
+                            min="0"
+                            step="0.01"
+                            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                            placeholder="e.g., 1500"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             </div>
 
@@ -385,6 +707,90 @@ export default function VenueInventoryPage() {
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                 placeholder="Describe your venue..."
               />
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-900 mb-1">
+                  Venue Images
+                </label>
+                <p className="text-xs text-slate-500">
+                  Upload up to 10 images. Add at least 1 to showcase your venue.
+                </p>
+              </div>
+
+              {existingImages.length > 0 && selectedImages.length === 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {existingImages.map((url, index) => (
+                    <div
+                      key={`${url}-${index}`}
+                      className="relative rounded-lg overflow-hidden border border-slate-200"
+                    >
+                      <img
+                        src={url}
+                        alt={`Venue ${index + 1}`}
+                        className="h-24 w-full object-cover"
+                      />
+                      {editingVenue?.coverPhotoUrl === url && (
+                        <span className="absolute top-1 right-1 text-[10px] bg-power-orange text-white px-2 py-0.5 rounded-full">
+                          Cover
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => handleImageSelection(e.target.files)}
+                className="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-power-orange/10 file:text-power-orange hover:file:bg-power-orange/20"
+              />
+
+              {imageError && (
+                <p className="text-xs text-red-600">{imageError}</p>
+              )}
+
+              {selectedImages.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {selectedImages.map((image, index) => (
+                    <div
+                      key={image.preview}
+                      className="relative rounded-lg overflow-hidden border border-slate-200"
+                    >
+                      <img
+                        src={image.preview}
+                        alt={`Selected ${index + 1}`}
+                        className="h-24 w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-1 left-1 text-[10px] bg-slate-900/80 text-white px-2 py-0.5 rounded-full"
+                      >
+                        Remove
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCoverPhotoIndex(index)}
+                        className={`absolute bottom-1 right-1 text-[10px] px-2 py-0.5 rounded-full ${
+                          index === coverPhotoIndex
+                            ? "bg-power-orange text-white"
+                            : "bg-white text-slate-700"
+                        }`}
+                      >
+                        {index === coverPhotoIndex ? "Cover" : "Set Cover"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {isUploadingImages && (
+                <p className="text-xs text-slate-500">Uploading images...</p>
+              )}
             </div>
 
             <div className="flex gap-3">

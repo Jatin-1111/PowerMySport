@@ -98,9 +98,12 @@ export interface Venue {
   location: IGeoLocation;
   sports: string[];
   pricePerHour: number;
+  sportPricing?: Record<string, number>;
+  address?: string;
   amenities: string[];
   description: string;
   images: string[];
+  coverPhotoUrl?: string;
   allowExternalCoaches: boolean;
   createdAt: string;
   updatedAt: string;
@@ -123,6 +126,7 @@ export interface Booking {
   userId: string;
   venueId: string;
   coachId?: string;
+  sport?: string;
   date: string;
   startTime: string;
   endTime: string;

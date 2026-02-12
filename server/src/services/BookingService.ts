@@ -42,6 +42,7 @@ export interface InitiateBookingPayload {
   userId: string;
   venueId: string;
   coachId?: string;
+  sport: string;
   date: Date;
   startTime: string;
   endTime: string;
@@ -144,6 +145,11 @@ export const initiateBooking = async (
       throw new Error("Selected time slot is already booked for this venue");
     }
 
+    // Validate sport selection
+    if (!payload.sport || !venue.sports.includes(payload.sport)) {
+      throw new Error("Selected sport is not available at this venue");
+    }
+
     // Calculate venue price (supports fractional hours)
     const startParts = payload.startTime.split(":");
     const endParts = payload.endTime.split(":");
@@ -156,7 +162,15 @@ export const initiateBooking = async (
     const endTotalMinutes = endHour * 60 + endMin;
     const totalMinutes = endTotalMinutes - startTotalMinutes;
     const hours = totalMinutes / 60; // Supports 0.5, 0.75, etc.
-    const venuePrice = Math.round(hours * venue.pricePerHour * 100) / 100; // Round to 2 decimals
+    const sportPrice = venue.sportPricing?.[payload.sport];
+    const basePrice =
+      typeof sportPrice === "number" && sportPrice >= 0
+        ? sportPrice
+        : venue.pricePerHour;
+    if (basePrice <= 0) {
+      throw new Error("Venue pricing is not configured for this sport");
+    }
+    const venuePrice = Math.round(hours * basePrice * 100) / 100; // Round to 2 decimals
 
     let coachPrice = 0;
     let coachUserId: string | undefined;
@@ -223,6 +237,7 @@ export const initiateBooking = async (
       userId: payload.userId,
       venueId: payload.venueId,
       coachId: payload.coachId,
+      sport: payload.sport,
       date: payload.date,
       startTime: payload.startTime,
       endTime: payload.endTime,

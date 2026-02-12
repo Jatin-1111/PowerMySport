@@ -24,6 +24,7 @@ export default function BookCoachPage() {
     date: "",
     startTime: "",
     endTime: "",
+    sport: "",
     dependentId: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,12 +89,24 @@ export default function BookCoachPage() {
     return end - start;
   };
 
+  const getSportPrice = (sport: string) => {
+    if (!venue) return 0;
+    if (
+      sport &&
+      venue.sportPricing &&
+      venue.sportPricing[sport] !== undefined
+    ) {
+      return venue.sportPricing[sport];
+    }
+    return venue.pricePerHour;
+  };
+
   const calculateTotal = () => {
     if (!coach) return 0;
     const duration = calculateDuration();
     let total = duration * coach.hourlyRate;
     if (venue) {
-      total += duration * venue.pricePerHour;
+      total += duration * getSportPrice(bookingData.sport);
     }
     return total;
   };
@@ -102,7 +115,12 @@ export default function BookCoachPage() {
     e.preventDefault();
     setError("");
 
-    if (!bookingData.date || !bookingData.startTime || !bookingData.endTime) {
+    if (
+      !bookingData.date ||
+      !bookingData.startTime ||
+      !bookingData.endTime ||
+      !bookingData.sport
+    ) {
       setError("Please fill in all fields");
       return;
     }
@@ -124,6 +142,7 @@ export default function BookCoachPage() {
       await bookingApi.initiateBooking({
         venueId: venue.id,
         coachId: coachId,
+        sport: bookingData.sport,
         date: bookingData.date,
         startTime: bookingData.startTime,
         endTime: bookingData.endTime,
@@ -212,7 +231,9 @@ export default function BookCoachPage() {
                   Venue: {venue.name}
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Venue Rate: ?{venue.pricePerHour}/hour
+                  Venue Rate: ?
+                  {getSportPrice(bookingData.sport || venue.sports[0] || "")}
+                  /hour
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
                   Note: Total price includes both coach and venue fees.
@@ -236,6 +257,28 @@ export default function BookCoachPage() {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Sport Selection */}
+            {venue && (
+              <div>
+                <label className="block text-sm font-medium text-slate-900 mb-2">
+                  Sport *
+                </label>
+                <select
+                  name="sport"
+                  value={bookingData.sport}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                >
+                  <option value="">Select a sport</option>
+                  {venue.sports.map((sport) => (
+                    <option key={sport} value={sport}>
+                      {sport}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-slate-900 mb-2">
                 Date *
