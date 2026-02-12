@@ -250,7 +250,7 @@ venueSchema.index({ location: "2dsphere" });
  * Valid for 24 hours
  */
 venueSchema.methods.refreshDocumentUrls = async function () {
-  const { s3Service } = await import("../services/S3Service");
+  const { s3Service } = require("../services/S3Service");
 
   for (const doc of this.documents) {
     if (doc.s3Key) {
@@ -277,7 +277,7 @@ venueSchema.methods.refreshDocumentUrls = async function () {
  * Valid for 7 days
  */
 venueSchema.methods.refreshImageUrls = async function () {
-  const { s3Service } = await import("../services/S3Service");
+  const { s3Service } = require("../services/S3Service");
 
   // Refresh gallery images
   if (this.imageKeys && this.imageKeys.length > 0) {
