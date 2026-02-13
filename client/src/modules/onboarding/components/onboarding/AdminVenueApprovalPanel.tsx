@@ -7,6 +7,7 @@ import {
   OnboardingVenue,
   PendingVenueListItem,
 } from "@/modules/onboarding/types/onboarding";
+import { formatOpeningHours } from "@/modules/onboarding/utils/formatOpeningHours";
 
 interface AdminVenueApprovalPanelProps {
   initialVenues?: PendingVenueListItem[];
@@ -348,8 +349,8 @@ export default function AdminVenueApprovalPanel({
                   </div>
                   <div>
                     <dt className="text-gray-600">Opening Hours:</dt>
-                    <dd className="font-medium text-gray-900">
-                      {selectedVenue.openingHours}
+                    <dd className="font-medium text-gray-900 text-xs">
+                      {formatOpeningHours(selectedVenue.openingHours)}
                     </dd>
                   </div>
                   <div>
@@ -537,4 +538,3 @@ export default function AdminVenueApprovalPanel({
 
   return null;
 }
-

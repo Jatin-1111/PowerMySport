@@ -90,7 +90,169 @@ export const venueOnboardingStep2Schema = z.object({
   sportPricing: z.record(z.string(), z.number().min(0)).optional(),
   amenities: z.array(z.string()).optional().default([]),
   address: z.string().min(5, "Address must be at least 5 characters"),
-  openingHours: z.string().optional().default("9:00 AM - 9:00 PM"),
+  openingHours: z.object({
+    monday: z
+      .object({
+        isOpen: z.boolean(),
+        openTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+        closeTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+      })
+      .refine(
+        (data) => {
+          if (data.isOpen) {
+            return (
+              data.openTime && data.closeTime && data.openTime < data.closeTime
+            );
+          }
+          return true;
+        },
+        { message: "Opening time must be before closing time when open" },
+      ),
+    tuesday: z
+      .object({
+        isOpen: z.boolean(),
+        openTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+        closeTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+      })
+      .refine(
+        (data) => {
+          if (data.isOpen) {
+            return (
+              data.openTime && data.closeTime && data.openTime < data.closeTime
+            );
+          }
+          return true;
+        },
+        { message: "Opening time must be before closing time when open" },
+      ),
+    wednesday: z
+      .object({
+        isOpen: z.boolean(),
+        openTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+        closeTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+      })
+      .refine(
+        (data) => {
+          if (data.isOpen) {
+            return (
+              data.openTime && data.closeTime && data.openTime < data.closeTime
+            );
+          }
+          return true;
+        },
+        { message: "Opening time must be before closing time when open" },
+      ),
+    thursday: z
+      .object({
+        isOpen: z.boolean(),
+        openTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+        closeTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+      })
+      .refine(
+        (data) => {
+          if (data.isOpen) {
+            return (
+              data.openTime && data.closeTime && data.openTime < data.closeTime
+            );
+          }
+          return true;
+        },
+        { message: "Opening time must be before closing time when open" },
+      ),
+    friday: z
+      .object({
+        isOpen: z.boolean(),
+        openTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+        closeTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+      })
+      .refine(
+        (data) => {
+          if (data.isOpen) {
+            return (
+              data.openTime && data.closeTime && data.openTime < data.closeTime
+            );
+          }
+          return true;
+        },
+        { message: "Opening time must be before closing time when open" },
+      ),
+    saturday: z
+      .object({
+        isOpen: z.boolean(),
+        openTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+        closeTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+      })
+      .refine(
+        (data) => {
+          if (data.isOpen) {
+            return (
+              data.openTime && data.closeTime && data.openTime < data.closeTime
+            );
+          }
+          return true;
+        },
+        { message: "Opening time must be before closing time when open" },
+      ),
+    sunday: z
+      .object({
+        isOpen: z.boolean(),
+        openTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+        closeTime: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format")
+          .optional(),
+      })
+      .refine(
+        (data) => {
+          if (data.isOpen) {
+            return (
+              data.openTime && data.closeTime && data.openTime < data.closeTime
+            );
+          }
+          return true;
+        },
+        { message: "Opening time must be before closing time when open" },
+      ),
+  }),
   description: z
     .string()
     .max(500, "Description cannot exceed 500 characters")
@@ -219,4 +381,24 @@ export const adminReviewVenueSchema = z.object({
     .min(5, "Review notes must be at least 5 characters")
     .max(500, "Review notes cannot exceed 500 characters")
     .optional(),
+});
+
+/**
+ * Email Verification: Send Code
+ */
+export const sendVerificationCodeSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+});
+
+/**
+ * Email Verification: Verify Code
+ */
+export const verifyEmailCodeSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  code: z
+    .string()
+    .length(6, "Verification code must be 6 digits")
+    .regex(/^\d{6}$/, "Verification code must contain only digits"),
+  venueId: z.string().min(1, "Venue ID is required"),
 });

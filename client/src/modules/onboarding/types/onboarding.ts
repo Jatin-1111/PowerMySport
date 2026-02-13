@@ -44,7 +44,15 @@ export interface OnboardingVenue {
   sportPricing?: Record<string, number>;
   amenities?: string[];
   address: string;
-  openingHours?: string;
+  openingHours?: {
+    monday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    tuesday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    wednesday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    thursday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    friday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    saturday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    sunday: { isOpen: boolean; openTime?: string; closeTime?: string };
+  };
   description?: string;
   allowExternalCoaches?: boolean;
   location: {
@@ -97,7 +105,15 @@ export interface OnboardingStep2Payload {
   sportPricing?: Record<string, number>;
   amenities: string[];
   address: string;
-  openingHours: string;
+  openingHours: {
+    monday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    tuesday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    wednesday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    thursday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    friday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    saturday: { isOpen: boolean; openTime?: string; closeTime?: string };
+    sunday: { isOpen: boolean; openTime?: string; closeTime?: string };
+  };
   description: string;
   allowExternalCoaches: boolean;
   hasCoaches: boolean;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
 import { Lightbulb } from "lucide-react";
+import EmailVerificationModal from "./EmailVerificationModal";
 
 interface ContactInfoFormData {
   ownerName: string;
@@ -34,6 +35,9 @@ export default function Step1ContactInfo({
   });
   const [globalError, setGlobalError] = useState<string>("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [venueId, setVenueId] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -80,13 +84,49 @@ export default function Step1ContactInfo({
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      await onContactInfoSubmit(formData);
+      // Step 1: Create venue with contact info
+      const result = await onContactInfoSubmit(formData);
+      setVenueId(result.venueId);
+
+      // Step 2: Send verification code
+      const verificationResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/venues/onboarding/send-verification`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.ownerEmail,
+            name: formData.ownerName,
+          }),
+        },
+      );
+
+      const verificationData = await verificationResponse.json();
+
+      if (!verificationResponse.ok || !verificationData.success) {
+        throw new Error(
+          verificationData.message || "Failed to send verification code",
+        );
+      }
+
+      // Step 3: Show verification modal
+      setShowVerificationModal(true);
     } catch (error) {
       setGlobalError(
         error instanceof Error ? error.message : "Failed to save contact info",
       );
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleVerificationSuccess = () => {
+    setShowVerificationModal(false);
+    // The parent component will handle navigation to next step
+    // This is already done by onContactInfoSubmit callback
   };
 
   return (
@@ -191,15 +231,17 @@ export default function Step1ContactInfo({
         <Button
           type="submit"
           className="w-full bg-power-orange hover:bg-orange-600 text-white py-2.5 text-base"
-          disabled={loading}
+          disabled={loading || isSubmitting}
         >
-          {loading ? "Saving..." : "Continue to Next Step"}
+          {isSubmitting
+            ? "Sending verification code..."
+            : "Continue to Verification"}
         </Button>
         {isDev && onSkip && (
           <Button
             type="button"
             onClick={onSkip}
-            disabled={loading}
+            disabled={loading || isSubmitting}
             className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2.5 text-base"
           >
             Skip (Dev)
@@ -221,6 +263,16 @@ export default function Step1ContactInfo({
           </span>
         </p>
       </Card>
+
+      {/* Email Verification Modal */}
+      {showVerificationModal && (
+        <EmailVerificationModal
+          email={formData.ownerEmail}
+          venueId={venueId}
+          onVerified={handleVerificationSuccess}
+          onClose={() => setShowVerificationModal(false)}
+        />
+      )}
     </div>
   );
 }

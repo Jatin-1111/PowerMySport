@@ -118,6 +118,22 @@ export interface IGeoLocation {
   coordinates: [number, number]; // [longitude, latitude]
 }
 
+export interface DayHours {
+  isOpen: boolean;
+  openTime?: string; // Format: "HH:MM" (24-hour)
+  closeTime?: string; // Format: "HH:MM" (24-hour)
+}
+
+export interface OpeningHours {
+  monday: DayHours;
+  tuesday: DayHours;
+  wednesday: DayHours;
+  thursday: DayHours;
+  friday: DayHours;
+  saturday: DayHours;
+  sunday: DayHours;
+}
+
 export interface IVenue {
   id?: string;
   name: string;
@@ -169,7 +185,7 @@ export interface IVenueOnboardingStep2 {
   sportPricing?: Record<string, number>;
   amenities: string[];
   address: string;
-  openingHours: string;
+  openingHours: OpeningHours;
   description: string;
   allowExternalCoaches: boolean;
   location: IGeoLocation;

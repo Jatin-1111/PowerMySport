@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { OnboardingStep2Payload } from "@/modules/onboarding/types/onboarding";
 import axios from "axios";
+import OpeningHoursInput, { getDefaultOpeningHours } from "./OpeningHoursInput";
 
 interface Step1VenueDetailsProps {
   onSubmit: (data: OnboardingStep2Payload) => Promise<void>;
@@ -57,7 +58,7 @@ export default function Step1VenueDetails({
     sportPricing: {},
     amenities: [],
     address: "",
-    openingHours: "9:00 AM - 9:00 PM",
+    openingHours: getDefaultOpeningHours(),
     description: "",
     allowExternalCoaches: true,
     hasCoaches: false,
@@ -365,24 +366,26 @@ export default function Step1VenueDetails({
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Base price per hour
-              </label>
-              <input
-                type="number"
-                value={basePricePerHour}
-                onChange={(e) =>
-                  handleBasePriceChange(parseFloat(e.target.value) || 0)
-                }
-                placeholder="500"
-                min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
+          {samePriceForAll && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Base price per hour
+                </label>
+                <input
+                  type="number"
+                  value={basePricePerHour === 0 ? "" : basePricePerHour}
+                  onChange={(e) =>
+                    handleBasePriceChange(parseFloat(e.target.value) || 0)
+                  }
+                  placeholder="500"
+                  min="0"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {formData.sports.length === 0 && (
             <p className="text-sm text-gray-500">
@@ -399,7 +402,11 @@ export default function Step1VenueDetails({
                   </label>
                   <input
                     type="number"
-                    value={sportPricing[sport] ?? ""}
+                    value={
+                      sportPricing[sport] === 0 || !sportPricing[sport]
+                        ? ""
+                        : sportPricing[sport]
+                    }
                     onChange={(e) =>
                       handleSportPriceChange(
                         sport,
@@ -418,19 +425,12 @@ export default function Step1VenueDetails({
         </div>
 
         {/* Opening Hours */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Opening Hours
-          </label>
-          <input
-            type="text"
-            name="openingHours"
-            value={formData.openingHours}
-            onChange={handleInputChange}
-            placeholder="9:00 AM - 9:00 PM"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+        <OpeningHoursInput
+          value={formData.openingHours}
+          onChange={(hours) =>
+            setFormData((prev) => ({ ...prev, openingHours: hours }))
+          }
+        />
 
         {/* Address */}
         <div className="relative">

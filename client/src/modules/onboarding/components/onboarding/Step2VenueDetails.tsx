@@ -5,6 +5,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { OnboardingStep2Payload } from "@/modules/onboarding/types/onboarding";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import OpeningHoursInput, { getDefaultOpeningHours } from "./OpeningHoursInput";
 
 interface Step2VenueDetailsProps {
   venueId: string;
@@ -58,7 +59,7 @@ export default function Step2VenueDetails({
     sportPricing: {},
     amenities: [],
     address: "",
-    openingHours: "9:00 AM - 9:00 PM",
+    openingHours: getDefaultOpeningHours(),
     description: "",
     allowExternalCoaches: true,
     hasCoaches: false,
@@ -423,25 +424,27 @@ export default function Step2VenueDetails({
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Base price per hour
-              </label>
-              <input
-                type="number"
-                value={basePricePerHour}
-                onChange={(e) =>
-                  handleBasePriceChange(parseFloat(e.target.value) || 0)
-                }
-                placeholder="500"
-                min="0"
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500"
-                required
-                disabled={loading}
-              />
+          {samePriceForAll && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  Base price per hour
+                </label>
+                <input
+                  type="number"
+                  value={basePricePerHour === 0 ? "" : basePricePerHour}
+                  onChange={(e) =>
+                    handleBasePriceChange(parseFloat(e.target.value) || 0)
+                  }
+                  placeholder="500"
+                  min="0"
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500"
+                  required
+                  disabled={loading}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {formData.sports.length === 0 && (
             <p className="text-sm text-slate-500">
@@ -458,7 +461,11 @@ export default function Step2VenueDetails({
                   </label>
                   <input
                     type="number"
-                    value={sportPricing[sport] ?? ""}
+                    value={
+                      sportPricing[sport] === 0 || !sportPricing[sport]
+                        ? ""
+                        : sportPricing[sport]
+                    }
                     onChange={(e) =>
                       handleSportPriceChange(
                         sport,
@@ -478,20 +485,12 @@ export default function Step2VenueDetails({
         </div>
 
         {/* Opening Hours */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
-            Opening Hours
-          </label>
-          <input
-            type="text"
-            name="openingHours"
-            value={formData.openingHours}
-            onChange={handleInputChange}
-            placeholder="9:00 AM - 9:00 PM"
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500"
-            disabled={loading}
-          />
-        </div>
+        <OpeningHoursInput
+          value={formData.openingHours}
+          onChange={(hours) =>
+            setFormData((prev) => ({ ...prev, openingHours: hours }))
+          }
+        />
 
         {/* Address */}
         <div>

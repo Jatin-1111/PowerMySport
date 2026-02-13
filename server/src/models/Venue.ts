@@ -13,6 +13,7 @@ export interface VenueDocument extends Document {
   ownerName: string;
   ownerEmail: string;
   ownerPhone: string;
+  emailVerified: boolean;
 
   // Venue Details
   name: string;
@@ -23,7 +24,7 @@ export interface VenueDocument extends Document {
   sportPricing?: Record<string, number>;
   amenities: string[];
   address: string;
-  openingHours: string;
+  openingHours: import("../types").OpeningHours;
   description: string;
   images: string[]; // Presigned URLs (regenerated on-demand)
   imageKeys: string[]; // S3 keys for images
@@ -80,6 +81,10 @@ const venueSchema = new Schema<VenueDocument>(
       required: [true, "Owner phone is required"],
       trim: true,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
 
     // Venue Details
     name: {
@@ -131,8 +136,52 @@ const venueSchema = new Schema<VenueDocument>(
       default: "",
     },
     openingHours: {
-      type: String,
-      default: "9:00 AM - 9:00 PM",
+      type: {
+        monday: {
+          isOpen: { type: Boolean, default: true },
+          openTime: { type: String, default: "09:00" },
+          closeTime: { type: String, default: "21:00" },
+        },
+        tuesday: {
+          isOpen: { type: Boolean, default: true },
+          openTime: { type: String, default: "09:00" },
+          closeTime: { type: String, default: "21:00" },
+        },
+        wednesday: {
+          isOpen: { type: Boolean, default: true },
+          openTime: { type: String, default: "09:00" },
+          closeTime: { type: String, default: "21:00" },
+        },
+        thursday: {
+          isOpen: { type: Boolean, default: true },
+          openTime: { type: String, default: "09:00" },
+          closeTime: { type: String, default: "21:00" },
+        },
+        friday: {
+          isOpen: { type: Boolean, default: true },
+          openTime: { type: String, default: "09:00" },
+          closeTime: { type: String, default: "21:00" },
+        },
+        saturday: {
+          isOpen: { type: Boolean, default: true },
+          openTime: { type: String, default: "09:00" },
+          closeTime: { type: String, default: "21:00" },
+        },
+        sunday: {
+          isOpen: { type: Boolean, default: true },
+          openTime: { type: String, default: "09:00" },
+          closeTime: { type: String, default: "21:00" },
+        },
+      },
+      default: {
+        monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        wednesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        thursday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        friday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        saturday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        sunday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      },
     },
     description: {
       type: String,

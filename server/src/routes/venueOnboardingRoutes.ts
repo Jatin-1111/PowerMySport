@@ -15,6 +15,10 @@ import {
   addVenueCoaches,
 } from "../controllers/venueOnboardingController";
 import {
+  sendVerificationCodeHandler,
+  verifyEmailHandler,
+} from "../controllers/emailVerificationController";
+import {
   authMiddleware,
   vendorMiddleware,
   adminMiddleware,
@@ -29,6 +33,8 @@ import {
   venueOnboardingStep4Schema,
   adminRejectVenueSchema,
   adminReviewVenueSchema,
+  sendVerificationCodeSchema,
+  verifyEmailCodeSchema,
 } from "../middleware/schemas";
 
 const router = Router();
@@ -45,6 +51,26 @@ router.post(
   "/step1",
   validateRequest(venueOnboardingStep1Schema),
   createVenueStep1,
+);
+
+/**
+ * Send email verification code
+ * POST /api/venues/onboarding/send-verification
+ */
+router.post(
+  "/send-verification",
+  validateRequest(sendVerificationCodeSchema),
+  sendVerificationCodeHandler,
+);
+
+/**
+ * Verify email code
+ * POST /api/venues/onboarding/verify-email
+ */
+router.post(
+  "/verify-email",
+  validateRequest(verifyEmailCodeSchema),
+  verifyEmailHandler,
 );
 
 /**

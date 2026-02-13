@@ -13,6 +13,7 @@ import Step2ImageUpload from "./Step2ImageUpload";
 import Step2VenueDetails from "./Step2VenueDetails";
 import Step3DocumentUpload from "./Step3DocumentUpload";
 import Step5CoachList from "./Step5CoachList";
+import { getDefaultOpeningHours } from "./OpeningHoursInput";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
@@ -367,7 +368,7 @@ export default function OnboardingContainer() {
         pricePerHour: 500,
         amenities: ["Parking", "Restroom"],
         address: "123 Dev Street, Dev City",
-        openingHours: "9:00 AM - 9:00 PM",
+        openingHours: getDefaultOpeningHours(),
         description: "Development venue",
         allowExternalCoaches: true,
         hasCoaches: true, // When skipping Step 2, assume in-house coaches for dev
