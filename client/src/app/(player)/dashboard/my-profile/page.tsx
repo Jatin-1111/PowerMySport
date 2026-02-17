@@ -12,6 +12,18 @@ import { useEffect, useState } from "react";
 
 type Dependent = NonNullable<User["dependents"]>[number];
 
+// Helper function to extract error message from axios errors
+const getErrorMessage = (error: unknown): string => {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const axiosError = error as { response?: { data?: { message?: string } } };
+    return axiosError.response?.data?.message || "An error occurred";
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "An error occurred";
+};
+
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -154,12 +166,10 @@ export default function ProfilePage() {
       } else {
         setError(response.message || "Failed to graduate dependent");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Graduation error:", error);
       const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to graduate dependent";
+        getErrorMessage(error) || "Failed to graduate dependent";
       setError(errorMessage);
     } finally {
       setGraduatingDependentId(null);
@@ -178,7 +188,13 @@ export default function ProfilePage() {
     setShowDependentModal(true);
   };
 
-  const handleSaveDependent = async (dependentData: any) => {
+  const handleSaveDependent = async (dependentData: {
+    name: string;
+    dob: string | Date;
+    gender?: "MALE" | "FEMALE" | "OTHER";
+    relation?: string;
+    sports?: string[];
+  }) => {
     try {
       if (dependentModalMode === "add") {
         setSavingDependentId("new");
@@ -188,7 +204,7 @@ export default function ProfilePage() {
         await authApi.updateDependent(selectedDependent._id, dependentData);
       }
       await fetchProfile();
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw error;
     } finally {
       setSavingDependentId(null);
@@ -208,8 +224,8 @@ export default function ProfilePage() {
     try {
       await authApi.deleteDependent(dependentId);
       await fetchProfile();
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Failed to delete dependent");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error) || "Failed to delete dependent");
     } finally {
       setDeletingDependentId(null);
     }
@@ -236,7 +252,12 @@ export default function ProfilePage() {
     setError("");
 
     try {
-      const updateData: any = {
+      const updateData: {
+        name: string;
+        email: string;
+        phone: string;
+        dob?: Date;
+      } = {
         name: profileForm.name,
         email: profileForm.email,
         phone: profileForm.phone,
@@ -249,8 +270,8 @@ export default function ProfilePage() {
       await authApi.updateProfile(updateData);
       await fetchProfile();
       setIsEditingProfile(false);
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Failed to update profile");
+    } catch (error: unknown) {
+      setError(getErrorMessage(error) || "Failed to update profile");
     } finally {
       setIsSavingProfile(false);
     }

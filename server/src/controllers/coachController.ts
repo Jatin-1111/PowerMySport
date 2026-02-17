@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import {
+  checkCoachAvailability,
   createCoach,
+  deleteCoach,
   getCoachById,
   getCoachByUserId,
+  submitCoachVerification,
   updateCoach,
-  deleteCoach,
-  checkCoachAvailability,
 } from "../services/CoachService";
 
 /**
@@ -262,6 +263,166 @@ export const getCoachAvailability = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to check availability",
+    });
+  }
+};
+
+/**
+ * Submit coach verification documents
+ * POST /api/coaches/verification
+ */
+export const submitCoachVerificationHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    if (req.user.role !== "COACH") {
+      res.status(403).json({
+        success: false,
+        message: "Coach role required",
+      });
+      return;
+    }
+
+    const { documents } = req.body as {
+      documents?: Array<{
+        type: string;
+        url: string;
+        s3Key?: string;
+        fileName: string;
+        uploadedAt?: string;
+      }>;
+    };
+
+    const allowedTypes = [
+      "CERTIFICATION",
+      "ID_PROOF",
+      "ADDRESS_PROOF",
+      "BACKGROUND_CHECK",
+      "INSURANCE",
+      "OTHER",
+    ] as const;
+
+    const normalizedDocs = (documents || []).map((doc) => {
+      if (!allowedTypes.includes(doc.type as (typeof allowedTypes)[number])) {
+        throw new Error("Invalid document type");
+      }
+      if (!doc.url || !doc.fileName) {
+        throw new Error("Document url and fileName are required");
+      }
+
+      return {
+        type: doc.type as (typeof allowedTypes)[number],
+        url: doc.url,
+        fileName: doc.fileName,
+        ...(doc.s3Key ? { s3Key: doc.s3Key } : {}),
+        ...(doc.uploadedAt ? { uploadedAt: new Date(doc.uploadedAt) } : {}),
+      };
+    });
+
+    const coach = await submitCoachVerification(req.user.id, {
+      documents: normalizedDocs,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Verification submitted successfully",
+      data: coach,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to submit verification",
+    });
+  }
+};
+
+/**
+ * Get presigned URL for coach verification document upload
+ * POST /api/coaches/verification/upload-url
+ */
+export const getCoachVerificationUploadUrlHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    if (req.user.role !== "COACH") {
+      res.status(403).json({
+        success: false,
+        message: "Coach role required",
+      });
+      return;
+    }
+
+    const { fileName, contentType, documentType } = req.body as {
+      fileName?: string;
+      contentType?: string;
+      documentType?:
+        | "CERTIFICATION"
+        | "ID_PROOF"
+        | "ADDRESS_PROOF"
+        | "BACKGROUND_CHECK"
+        | "INSURANCE"
+        | "OTHER";
+    };
+
+    if (!fileName || !contentType || !documentType) {
+      res.status(400).json({
+        success: false,
+        message: "fileName, contentType, and documentType are required",
+      });
+      return;
+    }
+
+    const coach = await getCoachByUserId(req.user.id);
+    if (!coach) {
+      res.status(404).json({
+        success: false,
+        message: "Coach profile not found",
+      });
+      return;
+    }
+
+    const { S3Service } = require("../services/S3Service");
+    const s3Service = new S3Service();
+    const uploadData = await s3Service.generateCoachVerificationUploadUrl(
+      fileName,
+      contentType,
+      coach._id.toString(),
+      documentType,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Verification document upload URL generated",
+      data: uploadData,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to generate upload URL",
     });
   }
 };

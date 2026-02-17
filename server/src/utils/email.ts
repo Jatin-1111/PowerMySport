@@ -298,6 +298,66 @@ export const sendPasswordResetEmail = async (
   });
 };
 
+interface CoachVerificationStatusEmailOptions {
+  name: string;
+  email: string;
+  status: "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
+  notes?: string;
+}
+
+export const sendCoachVerificationStatusEmail = async (
+  options: CoachVerificationStatusEmailOptions,
+): Promise<void> => {
+  const statusLabels: Record<string, string> = {
+    PENDING: "Pending",
+    REVIEW: "In Review",
+    VERIFIED: "Verified",
+    REJECTED: "Rejected",
+  };
+
+  const statusMessage = statusLabels[options.status] || options.status;
+  const actionCopy =
+    options.status === "VERIFIED"
+      ? "Your coach profile is now verified and will display a Verified badge."
+      : options.status === "REJECTED"
+        ? "Your verification was rejected. Please review the notes and resubmit."
+        : "We are reviewing your verification. We will notify you once it's updated.";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; padding: 24px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: #f9f9f9; padding: 24px; border-radius: 0 0 10px 10px; }
+    .badge { display: inline-block; padding: 6px 12px; background: #fff; border-radius: 999px; font-weight: bold; }
+    .note { background: #fff3cd; border: 1px solid #ffeeba; padding: 12px; border-radius: 8px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Coach Verification Update</h1>
+  </div>
+  <div class="content">
+    <p>Hi ${options.name},</p>
+    <p>Your coach verification status is now:</p>
+    <p><span class="badge">${statusMessage}</span></p>
+    <p>${actionCopy}</p>
+    ${options.notes ? `<div class="note"><strong>Notes:</strong> ${options.notes}</div>` : ""}
+    <p style="margin-top: 20px;">Thanks,<br/>PowerMySport Team</p>
+  </div>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.email,
+    subject: `Coach verification status: ${statusMessage}`,
+    html,
+  });
+};
+
 interface CredentialsEmailOptions {
   name: string;
   email: string;

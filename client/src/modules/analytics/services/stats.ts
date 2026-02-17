@@ -1,5 +1,5 @@
-﻿import { ApiResponse, Booking, Venue } from "@/types";
-import axiosInstance from "@/lib/api/axios";
+﻿import axiosInstance from "@/lib/api/axios";
+import { ApiResponse, Booking, Venue } from "@/types";
 
 export interface PlatformStats {
   totalUsers: number;
@@ -24,8 +24,17 @@ export const statsApi = {
     return response.data;
   },
 
-  getAllUsers: async (): Promise<ApiResponse<UserData[]>> => {
-    const response = await axiosInstance.get("/stats/users");
+  getAllUsers: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<UserData[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(
+      `/stats/users?${params.toString()}`,
+    );
     return response.data;
   },
 
@@ -57,4 +66,3 @@ export const statsApi = {
     return response.data;
   },
 };
-

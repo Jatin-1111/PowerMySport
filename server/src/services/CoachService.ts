@@ -1,8 +1,13 @@
-import { Booking } from "../models/Booking";
-import { Coach, CoachDocument } from "../models/Coach";
 import mongoose from "mongoose";
+import { Booking } from "../models/Booking";
+import {
+  Coach,
+  CoachDocument,
+  CoachDocumentFile,
+  CoachVerificationStatus,
+} from "../models/Coach";
 import { Venue } from "../models/Venue";
-import { ICoach, ServiceMode, IGeoLocation } from "../types";
+import { ICoach, IGeoLocation, ServiceMode } from "../types";
 
 export interface CreateCoachPayload {
   userId: string;
@@ -201,6 +206,99 @@ export const getAllCoaches = async (
       `Failed to fetch coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
+};
+
+export interface CoachVerificationSubmission {
+  documents: Array<
+    Omit<CoachDocumentFile, "uploadedAt" | "id"> & {
+      uploadedAt?: Date;
+    }
+  >;
+}
+
+export const submitCoachVerification = async (
+  userId: string,
+  payload: CoachVerificationSubmission,
+): Promise<CoachDocument> => {
+  const coach = await Coach.findOne({ userId });
+  if (!coach) {
+    throw new Error("Coach profile not found");
+  }
+
+  if (!payload.documents || payload.documents.length === 0) {
+    throw new Error("At least one verification document is required");
+  }
+
+  coach.verificationDocuments = payload.documents.map((doc) => ({
+    ...doc,
+    uploadedAt: doc.uploadedAt || new Date(),
+  }));
+  coach.verificationStatus = "PENDING";
+  coach.isVerified = false;
+  coach.verificationNotes = "";
+  coach.verificationSubmittedAt = new Date();
+  coach.verifiedAt = null;
+  coach.verifiedBy = null;
+
+  return coach.save();
+};
+
+export const listCoachVerificationRequests = async (
+  status: CoachVerificationStatus | undefined,
+  page: number = 1,
+  limit: number = 20,
+): Promise<{
+  coaches: CoachDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
+  const query: Record<string, unknown> = {};
+  if (status) {
+    query.verificationStatus = status;
+  }
+
+  const skip = (page - 1) * limit;
+  const total = await Coach.countDocuments(query);
+  const coaches = await Coach.find(query)
+    .populate("userId venueId")
+    .sort({ updatedAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  return {
+    coaches,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+
+export const updateCoachVerificationStatus = async (
+  coachId: string,
+  status: CoachVerificationStatus,
+  adminId: string,
+  notes?: string,
+): Promise<CoachDocument> => {
+  const coach = await Coach.findById(coachId);
+  if (!coach) {
+    throw new Error("Coach not found");
+  }
+
+  coach.verificationStatus = status;
+  coach.verificationNotes = notes || "";
+
+  if (status === "VERIFIED") {
+    coach.isVerified = true;
+    coach.verifiedAt = new Date();
+    coach.verifiedBy = new mongoose.Types.ObjectId(adminId);
+  } else {
+    coach.isVerified = false;
+    coach.verifiedAt = null;
+    coach.verifiedBy = null;
+  }
+
+  return coach.save();
 };
 
 /**

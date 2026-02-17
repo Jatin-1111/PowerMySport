@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { adminApi } from "@/modules/admin/services/admin";
-import { Eye, EyeOff, Lock, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -54,21 +54,28 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-deep-slate mb-2">
-            Admin Login
-          </h1>
-          <p className="text-muted-foreground">
-            PowerMySport Administration Panel
-          </p>
+        {/* Header Card */}
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-8 text-white shadow-lg mb-6">
+          <div className="relative z-10 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold mb-2">Admin Portal</h1>
+            <p className="text-sm text-slate-200">
+              PowerMySport Administration Panel
+            </p>
+          </div>
+          <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
         </div>
 
-        <div className="bg-card rounded-lg p-8 border border-border shadow-lg">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Login Form Card */}
+        <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Email Address
               </label>
               <input
@@ -77,13 +84,13 @@ export default function AdminLoginPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 transition-all"
                 placeholder="admin@powermysport.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -93,13 +100,13 @@ export default function AdminLoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange bg-card text-foreground"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 transition-all"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -107,7 +114,7 @@ export default function AdminLoginPage() {
             </div>
 
             {error && (
-              <div className="bg-error-red/10 border border-error-red text-error-red px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
@@ -115,16 +122,23 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-deep-slate text-white py-3 rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 transition-colors"
+              className="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
-              {isLoading ? "Logging in..." : "Login to Admin Panel"}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Logging in...
+                </span>
+              ) : (
+                "Login to Admin Panel"
+              )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <Link
               href="/"
-              className="text-sm text-power-orange hover:underline inline-flex items-center gap-1"
+              className="text-sm text-power-orange hover:text-orange-600 inline-flex items-center gap-1 font-medium transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
               Back to Main Site
@@ -132,9 +146,12 @@ export default function AdminLoginPage() {
           </div>
         </div>
 
-        <div className="mt-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-          <Lock size={16} />
-          <p>Secure admin access only</p>
+        {/* Security Notice */}
+        <div className="mt-6 text-center">
+          <div className="inline-flex items-center gap-2 text-xs text-slate-600 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+            <Lock size={14} className="text-slate-400" />
+            <span>Secure admin access only</span>
+          </div>
         </div>
       </div>
     </div>
