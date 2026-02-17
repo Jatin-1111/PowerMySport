@@ -26,8 +26,12 @@ export interface VenueDocument extends Document {
   address: string;
   openingHours: import("../types").OpeningHours;
   description: string;
-  images: string[]; // Presigned URLs (regenerated on-demand)
-  imageKeys: string[]; // S3 keys for images
+  images: string[]; // Presigned URLs (regenerated on-demand) - LEGACY: for backward compatibility
+  imageKeys: string[]; // S3 keys for images - LEGACY: for backward compatibility
+  generalImages?: string[]; // General venue images (3 required for new venues)
+  generalImageKeys?: string[]; // S3 keys for general images
+  sportImages?: Record<string, string[]>; // Sport-specific images (5 per sport)
+  sportImageKeys?: Record<string, string[]>; // S3 keys for sport-specific images
   coverPhotoUrl?: string; // Presigned URL (regenerated on-demand)
   coverPhotoKey?: string; // S3 key for cover photo
   allowExternalCoaches: boolean;
@@ -194,6 +198,24 @@ const venueSchema = new Schema<VenueDocument>(
     imageKeys: {
       type: [String],
       default: [],
+    },
+    generalImages: {
+      type: [String],
+      optional: true,
+    },
+    generalImageKeys: {
+      type: [String],
+      optional: true,
+    },
+    sportImages: {
+      type: Map,
+      of: [String],
+      optional: true,
+    },
+    sportImageKeys: {
+      type: Map,
+      of: [String],
+      optional: true,
     },
     coverPhotoUrl: {
       type: String,

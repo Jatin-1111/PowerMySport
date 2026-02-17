@@ -12,7 +12,7 @@ interface Step2VenueDetailsProps {
   onSubmit: (data: OnboardingStep2Payload) => Promise<void>;
   loading?: boolean;
   error?: string;
-  onSkip?: () => Promise<void>;
+  onSkip?: (hasCoaches?: boolean) => Promise<void>;
 }
 
 const SPORTS_OPTIONS = [
@@ -629,7 +629,7 @@ export default function Step2VenueDetails({
         {isDev && onSkip && (
           <Button
             type="button"
-            onClick={onSkip}
+            onClick={() => onSkip && onSkip(formData.hasCoaches)}
             disabled={loading}
             className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2.5 text-base"
           >

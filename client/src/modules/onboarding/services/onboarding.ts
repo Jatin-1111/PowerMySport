@@ -51,16 +51,15 @@ export const onboardingApi = {
 
   /**
    * STEP 3A: Get presigned URLs for image upload
+   * Now generates URLs for 3 general images + 5 per sport
    */
   getImageUploadUrls: async (
     venueId: string,
-    imageCount: number,
-    coverPhotoIndex: number,
+    sports: string[],
   ): Promise<ApiResponse<{ uploadUrls: PresignedUrl[] }>> => {
     const response = await axiosInstance.post(`${API_BASE}/step3/upload-urls`, {
       venueId,
-      imageCount,
-      coverPhotoIndex,
+      sports,
     });
     return response.data;
   },
@@ -118,6 +117,27 @@ export const onboardingApi = {
     const response = await axiosInstance.post(
       `${API_BASE}/step5/coaches`,
       payload,
+    );
+    return response.data;
+  },
+
+  /**
+   * Get coach photo upload URL
+   */
+  getCoachPhotoUploadUrl: async (
+    venueId: string,
+    fileName: string,
+    contentType: string,
+  ): Promise<
+    ApiResponse<{ uploadUrl: string; downloadUrl: string; s3Key: string }>
+  > => {
+    const response = await axiosInstance.post(
+      `${API_BASE}/coach-photo-upload-url`,
+      {
+        venueId,
+        fileName,
+        contentType,
+      },
     );
     return response.data;
   },
@@ -250,4 +270,3 @@ export const uploadFileToPresignedUrl = async (
     },
   });
 };
-

@@ -1,19 +1,32 @@
 ﻿"use client";
 
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
+import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
+import { useState, useMemo } from "react";
 import {
-  PresignedUrl,
-  UploadedImage,
-} from "@/modules/onboarding/types/onboarding";
-import Image from "next/image";
-import { useState } from "react";
+  ArrowLeft,
+  Camera,
+  Target,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Upload,
+} from "lucide-react";
+
+interface UploadedImage {
+  url: string;
+  key: string;
+  field: string;
+}
 
 interface Step2ImageUploadProps {
   venueId: string;
   presignedUrls: PresignedUrl[];
   onImagesConfirmed: (
-    images: string[],
-    imageKeys: string[],
+    generalImages: string[],
+    generalImageKeys: string[],
+    sportImages: Record<string, string[]>,
+    sportImageKeys: Record<string, string[]>,
     coverPhotoUrl: string,
     coverPhotoKey: string,
   ) => Promise<void>;
@@ -33,10 +46,41 @@ export default function Step2ImageUpload({
   error,
   onSkip,
 }: Step2ImageUploadProps) {
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<
+    Record<string, UploadedImage>
+  >({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
-  const [coverPhotoIndex, setCoverPhotoIndex] = useState<number>(0);
+  const [coverPhotoIndex, setCoverPhotoIndex] = useState<number>(0); // Index in general images (0-2)
+
+  // Categorize presigned URLs
+  const categorizedUrls = useMemo(() => {
+    const general: PresignedUrl[] = [];
+    const sports: Record<string, PresignedUrl[]> = {};
+
+    presignedUrls.forEach((url) => {
+      if (url.field.startsWith("general_")) {
+        general.push(url);
+      } else if (url.field.startsWith("sport_")) {
+        // Extract sport name from field: "sport_Cricket_0" -> "Cricket"
+        const parts = url.field.split("_");
+        const sport = parts.slice(1, -1).join("_"); // Handle sports with underscores
+        if (!sports[sport]) {
+          sports[sport] = [];
+        }
+        sports[sport].push(url);
+      }
+    });
+
+    // Sort sports alphabetically
+    const sortedSports = Object.keys(sports).sort();
+    const sortedSportsMap: Record<string, PresignedUrl[]> = {};
+    sortedSports.forEach((sport) => {
+      sortedSportsMap[sport] = sports[sport];
+    });
+
+    return { general, sports: sortedSportsMap };
+  }, [presignedUrls]);
 
   const handleImageSelect = async (
     file: File,
@@ -51,43 +95,36 @@ export default function Step2ImageUpload({
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    // Check file size (5MB max)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
       setUploadErrors((prev) => ({
         ...prev,
-        [fieldName]: "Image must be smaller than 5MB",
+        [fieldName]: "Image must be less than 5MB",
       }));
       return;
     }
 
     setUploading((prev) => ({ ...prev, [fieldName]: true }));
+    setUploadErrors((prev) => ({ ...prev, [fieldName]: "" }));
 
     try {
-      // Upload directly to S3 via presigned URL
+      // Upload to S3
       await uploadFileToPresignedUrl(
         file,
         presignedUrl.uploadUrl,
         presignedUrl.contentType,
       );
 
-      // Create preview
-      const preview = URL.createObjectURL(file);
-      const imageIndex = parseInt(fieldName.split("_")[1]);
-
-      // Store uploaded image with S3 URL
-      setUploadedImages((prev) => [
-        ...prev.filter((img) => img.data.name !== file.name),
-        {
-          data: file,
-          preview,
-          isCover: imageIndex === coverPhotoIndex,
+      // Store uploaded image info
+      setUploadedImages((prev) => ({
+        ...prev,
+        [fieldName]: {
+          url: presignedUrl.downloadUrl,
+          key: presignedUrl.key || "",
+          field: fieldName,
         },
-      ]);
-
-      setUploadErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[fieldName];
-        return newErrors;
-      });
+      }));
     } catch (err) {
       setUploadErrors((prev) => ({
         ...prev,
@@ -99,206 +136,342 @@ export default function Step2ImageUpload({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRemoveImage = (fieldName: string) => {
+    setUploadedImages((prev) => {
+      const updated = { ...prev };
+      delete updated[fieldName];
+      return updated;
+    });
+    setUploadErrors((prev) => {
+      const updated = { ...prev };
+      delete updated[fieldName];
+      return updated;
+    });
+  };
 
-    if (uploadedImages.length < 5) {
-      alert(
-        `Please upload at least 5 images (current: ${uploadedImages.length})`,
-      );
+  const handleSubmit = async () => {
+    // Validate: All general images must be uploaded
+    const generalUploaded = categorizedUrls.general.filter(
+      (url) => uploadedImages[url.field],
+    );
+    if (generalUploaded.length !== 3) {
+      alert("Please upload all 3 general venue images");
       return;
     }
 
-    try {
-      // Extract S3 URLs and keys from presigned upload URLs
-      const imagePresignedUrls = presignedUrls.filter((url) =>
-        url.field.startsWith("image_"),
-      );
-      const imageUrls = imagePresignedUrls.map((url) => url.downloadUrl);
-      const imageKeys = imagePresignedUrls.map((url) => url.key);
-
-      const coverPhotoUrl =
-        presignedUrls[coverPhotoIndex]?.downloadUrl || imageUrls[0];
-      const coverPhotoKey = presignedUrls[coverPhotoIndex]?.key || imageKeys[0];
-
-      await onImagesConfirmed(
-        imageUrls,
-        imageKeys,
-        coverPhotoUrl,
-        coverPhotoKey,
-      );
-    } catch (err) {
-      console.error("Failed to confirm images:", err);
+    // Validate: All sport images must be uploaded
+    for (const [sport, urls] of Object.entries(categorizedUrls.sports)) {
+      const sportUploaded = urls.filter((url) => uploadedImages[url.field]);
+      if (sportUploaded.length !== 5) {
+        alert(`Please upload all 5 images for ${sport}`);
+        return;
+      }
     }
+
+    // Build categorized image arrays
+    const generalImages: string[] = [];
+    const generalImageKeys: string[] = [];
+
+    categorizedUrls.general.forEach((url) => {
+      const uploaded = uploadedImages[url.field];
+      if (uploaded) {
+        generalImages.push(uploaded.url);
+        generalImageKeys.push(uploaded.key);
+      }
+    });
+
+    const sportImages: Record<string, string[]> = {};
+    const sportImageKeys: Record<string, string[]> = {};
+
+    Object.entries(categorizedUrls.sports).forEach(([sport, urls]) => {
+      sportImages[sport] = [];
+      sportImageKeys[sport] = [];
+
+      urls.forEach((url) => {
+        const uploaded = uploadedImages[url.field];
+        if (uploaded) {
+          sportImages[sport].push(uploaded.url);
+          sportImageKeys[sport].push(uploaded.key);
+        }
+      });
+    });
+
+    // Cover photo must be from general images
+    const coverPhotoUrl = generalImages[coverPhotoIndex];
+    const coverPhotoKey = generalImageKeys[coverPhotoIndex];
+
+    await onImagesConfirmed(
+      generalImages,
+      generalImageKeys,
+      sportImages,
+      sportImageKeys,
+      coverPhotoUrl,
+      coverPhotoKey,
+    );
   };
 
+  const totalRequired = 3 + Object.keys(categorizedUrls.sports).length * 5;
+  const totalUploaded = Object.keys(uploadedImages).length;
+  const isComplete = totalUploaded === totalRequired;
+
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Add Venue Images</h1>
-        <p className="text-gray-600 mt-2">
-          Step 2 of 3: Upload {presignedUrls.length} high-quality images (JPG,
-          PNG, WebP)
-        </p>
-        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
-          <p className="text-sm text-blue-700">
-            Each image should be clear and show different aspects of your venue.
-            Max 5MB per image.
-          </p>
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        Upload Venue Images
+      </h2>
+      <p className="text-gray-600 mb-6">
+        Upload {totalRequired} images: 3 general venue images + 5 images per
+        sport
+      </p>
+
+      {/* Progress */}
+      <div className="mb-6">
+        <div className="flex justify-between text-sm text-gray-600 mb-2">
+          <span>
+            {totalUploaded} of {totalRequired} images uploaded
+          </span>
+          <span>{Math.round((totalUploaded / totalRequired) * 100)}%</span>
+        </div>
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-600 transition-all duration-300"
+            style={{ width: `${(totalUploaded / totalRequired) * 100}%` }}
+          ></div>
         </div>
       </div>
 
+      {/* General Venue Images Section */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+            Required
+          </span>
+          General Venue Images (3)
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Upload overall facility shots. Select one as your cover photo.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {categorizedUrls.general.map((presignedUrl, index) => {
+            const uploaded = uploadedImages[presignedUrl.field];
+            const isUploading = uploading[presignedUrl.field];
+            const uploadError = uploadErrors[presignedUrl.field];
+
+            return (
+              <div
+                key={presignedUrl.field}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition"
+              >
+                {uploaded ? (
+                  <div className="relative">
+                    <img
+                      src={uploaded.url}
+                      alt={`General image ${index + 1}`}
+                      className="w-full h-48 object-cover rounded"
+                    />
+                    <button
+                      onClick={() => handleRemoveImage(presignedUrl.field)}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                      aria-label="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+
+                    {/* Cover Photo Selection */}
+                    <div className="mt-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="coverPhoto"
+                          checked={coverPhotoIndex === index}
+                          onChange={() => setCoverPhotoIndex(index)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm text-gray-700">
+                          Set as cover photo
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="cursor-pointer block">
+                      <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+                        {isUploading ? (
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                            <p className="text-sm">Uploading...</p>
+                          </div>
+                        ) : (
+                          <>
+                            <Camera className="w-12 h-12 mb-3 text-gray-400" />
+                            <p className="text-sm font-medium">
+                              Click to upload image {index + 1}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              JPG, PNG up to 10MB
+                            </p>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleImageSelect(
+                              file,
+                              presignedUrl.field,
+                              presignedUrl,
+                            );
+                          }
+                        }}
+                        disabled={isUploading}
+                      />
+                    </label>
+                    {uploadError && (
+                      <p className="text-red-500 text-sm mt-2">{uploadError}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sport-Specific Images Sections */}
+      {Object.entries(categorizedUrls.sports).map(([sport, urls]) => {
+        const sportUploaded = urls.filter(
+          (url) => uploadedImages[url.field],
+        ).length;
+
+        return (
+          <div key={sport} className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
+                Required
+              </span>
+              {sport} Images ({sportUploaded}/5)
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Upload 5 images showcasing your {sport} facilities
+            </p>
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {urls.map((presignedUrl, index) => {
+                const uploaded = uploadedImages[presignedUrl.field];
+                const isUploading = uploading[presignedUrl.field];
+                const uploadError = uploadErrors[presignedUrl.field];
+
+                return (
+                  <div
+                    key={presignedUrl.field}
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-green-400 transition"
+                  >
+                    {uploaded ? (
+                      <div className="relative">
+                        <img
+                          src={uploaded.url}
+                          alt={`${sport} image ${index + 1}`}
+                          className="w-full h-32 object-cover rounded"
+                        />
+                        <button
+                          onClick={() => handleRemoveImage(presignedUrl.field)}
+                          className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 text-xs transition-colors"
+                          aria-label="Remove image"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="cursor-pointer block">
+                          <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                            {isUploading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                                <p className="mt-1 text-xs">Uploading...</p>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                <p className="text-xs">Image {index + 1}</p>
+                              </>
+                            )}
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleImageSelect(
+                                  file,
+                                  presignedUrl.field,
+                                  presignedUrl,
+                                );
+                              }
+                            }}
+                            disabled={isUploading}
+                          />
+                        </label>
+                        {uploadError && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {uploadError}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Error Display */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded">
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Image Upload Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {presignedUrls.map((presigned, index) => (
-            <div
-              key={presigned.field}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-500 transition"
-            >
-              <label className="cursor-pointer block">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file)
-                      handleImageSelect(file, presigned.field, presigned);
-                  }}
-                  disabled={uploading[presigned.field]}
-                  className="hidden"
-                />
-
-                {uploadedImages.find((img) => img.preview) &&
-                index < uploadedImages.length ? (
-                  <div className="relative">
-                    <Image
-                      src={uploadedImages[index]?.preview}
-                      alt={`Image ${index + 1}`}
-                      width={200}
-                      height={200}
-                      className="w-full h-40 object-cover rounded"
-                    />
-                    {index === coverPhotoIndex && (
-                      <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-3 py-1 rounded text-xs font-bold">
-                        COVER
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full h-40 flex flex-col items-center justify-center bg-gray-50 rounded">
-                    {uploading[presigned.field] ? (
-                      <>
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                        <p className="text-sm text-gray-600 mt-2">
-                          Uploading...
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-8 h-8 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                        <p className="text-sm text-gray-600 mt-2">
-                          Click to upload image
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">Max 5MB</p>
-                      </>
-                    )}
-                  </div>
-                )}
-              </label>
-
-              {uploadErrors[presigned.field] && (
-                <p className="text-red-500 text-xs mt-2">
-                  {uploadErrors[presigned.field]}
-                </p>
-              )}
-
-              {/* Set as Cover Button */}
-              {uploadedImages.find((img) => img.preview) &&
-                index < uploadedImages.length && (
-                  <button
-                    type="button"
-                    onClick={() => setCoverPhotoIndex(index)}
-                    className={`w-full mt-2 px-3 py-2 text-sm rounded transition ${
-                      index === coverPhotoIndex
-                        ? "bg-yellow-400 text-yellow-900 font-bold"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
-                  >
-                    {index === coverPhotoIndex
-                      ? "? Cover Photo"
-                      : "Set as Cover"}
-                  </button>
-                )}
-            </div>
-          ))}
-        </div>
-
-        {/* Upload Progress */}
-        {Object.values(uploading).some((v) => v) && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded">
-            <p className="text-sm text-blue-700">
-              Uploading images... This may take a few moments.
-            </p>
-          </div>
-        )}
-
-        {/* Uploaded Count */}
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded">
-          <p className="text-sm text-gray-700">
-            Images uploaded:{" "}
-            <span className="font-bold">{uploadedImages.length}</span> /
-            <span> {presignedUrls.length}</span>
-          </p>
-          <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
-              style={{
-                width: `${(uploadedImages.length / presignedUrls.length) * 100}%`,
-              }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Submit Button */}
+      {/* Action Buttons */}
+      <div className="flex gap-4 mt-6">
         <button
-          type="submit"
-          disabled={loading || uploadedImages.length < 5}
-          className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          onClick={handleSubmit}
+          disabled={!isComplete || loading}
+          className={`flex-1 py-3 rounded-lg font-medium transition ${
+            isComplete && !loading
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
         >
-          {loading
-            ? "Confirming Images..."
-            : "Continue to Step 3: Upload Documents"}
+          {loading ? "Processing..." : "Continue"}
         </button>
+
         {isDev && onSkip && (
           <button
-            type="button"
             onClick={onSkip}
             disabled={loading}
-            className="w-full py-3 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="px-6 py-3 bg-yellow-100 text-yellow-700 font-medium rounded-lg hover:bg-yellow-200 disabled:opacity-50"
           >
             Skip (Dev)
           </button>
         )}
-      </form>
+      </div>
+
+      {/* Help Text */}
+      <p className="text-sm text-gray-500 mt-4 text-center">
+        Tip: Use high-quality images that showcase your facilities well. The
+        cover photo will be displayed prominently on your venue listing.
+      </p>
     </div>
   );
 }

@@ -74,7 +74,15 @@ export const startVenueOnboarding = async (
     pricePerHour: 0,
     amenities: [],
     address: "",
-    openingHours: "9:00 AM - 9:00 PM",
+    openingHours: {
+      monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      wednesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      thursday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      friday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      saturday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      sunday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+    },
     description: "",
     allowExternalCoaches: true,
   });
@@ -114,55 +122,68 @@ export const updateVenueDetails = async (
 
 /**
  * Step 2A: Get presigned URLs for image uploads (NOW Step 3)
- * Returns URLs for each image slot
+ * Returns URLs for general venue images (3) and sport-specific images (5 per sport)
  */
 export const getImageUploadPresignedUrls = async (
   venueId: string,
-  imageCount: number,
-  coverPhotoIndex: number,
+  sports: string[], // Array of selected sports
 ): Promise<IOnboardingUploadUrl[]> => {
-  // Validate inputs
-  if (imageCount < UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT) {
-    throw new Error(
-      `Minimum ${UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT} images required`,
-    );
-  }
-  if (imageCount > UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT) {
-    throw new Error(
-      `Maximum ${UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT} images allowed`,
-    );
-  }
-  if (coverPhotoIndex >= imageCount || coverPhotoIndex < 0) {
-    throw new Error("Invalid cover photo index");
-  }
-
   // Verify venue exists
   const venue = await Venue.findById(venueId);
   if (!venue) {
     throw new Error("Venue not found");
   }
 
+  // Validate sports
+  if (!sports || sports.length === 0) {
+    throw new Error("At least one sport must be selected");
+  }
+
   const urls: IOnboardingUploadUrl[] = [];
 
-  // Generate presigned URLs for each image
-  for (let i = 0; i < imageCount; i++) {
-    const isCover = i === coverPhotoIndex;
+  // Generate 3 presigned URLs for general venue images
+  for (let i = 0; i < 3; i++) {
     const uploadResponse = await s3Service.generateImageUploadUrl(
-      `image_${i}.jpg`,
+      `general_${i}.jpg`,
       "image/jpeg",
       venueId,
-      isCover,
+      i === 0, // First general image is the default cover photo
     );
 
     urls.push({
-      field: `image_${i}`,
+      field: `general_${i}`,
       uploadUrl: uploadResponse.uploadUrl,
       downloadUrl: uploadResponse.downloadUrl,
-      s3Key: uploadResponse.key, // Store S3 key for regenerating URLs
+      s3Key: uploadResponse.key,
       fileName: uploadResponse.fileName,
       contentType: "image/jpeg",
       maxSizeBytes: UPLOAD_CONSTRAINTS.IMAGES.MAX_SIZE_BYTES,
     });
+  }
+
+  // Sort sports alphabetically as per user requirement
+  const sortedSports = [...sports].sort();
+
+  // Generate 5 presigned URLs for each sport
+  for (const sport of sortedSports) {
+    for (let i = 0; i < 5; i++) {
+      const uploadResponse = await s3Service.generateImageUploadUrl(
+        `sport_${sport.toLowerCase().replace(/\s+/g, "_")}_${i}.jpg`,
+        "image/jpeg",
+        venueId,
+        false, // Sport images cannot be cover photos
+      );
+
+      urls.push({
+        field: `sport_${sport}_${i}`,
+        uploadUrl: uploadResponse.uploadUrl,
+        downloadUrl: uploadResponse.downloadUrl,
+        s3Key: uploadResponse.key,
+        fileName: uploadResponse.fileName,
+        contentType: "image/jpeg",
+        maxSizeBytes: UPLOAD_CONSTRAINTS.IMAGES.MAX_SIZE_BYTES,
+      });
+    }
   }
 
   return urls;
@@ -170,39 +191,78 @@ export const getImageUploadPresignedUrls = async (
 
 /**
  * Step 3: Confirm images and set cover photo
+ * Supports both legacy (flat array) and new (sport-specific) image structures
  */
 export const confirmVenueImages = async (
   payload: IVenueOnboardingStep3,
 ): Promise<VenueDocument | null> => {
-  // Validate image count
-  if (payload.images.length < UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT) {
-    throw new Error(
-      `Minimum ${UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT} images required`,
+  // Handle new sport-specific structure
+  if (payload.generalImages && payload.sportImages) {
+    // Validate general images count
+    if (payload.generalImages.length !== 3) {
+      throw new Error("Exactly 3 general venue images are required");
+    }
+
+    // Validate sport images count (5 per sport)
+    for (const [sport, images] of Object.entries(payload.sportImages)) {
+      if (images.length !== 5) {
+        throw new Error(`Exactly 5 images required for ${sport}`);
+      }
+    }
+
+    // Update venue with categorized images
+    const venue = await Venue.findByIdAndUpdate(
+      payload.venueId,
+      {
+        generalImages: payload.generalImages,
+        generalImageKeys: payload.generalImageKeys,
+        sportImages: payload.sportImages,
+        sportImageKeys: payload.sportImageKeys,
+        coverPhotoUrl: payload.coverPhotoUrl,
+        coverPhotoKey: payload.coverPhotoKey,
+      },
+      { new: true },
     );
+
+    if (!venue) {
+      throw new Error("Venue not found");
+    }
+
+    return venue;
   }
-  if (payload.images.length > UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT) {
-    throw new Error(
-      `Maximum ${UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT} images allowed`,
+
+  // Handle legacy structure (backward compatibility)
+  if (payload.images && payload.images.length > 0) {
+    if (payload.images.length < UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT) {
+      throw new Error(
+        `Minimum ${UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT} images required`,
+      );
+    }
+    if (payload.images.length > UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT) {
+      throw new Error(
+        `Maximum ${UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT} images allowed`,
+      );
+    }
+
+    const venue = await Venue.findByIdAndUpdate(
+      payload.venueId,
+      {
+        images: payload.images,
+        imageKeys: payload.imageKeys,
+        coverPhotoUrl: payload.coverPhotoUrl,
+        coverPhotoKey: payload.coverPhotoKey,
+      },
+      { new: true },
     );
+
+    if (!venue) {
+      throw new Error("Venue not found");
+    }
+
+    return venue;
   }
 
-  // Update venue with images and their S3 keys
-  const venue = await Venue.findByIdAndUpdate(
-    payload.venueId,
-    {
-      images: payload.images, // URLs (will be regenerated on fetch)
-      imageKeys: payload.imageKeys, // S3 keys for regeneration
-      coverPhotoUrl: payload.coverPhotoUrl, // URL (will be regenerated on fetch)
-      coverPhotoKey: payload.coverPhotoKey, // S3 key for regeneration
-    },
-    { new: true },
-  );
-
-  if (!venue) {
-    throw new Error("Venue not found");
-  }
-
-  return venue;
+  throw new Error("No images provided");
 };
 
 /**

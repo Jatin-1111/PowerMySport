@@ -273,22 +273,61 @@ export const venueOnboardingStep2Schema = z.object({
  */
 export const getImageUploadUrlsSchema = z.object({
   venueId: z.string().min(1, "Venue ID is required"),
-  imageCount: z.number().min(5).max(20, "Image count must be between 5 and 20"),
-  coverPhotoIndex: z.number().min(0).max(19, "Invalid cover photo index"),
+  sports: z
+    .array(z.string())
+    .min(1, "At least one sport is required")
+    .max(10, "Maximum 10 sports allowed"),
 });
 
 /**
  * Step 3B: Confirm Images (REFACTORED from Step 2)
  * Now Step 3 images confirmation
  */
-export const venueOnboardingStep3ImagesSchema = z.object({
-  venueId: z.string().min(1, "Venue ID is required"),
-  images: z
-    .array(z.string().url())
-    .min(5, "Minimum 5 images required")
-    .max(20, "Maximum 20 images allowed"),
-  coverPhotoUrl: z.string().url("Cover photo URL must be valid"),
-});
+export const venueOnboardingStep3ImagesSchema = z
+  .object({
+    venueId: z.string().min(1, "Venue ID is required"),
+    // Legacy images array (optional now)
+    images: z.array(z.string().url()).optional().default([]),
+
+    // New structure
+    generalImages: z.array(z.string().url()).optional(),
+    generalImageKeys: z.array(z.string()).optional(),
+    sportImages: z.record(z.string(), z.array(z.string().url())).optional(),
+    sportImageKeys: z.record(z.string(), z.array(z.string())).optional(),
+
+    coverPhotoUrl: z.string().url("Cover photo URL must be valid"),
+    coverPhotoKey: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // Check if using new structure
+      if (data.generalImages && data.sportImages) {
+        // Validate general images (must be 3)
+        if (data.generalImages.length !== 3) return false;
+
+        // Validate sport images (must be 5 per sport)
+        const sportImages = data.sportImages;
+        if (!sportImages) return false;
+
+        const sports = Object.keys(sportImages);
+        if (sports.length === 0) return false;
+
+        for (const sport of sports) {
+          const images = sportImages[sport];
+          if (!images || images.length !== 5) return false;
+        }
+
+        return true;
+      }
+
+      // Fallback to legacy structure validation
+      return data.images.length >= 5 && data.images.length <= 20;
+    },
+    {
+      message:
+        "Invalid images: Requirement is either 3 general images + 5 per sport, OR 5-20 total images (legacy)",
+    },
+  );
 
 /**
  * Step 4: Finalize Onboarding with Images + Documents

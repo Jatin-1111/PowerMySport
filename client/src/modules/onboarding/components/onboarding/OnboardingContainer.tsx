@@ -14,6 +14,7 @@ import Step2VenueDetails from "./Step2VenueDetails";
 import Step3DocumentUpload from "./Step3DocumentUpload";
 import Step5CoachList from "./Step5CoachList";
 import { getDefaultOpeningHours } from "./OpeningHoursInput";
+import { Check, ArrowLeft } from "lucide-react";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
@@ -108,8 +109,7 @@ export default function OnboardingContainer() {
         // Get image presigned URLs for step 3
         const imageUrlsResponse = await onboardingApi.getImageUploadUrls(
           venueId,
-          5, // min 5 images
-          0, // first image as cover
+          data.sports, // Pass sports array for categorized image upload
         );
 
         if (!imageUrlsResponse.success || !imageUrlsResponse.data) {
@@ -132,8 +132,10 @@ export default function OnboardingContainer() {
   // ============ STEP 3: Confirm images and get document URLs ============
   const handleStep3ImagesConfirmed = useCallback(
     async (
-      images: string[],
-      imageKeys: string[],
+      generalImages: string[],
+      generalImageKeys: string[],
+      sportImages: Record<string, string[]>,
+      sportImageKeys: Record<string, string[]>,
       coverPhotoUrl: string,
       coverPhotoKey: string,
     ) => {
@@ -143,20 +145,32 @@ export default function OnboardingContainer() {
       try {
         if (!venueId) throw new Error("Venue ID not found");
 
-        // Store uploaded images with S3 keys
-        const uploadedImagesData: UploadedImage[] = images.map(
+        // Store uploaded images (flatten for legacy compatibility)
+        const allImages = [
+          ...generalImages,
+          ...Object.values(sportImages).flat(),
+        ];
+        const allKeys = [
+          ...generalImageKeys,
+          ...Object.values(sportImageKeys).flat(),
+        ];
+        const uploadedImagesData: UploadedImage[] = allImages.map(
           (url, index) => ({
-            key: imageKeys[index],
+            key: allKeys[index],
             url,
           }),
         );
         setUploadedImages(uploadedImagesData);
 
-        // Confirm images with server (now includes S3 keys)
+        // Confirm images with server (sport-specific structure)
         const confirmResponse = await onboardingApi.confirmImagesStep3({
           venueId,
-          images,
-          imageKeys,
+          images: [], // Legacy field (empty for new structure)
+          imageKeys: [], // Legacy field (empty for new structure)
+          generalImages,
+          generalImageKeys,
+          sportImages,
+          sportImageKeys,
           coverPhotoUrl,
           coverPhotoKey,
         });
@@ -357,36 +371,39 @@ export default function OnboardingContainer() {
     }
   }, [handleStep1SubmitContactInfo]);
 
-  const handleSkipStep2 = useCallback(async () => {
-    setGlobalError("");
-    setLoading(true);
-    try {
-      const dummyData: OnboardingStep2Payload = {
-        venueId,
-        name: "Dev Venue",
-        sports: ["Cricket"],
-        pricePerHour: 500,
-        amenities: ["Parking", "Restroom"],
-        address: "123 Dev Street, Dev City",
-        openingHours: getDefaultOpeningHours(),
-        description: "Development venue",
-        allowExternalCoaches: true,
-        hasCoaches: true, // When skipping Step 2, assume in-house coaches for dev
-        location: {
-          type: "Point",
-          coordinates: [77.2, 28.7],
-        },
-      };
-      await handleStep2SubmitVenueDetails(dummyData);
-    } catch (err) {
-      console.error("Skip step 2 error:", err);
-      setGlobalError(
-        err instanceof Error ? err.message : "Failed to skip step 2",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [venueId, handleStep2SubmitVenueDetails]);
+  const handleSkipStep2 = useCallback(
+    async (hasCoachesOverride?: boolean) => {
+      setGlobalError("");
+      setLoading(true);
+      try {
+        const dummyData: OnboardingStep2Payload = {
+          venueId,
+          name: "Dev Venue",
+          sports: ["Cricket"],
+          pricePerHour: 500,
+          amenities: ["Parking", "Restroom"],
+          address: "123 Dev Street, Dev City",
+          openingHours: getDefaultOpeningHours(),
+          description: "Development venue",
+          allowExternalCoaches: true,
+          hasCoaches: hasCoachesOverride ?? false, // Respect user selection or default to false
+          location: {
+            type: "Point",
+            coordinates: [77.2, 28.7],
+          },
+        };
+        await handleStep2SubmitVenueDetails(dummyData);
+      } catch (err) {
+        console.error("Skip step 2 error:", err);
+        setGlobalError(
+          err instanceof Error ? err.message : "Failed to skip step 2",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [venueId, handleStep2SubmitVenueDetails],
+  );
 
   const handleSkipStep3 = useCallback(async () => {
     setGlobalError("");
@@ -396,28 +413,51 @@ export default function OnboardingContainer() {
 
       const dummyImageUrl =
         "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800";
+
+      // Generate structured dummy images (to match validation)
+      const generalImages = [dummyImageUrl, dummyImageUrl, dummyImageUrl];
+      const generalImageKeys = [
+        "dev/dummy-general-1.jpg",
+        "dev/dummy-general-2.jpg",
+        "dev/dummy-general-3.jpg",
+      ];
+
+      const sportImages: Record<string, string[]> = {};
+      const sportImageKeys: Record<string, string[]> = {};
+
+      // Generate 5 images per sport
+      // Use sports from venue details or fallback to Cricket (for robustness)
+      const sportsToUse =
+        venueDetails?.sports && venueDetails.sports.length > 0
+          ? venueDetails.sports
+          : ["Cricket"];
+
+      sportsToUse.forEach((sport) => {
+        sportImages[sport] = Array(5).fill(dummyImageUrl);
+        sportImageKeys[sport] = Array(5).fill(`dev/dummy-${sport}-1.jpg`);
+      });
+
+      // Flatten for legacy state compatibility
       const dummyImages = [
-        dummyImageUrl,
-        dummyImageUrl,
-        dummyImageUrl,
-        dummyImageUrl,
-        dummyImageUrl,
+        ...generalImages,
+        ...Object.values(sportImages).flat(),
       ];
       const dummyImageKeys = [
-        "dev/dummy-image-1.jpg",
-        "dev/dummy-image-2.jpg",
-        "dev/dummy-image-3.jpg",
-        "dev/dummy-image-4.jpg",
-        "dev/dummy-image-5.jpg",
+        ...generalImageKeys,
+        ...Object.values(sportImageKeys).flat(),
       ];
 
       // Confirm images
       const confirmResponse = await onboardingApi.confirmImagesStep3({
         venueId,
-        images: dummyImages,
-        imageKeys: dummyImageKeys,
+        images: [], // Legacy field (empty for new structure)
+        imageKeys: [], // Legacy field (empty for new structure)
+        generalImages,
+        generalImageKeys,
+        sportImages,
+        sportImageKeys,
         coverPhotoUrl: dummyImageUrl,
-        coverPhotoKey: dummyImageKeys[0],
+        coverPhotoKey: generalImageKeys[0],
       });
 
       if (!confirmResponse.success || !confirmResponse.data) {
@@ -670,7 +710,13 @@ export default function OnboardingContainer() {
                         : "bg-gray-300 text-gray-600"
                   }`}
                 >
-                  {step < currentStep ? "?" : step}
+                  {step < currentStep ? (
+                    <>
+                      <Check />
+                    </>
+                  ) : (
+                    step
+                  )}
                 </div>
                 <span className="text-sm mt-2 text-gray-600 text-center">
                   {step === 1 && "Your Info"}
@@ -713,9 +759,10 @@ export default function OnboardingContainer() {
                 <button
                   onClick={handleBack}
                   disabled={loading}
-                  className="flex-1 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  className="flex-1 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  ? Back
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
                 </button>
                 <button
                   onClick={handleCancel}
@@ -742,9 +789,10 @@ export default function OnboardingContainer() {
                 <button
                   onClick={handleBack}
                   disabled={loading}
-                  className="flex-1 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  className="flex-1 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  ? Back
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
                 </button>
                 <button
                   onClick={handleCancel}
@@ -771,9 +819,10 @@ export default function OnboardingContainer() {
                 <button
                   onClick={handleBack}
                   disabled={loading}
-                  className="flex-1 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  className="flex-1 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  ? Back
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
                 </button>
                 <button
                   onClick={handleCancel}
@@ -789,6 +838,7 @@ export default function OnboardingContainer() {
           {currentStep === 5 && (
             <div>
               <Step5CoachList
+                venueId={venueId}
                 onFinalize={handleStep5CoachesFinalized}
                 loading={loading}
                 error={globalError}
@@ -797,9 +847,10 @@ export default function OnboardingContainer() {
                 <button
                   onClick={handleBack}
                   disabled={loading}
-                  className="flex-1 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  className="flex-1 py-3 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  ? Back
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
                 </button>
                 <button
                   onClick={handleCancel}

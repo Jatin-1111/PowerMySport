@@ -13,6 +13,7 @@ import {
   rejectVenueHandler,
   markVenueForReviewHandler,
   addVenueCoaches,
+  getCoachPhotoUploadUrl,
 } from "../controllers/venueOnboardingController";
 import {
   sendVerificationCodeHandler,
@@ -128,6 +129,12 @@ router.post(
  * POST /api/venues/onboarding/step5/coaches
  */
 router.post("/step5/coaches", addVenueCoaches);
+
+/**
+ * Get presigned URL for coach profile photo upload
+ * POST /api/venues/onboarding/coach-photo-upload-url
+ */
+router.post("/coach-photo-upload-url", getCoachPhotoUploadUrl);
 
 /**
  * Cancel/Delete onboarding

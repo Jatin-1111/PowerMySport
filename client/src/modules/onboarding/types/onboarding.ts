@@ -13,6 +13,7 @@ export interface VenueCoach {
   sport: string;
   hourlyRate: number;
   bio?: string;
+  profilePhoto?: string; // S3 URL for coach profile photo
 }
 
 export interface VenueDocument {
@@ -121,8 +122,8 @@ export interface OnboardingStep2Payload {
     type: "Point";
     coordinates: [number, number];
   };
-  images?: string[];
-  coverPhotoUrl?: string;
+  images?: string[]; // LEGACY
+  coverPhotoUrl?: string; // LEGACY
 }
 
 export interface OnboardingStep3Payload {
@@ -146,8 +147,12 @@ export interface OnboardingStep3Payload {
 
 export interface ConfirmImagesPayload {
   venueId: string;
-  images: string[];
-  imageKeys: string[]; // S3 keys for images
+  images: string[]; // LEGACY
+  imageKeys: string[]; // LEGACY
+  generalImages?: string[]; // 3 general venue images
+  generalImageKeys?: string[]; // S3 keys for general images
+  sportImages?: Record<string, string[]>; // 5 images per sport
+  sportImageKeys?: Record<string, string[]>; // S3 keys for sport images
   coverPhotoUrl: string;
   coverPhotoKey: string; // S3 key for cover photo
 }

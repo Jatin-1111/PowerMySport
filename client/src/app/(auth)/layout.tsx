@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import React from "react";
 
 export default function AuthLayout({
@@ -27,13 +28,15 @@ export default function AuthLayout({
 
         {/* Footer */}
         <div className="text-center mt-6 text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-power-orange transition-colors">
-            ? Back to Home
+          <Link
+            href="/"
+            className="text-sm text-power-orange hover:underline inline-flex items-center gap-1"
+          >
+            <ArrowLeft className="w-3 h-3" />
+            Back to Home
           </Link>
         </div>
       </div>
     </div>
   );
 }
-
-

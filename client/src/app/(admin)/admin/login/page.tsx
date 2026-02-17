@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { adminApi } from "@/modules/admin/services/admin";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { Eye, EyeOff, Lock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -124,9 +124,10 @@ export default function AdminLoginPage() {
           <div className="mt-6 text-center">
             <Link
               href="/"
-              className="text-sm text-power-orange hover:underline"
+              className="text-sm text-power-orange hover:underline inline-flex items-center gap-1"
             >
-              ? Back to Main Site
+              <ArrowLeft className="w-3 h-3" />
+              Back to Main Site
             </Link>
           </div>
         </div>

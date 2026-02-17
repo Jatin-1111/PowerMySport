@@ -112,8 +112,7 @@ export const updateVenueDetailsStep2 = async (
  * Request body:
  * {
  *   venueId: string,
- *   imageCount: number (5-20),
- *   coverPhotoIndex: number (index of cover photo)
+ *   sports: string[] (selected sports from Step 2)
  * }
  */
 export const getImageUploadUrls = async (
@@ -121,7 +120,7 @@ export const getImageUploadUrls = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { venueId, imageCount, coverPhotoIndex } = req.body;
+    const { venueId, sports } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
     const venue = await require("../models/Venue").Venue.findById(venueId);
@@ -133,18 +132,26 @@ export const getImageUploadUrls = async (
       return;
     }
 
-    const uploadUrls = await getImageUploadPresignedUrls(
-      venueId,
-      imageCount,
-      coverPhotoIndex,
-    );
+    if (!sports || !Array.isArray(sports) || sports.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "Sports array is required",
+      });
+      return;
+    }
+
+    const uploadUrls = await getImageUploadPresignedUrls(venueId, sports);
+
+    const totalImages = 3 + sports.length * 5; // 3 general + 5 per sport
 
     res.status(200).json({
       success: true,
-      message: `Upload ${imageCount} images to the provided URLs`,
+      message: `Upload ${totalImages} images: 3 general venue images + 5 images per sport`,
       data: {
-        totalImages: imageCount,
-        coverPhotoIndex,
+        totalImages,
+        generalImageCount: 3,
+        sportsImageCount: sports.length * 5,
+        sports: sports.sort(),
         maxSizePerImage: `${UPLOAD_CONSTRAINTS.IMAGES.MAX_SIZE_BYTES / (1024 * 1024)}MB`,
         uploadUrls,
       },
@@ -156,6 +163,61 @@ export const getImageUploadUrls = async (
         error instanceof Error
           ? error.message
           : "Failed to generate upload URLs",
+    });
+  }
+};
+
+/**
+ * Get presigned URL for coach profile photo upload
+ * POST /api/venues/onboarding/coach-photo-upload-url
+ * Body: { venueId, fileName, contentType }
+ */
+export const getCoachPhotoUploadUrl = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { venueId, fileName, contentType } = req.body;
+
+    if (!venueId || !fileName || !contentType) {
+      res.status(400).json({
+        success: false,
+        message: "venueId, fileName, and contentType are required",
+      });
+      return;
+    }
+
+    // Verify venue exists
+    const venue = await require("../models/Venue").Venue.findById(venueId);
+    if (!venue) {
+      res.status(404).json({
+        success: false,
+        message: "Venue not found",
+      });
+      return;
+    }
+
+    // Generate presigned URL using S3Service
+    const { S3Service } = require("../services/S3Service");
+    const s3Service = new S3Service();
+    const uploadData = await s3Service.generateCoachPhotoUploadUrl(
+      fileName,
+      contentType,
+      venueId,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Coach photo upload URL generated",
+      data: uploadData,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to generate coach photo upload URL",
     });
   }
 };

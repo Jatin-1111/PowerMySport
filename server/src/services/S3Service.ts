@@ -12,6 +12,8 @@ import {
   PutObjectCommand,
   S3Client,
   S3ClientConfig,
+  GetBucketCorsCommand,
+  PutBucketCorsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -30,14 +32,23 @@ export interface UploadUrlResponse {
 }
 
 export class S3Service {
-  private documentsBucket: string =
-    process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-documents";
-  private imagesBucket: string =
-    process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
-  private region: string = process.env.AWS_REGION || "us-east-1";
+  private documentsBucket: string;
+  private imagesBucket: string;
+  private region: string;
   private s3Client: S3Client;
 
   constructor() {
+    // Load environment variables first
+    this.region = process.env.AWS_REGION || "ap-south-1";
+    this.documentsBucket =
+      process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-documents";
+    this.imagesBucket =
+      process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
+
+    console.log(`[S3Service] Initializing with region: ${this.region}`);
+    console.log(`[S3Service] Images bucket: ${this.imagesBucket}`);
+    console.log(`[S3Service] Documents bucket: ${this.documentsBucket}`);
+
     const clientConfig: S3ClientConfig = {
       region: this.region,
     };
@@ -84,7 +95,15 @@ export class S3Service {
       expiresIn: 3600, // 1 hour
     });
 
-    const downloadUrl = `https://${this.documentsBucket}.s3.${this.region}.amazonaws.com/${key}`;
+    // Generate presigned download URL (valid for 7 days) for private bucket
+    const getCommand = new GetObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800, // 7 days
+    });
 
     return {
       uploadUrl,
@@ -114,7 +133,7 @@ export class S3Service {
     const key = `venues/${venueId}/images/${sanitizedFileName}`;
 
     const putCommand = new PutObjectCommand({
-      Bucket: this.documentsBucket,
+      Bucket: this.imagesBucket,
       Key: key,
       ContentType: contentType,
     });
@@ -123,7 +142,15 @@ export class S3Service {
       expiresIn: 3600, // 1 hour
     });
 
-    const downloadUrl = `https://${this.documentsBucket}.s3.${this.region}.amazonaws.com/${key}`;
+    // Generate presigned URL for downloading/viewing the image (7 days expiry)
+    const getCommand = new GetObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800, // 7 days
+    });
 
     return {
       uploadUrl,
@@ -148,6 +175,50 @@ export class S3Service {
     const fileExtension = fileName.split(".").pop();
     const sanitizedFileName = `profile_${Date.now()}.${fileExtension}`;
     const key = `users/${userId}/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600, // 1 hour
+    });
+
+    // Generate presigned download URL (valid for 7 days) for private bucket
+    const getCommand = new GetObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800, // 7 days
+    });
+
+    return {
+      uploadUrl,
+      downloadUrl,
+      fileName: sanitizedFileName,
+      key,
+    };
+  }
+
+  /**
+   * Generate presigned upload URL for coach profile photos
+   * @param fileName - Original file name
+   * @param contentType - MIME type for image
+   * @param venueId - Venue ID for folder organization
+   * @returns Presigned URL and metadata
+   */
+  async generateCoachPhotoUploadUrl(
+    fileName: string,
+    contentType: string,
+    venueId: string,
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = fileName.split(".").pop();
+    const sanitizedFileName = `coach_${Date.now()}.${fileExtension}`;
+    const key = `venues/${venueId}/coaches/${sanitizedFileName}`;
 
     const putCommand = new PutObjectCommand({
       Bucket: this.imagesBucket,

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
 import {
   OnboardingVenue,
@@ -300,9 +301,10 @@ export default function AdminVenueApprovalPanel({
           {/* Back Button */}
           <button
             onClick={() => setViewMode("list")}
-            className="mb-6 flex items-center text-blue-600 hover:text-blue-800"
+            className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
           >
-            ? Back to List
+            <ArrowLeft className="w-4 h-4" />
+            Back to List
           </button>
 
           {error && (

@@ -193,16 +193,24 @@ export interface IVenueOnboardingStep2 {
 
 export interface IVenueOnboardingStep3 {
   venueId: string;
-  images: string[]; // S3 URLs from client upload
-  imageKeys: string[]; // S3 keys for regenerating URLs
+  images: string[]; // S3 URLs from client upload - LEGACY
+  imageKeys: string[]; // S3 keys for regenerating URLs - LEGACY
+  generalImages?: string[]; // General venue images (3 required)
+  generalImageKeys?: string[]; // S3 keys for general images
+  sportImages?: Record<string, string[]>; // Sport-specific images (5 per sport)
+  sportImageKeys?: Record<string, string[]>; // S3 keys for sport images
   coverPhotoUrl: string; // S3 URL for cover shot
   coverPhotoKey: string; // S3 key for cover photo
 }
 
 export interface IVenueOnboardingStep4 {
   venueId: string;
-  images: string[]; // S3 URLs from client upload
-  imageKeys: string[]; // S3 keys for regenerating URLs
+  images: string[]; // S3 URLs from client upload - LEGACY
+  imageKeys: string[]; // S3 keys for regenerating URLs - LEGACY
+  generalImages?: string[]; // General venue images (3 required)
+  generalImageKeys?: string[]; // S3 keys for general images
+  sportImages?: Record<string, string[]>; // Sport-specific images (5 per sport)
+  sportImageKeys?: Record<string, string[]>; // S3 keys for sport images
   coverPhotoUrl: string; // S3 URL for cover shot
   coverPhotoKey: string; // S3 key for cover photo
   documents: {
