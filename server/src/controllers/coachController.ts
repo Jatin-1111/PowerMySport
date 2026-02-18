@@ -160,7 +160,23 @@ export const updateCoachProfile = async (
       return;
     }
 
-    const coach = await updateCoach(coachId, req.body);
+    // Handle venueId validation and preservation
+    const updates = { ...req.body };
+    const newServiceMode = updates.serviceMode || existingCoach.serviceMode;
+
+    // Only preserve venueId if coach currently has OWN_VENUE mode
+    // This allows coaches to change to OWN_VENUE mode without a venue initially
+    // They can link/create a venue later
+    if (
+      newServiceMode === "OWN_VENUE" &&
+      !updates.venueId &&
+      existingCoach.venueId
+    ) {
+      // Preserve existing venueId if coach had one before
+      updates.venueId = existingCoach.venueId.toString();
+    }
+
+    const coach = await updateCoach(coachId, updates);
 
     res.status(200).json({
       success: true,

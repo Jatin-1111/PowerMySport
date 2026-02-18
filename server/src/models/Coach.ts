@@ -215,11 +215,9 @@ const coachSchema = new Schema<CoachDocument>(
 
 // Validation: Service mode conditional fields
 coachSchema.pre<CoachDocument>("save", function () {
-  if (this.serviceMode === "OWN_VENUE") {
-    if (!this.venueId) {
-      throw new Error("venueId is required when serviceMode is OWN_VENUE");
-    }
-  }
+  // Only enforce venueId requirement if the coach is actually USING the venue
+  // (i.e., has bookings, listings, etc). For now, allow creation/update without venueId
+  // Coaches can select OWN_VENUE mode and create/link venue later
 
   if (this.serviceMode === "FREELANCE" || this.serviceMode === "HYBRID") {
     if (!this.serviceRadiusKm) {

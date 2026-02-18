@@ -24,7 +24,6 @@ export default function CoachProfilePage() {
     sports: "",
     hourlyRate: "",
     serviceMode: "FREELANCE" as "OWN_VENUE" | "FREELANCE" | "HYBRID",
-    venueId: "",
     serviceRadiusKm: "10",
     travelBufferTime: "30",
   });
@@ -98,7 +97,6 @@ export default function CoachProfilePage() {
           sports: response.data.sports.join(", "),
           hourlyRate: response.data.hourlyRate.toString(),
           serviceMode: response.data.serviceMode,
-          venueId: response.data.venueId || "",
           serviceRadiusKm: (response.data.serviceRadiusKm ?? 10).toString(),
           travelBufferTime: (response.data.travelBufferTime ?? 30).toString(),
         });
@@ -133,22 +131,6 @@ export default function CoachProfilePage() {
     setSaving(true);
 
     try {
-      // Validate Venue ID format if present
-      if (
-        formData.serviceMode !== "FREELANCE" &&
-        formData.venueId &&
-        formData.venueId.trim() !== ""
-      ) {
-        const objectIdPattern = /^[0-9a-fA-F]{24}$/;
-        if (!objectIdPattern.test(formData.venueId.trim())) {
-          alert(
-            "Invalid Venue ID. It must be a 24-character hexadecimal string.",
-          );
-          setSaving(false);
-          return;
-        }
-      }
-
       const payload = {
         bio: formData.bio,
         certifications: formData.certifications
@@ -161,18 +143,16 @@ export default function CoachProfilePage() {
           .filter((s) => s),
         hourlyRate: Number(formData.hourlyRate || 0),
         serviceMode: formData.serviceMode,
-        serviceRadiusKm:
-          formData.serviceMode !== "OWN_VENUE"
-            ? formData.serviceRadiusKm.trim() === ""
+        ...(formData.serviceMode !== "OWN_VENUE" && {
+          serviceRadiusKm:
+            formData.serviceRadiusKm.trim() === ""
               ? undefined
-              : Number(formData.serviceRadiusKm)
-            : undefined,
-        travelBufferTime:
-          formData.serviceMode !== "OWN_VENUE"
-            ? formData.travelBufferTime.trim() === ""
+              : Number(formData.serviceRadiusKm),
+          travelBufferTime:
+            formData.travelBufferTime.trim() === ""
               ? undefined
-              : Number(formData.travelBufferTime)
-            : undefined,
+              : Number(formData.travelBufferTime),
+        }),
         availability: [], // TODO: Add availability editor
       };
 
