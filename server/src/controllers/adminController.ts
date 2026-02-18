@@ -1,10 +1,16 @@
 import { Request, Response } from "express";
+import { User } from "../models/User";
 import {
-  loginAdmin,
   createAdmin,
   getAdminById,
   getAllAdmins,
+  loginAdmin,
 } from "../services/AdminService";
+import {
+  listCoachVerificationRequests,
+  updateCoachVerificationStatus,
+} from "../services/CoachService";
+import { sendCoachVerificationStatusEmail } from "../utils/email";
 
 // Admin login
 export const adminLogin = async (
@@ -227,6 +233,218 @@ export const handleDispute = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to handle dispute",
+    });
+  }
+};
+
+/**
+ * List coach verification requests
+ * GET /api/admin/coaches/verification?status=PENDING&page=1&limit=20
+ */
+export const listCoachVerifications = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const status = req.query.status as
+      | "UNVERIFIED"
+      | "PENDING"
+      | "REVIEW"
+      | "VERIFIED"
+      | "REJECTED"
+      | undefined;
+    const page = parseInt((req.query.page as string) || "1", 10);
+    const limit = parseInt((req.query.limit as string) || "20", 10);
+
+    const result = await listCoachVerificationRequests(status, page, limit);
+
+    res.status(200).json({
+      success: true,
+      message: "Coach verification requests retrieved",
+      data: result.coaches,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch coach verifications",
+    });
+  }
+};
+
+/**
+ * Approve coach verification
+ * POST /api/admin/coaches/:coachId/verify
+ */
+export const approveCoachVerification = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const coachId = (req.params as Record<string, unknown>).coachId as string;
+    const coach = await updateCoachVerificationStatus(
+      coachId,
+      "VERIFIED",
+      req.user.id,
+    );
+
+    try {
+      const user = await User.findById(coach.userId);
+      if (user?.email) {
+        await sendCoachVerificationStatusEmail({
+          name: user.name,
+          email: user.email,
+          status: "VERIFIED",
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send coach verification email:", emailError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Coach verified successfully",
+      data: coach,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to verify coach",
+    });
+  }
+};
+
+/**
+ * Reject coach verification
+ * POST /api/admin/coaches/:coachId/reject
+ */
+export const rejectCoachVerification = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const coachId = (req.params as Record<string, unknown>).coachId as string;
+    const { reason } = req.body as { reason?: string };
+    if (!reason) {
+      res.status(400).json({
+        success: false,
+        message: "Rejection reason is required",
+      });
+      return;
+    }
+
+    const coach = await updateCoachVerificationStatus(
+      coachId,
+      "REJECTED",
+      req.user.id,
+      reason,
+    );
+
+    try {
+      const user = await User.findById(coach.userId);
+      if (user?.email) {
+        await sendCoachVerificationStatusEmail({
+          name: user.name,
+          email: user.email,
+          status: "REJECTED",
+          notes: reason,
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send coach verification email:", emailError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Coach verification rejected",
+      data: coach,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to reject coach",
+    });
+  }
+};
+
+/**
+ * Mark coach verification for review
+ * POST /api/admin/coaches/:coachId/mark-review
+ */
+export const markCoachVerificationForReview = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const coachId = (req.params as Record<string, unknown>).coachId as string;
+    const { notes } = req.body as { notes?: string };
+
+    const coach = await updateCoachVerificationStatus(
+      coachId,
+      "REVIEW",
+      req.user.id,
+      notes,
+    );
+
+    try {
+      const user = await User.findById(coach.userId);
+      if (user?.email) {
+        await sendCoachVerificationStatusEmail({
+          name: user.name,
+          email: user.email,
+          status: "REVIEW",
+          ...(notes ? { notes } : {}),
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send coach verification email:", emailError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Coach verification marked for review",
+      data: coach,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to mark coach for review",
     });
   }
 };

@@ -18,6 +18,11 @@ export interface CoachDocument extends Document {
   travelBufferTime?: number;
   availability: IAvailability[];
   verificationDocuments?: CoachDocumentFile[]; // Certification proofs, ID verification
+  verificationStatus?: CoachVerificationStatus;
+  verificationNotes?: string;
+  verificationSubmittedAt?: Date;
+  verifiedAt?: Date | null;
+  verifiedBy?: mongoose.Types.ObjectId | null;
   isVerified: boolean;
   rating: number;
   reviewCount: number;
@@ -30,6 +35,7 @@ export interface CoachDocumentFile {
   type:
     | "CERTIFICATION"
     | "ID_PROOF"
+    | "ADDRESS_PROOF"
     | "BACKGROUND_CHECK"
     | "INSURANCE"
     | "OTHER";
@@ -38,6 +44,13 @@ export interface CoachDocumentFile {
   fileName: string;
   uploadedAt: Date;
 }
+
+export type CoachVerificationStatus =
+  | "UNVERIFIED"
+  | "PENDING"
+  | "REVIEW"
+  | "VERIFIED"
+  | "REJECTED";
 
 const coachSchema = new Schema<CoachDocument>(
   {
@@ -148,6 +161,7 @@ const coachSchema = new Schema<CoachDocument>(
           enum: [
             "CERTIFICATION",
             "ID_PROOF",
+            "ADDRESS_PROOF",
             "BACKGROUND_CHECK",
             "INSURANCE",
             "OTHER",
@@ -170,6 +184,27 @@ const coachSchema = new Schema<CoachDocument>(
         },
       },
     ],
+    verificationStatus: {
+      type: String,
+      enum: ["UNVERIFIED", "PENDING", "REVIEW", "VERIFIED", "REJECTED"],
+      default: "UNVERIFIED",
+    },
+    verificationNotes: {
+      type: String,
+      default: "",
+    },
+    verificationSubmittedAt: {
+      type: Date,
+    },
+    verifiedAt: {
+      type: Date,
+      default: null,
+    },
+    verifiedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null,
+    },
     isVerified: {
       type: Boolean,
       default: false,
@@ -205,5 +240,6 @@ coachSchema.index({ baseLocation: "2dsphere" });
 coachSchema.index({ sports: 1 });
 coachSchema.index({ serviceMode: 1 });
 coachSchema.index({ isVerified: 1 });
+coachSchema.index({ verificationStatus: 1 });
 
 export const Coach = mongoose.model<CoachDocument>("Coach", coachSchema);

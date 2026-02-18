@@ -12,8 +12,6 @@ import {
   PutObjectCommand,
   S3Client,
   S3ClientConfig,
-  GetBucketCorsCommand,
-  PutBucketCorsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -238,6 +236,57 @@ export class S3Service {
 
     const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
       expiresIn: 604800, // 7 days
+    });
+
+    return {
+      uploadUrl,
+      downloadUrl,
+      fileName: sanitizedFileName,
+      key,
+    };
+  }
+
+  /**
+   * Generate presigned upload URL for coach verification documents
+   * @param fileName - Original file name
+   * @param contentType - MIME type for document
+   * @param coachId - Coach ID for folder organization
+   * @param documentType - Verification document type
+   * @returns Presigned URL and metadata
+   */
+  async generateCoachVerificationUploadUrl(
+    fileName: string,
+    contentType: string,
+    coachId: string,
+    documentType:
+      | "CERTIFICATION"
+      | "ID_PROOF"
+      | "ADDRESS_PROOF"
+      | "BACKGROUND_CHECK"
+      | "INSURANCE"
+      | "OTHER",
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = fileName.split(".").pop();
+    const sanitizedFileName = `${documentType.toLowerCase()}_${Date.now()}.${fileExtension}`;
+    const key = `coaches/${coachId}/documents/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600,
+    });
+
+    const getCommand = new GetObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800,
     });
 
     return {

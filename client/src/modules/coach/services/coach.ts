@@ -1,5 +1,17 @@
 ﻿import axiosInstance from "@/lib/api/axios";
-import { ApiResponse, Coach, IAvailability } from "@/types";
+import {
+  ApiResponse,
+  Coach,
+  CoachVerificationDocument,
+  IAvailability,
+} from "@/types";
+
+export interface CoachVerificationUploadResponse {
+  uploadUrl: string;
+  downloadUrl: string;
+  fileName: string;
+  key: string;
+}
 
 export const coachApi = {
   // Create coach profile
@@ -60,5 +72,25 @@ export const coachApi = {
     );
     return response.data;
   },
-};
 
+  // Submit verification documents
+  submitVerification: async (payload: {
+    documents: CoachVerificationDocument[];
+  }): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.post("/coaches/verification", payload);
+    return response.data;
+  },
+
+  // Get presigned upload URL for verification documents
+  getVerificationUploadUrl: async (payload: {
+    fileName: string;
+    contentType: string;
+    documentType: CoachVerificationDocument["type"];
+  }): Promise<ApiResponse<CoachVerificationUploadResponse>> => {
+    const response = await axiosInstance.post(
+      "/coaches/verification/upload-url",
+      payload,
+    );
+    return response.data;
+  },
+};

@@ -51,7 +51,16 @@ export const getAllUsers = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const users = await User.find().select("-password").sort({ createdAt: -1 });
+    const page = parseInt((req.query.page as string) || "1", 10);
+    const limit = parseInt((req.query.limit as string) || "15", 10);
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments();
+    const users = await User.find()
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     // Transform _id to id for frontend
     const transformedUsers = users.map((user) => ({
@@ -63,6 +72,11 @@ export const getAllUsers = async (
       success: true,
       message: "Users retrieved successfully",
       data: transformedUsers,
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     res.status(500).json({

@@ -1,13 +1,14 @@
 ﻿"use client";
 
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import {
   VenueInquiry,
   venueInquiryApi,
 } from "@/modules/venue-inquiry/services/venueInquiry";
-import { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function VenueInquiriesPage() {
   const [inquiries, setInquiries] = useState<VenueInquiry[]>([]);
@@ -70,21 +71,23 @@ export default function VenueInquiriesPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6 text-slate-900">
-        Venue Inquiries
-      </h1>
+    <div className="space-y-6">
+      <AdminPageHeader
+        badge="Admin"
+        title="Venue Inquiries"
+        subtitle="Review and approve venue listing requests from potential partners."
+      />
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2">
         {["PENDING", "APPROVED", "REJECTED"].map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${
               filter === status
-                ? "bg-power-orange text-white"
-                : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                ? "bg-power-orange text-white shadow-md"
+                : "bg-white border border-slate-200 text-slate-700 hover:border-power-orange hover:text-power-orange"
             }`}
           >
             {status}
@@ -94,13 +97,25 @@ export default function VenueInquiriesPage() {
 
       {/* Inquiries List */}
       {inquiries.length === 0 ? (
-        <Card className="text-center bg-white">
-          <p className="text-slate-600">No {filter.toLowerCase()} inquiries</p>
+        <Card className="bg-white">
+          <div className="flex flex-col items-center gap-4 py-10 text-center">
+            <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
+              No {filter.toLowerCase()} inquiries
+            </div>
+            <p className="max-w-md text-slate-600">
+              {filter === "PENDING"
+                ? "New venue inquiries will appear here for review."
+                : `No ${filter.toLowerCase()} inquiries to display.`}
+            </p>
+          </div>
         </Card>
       ) : (
         <div className="space-y-4">
           {inquiries.map((inquiry) => (
-            <Card key={inquiry.id} className="bg-white">
+            <Card
+              key={inquiry.id}
+              className="bg-white hover:shadow-lg transition-shadow"
+            >
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-xl font-bold text-slate-900 mb-1">

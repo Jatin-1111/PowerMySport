@@ -24,6 +24,40 @@ export default function CoachesPage() {
   const [sportFilter, setSportFilter] = useState("");
   const router = useRouter();
 
+  const getVerificationBadge = (coach: Coach) => {
+    const status =
+      coach.verificationStatus ||
+      (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+
+    switch (status) {
+      case "VERIFIED":
+        return {
+          label: "Verified",
+          className: "bg-green-100 text-green-700 border border-green-200",
+        };
+      case "PENDING":
+        return {
+          label: "Pending",
+          className: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+        };
+      case "REVIEW":
+        return {
+          label: "In Review",
+          className: "bg-blue-100 text-blue-700 border border-blue-200",
+        };
+      case "REJECTED":
+        return {
+          label: "Unverified",
+          className: "bg-red-100 text-red-700 border border-red-200",
+        };
+      default:
+        return {
+          label: "Unverified",
+          className: "bg-slate-100 text-slate-700 border border-slate-200",
+        };
+    }
+  };
+
   useEffect(() => {
     loadCoaches();
   }, []);
@@ -178,11 +212,21 @@ export default function CoachesPage() {
                 >
                   <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-5 border-b border-slate-100">
                     <div className="mb-3">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center justify-between gap-2 mb-2">
                         <Award size={20} className="text-turf-green" />
                         <h3 className="text-lg font-bold text-slate-900">
                           {coach.sports[0]} Coach
                         </h3>
+                        {(() => {
+                          const badge = getVerificationBadge(coach);
+                          return (
+                            <span
+                              className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${badge.className}`}
+                            >
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <p className="text-sm text-slate-600">
                         {coach.sports.join(", ")}

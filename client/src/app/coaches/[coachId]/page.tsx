@@ -43,6 +43,40 @@ export default function CoachDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const getVerificationBadge = (coachData: Coach) => {
+    const status =
+      coachData.verificationStatus ||
+      (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
+
+    switch (status) {
+      case "VERIFIED":
+        return {
+          label: "Verified",
+          className: "bg-green-100 text-green-700 border border-green-200",
+        };
+      case "PENDING":
+        return {
+          label: "Pending",
+          className: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+        };
+      case "REVIEW":
+        return {
+          label: "In Review",
+          className: "bg-blue-100 text-blue-700 border border-blue-200",
+        };
+      case "REJECTED":
+        return {
+          label: "Unverified",
+          className: "bg-red-100 text-red-700 border border-red-200",
+        };
+      default:
+        return {
+          label: "Unverified",
+          className: "bg-slate-100 text-slate-700 border border-slate-200",
+        };
+    }
+  };
+
   useEffect(() => {
     if (coachId) {
       loadCoachDetails();
@@ -168,6 +202,17 @@ export default function CoachDetailsPage() {
                   <h2 className="text-2xl font-bold text-slate-900">
                     Coach Profile
                   </h2>
+                  {coach &&
+                    (() => {
+                      const badge = getVerificationBadge(coach);
+                      return (
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full mt-2 ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
                   <div className="flex items-center gap-2 mt-1">
                     <Star
                       className="text-yellow-500 fill-yellow-500"

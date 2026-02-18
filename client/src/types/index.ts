@@ -67,6 +67,27 @@ export interface IAvailability {
   endTime: string; // "18:00"
 }
 
+export type CoachVerificationStatus =
+  | "UNVERIFIED"
+  | "PENDING"
+  | "REVIEW"
+  | "VERIFIED"
+  | "REJECTED";
+
+export interface CoachVerificationDocument {
+  type:
+    | "CERTIFICATION"
+    | "ID_PROOF"
+    | "ADDRESS_PROOF"
+    | "BACKGROUND_CHECK"
+    | "INSURANCE"
+    | "OTHER";
+  url: string;
+  s3Key?: string;
+  fileName: string;
+  uploadedAt?: string;
+}
+
 export interface Coach {
   _id?: string;
   id: string;
@@ -80,6 +101,13 @@ export interface Coach {
   serviceRadiusKm?: number;
   travelBufferTime?: number;
   availability: IAvailability[];
+  verificationDocuments?: CoachVerificationDocument[];
+  verificationStatus?: CoachVerificationStatus;
+  verificationNotes?: string;
+  verificationSubmittedAt?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  isVerified?: boolean;
   rating: number;
   reviewCount: number;
   createdAt: string;
@@ -111,6 +139,8 @@ export interface Venue {
   coverPhotoUrl?: string;
   coverPhotoKey?: string; // S3 key for cover photo (regenerate URL as needed)
   allowExternalCoaches: boolean;
+  rating?: number;
+  reviewCount?: number;
   createdAt: string;
   updatedAt: string;
 }
