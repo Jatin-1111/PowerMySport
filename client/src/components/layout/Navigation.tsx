@@ -44,7 +44,8 @@ export const Navigation: React.FC<NavProps> = ({
 
   const navigationLinks = [
     { href: "/", label: "Home" },
-    { href: "/about", label: "About Us" },
+    { href: "/venues", label: "Venues" },
+    { href: "/coaches", label: "Coaches" },
     { href: "/services", label: "Services" },
     { href: "/how-it-works", label: "How It Works" },
     { href: "/contact", label: "Contact" },

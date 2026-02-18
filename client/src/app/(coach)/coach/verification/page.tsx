@@ -382,13 +382,11 @@ export default function CoachVerificationPage() {
             </div>
             {filePreview.type.startsWith("image/") && (
               <div className="rounded-lg bg-slate-100 p-4">
-                <img
-                  src={URL.createObjectURL(
-                    new File([], filePreview.name, { type: filePreview.type }),
-                  )}
-                  alt="Preview"
-                  className="max-h-96 w-full rounded object-contain"
-                />
+                <div className="bg-gray-200 rounded h-96 w-full flex items-center justify-center">
+                  <p className="text-gray-500 text-sm">
+                    Image preview not available
+                  </p>
+                </div>
               </div>
             )}
             {filePreview.type === "application/pdf" && (

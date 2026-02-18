@@ -30,7 +30,7 @@ export default function TermsOfServicePage() {
                 Terms of Service
               </h1>
               <p className="text-slate-200 text-base sm:text-lg max-w-2xl">
-                Last updated: February 12, 2026
+                Last updated: February 18, 2026 | Effective: February 18, 2026
               </p>
             </div>
             <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
@@ -391,8 +391,13 @@ export default function TermsOfServicePage() {
                 <strong>Email:</strong> legal@powermysport.com
               </p>
               <p className="text-slate-700">
-                <strong>Address:</strong> PowerMySport HQ, Sports Complex Road,
-                Your City, India
+                <strong>Address:</strong> PowerMySport HQ, Bangalore, India
+              </p>
+              <p className="text-slate-700 mt-2">
+                <strong>Legal Contact:</strong> legal@powermysport.com
+              </p>
+              <p className="text-slate-700">
+                <strong>Privacy Contact:</strong> privacy@powermysport.com
               </p>
             </div>
           </section>

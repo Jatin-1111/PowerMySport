@@ -30,7 +30,7 @@ export default function PrivacyPolicyPage() {
                 Privacy Policy
               </h1>
               <p className="text-slate-200 text-base sm:text-lg max-w-2xl">
-                Last updated: February 12, 2026
+                Last updated: February 18, 2026 | Effective: February 18, 2026
               </p>
             </div>
             <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
