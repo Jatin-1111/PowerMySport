@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
