@@ -2,12 +2,14 @@
 
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { venueApi } from "@/modules/venue/services/venue";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { Venue } from "@/types";
 import { MapPin } from "lucide-react";
+import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
 export default function VenueInventoryPage() {
@@ -486,19 +488,28 @@ export default function VenueInventoryPage() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">My Venues</h1>
-        {!showForm && canAddMoreVenues && (
-          <Button onClick={() => setShowForm(true)} variant="primary">
-            + Add Venue
-          </Button>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PlayerPageHeader
+        badge="Venue Lister"
+        title="My Venues"
+        subtitle="Manage listings, pricing, and availability for every venue you host."
+        action={
+          <div className="flex flex-wrap gap-3">
+            <Link href="/venue-lister/vendor-bookings">
+              <Button variant="secondary">View Bookings</Button>
+            </Link>
+            {!showForm && canAddMoreVenues && (
+              <Button onClick={() => setShowForm(true)} variant="primary">
+                Add Venue
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {/* Restriction message for venue listers who cannot add more */}
       {!canAddMoreVenues && !showForm && (
-        <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-6">
+        <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4">
           <p className="text-yellow-800">
             <strong>Note:</strong> You can only manage your approved venue. To
             add more venues, please contact our admin team.

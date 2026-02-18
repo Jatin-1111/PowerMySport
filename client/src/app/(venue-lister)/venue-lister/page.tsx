@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { Card } from "@/modules/shared/ui/Card";
+import { Button } from "@/modules/shared/ui/Button";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Booking, Venue } from "@/types";
@@ -91,11 +93,25 @@ export default function VenueListerDashboard() {
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6 text-slate-900">Dashboard</h1>
+    <div className="space-y-6">
+      <PlayerPageHeader
+        badge="Venue Lister"
+        title="Dashboard"
+        subtitle="Track your venues, bookings, and earnings at a glance."
+        action={
+          <div className="flex flex-wrap gap-3">
+            <Link href="/venue-lister/inventory">
+              <Button variant="primary">Manage Inventory</Button>
+            </Link>
+            <Link href="/venue-lister/vendor-bookings">
+              <Button variant="secondary">View Bookings</Button>
+            </Link>
+          </div>
+        }
+      />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-white">
           <p className="text-sm text-slate-600 mb-1">Total Venues</p>
           <p className="text-3xl font-bold text-slate-900">
@@ -126,10 +142,8 @@ export default function VenueListerDashboard() {
       </div>
 
       {primaryVenue && (
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 text-slate-900">
-            Your First Venue
-          </h2>
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900">Your First Venue</h2>
           <Card className="bg-white border border-slate-200 p-0 overflow-hidden">
             {primaryVenue.coverPhotoUrl ||
             (primaryVenue.images && primaryVenue.images.length > 0) ? (
@@ -184,8 +198,8 @@ export default function VenueListerDashboard() {
       )}
 
       {/* Quick Actions */}
-      <h2 className="text-xl font-bold mb-4 text-slate-900">Quick Actions</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <h2 className="text-xl font-bold text-slate-900">Quick Actions</h2>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Link
           href="/venue-lister/inventory"
           className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors group"

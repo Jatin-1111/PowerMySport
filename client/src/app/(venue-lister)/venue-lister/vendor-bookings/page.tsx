@@ -1,11 +1,14 @@
 ﻿"use client";
 
+import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { Booking } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import { useEffect, useState } from "react";
 import { Calendar } from "lucide-react";
+import Link from "next/link";
 
 export default function VenueBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -33,15 +36,41 @@ export default function VenueBookingsPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6 text-slate-900">Venue Bookings</h1>
+    <div className="space-y-6">
+      <PlayerPageHeader
+        badge="Venue Lister"
+        title="Bookings"
+        subtitle="Review incoming bookings, track schedules, and monitor payment status."
+        action={
+          <div className="flex flex-wrap gap-3">
+            <Link href="/venue-lister/inventory">
+              <Button variant="secondary">Manage Inventory</Button>
+            </Link>
+            <Link href="/venue-lister">
+              <Button variant="primary">Back to Dashboard</Button>
+            </Link>
+          </div>
+        }
+      />
 
       {bookings.length === 0 ? (
-        <Card className="text-center bg-white">
-          <p className="text-slate-600 mb-4">No bookings yet</p>
-          <p className="text-sm text-slate-600">
-            Bookings will appear here once players book your venues
-          </p>
+        <Card className="bg-white">
+          <div className="flex flex-col items-center gap-4 py-10 text-center">
+            <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
+              No bookings yet
+            </div>
+            <p className="max-w-md text-slate-600">
+              Bookings will appear here once players reserve your venues.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/venue-lister/inventory">
+                <Button variant="secondary">Manage Inventory</Button>
+              </Link>
+              <Link href="/venue-lister">
+                <Button variant="primary">Go to Dashboard</Button>
+              </Link>
+            </div>
+          </div>
         </Card>
       ) : (
         <div className="space-y-4">

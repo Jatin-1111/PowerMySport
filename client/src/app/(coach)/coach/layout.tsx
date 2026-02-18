@@ -47,7 +47,7 @@ export default function CoachLayout({
     <div className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen">
         {/* Sidebar */}
-        <aside className="w-72 border-r border-slate-200 bg-white shadow-sm">
+        <aside className="sticky top-0 h-screen w-72 border-r border-slate-200 bg-white shadow-sm">
           <div className="p-6">
             <div className="rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-5 text-white">
               <p className="text-xs uppercase tracking-wide text-slate-300">

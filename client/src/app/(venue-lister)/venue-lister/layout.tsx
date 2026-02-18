@@ -4,13 +4,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  BookOpen,
-  Calendar,
-  Grid3x3,
-  LogOut,
-  LayoutDashboard,
-} from "lucide-react";
+import { BookOpen, Calendar, Grid3x3, LayoutDashboard } from "lucide-react";
 import React from "react";
 
 export default function VendorLayout({
@@ -31,71 +25,90 @@ export default function VendorLayout({
     }
   };
 
+  const navItems = [
+    {
+      href: "/venue-lister",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      href: "/onboarding",
+      label: "Onboarding",
+      icon: BookOpen,
+    },
+    {
+      href: "/venue-lister/inventory",
+      label: "Inventory",
+      icon: Grid3x3,
+    },
+    {
+      href: "/venue-lister/vendor-bookings",
+      label: "Bookings",
+      icon: Calendar,
+    },
+  ];
+
   return (
-    <div className="flex h-screen bg-slate-50">
-      {/* Vendor Sidebar */}
-      <aside className="w-64 bg-slate-900 shadow-xl flex flex-col relative">
-        <div className="p-6 border-b border-slate-700">
-          <h1 className="text-2xl font-bold text-power-orange">PowerMySport</h1>
-          <p className="text-slate-400 text-sm mt-2">Vendor Portal</p>
-          <p className="text-slate-200 font-semibold mt-4">{user?.name}</p>
-        </div>
+    <div className="min-h-screen bg-slate-50">
+      <div className="flex min-h-screen">
+        {/* Sidebar */}
+        <aside className="sticky top-0 h-screen w-72 border-r border-slate-200 bg-white shadow-sm">
+          <div className="p-6">
+            <div className="rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-5 text-white">
+              <p className="text-xs uppercase tracking-wide text-slate-300">
+                Venue Lister Dashboard
+              </p>
+              <h1 className="mt-2 text-2xl font-bold text-white">
+                PowerMySport
+              </h1>
+              <p className="mt-1 text-sm text-slate-200">{user?.name}</p>
+            </div>
+          </div>
 
-        <nav className="mt-8 flex-1">
-          <Link
-            href="/venue-lister"
-            className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
-          >
-            <LayoutDashboard size={20} />
-            <span>Dashboard</span>
-          </Link>
-          <Link
-            href="/onboarding"
-            className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
-          >
-            <BookOpen size={20} />
-            <span>Onboarding</span>
-          </Link>
-          <Link
-            href="/venue-lister/inventory"
-            className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
-          >
-            <Grid3x3 size={20} />
-            <span>Inventory</span>
-          </Link>
-          <Link
-            href="/venue-lister/vendor-bookings"
-            className="flex items-center gap-3 px-6 py-3 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-power-orange transition-all"
-          >
-            <Calendar size={20} />
-            <span>Bookings</span>
-          </Link>
+          <nav className="mt-2 space-y-1 px-4">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition-colors hover:bg-slate-100"
+                >
+                  <Icon size={18} />
+                  <span className="text-sm font-semibold">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
 
-          {/* Show "Back to Coach" if user is a coach */}
           {user?.role === "COACH" && (
-            <Link
-              href="/coach/profile"
-              className="flex items-center gap-3 px-6 py-3 mt-4 text-slate-300 hover:bg-slate-800 hover:border-l-4 hover:border-turf-green transition-all border-l-4 border-turf-green"
-            >
-              <span className="text-turf-green">← Back to Coach Profile</span>
-            </Link>
+            <div className="px-4 pt-4">
+              <Link
+                href="/coach/profile"
+                className="flex items-center justify-center rounded-xl border border-turf-green/30 bg-turf-green/10 px-4 py-3 text-sm font-semibold text-turf-green transition-colors hover:bg-turf-green/20"
+              >
+                Back to Coach Profile
+              </Link>
+            </div>
           )}
-        </nav>
 
-        <div className="p-6 mt-auto border-t border-slate-700">
-          <button
-            onClick={handleLogout}
-            className="w-full bg-red-600 text-white py-2.5 rounded-lg font-semibold hover:bg-red-700 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-      </aside>
+          <div className="mt-auto border-t border-slate-200 p-6">
+            <button
+              onClick={handleLogout}
+              className="w-full rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+            >
+              Logout
+            </button>
+          </div>
+        </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">{children}</div>
-      </main>
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto w-full max-w-6xl px-6 py-8 sm:px-8">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

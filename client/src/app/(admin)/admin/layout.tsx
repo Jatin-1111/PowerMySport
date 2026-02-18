@@ -42,7 +42,7 @@ export default function AdminLayout({
   return (
     <div className="flex h-screen bg-slate-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 shadow-xl flex flex-col relative">
+      <aside className="sticky top-0 h-screen w-64 bg-slate-900 shadow-xl flex flex-col relative">
         <div className="p-6 border-b border-slate-700">
           <h1 className="text-2xl font-bold text-power-orange">PowerMySport</h1>
           <p className="text-slate-400 text-sm mt-2">Admin Portal</p>
