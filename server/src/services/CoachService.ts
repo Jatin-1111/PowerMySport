@@ -367,6 +367,10 @@ export const checkCoachAvailability = async (
 export const getCoachById = async (
   coachId: string,
 ): Promise<CoachDocument | null> => {
+  // Validate coachId
+  if (!coachId || coachId === "undefined") {
+    return null;
+  }
   return Coach.findById(coachId).populate("userId venueId");
 };
 
@@ -386,7 +390,17 @@ export const updateCoach = async (
   coachId: string,
   updates: Partial<ICoach>,
 ): Promise<CoachDocument | null> => {
-  return Coach.findByIdAndUpdate(coachId, updates, {
+  // Validate coachId is provided
+  if (!coachId || coachId === "undefined") {
+    throw new Error("Invalid coach ID");
+  }
+
+  // Filter out undefined values to prevent MongoDB casting issues
+  const cleanedUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined),
+  );
+
+  return Coach.findByIdAndUpdate(coachId, cleanedUpdates, {
     new: true,
     runValidators: true,
   });

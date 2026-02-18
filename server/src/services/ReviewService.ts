@@ -1,7 +1,7 @@
-import { Review, ReviewDocument } from "../models/Review";
 import { Booking } from "../models/Booking";
-import { Venue } from "../models/Venue";
 import { Coach } from "../models/Coach";
+import { Review, ReviewDocument } from "../models/Review";
+import { Venue } from "../models/Venue";
 
 export interface CreateReviewPayload {
   bookingId: string;
@@ -99,6 +99,11 @@ const updateVenueRating = async (venueId: string): Promise<void> => {
  * Update coach's average rating and review count
  */
 const updateCoachRating = async (coachId: string): Promise<void> => {
+  // Validate coachId
+  if (!coachId) {
+    return;
+  }
+
   const stats = await Review.aggregate([
     { $match: { coachId: coachId as any, coachRating: { $exists: true } } },
     {

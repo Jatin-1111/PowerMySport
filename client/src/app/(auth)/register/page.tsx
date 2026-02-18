@@ -118,6 +118,11 @@ function RegisterContent() {
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
 
+        // Store serviceMode for coaches to pre-fill on profile page
+        if (formData.role === "COACH") {
+          localStorage.setItem("coachServiceMode", formData.serviceMode);
+        }
+
         // Redirect based on role
         if (response.data.user.role === "PLAYER") {
           router.push("/dashboard/my-bookings");

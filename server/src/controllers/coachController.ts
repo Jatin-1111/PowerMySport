@@ -26,6 +26,25 @@ export const createNewCoach = async (
       return;
     }
 
+    // Validate required fields
+    const { bio, certifications, sports, hourlyRate, serviceMode } = req.body;
+
+    if (!serviceMode) {
+      res.status(400).json({
+        success: false,
+        message: "Service mode is required",
+      });
+      return;
+    }
+
+    if (!sports || !Array.isArray(sports) || sports.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "At least one sport is required",
+      });
+      return;
+    }
+
     // Check if user already has a coach profile
     const existingCoach = await getCoachByUserId(req.user.id);
     if (existingCoach) {
@@ -41,10 +60,23 @@ export const createNewCoach = async (
       ...req.body,
     });
 
+    console.log("Created coach:", {
+      id: coach.id,
+      serviceMode: coach.serviceMode,
+    });
+
+    // Convert to JSON to ensure all fields are serialized correctly
+    const coachJson = coach.toJSON();
+
+    console.log("Coach JSON response:", {
+      id: coachJson.id,
+      serviceMode: coachJson.serviceMode,
+    });
+
     res.status(201).json({
       success: true,
       message: "Coach profile created successfully",
-      data: coach,
+      data: coachJson,
     });
   } catch (error) {
     res.status(400).json({
@@ -75,10 +107,13 @@ export const getCoach = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Convert to JSON to ensure all fields are serialized correctly
+    const coachJson = coach.toJSON();
+
     res.status(200).json({
       success: true,
       message: "Coach retrieved successfully",
-      data: coach,
+      data: coachJson,
     });
   } catch (error) {
     res.status(500).json({
@@ -115,10 +150,18 @@ export const getMyCoachProfile = async (
       return;
     }
 
+    // Convert to JSON to ensure all fields are serialized correctly
+    const coachJson = coach.toJSON();
+
+    console.log("getMyCoachProfile returning:", {
+      id: coachJson.id,
+      serviceMode: coachJson.serviceMode,
+    });
+
     res.status(200).json({
       success: true,
       message: "Coach profile retrieved successfully",
-      data: coach,
+      data: coachJson,
     });
   } catch (error) {
     res.status(500).json({
@@ -142,6 +185,15 @@ export const updateCoachProfile = async (
   try {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
 
+    // Validate coachId is provided and is a valid MongoDB ObjectId
+    if (!coachId || coachId === "undefined") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid coach ID provided",
+      });
+      return;
+    }
+
     // Verify ownership
     const existingCoach = await getCoachById(coachId);
     if (!existingCoach) {
@@ -152,7 +204,14 @@ export const updateCoachProfile = async (
       return;
     }
 
-    if (existingCoach.userId.toString() !== req.user?.id) {
+    // Handle both populated userId (object) and unpopulated userId (ObjectId)
+    const userId = existingCoach.userId as any;
+    const coachUserId =
+      typeof userId === "object" && userId !== null
+        ? userId._id?.toString() || userId.id
+        : userId.toString();
+
+    if (coachUserId !== req.user?.id) {
       res.status(403).json({
         success: false,
         message: "You can only update your own coach profile",
@@ -164,24 +223,30 @@ export const updateCoachProfile = async (
     const updates = { ...req.body };
     const newServiceMode = updates.serviceMode || existingCoach.serviceMode;
 
-    // Only preserve venueId if coach currently has OWN_VENUE mode
-    // This allows coaches to change to OWN_VENUE mode without a venue initially
-    // They can link/create a venue later
-    if (
-      newServiceMode === "OWN_VENUE" &&
-      !updates.venueId &&
-      existingCoach.venueId
-    ) {
-      // Preserve existing venueId if coach had one before
-      updates.venueId = existingCoach.venueId.toString();
+    // Handle service mode specific logic
+    if (newServiceMode === "OWN_VENUE") {
+      // For OWN_VENUE mode: preserve existing venueId if not providing a new one
+      if (!updates.venueId && existingCoach.venueId) {
+        updates.venueId = existingCoach.venueId.toString();
+      }
+      // If no venueId is provided and coach doesn't have one, that's ok for now
+      // (they can create/link venue later)
+    } else {
+      // For non-OWN_VENUE modes: clear venueId if coming from OWN_VENUE
+      if (existingCoach.serviceMode === "OWN_VENUE" && !updates.venueId) {
+        updates.venueId = null;
+      }
     }
 
     const coach = await updateCoach(coachId, updates);
 
+    // Convert to JSON to ensure all fields are serialized correctly
+    const coachJson = coach?.toJSON();
+
     res.status(200).json({
       success: true,
       message: "Coach profile updated successfully",
-      data: coach,
+      data: coachJson,
     });
   } catch (error) {
     res.status(400).json({
@@ -215,7 +280,14 @@ export const deleteCoachProfile = async (
       return;
     }
 
-    if (existingCoach.userId.toString() !== req.user?.id) {
+    // Handle both populated userId (object) and unpopulated userId (ObjectId)
+    const userId = existingCoach.userId as any;
+    const coachUserId =
+      typeof userId === "object" && userId !== null
+        ? userId._id?.toString() || userId.id
+        : userId.toString();
+
+    if (coachUserId !== req.user?.id) {
       res.status(403).json({
         success: false,
         message: "You can only delete your own coach profile",

@@ -18,12 +18,31 @@ export default function CoachProfilePage() {
   const [hasProfile, setHasProfile] = useState(false);
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
   const [user, setUser] = useState<User | null>(null);
+
+  // Initialize form data with serviceMode from localStorage if available
+  const getInitialServiceMode = () => {
+    if (typeof window !== "undefined") {
+      const savedMode = localStorage.getItem("coachServiceMode");
+      if (
+        savedMode === "OWN_VENUE" ||
+        savedMode === "FREELANCE" ||
+        savedMode === "HYBRID"
+      ) {
+        return savedMode;
+      }
+    }
+    return "FREELANCE";
+  };
+
   const [formData, setFormData] = useState({
     bio: "",
     certifications: "",
     sports: "",
     hourlyRate: "",
-    serviceMode: "FREELANCE" as "OWN_VENUE" | "FREELANCE" | "HYBRID",
+    serviceMode: getInitialServiceMode() as
+      | "OWN_VENUE"
+      | "FREELANCE"
+      | "HYBRID",
     serviceRadiusKm: "10",
     travelBufferTime: "30",
   });
@@ -88,7 +107,12 @@ export default function CoachProfilePage() {
   const loadProfile = async () => {
     try {
       const response = await coachApi.getMyProfile();
+      console.log("Coach profile response:", response);
       if (response.success && response.data) {
+        console.log(
+          "Setting profile with serviceMode:",
+          response.data.serviceMode,
+        );
         setHasProfile(true);
         setCoachProfile(response.data);
         setFormData({
@@ -102,6 +126,7 @@ export default function CoachProfilePage() {
         });
       }
     } catch (error) {
+      console.log("Profile not found, using localStorage value");
       // No profile found, check if there's a serviceMode from registration
       const registrationServiceMode =
         typeof window !== "undefined"
@@ -112,7 +137,13 @@ export default function CoachProfilePage() {
               | null)
           : null;
 
+      console.log("localStorage coachServiceMode:", registrationServiceMode);
+
       if (registrationServiceMode) {
+        console.log(
+          "Setting serviceMode from localStorage:",
+          registrationServiceMode,
+        );
         setFormData((prev) => ({
           ...prev,
           serviceMode: registrationServiceMode,
@@ -156,15 +187,52 @@ export default function CoachProfilePage() {
         availability: [], // TODO: Add availability editor
       };
 
+      console.log("Submitting payload:", payload);
+
       if (hasProfile && coachProfile) {
-        await coachApi.updateProfile(coachProfile.id, payload);
+        const response = await coachApi.updateProfile(coachProfile.id, payload);
+        console.log("Update response:", response);
+        if (response.success && response.data) {
+          console.log(
+            "Updating formData with response serviceMode:",
+            response.data.serviceMode,
+          );
+          setCoachProfile(response.data);
+          setFormData({
+            bio: response.data.bio,
+            certifications: response.data.certifications.join(", "),
+            sports: response.data.sports.join(", "),
+            hourlyRate: response.data.hourlyRate.toString(),
+            serviceMode: response.data.serviceMode,
+            serviceRadiusKm: (response.data.serviceRadiusKm ?? 10).toString(),
+            travelBufferTime: (response.data.travelBufferTime ?? 30).toString(),
+          });
+        }
         alert("Profile updated successfully!");
       } else {
-        await coachApi.createProfile(payload);
-        alert("Profile created successfully!");
-        setHasProfile(true);
+        const response = await coachApi.createProfile(payload);
+        console.log("Create response:", response);
+        if (response.success && response.data) {
+          console.log(
+            "Setting formData with response serviceMode:",
+            response.data.serviceMode,
+          );
+          setHasProfile(true);
+          setCoachProfile(response.data);
+          setFormData({
+            bio: response.data.bio,
+            certifications: response.data.certifications.join(", "),
+            sports: response.data.sports.join(", "),
+            hourlyRate: response.data.hourlyRate.toString(),
+            serviceMode: response.data.serviceMode,
+            serviceRadiusKm: (response.data.serviceRadiusKm ?? 10).toString(),
+            travelBufferTime: (response.data.travelBufferTime ?? 30).toString(),
+          });
+          alert("Profile created successfully!");
+          // Clear from localStorage after successful creation
+          localStorage.removeItem("coachServiceMode");
+        }
       }
-      await loadProfile();
     } catch (error: any) {
       alert(error.response?.data?.message || "Failed to save profile");
     } finally {

@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 import { IAvailability, ServiceMode } from "../types";
 
 export interface CoachDocument extends Document {
+  id?: string;
   userId: mongoose.Types.ObjectId;
   bio: string;
   certifications: string[];
@@ -210,8 +211,23 @@ const coachSchema = new Schema<CoachDocument>(
       default: false,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform(doc: any, ret: any) {
+        ret.id = ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  },
 );
+
+// Virtual for easy access to id as a string
+coachSchema.virtual("id").get(function (this: CoachDocument) {
+  return this._id.toString();
+});
 
 // Validation: Service mode conditional fields
 coachSchema.pre<CoachDocument>("save", function () {
@@ -220,15 +236,12 @@ coachSchema.pre<CoachDocument>("save", function () {
   // Coaches can select OWN_VENUE mode and create/link venue later
 
   if (this.serviceMode === "FREELANCE" || this.serviceMode === "HYBRID") {
+    // Provide defaults for FREELANCE/HYBRID coaches if values are missing
     if (!this.serviceRadiusKm) {
-      throw new Error(
-        "serviceRadiusKm is required when serviceMode is FREELANCE or HYBRID",
-      );
+      this.serviceRadiusKm = 10; // Default 10 km radius
     }
     if (!this.travelBufferTime) {
-      throw new Error(
-        "travelBufferTime is required when serviceMode is FREELANCE or HYBRID",
-      );
+      this.travelBufferTime = 30; // Default 30 minutes buffer
     }
   }
 });
