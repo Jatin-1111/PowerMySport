@@ -224,6 +224,22 @@ const coachSchema = new Schema<CoachDocument>(
       transform(doc: any, ret: any) {
         ret.id = ret._id;
         delete ret.__v;
+        // Convert Map to plain object for sportPricing
+        if (ret.sportPricing instanceof Map) {
+          ret.sportPricing = Object.fromEntries(ret.sportPricing);
+        }
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform(doc: any, ret: any) {
+        ret.id = ret._id;
+        delete ret.__v;
+        // Convert Map to plain object for sportPricing
+        if (ret.sportPricing instanceof Map) {
+          ret.sportPricing = Object.fromEntries(ret.sportPricing);
+        }
         return ret;
       },
     },

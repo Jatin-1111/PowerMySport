@@ -1,11 +1,13 @@
 "use client";
 
+import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
 import { authApi } from "@/modules/auth/services/auth";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Coach, CoachVerificationDocument, ServiceMode } from "@/types";
+import { Coach, CoachVerificationDocument, ServiceMode, User } from "@/types";
 import { CheckCircle, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type VerificationStep = 1 | 2 | 3;
@@ -98,25 +100,27 @@ const getVerificationBadge = (coachData: Coach | null) => {
 const getStatusGuidance = (status: string) => {
   switch (status) {
     case "PENDING":
-      return "Your verification is submitted and pending admin review. You’ll be notified once reviewed.";
+      return "Your verification is submitted and pending admin review. You'll be notified once reviewed.";
     case "REVIEW":
       return "Your verification is currently under review. Edits are temporarily disabled.";
     case "VERIFIED":
-      return "You are verified. No further action is required right now.";
+      return "You are verified! Redirecting to your profile...";
     case "REJECTED":
       return "Your verification was rejected. Update documents and resubmit.";
     default:
-      return "Complete all 3 steps and submit both certification and ID proof documents.";
+      return "Complete all 3 steps: Profile info, Sports & Pricing, and upload both certification and ID proof documents.";
   }
 };
 
 export default function CoachVerificationPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingDocIndex, setUploadingDocIndex] = useState<number | null>(
     null,
   );
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [step, setStep] = useState<VerificationStep>(1);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
@@ -151,6 +155,13 @@ export default function CoachVerificationPage() {
   const isLockedByReview =
     status === "PENDING" || status === "REVIEW" || status === "VERIFIED";
 
+  // Redirect verified coaches to profile page
+  useEffect(() => {
+    if (!loading && status === "VERIFIED") {
+      router.push("/coach/profile");
+    }
+  }, [loading, status, router]);
+
   const loadProfile = async () => {
     try {
       const [coachResponse, userResponse] = await Promise.all([
@@ -158,8 +169,11 @@ export default function CoachVerificationPage() {
         authApi.getProfile(),
       ]);
 
-      if (userResponse.success && userResponse.data?.phone) {
-        setMobileNumber(userResponse.data.phone);
+      if (userResponse.success && userResponse.data) {
+        setUser(userResponse.data);
+        if (userResponse.data.phone) {
+          setMobileNumber(userResponse.data.phone);
+        }
       }
 
       if (coachResponse.success && coachResponse.data) {
@@ -509,6 +523,11 @@ export default function CoachVerificationPage() {
         "Verification submitted successfully. Your profile is now in review.",
       );
       await loadProfile();
+
+      // Redirect to profile page after successful submission
+      setTimeout(() => {
+        router.push("/coach/profile");
+      }, 2000);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -595,6 +614,27 @@ export default function CoachVerificationPage() {
 
         {step === 1 && (
           <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-900">
+                Profile Picture
+              </label>
+              <div className="flex items-center gap-4">
+                <ProfilePictureUpload
+                  currentPhotoUrl={user?.photoUrl}
+                  onUploadSuccess={(updatedUser) => {
+                    setUser(updatedUser);
+                  }}
+                  size="lg"
+                />
+                <div className="text-sm text-slate-600">
+                  <p className="font-medium">Upload your profile picture</p>
+                  <p className="text-xs text-slate-500">
+                    JPG, PNG or WebP (Max 5MB)
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-900">
                 Bio (About You)
