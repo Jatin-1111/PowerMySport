@@ -3,33 +3,13 @@
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Modal } from "@/modules/shared/ui/Modal";
-import { Coach, CoachVerificationDocument } from "@/types";
-import {
-  AlertCircle,
-  CheckCircle,
-  File,
-  ShieldCheck,
-  Upload,
-  X,
-} from "lucide-react";
-import { useEffect, useState } from "react";
+import { Coach, CoachVerificationDocument, ServiceMode } from "@/types";
+import { CheckCircle, Upload } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-interface ModalState {
-  type: "success" | "error" | "warning" | "info" | null;
-  isOpen: boolean;
-  title: string;
-  message: string;
-}
+type VerificationStep = 1 | 2 | 3;
 
-interface FilePreview {
-  index: number;
-  name: string;
-  type: string;
-  size: number;
-}
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",
   "image/png",
@@ -37,90 +17,128 @@ const ALLOWED_FILE_TYPES = [
   "application/pdf",
 ];
 
+const getInitialServiceMode = (): ServiceMode => {
+  if (typeof window === "undefined") {
+    return "FREELANCE";
+  }
+
+  const savedMode = localStorage.getItem("coachServiceMode");
+  if (
+    savedMode === "OWN_VENUE" ||
+    savedMode === "FREELANCE" ||
+    savedMode === "HYBRID"
+  ) {
+    return savedMode;
+  }
+
+  return "FREELANCE";
+};
+
+const parseCommaSeparated = (value: string): string[] => {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const getVerificationBadge = (coachData: Coach | null) => {
+  if (!coachData) {
+    return {
+      label: "Not Started",
+      className: "bg-slate-100 text-slate-700 border border-slate-200",
+    };
+  }
+
+  const status =
+    coachData.verificationStatus ||
+    (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
+
+  switch (status) {
+    case "VERIFIED":
+      return {
+        label: "Verified",
+        className: "bg-green-100 text-green-700 border border-green-200",
+      };
+    case "PENDING":
+      return {
+        label: "Pending Review",
+        className: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+      };
+    case "REVIEW":
+      return {
+        label: "In Review",
+        className: "bg-blue-100 text-blue-700 border border-blue-200",
+      };
+    case "REJECTED":
+      return {
+        label: "Rejected",
+        className: "bg-red-100 text-red-700 border border-red-200",
+      };
+    default:
+      return {
+        label: "Not Started",
+        className: "bg-slate-100 text-slate-700 border border-slate-200",
+      };
+  }
+};
+
 export default function CoachVerificationPage() {
-  const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);
-  const [verificationDocs, setVerificationDocs] = useState<
-    CoachVerificationDocument[]
-  >([
-    {
-      type: "ID_PROOF",
-      url: "",
-      fileName: "",
-    },
-  ]);
+  const [saving, setSaving] = useState(false);
   const [uploadingDocIndex, setUploadingDocIndex] = useState<number | null>(
     null,
   );
-  const [verificationSubmitting, setVerificationSubmitting] = useState(false);
-  const [modal, setModal] = useState<ModalState>({
-    type: null,
-    isOpen: false,
-    title: "",
-    message: "",
-  });
-  const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
+  const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
+  const [step, setStep] = useState<VerificationStep>(1);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
 
-  const showModal = (
-    type: "success" | "error" | "warning" | "info",
-    title: string,
-    message: string,
-  ) => {
-    setModal({ type, isOpen: true, title, message });
-  };
+  const [bio, setBio] = useState("");
+  const [sportsInput, setSportsInput] = useState("");
+  const [certificationsInput, setCertificationsInput] = useState("");
 
-  const closeModal = () => {
-    setModal({ ...modal, isOpen: false });
-  };
+  const [verificationDocs, setVerificationDocs] = useState<
+    CoachVerificationDocument[]
+  >([{ type: "CERTIFICATION", url: "", fileName: "" }]);
 
-  const getErrorMessage = (error: unknown) => {
-    if (error instanceof Error) return error.message;
-    return "Something went wrong";
-  };
-
-  const validateFile = (file: File): { valid: boolean; error?: string } => {
-    if (file.size > MAX_FILE_SIZE) {
-      return {
-        valid: false,
-        error: `File size exceeds 5MB limit. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
-      };
+  const status = useMemo(() => {
+    if (!coachProfile) {
+      return "UNVERIFIED";
     }
 
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return {
-        valid: false,
-        error:
-          "Invalid file type. Please upload JPG, PNG, WebP, or PDF files only.",
-      };
-    }
+    return (
+      coachProfile.verificationStatus ||
+      (coachProfile.isVerified ? "VERIFIED" : "UNVERIFIED")
+    );
+  }, [coachProfile]);
 
-    return { valid: true };
-  };
+  const isLockedByReview =
+    status === "PENDING" || status === "REVIEW" || status === "VERIFIED";
 
   const loadProfile = async () => {
     try {
       const response = await coachApi.getMyProfile();
       if (response.success && response.data) {
-        setCoachProfile(response.data);
-        if (response.data.verificationDocuments?.length) {
+        const coach = response.data;
+        setCoachProfile(coach);
+        setBio(coach.bio || "");
+        setSportsInput((coach.sports || []).join(", "));
+        setCertificationsInput((coach.certifications || []).join(", "));
+
+        if (coach.verificationDocuments?.length) {
           setVerificationDocs(
-            response.data.verificationDocuments.map((doc) => ({
+            coach.verificationDocuments.map((doc) => ({
               type: doc.type,
               url: doc.url,
-              fileName: doc.fileName,
               s3Key: doc.s3Key,
+              fileName: doc.fileName,
               uploadedAt: doc.uploadedAt,
             })),
           );
         }
       }
-    } catch (error) {
-      console.error("Failed to load coach profile:", error);
-      showModal(
-        "error",
-        "Load Failed",
-        "Failed to load your profile. Please refresh the page.",
-      );
+    } catch {
+      setCoachProfile(null);
     } finally {
       setLoading(false);
     }
@@ -130,66 +148,31 @@ export default function CoachVerificationPage() {
     loadProfile();
   }, []);
 
-  const getVerificationBadge = (coachData: Coach | null) => {
-    if (!coachData) {
+  const validateFile = (file: File): { valid: boolean; error?: string } => {
+    if (file.size > MAX_FILE_SIZE) {
       return {
-        label: "Unverified",
-        className: "bg-slate-100 text-slate-700 border border-slate-200",
+        valid: false,
+        error: `File size exceeds 5MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
       };
     }
 
-    const status =
-      coachData.verificationStatus ||
-      (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
-
-    switch (status) {
-      case "VERIFIED":
-        return {
-          label: "Verified",
-          className: "bg-green-100 text-green-700 border border-green-200",
-        };
-      case "PENDING":
-        return {
-          label: "Pending",
-          className: "bg-yellow-100 text-yellow-700 border border-yellow-200",
-        };
-      case "REVIEW":
-        return {
-          label: "In Review",
-          className: "bg-blue-100 text-blue-700 border border-blue-200",
-        };
-      case "REJECTED":
-        return {
-          label: "Rejected",
-          className: "bg-red-100 text-red-700 border border-red-200",
-        };
-      default:
-        return {
-          label: "Unverified",
-          className: "bg-slate-100 text-slate-700 border border-slate-200",
-        };
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return {
+        valid: false,
+        error: "Invalid file type. Upload JPG, PNG, WebP, or PDF only.",
+      };
     }
-  };
 
-  const updateVerificationDoc = (
-    index: number,
-    field: keyof CoachVerificationDocument,
-    value: string,
-  ) => {
-    setVerificationDocs((prev) =>
-      prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc)),
-    );
+    return { valid: true };
   };
 
   const handleUploadDocument = async (index: number, file: File) => {
-    // Validate file first
+    setError("");
+    setSuccess("");
+
     const validation = validateFile(file);
     if (!validation.valid) {
-      showModal(
-        "error",
-        "Invalid File",
-        validation.error || "File validation failed",
-      );
+      setError(validation.error || "Invalid file");
       return;
     }
 
@@ -197,7 +180,7 @@ export default function CoachVerificationPage() {
     try {
       const currentDoc = verificationDocs[index];
       if (!currentDoc) {
-        throw new Error("Document entry not found");
+        throw new Error("Document row not found");
       }
 
       const uploadResponse = await coachApi.getVerificationUploadUrl({
@@ -236,37 +219,110 @@ export default function CoachVerificationPage() {
             : doc,
         ),
       );
-
-      showModal(
-        "success",
-        "Upload Successful",
-        `${fileName} has been uploaded successfully.`,
+      setSuccess(`${fileName} uploaded successfully.`);
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error ? uploadError.message : "Upload failed",
       );
-    } catch (error: unknown) {
-      showModal("error", "Upload Failed", getErrorMessage(error));
     } finally {
       setUploadingDocIndex(null);
     }
   };
 
-  const addVerificationDoc = () => {
-    setVerificationDocs((prev) => [
-      ...prev,
-      { type: "CERTIFICATION", url: "", fileName: "" },
-    ]);
+  const handleStepOneContinue = () => {
+    setError("");
+    setSuccess("");
+
+    if (!bio.trim()) {
+      setError("Bio is required to continue.");
+      return;
+    }
+
+    setSaving(true);
+    void (async () => {
+      try {
+        const response = await coachApi.saveVerificationStep1({
+          bio: bio.trim(),
+        });
+
+        if (!response.success) {
+          throw new Error(response.message || "Failed to save step 1");
+        }
+
+        if (response.data && "sports" in response.data) {
+          setCoachProfile(response.data as Coach);
+        }
+
+        setStep(2);
+      } catch (saveError) {
+        setError(
+          saveError instanceof Error
+            ? saveError.message
+            : "Failed to save step 1",
+        );
+      } finally {
+        setSaving(false);
+      }
+    })();
   };
 
-  const removeVerificationDoc = (index: number) => {
-    setVerificationDocs((prev) => prev.filter((_, i) => i !== index));
-  };
+  const handleStepTwoContinue = async () => {
+    setError("");
+    setSuccess("");
 
-  const handleVerificationSubmit = async () => {
-    if (!verificationDocs.length) {
-      showModal(
-        "warning",
-        "No Documents",
-        "Please add at least one document before submitting.",
+    const sports = parseCommaSeparated(sportsInput);
+    if (sports.length === 0) {
+      setError("Please add at least one sport you can teach.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const step2Response = await coachApi.saveVerificationStep2({
+        bio: bio.trim(),
+        sports,
+        certifications: parseCommaSeparated(certificationsInput),
+        serviceMode: getInitialServiceMode(),
+      });
+
+      if (!step2Response.success || !step2Response.data) {
+        throw new Error(step2Response.message || "Failed to save step 2");
+      }
+
+      setCoachProfile(step2Response.data);
+      localStorage.removeItem("coachServiceMode");
+      setStep(3);
+      setSuccess("Step 2 completed. Now upload your certification documents.");
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Failed to save your profile details",
       );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSubmitVerification = async () => {
+    setError("");
+    setSuccess("");
+
+    const sports = parseCommaSeparated(sportsInput);
+    const certifications = parseCommaSeparated(certificationsInput);
+
+    if (!bio.trim()) {
+      setError("Bio is required.");
+      return;
+    }
+
+    if (sports.length === 0) {
+      setError("Please add at least one sport.");
+      return;
+    }
+
+    if (certifications.length === 0) {
+      setError("Please add at least one certification name.");
       return;
     }
 
@@ -274,17 +330,21 @@ export default function CoachVerificationPage() {
       (doc) => !doc.url.trim() || !doc.fileName.trim(),
     );
     if (invalidDoc) {
-      showModal(
-        "warning",
-        "Missing File",
-        "Please upload a file for each document before submitting.",
-      );
+      setError("Please upload a file for each listed document.");
       return;
     }
 
-    setVerificationSubmitting(true);
+    const hasCertificationDoc = verificationDocs.some(
+      (doc) => doc.type === "CERTIFICATION",
+    );
+    if (!hasCertificationDoc) {
+      setError("At least one uploaded document must be a CERTIFICATION.");
+      return;
+    }
+
+    setSaving(true);
     try {
-      const response = await coachApi.submitVerification({
+      const response = await coachApi.submitVerificationStep3({
         documents: verificationDocs.map((doc) => ({
           type: doc.type,
           url: doc.url.trim(),
@@ -298,270 +358,306 @@ export default function CoachVerificationPage() {
         throw new Error(response.message || "Verification submission failed");
       }
 
-      showModal(
-        "success",
-        "Submitted Successfully",
-        "Your verification documents have been submitted. We'll review them shortly and notify you of the status.",
+      setSuccess(
+        "Verification submitted successfully. Your profile is now in review.",
       );
       await loadProfile();
-    } catch (error: unknown) {
-      showModal("error", "Submission Failed", getErrorMessage(error));
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to submit verification",
+      );
     } finally {
-      setVerificationSubmitting(false);
+      setSaving(false);
     }
   };
 
   if (loading) {
     return (
-      <Card className="text-center bg-white">
-        <p className="text-slate-600">Loading your verification status...</p>
+      <Card className="bg-white text-center">
+        <p className="text-slate-600">Loading verification flow...</p>
       </Card>
     );
   }
 
   const badge = getVerificationBadge(coachProfile);
-  const modalIconMap = {
-    success: <CheckCircle className="h-5 w-5 text-green-600" />,
-    error: <AlertCircle className="h-5 w-5 text-red-600" />,
-    warning: <AlertCircle className="h-5 w-5 text-yellow-600" />,
-    info: <AlertCircle className="h-5 w-5 text-blue-600" />,
-  };
-
-  const modalColorMap = {
-    success: "bg-green-50 text-green-800",
-    error: "bg-red-50 text-red-800",
-    warning: "bg-yellow-50 text-yellow-800",
-    info: "bg-blue-50 text-blue-800",
-  };
 
   return (
     <div className="space-y-6">
-      {/* Modal */}
-      <Modal
-        isOpen={modal.isOpen}
-        onClose={closeModal}
-        title={modal.title}
-        size="sm"
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="primary" onClick={closeModal}>
-              OK
-            </Button>
-          </div>
-        }
-      >
-        <div className="flex gap-3">
-          {modal.type && modalIconMap[modal.type]}
-          <p className={`text-sm ${modal.type && modalColorMap[modal.type]}`}>
-            {modal.message}
-          </p>
-        </div>
-      </Modal>
-
-      {/* File Preview Modal */}
-      <Modal
-        isOpen={filePreview !== null}
-        onClose={() => setFilePreview(null)}
-        title="File Preview"
-        size="lg"
-      >
-        {filePreview && (
-          <div className="space-y-4">
-            <div className="rounded-lg bg-slate-50 p-4">
-              <div className="flex items-center gap-3">
-                <File className="h-8 w-8 text-power-orange" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {filePreview.name}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {(filePreview.size / 1024).toFixed(2)} KB
-                  </p>
-                </div>
-              </div>
-            </div>
-            {filePreview.type.startsWith("image/") && (
-              <div className="rounded-lg bg-slate-100 p-4">
-                <div className="bg-gray-200 rounded h-96 w-full flex items-center justify-center">
-                  <p className="text-gray-500 text-sm">
-                    Image preview not available
-                  </p>
-                </div>
-              </div>
-            )}
-            {filePreview.type === "application/pdf" && (
-              <div className="rounded-lg bg-slate-100 p-4 text-center">
-                <File className="mx-auto h-16 w-16 text-slate-400" />
-                <p className="mt-2 text-sm text-slate-600">PDF Document</p>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
-
-      {/* Header Card */}
       <Card className="bg-white">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Verification</h2>
-            <p className="text-sm text-slate-600">
-              Upload your documents to get verified on our platform.
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Coach Verification
+            </p>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Complete Your Verification
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              3 steps: Bio, Sports, Certifications/Documents
             </p>
           </div>
           <span
-            className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full ${badge.className}`}
+            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}
           >
             {badge.label}
           </span>
         </div>
+
         {coachProfile?.verificationNotes && (
-          <div className="mt-4 rounded-lg bg-red-50 p-3 border border-red-200">
-            <p className="text-sm text-red-700">
-              <span className="font-semibold">Rejection Reason:</span>{" "}
-              {coachProfile.verificationNotes}
-            </p>
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {coachProfile.verificationNotes}
           </div>
         )}
       </Card>
 
-      {/* Documents Card */}
       <Card className="bg-white">
-        <h3 className="text-xl font-bold text-slate-900 mb-2">
-          Verification Documents
-        </h3>
-        <p className="text-sm text-slate-600 mb-4">
-          Upload your ID proof, coaching certification, and other relevant
-          documents. Max file size: 5MB. Supported formats: JPG, PNG, WebP, PDF
-        </p>
-
-        <div className="space-y-4">
-          {verificationDocs.map((doc, index) => (
+        <div className="mb-6 grid grid-cols-3 gap-2">
+          {[1, 2, 3].map((current) => (
             <div
-              key={index}
-              className="rounded-lg border border-slate-200 p-4 hover:border-slate-300 transition-colors"
+              key={current}
+              className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${
+                step === current
+                  ? "border-power-orange bg-orange-50 text-power-orange"
+                  : "border-slate-200 bg-slate-50 text-slate-500"
+              }`}
             >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {/* Document Type */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-2">
-                    Document Type
-                  </label>
-                  <select
-                    value={doc.type}
-                    onChange={(e) =>
-                      updateVerificationDoc(index, "type", e.target.value)
-                    }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange"
-                  >
-                    <option value="ID_PROOF">ID Proof</option>
-                    <option value="CERTIFICATION">Certification</option>
-                    <option value="ADDRESS_PROOF">Address Proof</option>
-                    <option value="BACKGROUND_CHECK">Background Check</option>
-                    <option value="INSURANCE">Insurance</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-
-                {/* File Upload */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-2">
-                    Upload File
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          handleUploadDocument(index, file);
-                          e.currentTarget.value = "";
-                        }
-                      }}
-                      disabled={uploadingDocIndex === index}
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    />
-                    <div
-                      className={`rounded-lg border-2 border-dashed border-slate-300 p-3 text-center transition-colors ${
-                        uploadingDocIndex === index
-                          ? "bg-slate-50 border-slate-400"
-                          : "hover:border-power-orange hover:bg-orange-50"
-                      }`}
-                    >
-                      {uploadingDocIndex === index ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-power-orange border-t-transparent" />
-                          <span className="text-xs font-semibold text-power-orange">
-                            Uploading...
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-1">
-                          <Upload size={16} className="text-slate-400" />
-                          <span className="text-xs font-semibold text-slate-600">
-                            Click to upload
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* File Status */}
-              {doc.url && (
-                <div className="mt-3">
-                  <div className="rounded-lg bg-green-50 border border-green-200 p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={16} className="text-green-600" />
-                      <div>
-                        <p className="text-xs font-semibold text-green-800">
-                          {doc.fileName}
-                        </p>
-                        {doc.uploadedAt && (
-                          <p className="text-xs text-green-700">
-                            Uploaded{" "}
-                            {new Date(doc.uploadedAt).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Remove Button */}
-              {verificationDocs.length > 1 && (
-                <div className="mt-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => removeVerificationDoc(index)}
-                    className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:text-red-700 transition-colors"
-                  >
-                    <X size={14} />
-                    Remove
-                  </button>
-                </div>
-              )}
+              Step {current}
             </div>
           ))}
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button variant="secondary" onClick={addVerificationDoc}>
-            + Add Document
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleVerificationSubmit}
-            disabled={verificationSubmitting}
-            className="flex items-center gap-2"
-          >
-            <ShieldCheck size={18} />
-            {verificationSubmitting ? "Submitting..." : "Submit Verification"}
-          </Button>
-        </div>
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            <CheckCircle size={16} />
+            {success}
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-900">
+                Bio (About You)
+              </label>
+              <textarea
+                value={bio}
+                onChange={(event) => setBio(event.target.value)}
+                rows={5}
+                disabled={isLockedByReview}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                placeholder="Tell players about your experience, achievements, and coaching style."
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="primary"
+                disabled={isLockedByReview}
+                onClick={handleStepOneContinue}
+              >
+                Continue to Sports
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-900">
+                Sports You Can Teach
+              </label>
+              <input
+                type="text"
+                value={sportsInput}
+                disabled={isLockedByReview}
+                onChange={(event) => setSportsInput(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                placeholder="e.g., Cricket, Football, Badminton"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Add comma-separated values.
+              </p>
+            </div>
+
+            <div className="flex justify-between">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setStep(1)}
+              >
+                Back
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleStepTwoContinue}
+                disabled={saving || isLockedByReview}
+              >
+                {saving ? "Saving..." : "Continue to Documents"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-5">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-900">
+                Certification Names
+              </label>
+              <input
+                type="text"
+                value={certificationsInput}
+                disabled={isLockedByReview}
+                onChange={(event) => setCertificationsInput(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                placeholder="e.g., NIS Level 1, ICC Foundation Coach"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Add comma-separated values.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-900">
+                  Upload Verification Documents
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={isLockedByReview}
+                  onClick={() =>
+                    setVerificationDocs((prev) => [
+                      ...prev,
+                      { type: "CERTIFICATION", url: "", fileName: "" },
+                    ])
+                  }
+                >
+                  Add Document
+                </Button>
+              </div>
+
+              {verificationDocs.map((doc, index) => (
+                <div
+                  key={`${doc.fileName}-${index}`}
+                  className="rounded-lg border border-slate-200 p-4"
+                >
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
+                          Document Type
+                        </label>
+                        <select
+                          value={doc.type}
+                          disabled={isLockedByReview}
+                          onChange={(event) =>
+                            setVerificationDocs((prev) =>
+                              prev.map((item, i) =>
+                                i === index
+                                  ? {
+                                      ...item,
+                                      type: event.target
+                                        .value as CoachVerificationDocument["type"],
+                                    }
+                                  : item,
+                              ),
+                            )
+                          }
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                        >
+                          <option value="CERTIFICATION">Certification</option>
+                          <option value="ID_PROOF">ID Proof</option>
+                          <option value="ADDRESS_PROOF">Address Proof</option>
+                          <option value="BACKGROUND_CHECK">
+                            Background Check
+                          </option>
+                          <option value="INSURANCE">Insurance</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
+                          Uploaded File
+                        </label>
+                        <div className="truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                          {doc.fileName || "No file uploaded"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        <Upload size={14} />
+                        {uploadingDocIndex === index
+                          ? "Uploading..."
+                          : "Upload"}
+                        <input
+                          type="file"
+                          disabled={
+                            isLockedByReview || uploadingDocIndex === index
+                          }
+                          accept=".jpg,.jpeg,.png,.webp,.pdf"
+                          className="hidden"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) {
+                              void handleUploadDocument(index, file);
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {verificationDocs.length > 1 && !isLockedByReview && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setVerificationDocs((prev) =>
+                              prev.filter((_, i) => i !== index),
+                            )
+                          }
+                          className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setStep(2)}
+              >
+                Back
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={saving || isLockedByReview}
+                onClick={handleSubmitVerification}
+              >
+                {saving ? "Submitting..." : "Submit for Verification"}
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

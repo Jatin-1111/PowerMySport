@@ -107,6 +107,17 @@ export const getCoach = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const isPubliclyVisible =
+      coach.isVerified || coach.verificationStatus === "VERIFIED";
+
+    if (!isPubliclyVisible) {
+      res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+      return;
+    }
+
     // Convert to JSON to ensure all fields are serialized correctly
     const coachJson = coach.toJSON();
 
@@ -355,11 +366,175 @@ export const getCoachAvailability = async (
   }
 };
 
+const normalizeVerificationDocuments = (
+  documents?: Array<{
+    type: string;
+    url: string;
+    s3Key?: string;
+    fileName: string;
+    uploadedAt?: string | Date;
+  }>,
+) => {
+  const allowedTypes = [
+    "CERTIFICATION",
+    "ID_PROOF",
+    "ADDRESS_PROOF",
+    "BACKGROUND_CHECK",
+    "INSURANCE",
+    "OTHER",
+  ] as const;
+
+  return (documents || []).map((doc) => {
+    if (!allowedTypes.includes(doc.type as (typeof allowedTypes)[number])) {
+      throw new Error("Invalid document type");
+    }
+    if (!doc.url || !doc.fileName) {
+      throw new Error("Document url and fileName are required");
+    }
+
+    return {
+      type: doc.type as (typeof allowedTypes)[number],
+      url: doc.url,
+      fileName: doc.fileName,
+      ...(doc.s3Key ? { s3Key: doc.s3Key } : {}),
+      ...(doc.uploadedAt
+        ? { uploadedAt: new Date(doc.uploadedAt) }
+        : { uploadedAt: new Date() }),
+    };
+  });
+};
+
 /**
- * Submit coach verification documents
- * POST /api/coaches/verification
+ * Save coach verification step 1 (Bio)
+ * POST /api/coaches/verification/step1
  */
-export const submitCoachVerificationHandler = async (
+export const saveCoachVerificationStep1Handler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (req.user.role !== "COACH") {
+      res.status(403).json({ success: false, message: "Coach role required" });
+      return;
+    }
+
+    const { bio } = req.body as { bio: string };
+    const existingCoach = await getCoachByUserId(req.user.id);
+
+    if (!existingCoach) {
+      res.status(200).json({
+        success: true,
+        message: "Step 1 captured. Continue to step 2.",
+        data: { bio },
+      });
+      return;
+    }
+
+    const coachId = (existingCoach.id ||
+      existingCoach._id?.toString()) as string;
+    const coach = await updateCoach(coachId, { bio });
+
+    res.status(200).json({
+      success: true,
+      message: "Step 1 saved successfully",
+      data: coach,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to save verification step 1",
+    });
+  }
+};
+
+/**
+ * Save coach verification step 2 (Sports + core profile)
+ * POST /api/coaches/verification/step2
+ */
+export const saveCoachVerificationStep2Handler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (req.user.role !== "COACH") {
+      res.status(403).json({ success: false, message: "Coach role required" });
+      return;
+    }
+
+    const { bio, sports, certifications, serviceMode } = req.body as {
+      bio: string;
+      sports: string[];
+      certifications?: string[];
+      serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
+    };
+
+    const existingCoach = await getCoachByUserId(req.user.id);
+
+    if (existingCoach) {
+      const coachId = (existingCoach.id ||
+        existingCoach._id?.toString()) as string;
+      const coach = await updateCoach(coachId, {
+        bio,
+        sports,
+        certifications: certifications || [],
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Step 2 saved successfully",
+        data: coach,
+      });
+      return;
+    }
+
+    const coach = await createCoach({
+      userId: req.user.id,
+      bio,
+      sports,
+      certifications: certifications || [],
+      hourlyRate: 0,
+      serviceMode: serviceMode || "FREELANCE",
+      availability: [],
+      ...(serviceMode !== "OWN_VENUE" && {
+        serviceRadiusKm: 10,
+        travelBufferTime: 30,
+      }),
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Step 2 saved successfully",
+      data: coach,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to save verification step 2",
+    });
+  }
+};
+
+/**
+ * Submit coach verification step 3 (Documents)
+ * POST /api/coaches/verification/step3
+ */
+export const submitCoachVerificationStep3Handler = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
@@ -390,31 +565,7 @@ export const submitCoachVerificationHandler = async (
       }>;
     };
 
-    const allowedTypes = [
-      "CERTIFICATION",
-      "ID_PROOF",
-      "ADDRESS_PROOF",
-      "BACKGROUND_CHECK",
-      "INSURANCE",
-      "OTHER",
-    ] as const;
-
-    const normalizedDocs = (documents || []).map((doc) => {
-      if (!allowedTypes.includes(doc.type as (typeof allowedTypes)[number])) {
-        throw new Error("Invalid document type");
-      }
-      if (!doc.url || !doc.fileName) {
-        throw new Error("Document url and fileName are required");
-      }
-
-      return {
-        type: doc.type as (typeof allowedTypes)[number],
-        url: doc.url,
-        fileName: doc.fileName,
-        ...(doc.s3Key ? { s3Key: doc.s3Key } : {}),
-        ...(doc.uploadedAt ? { uploadedAt: new Date(doc.uploadedAt) } : {}),
-      };
-    });
+    const normalizedDocs = normalizeVerificationDocuments(documents);
 
     const coach = await submitCoachVerification(req.user.id, {
       documents: normalizedDocs,
@@ -434,6 +585,17 @@ export const submitCoachVerificationHandler = async (
           : "Failed to submit verification",
     });
   }
+};
+
+/**
+ * Submit coach verification documents
+ * POST /api/coaches/verification
+ */
+export const submitCoachVerificationHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  await submitCoachVerificationStep3Handler(req, res);
 };
 
 /**

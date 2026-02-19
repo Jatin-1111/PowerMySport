@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { Coach } from "../models/Coach";
 import { verifyToken } from "../utils/jwt";
 import { IUserPayload } from "../types/index";
 
@@ -65,4 +66,62 @@ export const adminMiddleware = (
     return;
   }
   next();
+};
+
+export const coachVerificationCompletedMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    if (req.user?.role !== "COACH" || !req.user.id) {
+      next();
+      return;
+    }
+
+    const coach = await Coach.findOne({ userId: req.user.id }).select(
+      "bio sports verificationDocuments verificationStatus isVerified",
+    );
+
+    if (!coach) {
+      res.status(403).json({
+        success: false,
+        message: "Complete coach verification to access this feature.",
+      });
+      return;
+    }
+
+    const status =
+      coach.verificationStatus ||
+      (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+    const hasBio = Boolean(coach.bio?.trim());
+    const hasSports = Array.isArray(coach.sports) && coach.sports.length > 0;
+    const hasDocuments =
+      Array.isArray(coach.verificationDocuments) &&
+      coach.verificationDocuments.length > 0;
+
+    const isCompleted =
+      ["PENDING", "REVIEW", "VERIFIED"].includes(status) &&
+      hasBio &&
+      hasSports &&
+      hasDocuments;
+
+    if (!isCompleted) {
+      res.status(403).json({
+        success: false,
+        message: "Complete coach verification to access this feature.",
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to verify coach status",
+    });
+  }
 };

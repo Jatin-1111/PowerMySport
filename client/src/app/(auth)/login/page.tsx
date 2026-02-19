@@ -56,7 +56,7 @@ export default function LoginPage() {
         } else if (response.data.user.role === "VENUE_LISTER") {
           router.push("/venue-lister/inventory");
         } else if (response.data.user.role === "COACH") {
-          router.push("/coach/profile");
+          router.push("/coach/verification");
         } else if (response.data.user.role === "ADMIN") {
           router.push("/admin");
         } else {
@@ -65,16 +65,23 @@ export default function LoginPage() {
       } else {
         setError(response.message || "Login failed");
       }
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Login failed");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      setError(err.response?.data?.message || "Login failed");
     } finally {
       setIsSubmitting(false);
       setLoading(false);
     }
   };
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: {
+    credential?: string;
+  }) => {
     try {
       setLoading(true);
+      if (!credentialResponse.credential) {
+        setError("No credential received from Google");
+        return;
+      }
       // Decode JWT token from Google
       const decoded = JSON.parse(
         atob(credentialResponse.credential.split(".")[1]),
@@ -98,13 +105,14 @@ export default function LoginPage() {
         } else if (response.data.user.role === "VENUE_LISTER") {
           router.push("/venue-lister/inventory");
         } else if (response.data.user.role === "COACH") {
-          router.push("/coach/profile");
+          router.push("/coach/verification");
         } else {
           router.push("/dashboard/my-bookings");
         }
       }
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Google login failed");
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      setError(err.response?.data?.message || "Google login failed");
     } finally {
       setLoading(false);
     }
@@ -224,4 +232,3 @@ export default function LoginPage() {
     </GoogleOAuthProvider>
   );
 }
-

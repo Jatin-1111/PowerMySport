@@ -52,6 +52,48 @@ export const bookingSchema = z.object({
     .regex(/^\d{2}:\d{2}$/, "End time must be in HH:mm format"),
 });
 
+const coachVerificationDocumentTypeSchema = z.enum([
+  "CERTIFICATION",
+  "ID_PROOF",
+  "ADDRESS_PROOF",
+  "BACKGROUND_CHECK",
+  "INSURANCE",
+  "OTHER",
+]);
+
+export const coachVerificationStep1Schema = z.object({
+  bio: z
+    .string()
+    .min(20, "Bio must be at least 20 characters")
+    .max(2000, "Bio cannot exceed 2000 characters"),
+});
+
+export const coachVerificationStep2Schema = z.object({
+  bio: z
+    .string()
+    .min(20, "Bio must be at least 20 characters")
+    .max(2000, "Bio cannot exceed 2000 characters"),
+  sports: z
+    .array(z.string().min(1, "Sport cannot be empty"))
+    .min(1, "At least one sport is required"),
+  certifications: z.array(z.string().min(1)).optional().default([]),
+  serviceMode: z.enum(["OWN_VENUE", "FREELANCE", "HYBRID"]).optional(),
+});
+
+export const coachVerificationStep3Schema = z.object({
+  documents: z
+    .array(
+      z.object({
+        type: coachVerificationDocumentTypeSchema,
+        url: z.string().url("Document URL must be valid"),
+        s3Key: z.string().optional(),
+        fileName: z.string().min(1, "File name is required"),
+        uploadedAt: z.union([z.string().datetime(), z.date()]).optional(),
+      }),
+    )
+    .min(1, "At least one verification document is required"),
+});
+
 // ============================================
 // VENUE ONBOARDING SCHEMAS (4-Step Flow)
 // ============================================

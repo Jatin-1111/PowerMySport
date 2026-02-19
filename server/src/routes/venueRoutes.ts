@@ -9,7 +9,11 @@ import {
   searchVenues,
   updateVenueDetails,
 } from "../controllers/venueController";
-import { authMiddleware, vendorMiddleware } from "../middleware/auth";
+import {
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  vendorMiddleware,
+} from "../middleware/auth";
 import { venueImageUploadSchema, venueSchema } from "../middleware/schemas";
 import { validateRequest } from "../middleware/validation";
 
@@ -18,6 +22,7 @@ const router = Router();
 router.post(
   "/",
   authMiddleware,
+  coachVerificationCompletedMiddleware,
   vendorMiddleware,
   validateRequest(venueSchema),
   createNewVenue,
@@ -32,16 +37,35 @@ router.get("/discover", discoverNearby);
 // Legacy search endpoint (public)
 router.get("/search", searchVenues);
 
-router.get("/my-venues", authMiddleware, vendorMiddleware, getMyVenues);
+router.get(
+  "/my-venues",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  vendorMiddleware,
+  getMyVenues,
+);
 router.post(
   "/:venueId/image-upload-urls",
   authMiddleware,
+  coachVerificationCompletedMiddleware,
   vendorMiddleware,
   validateRequest(venueImageUploadSchema),
   getVenueImageUploadUrls,
 );
 router.get("/:venueId", getVenue);
-router.put("/:venueId", authMiddleware, vendorMiddleware, updateVenueDetails);
-router.delete("/:venueId", authMiddleware, vendorMiddleware, deleteVenueById);
+router.put(
+  "/:venueId",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  vendorMiddleware,
+  updateVenueDetails,
+);
+router.delete(
+  "/:venueId",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  vendorMiddleware,
+  deleteVenueById,
+);
 
 export default router;

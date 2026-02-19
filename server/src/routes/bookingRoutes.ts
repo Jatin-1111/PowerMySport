@@ -11,7 +11,10 @@ import {
   processMockPaymentHandler,
   verifyBookingByToken,
 } from "../controllers/bookingController";
-import { authMiddleware } from "../middleware/auth";
+import {
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+} from "../middleware/auth";
 import { validateRequest } from "../middleware/validation";
 import { bookingSchema } from "../middleware/schemas";
 
@@ -21,6 +24,7 @@ const router = Router();
 router.post(
   "/initiate",
   authMiddleware,
+  coachVerificationCompletedMiddleware,
   validateRequest(bookingSchema),
   initiateNewBooking,
 );
@@ -38,18 +42,38 @@ router.get("/verify/:token", verifyBookingByToken);
 router.post("/check-in/:token", checkInBookingByToken);
 
 // Mark booking as completed (venue owner or admin only)
-router.post("/:bookingId/complete", authMiddleware, completeBookingById);
+router.post(
+  "/:bookingId/complete",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  completeBookingById,
+);
 
 // Mark booking as no-show (venue owner or admin only)
-router.post("/:bookingId/no-show", authMiddleware, markBookingNoShow);
+router.post(
+  "/:bookingId/no-show",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  markBookingNoShow,
+);
 
 // Get user's bookings
-router.get("/my-bookings", authMiddleware, getMyBookings);
+router.get(
+  "/my-bookings",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  getMyBookings,
+);
 
 // Get venue availability
 router.get("/availability/:venueId", getVenueAvailability);
 
 // Cancel booking
-router.delete("/:bookingId", authMiddleware, cancelBookingById);
+router.delete(
+  "/:bookingId",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  cancelBookingById,
+);
 
 export default router;

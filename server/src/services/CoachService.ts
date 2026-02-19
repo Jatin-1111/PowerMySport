@@ -112,6 +112,8 @@ export const findCoachesNearby = async (
       // Match by service mode and sport
       {
         $match: {
+          isVerified: true,
+          verificationStatus: "VERIFIED",
           serviceMode: { $in: ["FREELANCE", "HYBRID"] },
           ...(sport ? { sports: sport } : {}),
         },
@@ -192,8 +194,8 @@ export const getAllCoaches = async (
 ): Promise<CoachDocument[]> => {
   try {
     const query: any = {
-      // You might want to filter by serviceMode or just return all
-      // For now, let's return all coaches
+      isVerified: true,
+      verificationStatus: "VERIFIED",
     };
 
     if (sport) {

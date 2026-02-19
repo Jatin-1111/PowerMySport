@@ -14,6 +14,42 @@ export interface CoachVerificationUploadResponse {
 }
 
 export const coachApi = {
+  // Save verification step 1 (bio)
+  saveVerificationStep1: async (payload: {
+    bio: string;
+  }): Promise<ApiResponse<Coach | { bio: string }>> => {
+    const response = await axiosInstance.post(
+      "/coaches/verification/step1",
+      payload,
+    );
+    return response.data;
+  },
+
+  // Save verification step 2 (sports/profile)
+  saveVerificationStep2: async (payload: {
+    bio: string;
+    sports: string[];
+    certifications?: string[];
+    serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
+  }): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.post(
+      "/coaches/verification/step2",
+      payload,
+    );
+    return response.data;
+  },
+
+  // Submit verification step 3 (documents)
+  submitVerificationStep3: async (payload: {
+    documents: CoachVerificationDocument[];
+  }): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.post(
+      "/coaches/verification/step3",
+      payload,
+    );
+    return response.data;
+  },
+
   // Create coach profile
   createProfile: async (data: {
     bio: string;

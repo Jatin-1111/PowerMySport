@@ -2,10 +2,12 @@
 
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { coachApi } from "@/modules/coach/services/coach";
+import { isCoachVerificationFlowComplete } from "@/modules/coach/utils/verification";
 import { Calendar, ShieldCheck, Store, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React from "react";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 export default function CoachLayout({
   children,
@@ -13,7 +15,59 @@ export default function CoachLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const [isGateLoading, setIsGateLoading] = useState(true);
+  const [isVerificationLocked, setIsVerificationLocked] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkCoachVerificationGate = async () => {
+      if (user?.role !== "COACH") {
+        if (isMounted) {
+          setIsVerificationLocked(false);
+          setIsGateLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const response = await coachApi.getMyProfile();
+        const coach = response.success ? response.data : null;
+        const isComplete = isCoachVerificationFlowComplete(coach ?? null);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setIsVerificationLocked(!isComplete);
+
+        if (!isComplete && pathname !== "/coach/verification") {
+          router.replace("/coach/verification");
+        }
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setIsVerificationLocked(true);
+        if (pathname !== "/coach/verification") {
+          router.replace("/coach/verification");
+        }
+      } finally {
+        if (isMounted) {
+          setIsGateLoading(false);
+        }
+      }
+    };
+
+    void checkCoachVerificationGate();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pathname, router, user?.role]);
 
   const handleLogout = async () => {
     try {
@@ -35,13 +89,29 @@ export default function CoachLayout({
     },
   ];
 
-  // If user is a coach, show option to manage venue
-  if (user?.role === "COACH") {
+  // If user is a coach and verification is complete, show option to manage venue
+  if (user?.role === "COACH" && !isVerificationLocked) {
     navItems.push({
       href: "/venue-lister/inventory",
       label: "Manage Venue",
       icon: Store,
     });
+  }
+
+  const visibleNavItems = isVerificationLocked
+    ? navItems.filter((item) => item.href === "/coach/verification")
+    : navItems;
+
+  if (
+    isGateLoading &&
+    user?.role === "COACH" &&
+    pathname !== "/coach/verification"
+  ) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-600">Checking verification status...</p>
+      </div>
+    );
   }
 
   return (
@@ -62,7 +132,7 @@ export default function CoachLayout({
           </div>
 
           <nav className="mt-2 space-y-1 px-4">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link

@@ -73,7 +73,7 @@ function RegisterContent() {
         const roleRoutes = {
           PLAYER: "/dashboard/my-bookings",
           VENUE_LISTER: "/venue-lister/inventory",
-          COACH: "/coach/profile",
+          COACH: "/coach/verification",
           ADMIN: "/admin",
         };
         router.push(
@@ -129,7 +129,7 @@ function RegisterContent() {
         } else if (response.data.user.role === "VENUE_LISTER") {
           router.push("/venue-lister/inventory");
         } else if (response.data.user.role === "COACH") {
-          router.push("/coach/profile");
+          router.push("/coach/verification");
         } else {
           router.push("/dashboard/my-bookings");
         }
