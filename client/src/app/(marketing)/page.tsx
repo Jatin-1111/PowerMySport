@@ -10,11 +10,11 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { Stats } from "@/modules/marketing/components/marketing/Stats";
 import { Testimonials } from "@/modules/marketing/components/marketing/Testimonials";
 import {
-  Users,
   Building2,
-  User as UserIcon,
-  Users2,
   Trophy,
+  User as UserIcon,
+  Users,
+  Users2,
   Zap,
 } from "lucide-react";
 export default function HomePage() {
@@ -160,7 +160,7 @@ export default function HomePage() {
       <Stats stats={stats} variant="gradient" columns={4} />
 
       {/* Parent-Child Management Highlight Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-blue-50 to-indigo-50">
+      <section className="py-16 sm:py-20 lg:py-24 bg-linear-to-br from-blue-50 to-indigo-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16">
             <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wide mb-3">
@@ -286,7 +286,7 @@ export default function HomePage() {
 
       {/* Multi-Role CTA Section - Only show if user is NOT logged in */}
       {!user && (
-        <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-r from-slate-900 to-slate-800">
+        <section className="py-16 sm:py-20 lg:py-24 bg-linear-to-r from-slate-900 to-slate-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -307,27 +307,27 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
                   Players & Parents
                 </h3>
-                <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
+                <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
                   <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Book premium venues instantly</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Find & book professional coaches</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Manage kids' sports activities</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Digital QR check-in</span>
@@ -352,27 +352,27 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
                   Venue Owners
                 </h3>
-                <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
+                <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
                   <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Reach thousands of players</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Automated booking management</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Real-time availability tracking</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Instant payouts & analytics</span>
@@ -394,27 +394,27 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
                   Coaches & Trainers
                 </h3>
-                <ul className="text-sm text-muted-foreground mb-8 space-y-3 flex-grow">
+                <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
                   <li className="flex items-start gap-3">
-                    <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-turf-green font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Build your coaching profile</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-turf-green font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Connect with serious athletes</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-turf-green font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Set your own rates & schedule</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="text-turf-green font-bold flex-shrink-0 mt-0.5">
+                    <span className="text-turf-green font-bold shrink-0 mt-0.5">
                       ✓
                     </span>
                     <span>Grow your coaching business</span>
@@ -445,7 +445,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
             <a
               href="/venues"
-              className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-power-orange rounded-lg p-6 text-center hover:shadow-lg transition-shadow"
+              className="bg-linear-to-br from-orange-50 to-orange-100 border-2 border-power-orange rounded-lg p-6 text-center hover:shadow-lg transition-shadow"
             >
               <Building2 size={40} className="mx-auto mb-3 text-power-orange" />
               <h3 className="text-xl font-bold text-slate-900 mb-2">
@@ -460,7 +460,7 @@ export default function HomePage() {
             </a>
             <a
               href="/coaches"
-              className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-turf-green rounded-lg p-6 text-center hover:shadow-lg transition-shadow"
+              className="bg-linear-to-br from-green-50 to-green-100 border-2 border-turf-green rounded-lg p-6 text-center hover:shadow-lg transition-shadow"
             >
               <Users size={40} className="mx-auto mb-3 text-turf-green" />
               <h3 className="text-xl font-bold text-slate-900 mb-2">

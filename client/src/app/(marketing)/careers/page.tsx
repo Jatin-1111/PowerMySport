@@ -3,7 +3,6 @@
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import {
-  ArrowLeft,
   Briefcase,
   Globe,
   Heart,
@@ -141,13 +140,6 @@ export default function CareersPage() {
       {/* Header Section */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link href="/">
-            <Button variant="ghost" className="mb-4 -ml-2">
-              <ArrowLeft size={18} className="mr-2" />
-              Back to Home
-            </Button>
-          </Link>
-
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-2">

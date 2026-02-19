@@ -68,7 +68,7 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-gradient-to-b from-slate-900 to-slate-950 text-white">
+    <footer className="bg-linear-to-b from-slate-900 to-slate-950 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
         <div className="py-16">
@@ -77,7 +77,7 @@ export const Footer: React.FC = () => {
             <div className="lg:col-span-1">
               <Link
                 href="/"
-                className="text-3xl font-bold bg-gradient-to-r from-power-orange to-orange-400 bg-clip-text text-transparent hover:from-orange-400 hover:to-orange-500 transition-all duration-300 inline-block"
+                className="text-3xl font-bold bg-linear-to-r from-power-orange to-orange-400 bg-clip-text text-transparent hover:from-orange-400 hover:to-orange-500 transition-all duration-300 inline-block"
               >
                 PowerMySport
               </Link>

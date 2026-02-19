@@ -44,34 +44,34 @@ export default function AdminVenueApprovalPanel({
 
   // ============ Fetch pending venues on mount ============
   useEffect(() => {
+    const fetchPendingVenues = async () => {
+      setLoading(true);
+      try {
+        const response = await onboardingApi.getPendingVenues(
+          currentPage,
+          PAGE_SIZE,
+        );
+        if (!response.success || !response.data) {
+          throw new Error("Failed to fetch pending venues");
+        }
+        setVenues(response.data.venues || []);
+        setPaginationData({
+          total: response.data.total || 0,
+          page: response.data.page || 1,
+          totalPages: response.data.totalPages || 1,
+        });
+        setError("");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load venues");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (!initialVenues.length) {
       fetchPendingVenues();
     }
-  }, [currentPage]);
-
-  const fetchPendingVenues = async () => {
-    setLoading(true);
-    try {
-      const response = await onboardingApi.getPendingVenues(
-        currentPage,
-        PAGE_SIZE,
-      );
-      if (!response.success || !response.data) {
-        throw new Error("Failed to fetch pending venues");
-      }
-      setVenues(response.data.venues || []);
-      setPaginationData({
-        total: response.data.total || 0,
-        page: response.data.page || 1,
-        totalPages: response.data.totalPages || 1,
-      });
-      setError("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load venues");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [currentPage, initialVenues.length]);
 
   // ============ View venue details ============
   const handleViewDetails = async (venueId: string) => {
