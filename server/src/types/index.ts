@@ -81,6 +81,7 @@ export interface ICoach {
   certifications: string[];
   sports: string[];
   hourlyRate: number;
+  sportPricing?: Record<string, number>;
   serviceMode: ServiceMode;
   venueId?: string; // Required if OWN_VENUE
   baseLocation?: {

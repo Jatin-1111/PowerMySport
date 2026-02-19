@@ -8,6 +8,7 @@ export interface CoachDocument extends Document {
   certifications: string[];
   sports: string[];
   hourlyRate: number;
+  sportPricing?: Record<string, number>;
   serviceMode: ServiceMode;
   venueId?: mongoose.Types.ObjectId;
   baseLocation?: {
@@ -81,6 +82,11 @@ const coachSchema = new Schema<CoachDocument>(
       type: Number,
       required: [true, "Hourly rate is required"],
       min: [0, "Hourly rate must be positive"],
+    },
+    sportPricing: {
+      type: Map,
+      of: Number,
+      default: {},
     },
     serviceMode: {
       type: String,

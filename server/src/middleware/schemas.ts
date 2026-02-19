@@ -66,19 +66,45 @@ export const coachVerificationStep1Schema = z.object({
     .string()
     .min(20, "Bio must be at least 20 characters")
     .max(2000, "Bio cannot exceed 2000 characters"),
+  mobileNumber: z
+    .string()
+    .min(10, "Mobile number must be at least 10 digits")
+    .regex(/^[+]?[0-9\s().\-]+$/, "Please provide a valid mobile number"),
 });
 
-export const coachVerificationStep2Schema = z.object({
-  bio: z
-    .string()
-    .min(20, "Bio must be at least 20 characters")
-    .max(2000, "Bio cannot exceed 2000 characters"),
-  sports: z
-    .array(z.string().min(1, "Sport cannot be empty"))
-    .min(1, "At least one sport is required"),
-  certifications: z.array(z.string().min(1)).optional().default([]),
-  serviceMode: z.enum(["OWN_VENUE", "FREELANCE", "HYBRID"]).optional(),
-});
+export const coachVerificationStep2Schema = z
+  .object({
+    bio: z
+      .string()
+      .min(20, "Bio must be at least 20 characters")
+      .max(2000, "Bio cannot exceed 2000 characters"),
+    sports: z
+      .array(z.string().min(1, "Sport cannot be empty"))
+      .min(1, "At least one sport is required"),
+    certifications: z.array(z.string().min(1)).optional().default([]),
+    hourlyRate: z.number().min(1, "Hourly rate must be greater than 0"),
+    sportPricing: z
+      .record(z.string(), z.number().min(1))
+      .optional()
+      .default({}),
+    serviceMode: z.enum(["OWN_VENUE", "FREELANCE", "HYBRID"]).optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.sportPricing || Object.keys(data.sportPricing).length === 0) {
+        return true;
+      }
+
+      return data.sports.every((sport) => {
+        const rate = data.sportPricing?.[sport];
+        return typeof rate === "number" && rate > 0;
+      });
+    },
+    {
+      message: "Each selected sport must have a valid price",
+      path: ["sportPricing"],
+    },
+  );
 
 export const coachVerificationStep3Schema = z.object({
   documents: z
@@ -91,7 +117,13 @@ export const coachVerificationStep3Schema = z.object({
         uploadedAt: z.union([z.string().datetime(), z.date()]).optional(),
       }),
     )
-    .min(1, "At least one verification document is required"),
+    .min(2, "At least two verification documents are required")
+    .refine((docs) => docs.some((doc) => doc.type === "CERTIFICATION"), {
+      message: "A CERTIFICATION document is required",
+    })
+    .refine((docs) => docs.some((doc) => doc.type === "ID_PROOF"), {
+      message: "An ID_PROOF document is required",
+    }),
 });
 
 // ============================================

@@ -60,7 +60,12 @@ router.post(
 );
 
 // Submit verification documents
-router.post("/verification", authMiddleware, submitCoachVerificationHandler);
+router.post(
+  "/verification",
+  authMiddleware,
+  validateRequest(coachVerificationStep3Schema),
+  submitCoachVerificationHandler,
+);
 
 // Check coach availability
 router.get("/availability/:coachId", getCoachAvailability);

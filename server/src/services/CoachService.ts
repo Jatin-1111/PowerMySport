@@ -15,6 +15,7 @@ export interface CreateCoachPayload {
   certifications: string[];
   sports: string[];
   hourlyRate: number;
+  sportPricing?: Record<string, number>;
   serviceMode: ServiceMode;
   venueId?: string;
   serviceRadiusKm?: number;

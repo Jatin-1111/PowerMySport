@@ -17,7 +17,8 @@ export const coachApi = {
   // Save verification step 1 (bio)
   saveVerificationStep1: async (payload: {
     bio: string;
-  }): Promise<ApiResponse<Coach | { bio: string }>> => {
+    mobileNumber: string;
+  }): Promise<ApiResponse<Coach | { bio: string; mobileNumber: string }>> => {
     const response = await axiosInstance.post(
       "/coaches/verification/step1",
       payload,
@@ -30,6 +31,8 @@ export const coachApi = {
     bio: string;
     sports: string[];
     certifications?: string[];
+    hourlyRate: number;
+    sportPricing?: Record<string, number>;
     serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
   }): Promise<ApiResponse<Coach>> => {
     const response = await axiosInstance.post(

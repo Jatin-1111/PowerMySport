@@ -1,5 +1,6 @@
 "use client";
 
+import { authApi } from "@/modules/auth/services/auth";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
@@ -15,6 +16,19 @@ const ALLOWED_FILE_TYPES = [
   "image/png",
   "image/webp",
   "application/pdf",
+];
+
+const SPORTS_OPTIONS = [
+  "Cricket",
+  "Football",
+  "Badminton",
+  "Tennis",
+  "Basketball",
+  "Volleyball",
+  "Table Tennis",
+  "Swimming",
+  "Hockey",
+  "Kabaddi",
 ];
 
 const getInitialServiceMode = (): ServiceMode => {
@@ -34,12 +48,11 @@ const getInitialServiceMode = (): ServiceMode => {
   return "FREELANCE";
 };
 
-const parseCommaSeparated = (value: string): string[] => {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
+const isValidMobileNumber = (value: string) =>
+  /^[+]?[0-9\s().\-]+$/.test(value.trim());
+
+const sanitizeMobileNumber = (value: string) =>
+  value.replace(/[^0-9+\s().\-]/g, "");
 
 const getVerificationBadge = (coachData: Coach | null) => {
   if (!coachData) {
@@ -82,6 +95,21 @@ const getVerificationBadge = (coachData: Coach | null) => {
   }
 };
 
+const getStatusGuidance = (status: string) => {
+  switch (status) {
+    case "PENDING":
+      return "Your verification is submitted and pending admin review. You’ll be notified once reviewed.";
+    case "REVIEW":
+      return "Your verification is currently under review. Edits are temporarily disabled.";
+    case "VERIFIED":
+      return "You are verified. No further action is required right now.";
+    case "REJECTED":
+      return "Your verification was rejected. Update documents and resubmit.";
+    default:
+      return "Complete all 3 steps and submit both certification and ID proof documents.";
+  }
+};
+
 export default function CoachVerificationPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -94,12 +122,20 @@ export default function CoachVerificationPage() {
   const [success, setSuccess] = useState<string>("");
 
   const [bio, setBio] = useState("");
-  const [sportsInput, setSportsInput] = useState("");
-  const [certificationsInput, setCertificationsInput] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [hourlyRateInput, setHourlyRateInput] = useState("");
+  const [pricingMode, setPricingMode] = useState<"SAME" | "PER_SPORT">(
+    "PER_SPORT",
+  );
+  const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  const [sportPricing, setSportPricing] = useState<Record<string, string>>({});
 
   const [verificationDocs, setVerificationDocs] = useState<
     CoachVerificationDocument[]
-  >([{ type: "CERTIFICATION", url: "", fileName: "" }]);
+  >([
+    { type: "CERTIFICATION", url: "", fileName: "" },
+    { type: "ID_PROOF", url: "", fileName: "" },
+  ]);
 
   const status = useMemo(() => {
     if (!coachProfile) {
@@ -117,13 +153,48 @@ export default function CoachVerificationPage() {
 
   const loadProfile = async () => {
     try {
-      const response = await coachApi.getMyProfile();
-      if (response.success && response.data) {
-        const coach = response.data;
+      const [coachResponse, userResponse] = await Promise.all([
+        coachApi.getMyProfile(),
+        authApi.getProfile(),
+      ]);
+
+      if (userResponse.success && userResponse.data?.phone) {
+        setMobileNumber(userResponse.data.phone);
+      }
+
+      if (coachResponse.success && coachResponse.data) {
+        const coach = coachResponse.data;
         setCoachProfile(coach);
         setBio(coach.bio || "");
-        setSportsInput((coach.sports || []).join(", "));
-        setCertificationsInput((coach.certifications || []).join(", "));
+        setSelectedSports(coach.sports || []);
+        setHourlyRateInput(
+          coach.hourlyRate && coach.hourlyRate > 0
+            ? String(coach.hourlyRate)
+            : "",
+        );
+        setSportPricing(() => {
+          const prices: Record<string, string> = {};
+          (coach.sports || []).forEach((sport) => {
+            const value = coach.sportPricing?.[sport];
+            if (typeof value === "number" && value > 0) {
+              prices[sport] = String(value);
+            } else if (coach.hourlyRate && coach.hourlyRate > 0) {
+              prices[sport] = String(coach.hourlyRate);
+            } else {
+              prices[sport] = "";
+            }
+          });
+          return prices;
+        });
+        const pricingValues = Object.values(
+          (coach.sportPricing || {}) as Record<string, number>,
+        );
+        const hasPerSport = pricingValues.some((value) => value > 0);
+        const allMatchHourly =
+          hasPerSport &&
+          coach.hourlyRate &&
+          pricingValues.every((value) => value === coach.hourlyRate);
+        setPricingMode(allMatchHourly ? "SAME" : "PER_SPORT");
 
         if (coach.verificationDocuments?.length) {
           setVerificationDocs(
@@ -238,11 +309,22 @@ export default function CoachVerificationPage() {
       return;
     }
 
+    if (!mobileNumber.trim()) {
+      setError("Mobile number is required to continue.");
+      return;
+    }
+
+    if (!isValidMobileNumber(mobileNumber)) {
+      setError("Please provide a valid mobile number.");
+      return;
+    }
+
     setSaving(true);
     void (async () => {
       try {
         const response = await coachApi.saveVerificationStep1({
           bio: bio.trim(),
+          mobileNumber: mobileNumber.trim(),
         });
 
         if (!response.success) {
@@ -270,18 +352,43 @@ export default function CoachVerificationPage() {
     setError("");
     setSuccess("");
 
-    const sports = parseCommaSeparated(sportsInput);
+    const sports = selectedSports;
     if (sports.length === 0) {
       setError("Please add at least one sport you can teach.");
       return;
     }
+
+    const pricingPayload: Record<string, number> = {};
+    if (pricingMode === "SAME") {
+      const hourlyRate = Number(hourlyRateInput);
+      if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+        setError("Please add a valid hourly price greater than 0.");
+        return;
+      }
+      for (const sport of sports) {
+        pricingPayload[sport] = hourlyRate;
+      }
+    } else {
+      for (const sport of sports) {
+        const value = Number(sportPricing[sport]);
+        if (!Number.isFinite(value) || value <= 0) {
+          setError(`Please add a valid price for ${sport}.`);
+          return;
+        }
+        pricingPayload[sport] = value;
+      }
+    }
+
+    const hourlyRate = Math.max(...Object.values(pricingPayload));
 
     setSaving(true);
     try {
       const step2Response = await coachApi.saveVerificationStep2({
         bio: bio.trim(),
         sports,
-        certifications: parseCommaSeparated(certificationsInput),
+        certifications: [],
+        hourlyRate,
+        sportPricing: pricingPayload,
         serviceMode: getInitialServiceMode(),
       });
 
@@ -308,8 +415,8 @@ export default function CoachVerificationPage() {
     setError("");
     setSuccess("");
 
-    const sports = parseCommaSeparated(sportsInput);
-    const certifications = parseCommaSeparated(certificationsInput);
+    const sports = selectedSports;
+    let hourlyRate = 0;
 
     if (!bio.trim()) {
       setError("Bio is required.");
@@ -321,9 +428,26 @@ export default function CoachVerificationPage() {
       return;
     }
 
-    if (certifications.length === 0) {
-      setError("Please add at least one certification name.");
-      return;
+    const pricingPayload: Record<string, number> = {};
+    if (pricingMode === "SAME") {
+      hourlyRate = Number(hourlyRateInput);
+      if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+        setError("Please add a valid hourly price greater than 0.");
+        return;
+      }
+      for (const sport of sports) {
+        pricingPayload[sport] = hourlyRate;
+      }
+    } else {
+      for (const sport of sports) {
+        const value = Number(sportPricing[sport]);
+        if (!Number.isFinite(value) || value <= 0) {
+          setError(`Please add a valid price for ${sport}.`);
+          return;
+        }
+        pricingPayload[sport] = value;
+      }
+      hourlyRate = Math.max(...Object.values(pricingPayload));
     }
 
     const invalidDoc = verificationDocs.find(
@@ -342,8 +466,31 @@ export default function CoachVerificationPage() {
       return;
     }
 
+    const hasIdProofDoc = verificationDocs.some(
+      (doc) => doc.type === "ID_PROOF",
+    );
+    if (!hasIdProofDoc) {
+      setError("At least one uploaded document must be an ID_PROOF.");
+      return;
+    }
+
     setSaving(true);
     try {
+      const step2SyncResponse = await coachApi.saveVerificationStep2({
+        bio: bio.trim(),
+        sports,
+        certifications: [],
+        hourlyRate,
+        sportPricing: pricingPayload,
+        serviceMode: getInitialServiceMode(),
+      });
+
+      if (!step2SyncResponse.success || !step2SyncResponse.data) {
+        throw new Error(step2SyncResponse.message || "Failed to sync profile");
+      }
+
+      setCoachProfile(step2SyncResponse.data);
+
       const response = await coachApi.submitVerificationStep3({
         documents: verificationDocs.map((doc) => ({
           type: doc.type,
@@ -382,6 +529,7 @@ export default function CoachVerificationPage() {
   }
 
   const badge = getVerificationBadge(coachProfile);
+  const guidance = getStatusGuidance(status);
 
   return (
     <div className="space-y-6">
@@ -403,6 +551,10 @@ export default function CoachVerificationPage() {
           >
             {badge.label}
           </span>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          {guidance}
         </div>
 
         {coachProfile?.verificationNotes && (
@@ -452,8 +604,29 @@ export default function CoachVerificationPage() {
                 onChange={(event) => setBio(event.target.value)}
                 rows={5}
                 disabled={isLockedByReview}
+                minLength={20}
+                maxLength={2000}
                 className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
                 placeholder="Tell players about your experience, achievements, and coaching style."
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-900">
+                Mobile Number
+              </label>
+              <input
+                type="tel"
+                value={mobileNumber}
+                onChange={(event) =>
+                  setMobileNumber(sanitizeMobileNumber(event.target.value))
+                }
+                disabled={isLockedByReview}
+                inputMode="tel"
+                pattern="^[+]?[0-9\s().\-]+$"
+                maxLength={20}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                placeholder="e.g., 9876543210"
               />
             </div>
 
@@ -461,7 +634,7 @@ export default function CoachVerificationPage() {
               <Button
                 type="button"
                 variant="primary"
-                disabled={isLockedByReview}
+                disabled={isLockedByReview || saving}
                 onClick={handleStepOneContinue}
               >
                 Continue to Sports
@@ -472,22 +645,136 @@ export default function CoachVerificationPage() {
 
         {step === 2 && (
           <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-slate-900">Pricing</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                  <input
+                    type="radio"
+                    name="pricingMode"
+                    value="SAME"
+                    checked={pricingMode === "SAME"}
+                    disabled={isLockedByReview}
+                    onChange={() => setPricingMode("SAME")}
+                  />
+                  Same price for all sports
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                  <input
+                    type="radio"
+                    name="pricingMode"
+                    value="PER_SPORT"
+                    checked={pricingMode === "PER_SPORT"}
+                    disabled={isLockedByReview}
+                    onChange={() => setPricingMode("PER_SPORT")}
+                  />
+                  Different price per sport
+                </label>
+              </div>
+            </div>
+
+            {pricingMode === "SAME" && (
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-900">
+                  Hourly Price
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  step={0.01}
+                  value={hourlyRateInput}
+                  disabled={isLockedByReview}
+                  onChange={(event) => setHourlyRateInput(event.target.value)}
+                  inputMode="decimal"
+                  pattern="^\d+(\.\d{1,2})?$"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                  placeholder="e.g., 500"
+                />
+              </div>
+            )}
+
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-900">
                 Sports You Can Teach
               </label>
-              <input
-                type="text"
-                value={sportsInput}
-                disabled={isLockedByReview}
-                onChange={(event) => setSportsInput(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
-                placeholder="e.g., Cricket, Football, Badminton"
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                Add comma-separated values.
+              <div className="grid gap-3 sm:grid-cols-2">
+                {SPORTS_OPTIONS.map((sport) => {
+                  const checked = selectedSports.includes(sport);
+                  return (
+                    <label
+                      key={sport}
+                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={isLockedByReview}
+                        onChange={(event) => {
+                          if (event.target.checked) {
+                            const nextValue =
+                              pricingMode === "SAME"
+                                ? hourlyRateInput || ""
+                                : "";
+                            setSelectedSports((prev) => [...prev, sport]);
+                            setSportPricing((prev) => ({
+                              ...prev,
+                              [sport]: prev[sport] || nextValue,
+                            }));
+                          } else {
+                            setSelectedSports((prev) =>
+                              prev.filter((item) => item !== sport),
+                            );
+                            setSportPricing((prev) => {
+                              const updated = { ...prev };
+                              delete updated[sport];
+                              return updated;
+                            });
+                          }
+                        }}
+                      />
+                      {sport}
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                Select all sports you coach.
               </p>
             </div>
+
+            {pricingMode === "PER_SPORT" && selectedSports.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-slate-900">
+                  Price per Sport
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {selectedSports.map((sport) => (
+                    <div key={sport}>
+                      <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
+                        {sport}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={0.01}
+                        value={sportPricing[sport] || ""}
+                        disabled={isLockedByReview}
+                        inputMode="decimal"
+                        pattern="^\d+(\.\d{1,2})?$"
+                        onChange={(event) =>
+                          setSportPricing((prev) => ({
+                            ...prev,
+                            [sport]: event.target.value,
+                          }))
+                        }
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                        placeholder="e.g., 600"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-between">
               <Button
@@ -511,23 +798,6 @@ export default function CoachVerificationPage() {
 
         {step === 3 && (
           <div className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-900">
-                Certification Names
-              </label>
-              <input
-                type="text"
-                value={certificationsInput}
-                disabled={isLockedByReview}
-                onChange={(event) => setCertificationsInput(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
-                placeholder="e.g., NIS Level 1, ICC Foundation Coach"
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                Add comma-separated values.
-              </p>
-            </div>
-
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-900">
@@ -536,7 +806,7 @@ export default function CoachVerificationPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={isLockedByReview}
+                  disabled={isLockedByReview || uploadingDocIndex !== null}
                   onClick={() =>
                     setVerificationDocs((prev) => [
                       ...prev,
@@ -561,7 +831,9 @@ export default function CoachVerificationPage() {
                         </label>
                         <select
                           value={doc.type}
-                          disabled={isLockedByReview}
+                          disabled={
+                            isLockedByReview || uploadingDocIndex !== null
+                          }
                           onChange={(event) =>
                             setVerificationDocs((prev) =>
                               prev.map((item, i) =>
@@ -623,6 +895,7 @@ export default function CoachVerificationPage() {
                       {verificationDocs.length > 1 && !isLockedByReview && (
                         <button
                           type="button"
+                          disabled={uploadingDocIndex !== null}
                           onClick={() =>
                             setVerificationDocs((prev) =>
                               prev.filter((_, i) => i !== index),
@@ -650,7 +923,9 @@ export default function CoachVerificationPage() {
               <Button
                 type="button"
                 variant="primary"
-                disabled={saving || isLockedByReview}
+                disabled={
+                  saving || isLockedByReview || uploadingDocIndex !== null
+                }
                 onClick={handleSubmitVerification}
               >
                 {saving ? "Submitting..." : "Submit for Verification"}

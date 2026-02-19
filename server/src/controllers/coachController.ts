@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { User } from "../models/User";
 import {
   checkCoachAvailability,
   createCoach,
@@ -384,7 +385,7 @@ const normalizeVerificationDocuments = (
     "OTHER",
   ] as const;
 
-  return (documents || []).map((doc) => {
+  const normalizedDocs = (documents || []).map((doc) => {
     if (!allowedTypes.includes(doc.type as (typeof allowedTypes)[number])) {
       throw new Error("Invalid document type");
     }
@@ -402,6 +403,21 @@ const normalizeVerificationDocuments = (
         : { uploadedAt: new Date() }),
     };
   });
+
+  const hasCertification = normalizedDocs.some(
+    (doc) => doc.type === "CERTIFICATION",
+  );
+  const hasIdProof = normalizedDocs.some((doc) => doc.type === "ID_PROOF");
+
+  if (!hasCertification) {
+    throw new Error("A CERTIFICATION document is required");
+  }
+
+  if (!hasIdProof) {
+    throw new Error("An ID_PROOF document is required");
+  }
+
+  return normalizedDocs;
 };
 
 /**
@@ -423,14 +439,20 @@ export const saveCoachVerificationStep1Handler = async (
       return;
     }
 
-    const { bio } = req.body as { bio: string };
+    const { bio, mobileNumber } = req.body as {
+      bio: string;
+      mobileNumber: string;
+    };
+
+    await User.findByIdAndUpdate(req.user.id, { phone: mobileNumber });
+
     const existingCoach = await getCoachByUserId(req.user.id);
 
     if (!existingCoach) {
       res.status(200).json({
         success: true,
         message: "Step 1 captured. Continue to step 2.",
-        data: { bio },
+        data: { bio, mobileNumber },
       });
       return;
     }
@@ -456,7 +478,7 @@ export const saveCoachVerificationStep1Handler = async (
 };
 
 /**
- * Save coach verification step 2 (Sports + core profile)
+ * Save coach verification step 2 (Sports + hourly rate + core profile)
  * POST /api/coaches/verification/step2
  */
 export const saveCoachVerificationStep2Handler = async (
@@ -474,10 +496,19 @@ export const saveCoachVerificationStep2Handler = async (
       return;
     }
 
-    const { bio, sports, certifications, serviceMode } = req.body as {
+    const {
+      bio,
+      sports,
+      certifications,
+      hourlyRate,
+      sportPricing,
+      serviceMode,
+    } = req.body as {
       bio: string;
       sports: string[];
       certifications?: string[];
+      hourlyRate: number;
+      sportPricing?: Record<string, number>;
       serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
     };
 
@@ -490,6 +521,8 @@ export const saveCoachVerificationStep2Handler = async (
         bio,
         sports,
         certifications: certifications || [],
+        hourlyRate,
+        sportPricing: sportPricing || {},
       });
 
       res.status(200).json({
@@ -505,7 +538,8 @@ export const saveCoachVerificationStep2Handler = async (
       bio,
       sports,
       certifications: certifications || [],
-      hourlyRate: 0,
+      hourlyRate,
+      sportPricing: sportPricing || {},
       serviceMode: serviceMode || "FREELANCE",
       availability: [],
       ...(serviceMode !== "OWN_VENUE" && {
@@ -597,7 +631,6 @@ export const submitCoachVerificationHandler = async (
 ): Promise<void> => {
   await submitCoachVerificationStep3Handler(req, res);
 };
-
 /**
  * Get presigned URL for coach verification document upload
  * POST /api/coaches/verification/upload-url

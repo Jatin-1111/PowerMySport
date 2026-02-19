@@ -198,7 +198,16 @@ export const initiateBooking = async (
         throw new Error("Coach is not available for the selected time slot");
       }
 
-      coachPrice = hours * coach.hourlyRate;
+      const coachSportRate =
+        payload.sport && typeof coach.sportPricing?.[payload.sport] === "number"
+          ? coach.sportPricing[payload.sport]
+          : undefined;
+      const effectiveCoachRate =
+        typeof coachSportRate === "number" && coachSportRate > 0
+          ? coachSportRate
+          : coach.hourlyRate;
+
+      coachPrice = hours * effectiveCoachRate;
       // Handle both populated and non-populated userId
       if (coach.userId) {
         if (typeof coach.userId === "object" && "_id" in coach.userId) {
