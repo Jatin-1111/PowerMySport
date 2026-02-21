@@ -102,6 +102,7 @@ export interface Coach {
   serviceRadiusKm?: number;
   travelBufferTime?: number;
   availability: IAvailability[];
+  availabilityBySport?: Record<string, IAvailability[]>;
   verificationDocuments?: CoachVerificationDocument[];
   verificationStatus?: CoachVerificationStatus;
   verificationNotes?: string;

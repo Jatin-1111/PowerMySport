@@ -19,6 +19,7 @@ export interface CoachDocument extends Document {
   serviceRadiusKm?: number;
   travelBufferTime?: number;
   availability: IAvailability[];
+  availabilityBySport?: Record<string, IAvailability[]>;
   verificationDocuments?: CoachDocumentFile[]; // Certification proofs, ID verification
   verificationStatus?: CoachVerificationStatus;
   verificationNotes?: string;
@@ -150,6 +151,36 @@ const coachSchema = new Schema<CoachDocument>(
       ],
       default: [],
     },
+    availabilityBySport: {
+      type: Map,
+      of: [
+        {
+          dayOfWeek: {
+            type: Number,
+            min: 0,
+            max: 6,
+            required: true,
+          },
+          startTime: {
+            type: String,
+            required: true,
+            match: [
+              /^([01]\d|2[0-3]):([0-5]\d)$/,
+              "Start time must be in HH:mm format",
+            ],
+          },
+          endTime: {
+            type: String,
+            required: true,
+            match: [
+              /^([01]\d|2[0-3]):([0-5]\d)$/,
+              "End time must be in HH:mm format",
+            ],
+          },
+        },
+      ],
+      default: {},
+    },
     rating: {
       type: Number,
       default: 0,
@@ -228,6 +259,9 @@ const coachSchema = new Schema<CoachDocument>(
         if (ret.sportPricing instanceof Map) {
           ret.sportPricing = Object.fromEntries(ret.sportPricing);
         }
+        if (ret.availabilityBySport instanceof Map) {
+          ret.availabilityBySport = Object.fromEntries(ret.availabilityBySport);
+        }
         return ret;
       },
     },
@@ -239,6 +273,9 @@ const coachSchema = new Schema<CoachDocument>(
         // Convert Map to plain object for sportPricing
         if (ret.sportPricing instanceof Map) {
           ret.sportPricing = Object.fromEntries(ret.sportPricing);
+        }
+        if (ret.availabilityBySport instanceof Map) {
+          ret.availabilityBySport = Object.fromEntries(ret.availabilityBySport);
         }
         return ret;
       },

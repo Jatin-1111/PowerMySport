@@ -125,3 +125,50 @@ export const coachVerificationCompletedMiddleware = async (
     });
   }
 };
+
+export const coachVerifiedMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    if (req.user?.role !== "COACH" || !req.user.id) {
+      next();
+      return;
+    }
+
+    const coach = await Coach.findOne({ userId: req.user.id }).select(
+      "verificationStatus isVerified",
+    );
+
+    if (!coach) {
+      res.status(403).json({
+        success: false,
+        message: "Only verified coaches can manage venues.",
+      });
+      return;
+    }
+
+    const status =
+      coach.verificationStatus ||
+      (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+
+    if (status !== "VERIFIED") {
+      res.status(403).json({
+        success: false,
+        message: "Only verified coaches can manage venues.",
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to verify coach status",
+    });
+  }
+};

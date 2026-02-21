@@ -5,30 +5,53 @@ import { authApi } from "@/modules/auth/services/auth";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Coach, User } from "@/types";
-import { LogOut, ShieldCheck, AlertCircle, CheckCircle } from "lucide-react";
+import { Coach, IAvailability, User } from "@/types";
+import {
+  LogOut,
+  ShieldCheck,
+  AlertCircle,
+  CheckCircle,
+  Clock3,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
-const SPORTS_OPTIONS = [
-  "Cricket",
-  "Football",
-  "Badminton",
-  "Tennis",
-  "Basketball",
-  "Volleyball",
-  "Table Tennis",
-  "Swimming",
-  "Hockey",
-  "Kabaddi",
+const DAYS: Array<{ value: number; label: string }> = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
 ];
+
+const sortAvailabilitySlots = (slots: IAvailability[]) =>
+  [...slots].sort((first, second) => {
+    if (first.dayOfWeek !== second.dayOfWeek) {
+      return first.dayOfWeek - second.dayOfWeek;
+    }
+    if (first.startTime !== second.startTime) {
+      return first.startTime.localeCompare(second.startTime);
+    }
+    return first.endTime.localeCompare(second.endTime);
+  });
 
 export default function CoachProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [activeSportTab, setActiveSportTab] = useState("");
+  const [availabilityBySport, setAvailabilityBySport] = useState<
+    Record<string, IAvailability[]>
+  >({});
+  const [savingAvailability, setSavingAvailability] = useState(false);
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
+  const [availabilityError, setAvailabilityError] = useState("");
 
   useEffect(() => {
     loadProfile();
@@ -112,9 +135,26 @@ export default function CoachProfilePage() {
     try {
       const response = await coachApi.getMyProfile();
       if (response.success && response.data) {
+        const sports = response.data.sports || [];
+        const bySportFromApi = response.data.availabilityBySport || {};
+        const fallbackAvailability = sortAvailabilitySlots(
+          response.data.availability || [],
+        );
+        const nextBySport: Record<string, IAvailability[]> = {};
+
+        sports.forEach((sport) => {
+          nextBySport[sport] = sortAvailabilitySlots(
+            bySportFromApi[sport] || fallbackAvailability,
+          );
+        });
+
         setCoachProfile(response.data);
+        setAvailabilityBySport(nextBySport);
+        if (sports.length > 0) {
+          setActiveSportTab(sports[0]);
+        }
       }
-    } catch (error) {
+    } catch {
       console.log("No coach profile yet");
     } finally {
       setLoading(false);
@@ -127,6 +167,157 @@ export default function CoachProfilePage() {
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
+    }
+  };
+
+  const addTimeSlot = () => {
+    setAvailabilityMessage("");
+    setAvailabilityError("");
+    if (!activeSportTab) {
+      return;
+    }
+
+    setAvailabilityBySport((prev) => ({
+      ...prev,
+      [activeSportTab]: [
+        ...(prev[activeSportTab] || []),
+        { dayOfWeek: 1, startTime: "09:00", endTime: "10:00" },
+      ],
+    }));
+  };
+
+  const removeTimeSlot = (index: number) => {
+    setAvailabilityMessage("");
+    setAvailabilityError("");
+    if (!activeSportTab) {
+      return;
+    }
+
+    setAvailabilityBySport((prev) => ({
+      ...prev,
+      [activeSportTab]: (prev[activeSportTab] || []).filter(
+        (_, i) => i !== index,
+      ),
+    }));
+  };
+
+  const updateTimeSlot = (
+    index: number,
+    key: keyof IAvailability,
+    value: number | string,
+  ) => {
+    setAvailabilityMessage("");
+    setAvailabilityError("");
+    if (!activeSportTab) {
+      return;
+    }
+
+    setAvailabilityBySport((prev) => ({
+      ...prev,
+      [activeSportTab]: (prev[activeSportTab] || []).map((slot, i) =>
+        i === index ? { ...slot, [key]: value } : slot,
+      ),
+    }));
+  };
+
+  const validateAvailabilityBySport = (
+    bySport: Record<string, IAvailability[]>,
+  ) => {
+    for (const [sport, slots] of Object.entries(bySport)) {
+      for (const slot of slots) {
+        if (!slot.startTime || !slot.endTime) {
+          return `Each time slot in ${sport} must include start and end time.`;
+        }
+        if (slot.startTime >= slot.endTime) {
+          return `End time must be later than start time in ${sport}.`;
+        }
+      }
+    }
+    return "";
+  };
+
+  const flattenAvailability = (bySport: Record<string, IAvailability[]>) => {
+    const dedupe = new Set<string>();
+    const merged: IAvailability[] = [];
+
+    Object.values(bySport).forEach((slots) => {
+      slots.forEach((slot) => {
+        const key = `${slot.dayOfWeek}-${slot.startTime}-${slot.endTime}`;
+        if (!dedupe.has(key)) {
+          dedupe.add(key);
+          merged.push(slot);
+        }
+      });
+    });
+
+    return sortAvailabilitySlots(merged);
+  };
+
+  const handleSaveAvailability = async () => {
+    if (!coachProfile) {
+      setAvailabilityError("Coach profile not found.");
+      return;
+    }
+
+    const validationError = validateAvailabilityBySport(availabilityBySport);
+    if (validationError) {
+      setAvailabilityError(validationError);
+      return;
+    }
+
+    const coachId = coachProfile.id || coachProfile._id;
+    if (!coachId) {
+      setAvailabilityError("Coach profile id is missing.");
+      return;
+    }
+
+    try {
+      setSavingAvailability(true);
+      setAvailabilityError("");
+      setAvailabilityMessage("");
+
+      const sortedAvailabilityBySport: Record<string, IAvailability[]> = {};
+      Object.entries(availabilityBySport).forEach(([sport, slots]) => {
+        sortedAvailabilityBySport[sport] = sortAvailabilitySlots(slots);
+      });
+
+      const flattenedAvailability = flattenAvailability(
+        sortedAvailabilityBySport,
+      );
+
+      const response = await coachApi.updateProfile(coachId, {
+        availability: flattenedAvailability,
+        availabilityBySport: sortedAvailabilityBySport,
+      });
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Failed to save availability");
+      }
+
+      setCoachProfile(response.data);
+      const sports = response.data.sports || [];
+      const bySportFromApi = response.data.availabilityBySport || {};
+      const fallbackAvailability = sortAvailabilitySlots(
+        response.data.availability || [],
+      );
+      const nextBySport: Record<string, IAvailability[]> = {};
+
+      sports.forEach((sport) => {
+        nextBySport[sport] = sortAvailabilitySlots(
+          bySportFromApi[sport] || fallbackAvailability,
+        );
+      });
+
+      setAvailabilityBySport(nextBySport);
+      if (sports.length > 0 && !sports.includes(activeSportTab)) {
+        setActiveSportTab(sports[0]);
+      }
+      setAvailabilityMessage("Time slots updated successfully.");
+    } catch (error) {
+      setAvailabilityError(
+        error instanceof Error ? error.message : "Failed to save time slots",
+      );
+    } finally {
+      setSavingAvailability(false);
     }
   };
 
@@ -314,6 +505,155 @@ export default function CoachProfilePage() {
                     </div>
                   </>
                 )}
+              </div>
+            </Card>
+
+            <Card className="bg-white">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Availability / Time Slots
+                </h3>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="flex items-center gap-2"
+                  onClick={addTimeSlot}
+                  disabled={!activeSportTab}
+                >
+                  <Plus size={16} />
+                  Add Slot
+                </Button>
+              </div>
+
+              <div className="mb-4 flex flex-wrap gap-2">
+                {(coachProfile.sports || []).map((sport) => (
+                  <button
+                    key={sport}
+                    type="button"
+                    onClick={() => setActiveSportTab(sport)}
+                    className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                      activeSportTab === sport
+                        ? "border-power-orange bg-orange-50 text-power-orange"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    {sport}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-3">
+                {!activeSportTab ? (
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    No sports found for this coach profile.
+                  </div>
+                ) : (availabilityBySport[activeSportTab] || []).length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    No time slots added yet for {activeSportTab}.
+                  </div>
+                ) : (
+                  (availabilityBySport[activeSportTab] || []).map(
+                    (slot, index) => (
+                      <div
+                        key={`${slot.dayOfWeek}-${slot.startTime}-${slot.endTime}-${index}`}
+                        className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
+                      >
+                        <div>
+                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Day
+                          </label>
+                          <select
+                            value={slot.dayOfWeek}
+                            onChange={(event) =>
+                              updateTimeSlot(
+                                index,
+                                "dayOfWeek",
+                                Number(event.target.value),
+                              )
+                            }
+                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                          >
+                            {DAYS.map((day) => (
+                              <option key={day.value} value={day.value}>
+                                {day.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Start Time
+                          </label>
+                          <input
+                            type="time"
+                            value={slot.startTime}
+                            onChange={(event) =>
+                              updateTimeSlot(
+                                index,
+                                "startTime",
+                                event.target.value,
+                              )
+                            }
+                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            End Time
+                          </label>
+                          <input
+                            type="time"
+                            value={slot.endTime}
+                            onChange={(event) =>
+                              updateTimeSlot(
+                                index,
+                                "endTime",
+                                event.target.value,
+                              )
+                            }
+                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeTimeSlot(index)}
+                          className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-red-600 hover:bg-red-50"
+                          aria-label="Remove time slot"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ),
+                  )
+                )}
+              </div>
+
+              {availabilityError && (
+                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+                  {availabilityError}
+                </div>
+              )}
+
+              {availabilityMessage && (
+                <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700">
+                  {availabilityMessage}
+                </div>
+              )}
+
+              <div className="mt-4 flex items-center justify-end">
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleSaveAvailability}
+                  disabled={savingAvailability || !coachProfile}
+                  className="flex items-center gap-2"
+                >
+                  <Clock3 size={16} />
+                  {savingAvailability ? "Saving..." : "Save Time Slots"}
+                </Button>
               </div>
             </Card>
 

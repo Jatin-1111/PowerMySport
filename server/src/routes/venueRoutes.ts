@@ -11,7 +11,7 @@ import {
 } from "../controllers/venueController";
 import {
   authMiddleware,
-  coachVerificationCompletedMiddleware,
+  coachVerifiedMiddleware,
   vendorMiddleware,
 } from "../middleware/auth";
 import { venueImageUploadSchema, venueSchema } from "../middleware/schemas";
@@ -22,7 +22,7 @@ const router = Router();
 router.post(
   "/",
   authMiddleware,
-  coachVerificationCompletedMiddleware,
+  coachVerifiedMiddleware,
   vendorMiddleware,
   validateRequest(venueSchema),
   createNewVenue,
@@ -40,14 +40,14 @@ router.get("/search", searchVenues);
 router.get(
   "/my-venues",
   authMiddleware,
-  coachVerificationCompletedMiddleware,
+  coachVerifiedMiddleware,
   vendorMiddleware,
   getMyVenues,
 );
 router.post(
   "/:venueId/image-upload-urls",
   authMiddleware,
-  coachVerificationCompletedMiddleware,
+  coachVerifiedMiddleware,
   vendorMiddleware,
   validateRequest(venueImageUploadSchema),
   getVenueImageUploadUrls,
@@ -56,14 +56,14 @@ router.get("/:venueId", getVenue);
 router.put(
   "/:venueId",
   authMiddleware,
-  coachVerificationCompletedMiddleware,
+  coachVerifiedMiddleware,
   vendorMiddleware,
   updateVenueDetails,
 );
 router.delete(
   "/:venueId",
   authMiddleware,
-  coachVerificationCompletedMiddleware,
+  coachVerifiedMiddleware,
   vendorMiddleware,
   deleteVenueById,
 );

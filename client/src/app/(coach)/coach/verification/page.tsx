@@ -318,6 +318,11 @@ export default function CoachVerificationPage() {
     setError("");
     setSuccess("");
 
+    if (!user?.photoUrl?.trim()) {
+      setError("Profile picture is required to continue.");
+      return;
+    }
+
     if (!bio.trim()) {
       setError("Bio is required to continue.");
       return;
@@ -616,7 +621,7 @@ export default function CoachVerificationPage() {
           <div className="space-y-4">
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-900">
-                Profile Picture
+                Profile Picture <span className="text-red-600">*</span>
               </label>
               <div className="flex items-center gap-4">
                 <ProfilePictureUpload
@@ -629,7 +634,7 @@ export default function CoachVerificationPage() {
                 <div className="text-sm text-slate-600">
                   <p className="font-medium">Upload your profile picture</p>
                   <p className="text-xs text-slate-500">
-                    JPG, PNG or WebP (Max 5MB)
+                    Required for verification. JPG, PNG or WebP (Max 5MB)
                   </p>
                 </div>
               </div>

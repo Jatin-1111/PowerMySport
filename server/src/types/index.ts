@@ -92,6 +92,7 @@ export interface ICoach {
   serviceRadiusKm?: number; // Required if FREELANCE/HYBRID
   travelBufferTime?: number; // Minutes, required if FREELANCE/HYBRID
   availability: IAvailability[];
+  availabilityBySport?: Record<string, IAvailability[]>;
   verificationDocuments?: Array<{
     type:
       | "CERTIFICATION"

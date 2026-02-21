@@ -25,6 +25,14 @@ export interface CreateCoachPayload {
     startTime: string;
     endTime: string;
   }>;
+  availabilityBySport?: Record<
+    string,
+    Array<{
+      dayOfWeek: number;
+      startTime: string;
+      endTime: string;
+    }>
+  >;
   venueDetails?: {
     name: string;
     address: string;
@@ -321,19 +329,19 @@ export const checkCoachAvailability = async (
 
     // Check if coach has availability on this day of week
     const dayOfWeek = date.getDay();
-    const dayAvailability = coach.availability.find(
+    const dayAvailabilities = coach.availability.filter(
       (a) => a.dayOfWeek === dayOfWeek,
     );
 
-    if (!dayAvailability) {
+    if (dayAvailabilities.length === 0) {
       return false; // Coach doesn't work on this day
     }
 
-    // Check if requested time is within coach's working hours
-    if (
-      startTime < dayAvailability.startTime ||
-      endTime > dayAvailability.endTime
-    ) {
+    const isWithinAnySlot = dayAvailabilities.some(
+      (slot) => startTime >= slot.startTime && endTime <= slot.endTime,
+    );
+
+    if (!isWithinAnySlot) {
       return false;
     }
 

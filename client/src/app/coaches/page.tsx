@@ -56,6 +56,24 @@ export default function CoachesPage() {
     }
   };
 
+  const getSportRate = (coach: Coach, sport: string) => {
+    const sportRate = coach.sportPricing?.[sport];
+    if (typeof sportRate === "number" && sportRate > 0) {
+      return sportRate;
+    }
+    return coach.hourlyRate;
+  };
+
+  const getStartingRate = (coach: Coach) => {
+    const values = Object.values(coach.sportPricing || {}).filter(
+      (value) => typeof value === "number" && value > 0,
+    );
+    if (values.length > 0) {
+      return Math.min(...values);
+    }
+    return coach.hourlyRate;
+  };
+
   useEffect(() => {
     loadCoaches();
   }, []);
@@ -255,14 +273,24 @@ export default function CoachesPage() {
 
                     {/* Price */}
                     <div className="pt-4 border-t border-slate-100">
+                      <div className="mb-3 flex flex-wrap gap-1.5">
+                        {coach.sports.slice(0, 3).map((sport) => (
+                          <span
+                            key={sport}
+                            className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700"
+                          >
+                            {sport}: ₹{getSportRate(coach, sport)}
+                          </span>
+                        ))}
+                      </div>
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                            Per hour
+                            Starting from
                           </p>
                           <p className="text-xl font-bold text-turf-green flex items-center gap-1 mt-0.5">
                             <IndianRupee size={18} />
-                            {coach.hourlyRate}
+                            {getStartingRate(coach)}
                           </p>
                         </div>
                         <Button

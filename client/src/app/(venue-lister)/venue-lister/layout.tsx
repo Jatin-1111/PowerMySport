@@ -2,10 +2,11 @@
 
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { coachApi } from "@/modules/coach/services/coach";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, Calendar, Grid3x3, LayoutDashboard } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 export default function VendorLayout({
   children,
@@ -14,6 +15,48 @@ export default function VendorLayout({
 }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const [isCheckingCoachStatus, setIsCheckingCoachStatus] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const verifyCoachAccess = async () => {
+      if (user?.role !== "COACH") {
+        if (isMounted) {
+          setIsCheckingCoachStatus(false);
+        }
+        return;
+      }
+
+      try {
+        const response = await coachApi.getMyProfile();
+        const coach = response.success ? response.data : null;
+        const status =
+          coach?.verificationStatus ||
+          (coach?.isVerified ? "VERIFIED" : "UNVERIFIED");
+
+        if (isMounted && status !== "VERIFIED") {
+          router.replace("/coach/verification");
+          return;
+        }
+      } catch {
+        if (isMounted) {
+          router.replace("/coach/verification");
+          return;
+        }
+      } finally {
+        if (isMounted) {
+          setIsCheckingCoachStatus(false);
+        }
+      }
+    };
+
+    void verifyCoachAccess();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router, user?.role]);
 
   const handleLogout = async () => {
     try {
@@ -47,6 +90,14 @@ export default function VendorLayout({
       icon: Calendar,
     },
   ];
+
+  if (isCheckingCoachStatus && user?.role === "COACH") {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-600">Checking verification status...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">

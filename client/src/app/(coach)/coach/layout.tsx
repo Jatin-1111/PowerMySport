@@ -19,6 +19,7 @@ export default function CoachLayout({
   const { user, logout } = useAuthStore();
   const [isGateLoading, setIsGateLoading] = useState(true);
   const [isVerificationLocked, setIsVerificationLocked] = useState(false);
+  const [isCoachVerified, setIsCoachVerified] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,12 +37,16 @@ export default function CoachLayout({
         const response = await coachApi.getMyProfile();
         const coach = response.success ? response.data : null;
         const isComplete = isCoachVerificationFlowComplete(coach ?? null);
+        const status =
+          coach?.verificationStatus ||
+          (coach?.isVerified ? "VERIFIED" : "UNVERIFIED");
 
         if (!isMounted) {
           return;
         }
 
         setIsVerificationLocked(!isComplete);
+        setIsCoachVerified(status === "VERIFIED");
 
         if (!isComplete && pathname !== "/coach/verification") {
           router.replace("/coach/verification");
@@ -52,6 +57,7 @@ export default function CoachLayout({
         }
 
         setIsVerificationLocked(true);
+        setIsCoachVerified(false);
         if (pathname !== "/coach/verification") {
           router.replace("/coach/verification");
         }
@@ -90,7 +96,7 @@ export default function CoachLayout({
   ];
 
   // If user is a coach and verification is complete, show option to manage venue
-  if (user?.role === "COACH" && !isVerificationLocked) {
+  if (user?.role === "COACH" && isCoachVerified) {
     navItems.push({
       href: "/venue-lister/inventory",
       label: "Manage Venue",

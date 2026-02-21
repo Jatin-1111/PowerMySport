@@ -42,6 +42,17 @@ export default function CoachDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const getSportRate = (sport: string) => {
+    if (!coach) {
+      return 0;
+    }
+    const sportRate = coach.sportPricing?.[sport];
+    if (typeof sportRate === "number" && sportRate > 0) {
+      return sportRate;
+    }
+    return coach.hourlyRate;
+  };
+
   const getVerificationBadge = (coachData: Coach) => {
     const status =
       coachData.verificationStatus ||
@@ -86,7 +97,11 @@ export default function CoachDetailsPage() {
     if (coachId && selectedDate) {
       loadAvailability();
     }
-  }, [coachId, selectedDate]);
+  }, [coachId, selectedDate, selectedSport]);
+
+  useEffect(() => {
+    setSelectedSlot(null);
+  }, [selectedSport, selectedDate]);
 
   const loadCoachDetails = async () => {
     try {
@@ -111,6 +126,7 @@ export default function CoachDetailsPage() {
       const response = await bookingApi.getCoachAvailability(
         coachId,
         selectedDate,
+        selectedSport || undefined,
       );
       if (response.success && response.data) {
         setAvailability(response.data);
@@ -158,9 +174,18 @@ export default function CoachDetailsPage() {
           router.push("/dashboard/my-bookings");
         }, 1500);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Booking failed:", error);
-      setError(error.response?.data?.message || "Booking failed");
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as { response?: { data?: { message?: string } } })
+          .response?.data?.message === "string"
+          ? (error as { response?: { data?: { message?: string } } }).response!
+              .data!.message!
+          : "Booking failed";
+      setError(message);
     } finally {
       setBookingLoading(false);
     }
@@ -184,6 +209,24 @@ export default function CoachDetailsPage() {
       </div>
     );
   }
+
+  const selectedSportRate = getSportRate(selectedSport || coach.sports?.[0]);
+  const selectedDayOfWeek = new Date(selectedDate).getDay();
+  const sportDefaultSlots =
+    coach.availabilityBySport?.[selectedSport]?.filter(
+      (slot) => slot.dayOfWeek === selectedDayOfWeek,
+    ) ||
+    coach.availability?.filter(
+      (slot) => slot.dayOfWeek === selectedDayOfWeek,
+    ) ||
+    [];
+  const fallbackSlots = sportDefaultSlots.map(
+    (slot) => `${slot.startTime}-${slot.endTime}`,
+  );
+  const visibleSlots =
+    availability?.availableSlots && availability.availableSlots.length > 0
+      ? availability.availableSlots
+      : fallbackSlots;
 
   return (
     <div className="bg-slate-50">
@@ -236,7 +279,7 @@ export default function CoachDetailsPage() {
                 <div className="flex items-center gap-1">
                   <IndianRupee size={20} className="text-turf-green" />
                   <span className="font-bold text-xl text-turf-green">
-                    {coach.hourlyRate}
+                    {selectedSportRate}
                   </span>
                   <span className="text-slate-300 text-sm">/hour</span>
                 </div>
@@ -363,10 +406,9 @@ export default function CoachDetailsPage() {
                       <div className="flex justify-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-turf-green"></div>
                       </div>
-                    ) : availability &&
-                      availability.availableSlots?.length > 0 ? (
+                    ) : visibleSlots.length > 0 ? (
                       <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
-                        {availability.availableSlots.map((slot: any) => {
+                        {visibleSlots.map((slot: string) => {
                           const startTime = slot.split("-")[0] || slot;
                           const endTime =
                             slot.split("-")[1] ||
@@ -415,11 +457,11 @@ export default function CoachDetailsPage() {
                     <div className="bg-turf-green/5 rounded-lg p-4 mb-4">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-slate-600">
-                          Hourly Rate
+                          {selectedSport || "Selected Sport"} Rate
                         </span>
                         <span className="text-2xl font-bold text-turf-green flex items-center">
                           <IndianRupee size={20} />
-                          {coach.hourlyRate}
+                          {selectedSportRate}
                         </span>
                       </div>
                     </div>

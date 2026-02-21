@@ -64,11 +64,12 @@ export const bookingApi = {
   getCoachAvailability: async (
     coachId: string,
     date: string,
+    sport?: string,
   ): Promise<ApiResponse<Availability>> => {
     const response = await axiosInstance.get(
       `/coaches/availability/${coachId}`,
       {
-        params: { date },
+        params: { date, sport },
       },
     );
     return response.data;
