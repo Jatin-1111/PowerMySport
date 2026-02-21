@@ -16,9 +16,21 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const geoLocationSchema = z.object({
+  type: z.literal("Point"),
+  coordinates: z
+    .tuple([z.number(), z.number()])
+    .refine(
+      ([lng, lat]) => lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90,
+      {
+        message: "Coordinates must be valid longitude/latitude values",
+      },
+    ),
+});
+
 export const venueSchema = z.object({
   name: z.string().min(1, "Venue name is required"),
-  location: z.string().min(1, "Location is required"),
+  location: geoLocationSchema,
   sports: z.array(z.string()).min(1, "At least one sport is required"),
   pricePerHour: z.number().min(0, "Price must be non-negative"),
   sportPricing: z.record(z.string(), z.number().min(0)).optional(),

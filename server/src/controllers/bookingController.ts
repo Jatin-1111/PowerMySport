@@ -10,14 +10,10 @@ import {
   markNoShow,
   verifyBooking,
 } from "../services/BookingService";
-import {
-  handlePaymentWebhook,
-  processMockPayment,
-} from "../services/PaymentService";
 import { generateHourlySlots } from "../utils/booking";
 
 /**
- * Initiate a new booking with split payments
+ * Initiate a new booking
  * POST /api/bookings/initiate
  */
 export const initiateNewBooking = async (
@@ -41,10 +37,9 @@ export const initiateNewBooking = async (
 
     res.status(201).json({
       success: true,
-      message: "Booking initiated successfully",
+      message: "Booking created successfully",
       data: {
-        booking: result.booking,
-        paymentLinks: result.paymentLinks,
+        booking: result.booking.toJSON(),
       },
     });
   } catch (error) {
@@ -52,62 +47,6 @@ export const initiateNewBooking = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to initiate booking",
-    });
-  }
-};
-
-/**
- * Process mock payment (for testing without real payment gateway)
- * POST /api/bookings/mock-payment
- */
-export const processMockPaymentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { userId, bookingId, amount } = req.body;
-
-    if (!userId || !bookingId || !amount) {
-      res.status(400).json({
-        success: false,
-        message: "userId, bookingId, and amount are required",
-      });
-      return;
-    }
-
-    const result = await processMockPayment({ userId, bookingId, amount });
-
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Payment processing failed",
-    });
-  }
-};
-
-/**
- * Payment webhook handler
- * POST /api/bookings/webhook
- */
-export const paymentWebhookHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    // In production, verify webhook signature here
-    await handlePaymentWebhook(req.body);
-
-    res.status(200).json({
-      success: true,
-      message: "Webhook processed successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Webhook processing failed",
     });
   }
 };

@@ -99,7 +99,7 @@ const venueSchema = new Schema<VenueDocument>(
     ownerId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      optional: true,
+      required: false,
     },
     location: {
       type: {

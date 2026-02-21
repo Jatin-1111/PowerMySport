@@ -3,15 +3,12 @@
 // ============================================
 export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
-export type PaymentStatus = "PENDING" | "PAID";
 export type BookingStatus =
-  | "PENDING_PAYMENT"
   | "CONFIRMED"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "NO_SHOW"
-  | "CANCELLED"
-  | "EXPIRED";
+  | "CANCELLED";
 
 export interface VenueListerProfile {
   businessDetails?: {
@@ -148,32 +145,20 @@ export interface Venue {
 }
 
 // ============================================
-// BOOKING & PAYMENT TYPES
+// BOOKING TYPES
 // ============================================
-export interface IPayment {
-  userId: string;
-  userType: "VENUE_LISTER" | "COACH";
-  amount: number;
-  status: PaymentStatus;
-  paymentLink?: string;
-  paidAt?: string;
-}
-
 export interface Booking {
   id: string;
   userId: string;
-  venueId: string;
+  venueId: string | Venue; // Can be populated
   coachId?: string;
   sport?: string;
   date: string;
   startTime: string;
   endTime: string;
-  payments: IPayment[];
-  venuePayment?: {
-    amount: number;
-    status: string;
-  };
   totalAmount: number;
+  serviceFee?: number;
+  taxAmount?: number;
   status: BookingStatus;
   expiresAt: string;
   verificationToken?: string;
@@ -216,10 +201,4 @@ export interface DiscoveryResponse {
 
 export interface InitiateBookingResponse {
   booking: Booking;
-  paymentLinks: Array<{
-    userId: string;
-    userType: "VENUE_LISTER" | "COACH";
-    amount: number;
-    paymentLink: string;
-  }>;
 }

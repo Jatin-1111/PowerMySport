@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
-import { s3Service } from "../services/S3Service";
 import { findCoachesNearby, getAllCoaches } from "../services/CoachService";
+import { s3Service } from "../services/S3Service";
 import {
   createVenue,
   deleteVenue,
@@ -18,6 +18,10 @@ export const createNewVenue = async (
   res: Response,
 ): Promise<void> => {
   try {
+    console.log("=== Create Venue Request ===");
+    console.log("User:", req.user);
+    console.log("Request body:", req.body);
+
     if (!req.user?.id) {
       res.status(401).json({
         success: false,
@@ -38,6 +42,12 @@ export const createNewVenue = async (
         return;
       }
 
+      console.log("Venue Lister user:", {
+        id: user._id,
+        role: user.role,
+        canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues,
+      });
+
       // Check if user can add more venues (defaults to false for approved venue listers)
       if (!user.venueListerProfile?.canAddMoreVenues) {
         res.status(403).json({
@@ -53,6 +63,7 @@ export const createNewVenue = async (
     const venue = await createVenue({
       ...req.body,
       ownerId: req.user.id,
+      approvalStatus: "APPROVED", // Auto-approve venues created by authenticated users
     });
 
     res.status(201).json({
@@ -61,6 +72,7 @@ export const createNewVenue = async (
       data: venue,
     });
   } catch (error) {
+    console.error("Venue creation error:", error);
     res.status(400).json({
       success: false,
       message:
@@ -125,6 +137,7 @@ export const getMyVenues = async (
       },
     });
   } catch (error) {
+    console.error("Get my venues error:", error);
     res.status(500).json({
       success: false,
       message:

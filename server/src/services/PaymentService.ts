@@ -1,88 +1,160 @@
+import Stripe from "stripe";
+import { Booking, BookingDocument } from "../models/Booking";
+import { User } from "../models/User";
 import { updatePaymentStatus } from "./BookingService";
 
-export interface MockPaymentPayload {
-  userId: string;
-  bookingId: string;
-  amount: number;
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+  throw new Error("STRIPE_SECRET_KEY is not configured");
 }
 
-/**
- * Process a mock payment (for MVP without real payment gateway)
- * This simulates a successful payment
- */
-export const processMockPayment = async (
-  payload: MockPaymentPayload,
-): Promise<{ success: boolean; message: string }> => {
-  try {
-    // In a real implementation, this would:
-    // 1. Create a payment intent with the payment gateway
-    // 2. Return a payment link/session
-    // 3. Handle webhook callbacks
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: "2024-04-10",
+});
 
-    // For now, we just simulate immediate payment success
-    await updatePaymentStatus(payload.bookingId, payload.userId, "PAID");
+interface StripeCheckoutPayload {
+  booking: BookingDocument;
+  customerEmail?: string;
+  venueName?: string;
+}
 
-    return {
-      success: true,
-      message: "Payment processed successfully (mock)",
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Payment processing failed",
-    };
-  }
+const getFrontendUrl = (): string => {
+  return process.env.FRONTEND_URL || "http://localhost:3000";
 };
 
-/**
- * Handle payment webhook (mock implementation)
- * In production, this would verify webhook signatures and process real payment events
- */
-export const handlePaymentWebhook = async (payload: any): Promise<void> => {
-  try {
-    // Mock webhook payload structure
-    const { bookingId, userId, status } = payload;
-
-    if (status === "success" || status === "paid") {
-      await updatePaymentStatus(bookingId, userId, "PAID");
-    }
-  } catch (error) {
-    console.error("Webhook processing error:", error);
-    throw error;
-  }
+const buildSuccessUrl = (bookingId: string): string => {
+  return (
+    process.env.STRIPE_SUCCESS_URL ||
+    `${getFrontendUrl()}/payment?status=success&bookingId=${bookingId}&session_id={CHECKOUT_SESSION_ID}`
+  );
 };
 
-/**
- * Generate payment intent (mock)
- * In production, this would create a real payment session with Stripe/Razorpay
- */
-export const createPaymentIntent = async (
-  userId: string,
-  amount: number,
-  bookingId: string,
-): Promise<{ paymentLink: string; paymentId: string }> => {
-  // Mock payment ID
-  const paymentId = `mock_payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const buildCancelUrl = (bookingId: string): string => {
+  return (
+    process.env.STRIPE_CANCEL_URL ||
+    `${getFrontendUrl()}/payment?status=cancel&bookingId=${bookingId}`
+  );
+};
 
-  // Generate mock payment link
-  const baseUrl = process.env.API_BASE_URL || "http://localhost:5000";
-  const paymentLink = `${baseUrl}/api/payments/mock?userId=${userId}&amount=${amount}&bookingId=${bookingId}&paymentId=${paymentId}`;
+export const createStripeCheckoutSession = async (
+  payload: StripeCheckoutPayload,
+): Promise<Stripe.Checkout.Session> => {
+  const { booking, customerEmail, venueName } = payload;
+  const unitAmount = Math.round(booking.totalAmount * 100);
 
-  return {
-    paymentLink,
-    paymentId,
+  if (unitAmount <= 0) {
+    throw new Error("Booking amount must be greater than zero");
+  }
+
+  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
+    mode: "payment",
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price_data: {
+          currency: "inr",
+          unit_amount: unitAmount,
+          product_data: {
+            name: venueName || "Venue booking",
+          },
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: buildSuccessUrl(booking._id.toString()),
+    cancel_url: buildCancelUrl(booking._id.toString()),
+    metadata: {
+      bookingId: booking._id.toString(),
+      userId: booking.userId.toString(),
+    },
+    payment_intent_data: {
+      metadata: {
+        bookingId: booking._id.toString(),
+        userId: booking.userId.toString(),
+      },
+      transfer_group: `booking_${booking._id.toString()}`,
+    },
   };
+
+  if (customerEmail) {
+    sessionConfig.customer_email = customerEmail;
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionConfig);
+
+  return session;
 };
 
-/**
- * Verify payment status (mock)
- * In production, this would query the payment gateway
- */
-export const verifyPaymentStatus = async (
-  paymentId: string,
-): Promise<"PENDING" | "PAID" | "FAILED"> => {
-  // Mock implementation - always returns PENDING
-  // In production, this would check with the payment gateway
-  return "PENDING";
+const createTransfersForBooking = async (
+  booking: BookingDocument,
+): Promise<void> => {
+  for (const payment of booking.payments) {
+    const user = await User.findById(payment.userId).select("stripeAccountId");
+    if (!user?.stripeAccountId) {
+      continue;
+    }
+
+    const transferAmount = Math.round(payment.amount * 100);
+    if (transferAmount <= 0) {
+      continue;
+    }
+
+    await stripe.transfers.create({
+      amount: transferAmount,
+      currency: "inr",
+      destination: user.stripeAccountId,
+      transfer_group: `booking_${booking._id.toString()}`,
+    });
+  }
+};
+
+export const handleStripeWebhookEvent = async (
+  payload: Buffer,
+  signature?: string,
+): Promise<void> => {
+  if (!signature) {
+    throw new Error("Missing Stripe webhook signature");
+  }
+
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
+  }
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+  } catch (error) {
+    throw error instanceof Error
+      ? error
+      : new Error("Invalid webhook signature");
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const bookingId = session.metadata?.bookingId;
+
+    if (!bookingId) {
+      return;
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return;
+    }
+
+    if (booking.status === "CONFIRMED") {
+      return;
+    }
+
+    booking.paymentProvider = "stripe";
+    booking.stripeCheckoutSessionId = session.id;
+    if (typeof session.payment_intent === "string") {
+      booking.stripePaymentIntentId = session.payment_intent;
+    }
+    await booking.save();
+
+    await updatePaymentStatus(bookingId, booking.userId.toString(), "PAID");
+    await createTransfersForBooking(booking);
+  }
 };

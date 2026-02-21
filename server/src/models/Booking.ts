@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { IPayment, BookingStatus } from "../types";
+import mongoose, { Document, Schema } from "mongoose";
+import { BookingStatus } from "../types";
 
 export interface BookingDocument extends Document {
   userId: mongoose.Types.ObjectId;
@@ -9,8 +9,9 @@ export interface BookingDocument extends Document {
   date: Date;
   startTime: string;
   endTime: string;
-  payments: IPayment[];
   totalAmount: number;
+  serviceFee?: number;
+  taxAmount?: number;
   status: BookingStatus;
   expiresAt: Date;
   verificationToken?: string;
@@ -63,44 +64,25 @@ const bookingSchema = new Schema<BookingDocument>(
         "End time must be in HH:mm format",
       ],
     },
-    payments: {
-      type: [
-        {
-          userId: {
-            type: Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-          },
-          userType: {
-            type: String,
-            enum: ["VENUE_LISTER", "COACH"],
-            required: true,
-          },
-          amount: {
-            type: Number,
-            required: true,
-            min: 0,
-          },
-          status: {
-            type: String,
-            enum: ["PENDING", "PAID"],
-            default: "PENDING",
-          },
-          paymentLink: String,
-          paidAt: Date,
-        },
-      ],
-      default: [],
-    },
     totalAmount: {
       type: Number,
       required: [true, "Total amount is required"],
       min: 0,
     },
+    serviceFee: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    taxAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     status: {
       type: String,
-      enum: ["PENDING_PAYMENT", "CONFIRMED", "CANCELLED", "EXPIRED"],
-      default: "PENDING_PAYMENT",
+      enum: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"],
+      default: "CONFIRMED",
     },
     expiresAt: {
       type: Date,
@@ -124,7 +106,18 @@ const bookingSchema = new Schema<BookingDocument>(
       type: Number,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: function (_doc: any, ret: any) {
+        ret.id = ret._id.toString();
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  },
 );
 
 // Index for faster booking conflict checks (venue)
@@ -138,6 +131,12 @@ bookingSchema.index({ expiresAt: 1, status: 1 });
 
 // Index for verification token lookup
 bookingSchema.index({ verificationToken: 1 }, { unique: true, sparse: true });
+
+// Unique index to prevent duplicate bookings for same user/venue/date/time
+bookingSchema.index(
+  { userId: 1, venueId: 1, date: 1, startTime: 1 },
+  { unique: true, name: "unique_booking_slot" },
+);
 
 export const Booking = mongoose.model<BookingDocument>(
   "Booking",

@@ -47,28 +47,3 @@ export const validatePaymentStatus = (payments: IPayment[]): boolean => {
 
   return payments.every((payment) => payment.status === "PAID");
 };
-
-/**
- * Calculate total amount from payments array
- * @param payments - Array of payment objects
- * @returns Total amount
- */
-export const calculateTotalAmount = (payments: IPayment[]): number => {
-  return payments.reduce((total, payment) => total + payment.amount, 0);
-};
-
-/**
- * Generate mock payment link (for MVP without real payment gateway)
- * @param userId - User ID who needs to pay
- * @param amount - Amount to pay
- * @param bookingId - Booking ID
- * @returns Mock payment link
- */
-export const generateMockPaymentLink = (
-  userId: string,
-  amount: number,
-  bookingId: string,
-): string => {
-  const baseUrl = process.env.API_BASE_URL || "http://localhost:5000";
-  return `${baseUrl}/api/payments/mock?userId=${userId}&amount=${amount}&bookingId=${bookingId}`;
-};

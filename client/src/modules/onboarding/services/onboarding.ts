@@ -1,14 +1,15 @@
 ﻿import axiosInstance from "@/lib/api/axios";
 import {
+  ConfirmImagesPayload,
   OnboardingStep1Payload,
   OnboardingStep2Payload,
   OnboardingStep3Payload,
   OnboardingStep5Payload,
-  ConfirmImagesPayload,
-  PresignedUrl,
   OnboardingVenue,
   PendingVenueListItem,
+  PresignedUrl,
 } from "@/modules/onboarding/types/onboarding";
+import axios from "axios";
 
 const API_BASE = "/venues/onboarding";
 
@@ -264,9 +265,10 @@ export const uploadFileToPresignedUrl = async (
   presignedUrl: string,
   contentType: string,
 ): Promise<void> => {
-  await axiosInstance.put(presignedUrl, file, {
+  await axios.put(presignedUrl, file, {
     headers: {
       "Content-Type": contentType,
     },
+    withCredentials: false,
   });
 };

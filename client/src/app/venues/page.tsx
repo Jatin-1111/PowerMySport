@@ -9,6 +9,8 @@ import { Venue } from "@/types";
 import {
   ArrowRight,
   Building2,
+  ChevronLeft,
+  ChevronRight,
   IndianRupee,
   MapPin,
   Search,
@@ -22,19 +24,37 @@ export default function VenuesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [filteredVenues, setFilteredVenues] = useState<Venue[]>([]);
   const [sportFilter, setSportFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalVenues, setTotalVenues] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
-    loadVenues();
-  }, []);
+    loadVenues(currentPage);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage, sportFilter]);
 
-  const loadVenues = async () => {
+  const loadVenues = async (page: number = 1) => {
     setLoading(true);
     try {
-      const response = await discoveryApi.searchNearby({});
+      const params: any = {
+        page,
+        limit: 20,
+      };
+
+      if (sportFilter) {
+        params.sport = sportFilter;
+      }
+
+      const response = await discoveryApi.searchNearby(params);
       if (response.success && response.data) {
         setVenues(response.data.venues);
         setFilteredVenues(response.data.venues);
+        if (response.pagination?.venues) {
+          setTotalPages(response.pagination.venues.totalPages);
+          setTotalVenues(response.pagination.venues.total);
+        }
       }
     } catch (error) {
       console.error("Failed to load venues:", error);
@@ -45,16 +65,8 @@ export default function VenuesPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (sportFilter) {
-      const filtered = venues.filter((venue) =>
-        venue.sports.some((sport) =>
-          sport.toLowerCase().includes(sportFilter.toLowerCase()),
-        ),
-      );
-      setFilteredVenues(filtered);
-    } else {
-      setFilteredVenues(venues);
-    }
+    setCurrentPage(1); // Reset to page 1 when searching
+    loadVenues(1);
   };
 
   const getDisplayPrice = (venue: Venue) => {
@@ -151,7 +163,7 @@ export default function VenuesPage() {
                     variant="secondary"
                     onClick={() => {
                       setSportFilter("");
-                      setFilteredVenues(venues);
+                      setCurrentPage(1);
                     }}
                   >
                     Clear Search
@@ -287,6 +299,74 @@ export default function VenuesPage() {
                     </div>
                   </Card>
                 ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPage === 1 || loading}
+                    className="flex items-center gap-1"
+                  >
+                    <ChevronLeft size={16} />
+                    Previous
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          disabled={loading}
+                          className={`min-w-[40px] h-10 px-3 rounded-lg font-medium transition-all ${
+                            currentPage === pageNum
+                              ? "bg-power-orange text-white shadow-md"
+                              : "bg-white text-slate-700 border border-slate-300 hover:border-power-orange hover:text-power-orange"
+                          } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage === totalPages || loading}
+                    className="flex items-center gap-1"
+                  >
+                    Next
+                    <ChevronRight size={16} />
+                  </Button>
+                </div>
+              )}
+
+              {/* Results Summary */}
+              <div className="mt-4 text-center text-sm text-slate-600">
+                Showing {(currentPage - 1) * 20 + 1} -{" "}
+                {Math.min(currentPage * 20, totalVenues)} of {totalVenues}{" "}
+                venues
               </div>
             </>
           )}

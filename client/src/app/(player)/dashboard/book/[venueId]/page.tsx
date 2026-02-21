@@ -1,12 +1,12 @@
 ﻿"use client";
 
 import { authApi } from "@/modules/auth/services/auth";
-import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { User, Venue } from "@/types";
+import { formatCurrency } from "@/utils/format";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -25,7 +25,6 @@ export default function BookVenuePage() {
     sport: "",
     dependentId: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -63,11 +62,19 @@ export default function BookVenuePage() {
     setError("");
   };
 
-  const calculateDuration = () => {
+  const calculateDurationMinutes = () => {
     if (!bookingData.startTime || !bookingData.endTime) return 0;
-    const start = parseInt(bookingData.startTime.split(":")[0]);
-    const end = parseInt(bookingData.endTime.split(":")[0]);
-    return end - start;
+    const [startHour, startMinute = "0"] = bookingData.startTime.split(":");
+    const [endHour, endMinute = "0"] = bookingData.endTime.split(":");
+    const startTotal = parseInt(startHour, 10) * 60 + parseInt(startMinute, 10);
+    const endTotal = parseInt(endHour, 10) * 60 + parseInt(endMinute, 10);
+    return endTotal - startTotal;
+  };
+
+  const calculateDurationHours = () => {
+    const minutes = calculateDurationMinutes();
+    if (minutes <= 0) return 0;
+    return Number((minutes / 60).toFixed(2));
   };
 
   const getSportPrice = (sport: string) => {
@@ -84,11 +91,11 @@ export default function BookVenuePage() {
 
   const calculateTotal = () => {
     if (!venue) return 0;
-    const duration = calculateDuration();
+    const duration = calculateDurationHours();
     return duration * getSportPrice(bookingData.sport);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -103,38 +110,24 @@ export default function BookVenuePage() {
       return;
     }
 
-    const duration = calculateDuration();
-    if (duration <= 0) {
+    const durationMinutes = calculateDurationMinutes();
+    if (durationMinutes <= 0) {
       setError("End time must be after start time");
       return;
     }
 
-    setIsSubmitting(true);
+    const params = new URLSearchParams({
+      date: bookingData.date,
+      startTime: bookingData.startTime,
+      endTime: bookingData.endTime,
+      sport: bookingData.sport,
+    });
 
-    try {
-      // Convert date to ISO datetime format
-      const bookingDate = new Date(bookingData.date).toISOString();
-
-      const response = await bookingApi.initiateBooking({
-        venueId,
-        sport: bookingData.sport,
-        date: bookingDate,
-        startTime: bookingData.startTime,
-        endTime: bookingData.endTime,
-        dependentId: bookingData.dependentId || undefined,
-      });
-
-      // Redirect to bookings page with success message
-      router.push("/dashboard/my-bookings?success=true");
-    } catch (error: any) {
-      console.error("Booking failed:", error);
-      setError(
-        error.response?.data?.message ||
-          "Failed to create booking. Please try again.",
-      );
-    } finally {
-      setIsSubmitting(false);
+    if (bookingData.dependentId) {
+      params.set("dependentId", bookingData.dependentId);
     }
+
+    router.push(`/dashboard/book/${venueId}/checkout?${params.toString()}`);
   };
 
   if (loading) {
@@ -153,7 +146,7 @@ export default function BookVenuePage() {
     );
   }
 
-  const duration = calculateDuration();
+  const duration = calculateDurationHours();
   const total = calculateTotal();
 
   return (
@@ -197,7 +190,9 @@ export default function BookVenuePage() {
             <div>
               <p className="text-sm text-slate-600">Price</p>
               <p className="text-2xl font-bold text-power-orange">
-                ?{getSportPrice(bookingData.sport || venue.sports[0] || "")}
+                {formatCurrency(
+                  getSportPrice(bookingData.sport || venue.sports[0] || ""),
+                )}
                 <span className="text-sm text-slate-600">/hour</span>
               </p>
             </div>
@@ -327,14 +322,16 @@ export default function BookVenuePage() {
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-slate-600">Price per hour</span>
                   <span className="font-semibold text-slate-900">
-                    ?{venue.pricePerHour}
+                    {formatCurrency(
+                      getSportPrice(bookingData.sport || venue.sports[0] || ""),
+                    )}
                   </span>
                 </div>
                 <div className="border-t border-slate-300 pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-900">Total</span>
                     <span className="text-2xl font-bold text-power-orange">
-                      ?{total}
+                      {formatCurrency(total)}
                     </span>
                   </div>
                 </div>
@@ -351,11 +348,11 @@ export default function BookVenuePage() {
             {/* Submit Button */}
             <Button
               type="submit"
-              disabled={isSubmitting || duration <= 0}
+              disabled={duration <= 0}
               variant="primary"
               className="w-full"
             >
-              {isSubmitting ? "Processing..." : "Confirm Booking"}
+              Continue to Checkout
             </Button>
 
             <Button

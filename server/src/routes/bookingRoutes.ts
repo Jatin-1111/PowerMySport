@@ -7,16 +7,14 @@ import {
   getVenueAvailability,
   initiateNewBooking,
   markBookingNoShow,
-  paymentWebhookHandler,
-  processMockPaymentHandler,
   verifyBookingByToken,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
   coachVerificationCompletedMiddleware,
 } from "../middleware/auth";
-import { validateRequest } from "../middleware/validation";
 import { bookingSchema } from "../middleware/schemas";
+import { validateRequest } from "../middleware/validation";
 
 const router = Router();
 
@@ -28,12 +26,6 @@ router.post(
   validateRequest(bookingSchema),
   initiateNewBooking,
 );
-
-// Mock payment processing (for testing)
-router.post("/mock-payment", processMockPaymentHandler);
-
-// Payment webhook handler
-router.post("/webhook", paymentWebhookHandler);
 
 // Verify booking with token
 router.get("/verify/:token", verifyBookingByToken);

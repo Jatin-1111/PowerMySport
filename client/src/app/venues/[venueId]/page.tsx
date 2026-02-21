@@ -111,8 +111,8 @@ export default function VenueDetailsPage() {
       });
 
       if (response) {
-        setSuccess("Booking initiated successfully!");
-        // Navigate to payment or confirmation
+        setSuccess("Booking confirmed successfully!");
+
         setTimeout(() => {
           router.push("/dashboard/my-bookings");
         }, 1500);

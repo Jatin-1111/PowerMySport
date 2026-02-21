@@ -1,10 +1,10 @@
-﻿import {
+﻿import axiosInstance from "@/lib/api/axios";
+import {
   ApiResponse,
   Availability,
   Booking,
   InitiateBookingResponse,
 } from "@/types";
-import axiosInstance from "@/lib/api/axios";
 
 export const bookingApi = {
   // Initiate booking with split payments
@@ -19,16 +19,6 @@ export const bookingApi = {
   }): Promise<InitiateBookingResponse> => {
     const response = await axiosInstance.post("/bookings/initiate", data);
     return response.data.data;
-  },
-
-  // Mock payment processing (for testing)
-  processMockPayment: async (data: {
-    bookingId: string;
-    userId: string;
-    userType: "VENUE_LISTER" | "COACH";
-  }): Promise<ApiResponse<Booking>> => {
-    const response = await axiosInstance.post("/bookings/mock-payment", data);
-    return response.data;
   },
 
   // Get user's bookings

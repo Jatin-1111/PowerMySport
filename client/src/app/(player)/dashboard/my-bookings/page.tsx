@@ -1,9 +1,9 @@
 ﻿"use client";
 
+import { bookingApi } from "@/modules/booking/services/booking";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { bookingApi } from "@/modules/booking/services/booking";
 import { Booking } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import { Calendar, Clock, IndianRupee } from "lucide-react";
@@ -90,10 +90,22 @@ export default function BookingsPage() {
               className="bg-white hover:shadow-lg transition-shadow"
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 text-slate-900">
-                    Venue ID: {booking.venueId}
-                  </h3>
+                <div className="flex-1">
+                  {typeof booking.venueId === "object" &&
+                  booking.venueId !== null ? (
+                    <>
+                      <Link
+                        href={`/venues/${(booking.venueId as any)._id || (booking.venueId as any).id}`}
+                        className="text-lg font-semibold mb-2 text-slate-900 hover:text-power-orange transition-colors inline-block"
+                      >
+                        {(booking.venueId as any).name || "Venue"}
+                      </Link>
+                    </>
+                  ) : (
+                    <h3 className="text-lg font-semibold mb-2 text-slate-900">
+                      Venue ID: {booking.venueId}
+                    </h3>
+                  )}
                   <p className="text-slate-600 flex flex-wrap items-center gap-2">
                     <Calendar className="h-4 w-4 text-slate-400" />
                     <span>{formatDate(booking.date)}</span>
@@ -104,6 +116,19 @@ export default function BookingsPage() {
                       {formatTime(booking.endTime)}
                     </span>
                   </p>
+                  {typeof booking.venueId === "object" &&
+                    booking.venueId !== null &&
+                    (booking.venueId as any).address && (
+                      <p className="text-sm text-slate-500 mt-1">
+                        {(booking.venueId as any).address}
+                      </p>
+                    )}
+                  {booking.sport && (
+                    <p className="text-sm text-slate-600 mt-1">
+                      Sport:{" "}
+                      <span className="font-medium">{booking.sport}</span>
+                    </p>
+                  )}
                   <p className="text-slate-900 font-semibold mt-2 flex items-center gap-1">
                     <IndianRupee className="h-4 w-4 text-slate-700" />
                     <span>{booking.totalAmount}</span>

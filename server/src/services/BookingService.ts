@@ -3,38 +3,14 @@ import { Booking, BookingDocument } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
-import {
-  calculateSplitAmounts,
-  generateMockPaymentLink,
-  validatePaymentStatus,
-} from "../utils/payment";
 import { generateQRCode, generateVerificationURL } from "../utils/qrcode";
 import { getBookingExpirationTime } from "../utils/timer";
 
 /**
- * PAYMENT MODEL - FUTURE ESCROW IMPLEMENTATION
- *
- * Current Model (Mock):
- * - Split payment at booking time (player pays venue + coach separately)
- * - Both payments required before confirmation
- * - No refund mechanism
- *
- * Planned Escrow Model (Production):
- * - Player pays FULL amount upfront to platform escrow account
- * - Platform holds funds until booking completion
- * - After check-in (IN_PROGRESS) and completion (COMPLETED), release funds:
- *   - Venue owner receives their portion
- *   - Coach receives their portion
- * - If cancelled before 24hrs, issue full refund to player
- * - If NO_SHOW, release funds to venue/coach (cancellation fee)
- * - Dispute resolution: Admin can partial/full refund from escrow
- *
- * TODO before payment gateway integration:
- * - Update initiateBooking to accept full payment, not split
- * - Add escrow account management service
- * - Implement automatic fund release on completion
- * - Add cancellation window logic (24-hour free cancellation)
- * - Add admin refund/dispute functions
+ * Booking State Machine:
+ * CONFIRMED -> IN_PROGRESS -> COMPLETED
+ * CONFIRMED -> CANCELLED
+ * CONFIRMED -> NO_SHOW
  */
 
 export interface InitiateBookingPayload {
@@ -50,12 +26,6 @@ export interface InitiateBookingPayload {
 
 export interface InitiateBookingResponse {
   booking: BookingDocument;
-  paymentLinks: Array<{
-    userId: string;
-    userType: "VENUE_LISTER" | "COACH";
-    amount: number;
-    paymentLink: string;
-  }>;
 }
 
 /**
@@ -69,14 +39,14 @@ export const isSlotAvailable = async (
   endTime: string,
 ): Promise<boolean> => {
   // Find ALL conflicting bookings (not just first one)
-  // Only active bookings block slots: PENDING_PAYMENT, CONFIRMED, IN_PROGRESS
+  // Only active bookings block slots: CONFIRMED, IN_PROGRESS
   const conflictingBookings = await Booking.find({
     venueId,
     date: {
       $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
       $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
     },
-    status: { $in: ["PENDING_PAYMENT", "CONFIRMED", "IN_PROGRESS"] },
+    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
     $or: [
       // Requested slot overlaps with existing booking
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
@@ -90,8 +60,8 @@ export const isSlotAvailable = async (
 };
 
 /**
- * Initiate a new booking with split payments
- * This creates the booking in PENDING_PAYMENT status and generates payment links
+ * Initiate a new booking
+ * This creates the booking in CONFIRMED status
  */
 export const initiateBooking = async (
   payload: InitiateBookingPayload,
@@ -172,7 +142,6 @@ export const initiateBooking = async (
     const venuePrice = Math.round(hours * basePrice * 100) / 100; // Round to 2 decimals
 
     let coachPrice = 0;
-    let coachUserId: string | undefined;
 
     // If coach is requested, validate and calculate coach price
     if (payload.coachId) {
@@ -208,57 +177,17 @@ export const initiateBooking = async (
           : coach.hourlyRate;
 
       coachPrice = hours * effectiveCoachRate;
-      // Handle both populated and non-populated userId
-      if (coach.userId) {
-        if (typeof coach.userId === "object" && "_id" in coach.userId) {
-          coachUserId = (coach.userId as any)._id.toString();
-        } else {
-          coachUserId = (coach.userId as any).toString();
-        }
-      }
     }
 
-    // Calculate split payments
-    // Handle both populated and non-populated ownerId
-    let venueOwnerId: string | null = null;
-    if (venue.ownerId) {
-      if (typeof venue.ownerId === "object" && "_id" in venue.ownerId) {
-        venueOwnerId = (venue.ownerId as any)._id.toString();
-      } else {
-        venueOwnerId = (venue.ownerId as any).toString();
-      }
-    }
+    const subtotal = venuePrice + coachPrice;
+    const serviceFee = Math.round(subtotal * 0.02);
+    const taxAmount = Math.round(subtotal * 0.05);
+    const totalAmount = Math.max(0, subtotal + serviceFee + taxAmount);
 
-    if (!venueOwnerId) {
-      throw new Error("Venue owner not found");
-    }
-
-    const payments = calculateSplitAmounts(
-      venuePrice,
-      venueOwnerId,
-      coachPrice > 0 ? coachPrice : undefined,
-      coachUserId,
-    );
-
-    // Generate payment links for each payment
-    const paymentLinks = payments.map((payment) => ({
-      userId: payment.userId,
-      userType: payment.userType,
-      amount: payment.amount,
-      paymentLink: generateMockPaymentLink(
-        payment.userId,
-        payment.amount,
-        "temp-booking-id", // Will be updated after booking is created
-      ),
-    }));
-
-    // Add payment links to payments
-    payments.forEach((payment, index) => {
-      const link = paymentLinks[index]?.paymentLink;
-      if (link) {
-        payment.paymentLink = link;
-      }
-    });
+    // Generate verification token and QR code
+    const verificationToken = uuidv4();
+    const verificationURL = generateVerificationURL(verificationToken);
+    const qrCodeDataURL = await generateQRCode(verificationURL);
 
     // Create booking
     const booking = new Booking({
@@ -269,9 +198,12 @@ export const initiateBooking = async (
       date: payload.date,
       startTime: payload.startTime,
       endTime: payload.endTime,
-      payments,
-      totalAmount: venuePrice + coachPrice,
-      status: "PENDING_PAYMENT",
+      totalAmount,
+      serviceFee,
+      taxAmount,
+      status: "CONFIRMED",
+      verificationToken,
+      qrCode: qrCodeDataURL,
       expiresAt: getBookingExpirationTime(),
       participantName,
       participantId,
@@ -280,94 +212,12 @@ export const initiateBooking = async (
 
     await booking.save();
 
-    // Update payment links with actual booking ID
-    const updatedPaymentLinks = paymentLinks.map((link) => ({
-      ...link,
-      paymentLink: generateMockPaymentLink(
-        link.userId,
-        link.amount,
-        booking._id.toString(),
-      ),
-    }));
-
-    // Update booking with correct payment links
-    booking.payments.forEach((payment, index) => {
-      const link = updatedPaymentLinks[index]?.paymentLink;
-      if (link) {
-        payment.paymentLink = link;
-      }
-    });
-    await booking.save();
-
     return {
       booking,
-      paymentLinks: updatedPaymentLinks,
     };
   } catch (error) {
     throw new Error(
       `Failed to initiate booking: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
-};
-
-/**
- * Update payment status for a specific payment in a booking
- * If all payments are complete, generate QR code and confirm booking
- */
-export const updatePaymentStatus = async (
-  bookingId: string,
-  userId: string,
-  status: "PAID",
-): Promise<BookingDocument> => {
-  try {
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      throw new Error("Booking not found");
-    }
-
-    // Check if booking has expired
-    if (booking.status === "EXPIRED") {
-      throw new Error("Booking has expired");
-    }
-
-    if (new Date() > booking.expiresAt) {
-      booking.status = "EXPIRED";
-      await booking.save();
-      throw new Error("Booking has expired");
-    }
-
-    // Find the payment for this user
-    const payment = booking.payments.find(
-      (p) => p.userId.toString() === userId,
-    );
-    if (!payment) {
-      throw new Error("Payment not found for this user");
-    }
-
-    // Update payment status
-    payment.status = status;
-    payment.paidAt = new Date();
-
-    // Check if all payments are complete
-    if (validatePaymentStatus(booking.payments)) {
-      // All payments complete - confirm booking and generate QR code
-      booking.status = "CONFIRMED";
-
-      // Generate verification token
-      const verificationToken = uuidv4();
-      booking.verificationToken = verificationToken;
-
-      // Generate QR code with verification URL
-      const verificationURL = generateVerificationURL(verificationToken);
-      const qrCodeDataURL = await generateQRCode(verificationURL);
-      booking.qrCode = qrCodeDataURL;
-    }
-
-    await booking.save();
-    return booking;
-  } catch (error) {
-    throw new Error(
-      `Failed to update payment status: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 };
@@ -416,7 +266,7 @@ export const getVenueBookings = async (
 }> => {
   const query = {
     venueId,
-    status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
+    status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
   };
   const skip = (page - 1) * limit;
 
@@ -449,7 +299,7 @@ export const getVenueBookingsForDate = async (
       $gte: startOfDay,
       $lte: endOfDay,
     },
-    status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
+    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
   }).select("startTime endTime");
 };
 
@@ -472,7 +322,7 @@ export const getVenueListerBookings = async (
 
   const query = {
     venueId: { $in: venueIds },
-    status: { $in: ["PENDING_PAYMENT", "CONFIRMED"] },
+    status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
   };
   const skip = (page - 1) * limit;
 
@@ -621,14 +471,14 @@ const checkCoachAvailabilityForBooking = async (
   ) {
     return false;
   }
-  // Only active bookings block slots: PENDING_PAYMENT, CONFIRMED, IN_PROGRESS
+  // Only active bookings block slots: CONFIRMED, IN_PROGRESS
   const existingBooking = await Booking.findOne({
     coachId,
     date: {
       $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
       $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
     },
-    status: { $in: ["PENDING_PAYMENT", "CONFIRMED", "IN_PROGRESS"] },
+    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
       { startTime: { $lt: endTime }, endTime: { $gte: endTime } },

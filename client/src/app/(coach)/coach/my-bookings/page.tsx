@@ -1,11 +1,12 @@
 ﻿"use client";
 
-import React, { useEffect, useState } from "react";
-import { Booking } from "@/types";
 import { bookingApi } from "@/modules/booking/services/booking";
-import { formatDate, formatTime } from "@/utils/format";
 import { Card } from "@/modules/shared/ui/Card";
+import { Booking } from "@/types";
+import { formatDate, formatTime } from "@/utils/format";
 import { Calendar } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function CoachBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -131,10 +132,32 @@ export default function CoachBookingsPage() {
                     </div>
 
                     <div>
-                      <p className="text-sm text-slate-600">Venue</p>
-                      <p className="font-semibold text-slate-900">
-                        Venue ID: {booking.venueId}
-                      </p>
+                      <p className="text-sm text-slate-600 mb-1">Venue</p>
+                      {typeof booking.venueId === "object" &&
+                      booking.venueId !== null ? (
+                        <>
+                          <Link
+                            href={`/venues/${(booking.venueId as any)._id || (booking.venueId as any).id}`}
+                            className="font-semibold text-slate-900 hover:text-power-orange transition-colors"
+                          >
+                            {(booking.venueId as any).name || "Venue"}
+                          </Link>
+                          {(booking.venueId as any).address && (
+                            <p className="text-sm text-slate-600 mt-1">
+                              {(booking.venueId as any).address}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="font-semibold text-slate-900">
+                          Venue ID: {booking.venueId}
+                        </p>
+                      )}
+                      {booking.sport && (
+                        <p className="text-sm text-slate-600 mt-1">
+                          Sport: {booking.sport}
+                        </p>
+                      )}
                     </div>
                   </div>
 

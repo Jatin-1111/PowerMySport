@@ -3,28 +3,18 @@
 // ============================================
 export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
-export type PaymentStatus = "PENDING" | "PAID";
 export type BookingStatus =
-  | "PENDING_PAYMENT"
   | "CONFIRMED"
   | "IN_PROGRESS" // Booking started, check-in completed
   | "COMPLETED" // Booking finished successfully
   | "NO_SHOW" // User didn't show up
-  | "CANCELLED"
-  | "EXPIRED";
+  | "CANCELLED";
 
 // ============================================
 // USER TYPES
 // ============================================
-export interface IPaymentHistory {
-  bookingId: string;
-  amount: number;
-  date: Date;
-}
 
-export interface IPlayerProfile {
-  paymentHistory: IPaymentHistory[];
-}
+export interface IPlayerProfile {}
 
 export interface IBusinessDetails {
   name: string;
@@ -250,17 +240,8 @@ export interface IPendingVenue {
 }
 
 // ============================================
-// BOOKING & PAYMENT TYPES
+// BOOKING TYPES
 // ============================================
-export interface IPayment {
-  userId: string;
-  userType: "VENUE_LISTER" | "COACH";
-  amount: number;
-  status: PaymentStatus;
-  paymentLink?: string;
-  paidAt?: Date;
-}
-
 export interface IBooking {
   id?: string;
   userId: string; // Player
@@ -269,7 +250,6 @@ export interface IBooking {
   date: Date;
   startTime: string; // "18:00"
   endTime: string; // "19:00"
-  payments: IPayment[];
   totalAmount: number;
   status: BookingStatus;
   expiresAt: Date;

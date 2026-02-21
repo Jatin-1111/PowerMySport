@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Venue, VenueDocument } from "../models/Venue";
 import { IGeoLocation } from "../types";
 
@@ -12,13 +13,38 @@ export interface CreateVenuePayload {
   description?: string;
   images?: string[];
   allowExternalCoaches?: boolean;
+  approvalStatus?: string;
 }
 
 export const createVenue = async (
   payload: CreateVenuePayload,
 ): Promise<VenueDocument> => {
-  const venue = new Venue(payload);
+  // Ensure ownerId is properly converted to ObjectId
+  const venueData: any = {
+    ...payload,
+    ownerId: payload.ownerId
+      ? new mongoose.Types.ObjectId(payload.ownerId)
+      : undefined,
+  };
+
+  console.log("Creating venue with data:", {
+    name: venueData.name,
+    ownerId: venueData.ownerId,
+    ownerIdType: typeof venueData.ownerId,
+    sports: venueData.sports,
+    approvalStatus: venueData.approvalStatus,
+  });
+
+  const venue = new Venue(venueData);
   await venue.save();
+
+  console.log("Venue saved:", {
+    id: venue._id,
+    name: venue.name,
+    ownerId: venue.ownerId,
+    approvalStatus: venue.approvalStatus,
+  });
+
   return venue;
 };
 
@@ -43,7 +69,12 @@ export const getVenuesByOwner = async (
   page: number;
   totalPages: number;
 }> => {
-  const query = { ownerId };
+  // Convert string to ObjectId for proper comparison
+  const ownerObjectId = new mongoose.Types.ObjectId(ownerId);
+  const query = {
+    $or: [{ ownerId: ownerObjectId }, { ownerId }],
+  };
+
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
   const venues = await Venue.find(query).skip(skip).limit(limit);
@@ -159,12 +190,22 @@ export const getAllVenues = async (
     query.sports = { $in: filters.sports };
   }
 
+  console.log("[getAllVenues] Query:", JSON.stringify(query));
+  console.log("[getAllVenues] Page:", page, "Limit:", limit);
+
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
   const venues = await Venue.find(query)
     .populate("ownerId")
     .skip(skip)
     .limit(limit);
+
+  console.log(`[getAllVenues] Found ${venues.length} venues (total: ${total})`);
+  console.log(
+    "[getAllVenues] Venue IDs:",
+    venues.map((v) => v._id.toString()),
+  );
+
   // Refresh URLs for all venues
   await Promise.all(venues.map((v) => v.refreshAllUrls()));
   return {

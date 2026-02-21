@@ -510,6 +510,7 @@ export const getProfilePictureUploadUrlHandler = async (
       data: result,
     });
   } catch (error) {
+    console.error("Profile picture upload URL error:", error);
     res.status(400).json({
       success: false,
       message:

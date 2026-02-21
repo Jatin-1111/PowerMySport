@@ -1,21 +1,21 @@
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import "dotenv/config";
 import express, { Express } from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
 import { connectDB } from "./config/database";
 import { errorHandler } from "./middleware/errorHandler";
-import { requestLogger, errorLogger } from "./middleware/logger";
+import { errorLogger, requestLogger } from "./middleware/logger";
 import { startExpirationJob } from "./utils/timer";
 
 // Import routes
+import adminRoutes from "./routes/adminRoutes";
 import authRoutes from "./routes/authRoutes";
-import venueRoutes from "./routes/venueRoutes";
-import venueOnboardingRoutes from "./routes/venueOnboardingRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
 import coachRoutes from "./routes/coachRoutes";
-import adminRoutes from "./routes/adminRoutes";
-import statsRoutes from "./routes/statsRoutes";
 import geoRoutes from "./routes/geoRoutes";
+import statsRoutes from "./routes/statsRoutes";
+import venueOnboardingRoutes from "./routes/venueOnboardingRoutes";
+import venueRoutes from "./routes/venueRoutes";
 
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
@@ -127,8 +127,7 @@ const startServer = async () => {
       console.log(`   - GET    /api/coaches/availability/:coachId`);
       console.log(`   BOOKINGS:`);
       console.log(`   - POST   /api/bookings/initiate (NEW: split payments)`);
-      console.log(`   - POST   /api/bookings/mock-payment (NEW: testing)`);
-      console.log(`   - POST   /api/bookings/webhook (NEW: payment webhook)`);
+      console.log(`   - POST   /api/bookings/webhook (Stripe webhook)`);
       console.log(
         `   - GET    /api/bookings/verify/:token (NEW: QR verification)`,
       );

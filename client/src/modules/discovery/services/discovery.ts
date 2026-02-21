@@ -8,6 +8,8 @@ export const discoveryApi = {
     longitude?: number;
     maxDistance?: number;
     sport?: string;
+    page?: number;
+    limit?: number;
   }): Promise<ApiResponse<DiscoveryResponse>> => {
     const queryParams: any = {
       maxDistance: params.maxDistance || 10,
@@ -21,6 +23,14 @@ export const discoveryApi = {
 
     if (params.sport) {
       queryParams.sport = params.sport;
+    }
+
+    if (params.page) {
+      queryParams.page = params.page;
+    }
+
+    if (params.limit) {
+      queryParams.limit = params.limit;
     }
 
     const response = await axiosInstance.get("/venues/discover", {
