@@ -114,7 +114,9 @@ const coachSchema = new Schema<CoachDocument>(
               // Must be an array with exactly 2 numbers
               if (!Array.isArray(v) || v.length !== 2) return false;
               // Both elements must be numbers
-              return v.every((coord) => typeof coord === "number" && !isNaN(coord));
+              return v.every(
+                (coord) => typeof coord === "number" && !isNaN(coord),
+              );
             },
             message: "Coordinates must be [longitude, latitude]",
           },
@@ -139,7 +141,9 @@ const coachSchema = new Schema<CoachDocument>(
           validator(v: any) {
             // baseLocation coordinates should always be present and valid
             if (!Array.isArray(v) || v.length !== 2) return false;
-            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
+            return v.every(
+              (coord) => typeof coord === "number" && !isNaN(coord),
+            );
           },
           message: "Coordinates must be [longitude, latitude]",
         },

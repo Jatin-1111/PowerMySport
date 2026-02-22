@@ -379,7 +379,7 @@ export const updateCoach = async (
       // For ownVenueDetails, rebuild it completely to ensure proper type casting
       if (key === "ownVenueDetails" && value) {
         const venueData = value as any;
-        
+
         // Extract coordinates from either location or flat structure
         const coordinates = Array.isArray(venueData.location?.coordinates)
           ? venueData.location.coordinates
@@ -402,7 +402,7 @@ export const updateCoach = async (
           imageS3Keys: venueData.imageS3Keys || [],
           openingHours: venueData.openingHours,
         };
-        
+
         // Mark this nested path as modified so Mongoose re-validates it
         coach.markModified("ownVenueDetails");
       } else {
