@@ -279,22 +279,20 @@ function RegisterContent() {
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                 >
                   <option value="OWN_VENUE">
-                    Own Venue (Create and manage your own venue)
+                    Own Venue (Teach at your own location)
                   </option>
                   <option value="FREELANCE">
                     Freelance (Travel to player locations)
                   </option>
-                  <option value="HYBRID">
-                    Hybrid (Use existing venue or travel)
-                  </option>
+                  <option value="HYBRID">Hybrid (Own venue or travel)</option>
                 </select>
                 <p className="text-xs text-slate-500 mt-2">
                   {formData.serviceMode === "OWN_VENUE" &&
-                    "You'll automatically get a coaching venue to manage bookings."}
+                    "Your venue details will be stored for booking context. Want to rent out your space separately? Register as a Venue Lister instead."}
                   {formData.serviceMode === "FREELANCE" &&
                     "Travel to players for coaching sessions."}
                   {formData.serviceMode === "HYBRID" &&
-                    "Offer coaching at venues and/or travel to players."}
+                    "Teach at your venue or travel to players."}
                 </p>
               </div>
             )}

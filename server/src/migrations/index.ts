@@ -10,6 +10,7 @@ import { migrateVenueLocations } from "./02_migrate_venue_locations";
 import { migrateBookingPayments } from "./03_migrate_booking_payments";
 import { linkVenuesToOwners } from "./04_link_venues_to_owners";
 import { addS3KeysToDocuments } from "./05_add_s3_keys_to_documents";
+import { migrateCoachVenueToProfile } from "./06_separate_coach_venue_roles";
 
 const runAllMigrations = async () => {
   console.log("=".repeat(60));
@@ -46,6 +47,14 @@ const runAllMigrations = async () => {
     console.log("📋 Running Migration 5: Add S3 Keys to Images & Documents");
     console.log("-".repeat(60));
     await addS3KeysToDocuments();
+    console.log();
+
+    // Migration 6: Separate Coach and Venue-Lister Roles
+    console.log(
+      "📋 Running Migration 6: Separate Coach and Venue-Lister Roles",
+    );
+    console.log("-".repeat(60));
+    await migrateCoachVenueToProfile();
     console.log();
 
     console.log("=".repeat(60));

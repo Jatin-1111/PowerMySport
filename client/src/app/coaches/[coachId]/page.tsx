@@ -169,8 +169,20 @@ export default function CoachDetailsPage() {
       });
 
       if (response) {
-        setSuccess("Booking initiated successfully!");
+        const bookingId = response.booking?.id;
+
+        if (bookingId) {
+          await bookingApi.confirmMockPaymentSuccess(bookingId);
+        }
+
+        setSuccess("Mock payment successful! Booking confirmed.");
         setTimeout(() => {
+          if (bookingId) {
+            router.push(
+              `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&mock=true`,
+            );
+            return;
+          }
           router.push("/dashboard/my-bookings");
         }, 1500);
       }
@@ -410,9 +422,13 @@ export default function CoachDetailsPage() {
                       <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
                         {visibleSlots.map((slot: string) => {
                           const startTime = slot.split("-")[0] || slot;
+                          const startHour = parseInt(
+                            startTime.split(":")[0] || "0",
+                            10,
+                          );
                           const endTime =
                             slot.split("-")[1] ||
-                            `${parseInt(startTime.split(":")[0]) + 1}:00`;
+                            `${String(startHour + 1).padStart(2, "0")}:00`;
 
                           const isSelected =
                             selectedSlot?.startTime === startTime;

@@ -30,35 +30,33 @@ export const createNewVenue = async (
       return;
     }
 
-    // Check venue creation permissions based on role
-    if (req.user.role === "VENUE_LISTER") {
-      const user = await User.findById(req.user.id);
+    // Only venue listers can create venues
+    // Coaches store venue details in their profile and cannot create marketplace venues
+    const user = await User.findById(req.user.id);
 
-      if (!user) {
-        res.status(404).json({
-          success: false,
-          message: "User not found",
-        });
-        return;
-      }
-
-      console.log("Venue Lister user:", {
-        id: user._id,
-        role: user.role,
-        canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues,
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
       });
-
-      // Check if user can add more venues (defaults to false for approved venue listers)
-      if (!user.venueListerProfile?.canAddMoreVenues) {
-        res.status(403).json({
-          success: false,
-          message:
-            "You are only allowed to manage your approved venue. Contact admin to add more venues.",
-        });
-        return;
-      }
+      return;
     }
-    // Coaches can create their single academy venue without restrictions
+
+    console.log("Venue Lister user:", {
+      id: user._id,
+      role: user.role,
+      canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues,
+    });
+
+    // Check if venue lister can add more venues (defaults to false for approved venue listers)
+    if (!user.venueListerProfile?.canAddMoreVenues) {
+      res.status(403).json({
+        success: false,
+        message:
+          "You are only allowed to manage your approved venue. Contact admin to add more venues.",
+      });
+      return;
+    }
 
     const venue = await createVenue({
       ...req.body,

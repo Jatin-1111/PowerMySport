@@ -5,10 +5,27 @@ import { authApi } from "@/modules/auth/services/auth";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import OpeningHoursInput, {
+  OpeningHours,
+  getDefaultOpeningHours,
+} from "@/modules/onboarding/components/onboarding/OpeningHoursInput";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
+import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { Coach, CoachVerificationDocument, ServiceMode, User } from "@/types";
-import { CheckCircle, Upload } from "lucide-react";
+import {
+  CheckCircle,
+  Upload,
+  Lightbulb,
+  Award,
+  Briefcase,
+  Target,
+  Star,
+  Users,
+  MapPin,
+  Clock,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 
 type VerificationStep = 1 | 2 | 3;
 
@@ -18,19 +35,6 @@ const ALLOWED_FILE_TYPES = [
   "image/png",
   "image/webp",
   "application/pdf",
-];
-
-const SPORTS_OPTIONS = [
-  "Cricket",
-  "Football",
-  "Badminton",
-  "Tennis",
-  "Basketball",
-  "Volleyball",
-  "Table Tennis",
-  "Swimming",
-  "Hockey",
-  "Kabaddi",
 ];
 
 const getInitialServiceMode = (): ServiceMode => {
@@ -55,6 +59,61 @@ const isValidMobileNumber = (value: string) =>
 
 const sanitizeMobileNumber = (value: string) =>
   value.replace(/[^0-9+\s().\-]/g, "");
+
+// Helper to parse simple opening hours string to structured format
+const parseOpeningHoursString = (hoursStr: string): OpeningHours => {
+  // If it's a simple format like "09:00-18:00", apply to all days
+  const simplePattern = /^(\d{2}:\d{2})-(\d{2}:\d{2})$/;
+  const match = hoursStr.match(simplePattern);
+
+  if (match) {
+    const [, openTime, closeTime] = match;
+    const dayHours = { isOpen: true, openTime, closeTime };
+    return {
+      monday: dayHours,
+      tuesday: dayHours,
+      wednesday: dayHours,
+      thursday: dayHours,
+      friday: dayHours,
+      saturday: dayHours,
+      sunday: dayHours,
+    };
+  }
+
+  // Otherwise return default
+  return getDefaultOpeningHours();
+};
+
+// Helper to convert OpeningHours to a summary string
+const formatOpeningHoursToString = (hours: OpeningHours): string => {
+  const openDays = Object.entries(hours).filter(([, day]) => day.isOpen);
+
+  if (openDays.length === 0) {
+    return "Closed";
+  }
+
+  // Check if all open days have the same hours
+  const firstDay = openDays[0][1];
+  const allSame = openDays.every(
+    ([, day]) =>
+      day.openTime === firstDay.openTime &&
+      day.closeTime === firstDay.closeTime,
+  );
+
+  if (allSame && openDays.length === 7) {
+    return `${firstDay.openTime}-${firstDay.closeTime} (All days)`;
+  }
+
+  if (allSame) {
+    const dayNames = openDays.map(([day]) => day.slice(0, 3)).join(",");
+    return `${firstDay.openTime}-${firstDay.closeTime} (${dayNames})`;
+  }
+
+  // Return detailed format
+  return openDays
+    .map(([day, hours]) => `${day}: ${hours.openTime}-${hours.closeTime}`)
+    .join("; ");
+};
 
 const getVerificationBadge = (coachData: Coach | null) => {
   if (!coachData) {
@@ -134,6 +193,32 @@ export default function CoachVerificationPage() {
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [sportPricing, setSportPricing] = useState<Record<string, string>>({});
 
+  // Service mode tracking
+  const [serviceMode, setServiceMode] = useState<ServiceMode>(
+    getInitialServiceMode(),
+  );
+
+  // Venue details for OWN_VENUE/HYBRID coaches
+  const [venueDetails, setVenueDetails] = useState({
+    name: "",
+    address: "",
+    description: "",
+    openingHours: getDefaultOpeningHours(),
+  });
+
+  // Address autocomplete state
+  const [addressQuery, setAddressQuery] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<GeoSuggestion[]>(
+    [],
+  );
+  const [isAddressSearching, setIsAddressSearching] = useState(false);
+  const [addressSearchError, setAddressSearchError] = useState("");
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [venueCoordinates, setVenueCoordinates] = useState<
+    [number, number] | null
+  >(null);
+  const skipSearchRef = useRef(false); // Flag to skip search effect after selection
+
   const [verificationDocs, setVerificationDocs] = useState<
     CoachVerificationDocument[]
   >([
@@ -155,12 +240,109 @@ export default function CoachVerificationPage() {
   const isLockedByReview =
     status === "PENDING" || status === "REVIEW" || status === "VERIFIED";
 
+  // Debounced address search
+  useEffect(() => {
+    if (skipSearchRef.current) {
+      skipSearchRef.current = false;
+      return;
+    }
+
+    const query = addressQuery.trim();
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      setAddressSearchError("");
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setIsAddressSearching(true);
+      setAddressSearchError("");
+      try {
+        const results = await geoApi.autocomplete(query);
+        setAddressSuggestions(results);
+      } catch {
+        setAddressSearchError("Unable to fetch suggestions");
+      } finally {
+        setIsAddressSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [addressQuery]);
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAddressQuery(value);
+    setVenueDetails((prev) => ({
+      ...prev,
+      address: value,
+    }));
+  };
+
+  const handleSelectAddressSuggestion = (suggestion: GeoSuggestion) => {
+    // Set flag to skip search effect on next render
+    skipSearchRef.current = true;
+
+    // Display the address in the input field
+    setAddressQuery(suggestion.label);
+
+    // Close suggestions
+    setAddressSuggestions([]);
+    setAddressSearchError("");
+
+    // Store the coordinates and full details
+    setVenueCoordinates([suggestion.lon, suggestion.lat]);
+    setVenueDetails((prev) => ({
+      ...prev,
+      address: suggestion.label,
+    }));
+  };
+
+  const handleUseCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      setAddressSearchError("Geolocation is not supported by this browser");
+      return;
+    }
+
+    setIsGeocoding(true);
+    setAddressSearchError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const result = await geoApi.reverse(latitude, longitude);
+          if (!result) {
+            setAddressSearchError("Unable to find address for this location");
+            return;
+          }
+
+          setAddressSuggestions([]);
+          setAddressQuery(result.label);
+          setVenueCoordinates([result.lon, result.lat]);
+          setVenueDetails((prev) => ({
+            ...prev,
+            address: result.label,
+          }));
+        } catch {
+          setAddressSearchError("Unable to resolve current location");
+        } finally {
+          setIsGeocoding(false);
+        }
+      },
+      () => {
+        setAddressSearchError("Location access was denied");
+        setIsGeocoding(false);
+      },
+    );
+  };
+
   // Redirect verified coaches to profile page
   useEffect(() => {
-    if (!loading && status === "VERIFIED") {
+    if (!loading && status === "VERIFIED" && coachProfile) {
       router.push("/coach/profile");
     }
-  }, [loading, status, router]);
+  }, [loading, status, coachProfile, router]);
 
   const loadProfile = async () => {
     try {
@@ -186,6 +368,29 @@ export default function CoachVerificationPage() {
             ? String(coach.hourlyRate)
             : "",
         );
+
+        // Load service mode
+        if (coach.serviceMode) {
+          setServiceMode(coach.serviceMode);
+        }
+
+        // Load venue details if they exist
+        if (coach.ownVenueDetails) {
+          const venue = coach.ownVenueDetails;
+          setVenueDetails({
+            name: venue.name || "",
+            address: venue.address || "",
+            description: venue.description || "",
+            openingHours: venue.openingHours
+              ? parseOpeningHoursString(venue.openingHours)
+              : getDefaultOpeningHours(),
+          });
+          // Load coordinates from location object
+          if (venue.location?.coordinates) {
+            setVenueCoordinates(venue.location.coordinates);
+          }
+        }
+
         setSportPricing(() => {
           const prices: Record<string, string> = {};
           (coach.sports || []).forEach((sport) => {
@@ -400,16 +605,65 @@ export default function CoachVerificationPage() {
 
     const hourlyRate = Math.max(...Object.values(pricingPayload));
 
+    // Validate venue details if needed
+    if (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID") {
+      if (!venueDetails.name.trim()) {
+        setError("Please provide a venue name.");
+        return;
+      }
+      if (!venueDetails.address.trim()) {
+        setError("Please provide a venue address.");
+        return;
+      }
+      if (!venueCoordinates) {
+        setError(
+          "Please select a venue address from the suggestions or use current location to set the coordinates.",
+        );
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      const step2Response = await coachApi.saveVerificationStep2({
+      const payload: {
+        bio: string;
+        sports: string[];
+        certifications: string[];
+        hourlyRate: number;
+        sportPricing: Record<string, number>;
+        serviceMode: ServiceMode;
+        ownVenueDetails?: {
+          name: string;
+          address: string;
+          description: string;
+          openingHours: string;
+        };
+      } = {
         bio: bio.trim(),
         sports,
         certifications: [],
         hourlyRate,
         sportPricing: pricingPayload,
-        serviceMode: getInitialServiceMode(),
-      });
+        serviceMode,
+      };
+
+      // Add venue details if coach owns a venue
+      if (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID") {
+        payload.ownVenueDetails = {
+          name: venueDetails.name.trim(),
+          address: venueDetails.address.trim(),
+          description: venueDetails.description.trim(),
+          openingHours: formatOpeningHoursToString(venueDetails.openingHours),
+          ...(venueCoordinates && {
+            location: {
+              type: "Point",
+              coordinates: venueCoordinates,
+            },
+          }),
+        };
+      }
+
+      const step2Response = await coachApi.saveVerificationStep2(payload);
 
       if (!step2Response.success || !step2Response.data) {
         throw new Error(step2Response.message || "Failed to save step 2");
@@ -529,7 +783,7 @@ export default function CoachVerificationPage() {
       );
       await loadProfile();
 
-      // Redirect to profile page after successful submission
+      // Redirect to coach profile
       setTimeout(() => {
         router.push("/coach/profile");
       }, 2000);
@@ -644,6 +898,56 @@ export default function CoachVerificationPage() {
               <label className="mb-2 block text-sm font-semibold text-slate-900">
                 Bio (About You)
               </label>
+
+              {/* Bio Tips Banner */}
+              <div className="mb-4 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+                <div className="flex items-start gap-3 mb-3">
+                  <Lightbulb className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-blue-900 mb-2">
+                      Tips to Write a Great Bio
+                    </p>
+                    <ul className="space-y-2 text-sm text-blue-800">
+                      <li className="flex items-start gap-2">
+                        <Award className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Experience:</strong> Years of coaching, sports
+                          background
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Briefcase className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Certifications:</strong> Relevant credentials
+                          and achievements
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Target className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Specialization:</strong> What levels
+                          (beginner/advanced)
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Star className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Coaching Style:</strong> Your approach and
+                          philosophy
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Users className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Track Record:</strong> Success stories or
+                          player achievements
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <textarea
                 value={bio}
                 onChange={(event) => setBio(event.target.value)}
@@ -742,48 +1046,32 @@ export default function CoachVerificationPage() {
               <label className="mb-2 block text-sm font-semibold text-slate-900">
                 Sports You Can Teach
               </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {SPORTS_OPTIONS.map((sport) => {
-                  const checked = selectedSports.includes(sport);
-                  return (
-                    <label
-                      key={sport}
-                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={isLockedByReview}
-                        onChange={(event) => {
-                          if (event.target.checked) {
-                            const nextValue =
-                              pricingMode === "SAME"
-                                ? hourlyRateInput || ""
-                                : "";
-                            setSelectedSports((prev) => [...prev, sport]);
-                            setSportPricing((prev) => ({
-                              ...prev,
-                              [sport]: prev[sport] || nextValue,
-                            }));
-                          } else {
-                            setSelectedSports((prev) =>
-                              prev.filter((item) => item !== sport),
-                            );
-                            setSportPricing((prev) => {
-                              const updated = { ...prev };
-                              delete updated[sport];
-                              return updated;
-                            });
-                          }
-                        }}
-                      />
-                      {sport}
-                    </label>
-                  );
-                })}
-              </div>
+              <SportsMultiSelect
+                value={selectedSports}
+                onChange={(sports) => {
+                  setSelectedSports(sports);
+                  // Initialize pricing for new sports
+                  const updatedPricing = { ...sportPricing };
+                  sports.forEach((sport) => {
+                    if (!updatedPricing[sport]) {
+                      updatedPricing[sport] =
+                        pricingMode === "SAME" ? hourlyRateInput || "" : "";
+                    }
+                  });
+                  // Remove pricing for unselected sports
+                  Object.keys(updatedPricing).forEach((sport) => {
+                    if (!sports.includes(sport)) {
+                      delete updatedPricing[sport];
+                    }
+                  });
+                  setSportPricing(updatedPricing);
+                }}
+                disabled={isLockedByReview}
+                required
+              />
               <p className="mt-2 text-xs text-slate-500">
-                Select all sports you coach.
+                Search for sports or add custom ones. Gemini will verify custom
+                sports automatically.
               </p>
             </div>
 
@@ -817,6 +1105,139 @@ export default function CoachVerificationPage() {
                       />
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {(serviceMode === "OWN_VENUE" || serviceMode === "HYBRID") && (
+              <div className="space-y-4 border-t border-slate-200 pt-6 mt-6">
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-power-orange mt-1 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Your Venue Details
+                    </p>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Provide information about your venue where you&apos;ll
+                      conduct coaching sessions.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold text-slate-900">
+                      Venue Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={venueDetails.name}
+                      onChange={(e) =>
+                        setVenueDetails((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
+                      disabled={isLockedByReview}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      placeholder="e.g., Elite Sports Arena"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold text-slate-900">
+                      Venue Address <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={addressQuery}
+                        onChange={handleAddressChange}
+                        disabled={isLockedByReview}
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                        placeholder="Search your venue location"
+                      />
+                      {isAddressSearching && (
+                        <span className="absolute right-3 top-3 text-xs text-slate-500">
+                          Searching...
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-slate-500">
+                        Start typing to see suggestions
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleUseCurrentLocation}
+                        className="text-xs font-semibold text-power-orange hover:text-orange-600 disabled:opacity-50"
+                        disabled={isLockedByReview || isGeocoding}
+                      >
+                        {isGeocoding ? "Locating..." : "Use current location"}
+                      </button>
+                    </div>
+                    {addressSearchError && (
+                      <p className="text-xs text-red-500 mt-2">
+                        {addressSearchError}
+                      </p>
+                    )}
+                    {addressSuggestions.length > 0 && (
+                      <div className="mt-2 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm z-10">
+                        {addressSuggestions.map((suggestion) => (
+                          <button
+                            type="button"
+                            key={`${suggestion.lat}-${suggestion.lon}-${suggestion.label}`}
+                            onClick={() =>
+                              handleSelectAddressSuggestion(suggestion)
+                            }
+                            className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-power-orange/5 border-b border-slate-100 last:border-b-0"
+                          >
+                            {suggestion.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold text-slate-900">
+                      Venue Description
+                    </label>
+                    <textarea
+                      value={venueDetails.description}
+                      onChange={(e) =>
+                        setVenueDetails((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                      disabled={isLockedByReview}
+                      rows={3}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      placeholder="Describe the facilities, equipment, and amenities available at your venue."
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="h-4 w-4 text-power-orange" />
+                      <label className="block text-sm font-semibold text-slate-900">
+                        Opening Hours
+                      </label>
+                    </div>
+                    <OpeningHoursInput
+                      value={venueDetails.openingHours}
+                      onChange={(hours) =>
+                        setVenueDetails((prev) => ({
+                          ...prev,
+                          openingHours: hours,
+                        }))
+                      }
+                    />
+                    <p className="mt-2 text-xs text-slate-500">
+                      Set your venue availability for bookings
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

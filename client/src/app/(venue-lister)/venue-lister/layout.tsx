@@ -2,11 +2,10 @@
 
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { coachApi } from "@/modules/coach/services/coach";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, Calendar, Grid3x3, LayoutDashboard } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 
 export default function VendorLayout({
   children,
@@ -15,48 +14,14 @@ export default function VendorLayout({
 }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const [isCheckingCoachStatus, setIsCheckingCoachStatus] = useState(true);
 
+  // Block coaches from accessing venue-lister routes
+  // Coaches who want to list venues must create separate venue-lister credentials
   useEffect(() => {
-    let isMounted = true;
-
-    const verifyCoachAccess = async () => {
-      if (user?.role !== "COACH") {
-        if (isMounted) {
-          setIsCheckingCoachStatus(false);
-        }
-        return;
-      }
-
-      try {
-        const response = await coachApi.getMyProfile();
-        const coach = response.success ? response.data : null;
-        const status =
-          coach?.verificationStatus ||
-          (coach?.isVerified ? "VERIFIED" : "UNVERIFIED");
-
-        if (isMounted && status !== "VERIFIED") {
-          router.replace("/coach/verification");
-          return;
-        }
-      } catch {
-        if (isMounted) {
-          router.replace("/coach/verification");
-          return;
-        }
-      } finally {
-        if (isMounted) {
-          setIsCheckingCoachStatus(false);
-        }
-      }
-    };
-
-    void verifyCoachAccess();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router, user?.role]);
+    if (user && user.role !== "VENUE_LISTER") {
+      router.replace("/");
+    }
+  }, [user, router]);
 
   const handleLogout = async () => {
     try {
@@ -91,14 +56,6 @@ export default function VendorLayout({
     },
   ];
 
-  if (isCheckingCoachStatus && user?.role === "COACH") {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-slate-600">Checking verification status...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen">
@@ -131,17 +88,6 @@ export default function VendorLayout({
               );
             })}
           </nav>
-
-          {user?.role === "COACH" && (
-            <div className="px-4 pt-4">
-              <Link
-                href="/coach/profile"
-                className="flex items-center justify-center rounded-xl border border-turf-green/30 bg-turf-green/10 px-4 py-3 text-sm font-semibold text-turf-green transition-colors hover:bg-turf-green/20"
-              >
-                Back to Coach Profile
-              </Link>
-            </div>
-          )}
 
           <div className="mt-auto border-t border-slate-200 p-6">
             <button

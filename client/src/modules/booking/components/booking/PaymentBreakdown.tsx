@@ -42,18 +42,16 @@ export default function PaymentBreakdown({
               </p>
             </div>
             <p className="text-lg font-bold text-power-orange">
-              ?{payment.amount}
+              ₹{payment.amount}
             </p>
           </div>
         ))}
 
         <div className="flex justify-between items-center pt-3 border-t-2 border-deep-slate">
           <p className="text-lg font-bold text-deep-slate">Total</p>
-          <p className="text-xl font-bold text-power-orange">?{totalAmount}</p>
+          <p className="text-xl font-bold text-power-orange">₹{totalAmount}</p>
         </div>
       </div>
     </div>
   );
 }
-
-

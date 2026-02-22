@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "migrate": "ts-node src/migrations/index.ts",
+    "seed:sports": "ts-node src/scripts/seedSports.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -17,6 +18,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.985.0",
     "@aws-sdk/s3-request-presigner": "^3.985.0",
+    "@google/generative-ai": "^0.16.0",
     "@types/nodemailer": "^7.0.9",
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",

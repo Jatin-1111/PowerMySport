@@ -64,6 +64,27 @@ export interface IAvailability {
   endTime: string; // "18:00"
 }
 
+/**
+ * Venue details stored in coach profile for OWN_VENUE coaches.
+ * These venues are NOT listed in the marketplace - they exist only for coach bookings.
+ * Coaches who want to rent out venues separately must create a venue-lister account.
+ */
+export interface IOwnVenueDetails {
+  name: string;
+  address: string;
+  location: {
+    type: "Point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  sports: string[];
+  amenities?: string[];
+  pricePerHour: number;
+  description?: string;
+  images?: string[];
+  imageS3Keys?: string[];
+  openingHours?: string;
+}
+
 export interface ICoach {
   id?: string;
   userId: string;
@@ -73,7 +94,7 @@ export interface ICoach {
   hourlyRate: number;
   sportPricing?: Record<string, number>;
   serviceMode: ServiceMode;
-  venueId?: string; // Required if OWN_VENUE
+  ownVenueDetails?: IOwnVenueDetails; // For OWN_VENUE/HYBRID coaches - venue info for bookings only
   baseLocation?: {
     // For FREELANCE coaches: their home/office location
     type: "Point";
@@ -253,8 +274,7 @@ export interface IBooking {
   totalAmount: number;
   status: BookingStatus;
   expiresAt: Date;
-  verificationToken?: string;
-  qrCode?: string;
+  checkInCode?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

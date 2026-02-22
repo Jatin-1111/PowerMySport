@@ -95,15 +95,6 @@ export default function CoachLayout({
     },
   ];
 
-  // If user is a coach and verification is complete, show option to manage venue
-  if (user?.role === "COACH" && isCoachVerified) {
-    navItems.push({
-      href: "/venue-lister/inventory",
-      label: "Manage Venue",
-      icon: Store,
-    });
-  }
-
   const visibleNavItems = isVerificationLocked
     ? navItems.filter((item) => item.href === "/coach/verification")
     : navItems;

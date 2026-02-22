@@ -1,19 +1,19 @@
 import { Router } from "express";
 import {
   cancelBookingById,
-  checkInBookingByToken,
+  checkInBookingWithCode,
+  confirmMockPaymentSuccessById,
   completeBookingById,
   getMyBookings,
   getVenueAvailability,
   initiateNewBooking,
   markBookingNoShow,
-  verifyBookingByToken,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
   coachVerificationCompletedMiddleware,
 } from "../middleware/auth";
-import { bookingSchema } from "../middleware/schemas";
+import { bookingCheckInCodeSchema, bookingSchema } from "../middleware/schemas";
 import { validateRequest } from "../middleware/validation";
 
 const router = Router();
@@ -27,11 +27,22 @@ router.post(
   initiateNewBooking,
 );
 
-// Verify booking with token
-router.get("/verify/:token", verifyBookingByToken);
+// Check-in to booking with random code
+router.post(
+  "/check-in/code",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  validateRequest(bookingCheckInCodeSchema),
+  checkInBookingWithCode,
+);
 
-// Check-in to booking with QR code
-router.post("/check-in/:token", checkInBookingByToken);
+// Confirm mock payment success and trigger booking confirmation email
+router.post(
+  "/:bookingId/mock-payment-success",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  confirmMockPaymentSuccessById,
+);
 
 // Mark booking as completed (venue owner or admin only)
 router.post(

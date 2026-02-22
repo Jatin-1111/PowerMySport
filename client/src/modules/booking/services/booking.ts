@@ -71,9 +71,23 @@ export const bookingApi = {
     return response.data;
   },
 
-  // Verify booking with QR code
-  verifyBooking: async (token: string): Promise<ApiResponse<Booking>> => {
-    const response = await axiosInstance.get(`/bookings/verify/${token}`);
+  // Confirm mock payment success and trigger confirmation side effects
+  confirmMockPaymentSuccess: async (
+    bookingId: string,
+  ): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/mock-payment-success`,
+    );
+    return response.data;
+  },
+
+  // Check-in booking using player-provided random code
+  checkInBookingByCode: async (
+    checkInCode: string,
+  ): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post("/bookings/check-in/code", {
+      checkInCode,
+    });
     return response.data;
   },
 };

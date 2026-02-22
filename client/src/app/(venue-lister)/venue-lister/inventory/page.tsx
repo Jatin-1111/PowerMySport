@@ -46,7 +46,7 @@ export default function VenueInventoryPage() {
   const [imageError, setImageError] = useState("");
 
   // Check if user can add more venues (defaults to false for venue listers from inquiry)
-  const canAddMoreVenues = user?.venueListerProfile?.canAddMoreVenues ?? true;
+  const canAddMoreVenues = user?.venueListerProfile?.canAddMoreVenues ?? false;
 
   useEffect(() => {
     loadVenues();
@@ -864,7 +864,7 @@ export default function VenueInventoryPage() {
                 </div>
 
                 <p className="text-2xl font-bold text-power-orange mb-4">
-                  ?{venue.pricePerHour}
+                  ₹{venue.pricePerHour}
                   <span className="text-sm text-slate-600">/hour</span>
                 </p>
 

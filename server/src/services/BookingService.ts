@@ -1,9 +1,9 @@
-import { v4 as uuidv4 } from "uuid";
+import { randomBytes } from "crypto";
 import { Booking, BookingDocument } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
-import { generateQRCode, generateVerificationURL } from "../utils/qrcode";
+import { sendBookingConfirmationEmail } from "../utils/email";
 import { getBookingExpirationTime } from "../utils/timer";
 
 /**
@@ -27,6 +27,57 @@ export interface InitiateBookingPayload {
 export interface InitiateBookingResponse {
   booking: BookingDocument;
 }
+
+const TIME_FORMAT_REGEX = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+const CHECK_IN_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+const generateRandomCheckInCode = (): string => {
+  const bytes = randomBytes(6);
+  let code = "";
+
+  for (let index = 0; index < 6; index += 1) {
+    const byte = bytes[index] ?? 0;
+    code += CHECK_IN_CODE_CHARS[byte % CHECK_IN_CODE_CHARS.length];
+  }
+
+  return code;
+};
+
+const generateUniqueCheckInCode = async (): Promise<string> => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const code = generateRandomCheckInCode();
+    const exists = await Booking.exists({ checkInCode: code });
+    if (!exists) {
+      return code;
+    }
+  }
+
+  throw new Error("Unable to generate secure check-in code");
+};
+
+const normalizeTimeToHHmm = (value: string): string => {
+  const trimmed = value.trim();
+  const match = trimmed.match(TIME_FORMAT_REGEX);
+  if (!match) {
+    throw new Error("Time must be in HH:mm format");
+  }
+
+  const rawHour = match[1] ?? "0";
+  const minutes = match[2] ?? "00";
+  const hour = String(parseInt(rawHour, 10)).padStart(2, "0");
+  return `${hour}:${minutes}`;
+};
+
+const combineDateAndTime = (date: Date, time: string): Date => {
+  const [hourPart, minutePart] = time.split(":");
+  const hour = parseInt(hourPart || "0", 10);
+  const minute = parseInt(minutePart || "0", 10);
+
+  const slotDateTime = new Date(date);
+  slotDateTime.setHours(hour, minute, 0, 0);
+
+  return slotDateTime;
+};
 
 /**
  * Check if a time slot is available for a venue (with atomic locking)
@@ -67,6 +118,24 @@ export const initiateBooking = async (
   payload: InitiateBookingPayload,
 ): Promise<InitiateBookingResponse> => {
   try {
+    const normalizedStartTime = normalizeTimeToHHmm(payload.startTime);
+    const normalizedEndTime = normalizeTimeToHHmm(payload.endTime);
+
+    const requestedStartAt = combineDateAndTime(
+      payload.date,
+      normalizedStartTime,
+    );
+    const requestedEndAt = combineDateAndTime(payload.date, normalizedEndTime);
+    const now = new Date();
+
+    if (requestedEndAt <= requestedStartAt) {
+      throw new Error("End time must be after start time");
+    }
+
+    if (requestedStartAt <= now) {
+      throw new Error("Cannot book a slot in the past");
+    }
+
     // Fetch user for participant information
     const user = await User.findById(payload.userId);
     if (!user) {
@@ -106,8 +175,8 @@ export const initiateBooking = async (
     const venueAvailable = await isSlotAvailable(
       payload.venueId,
       payload.date,
-      payload.startTime,
-      payload.endTime,
+      normalizedStartTime,
+      normalizedEndTime,
     );
 
     if (!venueAvailable) {
@@ -120,8 +189,8 @@ export const initiateBooking = async (
     }
 
     // Calculate venue price (supports fractional hours)
-    const startParts = payload.startTime.split(":");
-    const endParts = payload.endTime.split(":");
+    const startParts = normalizedStartTime.split(":");
+    const endParts = normalizedEndTime.split(":");
     const startHour = parseInt(startParts[0] || "0", 10);
     const startMin = parseInt(startParts[1] || "0", 10);
     const endHour = parseInt(endParts[0] || "0", 10);
@@ -159,8 +228,8 @@ export const initiateBooking = async (
       const coachAvailable = await checkCoachAvailabilityForBooking(
         payload.coachId,
         payload.date,
-        payload.startTime,
-        payload.endTime,
+        normalizedStartTime,
+        normalizedEndTime,
       );
 
       if (!coachAvailable) {
@@ -184,10 +253,7 @@ export const initiateBooking = async (
     const taxAmount = Math.round(subtotal * 0.05);
     const totalAmount = Math.max(0, subtotal + serviceFee + taxAmount);
 
-    // Generate verification token and QR code
-    const verificationToken = uuidv4();
-    const verificationURL = generateVerificationURL(verificationToken);
-    const qrCodeDataURL = await generateQRCode(verificationURL);
+    const checkInCode = await generateUniqueCheckInCode();
 
     // Create booking
     const booking = new Booking({
@@ -196,14 +262,13 @@ export const initiateBooking = async (
       coachId: payload.coachId,
       sport: payload.sport,
       date: payload.date,
-      startTime: payload.startTime,
-      endTime: payload.endTime,
+      startTime: normalizedStartTime,
+      endTime: normalizedEndTime,
       totalAmount,
       serviceFee,
       taxAmount,
       status: "CONFIRMED",
-      verificationToken,
-      qrCode: qrCodeDataURL,
+      checkInCode,
       expiresAt: getBookingExpirationTime(),
       participantName,
       participantId,
@@ -243,6 +308,7 @@ export const getUserBookings = async (
 
   const total = await Booking.countDocuments(query);
   const bookings = await Booking.find(query)
+    .select("+checkInCode")
     .populate("venueId coachId")
     .sort({ date: -1 })
     .skip(skip)
@@ -350,24 +416,30 @@ export const cancelBooking = async (
   );
 };
 
-/**
- * Check-in to a booking using QR code verification
- * Changes status from CONFIRMED to IN_PROGRESS
- */
-export const checkInBooking = async (
-  verificationToken: string,
+export const checkInBookingByCode = async (
+  checkInCode: string,
+  requesterUserId: string,
+  requesterRole: string,
 ): Promise<BookingDocument> => {
-  const booking = await Booking.findOne({ verificationToken });
+  const normalizedCode = checkInCode.trim().toUpperCase();
+
+  const booking = await Booking.findOne({ checkInCode: normalizedCode });
 
   if (!booking) {
-    throw new Error("Booking not found or invalid verification token");
+    throw new Error("Invalid check-in code");
   }
 
   if (booking.status !== "CONFIRMED") {
     throw new Error(`Cannot check-in. Booking status is ${booking.status}`);
   }
 
-  // Check if booking date has arrived
+  if (requesterRole !== "ADMIN") {
+    const venue = await Venue.findById(booking.venueId).select("ownerId");
+    if (!venue || venue.ownerId?.toString() !== requesterUserId) {
+      throw new Error("Unauthorized to check in this booking");
+    }
+  }
+
   const now = new Date();
   const bookingDateTime = new Date(booking.date);
   const timeParts = booking.startTime.split(":").map(Number);
@@ -385,9 +457,7 @@ export const checkInBooking = async (
 
   bookingDateTime.setHours(startHour, startMin, 0, 0);
 
-  // Allow check-in 15 minutes before scheduled time
   const checkInWindow = new Date(bookingDateTime.getTime() - 15 * 60 * 1000);
-
   if (now < checkInWindow) {
     throw new Error("Cannot check-in before the scheduled time");
   }
@@ -489,14 +559,53 @@ const checkCoachAvailabilityForBooking = async (
 };
 
 /**
- * Verify a booking using verification token
+ * Confirm mock payment success and send booking confirmation email once
  */
-export const verifyBooking = async (
-  verificationToken: string,
-): Promise<BookingDocument | null> => {
-  return Booking.findOne({ verificationToken })
-    .select("+verificationToken")
-    .populate("userId venueId coachId");
+export const confirmMockPaymentSuccess = async (
+  bookingId: string,
+  userId: string,
+): Promise<BookingDocument> => {
+  const booking = await Booking.findById(bookingId).select("+checkInCode");
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.userId.toString() !== userId) {
+    throw new Error("Unauthorized to confirm this booking");
+  }
+
+  if (booking.status === "CANCELLED") {
+    throw new Error("Cannot confirm payment for a cancelled booking");
+  }
+
+  if (!booking.paymentConfirmedAt) {
+    booking.paymentConfirmedAt = new Date();
+  }
+
+  if (!booking.confirmationEmailSentAt) {
+    const user = await User.findById(booking.userId).select("name email");
+    const venue = await Venue.findById(booking.venueId).select("name");
+
+    if (user?.email) {
+      await sendBookingConfirmationEmail({
+        name: user.name,
+        email: user.email,
+        venueName: venue?.name || "Venue",
+        sport: booking.sport,
+        date: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        totalAmount: booking.totalAmount,
+        ...(booking.checkInCode && { checkInCode: booking.checkInCode }),
+      });
+    }
+
+    booking.confirmationEmailSentAt = new Date();
+  }
+
+  await booking.save();
+  return booking;
 };
 
 // Legacy function for backward compatibility

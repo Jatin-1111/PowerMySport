@@ -14,11 +14,12 @@ export interface BookingDocument extends Document {
   taxAmount?: number;
   status: BookingStatus;
   expiresAt: Date;
-  verificationToken?: string;
-  qrCode?: string;
+  checkInCode?: string;
   participantName: string;
   participantId?: mongoose.Types.ObjectId;
   participantAge?: number;
+  paymentConfirmedAt?: Date;
+  confirmationEmailSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,12 +89,13 @@ const bookingSchema = new Schema<BookingDocument>(
       type: Date,
       required: [true, "Expiration time is required"],
     },
-    verificationToken: {
+    checkInCode: {
       type: String,
-      select: false, // Hidden by default for security
-    },
-    qrCode: {
-      type: String,
+      select: false,
+      uppercase: true,
+      trim: true,
+      minlength: 6,
+      maxlength: 6,
     },
     participantName: {
       type: String,
@@ -104,6 +106,12 @@ const bookingSchema = new Schema<BookingDocument>(
     },
     participantAge: {
       type: Number,
+    },
+    paymentConfirmedAt: {
+      type: Date,
+    },
+    confirmationEmailSentAt: {
+      type: Date,
     },
   },
   {
@@ -128,9 +136,6 @@ bookingSchema.index({ coachId: 1, date: 1, startTime: 1, endTime: 1 });
 
 // Index for expiration cleanup job
 bookingSchema.index({ expiresAt: 1, status: 1 });
-
-// Index for verification token lookup
-bookingSchema.index({ verificationToken: 1 }, { unique: true, sparse: true });
 
 // Unique index to prevent duplicate bookings for same user/venue/date/time
 bookingSchema.index(

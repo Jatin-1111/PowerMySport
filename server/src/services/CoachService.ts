@@ -6,8 +6,7 @@ import {
   CoachDocumentFile,
   CoachVerificationStatus,
 } from "../models/Coach";
-import { Venue } from "../models/Venue";
-import { ICoach, IGeoLocation, ServiceMode } from "../types";
+import { ICoach, IGeoLocation, IOwnVenueDetails, ServiceMode } from "../types";
 
 export interface CreateCoachPayload {
   userId: string;
@@ -17,7 +16,7 @@ export interface CreateCoachPayload {
   hourlyRate: number;
   sportPricing?: Record<string, number>;
   serviceMode: ServiceMode;
-  venueId?: string;
+  ownVenueDetails?: IOwnVenueDetails; // Venue details stored in coach profile (not separate Venue document)
   serviceRadiusKm?: number;
   travelBufferTime?: number;
   availability: Array<{
@@ -33,21 +32,13 @@ export interface CreateCoachPayload {
       endTime: string;
     }>
   >;
-  venueDetails?: {
-    name: string;
-    address: string;
-    location: IGeoLocation;
-    sports?: string[];
-    pricePerHour?: number;
-    amenities?: string[];
-    description?: string;
-    allowExternalCoaches?: boolean;
-  };
 }
 
 /**
- * Create a new coach profile
- * Supports automatic "Ghost Venue" creation for OWN_VENUE coaches
+ * Create a new coach profile.
+ * For OWN_VENUE coaches, venue details are stored in the coach profile and used for booking context only.
+ * These venues do NOT appear in the marketplace. Coaches who want to rent out venues separately
+ * must create a venue-lister account with different credentials.
  */
 export const createCoach = async (
   payload: CreateCoachPayload,
@@ -56,39 +47,8 @@ export const createCoach = async (
   session.startTransaction();
 
   try {
-    let venueId = payload.venueId;
-
-    // Auto-create "Ghost Venue" if coach has OWN_VENUE mode without a venueId
-    if (
-      payload.serviceMode === "OWN_VENUE" &&
-      !venueId &&
-      payload.venueDetails
-    ) {
-      // Create the venue automatically
-      const venue = new Venue({
-        name: payload.venueDetails.name,
-        ownerId: payload.userId,
-        location: payload.venueDetails.location,
-        address: payload.venueDetails.address,
-        sports: payload.venueDetails.sports || payload.sports,
-        pricePerHour: payload.venueDetails.pricePerHour || payload.hourlyRate,
-        amenities: payload.venueDetails.amenities || [],
-        description: payload.venueDetails.description || "",
-        allowExternalCoaches: payload.venueDetails.allowExternalCoaches ?? true,
-        openingHours: "09:00-17:00", // Default opening hours
-        images: [],
-        approvalStatus: "PENDING",
-      });
-
-      await venue.save({ session });
-      venueId = venue._id.toString();
-    }
-
-    // Create the coach profile with the venue ID (either provided or auto-created)
-    const coach = new Coach({
-      ...payload,
-      venueId,
-    });
+    // Create the coach profile with venue details embedded (no separate Venue document)
+    const coach = new Coach(payload);
 
     // Validation is handled by the Coach model's pre-save hook
     await coach.save({ session });
@@ -396,6 +356,7 @@ export const getCoachByUserId = async (
 
 /**
  * Update coach profile
+ * Uses load-then-save to ensure full validation runs on all nested objects
  */
 export const updateCoach = async (
   coachId: string,
@@ -406,15 +367,54 @@ export const updateCoach = async (
     throw new Error("Invalid coach ID");
   }
 
-  // Filter out undefined values to prevent MongoDB casting issues
-  const cleanedUpdates = Object.fromEntries(
-    Object.entries(updates).filter(([, value]) => value !== undefined),
-  );
+  // Load the full document
+  const coach = await Coach.findById(coachId);
+  if (!coach) {
+    return null;
+  }
 
-  return Coach.findByIdAndUpdate(coachId, cleanedUpdates, {
-    new: true,
-    runValidators: true,
-  });
+  // Update each field individually - this allows Mongoose to properly cast nested types
+  for (const [key, value] of Object.entries(updates)) {
+    if (value !== undefined) {
+      // For ownVenueDetails, rebuild it completely to ensure proper type casting
+      if (key === "ownVenueDetails" && value) {
+        const venueData = value as any;
+        
+        // Extract coordinates from either location or flat structure
+        const coordinates = Array.isArray(venueData.location?.coordinates)
+          ? venueData.location.coordinates
+          : Array.isArray(venueData.coordinates)
+            ? venueData.coordinates
+            : [77.2, 28.7];
+
+        coach.ownVenueDetails = {
+          name: venueData.name,
+          address: venueData.address,
+          location: {
+            type: "Point",
+            coordinates: [Number(coordinates[0]), Number(coordinates[1])],
+          },
+          sports: venueData.sports || [],
+          amenities: venueData.amenities || [],
+          pricePerHour: venueData.pricePerHour,
+          description: venueData.description,
+          images: venueData.images || [],
+          imageS3Keys: venueData.imageS3Keys || [],
+          openingHours: venueData.openingHours,
+        };
+        
+        // Mark this nested path as modified so Mongoose re-validates it
+        coach.markModified("ownVenueDetails");
+      } else {
+        (coach as any)[key] = value;
+      }
+    }
+  }
+
+  // Save with validation
+  await coach.save();
+
+  return coach;
 };
 
 /**

@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
 import {
   cancelBooking,
-  checkInBooking,
+  checkInBookingByCode,
+  confirmMockPaymentSuccess,
   completeBooking,
   getUserBookings,
   getVenueBookingsForDate,
   getVenueListerBookings,
   initiateBooking,
   markNoShow,
-  verifyBooking,
 } from "../services/BookingService";
 import { generateHourlySlots } from "../utils/booking";
 
@@ -47,40 +47,6 @@ export const initiateNewBooking = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to initiate booking",
-    });
-  }
-};
-
-/**
- * Verify booking with verification token
- * GET /api/bookings/verify/:token
- */
-export const verifyBookingByToken = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const token = (req.params as Record<string, unknown>).token as string;
-
-    const booking = await verifyBooking(token);
-
-    if (!booking) {
-      res.status(404).json({
-        success: false,
-        message: "Invalid or expired verification token",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Booking verified successfully",
-      data: booking,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Verification failed",
     });
   }
 };
@@ -172,10 +138,27 @@ export const getVenueAvailability = async (
     }));
 
     const allSlots = generateHourlySlots(6, 23);
+    const targetDate = new Date(date as string);
+    const now = new Date();
+    const isToday =
+      targetDate.getFullYear() === now.getFullYear() &&
+      targetDate.getMonth() === now.getMonth() &&
+      targetDate.getDate() === now.getDate();
+
     const availableSlots = allSlots.filter((slot) => {
       const slotParts = slot.split(":");
       const slotHour = parseInt(slotParts[0] || "0", 10);
       const nextHour = String(slotHour + 1).padStart(2, "0") + ":00";
+
+      if (isToday) {
+        const slotStart = new Date(targetDate);
+        const slotMinute = parseInt(slotParts[1] || "0", 10);
+        slotStart.setHours(slotHour, slotMinute, 0, 0);
+
+        if (slotStart <= now) {
+          return false;
+        }
+      }
 
       return !bookedTimeSlots.some((booked) => {
         return (
@@ -239,17 +222,29 @@ export const cancelBookingById = async (
 };
 
 /**
- * Check-in to booking using QR code
- * POST /api/bookings/check-in/:token
+ * Check-in to booking using random check-in code
+ * POST /api/bookings/check-in/code
  */
-export const checkInBookingByToken = async (
+export const checkInBookingWithCode = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const token = (req.params as Record<string, unknown>).token as string;
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
 
-    const booking = await checkInBooking(token);
+    const { checkInCode } = req.body as { checkInCode: string };
+
+    const booking = await checkInBookingByCode(
+      checkInCode,
+      req.user.id,
+      req.user.role,
+    );
 
     res.status(200).json({
       success: true,
@@ -260,6 +255,44 @@ export const checkInBookingByToken = async (
     res.status(400).json({
       success: false,
       message: error instanceof Error ? error.message : "Check-in failed",
+    });
+  }
+};
+
+/**
+ * Confirm mock payment success for a booking
+ * POST /api/bookings/:bookingId/mock-payment-success
+ */
+export const confirmMockPaymentSuccessById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+
+    const booking = await confirmMockPaymentSuccess(bookingId, req.user.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Mock payment confirmed successfully",
+      data: booking,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to confirm mock payment",
     });
   }
 };

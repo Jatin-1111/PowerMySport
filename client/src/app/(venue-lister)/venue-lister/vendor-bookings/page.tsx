@@ -13,6 +13,9 @@ import Link from "next/link";
 export default function VenueBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [checkInCode, setCheckInCode] = useState("");
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkInMessage, setCheckInMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -30,6 +33,42 @@ export default function VenueBookingsPage() {
 
     fetchBookings();
   }, []);
+
+  const handleCodeCheckIn = async () => {
+    const normalizedCode = checkInCode.trim().toUpperCase();
+    if (!normalizedCode) {
+      setCheckInMessage("Please enter a check-in code.");
+      return;
+    }
+
+    try {
+      setCheckInLoading(true);
+      setCheckInMessage(null);
+
+      const response = await bookingApi.checkInBookingByCode(normalizedCode);
+
+      if (response.success && response.data) {
+        setBookings((prev) =>
+          prev.map((booking) =>
+            booking.id === response.data?.id
+              ? { ...booking, status: response.data.status }
+              : booking,
+          ),
+        );
+        setCheckInMessage("Check-in successful.");
+        setCheckInCode("");
+        return;
+      }
+
+      setCheckInMessage(response.message || "Unable to verify check-in code.");
+    } catch (error: any) {
+      setCheckInMessage(
+        error?.response?.data?.message || "Unable to verify check-in code.",
+      );
+    } finally {
+      setCheckInLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <div className="text-center py-12">Loading bookings...</div>;
@@ -74,6 +113,37 @@ export default function VenueBookingsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
+          <Card className="bg-white">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-slate-900 mb-1">
+                  Player Check-in
+                </p>
+                <p className="text-xs text-slate-500 mb-2">
+                  Enter the player's 6-character code to verify arrival.
+                </p>
+                <input
+                  type="text"
+                  value={checkInCode}
+                  maxLength={6}
+                  onChange={(event) => setCheckInCode(event.target.value)}
+                  placeholder="Enter code"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm uppercase tracking-wider"
+                />
+              </div>
+              <Button
+                variant="primary"
+                onClick={handleCodeCheckIn}
+                disabled={checkInLoading}
+              >
+                {checkInLoading ? "Verifying..." : "Verify Check-in"}
+              </Button>
+            </div>
+            {checkInMessage && (
+              <p className="mt-3 text-sm text-slate-700">{checkInMessage}</p>
+            )}
+          </Card>
+
           {bookings.map((booking) => (
             <Card
               key={booking.id}
@@ -83,7 +153,7 @@ export default function VenueBookingsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="text-lg font-semibold text-slate-900">
-                      Booking #{booking.id.slice(-6)}
+                      Booking Request
                     </h3>
                     <span
                       className={`px-3 py-1 rounded text-sm font-semibold ${
@@ -108,7 +178,7 @@ export default function VenueBookingsPage() {
                         {formatDate(booking.date)}
                       </p>
                       <p className="text-sm text-slate-900">
-                        ? {formatTime(booking.startTime)} -{" "}
+                        {formatTime(booking.startTime)} -{" "}
                         {formatTime(booking.endTime)}
                       </p>
                     </div>
@@ -116,7 +186,7 @@ export default function VenueBookingsPage() {
                     <div>
                       <p className="text-sm text-slate-600">Player Details</p>
                       <p className="font-semibold text-slate-900">
-                        User ID: {booking.userId}
+                        Privacy protected
                       </p>
                     </div>
                   </div>
@@ -131,7 +201,7 @@ export default function VenueBookingsPage() {
                         <div>
                           <span className="text-slate-600">Venue Fee:</span>
                           <span className="font-semibold ml-2 text-slate-900">
-                            ?{booking.venuePayment.amount}
+                            ₹{booking.venuePayment.amount}
                           </span>
                         </div>
                         <div>
@@ -153,7 +223,7 @@ export default function VenueBookingsPage() {
 
                 <div className="text-right">
                   <p className="text-2xl font-bold text-power-orange">
-                    ?{booking.totalAmount}
+                    ₹{booking.totalAmount}
                   </p>
                 </div>
               </div>

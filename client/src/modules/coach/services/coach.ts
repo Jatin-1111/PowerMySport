@@ -34,6 +34,13 @@ export const coachApi = {
     hourlyRate: number;
     sportPricing?: Record<string, number>;
     serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
+    ownVenueDetails?: {
+      name: string;
+      address: string;
+      description?: string;
+      openingHours?: string;
+      coordinates?: [number, number];
+    };
   }): Promise<ApiResponse<Coach>> => {
     const response = await axiosInstance.post(
       "/coaches/verification/step2",

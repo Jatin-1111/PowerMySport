@@ -233,22 +233,24 @@ export const updateCoachProfile = async (
       return;
     }
 
-    // Handle venueId validation and preservation
+    // Handle ownVenueDetails validation and preservation
     const updates = { ...req.body };
     const newServiceMode = updates.serviceMode || existingCoach.serviceMode;
 
     // Handle service mode specific logic
-    if (newServiceMode === "OWN_VENUE") {
-      // For OWN_VENUE mode: preserve existing venueId if not providing a new one
-      if (!updates.venueId && existingCoach.venueId) {
-        updates.venueId = existingCoach.venueId.toString();
+    if (newServiceMode === "OWN_VENUE" || newServiceMode === "HYBRID") {
+      // For OWN_VENUE/HYBRID modes: preserve existing ownVenueDetails if not providing new ones
+      if (!updates.ownVenueDetails && existingCoach.ownVenueDetails) {
+        updates.ownVenueDetails = existingCoach.ownVenueDetails;
       }
-      // If no venueId is provided and coach doesn't have one, that's ok for now
-      // (they can create/link venue later)
-    } else {
-      // For non-OWN_VENUE modes: clear venueId if coming from OWN_VENUE
-      if (existingCoach.serviceMode === "OWN_VENUE" && !updates.venueId) {
-        updates.venueId = null;
+      // If no ownVenueDetails provided, that's ok - they can add them later
+    } else if (newServiceMode === "FREELANCE") {
+      // For FREELANCE mode: clear ownVenueDetails if switching from OWN_VENUE/HYBRID
+      if (
+        existingCoach.serviceMode !== "FREELANCE" &&
+        !updates.ownVenueDetails
+      ) {
+        updates.ownVenueDetails = undefined;
       }
     }
 
@@ -600,6 +602,7 @@ export const saveCoachVerificationStep2Handler = async (
       hourlyRate,
       sportPricing,
       serviceMode,
+      ownVenueDetails,
     } = req.body as {
       bio: string;
       sports: string[];
@@ -607,20 +610,78 @@ export const saveCoachVerificationStep2Handler = async (
       hourlyRate: number;
       sportPricing?: Record<string, number>;
       serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
+      ownVenueDetails?: {
+        name: string;
+        address: string;
+        description?: string;
+        openingHours?: string;
+        coordinates?: [number, number];
+        location?: {
+          type: string;
+          coordinates: [number, number];
+        };
+      };
     };
+
+    // Build venue details for coach if provided
+    let venueDetailsPayload;
+    if (
+      ownVenueDetails &&
+      (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID")
+    ) {
+      // Validate that coordinates exist
+      const coordinates =
+        ownVenueDetails.location?.coordinates || ownVenueDetails.coordinates;
+
+      if (
+        !coordinates ||
+        !Array.isArray(coordinates) ||
+        coordinates.length !== 2
+      ) {
+        res.status(400).json({
+          success: false,
+          message:
+            "Venue coordinates are required and must be [longitude, latitude]",
+        });
+        return;
+      }
+
+      // Pass through the ownVenueDetails as-is, ensuring coordinates are at the right level
+      venueDetailsPayload = {
+        name: ownVenueDetails.name,
+        address: ownVenueDetails.address,
+        location: {
+          type: "Point",
+          coordinates: [Number(coordinates[0]), Number(coordinates[1])],
+        },
+        sports,
+        amenities: [],
+        pricePerHour: hourlyRate,
+        description: ownVenueDetails.description || "",
+        images: [],
+        imageS3Keys: [],
+        openingHours: ownVenueDetails.openingHours || "09:00-18:00",
+      };
+    }
 
     const existingCoach = await getCoachByUserId(req.user.id);
 
     if (existingCoach) {
       const coachId = (existingCoach.id ||
         existingCoach._id?.toString()) as string;
-      const coach = await updateCoach(coachId, {
+      const updatePayload: any = {
         bio,
         sports,
         certifications: certifications || [],
         hourlyRate,
         sportPricing: sportPricing || {},
-      });
+      };
+
+      if (venueDetailsPayload) {
+        updatePayload.ownVenueDetails = venueDetailsPayload;
+      }
+
+      const coach = await updateCoach(coachId, updatePayload);
 
       res.status(200).json({
         success: true,
@@ -630,7 +691,7 @@ export const saveCoachVerificationStep2Handler = async (
       return;
     }
 
-    const coach = await createCoach({
+    const createPayload: any = {
       userId: req.user.id,
       bio,
       sports,
@@ -643,7 +704,13 @@ export const saveCoachVerificationStep2Handler = async (
         serviceRadiusKm: 10,
         travelBufferTime: 30,
       }),
-    });
+    };
+
+    if (venueDetailsPayload) {
+      createPayload.ownVenueDetails = venueDetailsPayload;
+    }
+
+    const coach = await createCoach(createPayload);
 
     res.status(201).json({
       success: true,

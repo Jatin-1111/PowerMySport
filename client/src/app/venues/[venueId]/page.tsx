@@ -99,27 +99,14 @@ export default function VenueDetailsPage() {
 
     setBookingLoading(true);
     try {
-      // Convert date to ISO datetime format
-      const bookingDate = new Date(selectedDate).toISOString();
-
-      const response = await bookingApi.initiateBooking({
-        venueId,
-        sport: selectedSport,
-        date: bookingDate,
+      const params = new URLSearchParams({
+        date: selectedDate,
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
+        sport: selectedSport,
       });
 
-      if (response) {
-        setSuccess("Booking confirmed successfully!");
-
-        setTimeout(() => {
-          router.push("/dashboard/my-bookings");
-        }, 1500);
-      }
-    } catch (error: any) {
-      console.error("Booking failed:", error);
-      setError(error.response?.data?.message || "Booking failed");
+      router.push(`/dashboard/book/${venueId}/checkout?${params.toString()}`);
     } finally {
       setBookingLoading(false);
     }
@@ -331,9 +318,13 @@ export default function VenueDetailsPage() {
                         {availability.availableSlots?.length > 0 ? (
                           availability.availableSlots.map((slot: any) => {
                             const startTime = slot.split("-")[0] || slot;
+                            const startHour = parseInt(
+                              startTime.split(":")[0] || "0",
+                              10,
+                            );
                             const endTime =
                               slot.split("-")[1] ||
-                              `${parseInt(startTime.split(":")[0]) + 1}:00`;
+                              `${String(startHour + 1).padStart(2, "0")}:00`;
 
                             const isSelected =
                               selectedSlot?.startTime === startTime;

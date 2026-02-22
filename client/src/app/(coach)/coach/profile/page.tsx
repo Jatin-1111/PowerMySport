@@ -484,6 +484,48 @@ export default function CoachProfilePage() {
                   </div>
                 </div>
 
+                {(coachProfile.serviceMode === "OWN_VENUE" ||
+                  coachProfile.serviceMode === "HYBRID") &&
+                  coachProfile.ownVenueDetails && (
+                    <div className="border-t border-slate-200 pt-4 mt-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-500 mb-3">
+                        Your Venue
+                      </p>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {coachProfile.ownVenueDetails.name}
+                          </p>
+                          {coachProfile.ownVenueDetails.address && (
+                            <p className="text-sm text-slate-600">
+                              {coachProfile.ownVenueDetails.address}
+                            </p>
+                          )}
+                        </div>
+                        {coachProfile.ownVenueDetails.description && (
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                              Description
+                            </p>
+                            <p className="text-sm text-slate-700">
+                              {coachProfile.ownVenueDetails.description}
+                            </p>
+                          </div>
+                        )}
+                        {coachProfile.ownVenueDetails.openingHours && (
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                              Opening Hours
+                            </p>
+                            <p className="text-sm text-slate-700">
+                              {coachProfile.ownVenueDetails.openingHours}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                 {coachProfile.serviceMode !== "OWN_VENUE" && (
                   <>
                     <div>

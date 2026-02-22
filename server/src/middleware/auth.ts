@@ -38,20 +38,29 @@ export const authMiddleware = (
   }
 };
 
-export const vendorMiddleware = (
+/**
+ * Middleware for venue-lister only routes.
+ * Coaches and venue-listers are completely separate roles.
+ * Coaches who want to list venues for rent must create separate venue-lister credentials.
+ */
+export const venueListerMiddleware = (
   req: Request,
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "VENUE_LISTER" && req.user?.role !== "COACH") {
+  if (req.user?.role !== "VENUE_LISTER") {
     res.status(403).json({
       success: false,
-      message: "Access denied. Venue Lister or Coach role required.",
+      message:
+        "Access denied. Venue Lister role required. Coaches must create separate venue-lister credentials to manage rentable venues.",
     });
     return;
   }
   next();
 };
+
+// Alias for backward compatibility - will be removed in future
+export const vendorMiddleware = venueListerMiddleware;
 
 export const adminMiddleware = (
   req: Request,

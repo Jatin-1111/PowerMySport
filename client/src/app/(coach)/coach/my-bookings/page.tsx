@@ -79,7 +79,7 @@ export default function CoachBookingsPage() {
         <Card className="bg-white">
           <p className="text-sm text-slate-600 mb-1">Total Earnings</p>
           <p className="text-3xl font-bold text-power-orange">
-            ?{stats.totalEarnings}
+            ₹{stats.totalEarnings}
           </p>
         </Card>
       </div>
@@ -174,7 +174,7 @@ export default function CoachBookingsPage() {
                         <div className="flex justify-between items-center">
                           <div>
                             <span className="text-2xl font-bold text-power-orange">
-                              ?{coachPayment.amount}
+                              ₹{coachPayment.amount}
                             </span>
                           </div>
                           <div>

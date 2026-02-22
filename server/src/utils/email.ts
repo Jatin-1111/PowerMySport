@@ -461,3 +461,128 @@ export const sendCredentialsEmail = async (
     html,
   });
 };
+
+interface BookingConfirmationEmailOptions {
+  name: string;
+  email: string;
+  venueName: string;
+  sport: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  totalAmount: number;
+  checkInCode?: string;
+}
+
+export const sendBookingConfirmationEmail = async (
+  options: BookingConfirmationEmailOptions,
+): Promise<void> => {
+  const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
+  const bookingDate = options.date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const amountPaid = options.totalAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;">
+    Payment successful. Your booking is confirmed and ready in your dashboard.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dbe3ee;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#0f9d58 0%,#22c55e 100%);padding:30px 28px 24px;text-align:center;">
+              <div style="font-size:34px;line-height:34px;">✅</div>
+              <h1 style="margin:12px 0 0;font-size:30px;line-height:34px;color:#ffffff;font-weight:800;">Booking Confirmed</h1>
+              <p style="margin:10px 0 0;font-size:15px;line-height:22px;color:#dcfce7;">Your payment is successful and your slot is now reserved.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 28px 22px;background-color:#ffffff;">
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Thanks for booking with PowerMySport. Your session is confirmed and ready to view.</p>
+
+              <div style="display:inline-block;background-color:#ecfdf3;border:1px solid #bbf7d0;color:#15803d;font-size:12px;font-weight:700;line-height:12px;padding:8px 12px;border-radius:999px;margin-bottom:16px;">PAYMENT SUCCESSFUL</div>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0 16px;">
+                <tr>
+                  <td colspan="2" style="padding:14px 0 10px;font-size:15px;line-height:20px;color:#1e293b;font-weight:800;">Booking Summary</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-size:13px;color:#64748b;">Venue</td>
+                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.venueName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Sport</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.sport}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Date</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${bookingDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Time</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.startTime} - ${options.endTime}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0 14px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Amount Paid</td>
+                  <td style="padding:12px 0 14px;border-top:1px solid #e2e8f0;font-size:16px;color:#15803d;font-weight:800;text-align:right;">₹${amountPaid}</td>
+                </tr>
+                ${
+                  options.checkInCode
+                    ? `<tr>
+                  <td style="padding:12px 0 14px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Check-in Code</td>
+                  <td style="padding:12px 0 14px;border-top:1px solid #e2e8f0;font-size:16px;color:#0f172a;font-weight:800;text-align:right;font-family:monospace;letter-spacing:2px;">${options.checkInCode}</td>
+                </tr>`
+                    : ""
+                }
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+                <tr>
+                  <td align="center">
+                    <a href="${bookingsUrl}" style="display:inline-block;padding:13px 28px;background-color:#ff6b35;color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:0.2px;">View My Bookings</a>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+                <tr>
+                  <td align="center" style="font-size:12px;line-height:18px;color:#94a3b8;">
+                    Need help? Reach us from the app support section.<br/>
+                    © ${new Date().getFullYear()} PowerMySport. All rights reserved.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.email,
+    subject: "Your Booking is Confirmed ✨ | PowerMySport",
+    html,
+  });
+};

@@ -281,11 +281,16 @@ export default function VenueCheckoutPage() {
         dependentId: dependentId || undefined,
       });
 
-      if (!response.checkoutUrl) {
-        throw new Error("Payment session could not be created");
+      const bookingId = response.booking?.id;
+      if (!bookingId) {
+        throw new Error("Booking could not be created");
       }
 
-      window.location.href = response.checkoutUrl;
+      await bookingApi.confirmMockPaymentSuccess(bookingId);
+
+      router.push(
+        `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&mock=true`,
+      );
     } catch (submitError: any) {
       console.error("Checkout failed:", submitError);
       setError(

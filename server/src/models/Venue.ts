@@ -111,7 +111,10 @@ const venueSchema = new Schema<VenueDocument>(
         type: [Number],
         required: true,
         validate: {
-          validator: (v: number[]) => v.length === 2,
+          validator(v: any) {
+            if (!Array.isArray(v) || v.length !== 2) return false;
+            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
+          },
           message: "Coordinates must be [longitude, latitude]",
         },
       },

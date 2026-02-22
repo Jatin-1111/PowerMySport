@@ -58,10 +58,17 @@ export const bookingSchema = z.object({
   date: z.string().datetime(),
   startTime: z
     .string()
-    .regex(/^\d{2}:\d{2}$/, "Start time must be in HH:mm format"),
+    .regex(
+      /^([01]?\d|2[0-3]):([0-5]\d)$/,
+      "Start time must be in HH:mm format",
+    ),
   endTime: z
     .string()
-    .regex(/^\d{2}:\d{2}$/, "End time must be in HH:mm format"),
+    .regex(/^([01]?\d|2[0-3]):([0-5]\d)$/, "End time must be in HH:mm format"),
+});
+
+export const bookingCheckInCodeSchema = z.object({
+  checkInCode: z.string().min(1, "Check-in code is required"),
 });
 
 const coachVerificationDocumentTypeSchema = z.enum([

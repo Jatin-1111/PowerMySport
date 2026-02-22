@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { IAvailability, ServiceMode } from "../types";
+import { IAvailability, IOwnVenueDetails, ServiceMode } from "../types";
 
 export interface CoachDocument extends Document {
   id?: string;
@@ -10,7 +10,7 @@ export interface CoachDocument extends Document {
   hourlyRate: number;
   sportPricing?: Record<string, number>;
   serviceMode: ServiceMode;
-  venueId?: mongoose.Types.ObjectId;
+  ownVenueDetails?: IOwnVenueDetails; // Venue details stored in coach profile for bookings only (not marketplace)
   baseLocation?: {
     // For FREELANCE coaches: their home/office location
     type: "Point";
@@ -97,9 +97,36 @@ const coachSchema = new Schema<CoachDocument>(
       },
       required: [true, "Service mode is required"],
     },
-    venueId: {
-      type: Schema.Types.ObjectId,
-      ref: "Venue",
+    ownVenueDetails: {
+      name: { type: String },
+      address: { type: String },
+      location: {
+        type: {
+          type: String,
+          enum: ["Point"],
+        },
+        coordinates: {
+          type: [Number],
+          validate: {
+            validator(v: any) {
+              // Allow null/undefined for optional ownVenueDetails
+              if (!v) return true;
+              // Must be an array with exactly 2 numbers
+              if (!Array.isArray(v) || v.length !== 2) return false;
+              // Both elements must be numbers
+              return v.every((coord) => typeof coord === "number" && !isNaN(coord));
+            },
+            message: "Coordinates must be [longitude, latitude]",
+          },
+        },
+      },
+      sports: { type: [String] },
+      amenities: { type: [String] },
+      pricePerHour: { type: Number },
+      description: { type: String },
+      images: { type: [String] },
+      imageS3Keys: { type: [String] },
+      openingHours: { type: String },
     },
     baseLocation: {
       type: {
@@ -109,7 +136,11 @@ const coachSchema = new Schema<CoachDocument>(
       coordinates: {
         type: [Number],
         validate: {
-          validator: (v: number[]) => v.length === 2,
+          validator(v: any) {
+            // baseLocation coordinates should always be present and valid
+            if (!Array.isArray(v) || v.length !== 2) return false;
+            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
+          },
           message: "Coordinates must be [longitude, latitude]",
         },
       },

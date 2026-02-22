@@ -142,7 +142,7 @@ export default function BookCoachPage() {
       // Convert date to ISO datetime format
       const bookingDate = new Date(bookingData.date).toISOString();
 
-      await bookingApi.initiateBooking({
+      const response = await bookingApi.initiateBooking({
         venueId: venue.id,
         coachId: coachId,
         sport: bookingData.sport,
@@ -152,7 +152,16 @@ export default function BookCoachPage() {
         dependentId: bookingData.dependentId || undefined,
       });
 
-      router.push("/dashboard/my-bookings?success=true");
+      const bookingId = response.booking?.id;
+      if (!bookingId) {
+        throw new Error("Booking could not be created");
+      }
+
+      await bookingApi.confirmMockPaymentSuccess(bookingId);
+
+      router.push(
+        `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&mock=true`,
+      );
     } catch (error: any) {
       console.error("Booking failed:", error);
       setError(
@@ -223,7 +232,7 @@ export default function BookCoachPage() {
             <div>
               <p className="text-sm text-slate-600">Coach Rate</p>
               <p className="text-2xl font-bold text-power-orange">
-                ?{coach.hourlyRate}
+                ₹{coach.hourlyRate}
                 <span className="text-sm text-slate-600">/hour</span>
               </p>
             </div>
@@ -234,7 +243,7 @@ export default function BookCoachPage() {
                   Venue: {venue.name}
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Venue Rate: ?
+                  Venue Rate: ₹
                   {getSportPrice(bookingData.sport || venue.sports[0] || "")}
                   /hour
                 </p>
@@ -358,14 +367,14 @@ export default function BookCoachPage() {
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-slate-600">Rate / hr</span>
                   <span className="font-semibold text-slate-900">
-                    ?{coach.hourlyRate + (venue ? venue.pricePerHour : 0)}
+                    ₹{coach.hourlyRate + (venue ? venue.pricePerHour : 0)}
                   </span>
                 </div>
                 <div className="border-t border-slate-300 pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-900">Total</span>
                     <span className="text-2xl font-bold text-power-orange">
-                      ?{total}
+                      ₹{total}
                     </span>
                   </div>
                 </div>

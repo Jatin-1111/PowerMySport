@@ -11,8 +11,7 @@ export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const status = searchParams.get("status") || "pending";
-  const bookingId = searchParams.get("bookingId");
-  const sessionId = searchParams.get("session_id");
+  const isMockPayment = searchParams.get("mock") === "true";
 
   const isSuccess = status === "success";
   const isCancel = status === "cancel";
@@ -24,7 +23,9 @@ export default function PaymentPage() {
       : "Processing payment";
 
   const description = isSuccess
-    ? "Thanks! Your payment is confirmed. We will update your booking shortly."
+    ? isMockPayment
+      ? "Mock payment completed successfully. Your booking is confirmed."
+      : "Thanks! Your payment is confirmed. We will update your booking shortly."
     : isCancel
       ? "No charge was made. You can try again whenever you are ready."
       : "We are confirming your payment. You can safely leave this page.";
@@ -48,20 +49,11 @@ export default function PaymentPage() {
               <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
               <p className="mt-2 text-sm text-slate-600">{description}</p>
             </div>
-            {(bookingId || sessionId) && (
+            {isMockPayment && (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs text-slate-600">
-                {bookingId && (
-                  <p>
-                    Booking ID:{" "}
-                    <span className="font-semibold">{bookingId}</span>
-                  </p>
-                )}
-                {sessionId && (
-                  <p>
-                    Session ID:{" "}
-                    <span className="font-semibold">{sessionId}</span>
-                  </p>
-                )}
+                <p>
+                  Mode: <span className="font-semibold">Mock payment</span>
+                </p>
               </div>
             )}
             <div className="flex flex-col gap-3">
