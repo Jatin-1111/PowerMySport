@@ -1,13 +1,13 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
+import { authApi } from "@/modules/auth/services/auth";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
-import { authApi } from "@/modules/auth/services/auth";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
-import { toast } from "@/lib/toast";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -194,4 +194,3 @@ export default function ResetPasswordPage() {
     </Suspense>
   );
 }
-

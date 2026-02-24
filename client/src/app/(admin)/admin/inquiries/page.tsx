@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
@@ -7,7 +8,6 @@ import {
   VenueInquiry,
   venueInquiryApi,
 } from "@/modules/venue-inquiry/services/venueInquiry";
-import { toast } from "@/lib/toast";
 import { MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 

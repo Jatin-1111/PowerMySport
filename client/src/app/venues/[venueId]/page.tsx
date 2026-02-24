@@ -2,6 +2,7 @@
 
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
@@ -19,7 +20,6 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "@/lib/toast";
 
 export default function VenueDetailsPage() {
   const params = useParams();

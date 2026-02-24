@@ -1,12 +1,12 @@
 ﻿"use client";
 
-import { useState } from "react";
-import { IndianRupee, Lightbulb, Camera, User, X } from "lucide-react";
+import { toast } from "@/lib/toast";
+import { onboardingApi } from "@/modules/onboarding/services/onboarding";
+import { VenueCoach } from "@/modules/onboarding/types/onboarding";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { VenueCoach } from "@/modules/onboarding/types/onboarding";
-import { onboardingApi } from "@/modules/onboarding/services/onboarding";
-import { toast } from "@/lib/toast";
+import { Camera, IndianRupee, Lightbulb, User, X } from "lucide-react";
+import { useState } from "react";
 
 interface Step5CoachListProps {
   onFinalize: (coaches: VenueCoach[]) => Promise<void>;

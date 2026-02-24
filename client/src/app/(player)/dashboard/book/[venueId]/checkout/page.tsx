@@ -13,6 +13,7 @@ import {
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { toast } from "@/lib/toast";
 import {
   CheckoutDetailItem,
   CheckoutDetailList,
@@ -34,7 +35,6 @@ import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Venue } from "@/types";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
-import { toast } from "@/lib/toast";
 
 const paymentOptions: PaymentMethodOption[] = [
   {

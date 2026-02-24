@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { X } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { X } from "lucide-react";
+import { KeyboardEvent, useEffect, useRef, useState } from "react";
 
 interface EmailVerificationModalProps {
   email: string;

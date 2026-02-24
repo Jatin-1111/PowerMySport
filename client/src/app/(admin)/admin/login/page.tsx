@@ -1,11 +1,11 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
 import { adminApi } from "@/modules/admin/services/admin";
 import { ArrowLeft, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { toast } from "@/lib/toast";
 
 export default function AdminLoginPage() {
   const router = useRouter();

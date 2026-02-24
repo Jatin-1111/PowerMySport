@@ -1,6 +1,6 @@
-﻿import type { Metadata } from "next";
+﻿import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -35,4 +35,3 @@ export default function RootLayout({
     </html>
   );
 }
-

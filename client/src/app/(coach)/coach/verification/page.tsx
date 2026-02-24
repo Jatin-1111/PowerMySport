@@ -1,32 +1,31 @@
 "use client";
 
 import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
+import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { coachApi } from "@/modules/coach/services/coach";
+import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import OpeningHoursInput, {
+  getDefaultOpeningHours,
+  OpeningHours,
+} from "@/modules/onboarding/components/onboarding/OpeningHoursInput";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import OpeningHoursInput, {
-  OpeningHours,
-  getDefaultOpeningHours,
-} from "@/modules/onboarding/components/onboarding/OpeningHoursInput";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
-import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { Coach, CoachVerificationDocument, ServiceMode, User } from "@/types";
 import {
-  CheckCircle,
-  Upload,
-  Lightbulb,
   Award,
   Briefcase,
-  Target,
-  Star,
-  Users,
-  MapPin,
   Clock,
+  Lightbulb,
+  MapPin,
+  Star,
+  Target,
+  Upload,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useRef } from "react";
-import { toast } from "@/lib/toast";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type VerificationStep = 1 | 2 | 3;
 
@@ -661,7 +660,9 @@ export default function CoachVerificationPage() {
       setCoachProfile(step2Response.data);
       localStorage.removeItem("coachServiceMode");
       setStep(3);
-      toast.success("Step 2 completed. Now upload your certification documents.");
+      toast.success(
+        "Step 2 completed. Now upload your certification documents.",
+      );
     } catch (saveError) {
       toast.error(
         saveError instanceof Error

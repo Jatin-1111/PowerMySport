@@ -1,18 +1,10 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
-import { toast } from "@/lib/toast";
-import { useState, useMemo } from "react";
-import {
-  ArrowLeft,
-  Camera,
-  Target,
-  X,
-  CheckCircle,
-  AlertCircle,
-  Upload,
-} from "lucide-react";
+import { Camera, Upload, X } from "lucide-react";
+import { useMemo, useState } from "react";
 
 interface UploadedImage {
   url: string;

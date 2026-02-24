@@ -1,23 +1,21 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
-import { toast } from "@/lib/toast";
 import {
-  CheckCircle,
-  FileText,
-  Upload,
-  AlertCircle,
-  Building2,
-  ClipboardList,
-  Briefcase,
-  Shield,
   BadgeCheck,
-  Lightbulb,
-  X, // Keep X as it's used for error display
-  ClipboardCheck, // Keep ClipboardCheck if it's used elsewhere, or remove if not
-  Mail, // Keep Mail if it's used elsewhere, or remove if not
-  Zap, // Keep Zap if it's used elsewhere, or remove if not
+  Briefcase,
+  Building2,
+  CheckCircle, // Keep X as it's used for error display
+  ClipboardCheck,
+  ClipboardList,
+  FileText, // Keep ClipboardCheck if it's used elsewhere, or remove if not
+  Mail,
+  Shield,
+  Upload,
+  X, // Keep Mail if it's used elsewhere, or remove if not
+  Zap,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -154,7 +152,9 @@ export default function Step3DocumentUpload({
     e.preventDefault();
 
     if (uploadedDocs.length < presignedUrls.length) {
-      toast.error(`Please upload all ${presignedUrls.length} required documents`);
+      toast.error(
+        `Please upload all ${presignedUrls.length} required documents`,
+      );
       return;
     }
 

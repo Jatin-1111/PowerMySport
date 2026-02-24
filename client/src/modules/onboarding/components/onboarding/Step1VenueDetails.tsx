@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { useState, useEffect, useRef } from "react";
+import { toast } from "@/lib/toast";
 import { OnboardingStep2Payload } from "@/modules/onboarding/types/onboarding";
 import axios from "axios";
-import { toast } from "@/lib/toast";
+import { useEffect, useRef, useState } from "react";
 import OpeningHoursInput, { getDefaultOpeningHours } from "./OpeningHoursInput";
 
 interface Step1VenueDetailsProps {

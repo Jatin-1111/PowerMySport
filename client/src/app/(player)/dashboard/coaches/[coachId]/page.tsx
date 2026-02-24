@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
@@ -8,7 +9,6 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Coach, User, Venue } from "@/types";
-import { toast } from "@/lib/toast";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 

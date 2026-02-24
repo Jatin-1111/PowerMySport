@@ -1,11 +1,11 @@
 ﻿"use client";
 
-import { useState } from "react";
-import { Card } from "@/modules/shared/ui/Card";
-import { Button } from "@/modules/shared/ui/Button";
-import { Lightbulb } from "lucide-react";
-import EmailVerificationModal from "./EmailVerificationModal";
 import { toast } from "@/lib/toast";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card } from "@/modules/shared/ui/Card";
+import { Lightbulb } from "lucide-react";
+import { useState } from "react";
+import EmailVerificationModal from "./EmailVerificationModal";
 
 interface ContactInfoFormData {
   ownerName: string;

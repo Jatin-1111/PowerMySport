@@ -1,11 +1,10 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
-import { OnboardingStep2Payload } from "@/modules/onboarding/types/onboarding";
-import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { toast } from "@/lib/toast";
+import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import { OnboardingStep2Payload } from "@/modules/onboarding/types/onboarding";
+import { Button } from "@/modules/shared/ui/Button";
+import { useEffect, useState } from "react";
 import OpeningHoursInput, { getDefaultOpeningHours } from "./OpeningHoursInput";
 
 interface Step2VenueDetailsProps {
@@ -292,7 +291,9 @@ export default function Step2VenueDetails({
       try {
         const result = await geoApi.geocode(formData.address);
         if (!result) {
-          toast.error("We couldn't find this address. Please pick a suggestion.");
+          toast.error(
+            "We couldn't find this address. Please pick a suggestion.",
+          );
           return;
         }
 

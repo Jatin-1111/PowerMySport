@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
 import {
   OnboardingStep1Payload,
@@ -7,15 +8,14 @@ import {
   PresignedUrl,
   VenueCoach,
 } from "@/modules/onboarding/types/onboarding";
+import { ArrowLeft, Check } from "lucide-react";
 import { useCallback, useState } from "react";
+import { getDefaultOpeningHours } from "./OpeningHoursInput";
 import Step1ContactInfo from "./Step1ContactInfo";
 import Step2ImageUpload from "./Step2ImageUpload";
 import Step2VenueDetails from "./Step2VenueDetails";
 import Step3DocumentUpload from "./Step3DocumentUpload";
 import Step5CoachList from "./Step5CoachList";
-import { getDefaultOpeningHours } from "./OpeningHoursInput";
-import { Check, ArrowLeft } from "lucide-react";
-import { toast } from "@/lib/toast";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
@@ -76,9 +76,7 @@ export default function OnboardingContainer() {
         setCurrentStep(2);
         return { venueId: newVenueId };
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to proceed",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to proceed");
         throw err;
       } finally {
         setLoading(false);
@@ -116,9 +114,7 @@ export default function OnboardingContainer() {
         setImagePresignedUrls(imageUrlsResponse.data.uploadUrls || []);
         setCurrentStep(3);
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to proceed",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to proceed");
       } finally {
         setLoading(false);
       }
@@ -354,9 +350,7 @@ export default function OnboardingContainer() {
       setVenueId(result.venueId);
     } catch (err) {
       console.error("Skip step 1 error:", err);
-      toast.error(
-        err instanceof Error ? err.message : "Failed to skip step 1",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to skip step 1");
     } finally {
       setLoading(false);
     }
@@ -497,9 +491,7 @@ export default function OnboardingContainer() {
       setCurrentStep(4);
     } catch (err) {
       console.error("Skip step 3 error:", err);
-      toast.error(
-        err instanceof Error ? err.message : "Failed to skip step 3",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to skip step 3");
     } finally {
       setLoading(false);
     }
@@ -595,9 +587,7 @@ export default function OnboardingContainer() {
       }
     } catch (err) {
       console.error("Skip step 4 error:", err);
-      toast.error(
-        err instanceof Error ? err.message : "Failed to skip step 4",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to skip step 4");
     } finally {
       setLoading(false);
     }

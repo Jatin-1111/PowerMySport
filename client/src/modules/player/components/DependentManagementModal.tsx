@@ -1,10 +1,10 @@
 "use client";
 
+import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "@/lib/toast";
 
 interface Dependent {
   _id?: string;

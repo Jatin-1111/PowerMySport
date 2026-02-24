@@ -1,13 +1,13 @@
 ﻿"use client";
 
-import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { venueApi } from "@/modules/venue/services/venue";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
-import { toast } from "@/lib/toast";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card } from "@/modules/shared/ui/Card";
+import { venueApi } from "@/modules/venue/services/venue";
 import { Venue } from "@/types";
 import { MapPin } from "lucide-react";
 import Link from "next/link";
@@ -228,7 +228,9 @@ export default function VenueInventoryPage() {
         try {
           const result = await geoApi.geocode(formData.address);
           if (!result) {
-            toast.error("We couldn't find this address. Please pick a suggestion.");
+            toast.error(
+              "We couldn't find this address. Please pick a suggestion.",
+            );
             setIsSubmitting(false);
             return;
           }

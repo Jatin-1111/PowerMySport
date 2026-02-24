@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
 import {
@@ -11,7 +12,6 @@ import { Card } from "@/modules/shared/ui/Card";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { toast } from "@/lib/toast";
 
 interface AdminVenueApprovalPanelProps {
   initialVenues?: PendingVenueListItem[];
@@ -60,7 +60,9 @@ export default function AdminVenueApprovalPanel({
           totalPages: response.data.totalPages || 1,
         });
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to load venues");
+        toast.error(
+          err instanceof Error ? err.message : "Failed to load venues",
+        );
       } finally {
         setLoading(false);
       }
@@ -118,7 +120,9 @@ export default function AdminVenueApprovalPanel({
       setViewMode("list");
       setSelectedVenue(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to approve venue");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to approve venue",
+      );
     } finally {
       setActionLoading(false);
     }
@@ -157,7 +161,9 @@ export default function AdminVenueApprovalPanel({
       setSelectedVenue(null);
       setRejectionReason("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to reject venue");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to reject venue",
+      );
     } finally {
       setActionLoading(false);
     }

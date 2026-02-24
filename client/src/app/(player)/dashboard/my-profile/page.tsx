@@ -1,13 +1,13 @@
 ﻿"use client";
 
 import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
+import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { User } from "@/types";
-import { toast } from "@/lib/toast";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 

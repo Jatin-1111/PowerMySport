@@ -1,10 +1,10 @@
 "use client";
 
+import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { User } from "@/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { toast } from "@/lib/toast";
 
 interface ProfilePictureUploadProps {
   currentPhotoUrl?: string;
@@ -88,7 +88,9 @@ export default function ProfilePictureUpload({
         onUploadSuccess(confirmResponse.data);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to upload image");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to upload image",
+      );
       setPreviewUrl(currentPhotoUrl || null);
     } finally {
       setUploading(false);

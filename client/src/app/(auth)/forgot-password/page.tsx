@@ -1,11 +1,11 @@
 ﻿"use client";
 
+import { toast } from "@/lib/toast";
+import { authApi } from "@/modules/auth/services/auth";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
-import { authApi } from "@/modules/auth/services/auth";
 import Link from "next/link";
 import React, { useState } from "react";
-import { toast } from "@/lib/toast";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -110,4 +110,3 @@ export default function ForgotPasswordPage() {
     </Card>
   );
 }
-
