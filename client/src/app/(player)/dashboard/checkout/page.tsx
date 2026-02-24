@@ -10,7 +10,7 @@ import {
   TicketPercent,
   Wallet,
 } from "lucide-react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { toast } from "@/lib/toast";
@@ -32,8 +32,9 @@ import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { coachApi } from "@/modules/coach/services/coach";
 import { venueApi } from "@/modules/venue/services/venue";
-import { Venue } from "@/types";
+import { Coach, Venue } from "@/types";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
 
 const paymentOptions: PaymentMethodOption[] = [
@@ -58,12 +59,24 @@ const paymentOptions: PaymentMethodOption[] = [
   },
 ];
 
-export default function VenueCheckoutPage() {
-  const params = useParams();
+type BookingType = "coach" | "venue";
+
+export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const venueId = params.venueId as string;
 
+  // Query params
+  const type = (searchParams.get("type") || "venue") as BookingType;
+  const coachId = searchParams.get("coachId") || "";
+  const venueId = searchParams.get("venueId") || "";
+  const date = searchParams.get("date") || "";
+  const startTime = searchParams.get("startTime") || "";
+  const endTime = searchParams.get("endTime") || "";
+  const sport = searchParams.get("sport") || "";
+  const dependentId = searchParams.get("dependentId") || "";
+
+  // State
+  const [coach, setCoach] = useState<Coach | null>(null);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("card");
@@ -73,32 +86,37 @@ export default function VenueCheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
-  const date = searchParams.get("date") || "";
-  const startTime = searchParams.get("startTime") || "";
-  const endTime = searchParams.get("endTime") || "";
-  const sport = searchParams.get("sport") || "";
-  const dependentId = searchParams.get("dependentId") || "";
-
+  // Load coach or venue details
   useEffect(() => {
-    const loadVenue = async () => {
+    const loadDetails = async () => {
       try {
-        const response = await venueApi.getVenue(venueId);
-        if (response.success && response.data) {
-          setVenue(response.data);
-        } else {
-          toast.error("Unable to load venue details");
+        if (type === "coach" && coachId) {
+          const response = await coachApi.getCoachById(coachId);
+          if (response.success && response.data) {
+            setCoach(response.data);
+          } else {
+            toast.error("Unable to load coach details");
+          }
+        } else if (type === "venue" && venueId) {
+          const response = await venueApi.getVenue(venueId);
+          if (response.success && response.data) {
+            setVenue(response.data);
+          } else {
+            toast.error("Unable to load venue details");
+          }
         }
-      } catch (loadError) {
-        console.error("Failed to load venue:", loadError);
-        toast.error("Unable to load venue details");
+      } catch (error) {
+        console.error("Failed to load details:", error);
+        toast.error("Unable to load details");
       } finally {
         setLoading(false);
       }
     };
 
-    loadVenue();
-  }, [venueId]);
+    loadDetails();
+  }, [type, coachId, venueId]);
 
+  // Duration calculation
   const durationMinutes = useMemo(() => {
     if (!startTime || !endTime) return 0;
     const [startHour, startMinute = "0"] = startTime.split(":");
@@ -113,23 +131,29 @@ export default function VenueCheckoutPage() {
     return Number((durationMinutes / 60).toFixed(2));
   }, [durationMinutes]);
 
-  const pricePerHour = useMemo(() => {
-    if (!venue) return 0;
-    if (
-      sport &&
-      venue.sportPricing &&
-      venue.sportPricing[sport] !== undefined
-    ) {
-      return venue.sportPricing[sport];
+  // Price calculation
+  const getPricePerHour = () => {
+    if (type === "coach" && coach) {
+      if (sport && coach.sportPricing && coach.sportPricing[sport]) {
+        return coach.sportPricing[sport];
+      }
+      return coach.hourlyRate || 0;
+    } else if (type === "venue" && venue) {
+      if (sport && venue.sportPricing && venue.sportPricing[sport]) {
+        return venue.sportPricing[sport];
+      }
+      return venue.pricePerHour || 0;
     }
-    return venue.pricePerHour;
-  }, [venue, sport]);
+    return 0;
+  };
 
+  const pricePerHour = getPricePerHour();
   const subtotal = durationHours * pricePerHour;
   const serviceFee = Math.round(subtotal * 0.02);
   const taxes = Math.round(subtotal * 0.05);
   const total = Math.max(0, subtotal + serviceFee + taxes - discount);
 
+  // Booking details
   const bookingDetails: CheckoutDetailItem[] = [
     {
       label: "Date",
@@ -151,11 +175,25 @@ export default function VenueCheckoutPage() {
       value: durationHours ? `${durationHours} hour(s)` : "-",
       hint: durationHours ? `${durationHours} x hourly rate` : undefined,
     },
+    ...(type === "coach"
+      ? [
+          {
+            label: "Coach",
+            value: coach ? coach.sports?.[0] + " Coach" : "Loading...",
+          },
+        ]
+      : [
+          {
+            label: "Venue",
+            value: venue?.name || "Loading...",
+          },
+        ]),
   ];
 
+  // Summary items
   const summaryItems: CheckoutSummaryItem[] = [
     {
-      label: "Venue rate",
+      label: type === "coach" ? "Coach rate" : "Venue rate",
       value: `${formatCurrency(pricePerHour)}/hr`,
     },
     {
@@ -186,13 +224,17 @@ export default function VenueCheckoutPage() {
 
   const hasRequiredDetails = Boolean(date && startTime && endTime && sport);
   const hasValidDuration = durationMinutes > 0;
+  const isDetailsReady = type === "coach" ? Boolean(coach) : Boolean(venue);
 
   const steps = [
     {
       id: 1,
       label: "Step 1",
       title: "Review your booking",
-      description: "Confirm venue and schedule details.",
+      description:
+        type === "coach"
+          ? "Confirm coach and schedule details."
+          : "Confirm venue and schedule details.",
     },
     {
       id: 2,
@@ -258,8 +300,8 @@ export default function VenueCheckoutPage() {
       return;
     }
 
-    if (!venue) {
-      toast.error("Venue details are not available.");
+    if (!isDetailsReady) {
+      toast.error("Details are not available.");
       return;
     }
 
@@ -267,15 +309,63 @@ export default function VenueCheckoutPage() {
 
     try {
       const bookingDate = new Date(date).toISOString();
+      let response;
 
-      const response = await bookingApi.initiateBooking({
-        venueId,
-        sport,
-        date: bookingDate,
-        startTime,
-        endTime,
-        dependentId: dependentId || undefined,
-      });
+      if (type === "coach") {
+        // Get player location for coach booking
+        const playerLocation = await new Promise<{
+          type: "Point";
+          coordinates: [number, number];
+        }>((resolve, reject) => {
+          const timeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Location request timed out. Coach is out of your service area or location is required.",
+                ),
+              ),
+            10000,
+          );
+
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              clearTimeout(timeout);
+              resolve({
+                type: "Point",
+                coordinates: [
+                  position.coords.longitude,
+                  position.coords.latitude,
+                ],
+              });
+            },
+            (error) => {
+              clearTimeout(timeout);
+              reject(error);
+            },
+            { enableHighAccuracy: true },
+          );
+        });
+
+        response = await bookingApi.initiateBooking({
+          coachId,
+          sport,
+          date: bookingDate,
+          startTime,
+          endTime,
+          playerLocation,
+          dependentId: dependentId || undefined,
+        });
+      } else {
+        // Venue booking doesn't need player location
+        response = await bookingApi.initiateBooking({
+          venueId,
+          sport,
+          date: bookingDate,
+          startTime,
+          endTime,
+          dependentId: dependentId || undefined,
+        });
+      }
 
       const bookingId = response.booking?.id;
       if (!bookingId) {
@@ -285,14 +375,15 @@ export default function VenueCheckoutPage() {
       await bookingApi.confirmMockPaymentSuccess(bookingId);
 
       router.push(
-        `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&mock=true`,
+        `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&type=${type}&mock=true`,
       );
-    } catch (submitError: any) {
+    } catch (submitError: unknown) {
       console.error("Checkout failed:", submitError);
-      toast.error(
-        submitError.response?.data?.message ||
-          "Unable to start checkout. Please try again.",
-      );
+      const errorMessage =
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to complete checkout. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -306,16 +397,18 @@ export default function VenueCheckoutPage() {
     );
   }
 
-  if (!venue) {
+  if (!isDetailsReady) {
     return (
       <div className="rounded-2xl bg-white p-8 text-center">
-        <p className="text-slate-600">Venue not found.</p>
+        <p className="text-slate-600">
+          {type === "coach" ? "Coach" : "Venue"} not found.
+        </p>
         <Button
           variant="outline"
           className="mt-4"
-          onClick={() => router.push("/venues")}
+          onClick={() => router.push(type === "coach" ? "/coaches" : "/venues")}
         >
-          Browse venues
+          Browse {type === "coach" ? "coaches" : "venues"}
         </Button>
       </div>
     );
@@ -325,7 +418,11 @@ export default function VenueCheckoutPage() {
     <div className="space-y-6">
       <PlayerPageHeader
         badge="Checkout"
-        title="Complete your venue booking"
+        title={
+          type === "coach"
+            ? "Complete your coach booking"
+            : "Complete your venue booking"
+        }
         subtitle="Review your booking details, pick a payment method, and confirm your slot."
         action={
           <div className="flex flex-wrap gap-2">
@@ -390,7 +487,11 @@ export default function VenueCheckoutPage() {
             <CheckoutSummary
               items={summaryItems}
               totalValue={formatCurrency(total)}
-              note="Your slot is reserved for 10 minutes after confirmation."
+              note={
+                type === "venue"
+                  ? "Your slot is reserved for 10 minutes after confirmation."
+                  : "Booking confirmed after location verification."
+              }
               cta={
                 <div className="flex flex-col gap-2">
                   {currentStep > 1 && (
@@ -427,7 +528,7 @@ export default function VenueCheckoutPage() {
 
             <Card className="bg-white">
               <div className="flex items-start gap-3">
-                <span className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-turf-green/10 text-turf-green">
+                <span className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-green-100 shrink-0 text-green-600">
                   <ShieldCheck size={18} />
                 </span>
                 <div>
@@ -445,117 +546,159 @@ export default function VenueCheckoutPage() {
         }
       >
         {currentStep === 1 && (
-          <CheckoutSection
-            title="Venue overview"
-            description="Confirm the venue and location before you pay."
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-40">
-                {venue.images?.[0] ? (
-                  <img
-                    src={venue.images[0]}
-                    alt={venue.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                    No image available
+          <>
+            {type === "venue" && venue && (
+              <CheckoutSection
+                title="Venue overview"
+                description="Confirm the venue and location before you pay."
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-40">
+                    {venue.images?.[0] ? (
+                      <img
+                        src={venue.images[0]}
+                        alt={venue.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
+                        No image available
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-lg font-bold text-slate-900">{venue.name}</p>
-                {venue.address && (
-                  <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin size={16} />
-                    {venue.address}
-                  </p>
-                )}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {venue.sports.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange"
-                    >
-                      {item}
-                    </span>
-                  ))}
+                  <div className="flex-1">
+                    <p className="text-lg font-bold text-slate-900">
+                      {venue.name}
+                    </p>
+                    {venue.address && (
+                      <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+                        <MapPin size={16} />
+                        {venue.address}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {venue.sports.map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </CheckoutSection>
-        )}
-
-        {currentStep === 1 && (
-          <CheckoutSection
-            title="Booking details"
-            description="Verify your schedule and attendee details."
-            action={
-              <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <Calendar size={14} />
-                {date ? formatDate(date) : "No date"}
-              </span>
-            }
-          >
-            <CheckoutDetailList items={bookingDetails} />
-            <div className="mt-4 flex flex-wrap gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-              <span className="flex items-center gap-2">
-                <Clock size={16} className="text-slate-400" />
-                Arrival buffer: 10 minutes before slot start.
-              </span>
-            </div>
-          </CheckoutSection>
-        )}
-
-        {currentStep === 2 && (
-          <CheckoutSection
-            title="Payment method"
-            description="Choose how you want to pay for this booking."
-          >
-            <PaymentMethodSelector
-              value={paymentMethod}
-              onChange={setPaymentMethod}
-              options={paymentOptions}
-            />
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-              Selected:{" "}
-              {
-                paymentOptions.find((option) => option.id === paymentMethod)
-                  ?.label
-              }
-            </div>
-          </CheckoutSection>
-        )}
-
-        {currentStep === 2 && (
-          <CheckoutSection
-            title="Promo code"
-            description="Apply a promo to save on your booking."
-          >
-            <form
-              onSubmit={handleApplyPromo}
-              className="flex flex-col gap-3 sm:flex-row"
-            >
-              <div className="relative flex-1">
-                <TicketPercent
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  value={promoCode}
-                  onChange={(event) => setPromoCode(event.target.value)}
-                  placeholder="Enter code (try PLAY10)"
-                  className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
-                />
-              </div>
-              <Button type="submit" variant="outline" className="sm:w-40">
-                Apply
-              </Button>
-            </form>
-            {promoMessage && (
-              <p className="mt-2 text-xs text-slate-500">{promoMessage}</p>
+              </CheckoutSection>
             )}
-          </CheckoutSection>
+
+            {type === "coach" && coach && (
+              <CheckoutSection
+                title="Coach overview"
+                description="Confirm the coach and location before you pay."
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-40 flex items-center justify-center">
+                    <span className="text-2xl text-slate-400">🏆</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-lg font-bold text-slate-900">
+                      {coach.sports?.[0] || "Coach"} Coach
+                    </p>
+                    {coach.serviceMode && (
+                      <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+                        <MapPin size={16} />
+                        {coach.serviceMode === "FREELANCE"
+                          ? "Freelance"
+                          : coach.serviceMode === "OWN_VENUE"
+                            ? "Own Venue"
+                            : "Hybrid"}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {coach.sports.map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CheckoutSection>
+            )}
+
+            <CheckoutSection
+              title="Booking details"
+              description="Verify your schedule and attendee details."
+              action={
+                <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <Calendar size={14} />
+                  {date ? formatDate(date) : "No date"}
+                </span>
+              }
+            >
+              <CheckoutDetailList items={bookingDetails} />
+              <div className="mt-4 flex flex-wrap gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                <span className="flex items-center gap-2">
+                  <Clock size={16} className="text-slate-400" />
+                  Arrival buffer: 10 minutes before slot start.
+                </span>
+              </div>
+            </CheckoutSection>
+          </>
+        )}
+
+        {currentStep === 2 && (
+          <>
+            <CheckoutSection
+              title="Payment method"
+              description="Choose how you want to pay for this booking."
+            >
+              <PaymentMethodSelector
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                options={paymentOptions}
+              />
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                Selected:{" "}
+                {
+                  paymentOptions.find((option) => option.id === paymentMethod)
+                    ?.label
+                }
+              </div>
+            </CheckoutSection>
+
+            <CheckoutSection
+              title="Promo code"
+              description="Apply a promo to save on your booking."
+            >
+              <form
+                onSubmit={handleApplyPromo}
+                className="flex flex-col gap-3 sm:flex-row"
+              >
+                <div className="relative flex-1">
+                  <TicketPercent
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    value={promoCode}
+                    onChange={(event) => setPromoCode(event.target.value)}
+                    placeholder="Enter code (try PLAY10)"
+                    className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                  />
+                </div>
+                <Button type="submit" variant="outline" className="sm:w-40">
+                  Apply
+                </Button>
+              </form>
+              {promoMessage && (
+                <p className="mt-2 text-xs text-slate-500">{promoMessage}</p>
+              )}
+            </CheckoutSection>
+          </>
         )}
 
         {currentStep === 3 && (

@@ -19,6 +19,7 @@ interface Step1ContactInfoProps {
   ) => Promise<{ venueId: string }>;
   loading?: boolean;
   onSkip?: () => Promise<void>;
+  onVerificationComplete?: () => void;
 }
 
 const isDev =
@@ -28,6 +29,7 @@ export default function Step1ContactInfo({
   onContactInfoSubmit,
   loading = false,
   onSkip,
+  onVerificationComplete,
 }: Step1ContactInfoProps) {
   const [formData, setFormData] = useState<ContactInfoFormData>({
     ownerName: "",
@@ -86,32 +88,11 @@ export default function Step1ContactInfo({
     setIsSubmitting(true);
 
     try {
-      // Step 1: Create venue with contact info
+      // Submit contact info - backend will send verification code automatically
       const result = await onContactInfoSubmit(formData);
       setVenueId(result.venueId);
 
-      // Step 2: Send verification code
-      const verificationResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/venues/onboarding/send-verification`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.ownerEmail,
-            name: formData.ownerName,
-          }),
-        },
-      );
-
-      const verificationData = await verificationResponse.json();
-
-      if (!verificationResponse.ok || !verificationData.success) {
-        throw new Error(
-          verificationData.message || "Failed to send verification code",
-        );
-      }
-
-      // Step 3: Show verification modal
+      // Show verification modal - code has already been sent by backend
       setShowVerificationModal(true);
     } catch (error) {
       toast.error(
@@ -124,8 +105,8 @@ export default function Step1ContactInfo({
 
   const handleVerificationSuccess = () => {
     setShowVerificationModal(false);
-    // The parent component will handle navigation to next step
-    // This is already done by onContactInfoSubmit callback
+    // Call parent callback to proceed to next step
+    onVerificationComplete?.();
   };
 
   return (

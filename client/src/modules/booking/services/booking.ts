@@ -94,4 +94,10 @@ export const bookingApi = {
     });
     return response.data;
   },
+
+  // Get single booking by ID
+  getBooking: async (bookingId: string): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.get(`/bookings/${bookingId}`);
+    return response.data;
+  },
 };

@@ -1,7 +1,19 @@
 import mongoose from "mongoose";
 
+let isListenersAttached = false;
+let connectionPromise: Promise<typeof mongoose> | null = null;
+
 export const connectDB = async (): Promise<void> => {
   try {
+    if (mongoose.connection.readyState === 1) {
+      return;
+    }
+
+    if (connectionPromise) {
+      await connectionPromise;
+      return;
+    }
+
     const mongoUri =
       process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
 
@@ -14,35 +26,42 @@ export const connectDB = async (): Promise<void> => {
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
     };
 
-    // Connection events
-    mongoose.connection.on("connected", () => {
-      console.log("✅ MongoDB connected successfully");
-    });
+    if (!isListenersAttached) {
+      mongoose.connection.on("connected", () => {
+        console.log("✅ MongoDB connected successfully");
+      });
 
-    mongoose.connection.on("error", (err) => {
-      console.error("❌ MongoDB connection error:", err);
-    });
+      mongoose.connection.on("error", (err) => {
+        console.error("❌ MongoDB connection error:", err);
+      });
 
-    mongoose.connection.on("disconnected", () => {
-      console.warn("⚠️ MongoDB disconnected");
-    });
+      mongoose.connection.on("disconnected", () => {
+        console.warn("⚠️ MongoDB disconnected");
+      });
 
-    // Handle application termination
-    process.on("SIGINT", async () => {
-      await mongoose.connection.close();
-      console.log("🛑 MongoDB connection closed due to app termination");
-      process.exit(0);
-    });
+      if (!process.env.VERCEL) {
+        process.on("SIGINT", async () => {
+          await mongoose.connection.close();
+          console.log("🛑 MongoDB connection closed due to app termination");
+          process.exit(0);
+        });
+      }
 
-    await mongoose.connect(mongoUri, options);
+      isListenersAttached = true;
+    }
+
+    connectionPromise = mongoose.connect(mongoUri, options);
+    await connectionPromise;
+    connectionPromise = null;
 
     // Log connection pool stats on startup
     console.log(
       `🔌 Database Pool initialized: Min ${options.minPoolSize} / Max ${options.maxPoolSize} connections`,
     );
   } catch (error) {
+    connectionPromise = null;
     console.error("❌ MongoDB connection failed:", error);
-    process.exit(1);
+    throw error;
   }
 };
 

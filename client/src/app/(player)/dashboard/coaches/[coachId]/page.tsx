@@ -132,64 +132,19 @@ export default function BookCoachPage() {
     setIsSubmitting(true);
 
     try {
-      const playerLocation = await new Promise<{
-        type: "Point";
-        coordinates: [number, number];
-      }>((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error("Location is not supported on this device"));
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              type: "Point",
-              coordinates: [
-                position.coords.longitude,
-                position.coords.latitude,
-              ],
-            });
-          },
-          () => reject(new Error("Please enable location to book this coach")),
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000,
-          },
-        );
-      });
-
-      // Convert date to ISO datetime format
-      const bookingDate = new Date(bookingData.date).toISOString();
-
-      const response = await bookingApi.initiateBooking({
-        ...(venue?.id ? { venueId: venue.id } : {}),
-        coachId: coachId,
-        playerLocation,
-        sport: bookingData.sport,
-        date: bookingDate,
+      const params = new URLSearchParams({
+        type: "coach",
+        coachId,
+        date: bookingData.date,
         startTime: bookingData.startTime,
         endTime: bookingData.endTime,
-        dependentId: bookingData.dependentId || undefined,
+        sport: bookingData.sport,
+        ...(bookingData.dependentId && {
+          dependentId: bookingData.dependentId,
+        }),
       });
 
-      const bookingId = response.booking?.id;
-      if (!bookingId) {
-        throw new Error("Booking could not be created");
-      }
-
-      await bookingApi.confirmMockPaymentSuccess(bookingId);
-
-      router.push(
-        `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&mock=true`,
-      );
-    } catch (error: any) {
-      console.error("Booking failed:", error);
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to create booking. Please try again.",
-      );
+      router.push(`/dashboard/checkout?${params.toString()}`);
     } finally {
       setIsSubmitting(false);
     }

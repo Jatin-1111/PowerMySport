@@ -16,6 +16,7 @@ import Step2ImageUpload from "./Step2ImageUpload";
 import Step2VenueDetails from "./Step2VenueDetails";
 import Step3DocumentUpload from "./Step3DocumentUpload";
 import Step5CoachList from "./Step5CoachList";
+import EmailVerificationModal from "./EmailVerificationModal";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
@@ -35,6 +36,8 @@ export default function OnboardingContainer() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
   const [venueId, setVenueId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [emailToVerify, setEmailToVerify] = useState<string>("");
 
   // Step 1: Contact Info
   const [contactInfo, setContactInfo] = useState<OnboardingStep1Payload | null>(
@@ -73,7 +76,11 @@ export default function OnboardingContainer() {
         const newVenueId = response.data.venueId || (response.data as any)._id;
         setVenueId(newVenueId);
         setContactInfo(data);
-        setCurrentStep(2);
+
+        // Show email verification modal instead of proceeding directly
+        setEmailToVerify(data.email);
+        setShowEmailVerification(true);
+
         return { venueId: newVenueId };
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to proceed");
@@ -84,6 +91,21 @@ export default function OnboardingContainer() {
     },
     [],
   );
+
+  // ============ Email Verification ============
+  const handleEmailVerified = useCallback(() => {
+    setShowEmailVerification(false);
+    setCurrentStep(2);
+    toast.success("Email verified successfully!");
+  }, []);
+
+  const handleEmailVerificationClose = useCallback(() => {
+    setShowEmailVerification(false);
+    // Reset to step 1 if email verification is closed
+    setCurrentStep(1);
+    setVenueId("");
+    setContactInfo(null);
+  }, []);
 
   // ============ STEP 2: Submit venue details ============
   const handleStep2SubmitVenueDetails = useCallback(
@@ -689,6 +711,17 @@ export default function OnboardingContainer() {
               onContactInfoSubmit={handleStep1SubmitContactInfo}
               loading={loading}
               onSkip={handleSkipStep1}
+              onVerificationComplete={handleEmailVerified}
+            />
+          )}
+
+          {/* Email Verification Modal */}
+          {showEmailVerification && venueId && emailToVerify && (
+            <EmailVerificationModal
+              email={emailToVerify}
+              venueId={venueId}
+              onVerified={handleEmailVerified}
+              onClose={handleEmailVerificationClose}
             />
           )}
 

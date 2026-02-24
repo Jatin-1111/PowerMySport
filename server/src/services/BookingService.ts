@@ -669,5 +669,42 @@ export const confirmMockPaymentSuccess = async (
   return booking;
 };
 
+export const updatePaymentStatus = async (
+  bookingId: string,
+  payerUserId: string,
+  status: "PAID" | "PENDING" | "FAILED",
+): Promise<BookingDocument> => {
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.payments && booking.payments.length > 0) {
+    booking.payments = booking.payments.map((payment) => {
+      if (payment.userId.toString() !== payerUserId) {
+        return payment;
+      }
+
+      return {
+        ...payment,
+        status,
+        ...(status === "PAID" ? { paidAt: new Date() } : {}),
+      };
+    });
+  }
+
+  if (
+    status === "PAID" &&
+    (!booking.payments.length ||
+      booking.payments.every((payment) => payment.status === "PAID"))
+  ) {
+    booking.paymentConfirmedAt = new Date();
+  }
+
+  await booking.save();
+  return booking;
+};
+
 // Legacy function for backward compatibility
 export const createBooking = initiateBooking;

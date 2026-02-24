@@ -1,6 +1,20 @@
-import { Booking } from "../models/Booking";
+import { Booking, BookingPayment } from "../models/Booking";
 import { Venue } from "../models/Venue";
 import { Coach } from "../models/Coach";
+
+const getBookingVenueId = (venueRef: unknown): string | null => {
+  if (!venueRef) return null;
+  if (typeof venueRef === "object" && venueRef !== null && "_id" in venueRef) {
+    const populatedVenue = venueRef as { _id: { toString(): string } };
+    return populatedVenue._id.toString();
+  }
+  if (
+    typeof (venueRef as { toString?: () => string }).toString === "function"
+  ) {
+    return (venueRef as { toString: () => string }).toString();
+  }
+  return null;
+};
 
 /**
  * Get revenue analytics for a venue lister
@@ -56,7 +70,8 @@ export const getVenueListerAnalytics = async (
   const paidBookings = [...completedBookings, ...noShowBookings];
   paidBookings.forEach((booking) => {
     const venuePayment = booking.payments.find(
-      (p) => p.userType === "VENUE_LISTER" && p.status === "PAID",
+      (payment: BookingPayment) =>
+        payment.userType === "VENUE_LISTER" && payment.status === "PAID",
     );
     if (venuePayment) {
       totalRevenue += venuePayment.amount;
@@ -66,12 +81,13 @@ export const getVenueListerAnalytics = async (
   // Revenue by venue
   const revenueByVenue = venues.map((venue) => {
     const venueBookings = paidBookings.filter(
-      (b) => b.venueId._id.toString() === venue._id.toString(),
+      (b) => getBookingVenueId(b.venueId) === venue._id.toString(),
     );
 
     const revenue = venueBookings.reduce((sum, booking) => {
       const payment = booking.payments.find(
-        (p) => p.userType === "VENUE_LISTER" && p.status === "PAID",
+        (p: BookingPayment) =>
+          p.userType === "VENUE_LISTER" && p.status === "PAID",
       );
       return sum + (payment?.amount || 0);
     }, 0);
@@ -90,7 +106,8 @@ export const getVenueListerAnalytics = async (
   paidBookings.forEach((booking) => {
     const monthKey = booking.date.toISOString().slice(0, 7); // YYYY-MM
     const venuePayment = booking.payments.find(
-      (p) => p.userType === "VENUE_LISTER" && p.status === "PAID",
+      (p: BookingPayment) =>
+        p.userType === "VENUE_LISTER" && p.status === "PAID",
     );
 
     if (!monthlyData.has(monthKey)) {
@@ -163,7 +180,7 @@ export const getCoachAnalytics = async (
   const paidBookings = [...completedBookings, ...noShowBookings];
   paidBookings.forEach((booking) => {
     const coachPayment = booking.payments.find(
-      (p) => p.userType === "COACH" && p.status === "PAID",
+      (p: BookingPayment) => p.userType === "COACH" && p.status === "PAID",
     );
     if (coachPayment) {
       totalRevenue += coachPayment.amount;
@@ -176,7 +193,7 @@ export const getCoachAnalytics = async (
   paidBookings.forEach((booking) => {
     const monthKey = booking.date.toISOString().slice(0, 7); // YYYY-MM
     const coachPayment = booking.payments.find(
-      (p) => p.userType === "COACH" && p.status === "PAID",
+      (p: BookingPayment) => p.userType === "COACH" && p.status === "PAID",
     );
 
     if (!monthlyData.has(monthKey)) {
@@ -247,8 +264,8 @@ export const getAdminAnalytics = async (
 
   const totalRevenue = paidBookings.reduce((sum, booking) => {
     const bookingTotal = booking.payments
-      .filter((p) => p.status === "PAID")
-      .reduce((s, p) => s + p.amount, 0);
+      .filter((p: BookingPayment) => p.status === "PAID")
+      .reduce((s: number, p: BookingPayment) => s + p.amount, 0);
     return sum + bookingTotal;
   }, 0);
 
@@ -258,8 +275,8 @@ export const getAdminAnalytics = async (
   paidBookings.forEach((booking) => {
     const monthKey = booking.date.toISOString().slice(0, 7);
     const bookingRevenue = booking.payments
-      .filter((p) => p.status === "PAID")
-      .reduce((sum, p) => sum + p.amount, 0);
+      .filter((p: BookingPayment) => p.status === "PAID")
+      .reduce((sum: number, p: BookingPayment) => sum + p.amount, 0);
 
     if (!monthlyData.has(monthKey)) {
       monthlyData.set(monthKey, { revenue: 0, bookings: 0 });

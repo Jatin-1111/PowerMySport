@@ -13,6 +13,7 @@ import {
   deleteVenueOnboarding,
   UPLOAD_CONSTRAINTS,
 } from "../services/VenueOnboardingService";
+import { sendVerificationCode } from "../services/EmailVerificationService";
 
 /**
  * Venue Onboarding Controller
@@ -37,15 +38,27 @@ export const createVenueStep1 = async (
     // No authentication required - public endpoint
     const venue = await startVenueOnboarding(req.body);
 
+    // Send verification email
+    const { ownerName, ownerEmail } = req.body;
+    const emailResult = await sendVerificationCode(ownerEmail, ownerName);
+
+    if (!emailResult.success) {
+      res.status(400).json({
+        success: false,
+        message: emailResult.message || "Failed to send verification email",
+      });
+      return;
+    }
+
     res.status(201).json({
       success: true,
-      message: "Venue contact info saved. Proceed to Step 2: Venue Details",
+      message: "Venue contact info saved. Verification code sent to email.",
       data: {
         venueId: venue._id,
         ownerName: venue.ownerName,
         ownerEmail: venue.ownerEmail,
         approvalStatus: venue.approvalStatus,
-        nextStep: "Fill in venue details (name, location, sports, etc.)",
+        nextStep: "Verify your email (check your inbox for the code)",
       },
     });
   } catch (error) {

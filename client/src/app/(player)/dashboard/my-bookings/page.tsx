@@ -4,7 +4,7 @@ import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Booking } from "@/types";
+import { Booking, Coach, Venue } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import {
   Calendar,
@@ -12,6 +12,8 @@ import {
   IndianRupee,
   ChevronLeft,
   ChevronRight,
+  MapPin,
+  Award,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -21,6 +23,8 @@ interface PaginationInfo {
   page: number;
   totalPages: number;
 }
+
+type TabType = "venues" | "coaches";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -32,6 +36,7 @@ export default function BookingsPage() {
     totalPages: 0,
   });
   const [itemsPerPage] = useState(10);
+  const [activeTab, setActiveTab] = useState<TabType>("venues");
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -65,6 +70,12 @@ export default function BookingsPage() {
       console.error("Failed to cancel booking:", error);
     }
   };
+
+  // Filter bookings by type
+  const venueBookings = bookings.filter((b) => b.venueId && !b.coachId);
+  const coachBookings = bookings.filter((b) => b.coachId);
+  const filteredBookings =
+    activeTab === "venues" ? venueBookings : coachBookings;
 
   if (isLoading) {
     return <div className="text-center py-12">Loading bookings...</div>;
@@ -110,96 +121,195 @@ export default function BookingsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          <div className="space-y-4">
-            {bookings.map((booking) => (
-              <Card
-                key={booking.id}
-                className="bg-white hover:shadow-lg transition-shadow"
+          {/* Tabs */}
+          <Card className="bg-white">
+            <div className="flex border-b border-slate-200">
+              <button
+                onClick={() => {
+                  setActiveTab("venues");
+                  setCurrentPage(1);
+                }}
+                className={`flex-1 px-6 py-4 font-semibold text-center transition-colors border-b-2 ${
+                  activeTab === "venues"
+                    ? "border-power-orange text-power-orange"
+                    : "border-transparent text-slate-600 hover:text-slate-900"
+                }`}
               >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex-1">
-                    {typeof booking.venueId === "object" &&
-                    booking.venueId !== null ? (
-                      <>
-                        <Link
-                          href={`/venues/${(booking.venueId as any)._id || (booking.venueId as any).id}`}
-                          className="text-lg font-semibold mb-2 text-slate-900 hover:text-power-orange transition-colors inline-block"
-                        >
-                          {(booking.venueId as any).name || "Venue"}
-                        </Link>
-                      </>
-                    ) : (
-                      <h3 className="text-lg font-semibold mb-2 text-slate-900">
-                        Venue ID: {booking.venueId}
-                      </h3>
-                    )}
-                    <p className="text-slate-600 flex flex-wrap items-center gap-2">
-                      <Calendar className="h-4 w-4 text-slate-400" />
-                      <span>{formatDate(booking.date)}</span>
-                      <span className="text-slate-300">|</span>
-                      <Clock className="h-4 w-4 text-slate-400" />
-                      <span>
-                        {formatTime(booking.startTime)} -{" "}
-                        {formatTime(booking.endTime)}
-                      </span>
-                    </p>
-                    {typeof booking.venueId === "object" &&
-                      booking.venueId !== null &&
-                      (booking.venueId as any).address && (
-                        <p className="text-sm text-slate-500 mt-1">
-                          {(booking.venueId as any).address}
+                <div className="flex items-center justify-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  <span>Venue Bookings</span>
+                  <span className="ml-2 bg-slate-100 text-slate-700 text-xs rounded-full px-2 py-1 font-medium">
+                    {venueBookings.length}
+                  </span>
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("coaches");
+                  setCurrentPage(1);
+                }}
+                className={`flex-1 px-6 py-4 font-semibold text-center transition-colors border-b-2 ${
+                  activeTab === "coaches"
+                    ? "border-power-orange text-power-orange"
+                    : "border-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <Award className="h-5 w-5" />
+                  <span>Coach Bookings</span>
+                  <span className="ml-2 bg-slate-100 text-slate-700 text-xs rounded-full px-2 py-1 font-medium">
+                    {coachBookings.length}
+                  </span>
+                </div>
+              </button>
+            </div>
+          </Card>
+
+          {/* Bookings List */}
+          {filteredBookings.length === 0 ? (
+            <Card className="bg-white">
+              <div className="flex flex-col items-center gap-4 py-10 text-center">
+                <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
+                  No {activeTab} bookings
+                </div>
+                <p className="max-w-md text-slate-600">
+                  {activeTab === "venues"
+                    ? "You haven't booked any venues yet."
+                    : "You haven't booked any coaches yet."}
+                </p>
+                <Link href={activeTab === "venues" ? "/venues" : "/coaches"}>
+                  <Button variant="primary">
+                    {activeTab === "venues" ? "Browse Venues" : "Find a Coach"}
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredBookings.map((booking) => (
+                <Card
+                  key={booking.id}
+                  className="bg-white hover:shadow-lg transition-shadow"
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1">
+                      {/* Venue Booking */}
+                      {activeTab === "venues" &&
+                      typeof booking.venueId === "object" &&
+                      booking.venueId !== null ? (
+                        <>
+                          <Link
+                            href={`/venues/${(booking.venueId as any)._id || (booking.venueId as any).id}`}
+                            className="text-lg font-semibold mb-2 text-slate-900 hover:text-power-orange transition-colors inline-block"
+                          >
+                            {(booking.venueId as any).name || "Venue"}
+                          </Link>
+                          {(booking.venueId as any).address && (
+                            <p className="text-sm text-slate-500 flex items-center gap-2 mb-2">
+                              <MapPin className="h-4 w-4 text-slate-400" />
+                              {(booking.venueId as any).address}
+                            </p>
+                          )}
+                        </>
+                      ) : activeTab === "venues" ? (
+                        <h3 className="text-lg font-semibold mb-2 text-slate-900">
+                          Venue ID: {booking.venueId}
+                        </h3>
+                      ) : null}
+
+                      {/* Coach Booking */}
+                      {activeTab === "coaches" && booking.coach ? (
+                        <>
+                          <div className="text-lg font-semibold mb-2 text-slate-900 flex items-center gap-2">
+                            <Award className="h-5 w-5 text-power-orange" />
+                            {booking.coach.sports?.[0] || "Coach"} Coach
+                          </div>
+                          <p className="text-sm text-slate-600 mb-2">
+                            Service Mode:{" "}
+                            <span className="font-medium">
+                              {booking.coach.serviceMode === "FREELANCE"
+                                ? "Freelance"
+                                : booking.coach.serviceMode === "OWN_VENUE"
+                                  ? "Own Venue"
+                                  : "Hybrid"}
+                            </span>
+                          </p>
+                        </>
+                      ) : null}
+
+                      {/* Common Details */}
+                      <p className="text-slate-600 flex flex-wrap items-center gap-2">
+                        <Calendar className="h-4 w-4 text-slate-400" />
+                        <span>{formatDate(booking.date)}</span>
+                        <span className="text-slate-300">|</span>
+                        <Clock className="h-4 w-4 text-slate-400" />
+                        <span>
+                          {formatTime(booking.startTime)} -{" "}
+                          {formatTime(booking.endTime)}
+                        </span>
+                      </p>
+
+                      {booking.sport && (
+                        <p className="text-sm text-slate-600 mt-2">
+                          Sport:{" "}
+                          <span className="font-medium">{booking.sport}</span>
                         </p>
                       )}
-                    {booking.sport && (
-                      <p className="text-sm text-slate-600 mt-1">
-                        Sport:{" "}
-                        <span className="font-medium">{booking.sport}</span>
-                      </p>
-                    )}
-                    {booking.status === "CONFIRMED" && booking.checkInCode && (
-                      <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                        <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
-                          Check-in Code
-                        </span>
-                        <span className="font-mono text-sm font-bold text-emerald-900">
-                          {booking.checkInCode}
-                        </span>
-                      </div>
-                    )}
-                    <p className="text-slate-900 font-semibold mt-2 flex items-center gap-1">
-                      <IndianRupee className="h-4 w-4 text-slate-700" />
-                      <span>{booking.totalAmount}</span>
-                    </p>
-                    <span
-                      className={`inline-block mt-2 px-3 py-1 rounded text-sm font-semibold ${
-                        booking.status === "CONFIRMED"
-                          ? "bg-green-100 text-green-700 border border-green-300"
-                          : "bg-red-100 text-red-700 border border-red-300"
-                      }`}
-                    >
-                      {booking.status.charAt(0).toUpperCase() +
-                        booking.status.slice(1)}
-                    </span>
-                  </div>
-                  {booking.status === "CONFIRMED" && (
-                    <Button
-                      onClick={() => handleCancel(booking.id)}
-                      variant="danger"
-                    >
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
 
-          {pagination.totalPages > 1 && (
+                      {booking.status === "CONFIRMED" &&
+                        booking.checkInCode && (
+                          <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
+                              Check-in Code
+                            </span>
+                            <span className="font-mono text-sm font-bold text-emerald-900">
+                              {booking.checkInCode}
+                            </span>
+                          </div>
+                        )}
+
+                      <p className="text-slate-900 font-semibold mt-3 flex items-center gap-1">
+                        <IndianRupee className="h-4 w-4 text-slate-700" />
+                        <span>{booking.totalAmount}</span>
+                      </p>
+
+                      <span
+                        className={`inline-block mt-2 px-3 py-1 rounded text-sm font-semibold ${
+                          booking.status === "CONFIRMED"
+                            ? "bg-green-100 text-green-700 border border-green-300"
+                            : booking.status === "PENDING_PAYMENT"
+                              ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                              : "bg-red-100 text-red-700 border border-red-300"
+                        }`}
+                      >
+                        {booking.status.charAt(0).toUpperCase() +
+                          booking.status
+                            .slice(1)
+                            .toLowerCase()
+                            .replace(/_/g, " ")}
+                      </span>
+                    </div>
+                    {booking.status === "CONFIRMED" && (
+                      <Button
+                        onClick={() => handleCancel(booking.id)}
+                        variant="danger"
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && filteredBookings.length > 0 && (
             <Card className="bg-white">
               <div className="flex items-center justify-between gap-4">
                 <div className="text-sm text-slate-600">
-                  Page {pagination.page} of {pagination.totalPages} •{" "}
-                  {pagination.total} total bookings
+                  Page {currentPage} of {pagination.totalPages} •{" "}
+                  {filteredBookings.length} {activeTab} bookings
                 </div>
                 <div className="flex gap-2">
                   <Button

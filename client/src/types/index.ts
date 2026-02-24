@@ -169,8 +169,9 @@ export interface Venue {
 export interface Booking {
   id: string;
   userId: string;
-  venueId: string | Venue; // Can be populated
-  coachId?: string;
+  venueId?: string | Venue; // Can be populated
+  coachId?: string | Coach; // Can be populated
+  coach?: Coach; // Populated coach data
   sport?: string;
   date: string;
   startTime: string;

@@ -62,7 +62,9 @@ export const createReview = async (
   await review.save();
 
   // Update venue rating
-  await updateVenueRating(booking.venueId.toString());
+  if (booking.venueId) {
+    await updateVenueRating(booking.venueId.toString());
+  }
 
   // Update coach rating if coach was involved
   if (booking.coachId) {

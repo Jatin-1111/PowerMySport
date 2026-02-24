@@ -9,14 +9,7 @@ import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Availability, Venue } from "@/types";
-import {
-  Calendar,
-  Check,
-  Clock,
-  IndianRupee,
-  MapPin,
-  Star,
-} from "lucide-react";
+import { Calendar, Check, IndianRupee, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -103,7 +96,9 @@ export default function VenueDetailsPage() {
         sport: selectedSport,
       });
 
-      router.push(`/dashboard/book/${venueId}/checkout?${params.toString()}`);
+      router.push(
+        `/dashboard/checkout?type=venue&venueId=${venueId}&${params.toString()}`,
+      );
     } finally {
       setBookingLoading(false);
     }
@@ -306,54 +301,49 @@ export default function VenueDetailsPage() {
 
                   {/* Time Slots */}
                   <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
-                      <Clock size={16} />
-                      Available Time Slots
+                    <label className="block text-sm font-semibold text-slate-700 mb-3">
+                      Available Slots
                     </label>
-                    {availability ? (
-                      <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                        {availability.availableSlots?.length > 0 ? (
-                          availability.availableSlots.map((slot: any) => {
-                            const startTime = slot.split("-")[0] || slot;
-                            const startHour = parseInt(
-                              startTime.split(":")[0] || "0",
-                              10,
-                            );
-                            const endTime =
-                              slot.split("-")[1] ||
-                              `${String(startHour + 1).padStart(2, "0")}:00`;
-
-                            const isSelected =
-                              selectedSlot?.startTime === startTime;
-
-                            return (
-                              <button
-                                key={slot}
-                                onClick={() =>
-                                  setSelectedSlot({ startTime, endTime })
-                                }
-                                className={`px-3 py-2.5 text-sm font-semibold rounded-lg border-2 transition-all ${
-                                  isSelected
-                                    ? "bg-turf-green text-white border-turf-green shadow-md"
-                                    : "bg-white text-slate-700 border-slate-200 hover:border-turf-green hover:bg-turf-green/5"
-                                }`}
-                              >
-                                {startTime}
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <div className="col-span-2 text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                            <p className="text-sm text-slate-500">
-                              No slots available
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex justify-center py-8">
+                    {!availability ? (
+                      <div className="flex justify-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-power-orange"></div>
                       </div>
+                    ) : availability.availableSlots?.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                        {availability.availableSlots.map((slot: any) => {
+                          const startTime = slot.split("-")[0] || slot;
+                          const startHour = parseInt(
+                            startTime.split(":")[0] || "0",
+                            10,
+                          );
+                          const endTime =
+                            slot.split("-")[1] ||
+                            `${String(startHour + 1).padStart(2, "0")}:00`;
+
+                          const isSelected =
+                            selectedSlot?.startTime === startTime;
+
+                          return (
+                            <button
+                              key={slot}
+                              onClick={() =>
+                                setSelectedSlot({ startTime, endTime })
+                              }
+                              className={`px-3 py-2.5 text-sm font-medium rounded-lg border-2 transition-all ${
+                                isSelected
+                                  ? "bg-turf-green text-white border-turf-green shadow-md"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-turf-green"
+                              }`}
+                            >
+                              {startTime} - {endTime}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 text-center py-4">
+                        No slots available for this date.
+                      </p>
                     )}
                   </div>
 

@@ -153,76 +153,16 @@ export default function CoachDetailsPage() {
 
     setBookingLoading(true);
     try {
-      const playerLocation = await new Promise<{
-        type: "Point";
-        coordinates: [number, number];
-      }>((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error("Location is not supported on this device"));
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              type: "Point",
-              coordinates: [
-                position.coords.longitude,
-                position.coords.latitude,
-              ],
-            });
-          },
-          () => reject(new Error("Please enable location to book this coach")),
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000,
-          },
-        );
-      });
-
-      // Convert date to ISO datetime format
-      const bookingDate = new Date(selectedDate).toISOString();
-
-      const response = await bookingApi.initiateBooking({
-        coachId: coachId,
-        playerLocation,
-        sport: selectedSport,
-        date: bookingDate,
+      const params = new URLSearchParams({
+        type: "coach",
+        coachId,
+        date: selectedDate,
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
+        sport: selectedSport,
       });
 
-      if (response) {
-        const bookingId = response.booking?.id;
-
-        if (bookingId) {
-          await bookingApi.confirmMockPaymentSuccess(bookingId);
-        }
-
-        toast.success("Mock payment successful! Booking confirmed.");
-        setTimeout(() => {
-          if (bookingId) {
-            router.push(
-              `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&mock=true`,
-            );
-            return;
-          }
-          router.push("/dashboard/my-bookings");
-        }, 1500);
-      }
-    } catch (error: unknown) {
-      console.error("Booking failed:", error);
-      const message =
-        typeof error === "object" &&
-        error !== null &&
-        "response" in error &&
-        typeof (error as { response?: { data?: { message?: string } } })
-          .response?.data?.message === "string"
-          ? (error as { response?: { data?: { message?: string } } }).response!
-              .data!.message!
-          : "Booking failed";
-      toast.error(message);
+      router.push(`/dashboard/checkout?${params.toString()}`);
     } finally {
       setBookingLoading(false);
     }
@@ -248,22 +188,6 @@ export default function CoachDetailsPage() {
   }
 
   const selectedSportRate = getSportRate(selectedSport || coach.sports?.[0]);
-  const selectedDayOfWeek = new Date(selectedDate).getDay();
-  const sportDefaultSlots =
-    coach.availabilityBySport?.[selectedSport]?.filter(
-      (slot) => slot.dayOfWeek === selectedDayOfWeek,
-    ) ||
-    coach.availability?.filter(
-      (slot) => slot.dayOfWeek === selectedDayOfWeek,
-    ) ||
-    [];
-  const fallbackSlots = sportDefaultSlots.map(
-    (slot) => `${slot.startTime}-${slot.endTime}`,
-  );
-  const visibleSlots =
-    availability?.availableSlots && availability.availableSlots.length > 0
-      ? availability.availableSlots
-      : fallbackSlots;
 
   return (
     <div className="bg-slate-50">
@@ -443,9 +367,10 @@ export default function CoachDetailsPage() {
                       <div className="flex justify-center py-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-turf-green"></div>
                       </div>
-                    ) : visibleSlots.length > 0 ? (
+                    ) : availability &&
+                      availability.availableSlots.length > 0 ? (
                       <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
-                        {visibleSlots.map((slot: string) => {
+                        {availability.availableSlots.map((slot: string) => {
                           const startTime = slot.split("-")[0] || slot;
                           const startHour = parseInt(
                             startTime.split(":")[0] || "0",
@@ -475,9 +400,13 @@ export default function CoachDetailsPage() {
                           );
                         })}
                       </div>
-                    ) : (
+                    ) : availability ? (
                       <p className="text-sm text-slate-500 text-center py-4">
                         No slots available for this date.
+                      </p>
+                    ) : (
+                      <p className="text-sm text-slate-400 text-center py-4">
+                        Select a date to view slots
                       </p>
                     )}
                   </div>

@@ -6,12 +6,38 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { CheckCircle, Clock, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { bookingApi } from "@/modules/booking/services/booking";
+import { Booking } from "@/types";
 
 export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const status = searchParams.get("status") || "pending";
+  const bookingId = searchParams.get("bookingId") || "";
+  const type = searchParams.get("type") || "venue";
   const isMockPayment = searchParams.get("mock") === "true";
+
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [loading, setLoading] = useState(!!bookingId);
+
+  useEffect(() => {
+    const loadBooking = async () => {
+      if (!bookingId) return;
+      try {
+        const response = await bookingApi.getBooking(bookingId);
+        if (response.success && response.data) {
+          setBooking(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load booking details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBooking();
+  }, [bookingId]);
 
   const isSuccess = status === "success";
   const isCancel = status === "cancel";
@@ -49,6 +75,69 @@ export default function PaymentPage() {
               <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
               <p className="mt-2 text-sm text-slate-600">{description}</p>
             </div>
+
+            {/* Booking Details */}
+            {isSuccess && booking && (
+              <div className="bg-slate-50 rounded-lg p-4 text-left space-y-3 border border-slate-200">
+                <div>
+                  <p className="text-xs text-slate-500 uppercase font-semibold">
+                    {type === "coach" ? "Coach" : "Venue"}
+                  </p>
+                  <p className="text-sm font-semibold text-slate-900 mt-1">
+                    {type === "coach"
+                      ? booking.coach?.name || "Coach"
+                      : booking.venue?.name || "Venue"}
+                  </p>
+                </div>
+                <div className="border-t border-slate-200"></div>
+                {booking.date && (
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-semibold">
+                      Date
+                    </p>
+                    <p className="text-sm text-slate-900 mt-1">
+                      {new Date(booking.date).toLocaleDateString("en-IN", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                )}
+                {booking.startTime && booking.endTime && (
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-semibold">
+                      Time
+                    </p>
+                    <p className="text-sm text-slate-900 mt-1">
+                      {booking.startTime} - {booking.endTime}
+                    </p>
+                  </div>
+                )}
+                {booking.sport && (
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-semibold">
+                      Sport
+                    </p>
+                    <p className="text-sm text-slate-900 mt-1">
+                      {booking.sport}
+                    </p>
+                  </div>
+                )}
+                {booking.totalAmount && (
+                  <div className="border-t border-slate-200">
+                    <p className="text-xs text-slate-500 uppercase font-semibold">
+                      Amount Paid
+                    </p>
+                    <p className="text-lg font-bold text-power-orange mt-1">
+                      ₹{booking.totalAmount}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {isMockPayment && (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs text-slate-600">
                 <p>
@@ -63,8 +152,13 @@ export default function PaymentPage() {
               >
                 View my bookings
               </Button>
-              <Button variant="outline" onClick={() => router.push("/venues")}>
-                Browse venues
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(type === "coach" ? "/coaches" : "/venues")
+                }
+              >
+                Browse {type === "coach" ? "coaches" : "venues"}
               </Button>
             </div>
           </Card>

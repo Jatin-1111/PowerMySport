@@ -1,6 +1,14 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { BookingStatus } from "../types";
 
+export interface BookingPayment {
+  userId: mongoose.Types.ObjectId;
+  userType: "VENUE_LISTER" | "COACH";
+  amount: number;
+  status: "PENDING" | "PAID" | "FAILED";
+  paidAt?: Date;
+}
+
 export interface BookingDocument extends Document {
   userId: mongoose.Types.ObjectId;
   venueId?: mongoose.Types.ObjectId;
@@ -20,6 +28,10 @@ export interface BookingDocument extends Document {
   participantAge?: number;
   paymentConfirmedAt?: Date;
   confirmationEmailSentAt?: Date;
+  payments: BookingPayment[];
+  paymentProvider?: "stripe";
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -112,6 +124,43 @@ const bookingSchema = new Schema<BookingDocument>(
     },
     confirmationEmailSentAt: {
       type: Date,
+    },
+    payments: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        userType: {
+          type: String,
+          enum: ["VENUE_LISTER", "COACH"],
+          required: true,
+        },
+        amount: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        status: {
+          type: String,
+          enum: ["PENDING", "PAID", "FAILED"],
+          default: "PENDING",
+        },
+        paidAt: {
+          type: Date,
+        },
+      },
+    ],
+    paymentProvider: {
+      type: String,
+      enum: ["stripe"],
+    },
+    stripeCheckoutSessionId: {
+      type: String,
+    },
+    stripePaymentIntentId: {
+      type: String,
     },
   },
   {
