@@ -9,8 +9,12 @@ import {
 export const bookingApi = {
   // Initiate booking with split payments
   initiateBooking: async (data: {
-    venueId: string;
+    venueId?: string;
     coachId?: string;
+    playerLocation?: {
+      type: "Point";
+      coordinates: [number, number];
+    };
     sport: string;
     date: string;
     startTime: string;

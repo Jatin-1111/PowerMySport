@@ -129,20 +129,44 @@ export default function BookCoachPage() {
       return;
     }
 
-    if (!venue) {
-      toast.error("This coach does not have an associated venue for booking.");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
+      const playerLocation = await new Promise<{
+        type: "Point";
+        coordinates: [number, number];
+      }>((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Location is not supported on this device"));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              type: "Point",
+              coordinates: [
+                position.coords.longitude,
+                position.coords.latitude,
+              ],
+            });
+          },
+          () => reject(new Error("Please enable location to book this coach")),
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000,
+          },
+        );
+      });
+
       // Convert date to ISO datetime format
       const bookingDate = new Date(bookingData.date).toISOString();
 
       const response = await bookingApi.initiateBooking({
-        venueId: venue.id,
+        ...(venue?.id ? { venueId: venue.id } : {}),
         coachId: coachId,
+        playerLocation,
         sport: bookingData.sport,
         date: bookingDate,
         startTime: bookingData.startTime,

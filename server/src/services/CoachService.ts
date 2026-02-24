@@ -8,6 +8,30 @@ import {
 } from "../models/Coach";
 import { ICoach, IOwnVenueDetails, ServiceMode } from "../types";
 
+const toRadians = (value: number): number => (value * Math.PI) / 180;
+
+const calculateDistanceKm = (
+  from: [number, number],
+  to: [number, number],
+): number => {
+  const [fromLng, fromLat] = from;
+  const [toLng, toLat] = to;
+
+  const dLat = toRadians(toLat - fromLat);
+  const dLng = toRadians(toLng - fromLng);
+  const lat1 = toRadians(fromLat);
+  const lat2 = toRadians(toLat);
+
+  const haversine =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  const arc = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+  const earthRadiusKm = 6371;
+
+  return earthRadiusKm * arc;
+};
+
 export interface CreateCoachPayload {
   userId: string;
   bio: string;
@@ -144,8 +168,35 @@ export const findCoachesNearby = async (
 
     const coaches = await Coach.aggregate(pipeline);
 
+    const filteredCoaches = coaches.filter((coach: any) => {
+      if (coach.serviceMode !== "FREELANCE") {
+        return true;
+      }
+
+      const coachCoordinates = coach.baseLocation?.coordinates;
+      if (!Array.isArray(coachCoordinates) || coachCoordinates.length !== 2) {
+        return false;
+      }
+
+      const normalizedCoachCoordinates: [number, number] = [
+        Number(coachCoordinates[0]),
+        Number(coachCoordinates[1]),
+      ];
+
+      const serviceRadius =
+        typeof coach.serviceRadiusKm === "number" && coach.serviceRadiusKm > 0
+          ? coach.serviceRadiusKm
+          : 10;
+
+      const distance = calculateDistanceKm(normalizedCoachCoordinates, [
+        lng,
+        lat,
+      ]);
+      return distance <= serviceRadius;
+    });
+
     // Populate the final documents (aggregate doesn't return full mongoose documents)
-    return Coach.populate(coaches, { path: "userId" }) as Promise<
+    return Coach.populate(filteredCoaches, { path: "userId" }) as Promise<
       CoachDocument[]
     >;
   } catch (error) {

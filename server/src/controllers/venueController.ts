@@ -153,7 +153,12 @@ export const discoverNearby = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { lat, lng, radius, sport } = req.query;
+    const lat = (req.query.lat || req.query.latitude) as string | undefined;
+    const lng = (req.query.lng || req.query.longitude) as string | undefined;
+    const radius = (req.query.radius || req.query.maxDistance) as
+      | string
+      | undefined;
+    const { sport } = req.query;
     const sportFilter = sport as string | undefined;
 
     // If no location provided, return all venues and coaches (Universal Feed)

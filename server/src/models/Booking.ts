@@ -3,7 +3,7 @@ import { BookingStatus } from "../types";
 
 export interface BookingDocument extends Document {
   userId: mongoose.Types.ObjectId;
-  venueId: mongoose.Types.ObjectId;
+  venueId?: mongoose.Types.ObjectId;
   coachId?: mongoose.Types.ObjectId;
   sport: string;
   date: Date;
@@ -34,7 +34,7 @@ const bookingSchema = new Schema<BookingDocument>(
     venueId: {
       type: Schema.Types.ObjectId,
       ref: "Venue",
-      required: [true, "Venue ID is required"],
+      required: false,
     },
     coachId: {
       type: Schema.Types.ObjectId,

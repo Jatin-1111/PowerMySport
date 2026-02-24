@@ -12,13 +12,13 @@ export const discoveryApi = {
     limit?: number;
   }): Promise<ApiResponse<DiscoveryResponse>> => {
     const queryParams: any = {
-      maxDistance: params.maxDistance || 10,
+      radius: params.maxDistance || 100000,
     };
 
     // Only add coordinates if provided, otherwise get all listings
     if (params.latitude !== undefined && params.longitude !== undefined) {
-      queryParams.latitude = params.latitude;
-      queryParams.longitude = params.longitude;
+      queryParams.lat = params.latitude;
+      queryParams.lng = params.longitude;
     }
 
     if (params.sport) {

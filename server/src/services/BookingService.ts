@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { Booking, BookingDocument } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { User } from "../models/User";
-import { Venue } from "../models/Venue";
+import { Venue, VenueDocument } from "../models/Venue";
 import { sendBookingConfirmationEmail } from "../utils/email";
 import { getBookingExpirationTime } from "../utils/timer";
 
@@ -15,8 +15,12 @@ import { getBookingExpirationTime } from "../utils/timer";
 
 export interface InitiateBookingPayload {
   userId: string;
-  venueId: string;
+  venueId?: string;
   coachId?: string;
+  playerLocation?: {
+    type: "Point";
+    coordinates: [number, number];
+  };
   sport: string;
   date: Date;
   startTime: string;
@@ -77,6 +81,30 @@ const combineDateAndTime = (date: Date, time: string): Date => {
   slotDateTime.setHours(hour, minute, 0, 0);
 
   return slotDateTime;
+};
+
+const toRadians = (value: number): number => (value * Math.PI) / 180;
+
+const calculateDistanceKm = (
+  from: [number, number],
+  to: [number, number],
+): number => {
+  const [fromLng, fromLat] = from;
+  const [toLng, toLat] = to;
+
+  const dLat = toRadians(toLat - fromLat);
+  const dLng = toRadians(toLng - fromLng);
+  const lat1 = toRadians(fromLat);
+  const lat2 = toRadians(toLat);
+
+  const haversine =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  const arc = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+  const earthRadiusKm = 6371;
+
+  return earthRadiusKm * arc;
 };
 
 /**
@@ -165,27 +193,28 @@ export const initiateBooking = async (
       participantId = user._id;
     }
 
-    // Fetch venue to get price and owner
-    const venue = await Venue.findById(payload.venueId).populate("ownerId");
-    if (!venue) {
-      throw new Error("Venue not found");
-    }
+    let venue: VenueDocument | null = null;
 
-    // Check if slot is available for venue
-    const venueAvailable = await isSlotAvailable(
-      payload.venueId,
-      payload.date,
-      normalizedStartTime,
-      normalizedEndTime,
-    );
+    if (payload.venueId) {
+      venue = await Venue.findById(payload.venueId).populate("ownerId");
+      if (!venue) {
+        throw new Error("Venue not found");
+      }
 
-    if (!venueAvailable) {
-      throw new Error("Selected time slot is already booked for this venue");
-    }
+      const venueAvailable = await isSlotAvailable(
+        payload.venueId,
+        payload.date,
+        normalizedStartTime,
+        normalizedEndTime,
+      );
 
-    // Validate sport selection
-    if (!payload.sport || !venue.sports.includes(payload.sport)) {
-      throw new Error("Selected sport is not available at this venue");
+      if (!venueAvailable) {
+        throw new Error("Selected time slot is already booked for this venue");
+      }
+
+      if (!payload.sport || !venue.sports.includes(payload.sport)) {
+        throw new Error("Selected sport is not available at this venue");
+      }
     }
 
     // Calculate venue price (supports fractional hours)
@@ -200,15 +229,18 @@ export const initiateBooking = async (
     const endTotalMinutes = endHour * 60 + endMin;
     const totalMinutes = endTotalMinutes - startTotalMinutes;
     const hours = totalMinutes / 60; // Supports 0.5, 0.75, etc.
-    const sportPrice = venue.sportPricing?.[payload.sport];
-    const basePrice =
-      typeof sportPrice === "number" && sportPrice >= 0
-        ? sportPrice
-        : venue.pricePerHour;
-    if (basePrice <= 0) {
-      throw new Error("Venue pricing is not configured for this sport");
+    let venuePrice = 0;
+    if (venue) {
+      const sportPrice = venue.sportPricing?.[payload.sport];
+      const basePrice =
+        typeof sportPrice === "number" && sportPrice >= 0
+          ? sportPrice
+          : venue.pricePerHour;
+      if (basePrice <= 0) {
+        throw new Error("Venue pricing is not configured for this sport");
+      }
+      venuePrice = Math.round(hours * basePrice * 100) / 100;
     }
-    const venuePrice = Math.round(hours * basePrice * 100) / 100; // Round to 2 decimals
 
     let coachPrice = 0;
 
@@ -219,8 +251,37 @@ export const initiateBooking = async (
         throw new Error("Coach not found");
       }
 
-      // Check if venue allows external coaches
-      if (coach.serviceMode !== "OWN_VENUE" && !venue.allowExternalCoaches) {
+      if (!payload.venueId && !payload.playerLocation) {
+        throw new Error("Player location is required for coach booking");
+      }
+
+      if (
+        (coach.serviceMode === "FREELANCE" || coach.serviceMode === "HYBRID") &&
+        payload.playerLocation
+      ) {
+        const coachBaseCoordinates = coach.baseLocation?.coordinates;
+        if (!coachBaseCoordinates || coachBaseCoordinates.length !== 2) {
+          throw new Error("Coach service location is not configured");
+        }
+
+        const distanceKm = calculateDistanceKm(
+          coachBaseCoordinates,
+          payload.playerLocation.coordinates,
+        );
+        const serviceRadiusKm = coach.serviceRadiusKm || 10;
+
+        if (distanceKm > serviceRadiusKm) {
+          throw new Error(
+            `Coach is out of range. This coach serves up to ${serviceRadiusKm} km from their base location.`,
+          );
+        }
+      }
+
+      if (
+        venue &&
+        coach.serviceMode !== "OWN_VENUE" &&
+        !venue.allowExternalCoaches
+      ) {
         throw new Error("This venue does not allow external coaches");
       }
 
@@ -258,7 +319,7 @@ export const initiateBooking = async (
     // Create booking
     const booking = new Booking({
       userId: payload.userId,
-      venueId: payload.venueId,
+      ...(payload.venueId ? { venueId: payload.venueId } : {}),
       coachId: payload.coachId,
       sport: payload.sport,
       date: payload.date,

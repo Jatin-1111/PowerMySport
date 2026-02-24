@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function CoachDetailsPage() {
   const params = useParams();
@@ -86,23 +86,7 @@ export default function CoachDetailsPage() {
     }
   };
 
-  useEffect(() => {
-    if (coachId) {
-      loadCoachDetails();
-    }
-  }, [coachId]);
-
-  useEffect(() => {
-    if (coachId && selectedDate) {
-      loadAvailability();
-    }
-  }, [coachId, selectedDate, selectedSport]);
-
-  useEffect(() => {
-    setSelectedSlot(null);
-  }, [selectedSport, selectedDate]);
-
-  const loadCoachDetails = async () => {
+  const loadCoachDetails = useCallback(async () => {
     try {
       const response = await discoveryApi.getCoachById(coachId);
       if (response.success && response.data) {
@@ -117,9 +101,9 @@ export default function CoachDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [coachId]);
 
-  const loadAvailability = async () => {
+  const loadAvailability = useCallback(async () => {
     setAvailabilityLoading(true);
     try {
       const response = await bookingApi.getCoachAvailability(
@@ -130,15 +114,31 @@ export default function CoachDetailsPage() {
       if (response.success && response.data) {
         setAvailability(response.data);
       } else {
-        setAvailability({ availableSlots: [] } as Availability);
+        setAvailability({ availableSlots: [], bookedSlots: [] });
       }
     } catch (error) {
       console.error("Failed to load availability:", error);
-      setAvailability({ availableSlots: [] } as Availability);
+      setAvailability({ availableSlots: [], bookedSlots: [] });
     } finally {
       setAvailabilityLoading(false);
     }
-  };
+  }, [coachId, selectedDate, selectedSport]);
+
+  useEffect(() => {
+    if (coachId) {
+      loadCoachDetails();
+    }
+  }, [coachId, loadCoachDetails]);
+
+  useEffect(() => {
+    if (coachId && selectedDate) {
+      loadAvailability();
+    }
+  }, [coachId, selectedDate, selectedSport, loadAvailability]);
+
+  useEffect(() => {
+    setSelectedSlot(null);
+  }, [selectedSport, selectedDate]);
 
   const handleBooking = async () => {
     if (!user) {
@@ -153,12 +153,40 @@ export default function CoachDetailsPage() {
 
     setBookingLoading(true);
     try {
+      const playerLocation = await new Promise<{
+        type: "Point";
+        coordinates: [number, number];
+      }>((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("Location is not supported on this device"));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              type: "Point",
+              coordinates: [
+                position.coords.longitude,
+                position.coords.latitude,
+              ],
+            });
+          },
+          () => reject(new Error("Please enable location to book this coach")),
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000,
+          },
+        );
+      });
+
       // Convert date to ISO datetime format
       const bookingDate = new Date(selectedDate).toISOString();
 
       const response = await bookingApi.initiateBooking({
-        venueId: coach?.venueId || "freelance", // Handle freelance or venue-based
         coachId: coachId,
+        playerLocation,
         sport: selectedSport,
         date: bookingDate,
         startTime: selectedSlot.startTime,

@@ -52,20 +52,40 @@ export const venueImageUploadSchema = z.object({
   coverPhotoIndex: z.number().min(0).max(19),
 });
 
-export const bookingSchema = z.object({
-  venueId: z.string().min(1, "Venue ID is required"),
-  sport: z.string().min(1, "Sport is required"),
-  date: z.string().datetime(),
-  startTime: z
-    .string()
-    .regex(
-      /^([01]?\d|2[0-3]):([0-5]\d)$/,
-      "Start time must be in HH:mm format",
-    ),
-  endTime: z
-    .string()
-    .regex(/^([01]?\d|2[0-3]):([0-5]\d)$/, "End time must be in HH:mm format"),
-});
+export const bookingSchema = z
+  .object({
+    venueId: z.string().min(1, "Venue ID is required").optional(),
+    coachId: z.string().min(1, "Coach ID is required").optional(),
+    playerLocation: geoLocationSchema.optional(),
+    sport: z.string().min(1, "Sport is required"),
+    date: z.string().datetime(),
+    startTime: z
+      .string()
+      .regex(
+        /^([01]?\d|2[0-3]):([0-5]\d)$/,
+        "Start time must be in HH:mm format",
+      ),
+    endTime: z
+      .string()
+      .regex(
+        /^([01]?\d|2[0-3]):([0-5]\d)$/,
+        "End time must be in HH:mm format",
+      ),
+  })
+  .refine((data) => data.venueId || data.coachId, {
+    message: "Either venueId or coachId is required",
+    path: ["venueId"],
+  })
+  .refine(
+    (data) => {
+      if (!data.coachId) return true;
+      return Boolean(data.playerLocation);
+    },
+    {
+      message: "Player location is required when booking a coach",
+      path: ["playerLocation"],
+    },
+  );
 
 export const bookingCheckInCodeSchema = z.object({
   checkInCode: z.string().min(1, "Check-in code is required"),
@@ -107,6 +127,17 @@ export const coachVerificationStep2Schema = z
       .optional()
       .default({}),
     serviceMode: z.enum(["OWN_VENUE", "FREELANCE", "HYBRID"]).optional(),
+    baseLocation: geoLocationSchema.optional(),
+    serviceRadiusKm: z
+      .number()
+      .min(1, "Service radius must be greater than 0")
+      .max(500, "Service radius is too large")
+      .optional(),
+    travelBufferTime: z
+      .number()
+      .min(0, "Travel buffer time must be non-negative")
+      .max(600, "Travel buffer time is too large")
+      .optional(),
     ownVenueDetails: z
       .object({
         name: z.string().min(1, "Venue name is required"),
@@ -143,6 +174,18 @@ export const coachVerificationStep2Schema = z
     {
       message: "Each selected sport must have a valid price",
       path: ["sportPricing"],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.serviceMode === "FREELANCE" || data.serviceMode === "HYBRID") {
+        return Boolean(data.baseLocation);
+      }
+      return true;
+    },
+    {
+      message: "Base location is required for FREELANCE and HYBRID coaches",
+      path: ["baseLocation"],
     },
   );
 

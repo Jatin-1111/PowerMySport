@@ -194,6 +194,8 @@ export default function CoachVerificationPage() {
   const [serviceMode, setServiceMode] = useState<ServiceMode>(
     getInitialServiceMode(),
   );
+  const [serviceRadiusKmInput, setServiceRadiusKmInput] = useState("10");
+  const [travelBufferTimeInput, setTravelBufferTimeInput] = useState("30");
 
   // Venue details for OWN_VENUE/HYBRID coaches
   const [venueDetails, setVenueDetails] = useState({
@@ -371,6 +373,14 @@ export default function CoachVerificationPage() {
           setServiceMode(coach.serviceMode);
         }
 
+        if (typeof coach.serviceRadiusKm === "number") {
+          setServiceRadiusKmInput(String(coach.serviceRadiusKm));
+        }
+
+        if (typeof coach.travelBufferTime === "number") {
+          setTravelBufferTimeInput(String(coach.travelBufferTime));
+        }
+
         // Load venue details if they exist
         if (coach.ownVenueDetails) {
           const venue = coach.ownVenueDetails;
@@ -386,6 +396,10 @@ export default function CoachVerificationPage() {
           if (venue.location?.coordinates) {
             setVenueCoordinates(venue.location.coordinates);
           }
+        }
+
+        if (!coach.ownVenueDetails && coach.baseLocation?.coordinates) {
+          setVenueCoordinates(coach.baseLocation.coordinates);
         }
 
         setSportPricing(() => {
@@ -592,6 +606,25 @@ export default function CoachVerificationPage() {
     }
 
     const hourlyRate = Math.max(...Object.values(pricingPayload));
+    const serviceRadiusKm = Number(serviceRadiusKmInput || "10");
+    const travelBufferTime = Number(travelBufferTimeInput || "30");
+
+    if (serviceMode !== "OWN_VENUE") {
+      if (!venueCoordinates) {
+        toast.error("Please set your service base location.");
+        return;
+      }
+
+      if (!Number.isFinite(serviceRadiusKm) || serviceRadiusKm <= 0) {
+        toast.error("Please provide a valid service radius in km.");
+        return;
+      }
+
+      if (!Number.isFinite(travelBufferTime) || travelBufferTime < 0) {
+        toast.error("Please provide a valid travel buffer time.");
+        return;
+      }
+    }
 
     // Validate venue details if needed
     if (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID") {
@@ -620,6 +653,12 @@ export default function CoachVerificationPage() {
         hourlyRate: number;
         sportPricing: Record<string, number>;
         serviceMode: ServiceMode;
+        baseLocation?: {
+          type: "Point";
+          coordinates: [number, number];
+        };
+        serviceRadiusKm?: number;
+        travelBufferTime?: number;
         ownVenueDetails?: {
           name: string;
           address: string;
@@ -649,6 +688,15 @@ export default function CoachVerificationPage() {
             },
           }),
         };
+      }
+
+      if (serviceMode !== "OWN_VENUE" && venueCoordinates) {
+        payload.baseLocation = {
+          type: "Point",
+          coordinates: venueCoordinates,
+        };
+        payload.serviceRadiusKm = serviceRadiusKm;
+        payload.travelBufferTime = travelBufferTime;
       }
 
       const step2Response = await coachApi.saveVerificationStep2(payload);
@@ -742,7 +790,17 @@ export default function CoachVerificationPage() {
         certifications: [],
         hourlyRate,
         sportPricing: pricingPayload,
-        serviceMode: getInitialServiceMode(),
+        serviceMode,
+        ...(serviceMode !== "OWN_VENUE" && venueCoordinates
+          ? {
+              baseLocation: {
+                type: "Point" as const,
+                coordinates: venueCoordinates,
+              },
+              serviceRadiusKm: Number(serviceRadiusKmInput || "10"),
+              travelBufferTime: Number(travelBufferTimeInput || "30"),
+            }
+          : {}),
       });
 
       if (!step2SyncResponse.success || !step2SyncResponse.data) {
@@ -1211,6 +1269,124 @@ export default function CoachVerificationPage() {
                     <p className="mt-2 text-xs text-slate-500">
                       Set your venue availability for bookings
                     </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {serviceMode === "FREELANCE" && (
+              <div className="space-y-4 border-t border-slate-200 pt-6 mt-6">
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-power-orange mt-1 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Service Base Location
+                    </p>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Set your base location. Only players within your service
+                      radius can book you.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-900">
+                    Base Address <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={addressQuery}
+                      onChange={handleAddressChange}
+                      disabled={isLockedByReview}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      placeholder="Search your base location"
+                    />
+                    {isAddressSearching && (
+                      <span className="absolute right-3 top-3 text-xs text-slate-500">
+                        Searching...
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-slate-500">
+                      Start typing to see suggestions
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      className="text-xs font-semibold text-power-orange hover:text-orange-600 disabled:opacity-50"
+                      disabled={isLockedByReview || isGeocoding}
+                    >
+                      {isGeocoding ? "Locating..." : "Use current location"}
+                    </button>
+                  </div>
+                  {addressSearchError && (
+                    <p className="text-xs text-red-500 mt-2">
+                      {addressSearchError}
+                    </p>
+                  )}
+                  {addressSuggestions.length > 0 && (
+                    <div className="mt-2 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm z-10">
+                      {addressSuggestions.map((suggestion) => (
+                        <button
+                          type="button"
+                          key={`${suggestion.lat}-${suggestion.lon}-${suggestion.label}`}
+                          onClick={() =>
+                            handleSelectAddressSuggestion(suggestion)
+                          }
+                          className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-power-orange/5 border-b border-slate-100 last:border-b-0"
+                        >
+                          {suggestion.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {serviceMode !== "OWN_VENUE" && (
+              <div className="space-y-4 border-t border-slate-200 pt-6 mt-6">
+                <p className="text-sm font-semibold text-slate-900">
+                  Service Radius Settings
+                </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-900">
+                      Service Radius (km){" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={serviceRadiusKmInput}
+                      disabled={isLockedByReview}
+                      onChange={(event) =>
+                        setServiceRadiusKmInput(event.target.value)
+                      }
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      placeholder="e.g., 10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-900">
+                      Travel Buffer (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={5}
+                      value={travelBufferTimeInput}
+                      disabled={isLockedByReview}
+                      onChange={(event) =>
+                        setTravelBufferTimeInput(event.target.value)
+                      }
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      placeholder="e.g., 30"
+                    />
                   </div>
                 </div>
               </div>

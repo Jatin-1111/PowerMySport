@@ -20,6 +20,7 @@ export default function CoachesPage() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [filteredCoaches, setFilteredCoaches] = useState<Coach[]>([]);
   const [sportFilter, setSportFilter] = useState("");
+  const [locationError, setLocationError] = useState("");
   const router = useRouter();
 
   const getVerificationBadge = (coach: Coach) => {
@@ -75,13 +76,39 @@ export default function CoachesPage() {
   };
 
   useEffect(() => {
-    loadCoaches();
+    if (!navigator.geolocation) {
+      setLocationError("Location is required to discover nearby coaches.");
+      setLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        await loadCoaches(position.coords.latitude, position.coords.longitude);
+      },
+      () => {
+        setLocationError(
+          "Please enable location to see coaches in your range.",
+        );
+        setCoaches([]);
+        setFilteredCoaches([]);
+        setLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000,
+      },
+    );
   }, []);
 
-  const loadCoaches = async () => {
+  const loadCoaches = async (latitude: number, longitude: number) => {
     setLoading(true);
     try {
-      const response = await discoveryApi.searchNearby({});
+      const response = await discoveryApi.searchNearby({
+        latitude,
+        longitude,
+      });
       if (response.success && response.data) {
         setCoaches(response.data.coaches);
         setFilteredCoaches(response.data.coaches);
@@ -179,7 +206,7 @@ export default function CoachesPage() {
               <p className="text-slate-500 mb-6">
                 {sportFilter
                   ? `We couldn't find any coaches for "${sportFilter}". Try a different sport.`
-                  : "Check back soon for new coaches."}
+                  : locationError || "Check back soon for new coaches."}
               </p>
               {sportFilter && (
                 <Button

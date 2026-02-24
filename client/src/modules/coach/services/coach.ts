@@ -34,12 +34,22 @@ export const coachApi = {
     hourlyRate: number;
     sportPricing?: Record<string, number>;
     serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
+    baseLocation?: {
+      type: "Point";
+      coordinates: [number, number];
+    };
+    serviceRadiusKm?: number;
+    travelBufferTime?: number;
     ownVenueDetails?: {
       name: string;
       address: string;
       description?: string;
       openingHours?: string;
       coordinates?: [number, number];
+      location?: {
+        type: "Point";
+        coordinates: [number, number];
+      };
     };
   }): Promise<ApiResponse<Coach>> => {
     const response = await axiosInstance.post(

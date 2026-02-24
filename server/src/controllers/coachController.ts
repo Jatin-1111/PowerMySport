@@ -602,6 +602,9 @@ export const saveCoachVerificationStep2Handler = async (
       hourlyRate,
       sportPricing,
       serviceMode,
+      baseLocation,
+      serviceRadiusKm,
+      travelBufferTime,
       ownVenueDetails,
     } = req.body as {
       bio: string;
@@ -610,6 +613,12 @@ export const saveCoachVerificationStep2Handler = async (
       hourlyRate: number;
       sportPricing?: Record<string, number>;
       serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
+      baseLocation?: {
+        type: "Point";
+        coordinates: [number, number];
+      };
+      serviceRadiusKm?: number;
+      travelBufferTime?: number;
       ownVenueDetails?: {
         name: string;
         address: string;
@@ -675,7 +684,23 @@ export const saveCoachVerificationStep2Handler = async (
         certifications: certifications || [],
         hourlyRate,
         sportPricing: sportPricing || {},
+        serviceMode: serviceMode || existingCoach.serviceMode || "FREELANCE",
       };
+
+      if (baseLocation) {
+        updatePayload.baseLocation = {
+          type: "Point",
+          coordinates: [
+            Number(baseLocation.coordinates[0]),
+            Number(baseLocation.coordinates[1]),
+          ],
+        };
+      }
+
+      if (serviceMode !== "OWN_VENUE") {
+        updatePayload.serviceRadiusKm = serviceRadiusKm || 10;
+        updatePayload.travelBufferTime = travelBufferTime || 30;
+      }
 
       if (venueDetailsPayload) {
         updatePayload.ownVenueDetails = venueDetailsPayload;
@@ -701,10 +726,20 @@ export const saveCoachVerificationStep2Handler = async (
       serviceMode: serviceMode || "FREELANCE",
       availability: [],
       ...(serviceMode !== "OWN_VENUE" && {
-        serviceRadiusKm: 10,
-        travelBufferTime: 30,
+        serviceRadiusKm: serviceRadiusKm || 10,
+        travelBufferTime: travelBufferTime || 30,
       }),
     };
+
+    if (baseLocation) {
+      createPayload.baseLocation = {
+        type: "Point",
+        coordinates: [
+          Number(baseLocation.coordinates[0]),
+          Number(baseLocation.coordinates[1]),
+        ],
+      };
+    }
 
     if (venueDetailsPayload) {
       createPayload.ownVenueDetails = venueDetailsPayload;

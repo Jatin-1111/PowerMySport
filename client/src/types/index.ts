@@ -114,6 +114,7 @@ export interface Coach {
   sportPricing?: Record<string, number>;
   serviceMode: ServiceMode;
   ownVenueDetails?: IOwnVenueDetails; // Venue details stored in coach profile for bookings only (not marketplace)
+  baseLocation?: IGeoLocation;
   serviceRadiusKm?: number;
   travelBufferTime?: number;
   availability: IAvailability[];
