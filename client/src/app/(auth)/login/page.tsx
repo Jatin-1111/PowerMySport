@@ -9,10 +9,11 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { toast } from "@/lib/toast";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setUser, setToken, setLoading, setError } = useAuthStore();
+  const { setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -63,11 +64,11 @@ export default function LoginPage() {
           router.push("/dashboard/my-bookings");
         }
       } else {
-        setError(response.message || "Login failed");
+        toast.error(response.message || "Login failed");
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message || "Login failed");
+      toast.error(err.response?.data?.message || "Login failed");
     } finally {
       setIsSubmitting(false);
       setLoading(false);
@@ -79,7 +80,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
       if (!credentialResponse.credential) {
-        setError("No credential received from Google");
+        toast.error("No credential received from Google");
         return;
       }
       // Decode JWT token from Google
@@ -112,7 +113,7 @@ export default function LoginPage() {
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message || "Google login failed");
+      toast.error(err.response?.data?.message || "Google login failed");
     } finally {
       setLoading(false);
     }
@@ -214,7 +215,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google login failed")}
+              onError={() => toast.error("Google login failed")}
             />
           </div>
 

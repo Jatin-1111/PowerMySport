@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { OnboardingStep2Payload } from "@/modules/onboarding/types/onboarding";
 import axios from "axios";
+import { toast } from "@/lib/toast";
 import OpeningHoursInput, { getDefaultOpeningHours } from "./OpeningHoursInput";
 
 interface Step1VenueDetailsProps {
   onSubmit: (data: OnboardingStep2Payload) => Promise<void>;
   loading?: boolean;
-  error?: string;
 }
 
 interface PlaceSuggestion {
@@ -48,7 +48,6 @@ const AMENITIES_OPTIONS = [
 export default function Step1VenueDetails({
   onSubmit,
   loading,
-  error,
 }: Step1VenueDetailsProps) {
   const [formData, setFormData] = useState<OnboardingStep2Payload>({
     venueId: "",
@@ -236,16 +235,16 @@ export default function Step1VenueDetails({
 
     // Validation
     if (!formData.name.trim()) {
-      alert("Please enter venue name");
+      toast.error("Please enter venue name");
       return;
     }
     if (formData.sports.length === 0) {
-      alert("Please select at least one sport");
+      toast.error("Please select at least one sport");
       return;
     }
     if (samePriceForAll) {
       if (basePricePerHour <= 0) {
-        alert("Please enter valid price per hour");
+        toast.error("Please enter valid price per hour");
         return;
       }
     } else {
@@ -253,12 +252,12 @@ export default function Step1VenueDetails({
         (sport) => (sportPricing[sport] || 0) <= 0,
       );
       if (invalidSport) {
-        alert(`Please enter a valid price for ${invalidSport}`);
+        toast.error(`Please enter a valid price for ${invalidSport}`);
         return;
       }
     }
     if (!formData.address.trim()) {
-      alert("Please enter venue address");
+      toast.error("Please enter venue address");
       return;
     }
 
@@ -292,12 +291,6 @@ export default function Step1VenueDetails({
         <h1 className="text-3xl font-bold text-gray-900">Add Your Venue</h1>
         <p className="text-gray-600 mt-2">Step 1 of 3: Basic Details</p>
       </div>
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded">
-          {error}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Venue Name */}

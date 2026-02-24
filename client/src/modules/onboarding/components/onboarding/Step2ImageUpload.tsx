@@ -2,6 +2,7 @@
 
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
+import { toast } from "@/lib/toast";
 import { useState, useMemo } from "react";
 import {
   ArrowLeft,
@@ -31,7 +32,6 @@ interface Step2ImageUploadProps {
     coverPhotoKey: string,
   ) => Promise<void>;
   loading?: boolean;
-  error?: string;
   onSkip?: () => Promise<void>;
 }
 
@@ -43,7 +43,6 @@ export default function Step2ImageUpload({
   presignedUrls,
   onImagesConfirmed,
   loading,
-  error,
   onSkip,
 }: Step2ImageUploadProps) {
   const [uploadedImages, setUploadedImages] = useState<
@@ -155,7 +154,7 @@ export default function Step2ImageUpload({
       (url) => uploadedImages[url.field],
     );
     if (generalUploaded.length !== 3) {
-      alert("Please upload all 3 general venue images");
+      toast.error("Please upload all 3 general venue images");
       return;
     }
 
@@ -163,7 +162,7 @@ export default function Step2ImageUpload({
     for (const [sport, urls] of Object.entries(categorizedUrls.sports)) {
       const sportUploaded = urls.filter((url) => uploadedImages[url.field]);
       if (sportUploaded.length !== 5) {
-        alert(`Please upload all 5 images for ${sport}`);
+        toast.error(`Please upload all 5 images for ${sport}`);
         return;
       }
     }
@@ -434,13 +433,6 @@ export default function Step2ImageUpload({
           </div>
         );
       })}
-
-      {/* Error Display */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-          {error}
-        </div>
-      )}
 
       {/* Action Buttons */}
       <div className="flex gap-4 mt-6">

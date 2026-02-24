@@ -4,6 +4,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 
 interface Dependent {
   _id?: string;
@@ -41,7 +42,6 @@ export default function DependentManagementModal({
     },
   );
   const [sportInput, setSportInput] = useState("");
-  const [error, setError] = useState("");
 
   // Update form data when modal opens or initialDependent changes
   useEffect(() => {
@@ -66,7 +66,6 @@ export default function DependentManagementModal({
           sports: [],
         });
       }
-      setError("");
       setSportInput("");
     }
   }, [isOpen, initialDependent]);
@@ -76,7 +75,6 @@ export default function DependentManagementModal({
       ...prev,
       [field]: value,
     }));
-    setError("");
   };
 
   const addSport = () => {
@@ -98,15 +96,14 @@ export default function DependentManagementModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     if (!formData.name.trim()) {
-      setError("Name is required");
+      toast.error("Name is required");
       return;
     }
 
     if (!formData.dob) {
-      setError("Date of birth is required");
+      toast.error("Date of birth is required");
       return;
     }
 
@@ -122,7 +119,7 @@ export default function DependentManagementModal({
       setSportInput("");
       onClose();
     } catch (err: any) {
-      setError(err.message || "Failed to save dependent");
+      toast.error(err.message || "Failed to save dependent");
     }
   };
 
@@ -144,12 +141,6 @@ export default function DependentManagementModal({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 px-3 py-2 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Name *

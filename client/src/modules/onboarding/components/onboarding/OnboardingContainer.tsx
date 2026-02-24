@@ -15,6 +15,7 @@ import Step3DocumentUpload from "./Step3DocumentUpload";
 import Step5CoachList from "./Step5CoachList";
 import { getDefaultOpeningHours } from "./OpeningHoursInput";
 import { Check, ArrowLeft } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
@@ -34,8 +35,6 @@ export default function OnboardingContainer() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
   const [venueId, setVenueId] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [globalError, setGlobalError] = useState<string>("");
-  const [successMessage, setSuccessMessage] = useState<string>("");
 
   // Step 1: Contact Info
   const [contactInfo, setContactInfo] = useState<OnboardingStep1Payload | null>(
@@ -62,7 +61,6 @@ export default function OnboardingContainer() {
   // ============ STEP 1: Submit contact info ============
   const handleStep1SubmitContactInfo = useCallback(
     async (data: OnboardingStep1Payload): Promise<{ venueId: string }> => {
-      setGlobalError("");
       setLoading(true);
 
       try {
@@ -78,7 +76,7 @@ export default function OnboardingContainer() {
         setCurrentStep(2);
         return { venueId: newVenueId };
       } catch (err) {
-        setGlobalError(
+        toast.error(
           err instanceof Error ? err.message : "Failed to proceed",
         );
         throw err;
@@ -92,7 +90,6 @@ export default function OnboardingContainer() {
   // ============ STEP 2: Submit venue details ============
   const handleStep2SubmitVenueDetails = useCallback(
     async (data: OnboardingStep2Payload) => {
-      setGlobalError("");
       setLoading(true);
 
       try {
@@ -119,7 +116,7 @@ export default function OnboardingContainer() {
         setImagePresignedUrls(imageUrlsResponse.data.uploadUrls || []);
         setCurrentStep(3);
       } catch (err) {
-        setGlobalError(
+        toast.error(
           err instanceof Error ? err.message : "Failed to proceed",
         );
       } finally {
@@ -139,7 +136,6 @@ export default function OnboardingContainer() {
       coverPhotoUrl: string,
       coverPhotoKey: string,
     ) => {
-      setGlobalError("");
       setLoading(true);
 
       try {
@@ -222,7 +218,7 @@ export default function OnboardingContainer() {
         setDocumentPresignedUrls(docUrlsResponse.data.uploadUrls || []);
         setCurrentStep(4);
       } catch (err) {
-        setGlobalError(
+        toast.error(
           err instanceof Error ? err.message : "Failed to proceed to next step",
         );
       } finally {
@@ -235,7 +231,6 @@ export default function OnboardingContainer() {
   // ============ STEP 4: Finalize with documents ============
   const handleStep4DocumentsFinalized = useCallback(
     async (documents: UploadedDoc[]) => {
-      setGlobalError("");
       setLoading(true);
 
       try {
@@ -268,7 +263,7 @@ export default function OnboardingContainer() {
         if (hasCoaches) {
           setCurrentStep(5);
         } else {
-          setSuccessMessage(
+          toast.success(
             "Congratulations! Your venue has been submitted for approval. You'll receive an email at " +
               contactInfo?.ownerEmail +
               " once our admin team reviews your submission.",
@@ -284,12 +279,11 @@ export default function OnboardingContainer() {
             setUploadedDocuments([]);
             setImagePresignedUrls([]);
             setDocumentPresignedUrls([]);
-            setSuccessMessage("");
             setHasCoaches(false);
           }, 3000);
         }
       } catch (err) {
-        setGlobalError(
+        toast.error(
           err instanceof Error ? err.message : "Failed to finalize onboarding",
         );
       } finally {
@@ -302,7 +296,6 @@ export default function OnboardingContainer() {
   // ============ STEP 5: Finalize with coaches (optional) ============
   const handleStep5CoachesFinalized = useCallback(
     async (coaches: VenueCoach[]) => {
-      setGlobalError("");
       setLoading(true);
 
       try {
@@ -318,7 +311,7 @@ export default function OnboardingContainer() {
           throw new Error(coachesResponse.message || "Failed to save coaches");
         }
 
-        setSuccessMessage(
+        toast.success(
           "Congratulations! Your venue has been submitted for approval. You'll receive an email at " +
             contactInfo?.ownerEmail +
             " once our admin team reviews your submission.",
@@ -334,11 +327,10 @@ export default function OnboardingContainer() {
           setUploadedDocuments([]);
           setImagePresignedUrls([]);
           setDocumentPresignedUrls([]);
-          setSuccessMessage("");
           setHasCoaches(false);
         }, 3000);
       } catch (err) {
-        setGlobalError(
+        toast.error(
           err instanceof Error ? err.message : "Failed to finalize onboarding",
         );
       } finally {
@@ -350,7 +342,6 @@ export default function OnboardingContainer() {
 
   // ============ SKIP HANDLERS (Dev Mode) ============
   const handleSkipStep1 = useCallback(async () => {
-    setGlobalError("");
     setLoading(true);
     try {
       const dummyData: OnboardingStep1Payload = {
@@ -363,7 +354,7 @@ export default function OnboardingContainer() {
       setVenueId(result.venueId);
     } catch (err) {
       console.error("Skip step 1 error:", err);
-      setGlobalError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to skip step 1",
       );
     } finally {
@@ -373,7 +364,6 @@ export default function OnboardingContainer() {
 
   const handleSkipStep2 = useCallback(
     async (hasCoachesOverride?: boolean) => {
-      setGlobalError("");
       setLoading(true);
       try {
         const dummyData: OnboardingStep2Payload = {
@@ -395,7 +385,7 @@ export default function OnboardingContainer() {
         await handleStep2SubmitVenueDetails(dummyData);
       } catch (err) {
         console.error("Skip step 2 error:", err);
-        setGlobalError(
+        toast.error(
           err instanceof Error ? err.message : "Failed to skip step 2",
         );
       } finally {
@@ -406,7 +396,6 @@ export default function OnboardingContainer() {
   );
 
   const handleSkipStep3 = useCallback(async () => {
-    setGlobalError("");
     setLoading(true);
     try {
       if (!venueId) throw new Error("Venue ID not found");
@@ -508,7 +497,7 @@ export default function OnboardingContainer() {
       setCurrentStep(4);
     } catch (err) {
       console.error("Skip step 3 error:", err);
-      setGlobalError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to skip step 3",
       );
     } finally {
@@ -517,7 +506,6 @@ export default function OnboardingContainer() {
   }, [venueId]);
 
   const handleSkipStep4 = useCallback(async () => {
-    setGlobalError("");
     setLoading(true);
     try {
       if (!venueId) throw new Error("Venue ID not found");
@@ -586,7 +574,7 @@ export default function OnboardingContainer() {
         setCurrentStep(5);
       } else {
         console.log("Showing success message (no coaches)");
-        setSuccessMessage(
+        toast.success(
           "Dev Mode: Venue skipped to approval. You'll receive an email at " +
             contactInfo?.ownerEmail +
             " once our admin team reviews your submission.",
@@ -602,13 +590,12 @@ export default function OnboardingContainer() {
           setUploadedDocuments([]);
           setImagePresignedUrls([]);
           setDocumentPresignedUrls([]);
-          setSuccessMessage("");
           setHasCoaches(false);
         }, 3000);
       }
     } catch (err) {
       console.error("Skip step 4 error:", err);
-      setGlobalError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to skip step 4",
       );
     } finally {
@@ -618,7 +605,6 @@ export default function OnboardingContainer() {
   const handleBack = useCallback(() => {
     if (currentStep > 1) {
       setCurrentStep((prev) => (prev - 1) as OnboardingStep);
-      setGlobalError("");
     }
   }, [currentStep]);
 
@@ -642,10 +628,9 @@ export default function OnboardingContainer() {
       setUploadedDocuments([]);
       setImagePresignedUrls([]);
       setDocumentPresignedUrls([]);
-      setGlobalError("");
       setHasCoaches(false);
     } catch (err) {
-      setGlobalError(err instanceof Error ? err.message : "Failed to cancel");
+      toast.error(err instanceof Error ? err.message : "Failed to cancel");
     } finally {
       setLoading(false);
     }
@@ -663,35 +648,6 @@ export default function OnboardingContainer() {
             Complete these 4 steps to get your venue on PowerMySport
           </p>
         </div>
-
-        {/* Global Error */}
-        {globalError && (
-          <div className="max-w-3xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start justify-between">
-            <span>{globalError}</span>
-            <button
-              onClick={() => setGlobalError("")}
-              className="text-red-500 hover:text-red-700"
-            >
-              ?
-            </button>
-          </div>
-        )}
-
-        {/* Success Message */}
-        {successMessage && (
-          <div className="max-w-3xl mx-auto mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-            <p className="font-medium">{successMessage}</p>
-            <button
-              onClick={() => {
-                setSuccessMessage("");
-                window.location.href = "/";
-              }}
-              className="mt-3 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              Return Home
-            </button>
-          </div>
-        )}
 
         {/* Progress Bar */}
         <div className="max-w-3xl mx-auto mb-8">
@@ -752,7 +708,6 @@ export default function OnboardingContainer() {
                 venueId={venueId}
                 onSubmit={handleStep2SubmitVenueDetails}
                 loading={loading}
-                error={globalError}
                 onSkip={handleSkipStep2}
               />
               <div className="mt-6 flex gap-4">
@@ -782,7 +737,6 @@ export default function OnboardingContainer() {
                 presignedUrls={imagePresignedUrls}
                 onImagesConfirmed={handleStep3ImagesConfirmed}
                 loading={loading}
-                error={globalError}
                 onSkip={handleSkipStep3}
               />
               <div className="mt-6 flex gap-4">
@@ -812,7 +766,6 @@ export default function OnboardingContainer() {
                 presignedUrls={documentPresignedUrls}
                 onDocumentsFinalized={handleStep4DocumentsFinalized}
                 loading={loading}
-                error={globalError}
                 onSkip={handleSkipStep4}
               />
               <div className="mt-6 flex gap-4">
@@ -841,7 +794,6 @@ export default function OnboardingContainer() {
                 venueId={venueId}
                 onFinalize={handleStep5CoachesFinalized}
                 loading={loading}
-                error={globalError}
               />
               <div className="mt-6 flex gap-4">
                 <button

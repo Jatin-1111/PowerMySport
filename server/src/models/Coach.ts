@@ -109,8 +109,8 @@ const coachSchema = new Schema<CoachDocument>(
           type: [Number],
           validate: {
             validator(v: any) {
-              // Allow null/undefined for optional ownVenueDetails
-              if (!v) return true;
+              // Allow null/undefined/empty array for optional ownVenueDetails
+              if (!v || (Array.isArray(v) && v.length === 0)) return true;
               // Must be an array with exactly 2 numbers
               if (!Array.isArray(v) || v.length !== 2) return false;
               // Both elements must be numbers

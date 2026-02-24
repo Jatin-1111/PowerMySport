@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 
 export default function CoachDetailsPage() {
   const params = useParams();
@@ -39,8 +40,6 @@ export default function CoachDetailsPage() {
   } | null>(null);
   const [selectedSport, setSelectedSport] = useState<string>("");
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const getSportRate = (sport: string) => {
     if (!coach) {
@@ -114,7 +113,7 @@ export default function CoachDetailsPage() {
       }
     } catch (error) {
       console.error("Failed to load coach details:", error);
-      setError("Failed to load coach details");
+      toast.error("Failed to load coach details");
     } finally {
       setLoading(false);
     }
@@ -142,15 +141,13 @@ export default function CoachDetailsPage() {
   };
 
   const handleBooking = async () => {
-    setError(null);
-    setSuccess(null);
     if (!user) {
       router.push("/login?redirect=/coaches/" + coachId);
       return;
     }
 
     if (!selectedSlot || !selectedSport) {
-      setError("Please select a sport and time slot");
+      toast.error("Please select a sport and time slot");
       return;
     }
 
@@ -175,7 +172,7 @@ export default function CoachDetailsPage() {
           await bookingApi.confirmMockPaymentSuccess(bookingId);
         }
 
-        setSuccess("Mock payment successful! Booking confirmed.");
+        toast.success("Mock payment successful! Booking confirmed.");
         setTimeout(() => {
           if (bookingId) {
             router.push(
@@ -197,7 +194,7 @@ export default function CoachDetailsPage() {
           ? (error as { response?: { data?: { message?: string } } }).response!
               .data!.message!
           : "Booking failed";
-      setError(message);
+      toast.error(message);
     } finally {
       setBookingLoading(false);
     }
@@ -459,17 +456,6 @@ export default function CoachDetailsPage() {
 
                   {/* Price Display */}
                   <div className="pt-5 border-t-2 border-slate-100">
-                    {error && (
-                      <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
-                        {error}
-                      </div>
-                    )}
-                    {success && (
-                      <div className="mb-4 p-3 bg-green-50 text-green-600 text-sm rounded-lg border border-green-100">
-                        {success}
-                      </div>
-                    )}
-
                     <div className="bg-turf-green/5 rounded-lg p-4 mb-4">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-slate-600">

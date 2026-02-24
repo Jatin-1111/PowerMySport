@@ -5,19 +5,18 @@ import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
 import { authApi } from "@/modules/auth/services/auth";
 import Link from "next/link";
 import React, { useState } from "react";
+import { toast } from "@/lib/toast";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     if (!email) {
-      setError("Email is required");
+      toast.error("Email is required");
       return;
     }
 
@@ -27,11 +26,11 @@ export default function ForgotPasswordPage() {
       if (response.success) {
         setSuccess(true);
       } else {
-        setError(response.message || "Failed to send reset email");
+        toast.error(response.message || "Failed to send reset email");
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message || "Failed to send reset email");
+      toast.error(err.response?.data?.message || "Failed to send reset email");
     } finally {
       setIsSubmitting(false);
     }
@@ -64,14 +63,9 @@ export default function ForgotPasswordPage() {
                   name="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all ${
-                    error ? "border-red-500" : "border-slate-300"
-                  }`}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                   placeholder="your@email.com"
                 />
-                {error && (
-                  <p className="text-red-500 text-sm mt-1.5">{error}</p>
-                )}
               </div>
 
               <Button

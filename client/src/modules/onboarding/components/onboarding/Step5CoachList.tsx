@@ -6,11 +6,11 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { VenueCoach } from "@/modules/onboarding/types/onboarding";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
+import { toast } from "@/lib/toast";
 
 interface Step5CoachListProps {
   onFinalize: (coaches: VenueCoach[]) => Promise<void>;
   loading?: boolean;
-  error?: string;
   venueId?: string; // Made optional to avoid breaking existing usages, but required for photo upload
 }
 
@@ -30,11 +30,9 @@ const SPORTS_OPTIONS = [
 export default function Step5CoachList({
   onFinalize,
   loading,
-  error,
   venueId,
 }: Step5CoachListProps) {
   const [coaches, setCoaches] = useState<VenueCoach[]>([]);
-  const [formError, setFormError] = useState<string>("");
 
   // Form state for adding new coach
   const [newCoach, setNewCoach] = useState<VenueCoach>({
@@ -141,19 +139,18 @@ export default function Step5CoachList({
 
   const handleAddCoach = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError("");
 
     // Validation
     if (!newCoach.name.trim()) {
-      setFormError("Coach name is required");
+      toast.error("Coach name is required");
       return;
     }
     if (!newCoach.sport.trim()) {
-      setFormError("Sport is required");
+      toast.error("Sport is required");
       return;
     }
     if (newCoach.hourlyRate <= 0) {
-      setFormError("Hourly rate must be greater than 0");
+      toast.error("Hourly rate must be greater than 0");
       return;
     }
 
@@ -178,7 +175,7 @@ export default function Step5CoachList({
     try {
       await onFinalize([]);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Failed to skip");
+      toast.error(err instanceof Error ? err.message : "Failed to skip");
     }
   };
 
@@ -186,7 +183,7 @@ export default function Step5CoachList({
     try {
       await onFinalize(coaches);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Failed to finalize");
+      toast.error(err instanceof Error ? err.message : "Failed to finalize");
     }
   };
 
@@ -202,18 +199,6 @@ export default function Step5CoachList({
             Step 5 of 5: List your internal coaches (optional)
           </p>
         </div>
-
-        {/* Error Messages */}
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-        {formError && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded">
-            {formError}
-          </div>
-        )}
 
         {/* Coaches List */}
         {coaches.length > 0 && (

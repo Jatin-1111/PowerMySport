@@ -4,6 +4,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { User } from "@/types";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 
 interface ProfilePictureUploadProps {
   currentPhotoUrl?: string;
@@ -24,7 +25,6 @@ export default function ProfilePictureUpload({
   size = "lg",
 }: ProfilePictureUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     currentPhotoUrl || null,
   );
@@ -42,16 +42,15 @@ export default function ProfilePictureUpload({
 
     // Validate file
     if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be smaller than 5MB");
+      toast.error("Image must be smaller than 5MB");
       return;
     }
 
-    setError(null);
     setUploading(true);
 
     try {
@@ -89,7 +88,7 @@ export default function ProfilePictureUpload({
         onUploadSuccess(confirmResponse.data);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload image");
+      toast.error(err instanceof Error ? err.message : "Failed to upload image");
       setPreviewUrl(currentPhotoUrl || null);
     } finally {
       setUploading(false);
@@ -163,11 +162,6 @@ export default function ProfilePictureUpload({
           {uploading ? "Uploading..." : "Change Photo"}
         </span>
       </label>
-
-      {/* Error Message */}
-      {error && (
-        <p className="text-red-500 text-sm text-center max-w-xs">{error}</p>
-      )}
 
       {/* Info Text */}
       <p className="text-gray-500 text-xs text-center max-w-xs">

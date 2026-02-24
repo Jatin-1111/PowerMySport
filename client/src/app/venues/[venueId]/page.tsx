@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 
 export default function VenueDetailsPage() {
   const params = useParams();
@@ -38,8 +39,6 @@ export default function VenueDetailsPage() {
   } | null>(null);
   const [selectedSport, setSelectedSport] = useState<string>("");
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (venueId) {
@@ -64,7 +63,7 @@ export default function VenueDetailsPage() {
       }
     } catch (error) {
       console.error("Failed to load venue details:", error);
-      setError("Failed to load venue details");
+      toast.error("Failed to load venue details");
     } finally {
       setLoading(false);
     }
@@ -85,15 +84,13 @@ export default function VenueDetailsPage() {
   };
 
   const handleBooking = async () => {
-    setError(null);
-    setSuccess(null);
     if (!user) {
       router.push("/login?redirect=/venues/" + venueId);
       return;
     }
 
     if (!selectedSlot || !selectedSport) {
-      setError("Please select a sport and time slot");
+      toast.error("Please select a sport and time slot");
       return;
     }
 
@@ -362,17 +359,6 @@ export default function VenueDetailsPage() {
 
                   {/* Summary & CTA */}
                   <div className="pt-5 border-t-2 border-slate-100">
-                    {error && (
-                      <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border-2 border-red-100 font-medium">
-                        {error}
-                      </div>
-                    )}
-                    {success && (
-                      <div className="mb-4 p-3 bg-green-50 text-green-700 text-sm rounded-lg border-2 border-green-100 font-medium">
-                        {success}
-                      </div>
-                    )}
-
                     {selectedSport && selectedSlot && (
                       <div className="mb-4 p-4 bg-slate-50 rounded-lg space-y-2">
                         <div className="flex justify-between text-sm">

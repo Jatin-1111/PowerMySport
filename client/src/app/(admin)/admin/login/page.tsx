@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, EyeOff, Lock, Shield } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { toast } from "@/lib/toast";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -12,7 +13,6 @@ export default function AdminLoginPage() {
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -21,12 +21,10 @@ export default function AdminLoginPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
     try {
@@ -40,11 +38,11 @@ export default function AdminLoginPage() {
         // Redirect to admin dashboard
         router.push("/admin");
       } else {
-        setError(response.message || "Login failed");
+        toast.error(response.message || "Login failed");
       }
     } catch (error: any) {
       console.error("Admin login failed:", error);
-      setError(
+      toast.error(
         error.response?.data?.message ||
           "Invalid credentials. Please try again.",
       );
@@ -112,12 +110,6 @@ export default function AdminLoginPage() {
                 </button>
               </div>
             </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"

@@ -7,6 +7,7 @@ import {
   VenueInquiry,
   venueInquiryApi,
 } from "@/modules/venue-inquiry/services/venueInquiry";
+import { toast } from "@/lib/toast";
 import { MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -49,18 +50,20 @@ export default function VenueInquiriesPage() {
       });
 
       if (response.success) {
-        alert(
-          status === "APPROVED"
-            ? `Inquiry approved! Credentials: ${response.data.credentials?.email} / ${response.data.credentials?.password}`
-            : "Inquiry rejected",
-        );
+        if (status === "APPROVED") {
+          toast.success(
+            `Inquiry approved! Credentials: ${response.data.credentials?.email} / ${response.data.credentials?.password}`,
+          );
+        } else {
+          toast.success("Inquiry rejected");
+        }
         setSelectedInquiry(null);
         setReviewNotes("");
         loadInquiries();
       }
     } catch (error: any) {
       console.error("Failed to review inquiry:", error);
-      alert(error.response?.data?.message || "Failed to review inquiry");
+      toast.error(error.response?.data?.message || "Failed to review inquiry");
     } finally {
       setIsProcessing(false);
     }

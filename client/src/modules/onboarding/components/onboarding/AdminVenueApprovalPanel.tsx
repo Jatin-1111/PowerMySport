@@ -11,6 +11,7 @@ import { Card } from "@/modules/shared/ui/Card";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 
 interface AdminVenueApprovalPanelProps {
   initialVenues?: PendingVenueListItem[];
@@ -27,8 +28,6 @@ export default function AdminVenueApprovalPanel({
     null,
   );
   const [loading, setLoading] = useState(!initialVenues.length);
-  const [error, setError] = useState<string>("");
-  const [successMessage, setSuccessMessage] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [paginationData, setPaginationData] = useState({
     total: 0,
@@ -60,9 +59,8 @@ export default function AdminVenueApprovalPanel({
           page: response.data.page || 1,
           totalPages: response.data.totalPages || 1,
         });
-        setError("");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load venues");
+        toast.error(err instanceof Error ? err.message : "Failed to load venues");
       } finally {
         setLoading(false);
       }
@@ -83,9 +81,8 @@ export default function AdminVenueApprovalPanel({
       }
       setSelectedVenue(response.data);
       setViewMode("details");
-      setError("");
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to load venue details",
       );
     } finally {
@@ -100,7 +97,7 @@ export default function AdminVenueApprovalPanel({
     const venueId =
       selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
     if (!venueId) {
-      setError("Venue ID not found");
+      toast.error("Venue ID not found");
       return;
     }
 
@@ -116,14 +113,12 @@ export default function AdminVenueApprovalPanel({
         throw new Error(response.message || "Failed to approve venue");
       }
 
-      setSuccessMessage(`Venue "${selectedVenue.name}" has been approved!`);
+      toast.success(`Venue "${selectedVenue.name}" has been approved!`);
       setVenues(venues.filter((v) => v.id !== venueId));
       setViewMode("list");
       setSelectedVenue(null);
-
-      setTimeout(() => setSuccessMessage(""), 5000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to approve venue");
+      toast.error(err instanceof Error ? err.message : "Failed to approve venue");
     } finally {
       setActionLoading(false);
     }
@@ -132,14 +127,14 @@ export default function AdminVenueApprovalPanel({
   // ============ Reject venue ============
   const handleReject = async () => {
     if (!selectedVenue || !rejectionReason.trim()) {
-      setError("Please provide a rejection reason");
+      toast.error("Please provide a rejection reason");
       return;
     }
 
     const venueId =
       selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
     if (!venueId) {
-      setError("Venue ID not found");
+      toast.error("Venue ID not found");
       return;
     }
 
@@ -154,17 +149,15 @@ export default function AdminVenueApprovalPanel({
         throw new Error(response.message || "Failed to reject venue");
       }
 
-      setSuccessMessage(
+      toast.success(
         `Venue "${selectedVenue.name}" has been rejected. Notification sent to owner.`,
       );
       setVenues(venues.filter((v) => v.id !== venueId));
       setViewMode("list");
       setSelectedVenue(null);
       setRejectionReason("");
-
-      setTimeout(() => setSuccessMessage(""), 5000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reject venue");
+      toast.error(err instanceof Error ? err.message : "Failed to reject venue");
     } finally {
       setActionLoading(false);
     }
@@ -173,14 +166,14 @@ export default function AdminVenueApprovalPanel({
   // ============ Mark for review ============
   const handleMarkForReview = async () => {
     if (!selectedVenue || !reviewNotes.trim()) {
-      setError("Please provide review notes");
+      toast.error("Please provide review notes");
       return;
     }
 
     const venueId =
       selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
     if (!venueId) {
-      setError("Venue ID not found");
+      toast.error("Venue ID not found");
       return;
     }
 
@@ -195,17 +188,15 @@ export default function AdminVenueApprovalPanel({
         throw new Error(response.message || "Failed to mark venue for review");
       }
 
-      setSuccessMessage(
+      toast.success(
         `Venue "${selectedVenue.name}" marked for review. Owner will be notified.`,
       );
       setVenues(venues.filter((v) => v.id !== venueId));
       setViewMode("list");
       setSelectedVenue(null);
       setReviewNotes("");
-
-      setTimeout(() => setSuccessMessage(""), 5000);
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to mark venue for review",
       );
     } finally {
@@ -222,24 +213,6 @@ export default function AdminVenueApprovalPanel({
           title="Venue Approval Panel"
           subtitle="Review and approve pending venue submissions to expand the platform."
         />
-
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-300 text-red-800 rounded-xl flex justify-between items-center">
-            <span>{error}</span>
-            <button
-              onClick={() => setError("")}
-              className="text-red-500 hover:text-red-700 text-xl"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="p-4 bg-green-50 border border-green-300 text-green-800 rounded-xl">
-            {successMessage}
-          </div>
-        )}
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -367,24 +340,6 @@ export default function AdminVenueApprovalPanel({
           <ArrowLeft className="w-4 h-4" />
           Back to List
         </button>
-
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-300 text-red-800 rounded-xl flex justify-between items-center">
-            <span>{error}</span>
-            <button
-              onClick={() => setError("")}
-              className="text-red-500 hover:text-red-700 text-xl"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="p-4 bg-green-50 border border-green-300 text-green-800 rounded-xl">
-            {successMessage}
-          </div>
-        )}
 
         <Card className="bg-white overflow-hidden">
           {/* Header */}

@@ -9,12 +9,13 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
+import { toast } from "@/lib/toast";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roleParam = searchParams.get("role") || "PLAYER";
-  const { setUser, setToken, setLoading, setError } = useAuthStore();
+  const { setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -80,11 +81,11 @@ function RegisterContent() {
           roleRoutes[response.data.user.role] || "/dashboard/my-bookings",
         );
       } else {
-        setError(response.message || "Registration failed");
+        toast.error(response.message || "Registration failed");
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message || "Registration failed");
+      toast.error(err.response?.data?.message || "Registration failed");
     } finally {
       setIsSubmitting(false);
       setLoading(false);
@@ -97,7 +98,7 @@ function RegisterContent() {
     try {
       setLoading(true);
       if (!credentialResponse.credential) {
-        setError("No credential received from Google");
+        toast.error("No credential received from Google");
         return;
       }
       // Decode JWT token from Google
@@ -136,7 +137,7 @@ function RegisterContent() {
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message || "Google registration failed");
+      toast.error(err.response?.data?.message || "Google registration failed");
     } finally {
       setLoading(false);
     }
@@ -321,7 +322,7 @@ function RegisterContent() {
           <div className="flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google registration failed")}
+              onError={() => toast.error("Google registration failed")}
             />
           </div>
 

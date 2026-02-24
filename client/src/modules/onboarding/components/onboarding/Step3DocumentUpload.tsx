@@ -2,6 +2,7 @@
 
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
+import { toast } from "@/lib/toast";
 import {
   CheckCircle,
   FileText,
@@ -32,7 +33,6 @@ interface Step3DocumentUploadProps {
   presignedUrls: PresignedUrl[];
   onDocumentsFinalized: (documents: UploadedDoc[]) => Promise<void>;
   loading?: boolean;
-  error?: string;
   onSkip?: () => Promise<void>;
 }
 
@@ -79,7 +79,6 @@ export default function Step3DocumentUpload({
   presignedUrls,
   onDocumentsFinalized,
   loading,
-  error,
   onSkip,
 }: Step3DocumentUploadProps) {
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
@@ -155,7 +154,7 @@ export default function Step3DocumentUpload({
     e.preventDefault();
 
     if (uploadedDocs.length < presignedUrls.length) {
-      alert(`Please upload all ${presignedUrls.length} required documents`);
+      toast.error(`Please upload all ${presignedUrls.length} required documents`);
       return;
     }
 
@@ -197,14 +196,6 @@ export default function Step3DocumentUpload({
           ></div>
         </div>
       </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-start gap-3">
-          <X className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* Document Upload Cards */}
       <form onSubmit={handleSubmit} className="space-y-4">

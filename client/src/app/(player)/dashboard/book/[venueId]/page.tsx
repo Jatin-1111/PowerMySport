@@ -7,6 +7,7 @@ import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { User, Venue } from "@/types";
 import { formatCurrency } from "@/utils/format";
+import { toast } from "@/lib/toast";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -25,7 +26,6 @@ export default function BookVenuePage() {
     sport: "",
     dependentId: "",
   });
-  const [error, setError] = useState("");
 
   useEffect(() => {
     loadData();
@@ -46,7 +46,7 @@ export default function BookVenuePage() {
       }
     } catch (error) {
       console.error("Failed to load data:", error);
-      setError("Failed to load booking details");
+      toast.error("Failed to load booking details");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,6 @@ export default function BookVenuePage() {
       ...bookingData,
       [e.target.name]: e.target.value,
     });
-    setError("");
   };
 
   const calculateDurationMinutes = () => {
@@ -97,7 +96,6 @@ export default function BookVenuePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     // Validation
     if (
@@ -106,13 +104,13 @@ export default function BookVenuePage() {
       !bookingData.endTime ||
       !bookingData.sport
     ) {
-      setError("Please fill in all fields");
+      toast.error("Please fill in all fields");
       return;
     }
 
     const durationMinutes = calculateDurationMinutes();
     if (durationMinutes <= 0) {
-      setError("End time must be after start time");
+      toast.error("End time must be after start time");
       return;
     }
 
@@ -335,13 +333,6 @@ export default function BookVenuePage() {
                     </span>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
-                {error}
               </div>
             )}
 

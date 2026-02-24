@@ -1,4 +1,4 @@
-﻿import axios, { AxiosInstance, AxiosError } from "axios";
+﻿import axios, { AxiosError, AxiosInstance } from "axios";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -27,8 +27,14 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Clear auth data and redirect to login
+    const requestUrl = error.config?.url || "";
+    const isAuthEndpoint =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/register") ||
+      requestUrl.includes("/auth/google");
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      // Clear auth data and redirect to login only for non-auth endpoints
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -49,4 +55,3 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
-

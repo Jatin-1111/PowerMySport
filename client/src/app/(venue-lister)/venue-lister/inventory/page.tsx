@@ -7,6 +7,7 @@ import { venueApi } from "@/modules/venue/services/venue";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
+import { toast } from "@/lib/toast";
 import { Venue } from "@/types";
 import { MapPin } from "lucide-react";
 import Link from "next/link";
@@ -216,7 +217,7 @@ export default function VenueInventoryPage() {
 
     try {
       if (!formData.address.trim()) {
-        alert("Please enter a venue address");
+        toast.error("Please enter a venue address");
         setIsSubmitting(false);
         return;
       }
@@ -227,7 +228,7 @@ export default function VenueInventoryPage() {
         try {
           const result = await geoApi.geocode(formData.address);
           if (!result) {
-            alert("We couldn't find this address. Please pick a suggestion.");
+            toast.error("We couldn't find this address. Please pick a suggestion.");
             setIsSubmitting(false);
             return;
           }
@@ -253,14 +254,14 @@ export default function VenueInventoryPage() {
 
       const sportsList = parseSportsInput(formData.sports);
       if (sportsList.length === 0) {
-        alert("Please add at least one sport");
+        toast.error("Please add at least one sport");
         setIsSubmitting(false);
         return;
       }
 
       if (samePriceForAll) {
         if (basePricePerHour <= 0) {
-          alert("Please enter a valid base price");
+          toast.error("Please enter a valid base price");
           setIsSubmitting(false);
           return;
         }
@@ -269,7 +270,7 @@ export default function VenueInventoryPage() {
           (sport) => (sportPricing[sport] || 0) <= 0,
         );
         if (invalidSport) {
-          alert(`Please enter a valid price for ${invalidSport}`);
+          toast.error(`Please enter a valid price for ${invalidSport}`);
           setIsSubmitting(false);
           return;
         }
@@ -379,7 +380,7 @@ export default function VenueInventoryPage() {
       loadVenues();
     } catch (error: any) {
       console.error("Failed to save venue:", error);
-      alert(error.response?.data?.message || "Failed to save venue");
+      toast.error(error.response?.data?.message || "Failed to save venue");
     } finally {
       setIsUploadingImages(false);
       setIsSubmitting(false);
@@ -449,7 +450,7 @@ export default function VenueInventoryPage() {
       loadVenues();
     } catch (error) {
       console.error("Failed to delete venue:", error);
-      alert("Failed to delete venue");
+      toast.error("Failed to delete venue");
     }
   };
 

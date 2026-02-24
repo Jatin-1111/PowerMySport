@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,6 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <HydrationBoundary>{children}</HydrationBoundary>
+        <Toaster richColors closeButton position="top-right" />
       </body>
     </html>
   );

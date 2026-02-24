@@ -107,6 +107,27 @@ export const coachVerificationStep2Schema = z
       .optional()
       .default({}),
     serviceMode: z.enum(["OWN_VENUE", "FREELANCE", "HYBRID"]).optional(),
+    ownVenueDetails: z
+      .object({
+        name: z.string().min(1, "Venue name is required"),
+        address: z.string().min(1, "Venue address is required"),
+        description: z.string().optional().default(""),
+        openingHours: z.string().optional().default("09:00-18:00"),
+        coordinates: z.tuple([z.number(), z.number()]).optional(),
+        location: z
+          .object({
+            type: z.literal("Point"),
+            coordinates: z
+              .tuple([z.number(), z.number()])
+              .refine(
+                ([lon, lat]) =>
+                  lon >= -180 && lon <= 180 && lat >= -90 && lat <= 90,
+                { message: "Coordinates must be valid [longitude, latitude]" },
+              ),
+          })
+          .optional(),
+      })
+      .optional(),
   })
   .refine(
     (data) => {

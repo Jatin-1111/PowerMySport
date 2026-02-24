@@ -1,23 +1,24 @@
 ﻿"use client";
 
 import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
+import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Coach, IAvailability, User } from "@/types";
 import {
-  LogOut,
-  ShieldCheck,
   AlertCircle,
   CheckCircle,
   Clock3,
+  LogOut,
   Plus,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const DAYS: Array<{ value: number; label: string }> = [
   { value: 0, label: "Sunday" },
@@ -50,8 +51,13 @@ export default function CoachProfilePage() {
     Record<string, IAvailability[]>
   >({});
   const [savingAvailability, setSavingAvailability] = useState(false);
-  const [availabilityMessage, setAvailabilityMessage] = useState("");
-  const [availabilityError, setAvailabilityError] = useState("");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
 
   useEffect(() => {
     loadProfile();
@@ -131,6 +137,48 @@ export default function CoachProfilePage() {
     }
   };
 
+  const handleEditProfileClick = () => {
+    if (!user) return;
+    setProfileForm({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+    });
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileForm.name.trim() || !profileForm.email.trim()) {
+      toast.error("Name and email are required.");
+      return;
+    }
+    setIsSavingProfile(true);
+    try {
+      const response = await authApi.updateProfile({
+        name: profileForm.name.trim(),
+        email: profileForm.email.trim(),
+        phone: profileForm.phone.trim(),
+      });
+      if (response.success && response.data) {
+        setUser(response.data);
+        setIsEditingProfile(false);
+        toast.success("Profile updated successfully.");
+      } else {
+        throw new Error(response.message || "Failed to update profile");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile",
+      );
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   const loadProfile = async () => {
     try {
       const response = await coachApi.getMyProfile();
@@ -171,8 +219,6 @@ export default function CoachProfilePage() {
   };
 
   const addTimeSlot = () => {
-    setAvailabilityMessage("");
-    setAvailabilityError("");
     if (!activeSportTab) {
       return;
     }
@@ -187,8 +233,6 @@ export default function CoachProfilePage() {
   };
 
   const removeTimeSlot = (index: number) => {
-    setAvailabilityMessage("");
-    setAvailabilityError("");
     if (!activeSportTab) {
       return;
     }
@@ -206,8 +250,6 @@ export default function CoachProfilePage() {
     key: keyof IAvailability,
     value: number | string,
   ) => {
-    setAvailabilityMessage("");
-    setAvailabilityError("");
     if (!activeSportTab) {
       return;
     }
@@ -255,26 +297,24 @@ export default function CoachProfilePage() {
 
   const handleSaveAvailability = async () => {
     if (!coachProfile) {
-      setAvailabilityError("Coach profile not found.");
+      toast.error("Coach profile not found.");
       return;
     }
 
     const validationError = validateAvailabilityBySport(availabilityBySport);
     if (validationError) {
-      setAvailabilityError(validationError);
+      toast.error(validationError);
       return;
     }
 
     const coachId = coachProfile.id || coachProfile._id;
     if (!coachId) {
-      setAvailabilityError("Coach profile id is missing.");
+      toast.error("Coach profile id is missing.");
       return;
     }
 
     try {
       setSavingAvailability(true);
-      setAvailabilityError("");
-      setAvailabilityMessage("");
 
       const sortedAvailabilityBySport: Record<string, IAvailability[]> = {};
       Object.entries(availabilityBySport).forEach(([sport, slots]) => {
@@ -311,9 +351,9 @@ export default function CoachProfilePage() {
       if (sports.length > 0 && !sports.includes(activeSportTab)) {
         setActiveSportTab(sports[0]);
       }
-      setAvailabilityMessage("Time slots updated successfully.");
+      toast.success("Time slots updated successfully.");
     } catch (error) {
-      setAvailabilityError(
+      toast.error(
         error instanceof Error ? error.message : "Failed to save time slots",
       );
     } finally {
@@ -673,18 +713,6 @@ export default function CoachProfilePage() {
                 )}
               </div>
 
-              {availabilityError && (
-                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-                  {availabilityError}
-                </div>
-              )}
-
-              {availabilityMessage && (
-                <div className="mt-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700">
-                  {availabilityMessage}
-                </div>
-              )}
-
               <div className="mt-4 flex items-center justify-end">
                 <Button
                   type="button"
@@ -729,31 +757,125 @@ export default function CoachProfilePage() {
 
           <div className="space-y-6">
             <Card className="bg-white">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                Profile Info
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">
-                    Email
-                  </p>
-                  <p className="font-medium text-slate-900">{user?.email}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">
-                    Phone
-                  </p>
-                  <p className="font-medium text-slate-900">
-                    {user?.phone || "Not provided"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500">
-                    Role
-                  </p>
-                  <p className="font-medium text-slate-900">Coach</p>
-                </div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Profile Info
+                </h3>
+                {!isEditingProfile && (
+                  <button
+                    type="button"
+                    onClick={handleEditProfileClick}
+                    className="px-3 py-1.5 bg-power-orange text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
+
+              {isEditingProfile ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wide text-slate-500 mb-1">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      value={profileForm.name}
+                      onChange={(e) =>
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                      placeholder="Your name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wide text-slate-500 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(e) =>
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                      placeholder="Your email"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wide text-slate-500 mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={profileForm.phone}
+                      onChange={(e) =>
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                      placeholder="Your phone number"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleSaveProfile}
+                      disabled={isSavingProfile}
+                      className="flex-1 rounded-lg bg-power-orange px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-60 transition-colors"
+                    >
+                      {isSavingProfile ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      disabled={isSavingProfile}
+                      className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Name
+                    </p>
+                    <p className="font-medium text-slate-900">
+                      {user?.name || "Not provided"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Email
+                    </p>
+                    <p className="font-medium text-slate-900">{user?.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Phone
+                    </p>
+                    <p className="font-medium text-slate-900">
+                      {user?.phone || "Not provided"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Role
+                    </p>
+                    <p className="font-medium text-slate-900">Coach</p>
+                  </div>
+                </div>
+              )}
             </Card>
 
             <Card className="bg-white">

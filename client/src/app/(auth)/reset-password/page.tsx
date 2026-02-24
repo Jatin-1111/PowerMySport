@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
+import { toast } from "@/lib/toast";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -17,7 +18,6 @@ function ResetPasswordContent() {
     newPassword: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -26,25 +26,23 @@ function ResetPasswordContent() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     if (!token) {
-      setError("Invalid reset token");
+      toast.error("Invalid reset token");
       return;
     }
 
     if (formData.newPassword.length < 6) {
-      setError("Password must be at least 6 characters");
+      toast.error("Password must be at least 6 characters");
       return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -57,11 +55,11 @@ function ResetPasswordContent() {
           router.push("/login");
         }, 3000);
       } else {
-        setError(response.message || "Failed to reset password");
+        toast.error(response.message || "Failed to reset password");
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message || "Failed to reset password");
+      toast.error(err.response?.data?.message || "Failed to reset password");
     } finally {
       setIsSubmitting(false);
     }
@@ -142,12 +140,6 @@ function ResetPasswordContent() {
                   </button>
                 </div>
               </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-red-800 text-sm text-center">{error}</p>
-                </div>
-              )}
 
               <Button
                 type="submit"

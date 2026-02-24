@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useRef } from "react";
+import { toast } from "@/lib/toast";
 
 type VerificationStep = 1 | 2 | 3;
 
@@ -181,9 +182,6 @@ export default function CoachVerificationPage() {
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [step, setStep] = useState<VerificationStep>(1);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
-
   const [bio, setBio] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [hourlyRateInput, setHourlyRateInput] = useState("");
@@ -457,12 +455,9 @@ export default function CoachVerificationPage() {
   };
 
   const handleUploadDocument = async (index: number, file: File) => {
-    setError("");
-    setSuccess("");
-
     const validation = validateFile(file);
     if (!validation.valid) {
-      setError(validation.error || "Invalid file");
+      toast.error(validation.error || "Invalid file");
       return;
     }
 
@@ -509,9 +504,9 @@ export default function CoachVerificationPage() {
             : doc,
         ),
       );
-      setSuccess(`${fileName} uploaded successfully.`);
+      toast.success(`${fileName} uploaded successfully.`);
     } catch (uploadError) {
-      setError(
+      toast.error(
         uploadError instanceof Error ? uploadError.message : "Upload failed",
       );
     } finally {
@@ -520,26 +515,23 @@ export default function CoachVerificationPage() {
   };
 
   const handleStepOneContinue = () => {
-    setError("");
-    setSuccess("");
-
     if (!user?.photoUrl?.trim()) {
-      setError("Profile picture is required to continue.");
+      toast.error("Profile picture is required to continue.");
       return;
     }
 
     if (!bio.trim()) {
-      setError("Bio is required to continue.");
+      toast.error("Bio is required to continue.");
       return;
     }
 
     if (!mobileNumber.trim()) {
-      setError("Mobile number is required to continue.");
+      toast.error("Mobile number is required to continue.");
       return;
     }
 
     if (!isValidMobileNumber(mobileNumber)) {
-      setError("Please provide a valid mobile number.");
+      toast.error("Please provide a valid mobile number.");
       return;
     }
 
@@ -561,7 +553,7 @@ export default function CoachVerificationPage() {
 
         setStep(2);
       } catch (saveError) {
-        setError(
+        toast.error(
           saveError instanceof Error
             ? saveError.message
             : "Failed to save step 1",
@@ -573,12 +565,9 @@ export default function CoachVerificationPage() {
   };
 
   const handleStepTwoContinue = async () => {
-    setError("");
-    setSuccess("");
-
     const sports = selectedSports;
     if (sports.length === 0) {
-      setError("Please add at least one sport you can teach.");
+      toast.error("Please add at least one sport you can teach.");
       return;
     }
 
@@ -586,7 +575,7 @@ export default function CoachVerificationPage() {
     if (pricingMode === "SAME") {
       const hourlyRate = Number(hourlyRateInput);
       if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
-        setError("Please add a valid hourly price greater than 0.");
+        toast.error("Please add a valid hourly price greater than 0.");
         return;
       }
       for (const sport of sports) {
@@ -596,7 +585,7 @@ export default function CoachVerificationPage() {
       for (const sport of sports) {
         const value = Number(sportPricing[sport]);
         if (!Number.isFinite(value) || value <= 0) {
-          setError(`Please add a valid price for ${sport}.`);
+          toast.error(`Please add a valid price for ${sport}.`);
           return;
         }
         pricingPayload[sport] = value;
@@ -608,15 +597,15 @@ export default function CoachVerificationPage() {
     // Validate venue details if needed
     if (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID") {
       if (!venueDetails.name.trim()) {
-        setError("Please provide a venue name.");
+        toast.error("Please provide a venue name.");
         return;
       }
       if (!venueDetails.address.trim()) {
-        setError("Please provide a venue address.");
+        toast.error("Please provide a venue address.");
         return;
       }
       if (!venueCoordinates) {
-        setError(
+        toast.error(
           "Please select a venue address from the suggestions or use current location to set the coordinates.",
         );
         return;
@@ -672,9 +661,9 @@ export default function CoachVerificationPage() {
       setCoachProfile(step2Response.data);
       localStorage.removeItem("coachServiceMode");
       setStep(3);
-      setSuccess("Step 2 completed. Now upload your certification documents.");
+      toast.success("Step 2 completed. Now upload your certification documents.");
     } catch (saveError) {
-      setError(
+      toast.error(
         saveError instanceof Error
           ? saveError.message
           : "Failed to save your profile details",
@@ -685,19 +674,16 @@ export default function CoachVerificationPage() {
   };
 
   const handleSubmitVerification = async () => {
-    setError("");
-    setSuccess("");
-
     const sports = selectedSports;
     let hourlyRate = 0;
 
     if (!bio.trim()) {
-      setError("Bio is required.");
+      toast.error("Bio is required.");
       return;
     }
 
     if (sports.length === 0) {
-      setError("Please add at least one sport.");
+      toast.error("Please add at least one sport.");
       return;
     }
 
@@ -705,7 +691,7 @@ export default function CoachVerificationPage() {
     if (pricingMode === "SAME") {
       hourlyRate = Number(hourlyRateInput);
       if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
-        setError("Please add a valid hourly price greater than 0.");
+        toast.error("Please add a valid hourly price greater than 0.");
         return;
       }
       for (const sport of sports) {
@@ -715,7 +701,7 @@ export default function CoachVerificationPage() {
       for (const sport of sports) {
         const value = Number(sportPricing[sport]);
         if (!Number.isFinite(value) || value <= 0) {
-          setError(`Please add a valid price for ${sport}.`);
+          toast.error(`Please add a valid price for ${sport}.`);
           return;
         }
         pricingPayload[sport] = value;
@@ -727,7 +713,7 @@ export default function CoachVerificationPage() {
       (doc) => !doc.url.trim() || !doc.fileName.trim(),
     );
     if (invalidDoc) {
-      setError("Please upload a file for each listed document.");
+      toast.error("Please upload a file for each listed document.");
       return;
     }
 
@@ -735,7 +721,7 @@ export default function CoachVerificationPage() {
       (doc) => doc.type === "CERTIFICATION",
     );
     if (!hasCertificationDoc) {
-      setError("At least one uploaded document must be a CERTIFICATION.");
+      toast.error("At least one uploaded document must be a CERTIFICATION.");
       return;
     }
 
@@ -743,7 +729,7 @@ export default function CoachVerificationPage() {
       (doc) => doc.type === "ID_PROOF",
     );
     if (!hasIdProofDoc) {
-      setError("At least one uploaded document must be an ID_PROOF.");
+      toast.error("At least one uploaded document must be an ID_PROOF.");
       return;
     }
 
@@ -778,7 +764,7 @@ export default function CoachVerificationPage() {
         throw new Error(response.message || "Verification submission failed");
       }
 
-      setSuccess(
+      toast.success(
         "Verification submitted successfully. Your profile is now in review.",
       );
       await loadProfile();
@@ -788,7 +774,7 @@ export default function CoachVerificationPage() {
         router.push("/coach/profile");
       }, 2000);
     } catch (submitError) {
-      setError(
+      toast.error(
         submitError instanceof Error
           ? submitError.message
           : "Failed to submit verification",
@@ -857,19 +843,6 @@ export default function CoachVerificationPage() {
             </div>
           ))}
         </div>
-
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            <CheckCircle size={16} />
-            {success}
-          </div>
-        )}
 
         {step === 1 && (
           <div className="space-y-4">

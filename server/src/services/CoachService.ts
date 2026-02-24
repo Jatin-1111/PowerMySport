@@ -6,7 +6,7 @@ import {
   CoachDocumentFile,
   CoachVerificationStatus,
 } from "../models/Coach";
-import { ICoach, IGeoLocation, IOwnVenueDetails, ServiceMode } from "../types";
+import { ICoach, IOwnVenueDetails, ServiceMode } from "../types";
 
 export interface CreateCoachPayload {
   userId: string;
@@ -145,7 +145,7 @@ export const findCoachesNearby = async (
     const coaches = await Coach.aggregate(pipeline);
 
     // Populate the final documents (aggregate doesn't return full mongoose documents)
-    return Coach.populate(coaches, { path: "userId venueId" }) as Promise<
+    return Coach.populate(coaches, { path: "userId" }) as Promise<
       CoachDocument[]
     >;
   } catch (error) {
@@ -171,7 +171,7 @@ export const getAllCoaches = async (
       query.sports = sport;
     }
 
-    return Coach.find(query).populate("userId venueId");
+    return Coach.find(query).populate("userId");
   } catch (error) {
     throw new Error(
       `Failed to fetch coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -232,7 +232,7 @@ export const listCoachVerificationRequests = async (
   const skip = (page - 1) * limit;
   const total = await Coach.countDocuments(query);
   const coaches = await Coach.find(query)
-    .populate("userId venueId")
+    .populate("userId")
     .sort({ updatedAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -342,7 +342,7 @@ export const getCoachById = async (
   if (!coachId || coachId === "undefined") {
     return null;
   }
-  return Coach.findById(coachId).populate("userId venueId");
+  return Coach.findById(coachId).populate("userId");
 };
 
 /**
@@ -351,7 +351,7 @@ export const getCoachById = async (
 export const getCoachByUserId = async (
   userId: string,
 ): Promise<CoachDocument | null> => {
-  return Coach.findOne({ userId }).populate("userId venueId");
+  return Coach.findOne({ userId }).populate("userId");
 };
 
 /**

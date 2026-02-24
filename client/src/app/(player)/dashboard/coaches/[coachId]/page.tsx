@@ -8,6 +8,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Coach, User, Venue } from "@/types";
+import { toast } from "@/lib/toast";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -28,7 +29,6 @@ export default function BookCoachPage() {
     dependentId: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     loadData();
@@ -54,7 +54,7 @@ export default function BookCoachPage() {
       }
     } catch (error) {
       console.error("Failed to load data:", error);
-      setError("Failed to load details");
+      toast.error("Failed to load details");
       setLoading(false);
     }
   };
@@ -79,7 +79,6 @@ export default function BookCoachPage() {
       ...bookingData,
       [e.target.name]: e.target.value,
     });
-    setError("");
   };
 
   const calculateDuration = () => {
@@ -113,7 +112,6 @@ export default function BookCoachPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     if (
       !bookingData.date ||
@@ -121,18 +119,18 @@ export default function BookCoachPage() {
       !bookingData.endTime ||
       !bookingData.sport
     ) {
-      setError("Please fill in all fields");
+      toast.error("Please fill in all fields");
       return;
     }
 
     const duration = calculateDuration();
     if (duration <= 0) {
-      setError("End time must be after start time");
+      toast.error("End time must be after start time");
       return;
     }
 
     if (!venue) {
-      setError("This coach does not have an associated venue for booking.");
+      toast.error("This coach does not have an associated venue for booking.");
       return;
     }
 
@@ -164,7 +162,7 @@ export default function BookCoachPage() {
       );
     } catch (error: any) {
       console.error("Booking failed:", error);
-      setError(
+      toast.error(
         error.response?.data?.message ||
           "Failed to create booking. Please try again.",
       );
@@ -380,13 +378,6 @@ export default function BookCoachPage() {
                 </div>
               </div>
             )}
-
-            {error && (
-              <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
-                {error}
-              </div>
-            )}
-
             <Button
               type="submit"
               disabled={isSubmitting || duration <= 0 || !venue}

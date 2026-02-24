@@ -5,13 +5,13 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { OnboardingStep2Payload } from "@/modules/onboarding/types/onboarding";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import { toast } from "@/lib/toast";
 import OpeningHoursInput, { getDefaultOpeningHours } from "./OpeningHoursInput";
 
 interface Step2VenueDetailsProps {
   venueId: string;
   onSubmit: (data: OnboardingStep2Payload) => Promise<void>;
   loading?: boolean;
-  error?: string;
   onSkip?: (hasCoaches?: boolean) => Promise<void>;
 }
 
@@ -48,7 +48,6 @@ export default function Step2VenueDetails({
   venueId,
   onSubmit,
   loading,
-  error,
   onSkip,
 }: Step2VenueDetailsProps) {
   const [formData, setFormData] = useState<OnboardingStep2Payload>({
@@ -261,16 +260,16 @@ export default function Step2VenueDetails({
 
     // Validation
     if (!formData.name.trim()) {
-      alert("Please enter venue name");
+      toast.error("Please enter venue name");
       return;
     }
     if (formData.sports.length === 0) {
-      alert("Please select at least one sport");
+      toast.error("Please select at least one sport");
       return;
     }
     if (samePriceForAll) {
       if (basePricePerHour <= 0) {
-        alert("Please enter valid price per hour");
+        toast.error("Please enter valid price per hour");
         return;
       }
     } else {
@@ -278,12 +277,12 @@ export default function Step2VenueDetails({
         (sport) => (sportPricing[sport] || 0) <= 0,
       );
       if (invalidSport) {
-        alert(`Please enter a valid price for ${invalidSport}`);
+        toast.error(`Please enter a valid price for ${invalidSport}`);
         return;
       }
     }
     if (!formData.address.trim()) {
-      alert("Please enter venue address");
+      toast.error("Please enter venue address");
       return;
     }
 
@@ -293,7 +292,7 @@ export default function Step2VenueDetails({
       try {
         const result = await geoApi.geocode(formData.address);
         if (!result) {
-          alert("We couldn't find this address. Please pick a suggestion.");
+          toast.error("We couldn't find this address. Please pick a suggestion.");
           return;
         }
 
@@ -308,7 +307,7 @@ export default function Step2VenueDetails({
           },
         }));
       } catch (err) {
-        alert("Unable to verify address right now. Please try again.");
+        toast.error("Unable to verify address right now. Please try again.");
         return;
       } finally {
         setIsGeocoding(false);
@@ -347,12 +346,6 @@ export default function Step2VenueDetails({
         </h1>
         <p className="text-slate-600">Step 2 of 4: Venue Details</p>
       </div>
-
-      {error && (
-        <Card className="bg-red-50 border-red-200">
-          <p className="text-error-red font-medium">{error}</p>
-        </Card>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Venue Name */}

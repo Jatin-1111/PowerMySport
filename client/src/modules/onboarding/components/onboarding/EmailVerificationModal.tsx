@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { X } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 interface EmailVerificationModalProps {
   email: string;
@@ -18,7 +19,6 @@ export default function EmailVerificationModal({
 }: EmailVerificationModalProps) {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [canResend, setCanResend] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -67,7 +67,6 @@ export default function EmailVerificationModal({
     const newCode = [...code];
     newCode[index] = value.slice(-1); // Only take last digit
     setCode(newCode);
-    setError("");
 
     // Auto-advance to next input
     if (value && index < 5) {
@@ -112,12 +111,11 @@ export default function EmailVerificationModal({
     const verificationCode = codeToVerify || code.join("");
 
     if (verificationCode.length !== 6) {
-      setError("Please enter all 6 digits");
+      toast.error("Please enter all 6 digits");
       return;
     }
 
     setLoading(true);
-    setError("");
 
     try {
       const response = await fetch(
@@ -142,7 +140,7 @@ export default function EmailVerificationModal({
       // Success!
       onVerified();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Verification failed");
+      toast.error(err instanceof Error ? err.message : "Verification failed");
       setCode(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } finally {
@@ -154,7 +152,6 @@ export default function EmailVerificationModal({
     if (resendCooldown > 0) return;
 
     setLoading(true);
-    setError("");
 
     try {
       const response = await fetch(
@@ -182,7 +179,7 @@ export default function EmailVerificationModal({
       setCode(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resend code");
+      toast.error(err instanceof Error ? err.message : "Failed to resend code");
     } finally {
       setLoading(false);
     }
@@ -241,11 +238,6 @@ export default function EmailVerificationModal({
               />
             ))}
           </div>
-
-          {/* Error message */}
-          {error && (
-            <p className="text-error-red text-sm text-center mb-4">{error}</p>
-          )}
 
           {/* Timer */}
           <div className="text-center text-sm text-gray-600 mb-4">

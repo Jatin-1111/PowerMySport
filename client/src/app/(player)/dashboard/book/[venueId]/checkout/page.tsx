@@ -34,6 +34,7 @@ import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Venue } from "@/types";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
+import { toast } from "@/lib/toast";
 
 const paymentOptions: PaymentMethodOption[] = [
   {
@@ -65,7 +66,6 @@ export default function VenueCheckoutPage() {
 
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [promoCode, setPromoCode] = useState("");
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
@@ -86,11 +86,11 @@ export default function VenueCheckoutPage() {
         if (response.success && response.data) {
           setVenue(response.data);
         } else {
-          setError("Unable to load venue details");
+          toast.error("Unable to load venue details");
         }
       } catch (loadError) {
         console.error("Failed to load venue:", loadError);
-        setError("Unable to load venue details");
+        toast.error("Unable to load venue details");
       } finally {
         setLoading(false);
       }
@@ -211,20 +211,18 @@ export default function VenueCheckoutPage() {
   const currentStepInfo = steps.find((step) => step.id === currentStep);
 
   const handleNextStep = () => {
-    setError(null);
     if (!hasRequiredDetails) {
-      setError("Missing booking details. Please edit your booking first.");
+      toast.error("Missing booking details. Please edit your booking first.");
       return;
     }
     if (!hasValidDuration) {
-      setError("End time must be after start time.");
+      toast.error("End time must be after start time.");
       return;
     }
     setCurrentStep((prev) => Math.min(3, prev + 1));
   };
 
   const handlePrevStep = () => {
-    setError(null);
     setCurrentStep((prev) => Math.max(1, prev - 1));
   };
 
@@ -250,20 +248,18 @@ export default function VenueCheckoutPage() {
   };
 
   const handleCheckout = async () => {
-    setError(null);
-
     if (!hasRequiredDetails) {
-      setError("Missing booking details. Please edit your booking first.");
+      toast.error("Missing booking details. Please edit your booking first.");
       return;
     }
 
     if (!hasValidDuration) {
-      setError("End time must be after start time.");
+      toast.error("End time must be after start time.");
       return;
     }
 
     if (!venue) {
-      setError("Venue details are not available.");
+      toast.error("Venue details are not available.");
       return;
     }
 
@@ -293,7 +289,7 @@ export default function VenueCheckoutPage() {
       );
     } catch (submitError: any) {
       console.error("Checkout failed:", submitError);
-      setError(
+      toast.error(
         submitError.response?.data?.message ||
           "Unable to start checkout. Please try again.",
       );
@@ -576,12 +572,6 @@ export default function VenueCheckoutPage() {
               }
             </div>
           </CheckoutSection>
-        )}
-
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
         )}
 
         {!hasRequiredDetails && (

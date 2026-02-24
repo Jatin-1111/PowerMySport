@@ -7,6 +7,7 @@ import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { User } from "@/types";
+import { toast } from "@/lib/toast";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -51,8 +52,6 @@ export default function ProfilePage() {
     password: "",
     phone: "",
   });
-  const [graduateMessage, setGraduateMessage] = useState("");
-  const [error, setError] = useState("");
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -93,25 +92,23 @@ export default function ProfilePage() {
 
   const handleStartGraduation = (dependent: Dependent) => {
     if (!dependent._id) {
-      setError("Unable to graduate dependent without an id.");
+      toast.error("Unable to graduate dependent without an id.");
       return;
     }
 
     const age = getDependentAge(dependent.dob);
     if (age === null) {
-      setError("Dependent date of birth is missing or invalid.");
+      toast.error("Dependent date of birth is missing or invalid.");
       return;
     }
 
     if (age < 18) {
-      setError(
+      toast.error(
         `This dependent is ${age} years old and must be at least 18 to graduate.`,
       );
       return;
     }
 
-    setError("");
-    setGraduateMessage("");
     setGraduationForm({
       dependentId: dependent._id?.toString() || "",
       dependentName: dependent.name,
@@ -129,13 +126,11 @@ export default function ProfilePage() {
       !graduationForm.password ||
       !graduationForm.phone
     ) {
-      setError("Please fill in all required fields.");
+      toast.error("Please fill in all required fields.");
       return;
     }
 
     setGraduatingDependentId(graduationForm.dependentId);
-    setError("");
-    setGraduateMessage("");
 
     try {
       console.log("Graduating dependent with data:", {
@@ -151,7 +146,7 @@ export default function ProfilePage() {
         phone: graduationForm.phone,
       });
       if (response.success) {
-        setGraduateMessage(
+        toast.success(
           "Dependent successfully graduated to independent account! They'll receive a welcome email.",
         );
         setShowGraduationModal(false);
@@ -164,13 +159,13 @@ export default function ProfilePage() {
         });
         await fetchProfile();
       } else {
-        setError(response.message || "Failed to graduate dependent");
+        toast.error(response.message || "Failed to graduate dependent");
       }
     } catch (error: unknown) {
       console.error("Graduation error:", error);
       const errorMessage =
         getErrorMessage(error) || "Failed to graduate dependent";
-      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setGraduatingDependentId(null);
     }
@@ -219,13 +214,12 @@ export default function ProfilePage() {
     }
 
     setDeletingDependentId(dependentId);
-    setError("");
 
     try {
       await authApi.deleteDependent(dependentId);
       await fetchProfile();
     } catch (error: unknown) {
-      setError(getErrorMessage(error) || "Failed to delete dependent");
+      toast.error(getErrorMessage(error) || "Failed to delete dependent");
     } finally {
       setDeletingDependentId(null);
     }
@@ -244,12 +238,11 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     if (!profileForm.name.trim() || !profileForm.email.trim()) {
-      setError("Name and email are required");
+      toast.error("Name and email are required");
       return;
     }
 
     setIsSavingProfile(true);
-    setError("");
 
     try {
       const updateData: {
@@ -271,7 +264,7 @@ export default function ProfilePage() {
       await fetchProfile();
       setIsEditingProfile(false);
     } catch (error: unknown) {
-      setError(getErrorMessage(error) || "Failed to update profile");
+      toast.error(getErrorMessage(error) || "Failed to update profile");
     } finally {
       setIsSavingProfile(false);
     }
@@ -292,20 +285,6 @@ export default function ProfilePage() {
         title="My Profile"
         subtitle="Manage your account details and keep track of your dependents in one place."
       />
-
-      {/* Success Message */}
-      {graduateMessage && (
-        <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg">
-          {graduateMessage}
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
-          {error}
-        </div>
-      )}
 
       <Card className="bg-white">
         <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">

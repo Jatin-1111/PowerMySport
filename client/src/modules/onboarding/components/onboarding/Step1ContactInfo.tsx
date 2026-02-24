@@ -5,6 +5,7 @@ import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
 import { Lightbulb } from "lucide-react";
 import EmailVerificationModal from "./EmailVerificationModal";
+import { toast } from "@/lib/toast";
 
 interface ContactInfoFormData {
   ownerName: string;
@@ -33,7 +34,6 @@ export default function Step1ContactInfo({
     ownerEmail: "",
     ownerPhone: "",
   });
-  const [globalError, setGlobalError] = useState<string>("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [venueId, setVenueId] = useState<string>("");
@@ -78,7 +78,6 @@ export default function Step1ContactInfo({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setGlobalError("");
 
     if (!validateForm()) {
       return;
@@ -115,7 +114,7 @@ export default function Step1ContactInfo({
       // Step 3: Show verification modal
       setShowVerificationModal(true);
     } catch (error) {
-      setGlobalError(
+      toast.error(
         error instanceof Error ? error.message : "Failed to save contact info",
       );
     } finally {
@@ -139,12 +138,6 @@ export default function Step1ContactInfo({
           Let's start by getting your contact information
         </p>
       </div>
-
-      {globalError && (
-        <Card className="bg-red-50 border-red-200">
-          <p className="text-error-red font-medium">{globalError}</p>
-        </Card>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
