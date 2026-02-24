@@ -111,7 +111,10 @@ export default function AdminBookingsPage() {
                       <div>
                         <p className="text-sm text-slate-600">Venue</p>
                         <p className="font-semibold text-slate-900">
-                          ID: {booking.venueId}
+                          ID:{" "}
+                          {typeof booking.venueId === "string"
+                            ? booking.venueId
+                            : booking.venueId?.id || "N/A"}
                         </p>
                       </div>
                       <div>

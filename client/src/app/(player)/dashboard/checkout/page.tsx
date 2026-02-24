@@ -11,7 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { toast } from "@/lib/toast";
 import {
@@ -61,7 +61,7 @@ const paymentOptions: PaymentMethodOption[] = [
 
 type BookingType = "coach" | "venue";
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -731,5 +731,15 @@ export default function CheckoutPage() {
         )}
       </CheckoutShell>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={<div className="text-center py-12">Loading checkout...</div>}
+    >
+      <CheckoutPageContent />
+    </Suspense>
   );
 }

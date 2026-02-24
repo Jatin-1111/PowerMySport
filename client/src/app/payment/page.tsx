@@ -6,11 +6,11 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { CheckCircle, Clock, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { Booking } from "@/types";
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const status = searchParams.get("status") || "pending";
@@ -85,7 +85,9 @@ export default function PaymentPage() {
                   </p>
                   <p className="text-sm font-semibold text-slate-900 mt-1">
                     {type === "coach"
-                      ? booking.coach?.name || "Coach"
+                      ? booking.coach?.sports?.[0]
+                        ? `${booking.coach.sports[0]} Coach`
+                        : "Coach"
                       : booking.venue?.name || "Venue"}
                   </p>
                 </div>
@@ -166,5 +168,15 @@ export default function PaymentPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense
+      fallback={<div className="text-center py-12">Loading payment...</div>}
+    >
+      <PaymentPageContent />
+    </Suspense>
   );
 }

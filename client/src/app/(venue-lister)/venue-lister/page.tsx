@@ -38,7 +38,7 @@ export default function VenueListerDashboard() {
           (b) => b.status === "CONFIRMED",
         );
         const earnings = confirmedBookings.reduce((sum, b) => {
-          const venuePayment = b.payments.find(
+          const venuePayment = b.payments?.find(
             (p) => p.userType === "VENUE_LISTER",
           );
           return (
@@ -53,9 +53,8 @@ export default function VenueListerDashboard() {
           totalVenues: venues.length,
           totalBookings: bookings.length,
           totalEarnings: earnings,
-          pendingBookings: bookings.filter(
-            (b) => b.status === "PENDING_PAYMENT",
-          ).length,
+          pendingBookings: bookings.filter((b) => b.status === "IN_PROGRESS")
+            .length,
         });
 
         setRecentBookings(bookings.slice(0, 5));

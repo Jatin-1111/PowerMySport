@@ -213,7 +213,10 @@ export default function BookingsPage() {
                         </>
                       ) : activeTab === "venues" ? (
                         <h3 className="text-lg font-semibold mb-2 text-slate-900">
-                          Venue ID: {booking.venueId}
+                          Venue ID:{" "}
+                          {typeof booking.venueId === "string"
+                            ? booking.venueId
+                            : "N/A"}
                         </h3>
                       ) : null}
 
@@ -277,7 +280,7 @@ export default function BookingsPage() {
                         className={`inline-block mt-2 px-3 py-1 rounded text-sm font-semibold ${
                           booking.status === "CONFIRMED"
                             ? "bg-green-100 text-green-700 border border-green-300"
-                            : booking.status === "PENDING_PAYMENT"
+                            : booking.status === "IN_PROGRESS"
                               ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
                               : "bg-red-100 text-red-700 border border-red-300"
                         }`}

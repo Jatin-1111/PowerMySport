@@ -78,7 +78,7 @@ export default function OnboardingContainer() {
         setContactInfo(data);
 
         // Show email verification modal instead of proceeding directly
-        setEmailToVerify(data.email);
+        setEmailToVerify(data.ownerEmail);
         setShowEmailVerification(true);
 
         return { venueId: newVenueId };

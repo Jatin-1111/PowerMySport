@@ -10,6 +10,17 @@ export type BookingStatus =
   | "NO_SHOW"
   | "CANCELLED";
 
+export type PaymentUserType = "VENUE_LISTER" | "COACH";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+
+export interface IPayment {
+  userId: string;
+  userType: PaymentUserType;
+  amount: number;
+  status: PaymentStatus;
+  paidAt?: string;
+}
+
 export interface VenueListerProfile {
   businessDetails?: {
     name?: string;
@@ -170,6 +181,7 @@ export interface Booking {
   id: string;
   userId: string;
   venueId?: string | Venue; // Can be populated
+  venue?: Venue; // Populated venue data
   coachId?: string | Coach; // Can be populated
   coach?: Coach; // Populated coach data
   sport?: string;
@@ -179,6 +191,13 @@ export interface Booking {
   totalAmount: number;
   serviceFee?: number;
   taxAmount?: number;
+  payments?: Array<{
+    userId: string;
+    userType: PaymentUserType;
+    amount: number;
+    status: PaymentStatus;
+    paidAt?: string;
+  }>;
   status: BookingStatus;
   expiresAt: string;
   checkInCode?: string;

@@ -161,9 +161,7 @@ export default function VenueBookingsPage() {
                         booking.status === "IN_PROGRESS" ||
                         booking.status === "COMPLETED"
                           ? "bg-green-100 text-green-700 border border-green-300"
-                          : booking.status === "PENDING_PAYMENT"
-                            ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                            : "bg-red-100 text-red-700 border border-red-300"
+                          : "bg-red-100 text-red-700 border border-red-300"
                       }`}
                     >
                       {booking.status}
@@ -192,31 +190,45 @@ export default function VenueBookingsPage() {
                   </div>
 
                   {/* Payment Details */}
-                  {booking.venuePayment && (
+                  {booking.payments?.find(
+                    (payment) => payment.userType === "VENUE_LISTER",
+                  ) && (
                     <div className="bg-slate-50 rounded-lg p-4 mt-3 border border-slate-200">
                       <p className="text-sm font-semibold mb-2 text-slate-900">
                         Payment Details
                       </p>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="text-slate-600">Venue Fee:</span>
-                          <span className="font-semibold ml-2 text-slate-900">
-                            ₹{booking.venuePayment.amount}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-600">Status:</span>
-                          <span
-                            className={`ml-2 font-semibold ${
-                              booking.venuePayment.status === "COMPLETED"
-                                ? "text-green-700"
-                                : "text-yellow-700"
-                            }`}
-                          >
-                            {booking.venuePayment.status}
-                          </span>
-                        </div>
-                      </div>
+                      {(() => {
+                        const venuePayment = booking.payments?.find(
+                          (payment) => payment.userType === "VENUE_LISTER",
+                        );
+
+                        if (!venuePayment) {
+                          return null;
+                        }
+
+                        return (
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <span className="text-slate-600">Venue Fee:</span>
+                              <span className="font-semibold ml-2 text-slate-900">
+                                ₹{venuePayment.amount}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-slate-600">Status:</span>
+                              <span
+                                className={`ml-2 font-semibold ${
+                                  venuePayment.status === "PAID"
+                                    ? "text-green-700"
+                                    : "text-yellow-700"
+                                }`}
+                              >
+                                {venuePayment.status}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

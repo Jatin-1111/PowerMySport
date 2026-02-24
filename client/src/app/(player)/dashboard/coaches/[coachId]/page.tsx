@@ -42,8 +42,9 @@ export default function BookCoachPage() {
         setCoach(coachData);
 
         // If coach has a venue, fetch it
-        if (coachData.venueId) {
-          loadVenue(coachData.venueId);
+        const coachVenueId = (coachData as { venueId?: string }).venueId;
+        if (coachVenueId) {
+          loadVenue(coachVenueId);
         }
       }
 
