@@ -12,14 +12,35 @@ import coachRoutes from "./routes/coachRoutes";
 import geoRoutes from "./routes/geoRoutes";
 import sportsRoutes from "./routes/sportsRoutes";
 import statsRoutes from "./routes/statsRoutes";
+import venueInquiryRoutes from "./routes/venueInquiryRoutes";
 import venueOnboardingRoutes from "./routes/venueOnboardingRoutes";
 import venueRoutes from "./routes/venueRoutes";
 
 export const app: Express = express();
 
+const configuredOrigins = [
+  process.env.FRONTEND_URLS,
+  process.env.FRONTEND_URL,
+  "http://localhost:3000",
+  "http://localhost:3001",
+]
+  .filter(Boolean)
+  .flatMap((value) => (value as string).split(","))
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set(configuredOrigins);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   }),
 );
@@ -40,6 +61,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/geo", geoRoutes);
 app.use("/api/sports", sportsRoutes);
+app.use("/api/venue-inquiries", venueInquiryRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

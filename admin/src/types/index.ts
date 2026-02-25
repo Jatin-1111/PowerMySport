@@ -1,0 +1,249 @@
+﻿// ============================================
+// USER & AUTH TYPES
+// ============================================
+export type UserRole =
+  | "PLAYER"
+  | "VENUE_LISTER"
+  | "COACH"
+  | "ADMIN"
+  | "SUPER_ADMIN";
+export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
+export type BookingStatus =
+  | "CONFIRMED"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "NO_SHOW"
+  | "CANCELLED";
+
+export type PaymentUserType = "VENUE_LISTER" | "COACH";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+
+export interface IPayment {
+  userId: string;
+  userType: PaymentUserType;
+  amount: number;
+  status: PaymentStatus;
+  paidAt?: string;
+}
+
+export interface VenueListerProfile {
+  businessDetails?: {
+    name?: string;
+    gstNumber?: string;
+    address?: string;
+  };
+  payoutInfo?: {
+    accountNumber?: string;
+    ifsc?: string;
+    bankName?: string;
+  };
+  canAddMoreVenues?: boolean;
+}
+
+export interface Dependent {
+  _id?: string;
+  name: string;
+  dob: string; // ISO date string
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  relation?: string;
+  sports?: string[];
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  dob?: string;
+  role: UserRole;
+  photoUrl?: string;
+  photoS3Key?: string; // S3 key for profile picture
+  venueListerProfile?: VenueListerProfile;
+  dependents?: Dependent[];
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    token: string;
+    user: User;
+  };
+}
+
+// ============================================
+// COACH TYPES
+// ============================================
+export interface IAvailability {
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  startTime: string; // "09:00"
+  endTime: string; // "18:00"
+}
+
+/**
+ * Venue details stored in coach profile for OWN_VENUE coaches.
+ * These venues are NOT listed in the marketplace - they exist only for coach bookings.
+ * Coaches who want to rent out venues separately must create a venue-lister account.
+ */
+export interface IOwnVenueDetails {
+  name: string;
+  address: string;
+  location: IGeoLocation;
+  sports: string[];
+  amenities?: string[];
+  pricePerHour: number;
+  description?: string;
+  images?: string[];
+  imageS3Keys?: string[];
+  openingHours?: string;
+}
+
+export type CoachVerificationStatus =
+  | "UNVERIFIED"
+  | "PENDING"
+  | "REVIEW"
+  | "VERIFIED"
+  | "REJECTED";
+
+export interface CoachVerificationDocument {
+  type:
+    | "CERTIFICATION"
+    | "ID_PROOF"
+    | "ADDRESS_PROOF"
+    | "BACKGROUND_CHECK"
+    | "INSURANCE"
+    | "OTHER";
+  url: string;
+  s3Key?: string;
+  fileName: string;
+  uploadedAt?: string;
+}
+
+export interface Coach {
+  _id?: string;
+  id: string;
+  userId: string;
+  bio: string;
+  certifications: string[];
+  sports: string[];
+  hourlyRate: number;
+  sportPricing?: Record<string, number>;
+  serviceMode: ServiceMode;
+  ownVenueDetails?: IOwnVenueDetails; // Venue details stored in coach profile for bookings only (not marketplace)
+  baseLocation?: IGeoLocation;
+  serviceRadiusKm?: number;
+  travelBufferTime?: number;
+  availability: IAvailability[];
+  availabilityBySport?: Record<string, IAvailability[]>;
+  verificationDocuments?: CoachVerificationDocument[];
+  verificationStatus?: CoachVerificationStatus;
+  verificationNotes?: string;
+  verificationSubmittedAt?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  isVerified?: boolean;
+  rating: number;
+  reviewCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// VENUE TYPES
+// ============================================
+export interface IGeoLocation {
+  type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+export interface Venue {
+  _id?: string;
+  id: string;
+  name: string;
+  ownerId: string;
+  location: IGeoLocation;
+  sports: string[];
+  pricePerHour: number;
+  sportPricing?: Record<string, number>;
+  address?: string;
+  amenities: string[];
+  description: string;
+  images: string[];
+  imageKeys?: string[]; // S3 keys for venue images (regenerate URLs as needed)
+  coverPhotoUrl?: string;
+  coverPhotoKey?: string; // S3 key for cover photo (regenerate URL as needed)
+  allowExternalCoaches: boolean;
+  rating?: number;
+  reviewCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// BOOKING TYPES
+// ============================================
+export interface Booking {
+  id: string;
+  userId: string;
+  playerName?: string;
+  venueId?: string | Venue; // Can be populated
+  venueName?: string;
+  venue?: Venue; // Populated venue data
+  coachId?: string | Coach; // Can be populated
+  coach?: Coach; // Populated coach data
+  sport?: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  totalAmount: number;
+  serviceFee?: number;
+  taxAmount?: number;
+  payments?: Array<{
+    userId: string;
+    userType: PaymentUserType;
+    amount: number;
+    status: PaymentStatus;
+    paidAt?: string;
+  }>;
+  status: BookingStatus;
+  expiresAt: string;
+  checkInCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================
+// API RESPONSE TYPES
+// ============================================
+export interface PaginationMetadata {
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data?: T;
+  pagination?: {
+    // Allow nested pagination or top-level
+    [key: string]: PaginationMetadata | undefined;
+  } & PaginationMetadata; // Or just top-level
+}
+
+export interface Availability {
+  availableSlots: string[];
+  bookedSlots: Array<{
+    startTime: string;
+    endTime: string;
+  }>;
+}
+
+export interface DiscoveryResponse {
+  venues: Venue[];
+  coaches: Coach[];
+}
+
+export interface InitiateBookingResponse {
+  booking: Booking;
+}

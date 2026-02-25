@@ -403,8 +403,8 @@ export const getPendingVenues = async (
     venues: venues.map((v) => ({
       id: v._id?.toString() || "",
       name: v.name,
-      ownerEmail: (v.ownerId as any)?.email || "",
-      ownerPhone: (v.ownerId as any)?.phone || "",
+      ownerEmail: v.ownerEmail || (v.ownerId as any)?.email || "",
+      ownerPhone: v.ownerPhone || (v.ownerId as any)?.phone || "",
       sports: v.sports,
       approvalStatus: v.approvalStatus as "PENDING" | "REVIEW" | "REJECTED",
       submittedAt: v.createdAt,

@@ -1,7 +1,7 @@
 ﻿// ============================================
 // USER & AUTH TYPES
 // ============================================
-export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
+export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH";
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
   | "CONFIRMED"

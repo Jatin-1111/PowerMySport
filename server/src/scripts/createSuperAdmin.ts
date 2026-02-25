@@ -25,11 +25,22 @@ const createSuperAdmin = async () => {
       process.exit(0);
     }
 
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
+    const superAdminName = process.env.SUPER_ADMIN_NAME || "Super Admin";
+
+    if (!superAdminEmail || !superAdminPassword) {
+      console.error(
+        "❌ Missing SUPER_ADMIN_EMAIL or SUPER_ADMIN_PASSWORD in environment",
+      );
+      process.exit(1);
+    }
+
     // Create super admin
     const superAdmin = new Admin({
-      name: "Super Admin",
-      email: "cosmofluke2111@gmail.com",
-      password: "Jatin@1011",
+      name: superAdminName,
+      email: superAdminEmail,
+      password: superAdminPassword,
       role: "SUPER_ADMIN",
       permissions: [
         "manage_inquiries",
@@ -46,8 +57,8 @@ const createSuperAdmin = async () => {
 
     console.log("\n✅ Super Admin created successfully!");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📧 Email:    admin@powermysport.com");
-    console.log("🔑 Password: Admin@123456");
+    console.log(`📧 Email:    ${superAdminEmail}`);
+    console.log("🔑 Password: [from SUPER_ADMIN_PASSWORD]");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("\n⚠️  IMPORTANT: Change this password after first login!");
     console.log("\n🔗 Login at: http://localhost:3000/admin/login\n");

@@ -24,7 +24,7 @@ export const venueInquiryApi = {
     return response.data;
   },
 
-  // Admin endpoints
+  // Review endpoints
   getAllInquiries: async (
     status?: string,
   ): Promise<ApiResponse<VenueInquiry[]>> => {
@@ -54,4 +54,3 @@ export const venueInquiryApi = {
     return response.data;
   },
 };
-

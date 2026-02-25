@@ -115,7 +115,6 @@ export default function HomePage() {
       PLAYER: "/dashboard/my-bookings",
       VENUE_LISTER: "/venue-lister/inventory",
       COACH: "/coach/profile",
-      ADMIN: "/admin",
     };
     return dashboards[user.role] || "/dashboard/my-bookings";
   };

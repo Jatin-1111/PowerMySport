@@ -58,8 +58,6 @@ export default function LoginPage() {
           router.push("/venue-lister/inventory");
         } else if (response.data.user.role === "COACH") {
           router.push("/coach/verification");
-        } else if (response.data.user.role === "ADMIN") {
-          router.push("/admin");
         } else {
           router.push("/dashboard/my-bookings");
         }

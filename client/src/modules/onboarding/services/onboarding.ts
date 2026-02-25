@@ -6,7 +6,6 @@ import {
   OnboardingStep3Payload,
   OnboardingStep5Payload,
   OnboardingVenue,
-  PendingVenueListItem,
   PresignedUrl,
 } from "@/modules/onboarding/types/onboarding";
 import axios from "axios";
@@ -21,7 +20,7 @@ export interface ApiResponse<T> {
 
 /**
  * Venue Onboarding API Service
- * Handles all 4-step onboarding process and admin operations
+ * Handles all 4-step onboarding process
  *
  * REFACTORED FLOW:
  * Step 1: Venue Lister Contact Info (ownerName, ownerEmail, ownerPhone)
@@ -173,86 +172,6 @@ export const onboardingApi = {
    */
   cancelOnboarding: async (venueId: string): Promise<ApiResponse<void>> => {
     const response = await axiosInstance.delete(`${API_BASE}/${venueId}`);
-    return response.data;
-  },
-
-  /**
-   * ADMIN: List pending venues
-   */
-  getPendingVenues: async (
-    page: number = 1,
-    limit: number = 20,
-    status?: string,
-  ): Promise<
-    ApiResponse<{
-      venues: PendingVenueListItem[];
-      total: number;
-      page: number;
-      totalPages: number;
-    }>
-  > => {
-    const params = new URLSearchParams();
-    params.append("page", page.toString());
-    params.append("limit", limit.toString());
-    if (status) params.append("status", status);
-
-    const response = await axiosInstance.get(
-      `${API_BASE}/admin/pending?${params}`,
-    );
-    return response.data;
-  },
-
-  /**
-   * ADMIN: Get venue details for review
-   */
-  getVenueDetailsForReview: async (
-    venueId: string,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.get(`${API_BASE}/admin/${venueId}`);
-    return response.data;
-  },
-
-  /**
-   * ADMIN: Approve venue
-   */
-  approveVenue: async (
-    venueId: string,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/admin/${venueId}/approve`,
-    );
-    return response.data;
-  },
-
-  /**
-   * ADMIN: Reject venue
-   */
-  rejectVenue: async (
-    venueId: string,
-    reason: string,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/admin/${venueId}/reject`,
-      {
-        reason,
-      },
-    );
-    return response.data;
-  },
-
-  /**
-   * ADMIN: Mark venue for review
-   */
-  markVenueForReview: async (
-    venueId: string,
-    notes?: string,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/admin/${venueId}/mark-review`,
-      {
-        notes,
-      },
-    );
     return response.data;
   },
 };

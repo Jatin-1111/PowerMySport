@@ -13,7 +13,11 @@ import {
   processRefund,
   rejectCoachVerification,
 } from "../controllers/adminController";
-import { adminMiddleware, authMiddleware } from "../middleware/auth";
+import {
+  adminMiddleware,
+  authMiddleware,
+  superAdminMiddleware,
+} from "../middleware/auth";
 
 const router = Router();
 
@@ -68,7 +72,19 @@ router.post(
 );
 
 // Super admin only routes
-router.post("/create", authMiddleware, adminMiddleware, createAdminAccount);
-router.get("/list", authMiddleware, adminMiddleware, listAdmins);
+router.post(
+  "/create",
+  authMiddleware,
+  adminMiddleware,
+  superAdminMiddleware,
+  createAdminAccount,
+);
+router.get(
+  "/list",
+  authMiddleware,
+  adminMiddleware,
+  superAdminMiddleware,
+  listAdmins,
+);
 
 export default router;

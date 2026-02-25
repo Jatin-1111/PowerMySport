@@ -67,13 +67,29 @@ export const adminMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "ADMIN") {
+  if (req.user?.role !== "ADMIN" && req.user?.role !== "SUPER_ADMIN") {
     res.status(403).json({
       success: false,
       message: "Access denied. Admin role required.",
     });
     return;
   }
+  next();
+};
+
+export const superAdminMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  if (req.user?.role !== "SUPER_ADMIN") {
+    res.status(403).json({
+      success: false,
+      message: "Access denied. Super admin role required.",
+    });
+    return;
+  }
+
   next();
 };
 

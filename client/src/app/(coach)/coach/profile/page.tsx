@@ -114,7 +114,7 @@ export default function CoachProfilePage() {
   const getStatusGuidance = (status: string) => {
     switch (status) {
       case "PENDING":
-        return "Your verification is submitted and pending admin review. You'll be notified once reviewed.";
+        return "Your verification is submitted and pending review. You'll be notified once reviewed.";
       case "REVIEW":
         return "Your verification is currently under review. Edits are temporarily disabled.";
       case "VERIFIED":

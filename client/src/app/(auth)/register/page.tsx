@@ -75,7 +75,6 @@ function RegisterContent() {
           PLAYER: "/dashboard/my-bookings",
           VENUE_LISTER: "/venue-lister/inventory",
           COACH: "/coach/verification",
-          ADMIN: "/admin",
         };
         router.push(
           roleRoutes[response.data.user.role] || "/dashboard/my-bookings",

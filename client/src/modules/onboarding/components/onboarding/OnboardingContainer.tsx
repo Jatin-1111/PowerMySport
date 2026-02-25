@@ -284,7 +284,7 @@ export default function OnboardingContainer() {
           toast.success(
             "Congratulations! Your venue has been submitted for approval. You'll receive an email at " +
               contactInfo?.ownerEmail +
-              " once our admin team reviews your submission.",
+              " once our review team reviews your submission.",
           );
 
           // Reset for next submission
@@ -332,7 +332,7 @@ export default function OnboardingContainer() {
         toast.success(
           "Congratulations! Your venue has been submitted for approval. You'll receive an email at " +
             contactInfo?.ownerEmail +
-            " once our admin team reviews your submission.",
+            " once our review team reviews your submission.",
         );
 
         // Reset for next submission
@@ -591,7 +591,7 @@ export default function OnboardingContainer() {
         toast.success(
           "Dev Mode: Venue skipped to approval. You'll receive an email at " +
             contactInfo?.ownerEmail +
-            " once our admin team reviews your submission.",
+            " once our review team reviews your submission.",
         );
 
         // Reset for next submission

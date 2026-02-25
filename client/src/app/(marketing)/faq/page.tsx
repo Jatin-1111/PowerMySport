@@ -78,7 +78,7 @@ const faqs = [
       {
         question: "How do I list my venue?",
         answer:
-          "Sign up as a Venue Lister, complete the 4-step onboarding process including venue details, location, pricing, and documentation. Once approved by our admin team, your venue will be live on the platform.",
+          "Sign up as a Venue Lister, complete the 4-step onboarding process including venue details, location, pricing, and documentation. Once approved by our review team, your venue will be live on the platform.",
       },
       {
         question: "What documents do I need to provide?",

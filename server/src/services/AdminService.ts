@@ -40,7 +40,7 @@ export const loginAdmin = async (data: LoginPayload) => {
   const token = generateToken({
     id: admin._id.toString(),
     email: admin.email,
-    role: "ADMIN", // For compatibility with existing middleware
+    role: admin.role,
   });
 
   // Return admin without password

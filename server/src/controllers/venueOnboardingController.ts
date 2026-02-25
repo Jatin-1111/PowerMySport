@@ -448,7 +448,10 @@ export const listPendingVenues = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "ADMIN") {
+    if (
+      !req.user?.id ||
+      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+    ) {
       res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -487,7 +490,10 @@ export const getVenueOnboardingDetailsForAdmin = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "ADMIN") {
+    if (
+      !req.user?.id ||
+      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+    ) {
       res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -531,7 +537,10 @@ export const approveVenueHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "ADMIN") {
+    if (
+      !req.user?.id ||
+      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+    ) {
       res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -572,7 +581,10 @@ export const rejectVenueHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "ADMIN") {
+    if (
+      !req.user?.id ||
+      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+    ) {
       res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -624,7 +636,10 @@ export const markVenueForReviewHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "ADMIN") {
+    if (
+      !req.user?.id ||
+      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
+    ) {
       res.status(403).json({
         success: false,
         message: "Admin access required",

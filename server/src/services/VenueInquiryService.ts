@@ -132,6 +132,8 @@ export const reviewInquiry = async (
       pricePerHour: 0, // Default price - user must update
     });
 
+    await venue.save();
+
     // Send credentials via email
     try {
       await sendCredentialsEmail({

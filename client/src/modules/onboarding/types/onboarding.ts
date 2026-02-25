@@ -68,18 +68,6 @@ export interface OnboardingVenue {
   approvalStatus?: VenueApprovalStatus;
 }
 
-// Lightweight type for admin pending venues list
-export interface PendingVenueListItem {
-  id: string;
-  name: string;
-  ownerEmail: string;
-  ownerPhone: string;
-  sports: string[];
-  approvalStatus: VenueApprovalStatus;
-  submittedAt: string;
-  lastReviewedAt?: string;
-}
-
 export interface PresignedUrl {
   field: string;
   uploadUrl: string;

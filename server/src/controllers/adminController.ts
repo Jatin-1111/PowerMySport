@@ -12,6 +12,33 @@ import {
 } from "../services/CoachService";
 import { sendCoachVerificationStatusEmail } from "../utils/email";
 
+const normalizeAdminResponse = (admin: unknown) => {
+  if (!admin || typeof admin !== "object") {
+    return admin;
+  }
+
+  const objectValue = admin as { toObject?: () => Record<string, unknown> };
+  const plain =
+    typeof objectValue.toObject === "function"
+      ? objectValue.toObject()
+      : (admin as Record<string, unknown>);
+
+  const idSource = plain._id;
+  const id =
+    typeof plain.id === "string"
+      ? plain.id
+      : idSource &&
+          typeof (idSource as { toString?: () => string }).toString ===
+            "function"
+        ? (idSource as { toString: () => string }).toString()
+        : "";
+
+  return {
+    ...plain,
+    id,
+  };
+};
+
 // Admin login
 export const adminLogin = async (
   req: Request,
@@ -41,7 +68,7 @@ export const adminLogin = async (
       success: true,
       message: "Admin login successful",
       data: {
-        admin: result.admin,
+        admin: normalizeAdminResponse(result.admin),
         token: result.token,
       },
     });
@@ -64,7 +91,7 @@ export const createAdminAccount = async (
     res.status(201).json({
       success: true,
       message: "Admin created successfully",
-      data: admin,
+      data: normalizeAdminResponse(admin),
     });
   } catch (error) {
     res.status(400).json({
@@ -102,7 +129,7 @@ export const getAdminProfile = async (
     res.status(200).json({
       success: true,
       message: "Admin profile retrieved",
-      data: admin,
+      data: normalizeAdminResponse(admin),
     });
   } catch (error) {
     res.status(500).json({
@@ -123,7 +150,7 @@ export const listAdmins = async (
     res.status(200).json({
       success: true,
       message: "Admins retrieved successfully",
-      data: admins,
+      data: admins.map((admin) => normalizeAdminResponse(admin)),
     });
   } catch (error) {
     res.status(500).json({

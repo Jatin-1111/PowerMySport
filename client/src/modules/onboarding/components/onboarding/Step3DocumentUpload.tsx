@@ -321,8 +321,8 @@ export default function Step3DocumentUpload({
             <li className="flex items-start gap-3 text-sm text-blue-800">
               <ClipboardCheck className="w-5 h-5 flex-shrink-0 text-blue-600 mt-0.5" />
               <span>
-                Our admin team will review your venue and documents within 24-48
-                hours
+                Our review team will review your venue and documents within
+                24-48 hours
               </span>
             </li>
             <li className="flex items-start gap-3 text-sm text-blue-800">

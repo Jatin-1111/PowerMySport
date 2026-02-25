@@ -79,10 +79,15 @@ export const getInquiry = async (
       return;
     }
 
+    const transformedInquiry = {
+      ...inquiry.toObject(),
+      id: inquiry._id.toString(),
+    };
+
     res.status(200).json({
       success: true,
       message: "Inquiry retrieved successfully",
-      data: inquiry,
+      data: transformedInquiry,
     });
   } catch (error) {
     res.status(500).json({

@@ -52,7 +52,7 @@ export interface IUser {
 export interface IUserPayload {
   id: string;
   email: string;
-  role: UserRole;
+  role: UserRole | "SUPER_ADMIN";
 }
 
 // ============================================

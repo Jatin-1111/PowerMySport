@@ -515,7 +515,7 @@ export default function VenueInventoryPage() {
         <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4">
           <p className="text-yellow-800">
             <strong>Note:</strong> You can only manage your approved venue. To
-            add more venues, please contact our admin team.
+            add more venues, please contact our support team.
           </p>
         </div>
       )}

@@ -306,7 +306,7 @@ export default function HowItWorksPage() {
                 </div>
                 <CardTitle className="text-xl mb-3">Go Live</CardTitle>
                 <CardDescription className="text-base">
-                  Get access to your admin dashboard. Set up slots, pricing, and
+                  Get access to your venue dashboard. Set up slots, pricing, and
                   start accepting bookings immediately.
                 </CardDescription>
               </CardContent>
