@@ -23,6 +23,8 @@ const configuredOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
   "http://localhost:3001",
+  "https://powermysport.com",
+  "https://admin.powermysport.com",
 ]
   .filter(Boolean)
   .flatMap((value) => (value as string).split(","))
