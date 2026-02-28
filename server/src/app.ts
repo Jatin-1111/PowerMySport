@@ -1,5 +1,5 @@
 import cookieParser from "cookie-parser";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import "dotenv/config";
 import express, { Express } from "express";
 import { errorHandler } from "./middleware/errorHandler";
@@ -18,34 +18,68 @@ import venueRoutes from "./routes/venueRoutes";
 
 export const app: Express = express();
 
+const normalizeOrigin = (origin: string): string =>
+  origin.trim().replace(/\/$/, "").toLowerCase();
+
 const configuredOrigins = [
   process.env.FRONTEND_URLS,
   process.env.FRONTEND_URL,
   "http://localhost:3000",
   "http://localhost:3001",
   "https://powermysport.com",
+  "https://www.powermysport.com",
   "https://admin.powermysport.com",
 ]
   .filter(Boolean)
   .flatMap((value) => (value as string).split(","))
-  .map((origin) => origin.trim())
+  .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
 const allowedOrigins = new Set(configuredOrigins);
+const allowedOriginPatterns = [
+  /^https:\/\/([a-z0-9-]+\.)*powermysport\.com$/i,
+  /^http:\/\/localhost:\d+$/i,
+];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.has(origin)) {
-        callback(null, true);
-        return;
-      }
+const isOriginAllowed = (origin: string): boolean => {
+  const normalizedOrigin = normalizeOrigin(origin);
 
-      callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: true,
-  }),
-);
+  if (allowedOrigins.has(normalizedOrigin)) {
+    return true;
+  }
+
+  return allowedOriginPatterns.some((pattern) =>
+    pattern.test(normalizedOrigin),
+  );
+};
+
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || isOriginAllowed(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.warn(`CORS blocked for origin: ${origin}`);
+    }
+
+    callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+  ],
+  maxAge: 86400,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

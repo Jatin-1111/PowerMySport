@@ -11,6 +11,27 @@ const imagesBucket = process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
 const documentsBucket =
   process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-verification";
 
+const normalizeOrigin = (origin: string): string =>
+  origin.trim().replace(/\/$/, "");
+
+const envOrigins = [process.env.FRONTEND_URL, process.env.FRONTEND_URLS]
+  .filter(Boolean)
+  .flatMap((value) => (value as string).split(","))
+  .map((origin) => normalizeOrigin(origin))
+  .filter(Boolean);
+
+const defaultOrigins = [
+  "https://powermysport.com",
+  "https://www.powermysport.com",
+  "https://admin.powermysport.com",
+  "http://localhost:3000",
+  "http://localhost:3001",
+];
+
+const allowedOrigins = Array.from(
+  new Set([...defaultOrigins, ...envOrigins].map(normalizeOrigin)),
+);
+
 // Configure S3 client
 const s3Client = new S3Client({
   region,
@@ -26,15 +47,9 @@ const corsConfiguration = {
     {
       AllowedHeaders: ["*"],
       AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
-      AllowedOrigins: [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        process.env.FRONTEND_URL || "http://localhost:3000",
-        // Add your production domain here when deploying
-        // "https://yourdomain.com",
-      ].filter((origin, index, self) => self.indexOf(origin) === index), // Remove duplicates
-      ExposeHeaders: ["ETag"],
-      MaxAgeSeconds: 3000,
+      AllowedOrigins: allowedOrigins,
+      ExposeHeaders: ["ETag", "x-amz-request-id", "x-amz-id-2"],
+      MaxAgeSeconds: 86400,
     },
   ],
 };

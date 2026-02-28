@@ -7,6 +7,14 @@ import "dotenv/config";
 
 const region = process.env.AWS_REGION || "us-east-1";
 const imagesBucket = process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
+const documentsBucket =
+  process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-verification";
+
+const requiredOrigins = [
+  "https://powermysport.com",
+  "https://www.powermysport.com",
+  "http://localhost:3000",
+];
 
 const s3Client = new S3Client({
   region,
@@ -16,12 +24,12 @@ const s3Client = new S3Client({
   },
 });
 
-async function checkCors() {
-  console.log(`Checking CORS for: ${imagesBucket}`);
+async function checkCors(bucketName: string) {
+  console.log(`Checking CORS for: ${bucketName}`);
   console.log(`Region: ${region}\n`);
 
   try {
-    const command = new GetBucketCorsCommand({ Bucket: imagesBucket });
+    const command = new GetBucketCorsCommand({ Bucket: bucketName });
     const response = await s3Client.send(command);
 
     console.log("CORS Rules Found:");
@@ -33,9 +41,11 @@ async function checkCors() {
       console.log(`  Max Age: ${rule.MaxAgeSeconds}s`);
     });
 
-    // Check if localhost:3000 is allowed
-    const hasLocalhost = response.CORSRules?.some((rule) =>
-      rule.AllowedOrigins?.includes("http://localhost:3000"),
+    const missingOrigins = requiredOrigins.filter(
+      (origin) =>
+        !response.CORSRules?.some((rule) =>
+          rule.AllowedOrigins?.includes(origin),
+        ),
     );
 
     const hasPUT = response.CORSRules?.some((rule) =>
@@ -43,10 +53,12 @@ async function checkCors() {
     );
 
     console.log("\n--- Verification ---");
-    console.log(`✓ localhost:3000 allowed: ${hasLocalhost ? "YES" : "NO"}`);
+    console.log(
+      `✓ required origins allowed: ${missingOrigins.length === 0 ? "YES" : `NO (missing: ${missingOrigins.join(", ")})`}`,
+    );
     console.log(`✓ PUT method allowed: ${hasPUT ? "YES" : "NO"}`);
 
-    if (!hasLocalhost || !hasPUT) {
+    if (missingOrigins.length > 0 || !hasPUT) {
       console.log("\n❌ CORS is NOT properly configured!");
       console.log("Run: npx tsx src/scripts/configureS3Cors.ts");
     } else {
@@ -63,4 +75,10 @@ async function checkCors() {
   }
 }
 
-checkCors();
+async function main() {
+  await checkCors(imagesBucket);
+  console.log("\n" + "-".repeat(50) + "\n");
+  await checkCors(documentsBucket);
+}
+
+main();
