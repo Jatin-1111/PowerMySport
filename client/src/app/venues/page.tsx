@@ -5,6 +5,7 @@ import { Navigation } from "@/components/layout/Navigation";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { sportsApi } from "@/modules/sports/services/sports";
 import { Venue } from "@/types";
 import {
   ArrowRight,
@@ -23,19 +24,45 @@ export default function VenuesPage() {
   const [loading, setLoading] = useState(true);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [filteredVenues, setFilteredVenues] = useState<Venue[]>([]);
-  const [sportFilter, setSportFilter] = useState("");
+  const [sportInput, setSportInput] = useState("");
+  const [appliedSportFilter, setAppliedSportFilter] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [minRating, setMinRating] = useState("0");
+  const [sortBy, setSortBy] = useState("relevance");
+  const [sportOptions, setSportOptions] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalVenues, setTotalVenues] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
-    loadVenues(currentPage);
-    // Scroll to top when page changes
+    loadVenues(currentPage, appliedSportFilter);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [currentPage, sportFilter]);
+  }, [currentPage, appliedSportFilter]);
 
-  const loadVenues = async (page: number = 1) => {
+  useEffect(() => {
+    loadSportOptions();
+  }, []);
+
+  useEffect(() => {
+    applyVenueFilters(venues);
+  }, [venues, minPrice, maxPrice, minRating, sortBy]);
+
+  const loadSportOptions = async () => {
+    try {
+      const sports = await sportsApi.getAllSports();
+      const names = sports
+        .map((sport) => sport.name)
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+      setSportOptions(names);
+    } catch {
+      setSportOptions([]);
+    }
+  };
+
+  const loadVenues = async (page: number = 1, sportFilter: string = "") => {
     setLoading(true);
     try {
       const params: any = {
@@ -50,7 +77,6 @@ export default function VenuesPage() {
       const response = await discoveryApi.searchNearby(params);
       if (response.success && response.data) {
         setVenues(response.data.venues);
-        setFilteredVenues(response.data.venues);
         if (response.pagination?.venues) {
           setTotalPages(response.pagination.venues.totalPages);
           setTotalVenues(response.pagination.venues.total);
@@ -63,10 +89,55 @@ export default function VenuesPage() {
     }
   };
 
+  const applyVenueFilters = (baseVenues: Venue[]) => {
+    const parsedMinPrice = minPrice ? Number(minPrice) : undefined;
+    const parsedMaxPrice = maxPrice ? Number(maxPrice) : undefined;
+    const parsedMinRating = Number(minRating || 0);
+
+    let next = baseVenues.filter((venue) => {
+      const price = getDisplayPrice(venue);
+      const rating = venue.rating || 0;
+
+      if (parsedMinPrice !== undefined && !Number.isNaN(parsedMinPrice)) {
+        if (price < parsedMinPrice) return false;
+      }
+
+      if (parsedMaxPrice !== undefined && !Number.isNaN(parsedMaxPrice)) {
+        if (price > parsedMaxPrice) return false;
+      }
+
+      if (rating < parsedMinRating) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (sortBy === "priceAsc") {
+      next = [...next].sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b));
+    } else if (sortBy === "priceDesc") {
+      next = [...next].sort((a, b) => getDisplayPrice(b) - getDisplayPrice(a));
+    } else if (sortBy === "ratingDesc") {
+      next = [...next].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    }
+
+    setFilteredVenues(next);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentPage(1); // Reset to page 1 when searching
-    loadVenues(1);
+    setAppliedSportFilter(sportInput.trim());
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSportInput("");
+    setAppliedSportFilter("");
+    setMinPrice("");
+    setMaxPrice("");
+    setMinRating("0");
+    setSortBy("relevance");
+    setCurrentPage(1);
   };
 
   const getDisplayPrice = (venue: Venue) => {
@@ -80,6 +151,22 @@ export default function VenuesPage() {
     }
     return venue.pricePerHour;
   };
+
+  const activeVenueFilters = [
+    appliedSportFilter ? `Sport: ${appliedSportFilter}` : null,
+    minPrice ? `Min ₹${minPrice}` : null,
+    maxPrice ? `Max ₹${maxPrice}` : null,
+    Number(minRating) > 0 ? `Rating ${minRating}★+` : null,
+    sortBy !== "relevance"
+      ? sortBy === "priceAsc"
+        ? "Sort: Price Low-High"
+        : sortBy === "priceDesc"
+          ? "Sort: Price High-Low"
+          : "Sort: Top Rated"
+      : null,
+  ].filter(Boolean) as string[];
+
+  const hasActiveVenueFilters = activeVenueFilters.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -117,8 +204,8 @@ export default function VenuesPage() {
                     />
                     <input
                       type="text"
-                      value={sportFilter}
-                      onChange={(e) => setSportFilter(e.target.value)}
+                      value={sportInput}
+                      onChange={(e) => setSportInput(e.target.value)}
                       placeholder="Search by sport (e.g. Cricket, Tennis, Basketball)..."
                       className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 font-medium"
                     />
@@ -129,9 +216,120 @@ export default function VenuesPage() {
                     className="whitespace-nowrap px-8 shadow-lg"
                   >
                     <Search size={18} className="mr-2" />
-                    Search
+                    Apply Sport
                   </Button>
                 </form>
+
+                <div className="mt-5 max-w-6xl rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-xs">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
+                      Refine Results
+                    </p>
+                    {hasActiveVenueFilters && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleClearFilters}
+                        className="text-xs px-3 py-1.5"
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Sport
+                      </span>
+                      <select
+                        value={sportInput}
+                        onChange={(e) => setSportInput(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                      >
+                        <option value="">All Sports</option>
+                        {sportOptions.map((sport) => (
+                          <option key={sport} value={sport}>
+                            {sport}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Min Price
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={minPrice}
+                        onChange={(e) => setMinPrice(e.target.value)}
+                        placeholder="e.g. 500"
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                      />
+                    </label>
+
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Max Price
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={maxPrice}
+                        onChange={(e) => setMaxPrice(e.target.value)}
+                        placeholder="e.g. 2500"
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                      />
+                    </label>
+
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Minimum Rating
+                      </span>
+                      <select
+                        value={minRating}
+                        onChange={(e) => setMinRating(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                      >
+                        <option value="0">Any Rating</option>
+                        <option value="3">3★ and above</option>
+                        <option value="4">4★ and above</option>
+                        <option value="4.5">4.5★ and above</option>
+                      </select>
+                    </label>
+
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Sort By
+                      </span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                      >
+                        <option value="relevance">Relevance</option>
+                        <option value="priceAsc">Price: Low to High</option>
+                        <option value="priceDesc">Price: High to Low</option>
+                        <option value="ratingDesc">Rating: High to Low</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  {hasActiveVenueFilters && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {activeVenueFilters.map((filter) => (
+                        <span
+                          key={filter}
+                          className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white"
+                        >
+                          {filter}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
               <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-turf-green/20 blur-3xl" />
@@ -151,21 +349,17 @@ export default function VenuesPage() {
               <div className="text-center py-16 bg-slate-50 rounded-lg">
                 <Building2 size={56} className="mx-auto mb-4 text-slate-300" />
                 <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  {sportFilter ? "No venues found" : "No venues available"}
+                  {appliedSportFilter
+                    ? "No venues found"
+                    : "No venues available"}
                 </h3>
                 <p className="text-slate-500 mb-6">
-                  {sportFilter
-                    ? `We couldn't find any venues for "${sportFilter}". Try a different sport.`
+                  {appliedSportFilter
+                    ? `We couldn't find any venues for "${appliedSportFilter}". Try a different sport.`
                     : "Check back soon for new venues."}
                 </p>
-                {sportFilter && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setSportFilter("");
-                      setCurrentPage(1);
-                    }}
-                  >
+                {appliedSportFilter && (
+                  <Button variant="secondary" onClick={handleClearFilters}>
                     Clear Search
                   </Button>
                 )}
@@ -177,7 +371,9 @@ export default function VenuesPage() {
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-900">
-                    {sportFilter ? `${sportFilter} Venues` : "All Venues"}
+                    {appliedSportFilter
+                      ? `${appliedSportFilter} Venues`
+                      : "All Venues"}
                   </h2>
                   <p className="text-slate-600 mt-1">
                     {filteredVenues.length} venue
@@ -335,7 +531,7 @@ export default function VenuesPage() {
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
                           disabled={loading}
-                          className={`min-w-[40px] h-10 px-3 rounded-lg font-medium transition-all ${
+                          className={`min-w-10 h-10 px-3 rounded-lg font-medium transition-all ${
                             currentPage === pageNum
                               ? "bg-power-orange text-white shadow-md"
                               : "bg-white text-slate-700 border border-slate-300 hover:border-power-orange hover:text-power-orange"

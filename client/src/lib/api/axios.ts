@@ -33,12 +33,26 @@ axiosInstance.interceptors.response.use(
       requestUrl.includes("/auth/register") ||
       requestUrl.includes("/auth/google");
 
-    if (error.response?.status === 401 && !isAuthEndpoint) {
+    const errorMessage =
+      ((error.response?.data as any)?.message as string | undefined) || "";
+
+    const isStaleProfileSession =
+      error.response?.status === 404 &&
+      requestUrl.includes("/auth/profile") &&
+      /user not found|session expired/i.test(errorMessage);
+
+    if (
+      (error.response?.status === 401 || isStaleProfileSession) &&
+      !isAuthEndpoint
+    ) {
       // Clear auth data and redirect to login only for non-auth endpoints
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        window.location.href = "/login";
+
+        if (!window.location.pathname.startsWith("/login")) {
+          window.location.href = "/login";
+        }
       }
     }
 

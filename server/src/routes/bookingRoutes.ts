@@ -3,11 +3,10 @@ import {
   cancelBookingById,
   checkInBookingWithCode,
   confirmMockPaymentSuccessById,
-  completeBookingById,
+  getBookingById,
   getMyBookings,
   getVenueAvailability,
   initiateNewBooking,
-  markBookingNoShow,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
@@ -44,22 +43,6 @@ router.post(
   confirmMockPaymentSuccessById,
 );
 
-// Mark booking as completed (venue owner or admin only)
-router.post(
-  "/:bookingId/complete",
-  authMiddleware,
-  coachVerificationCompletedMiddleware,
-  completeBookingById,
-);
-
-// Mark booking as no-show (venue owner or admin only)
-router.post(
-  "/:bookingId/no-show",
-  authMiddleware,
-  coachVerificationCompletedMiddleware,
-  markBookingNoShow,
-);
-
 // Get user's bookings
 router.get(
   "/my-bookings",
@@ -70,6 +53,14 @@ router.get(
 
 // Get venue availability
 router.get("/availability/:venueId", getVenueAvailability);
+
+// Get booking by ID
+router.get(
+  "/:bookingId",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  getBookingById,
+);
 
 // Cancel booking
 router.delete(

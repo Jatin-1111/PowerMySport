@@ -7,6 +7,7 @@ import DependentManagementModal from "@/modules/player/components/DependentManag
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { Modal } from "@/modules/shared/ui/Modal";
 import { User } from "@/types";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -45,6 +46,9 @@ export default function ProfilePage() {
   const [isDeletingDependentId, setDeletingDependentId] = useState<
     string | null
   >(null);
+  const [dependentToDelete, setDependentToDelete] = useState<Dependent | null>(
+    null,
+  );
   const [graduationForm, setGraduationForm] = useState({
     dependentId: "",
     dependentName: "",
@@ -206,18 +210,16 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDeleteDependent = async (dependentId?: string) => {
+  const handleDeleteDependent = async () => {
+    const dependentId = dependentToDelete?._id?.toString();
     if (!dependentId) return;
-
-    if (!confirm("Are you sure you want to delete this dependent?")) {
-      return;
-    }
 
     setDeletingDependentId(dependentId);
 
     try {
       await authApi.deleteDependent(dependentId);
       await fetchProfile();
+      setDependentToDelete(null);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || "Failed to delete dependent");
     } finally {
@@ -555,9 +557,7 @@ export default function ProfilePage() {
                     </Button>
 
                     <Button
-                      onClick={() =>
-                        handleDeleteDependent(dependent._id?.toString())
-                      }
+                      onClick={() => setDependentToDelete(dependent)}
                       variant="secondary"
                       size="sm"
                       disabled={isDeletingDependentId === dependent._id}
@@ -639,6 +639,39 @@ export default function ProfilePage() {
         isLoading={savingDependentId !== null}
         mode={dependentModalMode}
       />
+
+      <Modal
+        isOpen={Boolean(dependentToDelete)}
+        onClose={() => setDependentToDelete(null)}
+        title="Delete dependent"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setDependentToDelete(null)}
+              disabled={isDeletingDependentId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteDependent}
+              disabled={isDeletingDependentId !== null}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeletingDependentId !== null ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-600">
+          Are you sure you want to delete
+          <span className="font-semibold text-slate-900">
+            {" "}
+            {dependentToDelete?.name}
+          </span>
+          ? This action cannot be undone.
+        </p>
+      </Modal>
 
       {showGraduationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

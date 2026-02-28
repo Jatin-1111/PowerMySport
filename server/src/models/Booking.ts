@@ -186,6 +186,9 @@ bookingSchema.index({ coachId: 1, date: 1, startTime: 1, endTime: 1 });
 // Index for expiration cleanup job
 bookingSchema.index({ expiresAt: 1, status: 1 });
 
+// Index for fast check-in code lookups
+bookingSchema.index({ checkInCode: 1 });
+
 // Unique index to prevent duplicate bookings for same user/venue/date/time
 bookingSchema.index(
   { userId: 1, venueId: 1, date: 1, startTime: 1 },

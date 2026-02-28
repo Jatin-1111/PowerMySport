@@ -245,6 +245,7 @@ export default function Step1ContactInfo({
           venueId={venueId}
           onVerified={handleVerificationSuccess}
           onClose={() => setShowVerificationModal(false)}
+          showCloseButton={false}
         />
       )}
     </div>

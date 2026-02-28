@@ -4,7 +4,6 @@ import {
   adminLogout,
   approveCoachVerification,
   createAdminAccount,
-  getAdminBookings,
   getAdminProfile,
   handleDispute,
   listAdmins,
@@ -27,9 +26,6 @@ router.post("/login", adminLogin);
 // Protected routes (require admin authentication)
 router.post("/logout", authMiddleware, adminLogout);
 router.get("/profile", authMiddleware, getAdminProfile);
-
-// Admin booking management
-router.get("/bookings", authMiddleware, adminMiddleware, getAdminBookings);
 
 // Coach verification management
 router.get(

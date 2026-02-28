@@ -1,11 +1,12 @@
 ﻿"use client";
 
+import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion } from "framer-motion";
 import { LayoutDashboard, LogOut, Menu, Settings, User, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/modules/shared/ui/Button";
 
@@ -25,6 +26,7 @@ export const Navigation: React.FC<NavProps> = ({
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuthStore();
 
   // Close dropdown when clicking outside
@@ -52,6 +54,19 @@ export const Navigation: React.FC<NavProps> = ({
   ];
 
   const isActive = (path: string) => pathname === path;
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      logout();
+      setUserDropdownOpen(false);
+      setMobileMenuOpen(false);
+      router.push("/");
+    }
+  };
 
   // If user is logged in, show dashboard link instead of register
   const getDashboardLink = () => {
@@ -153,10 +168,7 @@ export const Navigation: React.FC<NavProps> = ({
                         </Link>
 
                         <button
-                          onClick={() => {
-                            logout();
-                            setUserDropdownOpen(false);
-                          }}
+                          onClick={handleLogout}
                           className="flex items-center w-full px-4 py-2 text-sm text-error-red hover:bg-muted transition-colors"
                         >
                           <LogOut className="w-4 h-4 mr-3" />
@@ -263,10 +275,7 @@ export const Navigation: React.FC<NavProps> = ({
                     variant="ghost"
                     size="sm"
                     fullWidth
-                    onClick={() => {
-                      logout();
-                      setMobileMenuOpen(false);
-                    }}
+                    onClick={handleLogout}
                     className="justify-start text-error-red"
                   >
                     <LogOut className="w-4 h-4 mr-2" />

@@ -147,13 +147,12 @@ export const findVenuesNearby = async (
 
     const venues = await Venue.aggregate(dataPipeline);
 
-    // Convert aggregation results to Mongoose documents and refresh URLs
+    // Convert aggregation results to hydrated Mongoose documents and refresh URLs
+    // This avoids an additional findById per venue (N+1 query pattern)
     const venueDocuments = await Promise.all(
       venues.map(async (v) => {
-        const doc = await Venue.findById(v._id);
-        if (doc) {
-          await doc.refreshAllUrls();
-        }
+        const doc = Venue.hydrate(v);
+        await doc.refreshAllUrls();
         return doc;
       }),
     );

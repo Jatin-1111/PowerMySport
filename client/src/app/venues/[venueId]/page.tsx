@@ -6,9 +6,10 @@ import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
+import { reviewApi } from "@/modules/review/services/review";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Availability, Venue } from "@/types";
+import { Availability, ReviewItem, ReviewSummary, Venue } from "@/types";
 import { Calendar, Check, IndianRupee, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -32,6 +33,19 @@ export default function VenueDetailsPage() {
   } | null>(null);
   const [selectedSport, setSelectedSport] = useState<string>("");
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummary>({
+    averageRating: 0,
+    reviewCount: 0,
+  });
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(
+    null,
+  );
+  const [reviewEligibilityReason, setReviewEligibilityReason] = useState("");
 
   useEffect(() => {
     if (venueId) {
@@ -44,6 +58,21 @@ export default function VenueDetailsPage() {
       loadAvailability();
     }
   }, [venueId, selectedDate]);
+
+  useEffect(() => {
+    if (venueId) {
+      loadReviews();
+    }
+  }, [venueId]);
+
+  useEffect(() => {
+    if (venueId && user?.id) {
+      loadReviewEligibility();
+    } else {
+      setEligibleBookingId(null);
+      setReviewEligibilityReason("");
+    }
+  }, [venueId, user?.id, reviews.length]);
 
   const loadVenueDetails = async () => {
     try {
@@ -73,6 +102,88 @@ export default function VenueDetailsPage() {
       }
     } catch (error) {
       console.error("Failed to load availability:", error);
+    }
+  };
+
+  const loadReviews = async () => {
+    setReviewLoading(true);
+    try {
+      const response = await reviewApi.getVenueReviews(venueId, 1, 20);
+      if (response.success && response.data) {
+        setReviews(response.data.reviews || []);
+        setReviewSummary(
+          response.data.summary || { averageRating: 0, reviewCount: 0 },
+        );
+      }
+    } catch (error) {
+      console.error("Failed to load venue reviews:", error);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const loadReviewEligibility = async () => {
+    try {
+      const response = await reviewApi.getReviewEligibility({
+        targetType: "VENUE",
+        targetId: venueId,
+      });
+
+      if (response.success && response.data) {
+        setEligibleBookingId(
+          response.data.eligible ? response.data.bookingId : null,
+        );
+        setReviewEligibilityReason(response.data.reason || "");
+      }
+    } catch {
+      setEligibleBookingId(null);
+      setReviewEligibilityReason(
+        "Unable to verify review eligibility right now",
+      );
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/venues/${venueId}`);
+      return;
+    }
+
+    if (!eligibleBookingId) {
+      toast.error("No eligible completed booking found for review");
+      return;
+    }
+
+    if (!reviewRating) {
+      toast.error("Please select a rating");
+      return;
+    }
+
+    setReviewSubmitting(true);
+    try {
+      const response = await reviewApi.createReview({
+        bookingId: eligibleBookingId,
+        targetType: "VENUE",
+        targetId: venueId,
+        rating: reviewRating,
+        ...(reviewText.trim() ? { review: reviewText.trim() } : {}),
+      });
+
+      if (response.success) {
+        toast.success("Review submitted successfully");
+        setReviewRating(0);
+        setReviewText("");
+        setEligibleBookingId(null);
+        await Promise.all([loadReviews(), loadVenueDetails()]);
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to submit review",
+      );
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -247,6 +358,123 @@ export default function VenueDetailsPage() {
                   </div>
                 </Card>
               )}
+
+              {/* Reviews */}
+              <Card className="p-6 bg-white">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900">
+                      Venue Reviews
+                    </h2>
+                    <p className="text-sm text-slate-600 mt-1">
+                      {reviewSummary.averageRating.toFixed(1)}★ average ·{" "}
+                      {reviewSummary.reviewCount} reviews
+                    </p>
+                  </div>
+                </div>
+
+                {user && eligibleBookingId && (
+                  <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold text-slate-800 mb-3">
+                      Share your experience
+                    </p>
+                    <div className="flex items-center gap-1 mb-3">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          className="p-0.5"
+                        >
+                          <Star
+                            size={20}
+                            className={
+                              star <= reviewRating
+                                ? "text-yellow-500 fill-yellow-500"
+                                : "text-slate-300"
+                            }
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      rows={3}
+                      maxLength={1000}
+                      placeholder="Write your review (optional)"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                    />
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        variant="primary"
+                        onClick={handleSubmitReview}
+                        disabled={reviewSubmitting || reviewRating === 0}
+                      >
+                        {reviewSubmitting ? "Submitting..." : "Submit Review"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {user && !eligibleBookingId && (
+                  <p className="mb-4 text-sm text-slate-500">
+                    {reviewEligibilityReason ||
+                      "Complete a session for this venue to add a review."}
+                  </p>
+                )}
+
+                {reviewLoading ? (
+                  <div className="text-sm text-slate-500">
+                    Loading reviews...
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    No reviews yet. Be the first to review this venue.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {reviews.map((review) => {
+                      const reviewer =
+                        typeof review.userId === "object" &&
+                        review.userId !== null
+                          ? review.userId
+                          : null;
+
+                      return (
+                        <div
+                          key={String(review._id || review.id)}
+                          className="rounded-lg border border-slate-200 p-4"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-semibold text-slate-900 text-sm">
+                              {reviewer?.name || "User"}
+                            </p>
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: 5 }).map((_, index) => (
+                                <Star
+                                  key={index}
+                                  size={14}
+                                  className={
+                                    index < review.rating
+                                      ? "text-yellow-500 fill-yellow-500"
+                                      : "text-slate-300"
+                                  }
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          {review.review && (
+                            <p className="text-sm text-slate-700">
+                              {review.review}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
             </div>
 
             {/* Right Column - Booking Widget */}

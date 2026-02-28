@@ -119,9 +119,10 @@ export const getProfile = async (
     const user = await getUserById(req.user.id);
 
     if (!user) {
-      res.status(404).json({
+      res.clearCookie("token");
+      res.status(401).json({
         success: false,
-        message: "User not found",
+        message: "Session expired. Please login again.",
       });
       return;
     }
@@ -129,7 +130,6 @@ export const getProfile = async (
     // Refresh profile photo URL if S3 key exists
     if (user.photoS3Key) {
       await user.refreshPhotoUrl();
-      await user.save();
     }
 
     res.status(200).json({

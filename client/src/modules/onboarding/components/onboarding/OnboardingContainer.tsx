@@ -722,6 +722,7 @@ export default function OnboardingContainer() {
               venueId={venueId}
               onVerified={handleEmailVerified}
               onClose={handleEmailVerificationClose}
+              showCloseButton={false}
             />
           )}
 

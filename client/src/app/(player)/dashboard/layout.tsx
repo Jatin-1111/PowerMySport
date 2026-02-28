@@ -4,7 +4,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, MapPin, User, Users } from "lucide-react";
+import { Calendar, MapPin, Settings, User, Users } from "lucide-react";
 import React from "react";
 
 export default function DashboardLayout({
@@ -45,6 +45,11 @@ export default function DashboardLayout({
       href: "/dashboard/my-profile",
       label: "Profile",
       icon: User,
+    },
+    {
+      href: "/settings",
+      label: "Settings",
+      icon: Settings,
     },
   ];
 

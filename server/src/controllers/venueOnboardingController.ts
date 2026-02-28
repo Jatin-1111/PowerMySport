@@ -14,6 +14,7 @@ import {
   UPLOAD_CONSTRAINTS,
 } from "../services/VenueOnboardingService";
 import { sendVerificationCode } from "../services/EmailVerificationService";
+import { getPaginationParams } from "../utils/pagination";
 
 /**
  * Venue Onboarding Controller
@@ -459,8 +460,12 @@ export const listPendingVenues = async (
       return;
     }
 
-    const page = parseInt((req.query.page as string) || "1");
-    const limit = parseInt((req.query.limit as string) || "20");
+    const { page, limit } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      20,
+      100,
+    );
     const status = (req.query.status as string) || undefined;
 
     const result = await getPendingVenues(page, limit, status as any);

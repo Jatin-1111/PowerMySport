@@ -91,6 +91,14 @@ export const bookingCheckInCodeSchema = z.object({
   checkInCode: z.string().min(1, "Check-in code is required"),
 });
 
+export const createReviewSchema = z.object({
+  bookingId: z.string().min(1, "Booking ID is required"),
+  targetType: z.enum(["VENUE", "COACH"]),
+  targetId: z.string().min(1, "Target ID is required"),
+  rating: z.number().min(1).max(5),
+  review: z.string().max(1000).optional(),
+});
+
 const coachVerificationDocumentTypeSchema = z.enum([
   "CERTIFICATION",
   "ID_PROOF",

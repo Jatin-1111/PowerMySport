@@ -1,16 +1,17 @@
 import { Request, Response } from "express";
+import { Booking } from "../models/Booking";
+import { Venue } from "../models/Venue";
 import {
   cancelBooking,
   checkInBookingByCode,
   confirmMockPaymentSuccess,
-  completeBooking,
   getUserBookings,
   getVenueBookingsForDate,
   getVenueListerBookings,
   initiateBooking,
-  markNoShow,
 } from "../services/BookingService";
 import { generateHourlySlots } from "../utils/booking";
+import { getPaginationParams } from "../utils/pagination";
 
 /**
  * Initiate a new booking
@@ -72,8 +73,12 @@ export const getMyBookings = async (
       return;
     }
 
-    const page = parseInt((req.query.page as string) || "1", 10);
-    const limit = parseInt((req.query.limit as string) || "20", 10);
+    const { page, limit } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      20,
+      100,
+    );
 
     let result;
 
@@ -100,6 +105,79 @@ export const getMyBookings = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch bookings",
+    });
+  }
+};
+
+/**
+ * Get booking by ID
+ * GET /api/bookings/:bookingId
+ */
+export const getBookingById = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+
+    const booking = await Booking.findById(bookingId)
+      .select("+checkInCode")
+      .populate("userId venueId coachId participantId");
+
+    if (!booking) {
+      res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+      return;
+    }
+
+    const getRefId = (value: unknown): string | null => {
+      if (!value || typeof value !== "object") return null;
+      const asRecord = value as Record<string, unknown>;
+      const id = asRecord._id || asRecord.id;
+      return id ? String(id) : null;
+    };
+
+    const isAdmin = req.user.role === "ADMIN";
+    const bookingOwnerId = getRefId(booking.userId) || String(booking.userId);
+    const isBookingOwner = bookingOwnerId === req.user.id;
+
+    let isVenueOwner = false;
+    if (booking.venueId && req.user.role === "VENUE_LISTER") {
+      const venue = await Venue.findById(booking.venueId).select("ownerId");
+      isVenueOwner = Boolean(
+        venue && venue.ownerId?.toString() === req.user.id,
+      );
+    }
+
+    if (!isAdmin && !isBookingOwner && !isVenueOwner) {
+      res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Booking retrieved successfully",
+      data: booking,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to fetch booking",
     });
   }
 };
@@ -293,64 +371,6 @@ export const confirmMockPaymentSuccessById = async (
         error instanceof Error
           ? error.message
           : "Failed to confirm mock payment",
-    });
-  }
-};
-
-/**
- * Mark booking as completed
- * POST /api/bookings/:bookingId/complete
- */
-export const completeBookingById = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
-
-    // TODO: Verify that user is venue owner or admin
-    const booking = await completeBooking(bookingId);
-
-    res.status(200).json({
-      success: true,
-      message: "Booking marked as completed",
-      data: booking,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to complete booking",
-    });
-  }
-};
-
-/**
- * Mark booking as no-show
- * POST /api/bookings/:bookingId/no-show
- */
-export const markBookingNoShow = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
-
-    // TODO: Verify that user is venue owner or admin
-    const booking = await markNoShow(bookingId);
-
-    res.status(200).json({
-      success: true,
-      message: "Booking marked as no-show",
-      data: booking,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to mark as no-show",
     });
   }
 };

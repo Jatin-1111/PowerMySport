@@ -4,6 +4,10 @@ import "dotenv/config";
 import express, { Express } from "express";
 import { errorHandler } from "./middleware/errorHandler";
 import { errorLogger, requestLogger } from "./middleware/logger";
+import {
+  apiRateLimitMiddleware,
+  securityHeadersMiddleware,
+} from "./middleware/security";
 
 import adminRoutes from "./routes/adminRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -15,6 +19,7 @@ import statsRoutes from "./routes/statsRoutes";
 import venueInquiryRoutes from "./routes/venueInquiryRoutes";
 import venueOnboardingRoutes from "./routes/venueOnboardingRoutes";
 import venueRoutes from "./routes/venueRoutes";
+import reviewRoutes from "./routes/reviewRoutes";
 
 export const app: Express = express();
 
@@ -80,6 +85,8 @@ const corsOptions: CorsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(securityHeadersMiddleware);
+app.use(apiRateLimitMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -98,6 +105,7 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/geo", geoRoutes);
 app.use("/api/sports", sportsRoutes);
 app.use("/api/venue-inquiries", venueInquiryRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

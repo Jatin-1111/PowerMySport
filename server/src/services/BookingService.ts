@@ -530,56 +530,6 @@ export const checkInBookingByCode = async (
 };
 
 /**
- * Mark booking as completed (successful session)
- * Only venue owner or admin can mark as completed
- */
-export const completeBooking = async (
-  bookingId: string,
-): Promise<BookingDocument> => {
-  const booking = await Booking.findById(bookingId);
-
-  if (!booking) {
-    throw new Error("Booking not found");
-  }
-
-  if (booking.status !== "IN_PROGRESS") {
-    throw new Error(
-      `Cannot complete booking. Current status is ${booking.status}`,
-    );
-  }
-
-  booking.status = "COMPLETED";
-  await booking.save();
-
-  return booking;
-};
-
-/**
- * Mark booking as no-show (user didn't show up)
- * Only venue owner or admin can mark as no-show
- */
-export const markNoShow = async (
-  bookingId: string,
-): Promise<BookingDocument> => {
-  const booking = await Booking.findById(bookingId);
-
-  if (!booking) {
-    throw new Error("Booking not found");
-  }
-
-  if (booking.status !== "CONFIRMED" && booking.status !== "IN_PROGRESS") {
-    throw new Error(
-      `Cannot mark as no-show. Current status is ${booking.status}`,
-    );
-  }
-
-  booking.status = "NO_SHOW";
-  await booking.save();
-
-  return booking;
-};
-
-/**
  * Check coach availability (kept synchronized with CoachService.checkCoachAvailability)
  * Duplicated to avoid circular dependency between services
  */

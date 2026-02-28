@@ -17,18 +17,6 @@ export const venueApi = {
     return response.data;
   },
 
-  getAllVenues: async (pagination?: {
-    page?: number;
-    limit?: number;
-  }): Promise<ApiResponse<Venue[]>> => {
-    const params = new URLSearchParams();
-    if (pagination?.page) params.append("page", pagination.page.toString());
-    if (pagination?.limit) params.append("limit", pagination.limit.toString());
-
-    const response = await axiosInstance.get(`/venues?${params.toString()}`);
-    return response.data;
-  },
-
   getVenue: async (venueId: string): Promise<ApiResponse<Venue>> => {
     const response = await axiosInstance.get(`/venues/${venueId}`);
     return response.data;
@@ -44,34 +32,6 @@ export const venueApi = {
 
     const response = await axiosInstance.get(
       `/venues/my-venues?${params.toString()}`,
-    );
-    return response.data;
-  },
-
-  searchVenues: async (filters?: {
-    sports?: string[];
-    location?: string;
-    pagination?: {
-      page?: number;
-      limit?: number;
-    };
-  }): Promise<ApiResponse<Venue[]>> => {
-    const params = new URLSearchParams();
-    if (filters?.sports) {
-      filters.sports.forEach((sport) => params.append("sports", sport));
-    }
-    if (filters?.location) {
-      params.append("location", filters.location);
-    }
-    if (filters?.pagination?.page) {
-      params.append("page", filters.pagination.page.toString());
-    }
-    if (filters?.pagination?.limit) {
-      params.append("limit", filters.pagination.limit.toString());
-    }
-
-    const response = await axiosInstance.get(
-      `/venues/search?${params.toString()}`,
     );
     return response.data;
   },

@@ -237,6 +237,36 @@ export interface DiscoveryResponse {
   coaches: Coach[];
 }
 
+export interface ReviewUser {
+  _id?: string;
+  id?: string;
+  name: string;
+  photoUrl?: string;
+}
+
+export interface ReviewItem {
+  _id?: string;
+  id?: string;
+  bookingId: string;
+  userId: string | ReviewUser;
+  targetType: "VENUE" | "COACH";
+  targetId: string;
+  rating: number;
+  review?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewSummary {
+  averageRating: number;
+  reviewCount: number;
+}
+
+export interface ReviewListData {
+  reviews: ReviewItem[];
+  summary: ReviewSummary;
+}
+
 export interface InitiateBookingResponse {
   booking: Booking;
 }

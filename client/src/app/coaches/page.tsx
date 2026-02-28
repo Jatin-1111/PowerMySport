@@ -19,7 +19,13 @@ export default function CoachesPage() {
   const [loading, setLoading] = useState(true);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [filteredCoaches, setFilteredCoaches] = useState<Coach[]>([]);
-  const [sportFilter, setSportFilter] = useState("");
+  const [sportInput, setSportInput] = useState("");
+  const [appliedSportFilter, setAppliedSportFilter] = useState("");
+  const [serviceModeFilter, setServiceModeFilter] = useState("ALL");
+  const [verificationFilter, setVerificationFilter] = useState("ALL");
+  const [maxRate, setMaxRate] = useState("");
+  const [minRating, setMinRating] = useState("0");
+  const [sortBy, setSortBy] = useState("relevance");
   const [locationError, setLocationError] = useState("");
   const router = useRouter();
 
@@ -75,6 +81,66 @@ export default function CoachesPage() {
     return coach.hourlyRate;
   };
 
+  const applyCoachFilters = (baseCoaches: Coach[]) => {
+    const parsedMaxRate = maxRate ? Number(maxRate) : undefined;
+    const parsedMinRating = Number(minRating || 0);
+
+    let next = baseCoaches.filter((coach) => {
+      const status =
+        coach.verificationStatus ||
+        (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+      const matchesSport =
+        !appliedSportFilter ||
+        coach.sports.some((sport) =>
+          sport.toLowerCase().includes(appliedSportFilter.toLowerCase()),
+        );
+
+      const matchesServiceMode =
+        serviceModeFilter === "ALL" || coach.serviceMode === serviceModeFilter;
+
+      const matchesVerification =
+        verificationFilter === "ALL" || status === verificationFilter;
+
+      const startingRate = getStartingRate(coach);
+      const matchesRate =
+        parsedMaxRate === undefined ||
+        Number.isNaN(parsedMaxRate) ||
+        startingRate <= parsedMaxRate;
+
+      const matchesRating = (coach.rating || 0) >= parsedMinRating;
+
+      return (
+        matchesSport &&
+        matchesServiceMode &&
+        matchesVerification &&
+        matchesRate &&
+        matchesRating
+      );
+    });
+
+    if (sortBy === "priceAsc") {
+      next = [...next].sort((a, b) => getStartingRate(a) - getStartingRate(b));
+    } else if (sortBy === "priceDesc") {
+      next = [...next].sort((a, b) => getStartingRate(b) - getStartingRate(a));
+    } else if (sortBy === "ratingDesc") {
+      next = [...next].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    }
+
+    setFilteredCoaches(next);
+  };
+
+  useEffect(() => {
+    applyCoachFilters(coaches);
+  }, [
+    coaches,
+    appliedSportFilter,
+    serviceModeFilter,
+    verificationFilter,
+    maxRate,
+    minRating,
+    sortBy,
+  ]);
+
   useEffect(() => {
     if (!navigator.geolocation) {
       setLocationError("Location is required to discover nearby coaches.");
@@ -111,7 +177,6 @@ export default function CoachesPage() {
       });
       if (response.success && response.data) {
         setCoaches(response.data.coaches);
-        setFilteredCoaches(response.data.coaches);
       }
     } catch (error) {
       console.error("Failed to load coaches:", error);
@@ -122,17 +187,39 @@ export default function CoachesPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (sportFilter) {
-      const filtered = coaches.filter((coach) =>
-        coach.sports.some((sport) =>
-          sport.toLowerCase().includes(sportFilter.toLowerCase()),
-        ),
-      );
-      setFilteredCoaches(filtered);
-    } else {
-      setFilteredCoaches(coaches);
-    }
+    setAppliedSportFilter(sportInput.trim());
   };
+
+  const handleClearFilters = () => {
+    setSportInput("");
+    setAppliedSportFilter("");
+    setServiceModeFilter("ALL");
+    setVerificationFilter("ALL");
+    setMaxRate("");
+    setMinRating("0");
+    setSortBy("relevance");
+  };
+
+  const activeCoachFilters = [
+    appliedSportFilter ? `Sport: ${appliedSportFilter}` : null,
+    serviceModeFilter !== "ALL"
+      ? `Mode: ${serviceModeFilter.replace("_", " ")}`
+      : null,
+    verificationFilter !== "ALL"
+      ? `Verification: ${verificationFilter.replace("_", " ")}`
+      : null,
+    maxRate ? `Max ₹${maxRate}` : null,
+    Number(minRating) > 0 ? `Rating ${minRating}★+` : null,
+    sortBy !== "relevance"
+      ? sortBy === "priceAsc"
+        ? "Sort: Price Low-High"
+        : sortBy === "priceDesc"
+          ? "Sort: Price High-Low"
+          : "Sort: Top Rated"
+      : null,
+  ].filter(Boolean) as string[];
+
+  const hasActiveCoachFilters = activeCoachFilters.length > 0;
 
   return (
     <div className="bg-slate-50">
@@ -167,8 +254,8 @@ export default function CoachesPage() {
                   />
                   <input
                     type="text"
-                    value={sportFilter}
-                    onChange={(e) => setSportFilter(e.target.value)}
+                    value={sportInput}
+                    onChange={(e) => setSportInput(e.target.value)}
                     placeholder="Search by sport (e.g. Cricket, Tennis, Basketball)..."
                     className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green bg-white text-slate-900 font-medium"
                   />
@@ -179,9 +266,122 @@ export default function CoachesPage() {
                   className="whitespace-nowrap px-8 shadow-lg"
                 >
                   <Search size={18} className="mr-2" />
-                  Search
+                  Apply Sport
                 </Button>
               </form>
+
+              <div className="mt-5 max-w-6xl rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-xs">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
+                    Refine Results
+                  </p>
+                  {hasActiveCoachFilters && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleClearFilters}
+                      className="text-xs px-3 py-1.5"
+                    >
+                      Clear All
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <label className="space-y-1.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      Service Mode
+                    </span>
+                    <select
+                      value={serviceModeFilter}
+                      onChange={(e) => setServiceModeFilter(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                    >
+                      <option value="ALL">All Service Modes</option>
+                      <option value="OWN_VENUE">Own Venue</option>
+                      <option value="FREELANCE">Freelance</option>
+                      <option value="HYBRID">Hybrid</option>
+                    </select>
+                  </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      Verification
+                    </span>
+                    <select
+                      value={verificationFilter}
+                      onChange={(e) => setVerificationFilter(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                    >
+                      <option value="ALL">All Verification</option>
+                      <option value="VERIFIED">Verified</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="REVIEW">In Review</option>
+                      <option value="UNVERIFIED">Unverified</option>
+                      <option value="REJECTED">Rejected</option>
+                    </select>
+                  </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      Max Rate
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={maxRate}
+                      onChange={(e) => setMaxRate(e.target.value)}
+                      placeholder="e.g. 1500"
+                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                    />
+                  </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      Minimum Rating
+                    </span>
+                    <select
+                      value={minRating}
+                      onChange={(e) => setMinRating(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                    >
+                      <option value="0">Any Rating</option>
+                      <option value="3">3★ and above</option>
+                      <option value="4">4★ and above</option>
+                      <option value="4.5">4.5★ and above</option>
+                    </select>
+                  </label>
+
+                  <label className="space-y-1.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      Sort By
+                    </span>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                    >
+                      <option value="relevance">Relevance</option>
+                      <option value="priceAsc">Price: Low to High</option>
+                      <option value="priceDesc">Price: High to Low</option>
+                      <option value="ratingDesc">Rating: High to Low</option>
+                    </select>
+                  </label>
+                </div>
+
+                {hasActiveCoachFilters && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {activeCoachFilters.map((filter) => (
+                      <span
+                        key={filter}
+                        className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white"
+                      >
+                        {filter}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-turf-green/20 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-power-orange/20 blur-3xl" />
@@ -201,21 +401,17 @@ export default function CoachesPage() {
             <div className="text-center py-16 bg-slate-50 rounded-lg">
               <Users size={56} className="mx-auto mb-4 text-slate-300" />
               <h3 className="text-xl font-bold text-slate-900 mb-2">
-                {sportFilter ? "No coaches found" : "No coaches available"}
+                {appliedSportFilter
+                  ? "No coaches found"
+                  : "No coaches available"}
               </h3>
               <p className="text-slate-500 mb-6">
-                {sportFilter
-                  ? `We couldn't find any coaches for "${sportFilter}". Try a different sport.`
+                {appliedSportFilter
+                  ? `We couldn't find any coaches for "${appliedSportFilter}". Try a different sport.`
                   : locationError || "Check back soon for new coaches."}
               </p>
-              {sportFilter && (
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setSportFilter("");
-                    setFilteredCoaches(coaches);
-                  }}
-                >
+              {appliedSportFilter && (
+                <Button variant="secondary" onClick={handleClearFilters}>
                   Clear Search
                 </Button>
               )}
@@ -227,7 +423,9 @@ export default function CoachesPage() {
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">
-                  {sportFilter ? `${sportFilter} Coaches` : "All Coaches"}
+                  {appliedSportFilter
+                    ? `${appliedSportFilter} Coaches`
+                    : "All Coaches"}
                 </h2>
                 <p className="text-slate-600 mt-1">
                   {filteredCoaches.length} coach

@@ -9,6 +9,7 @@ interface EmailVerificationModalProps {
   venueId: string;
   onVerified: () => void;
   onClose: () => void;
+  showCloseButton?: boolean;
 }
 
 export default function EmailVerificationModal({
@@ -16,6 +17,7 @@ export default function EmailVerificationModal({
   venueId,
   onVerified,
   onClose,
+  showCloseButton = true,
 }: EmailVerificationModalProps) {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -195,13 +197,15 @@ export default function EmailVerificationModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
         {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-          disabled={loading}
-        >
-          <X size={24} />
-        </button>
+        {showCloseButton && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            disabled={loading}
+          >
+            <X size={24} />
+          </button>
+        )}
 
         {/* Header */}
         <div className="text-center mb-6">

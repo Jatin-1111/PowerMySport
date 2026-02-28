@@ -12,6 +12,96 @@ import {
   getVenuesByOwner,
   updateVenue,
 } from "../services/VenueService";
+import { getPaginationParams } from "../utils/pagination";
+
+type DiscoveryInclude = "venues" | "coaches" | "both";
+
+interface DiscoveryContext {
+  page: number;
+  limit: number;
+  sportFilter: string | undefined;
+  latitude: number | undefined;
+  longitude: number | undefined;
+  radiusMeters: number;
+  hasLocation: boolean;
+  include: DiscoveryInclude;
+}
+
+const parseDiscoveryInclude = (value: unknown): DiscoveryInclude => {
+  const normalized = String(value || "both").toLowerCase();
+  if (normalized === "venues") return "venues";
+  if (normalized === "coaches") return "coaches";
+  return "both";
+};
+
+const buildDiscoveryContext = (req: Request): DiscoveryContext => {
+  const lat = (req.query.lat || req.query.latitude) as string | undefined;
+  const lng = (req.query.lng || req.query.longitude) as string | undefined;
+  const radius = (req.query.radius || req.query.maxDistance) as
+    | string
+    | undefined;
+  const { sport } = req.query;
+
+  const sportFilter = sport as string | undefined;
+  const { page, limit } = getPaginationParams(
+    req.query.page,
+    req.query.limit,
+    20,
+    100,
+  );
+
+  const hasLocation = Boolean(lat && lng);
+  const latitude = hasLocation ? parseFloat(lat as string) : undefined;
+  const longitude = hasLocation ? parseFloat(lng as string) : undefined;
+
+  return {
+    page,
+    limit,
+    sportFilter,
+    latitude,
+    longitude,
+    radiusMeters: radius ? parseInt(radius as string, 10) : 5000,
+    hasLocation,
+    include: parseDiscoveryInclude(req.query.include),
+  };
+};
+
+const fetchDiscoveryVenues = async (ctx: DiscoveryContext) => {
+  if (
+    !ctx.hasLocation ||
+    ctx.latitude === undefined ||
+    ctx.longitude === undefined
+  ) {
+    const venueFilters = ctx.sportFilter ? { sports: [ctx.sportFilter] } : {};
+    return getAllVenues(venueFilters, ctx.page, ctx.limit);
+  }
+
+  return findVenuesNearby(
+    ctx.latitude,
+    ctx.longitude,
+    ctx.radiusMeters,
+    ctx.sportFilter,
+    ctx.page,
+    ctx.limit,
+  );
+};
+
+const fetchDiscoveryCoaches = async (ctx: DiscoveryContext) => {
+  if (
+    !ctx.hasLocation ||
+    ctx.latitude === undefined ||
+    ctx.longitude === undefined
+  ) {
+    return getAllCoaches(ctx.sportFilter);
+  }
+
+  return findCoachesNearby(
+    ctx.latitude,
+    ctx.longitude,
+    ctx.radiusMeters / 1000,
+    ctx.sportFilter,
+  );
+};
 
 export const createNewVenue = async (
   req: Request,
@@ -119,8 +209,12 @@ export const getMyVenues = async (
       return;
     }
 
-    const page = parseInt((req.query.page as string) || "1", 10);
-    const limit = parseInt((req.query.limit as string) || "20", 10);
+    const { page, limit } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      20,
+      100,
+    );
 
     const result = await getVenuesByOwner(req.user.id, page, limit);
 
@@ -153,78 +247,46 @@ export const discoverNearby = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const lat = (req.query.lat || req.query.latitude) as string | undefined;
-    const lng = (req.query.lng || req.query.longitude) as string | undefined;
-    const radius = (req.query.radius || req.query.maxDistance) as
-      | string
-      | undefined;
-    const { sport } = req.query;
-    const sportFilter = sport as string | undefined;
+    const context = buildDiscoveryContext(req);
 
-    // If no location provided, return all venues and coaches (Universal Feed)
-    // If no location provided, return all venues and coaches (Universal Feed)
-    if (!lat || !lng) {
-      const page = parseInt((req.query.page as string) || "1", 10);
-      const limit = parseInt((req.query.limit as string) || "20", 10);
-      const venueFilters = sportFilter ? { sports: [sportFilter] } : {};
+    const venuesPromise =
+      context.include === "coaches"
+        ? Promise.resolve(null)
+        : fetchDiscoveryVenues(context);
 
-      const [venuesResult, coaches] = await Promise.all([
-        getAllVenues(venueFilters, page, limit),
-        getAllCoaches(sportFilter),
-      ]);
-
-      res.status(200).json({
-        success: true,
-        message: "Discovery feed retrieved successfully",
-        data: {
-          venues: venuesResult.venues,
-          coaches,
-        },
-        pagination: {
-          venues: {
-            total: venuesResult.total,
-            page: venuesResult.page,
-            totalPages: venuesResult.totalPages,
-          },
-        },
-      });
-      return;
-    }
-
-    const latitude = parseFloat(lat as string);
-    const longitude = parseFloat(lng as string);
-    const radiusMeters = radius ? parseInt(radius as string, 10) : 5000;
-
-    // Search for venues and coaches in parallel
-    const page = parseInt((req.query.page as string) || "1", 10);
-    const limit = parseInt((req.query.limit as string) || "20", 10);
+    const coachesPromise =
+      context.include === "venues"
+        ? Promise.resolve(null)
+        : fetchDiscoveryCoaches(context);
 
     const [venuesResult, coaches] = await Promise.all([
-      findVenuesNearby(
-        latitude,
-        longitude,
-        radiusMeters,
-        sportFilter,
-        page,
-        limit,
-      ),
-      findCoachesNearby(latitude, longitude, radiusMeters / 1000, sportFilter), // Convert to km
+      venuesPromise,
+      coachesPromise,
     ]);
+
+    const responseData: Record<string, unknown> = {};
+    if (venuesResult) {
+      responseData.venues = venuesResult.venues;
+    }
+    if (coaches) {
+      responseData.coaches = coaches;
+    }
 
     res.status(200).json({
       success: true,
       message: "Discovery results retrieved successfully",
-      data: {
-        venues: venuesResult.venues,
-        coaches,
-      },
-      pagination: {
-        venues: {
-          total: venuesResult.total,
-          page: venuesResult.page,
-          totalPages: venuesResult.totalPages,
-        },
-      },
+      data: responseData,
+      ...(venuesResult
+        ? {
+            pagination: {
+              venues: {
+                total: venuesResult.total,
+                page: venuesResult.page,
+                totalPages: venuesResult.totalPages,
+              },
+            },
+          }
+        : {}),
     });
   } catch (error) {
     res.status(500).json({
@@ -251,8 +313,7 @@ export const searchVenues = async (
         : [sports as string];
     }
 
-    const page = parseInt((queryPage as string) || "1", 10);
-    const limit = parseInt((queryLimit as string) || "20", 10);
+    const { page, limit } = getPaginationParams(queryPage, queryLimit, 20, 100);
 
     const result = await getAllVenues(filters, page, limit);
 

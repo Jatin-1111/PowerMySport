@@ -321,6 +321,11 @@ const venueSchema = new Schema<VenueDocument>(
 // Geo-spatial index for $near queries
 venueSchema.index({ location: "2dsphere" });
 
+// Common read paths for owner dashboards and admin review queues
+venueSchema.index({ ownerId: 1, createdAt: -1 });
+venueSchema.index({ ownerEmail: 1, approvalStatus: 1 });
+venueSchema.index({ approvalStatus: 1, createdAt: -1 });
+
 /**
  * Instance method to regenerate presigned URLs for documents
  * Valid for 24 hours

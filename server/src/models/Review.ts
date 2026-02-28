@@ -3,16 +3,14 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ReviewDocument extends Document {
   bookingId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId; // Reviewer (player)
-  venueId: mongoose.Types.ObjectId;
-  coachId?: mongoose.Types.ObjectId;
+  targetType: "VENUE" | "COACH";
+  targetId: mongoose.Types.ObjectId;
 
   // Ratings (1-5)
-  venueRating: number;
-  coachRating?: number;
+  rating: number;
 
   // Reviews
-  venueReview?: string;
-  coachReview?: string;
+  review?: string;
 
   // Metadata
   isVerified: boolean; // Only from COMPLETED bookings
@@ -29,38 +27,28 @@ const reviewSchema = new Schema<ReviewDocument>(
       type: Schema.Types.ObjectId,
       ref: "Booking",
       required: true,
-      unique: true, // One review per booking
     },
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    venueId: {
-      type: Schema.Types.ObjectId,
-      ref: "Venue",
-      required: true,
-    },
-    coachId: {
-      type: Schema.Types.ObjectId,
-      ref: "Coach",
-    },
-    venueRating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5,
-    },
-    coachRating: {
-      type: Number,
-      min: 1,
-      max: 5,
-    },
-    venueReview: {
+    targetType: {
       type: String,
-      maxlength: 1000,
+      enum: ["VENUE", "COACH"],
+      required: true,
     },
-    coachReview: {
+    targetId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5,
+    },
+    review: {
       type: String,
       maxlength: 1000,
     },
@@ -81,9 +69,8 @@ const reviewSchema = new Schema<ReviewDocument>(
 );
 
 // Indexes
-reviewSchema.index({ venueId: 1, createdAt: -1 });
-reviewSchema.index({ coachId: 1, createdAt: -1 });
+reviewSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
 reviewSchema.index({ userId: 1 });
-reviewSchema.index({ bookingId: 1 });
+reviewSchema.index({ bookingId: 1, targetType: 1 }, { unique: true });
 
 export const Review = mongoose.model<ReviewDocument>("Review", reviewSchema);

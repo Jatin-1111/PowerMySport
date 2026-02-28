@@ -4,6 +4,7 @@ import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import VenueInquiry from "../models/VenueInquiry";
 import { getAllVenues as getAllVenuesService } from "../services/VenueService";
+import { getPaginationParams } from "../utils/pagination";
 
 // Get platform statistics
 export const getPlatformStats = async (
@@ -11,20 +12,29 @@ export const getPlatformStats = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const [totalUsers, totalVenues, totalBookings, pendingInquiries, bookings] =
-      await Promise.all([
-        User.countDocuments(),
-        Venue.countDocuments(),
-        Booking.countDocuments(),
-        VenueInquiry.countDocuments({ status: "PENDING" }),
-        Booking.find({ status: "CONFIRMED" }),
-      ]);
+    const [
+      totalUsers,
+      totalVenues,
+      totalBookings,
+      pendingInquiries,
+      revenueResult,
+    ] = await Promise.all([
+      User.countDocuments(),
+      Venue.countDocuments(),
+      Booking.countDocuments(),
+      VenueInquiry.countDocuments({ status: "PENDING" }),
+      Booking.aggregate([
+        { $match: { status: "CONFIRMED" } },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: "$totalAmount" },
+          },
+        },
+      ]),
+    ]);
 
-    // Calculate total revenue from confirmed bookings
-    const revenue = bookings.reduce(
-      (sum: number, booking: any) => sum + booking.totalAmount,
-      0,
-    );
+    const revenue = revenueResult[0]?.totalRevenue || 0;
 
     res.status(200).json({
       success: true,
@@ -51,20 +61,24 @@ export const getAllUsers = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const page = parseInt((req.query.page as string) || "1", 10);
-    const limit = parseInt((req.query.limit as string) || "15", 10);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      15,
+      100,
+    );
 
     const total = await User.countDocuments();
     const users = await User.find()
       .select("-password")
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     // Transform _id to id for frontend
     const transformedUsers = users.map((user) => ({
-      ...user.toObject(),
+      ...user,
       id: user._id.toString(),
     }));
 
@@ -92,8 +106,12 @@ export const getAllVenues = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const page = parseInt((req.query.page as string) || "1", 10);
-    const limit = parseInt((req.query.limit as string) || "20", 10);
+    const { page, limit } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      20,
+      100,
+    );
 
     // Using the service method matching the new signature
     const result = await getAllVenuesService({}, page, limit);
@@ -122,17 +140,12 @@ export const getAllBookings = async (
   res: Response,
 ): Promise<void> => {
   try {
-    // Assuming we need a service method for ALL bookings (admin view)
-    // Currently BookingService doesn't have a distinct "getAllBookings" for admin,
-    // it has getUserBookings, getVenueBookings.
-    // But statsController probably used Booking.find({}) directly or similar.
-    // Let's check the original content again.
-    // Ah, previous code was: const bookings = await Booking.find().populate(...);
-    // I should use pagination here.
-
-    const page = parseInt((req.query.page as string) || "1", 10);
-    const limit = parseInt((req.query.limit as string) || "20", 10);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      20,
+      100,
+    );
 
     const total = await Booking.countDocuments();
     const bookings = await Booking.find()

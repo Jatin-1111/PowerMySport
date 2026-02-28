@@ -4,7 +4,13 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Calendar, Grid3x3, LayoutDashboard } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  Grid3x3,
+  LayoutDashboard,
+  Settings,
+} from "lucide-react";
 import React, { useEffect } from "react";
 
 export default function VendorLayout({
@@ -53,6 +59,11 @@ export default function VendorLayout({
       href: "/venue-lister/vendor-bookings",
       label: "Bookings",
       icon: Calendar,
+    },
+    {
+      href: "/settings",
+      label: "Settings",
+      icon: Settings,
     },
   ];
 

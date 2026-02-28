@@ -475,35 +475,3 @@ export const markCoachVerificationForReview = async (
     });
   }
 };
-
-/**
- * Get all bookings for admin review (with filters)
- * GET /api/admin/bookings
- */
-export const getAdminBookings = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { status, startDate, endDate, page = 1, limit = 20 } = req.query;
-
-    // TODO: Implement booking filtering and pagination
-    // Current implementation is a stub
-
-    res.status(501).json({
-      success: false,
-      message: "Admin booking list not implemented yet",
-      data: {
-        filters: { status, startDate, endDate },
-        pagination: { page, limit },
-        note: "This endpoint will be implemented in future releases",
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch bookings",
-    });
-  }
-};

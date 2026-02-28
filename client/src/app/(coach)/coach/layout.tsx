@@ -4,7 +4,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { coachApi } from "@/modules/coach/services/coach";
 import { isCoachVerificationFlowComplete } from "@/modules/coach/utils/verification";
-import { Calendar, ShieldCheck, Store, User } from "lucide-react";
+import { Calendar, Settings, ShieldCheck, Store, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -93,6 +93,7 @@ export default function CoachLayout({
       label: "My Bookings",
       icon: Calendar,
     },
+    { href: "/settings", label: "Settings", icon: Settings },
   ];
 
   const visibleNavItems = isVerificationLocked
