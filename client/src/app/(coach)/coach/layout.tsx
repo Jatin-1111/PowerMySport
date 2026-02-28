@@ -78,10 +78,11 @@ export default function CoachLayout({
   const handleLogout = async () => {
     try {
       await authApi.logout();
-      logout();
-      router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
+      logout();
+      router.push("/");
     }
   };
 

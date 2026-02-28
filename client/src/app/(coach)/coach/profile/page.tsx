@@ -3,17 +3,18 @@
 import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { coachApi } from "@/modules/coach/services/coach";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Coach, IAvailability, User } from "@/types";
+import { Coach, IAvailability, ServiceMode, User } from "@/types";
 import {
   AlertCircle,
   CheckCircle,
   Clock3,
   LogOut,
   Plus,
-  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -41,8 +42,35 @@ const sortAvailabilitySlots = (slots: IAvailability[]) =>
     return first.endTime.localeCompare(second.endTime);
   });
 
+const normalizeSports = (sports: string[]) =>
+  [...new Set(sports.map((sport) => sport.trim()).filter(Boolean))].sort();
+
+const normalizeAvailabilityBySport = (
+  bySport: Record<string, IAvailability[]>,
+) => {
+  const normalized: Record<string, IAvailability[]> = {};
+
+  Object.entries(bySport).forEach(([sport, slots]) => {
+    normalized[sport] = sortAvailabilitySlots(slots).map((slot) => ({
+      dayOfWeek: Number(slot.dayOfWeek),
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+    }));
+  });
+
+  return normalized;
+};
+
+const isSameAvailabilityBySport = (
+  first: Record<string, IAvailability[]>,
+  second: Record<string, IAvailability[]>,
+) =>
+  JSON.stringify(normalizeAvailabilityBySport(first)) ===
+  JSON.stringify(normalizeAvailabilityBySport(second));
+
 export default function CoachProfilePage() {
   const router = useRouter();
+  const { logout } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -57,6 +85,22 @@ export default function CoachProfilePage() {
     name: "",
     email: "",
     phone: "",
+  });
+  const [isEditingAbout, setIsEditingAbout] = useState(false);
+  const [isSavingAbout, setIsSavingAbout] = useState(false);
+  const [aboutForm, setAboutForm] = useState({
+    bio: "",
+  });
+  const [isEditingCoaching, setIsEditingCoaching] = useState(false);
+  const [isSavingCoaching, setIsSavingCoaching] = useState(false);
+  const [coachingForm, setCoachingForm] = useState({
+    selectedSports: [] as string[],
+    pricingMode: "PER_SPORT" as "SAME" | "PER_SPORT",
+    hourlyRateInput: "",
+    sportPricing: {} as Record<string, string>,
+    serviceMode: "FREELANCE" as ServiceMode,
+    serviceRadiusKmInput: "10",
+    travelBufferTimeInput: "30",
   });
 
   useEffect(() => {
@@ -156,12 +200,27 @@ export default function CoachProfilePage() {
       toast.error("Name and email are required.");
       return;
     }
+
+    const nextName = profileForm.name.trim();
+    const nextEmail = profileForm.email.trim();
+    const nextPhone = profileForm.phone.trim();
+
+    if (
+      nextName === (user?.name || "") &&
+      nextEmail === (user?.email || "") &&
+      nextPhone === (user?.phone || "")
+    ) {
+      toast.info("No profile changes to save.");
+      setIsEditingProfile(false);
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
       const response = await authApi.updateProfile({
-        name: profileForm.name.trim(),
-        email: profileForm.email.trim(),
-        phone: profileForm.phone.trim(),
+        name: nextName,
+        email: nextEmail,
+        phone: nextPhone,
       });
       if (response.success && response.data) {
         setUser(response.data);
@@ -176,6 +235,266 @@ export default function CoachProfilePage() {
       );
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const handleEditAboutClick = () => {
+    if (!coachProfile) return;
+    setAboutForm({
+      bio: coachProfile.bio || "",
+    });
+    setIsEditingAbout(true);
+  };
+
+  const handleSaveAbout = async () => {
+    if (!coachProfile) {
+      toast.error("Coach profile not found.");
+      return;
+    }
+
+    const coachId = coachProfile.id || coachProfile._id;
+    if (!coachId) {
+      toast.error("Coach profile id is missing.");
+      return;
+    }
+
+    const nextBio = aboutForm.bio.trim();
+    if (!nextBio) {
+      toast.error("Bio cannot be empty.");
+      return;
+    }
+
+    if (nextBio === (coachProfile.bio || "")) {
+      toast.info("No About changes to save.");
+      setIsEditingAbout(false);
+      return;
+    }
+
+    try {
+      setIsSavingAbout(true);
+      const response = await coachApi.updateProfile(coachId, { bio: nextBio });
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Failed to update about section");
+      }
+
+      setCoachProfile(response.data);
+      setIsEditingAbout(false);
+      toast.success("About section updated.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update about section",
+      );
+    } finally {
+      setIsSavingAbout(false);
+    }
+  };
+
+  const handleEditCoachingClick = () => {
+    if (!coachProfile) return;
+
+    const sports = coachProfile.sports || [];
+    const pricingValues = Object.values(
+      (coachProfile.sportPricing || {}) as Record<string, number>,
+    );
+    const hasPerSport = pricingValues.some((value) => value > 0);
+    const allMatchHourly =
+      hasPerSport &&
+      typeof coachProfile.hourlyRate === "number" &&
+      pricingValues.every((value) => value === coachProfile.hourlyRate);
+
+    const nextSportPricing = sports.reduce<Record<string, string>>(
+      (acc, sport) => {
+        const existingPrice = coachProfile.sportPricing?.[sport];
+        if (typeof existingPrice === "number" && existingPrice > 0) {
+          acc[sport] = String(existingPrice);
+        } else if (
+          typeof coachProfile.hourlyRate === "number" &&
+          coachProfile.hourlyRate > 0
+        ) {
+          acc[sport] = String(coachProfile.hourlyRate);
+        } else {
+          acc[sport] = "";
+        }
+        return acc;
+      },
+      {},
+    );
+
+    setCoachingForm({
+      selectedSports: sports,
+      pricingMode: allMatchHourly ? "SAME" : "PER_SPORT",
+      hourlyRateInput:
+        typeof coachProfile.hourlyRate === "number" &&
+        coachProfile.hourlyRate > 0
+          ? String(coachProfile.hourlyRate)
+          : "",
+      sportPricing: nextSportPricing,
+      serviceMode: coachProfile.serviceMode || "FREELANCE",
+      serviceRadiusKmInput: String(coachProfile.serviceRadiusKm || 10),
+      travelBufferTimeInput: String(coachProfile.travelBufferTime || 30),
+    });
+    setIsEditingCoaching(true);
+  };
+
+  const handleSaveCoachingDetails = async () => {
+    if (!coachProfile) {
+      toast.error("Coach profile not found.");
+      return;
+    }
+
+    const coachId = coachProfile.id || coachProfile._id;
+    if (!coachId) {
+      toast.error("Coach profile id is missing.");
+      return;
+    }
+
+    const nextSports = normalizeSports(coachingForm.selectedSports);
+    if (nextSports.length === 0) {
+      toast.error("Add at least one sport.");
+      return;
+    }
+
+    const pricingPayload: Record<string, number> = {};
+    if (coachingForm.pricingMode === "SAME") {
+      const hourlyRate = Number(coachingForm.hourlyRateInput);
+      if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+        toast.error("Please add a valid hourly price greater than 0.");
+        return;
+      }
+
+      for (const sport of nextSports) {
+        pricingPayload[sport] = hourlyRate;
+      }
+    } else {
+      for (const sport of nextSports) {
+        const value = Number(coachingForm.sportPricing[sport]);
+        if (!Number.isFinite(value) || value <= 0) {
+          toast.error(`Please add a valid price for ${sport}.`);
+          return;
+        }
+        pricingPayload[sport] = value;
+      }
+    }
+
+    const hourlyRate = Math.max(...Object.values(pricingPayload));
+
+    const parsedServiceRadius = Number(coachingForm.serviceRadiusKmInput);
+    const parsedTravelBuffer = Number(coachingForm.travelBufferTimeInput);
+
+    if (
+      coachingForm.serviceMode !== "OWN_VENUE" &&
+      (!Number.isFinite(parsedServiceRadius) || parsedServiceRadius <= 0)
+    ) {
+      toast.error("Service radius must be greater than 0.");
+      return;
+    }
+
+    if (
+      coachingForm.serviceMode !== "OWN_VENUE" &&
+      (!Number.isFinite(parsedTravelBuffer) || parsedTravelBuffer < 0)
+    ) {
+      toast.error("Travel buffer time must be 0 or more.");
+      return;
+    }
+
+    const currentSports = normalizeSports(coachProfile.sports || []);
+    const currentHourlyRate = Number(coachProfile.hourlyRate || 0);
+    const currentServiceMode = coachProfile.serviceMode || "FREELANCE";
+    const currentServiceRadius = Number(coachProfile.serviceRadiusKm || 10);
+    const currentTravelBuffer = Number(coachProfile.travelBufferTime || 30);
+
+    const normalizePricing = (pricing: Record<string, number>) =>
+      Object.keys(pricing)
+        .sort()
+        .reduce<Record<string, number>>((acc, sport) => {
+          acc[sport] = pricing[sport];
+          return acc;
+        }, {});
+
+    const currentPricing = normalizePricing(
+      (coachProfile.sportPricing || {}) as Record<string, number>,
+    );
+    const nextPricing = normalizePricing(pricingPayload);
+
+    const hasSportsChange =
+      JSON.stringify(currentSports) !== JSON.stringify(nextSports);
+    const hasHourlyRateChange = currentHourlyRate !== hourlyRate;
+    const hasServiceModeChange =
+      currentServiceMode !== coachingForm.serviceMode;
+    const hasServiceRadiusChange =
+      coachingForm.serviceMode !== "OWN_VENUE" &&
+      currentServiceRadius !== parsedServiceRadius;
+    const hasTravelBufferChange =
+      coachingForm.serviceMode !== "OWN_VENUE" &&
+      currentTravelBuffer !== parsedTravelBuffer;
+    const hasSportPricingChange =
+      JSON.stringify(currentPricing) !== JSON.stringify(nextPricing);
+
+    if (
+      !hasSportsChange &&
+      !hasHourlyRateChange &&
+      !hasServiceModeChange &&
+      !hasServiceRadiusChange &&
+      !hasTravelBufferChange &&
+      !hasSportPricingChange
+    ) {
+      toast.info("No coaching detail changes to save.");
+      setIsEditingCoaching(false);
+      return;
+    }
+
+    const updates: Partial<Coach> = {
+      sports: nextSports,
+      hourlyRate,
+      serviceMode: coachingForm.serviceMode,
+      sportPricing: pricingPayload,
+    };
+
+    if (coachingForm.serviceMode !== "OWN_VENUE") {
+      updates.serviceRadiusKm = parsedServiceRadius;
+      updates.travelBufferTime = parsedTravelBuffer;
+    }
+
+    try {
+      setIsSavingCoaching(true);
+      const response = await coachApi.updateProfile(coachId, updates);
+      if (!response.success || !response.data) {
+        throw new Error(
+          response.message || "Failed to update coaching details",
+        );
+      }
+
+      setCoachProfile(response.data);
+      const sports = response.data.sports || [];
+      const bySportFromApi = response.data.availabilityBySport || {};
+      const fallbackAvailability = sortAvailabilitySlots(
+        response.data.availability || [],
+      );
+      const nextBySport: Record<string, IAvailability[]> = {};
+
+      sports.forEach((sport) => {
+        nextBySport[sport] = sortAvailabilitySlots(
+          bySportFromApi[sport] || fallbackAvailability,
+        );
+      });
+
+      setAvailabilityBySport(nextBySport);
+      if (sports.length > 0 && !sports.includes(activeSportTab)) {
+        setActiveSportTab(sports[0]);
+      }
+
+      setIsEditingCoaching(false);
+      toast.success("Coaching details updated.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update coaching details",
+      );
+    } finally {
+      setIsSavingCoaching(false);
     }
   };
 
@@ -211,10 +530,12 @@ export default function CoachProfilePage() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/");
+      await authApi.logout();
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
+      logout();
+      router.push("/");
     }
   };
 
@@ -321,6 +642,20 @@ export default function CoachProfilePage() {
         sortedAvailabilityBySport[sport] = sortAvailabilitySlots(slots);
       });
 
+      const currentBySportFromCoach = coachProfile.availabilityBySport || {};
+      const currentBySport: Record<string, IAvailability[]> = {};
+
+      Object.entries(currentBySportFromCoach).forEach(([sport, slots]) => {
+        currentBySport[sport] = sortAvailabilitySlots(slots || []);
+      });
+
+      if (
+        isSameAvailabilityBySport(sortedAvailabilityBySport, currentBySport)
+      ) {
+        toast.info("No time slot changes to save.");
+        return;
+      }
+
       const flattenedAvailability = flattenAvailability(
         sortedAvailabilityBySport,
       );
@@ -410,16 +745,6 @@ export default function CoachProfilePage() {
               <BadgeIcon size={14} />
               {badge.label}
             </span>
-            <Link href="/coach/verification">
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex items-center gap-2"
-              >
-                <ShieldCheck size={18} />
-                Edit Profile
-              </Button>
-            </Link>
           </div>
         </div>
 
@@ -439,155 +764,452 @@ export default function CoachProfilePage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
             <Card className="bg-white">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                About You
-              </h3>
-              <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-                {coachProfile.bio || "No bio added yet"}
-              </p>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  About You
+                </h3>
+                {!isEditingAbout && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleEditAboutClick}
+                  >
+                    Edit About
+                  </Button>
+                )}
+              </div>
+              {isEditingAbout ? (
+                <div className="space-y-3">
+                  <textarea
+                    value={aboutForm.bio}
+                    onChange={(event) =>
+                      setAboutForm({ bio: event.target.value })
+                    }
+                    rows={5}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                    placeholder="Tell players about your experience and coaching style"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleSaveAbout}
+                      loading={isSavingAbout}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEditingAbout(false)}
+                      disabled={isSavingAbout}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                  {coachProfile.bio || "No bio added yet"}
+                </p>
+              )}
             </Card>
 
             <Card className="bg-white">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                Coaching Details
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                    Sports You Teach
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {coachProfile.sports && coachProfile.sports.length > 0 ? (
-                      coachProfile.sports.map((sport) => (
-                        <span
-                          key={sport}
-                          className="inline-flex items-center rounded-full bg-power-orange/10 px-3 py-1 text-sm font-medium text-power-orange border border-power-orange/20"
-                        >
-                          {sport}
-                        </span>
-                      ))
-                    ) : (
-                      <p className="text-sm text-slate-500">
-                        No sports added yet
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {coachProfile.sportPricing &&
-                  Object.keys(coachProfile.sportPricing).length > 0 && (
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">
-                        Pricing per Sport
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {Object.entries(coachProfile.sportPricing).map(
-                          ([sport, price]) => (
-                            <div
-                              key={sport}
-                              className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                            >
-                              <span className="text-sm font-medium text-slate-700">
-                                {sport}
-                              </span>
-                              <span className="text-sm font-semibold text-slate-900">
-                                ₹{price}/hr
-                              </span>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                {coachProfile.hourlyRate && !coachProfile.sportPricing && (
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                      Hourly Rate
-                    </p>
-                    <p className="text-2xl font-bold text-power-orange">
-                      ₹{coachProfile.hourlyRate}/hr
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                    Service Mode
-                  </p>
-                  <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
-                    {coachProfile.serviceMode === "OWN_VENUE"
-                      ? "Own Venue"
-                      : coachProfile.serviceMode === "HYBRID"
-                        ? "Hybrid"
-                        : "Freelance"}
-                  </div>
-                </div>
-
-                {(coachProfile.serviceMode === "OWN_VENUE" ||
-                  coachProfile.serviceMode === "HYBRID") &&
-                  coachProfile.ownVenueDetails && (
-                    <div className="border-t border-slate-200 pt-4 mt-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-500 mb-3">
-                        Your Venue
-                      </p>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {coachProfile.ownVenueDetails.name}
-                          </p>
-                          {coachProfile.ownVenueDetails.address && (
-                            <p className="text-sm text-slate-600">
-                              {coachProfile.ownVenueDetails.address}
-                            </p>
-                          )}
-                        </div>
-                        {coachProfile.ownVenueDetails.description && (
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                              Description
-                            </p>
-                            <p className="text-sm text-slate-700">
-                              {coachProfile.ownVenueDetails.description}
-                            </p>
-                          </div>
-                        )}
-                        {coachProfile.ownVenueDetails.openingHours && (
-                          <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                              Opening Hours
-                            </p>
-                            <p className="text-sm text-slate-700">
-                              {coachProfile.ownVenueDetails.openingHours}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                {coachProfile.serviceMode !== "OWN_VENUE" && (
-                  <>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                        Service Radius
-                      </p>
-                      <p className="text-sm font-medium text-slate-900">
-                        {coachProfile.serviceRadiusKm || 10} km
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                        Travel Buffer Time
-                      </p>
-                      <p className="text-sm font-medium text-slate-900">
-                        {coachProfile.travelBufferTime || 30} minutes
-                      </p>
-                    </div>
-                  </>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Coaching Details
+                </h3>
+                {!isEditingCoaching && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleEditCoachingClick}
+                  >
+                    Edit Details
+                  </Button>
                 )}
               </div>
+              {isEditingCoaching ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Sports You Can Teach
+                    </label>
+                    <SportsMultiSelect
+                      value={coachingForm.selectedSports}
+                      onChange={(sports) => {
+                        const updatedPricing = { ...coachingForm.sportPricing };
+
+                        sports.forEach((sport) => {
+                          if (!updatedPricing[sport]) {
+                            updatedPricing[sport] =
+                              coachingForm.pricingMode === "SAME"
+                                ? coachingForm.hourlyRateInput || ""
+                                : "";
+                          }
+                        });
+
+                        Object.keys(updatedPricing).forEach((sport) => {
+                          if (!sports.includes(sport)) {
+                            delete updatedPricing[sport];
+                          }
+                        });
+
+                        setCoachingForm((prev) => ({
+                          ...prev,
+                          selectedSports: sports,
+                          sportPricing: updatedPricing,
+                        }));
+                      }}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-900">
+                      Pricing
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                        <input
+                          type="radio"
+                          name="profilePricingMode"
+                          value="SAME"
+                          checked={coachingForm.pricingMode === "SAME"}
+                          onChange={() =>
+                            setCoachingForm((prev) => {
+                              const updatedPricing = {
+                                ...prev.sportPricing,
+                              };
+                              prev.selectedSports.forEach((sport) => {
+                                updatedPricing[sport] =
+                                  prev.hourlyRateInput || "";
+                              });
+
+                              return {
+                                ...prev,
+                                pricingMode: "SAME",
+                                sportPricing: updatedPricing,
+                              };
+                            })
+                          }
+                        />
+                        Same price for all sports
+                      </label>
+                      <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                        <input
+                          type="radio"
+                          name="profilePricingMode"
+                          value="PER_SPORT"
+                          checked={coachingForm.pricingMode === "PER_SPORT"}
+                          onChange={() =>
+                            setCoachingForm((prev) => ({
+                              ...prev,
+                              pricingMode: "PER_SPORT",
+                            }))
+                          }
+                        />
+                        Different price per sport
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {coachingForm.pricingMode === "SAME"
+                          ? "Hourly Price"
+                          : "Base Hourly Rate"}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        step={0.01}
+                        value={coachingForm.hourlyRateInput}
+                        onChange={(event) =>
+                          setCoachingForm((prev) => {
+                            const nextValue = event.target.value;
+                            const updatedPricing = { ...prev.sportPricing };
+
+                            if (prev.pricingMode === "SAME") {
+                              prev.selectedSports.forEach((sport) => {
+                                updatedPricing[sport] = nextValue;
+                              });
+                            }
+
+                            return {
+                              ...prev,
+                              hourlyRateInput: nextValue,
+                              sportPricing: updatedPricing,
+                            };
+                          })
+                        }
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                        placeholder="500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Service Mode
+                      </label>
+                      <select
+                        value={coachingForm.serviceMode}
+                        onChange={(event) =>
+                          setCoachingForm((prev) => ({
+                            ...prev,
+                            serviceMode: event.target.value as ServiceMode,
+                          }))
+                        }
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                      >
+                        <option value="FREELANCE">Freelance</option>
+                        <option value="OWN_VENUE">Own Venue</option>
+                        <option value="HYBRID">Hybrid</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {coachingForm.pricingMode === "PER_SPORT" &&
+                    coachingForm.selectedSports.length > 0 && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-slate-900">
+                          Price per Sport
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {coachingForm.selectedSports.map((sport) => (
+                            <div key={sport}>
+                              <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
+                                {sport}
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                step={0.01}
+                                value={coachingForm.sportPricing[sport] || ""}
+                                onChange={(event) =>
+                                  setCoachingForm((prev) => ({
+                                    ...prev,
+                                    sportPricing: {
+                                      ...prev.sportPricing,
+                                      [sport]: event.target.value,
+                                    },
+                                  }))
+                                }
+                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                                placeholder="600"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {coachingForm.serviceMode !== "OWN_VENUE" && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Service Radius (km)
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={coachingForm.serviceRadiusKmInput}
+                          onChange={(event) =>
+                            setCoachingForm((prev) => ({
+                              ...prev,
+                              serviceRadiusKmInput: event.target.value,
+                            }))
+                          }
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Travel Buffer (minutes)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={coachingForm.travelBufferTimeInput}
+                          onChange={(event) =>
+                            setCoachingForm((prev) => ({
+                              ...prev,
+                              travelBufferTimeInput: event.target.value,
+                            }))
+                          }
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleSaveCoachingDetails}
+                      loading={isSavingCoaching}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsEditingCoaching(false)}
+                      disabled={isSavingCoaching}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                      Sports You Teach
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {coachProfile.sports && coachProfile.sports.length > 0 ? (
+                        coachProfile.sports.map((sport) => (
+                          <span
+                            key={sport}
+                            className="inline-flex items-center rounded-full bg-power-orange/10 px-3 py-1 text-sm font-medium text-power-orange border border-power-orange/20"
+                          >
+                            {sport}
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-sm text-slate-500">
+                          No sports added yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {coachProfile.sportPricing &&
+                    Object.keys(coachProfile.sportPricing).length > 0 && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+                          Pricing per Sport
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {Object.entries(coachProfile.sportPricing).map(
+                            ([sport, price]) => (
+                              <div
+                                key={sport}
+                                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                              >
+                                <span className="text-sm font-medium text-slate-700">
+                                  {sport}
+                                </span>
+                                <span className="text-sm font-semibold text-slate-900">
+                                  ₹{price}/hr
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                  {coachProfile.hourlyRate && !coachProfile.sportPricing && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                        Hourly Rate
+                      </p>
+                      <p className="text-2xl font-bold text-power-orange">
+                        ₹{coachProfile.hourlyRate}/hr
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                      Service Mode
+                    </p>
+                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
+                      {coachProfile.serviceMode === "OWN_VENUE"
+                        ? "Own Venue"
+                        : coachProfile.serviceMode === "HYBRID"
+                          ? "Hybrid"
+                          : "Freelance"}
+                    </div>
+                  </div>
+
+                  {(coachProfile.serviceMode === "OWN_VENUE" ||
+                    coachProfile.serviceMode === "HYBRID") &&
+                    coachProfile.ownVenueDetails && (
+                      <div className="border-t border-slate-200 pt-4 mt-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-3">
+                          Your Venue
+                        </p>
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">
+                              {coachProfile.ownVenueDetails.name}
+                            </p>
+                            {coachProfile.ownVenueDetails.address && (
+                              <p className="text-sm text-slate-600">
+                                {coachProfile.ownVenueDetails.address}
+                              </p>
+                            )}
+                          </div>
+                          {coachProfile.ownVenueDetails.description && (
+                            <div>
+                              <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                                Description
+                              </p>
+                              <p className="text-sm text-slate-700">
+                                {coachProfile.ownVenueDetails.description}
+                              </p>
+                            </div>
+                          )}
+                          {coachProfile.ownVenueDetails.openingHours && (
+                            <div>
+                              <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                                Opening Hours
+                              </p>
+                              <p className="text-sm text-slate-700">
+                                {coachProfile.ownVenueDetails.openingHours}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                  {coachProfile.serviceMode !== "OWN_VENUE" && (
+                    <>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                          Service Radius
+                        </p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {coachProfile.serviceRadiusKm || 10} km
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                          Travel Buffer Time
+                        </p>
+                        <p className="text-sm font-medium text-slate-900">
+                          {coachProfile.travelBufferTime || 30} minutes
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </Card>
 
             <Card className="bg-white">

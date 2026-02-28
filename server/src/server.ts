@@ -69,7 +69,6 @@ const startServer = async () => {
       console.log(`   - GET    /api/coaches/availability/:coachId`);
       console.log(`   BOOKINGS:`);
       console.log(`   - POST   /api/bookings/initiate (NEW: split payments)`);
-      console.log(`   - POST   /api/bookings/webhook (Stripe webhook)`);
       console.log(
         `   - GET    /api/bookings/verify/:token (NEW: QR verification)`,
       );

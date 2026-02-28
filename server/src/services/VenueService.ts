@@ -53,8 +53,9 @@ export const getVenueById = async (
 ): Promise<VenueDocument | null> => {
   const venue = await Venue.findById(id).populate("ownerId");
   if (venue) {
-    // Refresh all presigned URLs before returning
-    await venue.refreshAllUrls();
+    // For venue detail reads, only image URLs are needed.
+    // Avoid refreshing document URLs here because it adds expensive S3 calls.
+    await venue.refreshImageUrls();
   }
   return venue;
 };

@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "migrate": "ts-node src/migrations/index.ts",
     "seed:sports": "ts-node src/scripts/seedSports.ts",
+    "stress:booking-race": "ts-node src/scripts/stressBookingConcurrency.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -34,7 +35,6 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "qrcode": "^1.5.4",
-    "stripe": "^15.12.0",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },

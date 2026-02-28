@@ -189,6 +189,8 @@ export const updateProfileHandler = async (
         phone: updatedUser.phone,
         role: updatedUser.role,
         dob: updatedUser.dob,
+        photoUrl: updatedUser.photoUrl,
+        photoS3Key: updatedUser.photoS3Key,
         venueListerProfile: updatedUser.venueListerProfile,
         dependents: updatedUser.dependents,
       },

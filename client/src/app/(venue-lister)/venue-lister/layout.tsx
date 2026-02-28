@@ -10,6 +10,7 @@ import {
   Grid3x3,
   LayoutDashboard,
   Settings,
+  User,
 } from "lucide-react";
 import React, { useEffect } from "react";
 
@@ -32,10 +33,11 @@ export default function VendorLayout({
   const handleLogout = async () => {
     try {
       await authApi.logout();
-      logout();
-      router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
+      logout();
+      router.push("/");
     }
   };
 
@@ -59,6 +61,11 @@ export default function VendorLayout({
       href: "/venue-lister/vendor-bookings",
       label: "Bookings",
       icon: Calendar,
+    },
+    {
+      href: "/venue-lister/profile",
+      label: "Profile",
+      icon: User,
     },
     {
       href: "/settings",

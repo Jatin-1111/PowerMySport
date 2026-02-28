@@ -72,7 +72,7 @@ export default function VenueDetailsPage() {
       setEligibleBookingId(null);
       setReviewEligibilityReason("");
     }
-  }, [venueId, user?.id, reviews.length]);
+  }, [venueId, user?.id]);
 
   const loadVenueDetails = async () => {
     try {

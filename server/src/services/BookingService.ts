@@ -1,5 +1,7 @@
 import { randomBytes } from "crypto";
+import mongoose, { ClientSession } from "mongoose";
 import { Booking, BookingDocument } from "../models/Booking";
+import { BookingSlotLock } from "../models/BookingSlotLock";
 import { Coach } from "../models/Coach";
 import { User } from "../models/User";
 import { Venue, VenueDocument } from "../models/Venue";
@@ -34,6 +36,24 @@ export interface InitiateBookingResponse {
 
 const TIME_FORMAT_REGEX = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 const CHECK_IN_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const MAX_TRANSACTION_RETRIES = 3;
+
+interface BookingCreatePayload {
+  userId: string;
+  venueId?: string;
+  coachId?: string;
+  sport: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  totalAmount: number;
+  serviceFee: number;
+  taxAmount: number;
+  checkInCode: string;
+  participantName: string;
+  participantId: mongoose.Types.ObjectId;
+  participantAge?: number;
+}
 
 const generateRandomCheckInCode = (): string => {
   const bytes = randomBytes(6);
@@ -83,6 +103,232 @@ const combineDateAndTime = (date: Date, time: string): Date => {
   return slotDateTime;
 };
 
+const toDayRange = (date: Date): { start: Date; end: Date } => {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  return { start, end };
+};
+
+const getDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const hasErrorLabel = (error: unknown, label: string): boolean => {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const possibleError = error as { hasErrorLabel?: (value: string) => boolean };
+  return typeof possibleError.hasErrorLabel === "function"
+    ? possibleError.hasErrorLabel(label)
+    : false;
+};
+
+const isRetryableTransactionError = (error: unknown): boolean => {
+  return (
+    hasErrorLabel(error, "TransientTransactionError") ||
+    hasErrorLabel(error, "UnknownTransactionCommitResult")
+  );
+};
+
+const hasConflictingVenueBooking = async (
+  venueId: string,
+  date: Date,
+  startTime: string,
+  endTime: string,
+  session?: ClientSession,
+): Promise<boolean> => {
+  const { start, end } = toDayRange(date);
+  const query = Booking.findOne({
+    venueId,
+    date: {
+      $gte: start,
+      $lt: end,
+    },
+    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    $or: [
+      { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
+      { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
+      { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
+    ],
+  });
+
+  if (session) {
+    query.session(session);
+  }
+
+  const conflict = await query;
+  return Boolean(conflict);
+};
+
+const hasConflictingCoachBooking = async (
+  coachId: string,
+  date: Date,
+  startTime: string,
+  endTime: string,
+  session?: ClientSession,
+): Promise<boolean> => {
+  const { start, end } = toDayRange(date);
+  const query = Booking.findOne({
+    coachId,
+    date: {
+      $gte: start,
+      $lt: end,
+    },
+    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    $or: [
+      { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
+      { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
+      { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
+    ],
+  });
+
+  if (session) {
+    query.session(session);
+  }
+
+  const conflict = await query;
+  return Boolean(conflict);
+};
+
+const acquireResourceDayLock = async (
+  resourceType: "VENUE_DAY" | "COACH_DAY",
+  resourceId: string,
+  date: Date,
+  session: ClientSession,
+): Promise<void> => {
+  await BookingSlotLock.findOneAndUpdate(
+    {
+      resourceType,
+      resourceId: new mongoose.Types.ObjectId(resourceId),
+      dateKey: getDateKey(date),
+    },
+    {
+      $inc: { version: 1 },
+      $set: { lastLockedAt: new Date() },
+    },
+    {
+      upsert: true,
+      new: true,
+      session,
+      setDefaultsOnInsert: true,
+    },
+  );
+};
+
+const createBookingAtomically = async (
+  payload: BookingCreatePayload,
+): Promise<BookingDocument> => {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_TRANSACTION_RETRIES; attempt += 1) {
+    const session = await mongoose.startSession();
+
+    try {
+      let createdBooking: BookingDocument | null = null;
+
+      await session.withTransaction(async () => {
+        if (payload.venueId) {
+          await acquireResourceDayLock(
+            "VENUE_DAY",
+            payload.venueId,
+            payload.date,
+            session,
+          );
+
+          const hasVenueConflict = await hasConflictingVenueBooking(
+            payload.venueId,
+            payload.date,
+            payload.startTime,
+            payload.endTime,
+            session,
+          );
+
+          if (hasVenueConflict) {
+            throw new Error(
+              "Selected time slot is already booked for this venue",
+            );
+          }
+        }
+
+        if (payload.coachId) {
+          await acquireResourceDayLock(
+            "COACH_DAY",
+            payload.coachId,
+            payload.date,
+            session,
+          );
+
+          const hasCoachConflict = await hasConflictingCoachBooking(
+            payload.coachId,
+            payload.date,
+            payload.startTime,
+            payload.endTime,
+            session,
+          );
+
+          if (hasCoachConflict) {
+            throw new Error(
+              "Coach is not available for the selected time slot",
+            );
+          }
+        }
+
+        const booking = new Booking({
+          userId: payload.userId,
+          ...(payload.venueId ? { venueId: payload.venueId } : {}),
+          ...(payload.coachId ? { coachId: payload.coachId } : {}),
+          sport: payload.sport,
+          date: payload.date,
+          startTime: payload.startTime,
+          endTime: payload.endTime,
+          totalAmount: payload.totalAmount,
+          serviceFee: payload.serviceFee,
+          taxAmount: payload.taxAmount,
+          status: "CONFIRMED",
+          checkInCode: payload.checkInCode,
+          expiresAt: getBookingExpirationTime(),
+          participantName: payload.participantName,
+          participantId: payload.participantId,
+          ...(payload.participantAge !== undefined
+            ? { participantAge: payload.participantAge }
+            : {}),
+        });
+
+        await booking.save({ session });
+        createdBooking = booking;
+      });
+
+      if (!createdBooking) {
+        throw new Error("Failed to create booking");
+      }
+
+      return createdBooking;
+    } catch (error) {
+      lastError = error;
+      if (
+        !isRetryableTransactionError(error) ||
+        attempt === MAX_TRANSACTION_RETRIES
+      ) {
+        throw error;
+      }
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Failed to create booking after multiple retries");
+};
+
 const toRadians = (value: number): number => (value * Math.PI) / 180;
 
 const calculateDistanceKm = (
@@ -108,8 +354,8 @@ const calculateDistanceKm = (
 };
 
 /**
- * Check if a time slot is available for a venue (with atomic locking)
- * Prevents double-booking race conditions
+ * Check if a time slot is available for a venue.
+ * Use `createBookingAtomically` for race-safe booking creation.
  */
 export const isSlotAvailable = async (
   venueId: string,
@@ -117,25 +363,13 @@ export const isSlotAvailable = async (
   startTime: string,
   endTime: string,
 ): Promise<boolean> => {
-  // Find ALL conflicting bookings (not just first one)
-  // Only active bookings block slots: CONFIRMED, IN_PROGRESS
-  const conflictingBookings = await Booking.find({
+  const hasConflict = await hasConflictingVenueBooking(
     venueId,
-    date: {
-      $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-      $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
-    },
-    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
-    $or: [
-      // Requested slot overlaps with existing booking
-      { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
-      { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
-      { startTime: { $gte: startTime }, endTime: { $lte: endTime } },
-    ],
-  });
-
-  // Slot is available only if no conflicts
-  return conflictingBookings.length === 0;
+    date,
+    startTime,
+    endTime,
+  );
+  return !hasConflict;
 };
 
 /**
@@ -316,11 +550,10 @@ export const initiateBooking = async (
 
     const checkInCode = await generateUniqueCheckInCode();
 
-    // Create booking
-    const booking = new Booking({
+    const bookingPayload: BookingCreatePayload = {
       userId: payload.userId,
       ...(payload.venueId ? { venueId: payload.venueId } : {}),
-      coachId: payload.coachId,
+      ...(payload.coachId ? { coachId: payload.coachId } : {}),
       sport: payload.sport,
       date: payload.date,
       startTime: normalizedStartTime,
@@ -328,15 +561,39 @@ export const initiateBooking = async (
       totalAmount,
       serviceFee,
       taxAmount,
-      status: "CONFIRMED",
       checkInCode,
-      expiresAt: getBookingExpirationTime(),
       participantName,
       participantId,
-      participantAge,
-    });
+      ...(participantAge !== undefined ? { participantAge } : {}),
+    };
 
-    await booking.save();
+    const booking =
+      payload.venueId || payload.coachId
+        ? await createBookingAtomically(bookingPayload)
+        : await Booking.create({
+            userId: bookingPayload.userId,
+            ...(bookingPayload.venueId
+              ? { venueId: bookingPayload.venueId }
+              : {}),
+            ...(bookingPayload.coachId
+              ? { coachId: bookingPayload.coachId }
+              : {}),
+            sport: bookingPayload.sport,
+            date: bookingPayload.date,
+            startTime: bookingPayload.startTime,
+            endTime: bookingPayload.endTime,
+            totalAmount: bookingPayload.totalAmount,
+            serviceFee: bookingPayload.serviceFee,
+            taxAmount: bookingPayload.taxAmount,
+            status: "CONFIRMED",
+            checkInCode: bookingPayload.checkInCode,
+            expiresAt: getBookingExpirationTime(),
+            participantName: bookingPayload.participantName,
+            participantId: bookingPayload.participantId,
+            ...(bookingPayload.participantAge !== undefined
+              ? { participantAge: bookingPayload.participantAge }
+              : {}),
+          });
 
     return {
       booking,
@@ -470,9 +727,14 @@ export const getVenueListerBookings = async (
 export const cancelBooking = async (
   bookingId: string,
 ): Promise<BookingDocument | null> => {
-  return Booking.findByIdAndUpdate(
-    bookingId,
-    { status: "CANCELLED" },
+  return Booking.findOneAndUpdate(
+    {
+      _id: bookingId,
+      status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    },
+    {
+      $set: { status: "CANCELLED" },
+    },
     { new: true },
   );
 };
@@ -523,10 +785,22 @@ export const checkInBookingByCode = async (
     throw new Error("Cannot check-in before the scheduled time");
   }
 
-  booking.status = "IN_PROGRESS";
-  await booking.save();
+  const updatedBooking = await Booking.findOneAndUpdate(
+    {
+      _id: booking._id,
+      status: "CONFIRMED",
+    },
+    {
+      $set: { status: "IN_PROGRESS" },
+    },
+    { new: true },
+  );
 
-  return booking;
+  if (!updatedBooking) {
+    throw new Error("Cannot check-in. Booking status changed, please retry");
+  }
+
+  return updatedBooking;
 };
 
 /**
@@ -590,11 +864,32 @@ export const confirmMockPaymentSuccess = async (
     throw new Error("Cannot confirm payment for a cancelled booking");
   }
 
-  if (!booking.paymentConfirmedAt) {
-    booking.paymentConfirmedAt = new Date();
-  }
+  await Booking.findOneAndUpdate(
+    {
+      _id: bookingId,
+      userId,
+      status: { $ne: "CANCELLED" },
+      paymentConfirmedAt: { $exists: false },
+    },
+    {
+      $set: { paymentConfirmedAt: new Date() },
+    },
+  );
 
-  if (!booking.confirmationEmailSentAt) {
+  const emailClaimedBooking = await Booking.findOneAndUpdate(
+    {
+      _id: bookingId,
+      userId,
+      status: { $ne: "CANCELLED" },
+      confirmationEmailSentAt: { $exists: false },
+    },
+    {
+      $set: { confirmationEmailSentAt: new Date() },
+    },
+    { new: true },
+  ).select("+checkInCode");
+
+  if (emailClaimedBooking) {
     const user = await User.findById(booking.userId).select("name email");
     const venue = await Venue.findById(booking.venueId).select("name");
 
@@ -603,28 +898,39 @@ export const confirmMockPaymentSuccess = async (
         name: user.name,
         email: user.email,
         venueName: venue?.name || "Venue",
-        sport: booking.sport,
-        date: booking.date,
-        startTime: booking.startTime,
-        endTime: booking.endTime,
-        totalAmount: booking.totalAmount,
-        ...(booking.checkInCode && { checkInCode: booking.checkInCode }),
+        sport: emailClaimedBooking.sport,
+        date: emailClaimedBooking.date,
+        startTime: emailClaimedBooking.startTime,
+        endTime: emailClaimedBooking.endTime,
+        totalAmount: emailClaimedBooking.totalAmount,
+        ...(emailClaimedBooking.checkInCode && {
+          checkInCode: emailClaimedBooking.checkInCode,
+        }),
       });
     }
-
-    booking.confirmationEmailSentAt = new Date();
   }
 
-  await booking.save();
-  return booking;
+  const updatedBooking =
+    await Booking.findById(bookingId).select("+checkInCode");
+  if (!updatedBooking) {
+    throw new Error("Booking not found");
+  }
+
+  return updatedBooking;
 };
 
 export const updatePaymentStatus = async (
   bookingId: string,
   payerUserId: string,
   status: "PAID" | "PENDING" | "FAILED",
+  session?: ClientSession,
 ): Promise<BookingDocument> => {
-  const booking = await Booking.findById(bookingId);
+  const bookingQuery = Booking.findById(bookingId);
+  if (session) {
+    bookingQuery.session(session);
+  }
+
+  const booking = await bookingQuery;
 
   if (!booking) {
     throw new Error("Booking not found");
@@ -652,7 +958,11 @@ export const updatePaymentStatus = async (
     booking.paymentConfirmedAt = new Date();
   }
 
-  await booking.save();
+  if (session) {
+    await booking.save({ session });
+  } else {
+    await booking.save();
+  }
   return booking;
 };
 

@@ -56,6 +56,17 @@ export const adminApi = {
     return response.data;
   },
 
+  updateProfile: async (data: {
+    name?: string;
+    email?: string;
+  }): Promise<ApiResponse<Admin>> => {
+    const response = await axiosInstance.put("/admin/profile", data);
+    if (response.data?.data) {
+      response.data.data = normalizeAdmin(response.data.data);
+    }
+    return response.data;
+  },
+
   createAdmin: async (data: {
     name: string;
     email: string;

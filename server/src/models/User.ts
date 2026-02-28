@@ -9,7 +9,6 @@ export interface UserDocument extends Document {
   role: UserRole;
   password?: string;
   googleId?: string;
-  stripeAccountId?: string;
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
   dob?: Date;
@@ -97,10 +96,6 @@ const userSchema = new Schema<UserDocument>(
     googleId: {
       type: String,
       unique: true,
-      sparse: true,
-    },
-    stripeAccountId: {
-      type: String,
       sparse: true,
     },
     photoUrl: {

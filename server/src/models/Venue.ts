@@ -333,21 +333,25 @@ venueSchema.index({ approvalStatus: 1, createdAt: -1 });
 venueSchema.methods.refreshDocumentUrls = async function () {
   const { s3Service } = require("../services/S3Service");
 
-  for (const doc of this.documents) {
-    if (doc.s3Key) {
-      try {
-        doc.url = await s3Service.generateDownloadUrl(
-          doc.s3Key,
-          "verification",
-          86400,
-        );
-      } catch (error) {
-        console.error(
-          `Failed to refresh URL for document ${doc.fileName}:`,
-          error,
-        );
-      }
-    }
+  if (Array.isArray(this.documents) && this.documents.length > 0) {
+    await Promise.all(
+      this.documents.map(async (doc: any) => {
+        if (!doc.s3Key) return;
+
+        try {
+          doc.url = await s3Service.generateDownloadUrl(
+            doc.s3Key,
+            "verification",
+            86400,
+          );
+        } catch (error) {
+          console.error(
+            `Failed to refresh URL for document ${doc.fileName}:`,
+            error,
+          );
+        }
+      }),
+    );
   }
 
   return this;
@@ -362,20 +366,21 @@ venueSchema.methods.refreshImageUrls = async function () {
 
   // Refresh gallery images
   if (this.imageKeys && this.imageKeys.length > 0) {
-    const freshImages: string[] = [];
-    for (const key of this.imageKeys) {
-      try {
-        const url = await s3Service.generateDownloadUrl(
-          key,
-          "verification",
-          604800,
-        ); // 7 days
-        freshImages.push(url);
-      } catch (error) {
-        console.error(`Failed to refresh URL for image ${key}:`, error);
-        freshImages.push(""); // Placeholder for failed image
-      }
-    }
+    const freshImages = await Promise.all(
+      this.imageKeys.map(async (key: string) => {
+        try {
+          return await s3Service.generateDownloadUrl(
+            key,
+            "verification",
+            604800,
+          ); // 7 days
+        } catch (error) {
+          console.error(`Failed to refresh URL for image ${key}:`, error);
+          return ""; // Placeholder for failed image
+        }
+      }),
+    );
+
     this.images = freshImages;
   }
 

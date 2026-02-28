@@ -224,6 +224,10 @@ export default function CoachVerificationPage() {
     { type: "CERTIFICATION", url: "", fileName: "" },
     { type: "ID_PROOF", url: "", fileName: "" },
   ]);
+  const [requestedStep, setRequestedStep] = useState<VerificationStep | null>(
+    null,
+  );
+  const [isEditModeFromProfile, setIsEditModeFromProfile] = useState(false);
 
   const status = useMemo(() => {
     if (!coachProfile) {
@@ -236,8 +240,25 @@ export default function CoachVerificationPage() {
     );
   }, [coachProfile]);
 
-  const isLockedByReview =
-    status === "PENDING" || status === "REVIEW" || status === "VERIFIED";
+  const isLockedByReview = status === "PENDING" || status === "REVIEW";
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const requestedStepParam = params.get("step");
+    const nextRequestedStep: VerificationStep | null =
+      requestedStepParam === "1" ||
+      requestedStepParam === "2" ||
+      requestedStepParam === "3"
+        ? (Number(requestedStepParam) as VerificationStep)
+        : null;
+
+    setRequestedStep(nextRequestedStep);
+    setIsEditModeFromProfile(params.get("edit") === "true");
+  }, []);
 
   // Debounced address search
   useEffect(() => {
@@ -338,10 +359,29 @@ export default function CoachVerificationPage() {
 
   // Redirect verified coaches to profile page
   useEffect(() => {
-    if (!loading && status === "VERIFIED" && coachProfile) {
+    if (
+      !loading &&
+      status === "VERIFIED" &&
+      coachProfile &&
+      !requestedStep &&
+      !isEditModeFromProfile
+    ) {
       router.push("/coach/profile");
     }
-  }, [loading, status, coachProfile, router]);
+  }, [
+    loading,
+    status,
+    coachProfile,
+    requestedStep,
+    isEditModeFromProfile,
+    router,
+  ]);
+
+  useEffect(() => {
+    if (requestedStep) {
+      setStep(requestedStep);
+    }
+  }, [requestedStep]);
 
   const loadProfile = async () => {
     try {

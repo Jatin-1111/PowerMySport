@@ -29,9 +29,6 @@ export interface BookingDocument extends Document {
   paymentConfirmedAt?: Date;
   confirmationEmailSentAt?: Date;
   payments: BookingPayment[];
-  paymentProvider?: "stripe";
-  stripeCheckoutSessionId?: string;
-  stripePaymentIntentId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -152,16 +149,6 @@ const bookingSchema = new Schema<BookingDocument>(
         },
       },
     ],
-    paymentProvider: {
-      type: String,
-      enum: ["stripe"],
-    },
-    stripeCheckoutSessionId: {
-      type: String,
-    },
-    stripePaymentIntentId: {
-      type: String,
-    },
   },
   {
     timestamps: true,

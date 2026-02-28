@@ -27,6 +27,11 @@ const roleSettingsLinks: Record<
   ],
   VENUE_LISTER: [
     {
+      href: "/venue-lister/profile",
+      label: "Profile",
+      description: "Update personal details and profile photo.",
+    },
+    {
       href: "/onboarding",
       label: "Onboarding",
       description: "Complete venue onboarding and verification steps.",
