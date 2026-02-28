@@ -151,7 +151,7 @@ function RegisterContent() {
           <h1 className="text-3xl font-bold text-center text-white">
             Create Account
           </h1>
-          <p className="text-center text-slate-600 mt-2">
+          <p className="text-center text-slate-300 mt-2">
             Join PowerMySport and start your journey
           </p>
         </CardHeader>
@@ -159,7 +159,7 @@ function RegisterContent() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-200 mb-2">
                 Full Name
               </label>
               <input
@@ -178,7 +178,7 @@ function RegisterContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-200 mb-2">
                 Email
               </label>
               <input
@@ -197,7 +197,7 @@ function RegisterContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-200 mb-2">
                 Phone
               </label>
               <input
@@ -216,7 +216,7 @@ function RegisterContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-200 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -244,7 +244,7 @@ function RegisterContent() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-200 mb-2">
                 Account Type
               </label>
               <select
@@ -256,7 +256,7 @@ function RegisterContent() {
                 <option value="PLAYER">Player (Book Venues & Coaches)</option>
                 <option value="COACH">Coach (Offer Coaching Services)</option>
               </select>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-slate-300 mt-2">
                 Want to list your venue?{" "}
                 <a
                   href="/onboarding"
@@ -269,7 +269,7 @@ function RegisterContent() {
 
             {formData.role === "COACH" && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-200 mb-2">
                   Coaching Service Mode
                 </label>
                 <select
@@ -286,7 +286,7 @@ function RegisterContent() {
                   </option>
                   <option value="HYBRID">Hybrid (Own venue or travel)</option>
                 </select>
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs text-slate-300 mt-2">
                   {formData.serviceMode === "OWN_VENUE" &&
                     "Your venue details will be stored for booking context. Want to rent out your space separately? Register as a Venue Lister instead."}
                   {formData.serviceMode === "FREELANCE" &&
@@ -309,10 +309,10 @@ function RegisterContent() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
+              <div className="w-full border-t border-slate-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-slate-500">
+              <span className="px-3 bg-card text-slate-300">
                 Or continue with
               </span>
             </div>
@@ -325,7 +325,7 @@ function RegisterContent() {
             />
           </div>
 
-          <p className="text-center mt-6 text-slate-600">
+          <p className="text-center mt-6 text-slate-300">
             Already have an account?{" "}
             <Link
               href="/login"

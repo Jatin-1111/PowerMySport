@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
 import {
+  changeAdminPassword,
   createAdmin,
   getAdminById,
   getAllAdmins,
@@ -86,11 +87,29 @@ export const createAdminAccount = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const admin = await createAdmin(req.body);
+    const { name, email, role, permissions } = req.body;
+
+    if (!name || !email) {
+      res.status(400).json({
+        success: false,
+        message: "Name and email are required",
+      });
+      return;
+    }
+
+    const admin = await createAdmin({
+      name,
+      email,
+      ...(role ? { role } : {}),
+      ...(Array.isArray(permissions) ? { permissions } : {}),
+    });
 
     res.status(201).json({
       success: true,
-      message: "Admin created successfully",
+      message:
+        role === "SUPER_ADMIN"
+          ? "Super admin created successfully. Temporary password has been emailed."
+          : "Admin created successfully. Temporary password has been emailed.",
       data: normalizeAdminResponse(admin),
     });
   } catch (error) {
@@ -98,6 +117,57 @@ export const createAdminAccount = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to create admin",
+    });
+  }
+};
+
+export const changeAdminPasswordHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+      return;
+    }
+
+    if (typeof newPassword !== "string" || newPassword.length < 8) {
+      res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters",
+      });
+      return;
+    }
+
+    const updatedAdmin = await changeAdminPassword({
+      adminId: req.user.id,
+      currentPassword,
+      newPassword,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+      data: normalizeAdminResponse(updatedAdmin),
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to change password",
     });
   }
 };

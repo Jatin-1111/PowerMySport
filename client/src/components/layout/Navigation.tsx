@@ -199,7 +199,7 @@ export const Navigation: React.FC<NavProps> = ({
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-foreground hover:text-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange p-2 rounded-md"
+              className="text-white hover:text-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange p-2 rounded-md"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -224,7 +224,7 @@ export const Navigation: React.FC<NavProps> = ({
                   "block px-3 py-2 rounded-md text-base font-medium hover:bg-muted transition-colors",
                   isActive(link.href)
                     ? "text-power-orange bg-orange-50"
-                    : "text-foreground",
+                    : "text-slate-100",
                 )}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -237,12 +237,10 @@ export const Navigation: React.FC<NavProps> = ({
               {user ? (
                 <>
                   <div className="px-3 py-2 border-b border-border">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-slate-100">
                       {user.name}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {user.email}
-                    </p>
+                    <p className="text-xs mt-1 text-slate-300">{user.email}</p>
                   </div>
 
                   <Link href={getDashboardLink() || "/"}>

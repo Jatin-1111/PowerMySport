@@ -201,6 +201,9 @@ export interface Booking {
   status: BookingStatus;
   expiresAt: string;
   checkInCode?: string;
+  participantName?: string;
+  participantId?: string;
+  participantAge?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -126,7 +126,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-center text-white">
             Welcome Back
           </h1>
-          <p className="text-center mt-2 text-white">
+          <p className="text-center mt-2 text-slate-300">
             Sign in to continue to PowerMySport
           </p>
         </CardHeader>
@@ -201,10 +201,10 @@ export default function LoginPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200"></div>
+              <div className="w-full border-t border-slate-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-slate-500">
+              <span className="px-3 bg-card text-slate-300">
                 Or continue with
               </span>
             </div>

@@ -53,8 +53,11 @@ export default function AdminLoginPage() {
         localStorage.setItem("admin", JSON.stringify(response.data.admin));
         localStorage.setItem("token", response.data.token);
 
-        // Redirect to admin dashboard
-        router.push("/admin");
+        if (response.data.admin.mustChangePassword) {
+          router.push("/admin/change-password");
+        } else {
+          router.push("/admin");
+        }
       } else {
         toast.error(response.message || "Login failed");
       }

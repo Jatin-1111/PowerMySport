@@ -20,6 +20,7 @@ type StoredAdmin = {
   name?: string;
   email?: string;
   role?: "ADMIN" | "SUPER_ADMIN";
+  mustChangePassword?: boolean;
 };
 
 export default function AdminLayout({
@@ -31,6 +32,7 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   const isLoginPage = pathname === "/admin/login";
+  const isChangePasswordPage = pathname === "/admin/change-password";
   const storedAdminRaw = useSyncExternalStore(
     (onStoreChange) => {
       if (typeof window === "undefined") {
@@ -67,6 +69,7 @@ export default function AdminLayout({
 
   const adminName = storedAdmin?.name || storedAdmin?.email || "Admin";
   const isSuperAdmin = storedAdmin?.role === "SUPER_ADMIN";
+  const mustChangePassword = storedAdmin?.mustChangePassword === true;
 
   useEffect(() => {
     if (!isLoginPage) {
@@ -75,9 +78,19 @@ export default function AdminLayout({
 
       if (!token || !adminData) {
         router.replace("/admin/login");
+        return;
+      }
+
+      if (mustChangePassword && !isChangePasswordPage) {
+        router.replace("/admin/change-password");
+        return;
+      }
+
+      if (!mustChangePassword && isChangePasswordPage) {
+        router.replace("/admin");
       }
     }
-  }, [isLoginPage, router]);
+  }, [isLoginPage, isChangePasswordPage, mustChangePassword, router]);
 
   const handleLogout = async () => {
     try {
@@ -147,7 +160,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen">
         {/* Sidebar - Hidden on login page */}
-        {!isLoginPage && (
+        {!isLoginPage && !isChangePasswordPage && (
           <>
             <div className="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
               <div className="flex items-center justify-between gap-3">
@@ -243,7 +256,9 @@ export default function AdminLayout({
         )}
 
         {/* Main Content */}
-        <main className={`flex-1 ${!isLoginPage ? "lg:ml-72" : ""}`}>
+        <main
+          className={`flex-1 ${!isLoginPage && !isChangePasswordPage ? "lg:ml-72" : ""}`}
+        >
           <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
             {children}
           </div>

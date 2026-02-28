@@ -16,6 +16,39 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const adminLoginSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const adminCreateSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().email("Invalid email format"),
+  role: z.enum(["ADMIN", "SUPER_ADMIN"]).optional().default("ADMIN"),
+  permissions: z.array(z.string().min(1)).optional(),
+});
+
+export const adminChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters"),
+    confirmPassword: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.confirmPassword) {
+        return true;
+      }
+      return data.newPassword === data.confirmPassword;
+    },
+    {
+      message: "New password and confirm password must match",
+      path: ["confirmPassword"],
+    },
+  );
+
 const geoLocationSchema = z.object({
   type: z.literal("Point"),
   coordinates: z
@@ -56,6 +89,7 @@ export const bookingSchema = z
   .object({
     venueId: z.string().min(1, "Venue ID is required").optional(),
     coachId: z.string().min(1, "Coach ID is required").optional(),
+    dependentId: z.string().min(1, "Dependent ID is required").optional(),
     playerLocation: geoLocationSchema.optional(),
     sport: z.string().min(1, "Sport is required"),
     date: z.string().datetime(),

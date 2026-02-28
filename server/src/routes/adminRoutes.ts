@@ -3,6 +3,7 @@ import {
   adminLogin,
   adminLogout,
   approveCoachVerification,
+  changeAdminPasswordHandler,
   createAdminAccount,
   getAdminProfile,
   handleDispute,
@@ -17,15 +18,28 @@ import {
   authMiddleware,
   superAdminMiddleware,
 } from "../middleware/auth";
+import {
+  adminChangePasswordSchema,
+  adminCreateSchema,
+  adminLoginSchema,
+} from "../middleware/schemas";
+import { validateRequest } from "../middleware/validation";
 
 const router = Router();
 
 // Public routes
-router.post("/login", adminLogin);
+router.post("/login", validateRequest(adminLoginSchema), adminLogin);
 
 // Protected routes (require admin authentication)
 router.post("/logout", authMiddleware, adminLogout);
 router.get("/profile", authMiddleware, getAdminProfile);
+router.post(
+  "/change-password",
+  authMiddleware,
+  adminMiddleware,
+  validateRequest(adminChangePasswordSchema),
+  changeAdminPasswordHandler,
+);
 
 // Coach verification management
 router.get(
@@ -73,6 +87,7 @@ router.post(
   authMiddleware,
   adminMiddleware,
   superAdminMiddleware,
+  validateRequest(adminCreateSchema),
   createAdminAccount,
 );
 router.get(

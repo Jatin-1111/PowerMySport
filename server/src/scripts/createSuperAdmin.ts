@@ -1,6 +1,7 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import Admin from "../models/Admin";
+import { SUPER_ADMIN_PERMISSIONS } from "../constants/adminPermissions";
 
 const createSuperAdmin = async () => {
   try {
@@ -42,14 +43,7 @@ const createSuperAdmin = async () => {
       email: superAdminEmail,
       password: superAdminPassword,
       role: "SUPER_ADMIN",
-      permissions: [
-        "manage_inquiries",
-        "view_users",
-        "view_venues",
-        "view_bookings",
-        "manage_admins",
-        "all_permissions",
-      ],
+      permissions: [...SUPER_ADMIN_PERMISSIONS],
       isActive: true,
     });
 

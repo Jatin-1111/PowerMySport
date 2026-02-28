@@ -5,6 +5,7 @@ export interface IAdmin extends Document {
   name: string;
   email: string;
   password: string;
+  mustChangePassword: boolean;
   role: "SUPER_ADMIN" | "ADMIN";
   permissions: string[];
   isActive: boolean;
@@ -36,6 +37,10 @@ const AdminSchema: Schema = new Schema(
       required: [true, "Password is required"],
       minlength: 8,
       select: false,
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
     },
     role: {
       type: String,

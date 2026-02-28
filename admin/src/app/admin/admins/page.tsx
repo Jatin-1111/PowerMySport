@@ -4,18 +4,44 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { Admin, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
 import { toast } from "@/lib/toast";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+const PERMISSION_LABELS: Record<string, string> = {
+  all_permissions: "All Permissions",
+  manage_admins: "Manage Admins",
+  manage_inquiries: "Manage Inquiries",
+  manage_coach_verification: "Manage Coach Verification",
+  manage_refunds_disputes: "Manage Refunds & Disputes",
+  manage_settings: "Manage Settings",
+  view_users: "View Users",
+  view_venues: "View Venues",
+  view_bookings: "View Bookings",
+  view_analytics: "View Analytics",
+};
+
+const formatPermissionLabel = (permission: string): string => {
+  if (PERMISSION_LABELS[permission]) {
+    return PERMISSION_LABELS[permission];
+  }
+
+  return permission
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
 
 export default function AdminsManagementPage() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastInvitationEmail, setLastInvitationEmail] = useState<string | null>(
+    null,
+  );
   const [form, setForm] = useState({
     name: "",
     email: "",
-    password: "",
     role: "ADMIN" as "ADMIN" | "SUPER_ADMIN",
   });
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,8 +90,8 @@ export default function AdminsManagementPage() {
 
   const handleCreateAdmin = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.name || !form.email || !form.password) {
-      toast.error("Name, email, and password are required.");
+    if (!form.name || !form.email) {
+      toast.error("Name and email are required.");
       return;
     }
 
@@ -77,11 +103,13 @@ export default function AdminsManagementPage() {
         return;
       }
 
-      toast.success("Admin created successfully.");
+      toast.success(
+        "Admin created successfully. Temporary password sent to email.",
+      );
+      setLastInvitationEmail(form.email.trim().toLowerCase());
       setForm({
         name: "",
         email: "",
-        password: "",
         role: "ADMIN",
       });
       await loadAdmins();
@@ -178,49 +206,76 @@ export default function AdminsManagementPage() {
         <h2 className="text-lg font-semibold text-slate-900 mb-4">
           Create Admin
         </h2>
+        <p className="mb-5 text-sm text-slate-600">
+          Enter name, email, and role. A temporary password is auto-generated
+          and sent via email. Admin must change it on first login.
+        </p>
+
+        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+          <div className="flex items-start gap-2">
+            <Mail className="mt-0.5 h-4 w-4 text-slate-500" />
+            <p>
+              Use an active inbox. The admin receives temporary credentials at
+              this address and must reset password on first login.
+            </p>
+          </div>
+        </div>
+
         <form
           onSubmit={handleCreateAdmin}
           className="grid gap-4 md:grid-cols-2"
         >
-          <input
-            value={form.name}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, name: event.target.value }))
-            }
-            placeholder="Name"
-            className="rounded-lg border border-slate-300 px-3 py-2"
-          />
-          <input
-            value={form.email}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, email: event.target.value }))
-            }
-            placeholder="Email"
-            type="email"
-            className="rounded-lg border border-slate-300 px-3 py-2"
-          />
-          <input
-            value={form.password}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, password: event.target.value }))
-            }
-            placeholder="Password"
-            type="password"
-            className="rounded-lg border border-slate-300 px-3 py-2"
-          />
-          <select
-            value={form.role}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                role: event.target.value as "ADMIN" | "SUPER_ADMIN",
-              }))
-            }
-            className="rounded-lg border border-slate-300 px-3 py-2"
-          >
-            <option value="ADMIN">ADMIN</option>
-            <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-          </select>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              Full name
+            </label>
+            <input
+              value={form.name}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, name: event.target.value }))
+              }
+              placeholder="Enter full name"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              Email address
+            </label>
+            <input
+              value={form.email}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, email: event.target.value }))
+              }
+              placeholder="name@company.com"
+              type="email"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+            />
+            <p className="mt-1.5 text-xs text-slate-500">
+              Temporary credentials will be sent to this email.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              Role
+            </label>
+            <select
+              value={form.role}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  role: event.target.value as "ADMIN" | "SUPER_ADMIN",
+                }))
+              }
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+            >
+              <option value="ADMIN">ADMIN</option>
+              <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+            </select>
+          </div>
+
           <div className="md:col-span-2">
             <button
               type="submit"
@@ -231,6 +286,13 @@ export default function AdminsManagementPage() {
             </button>
           </div>
         </form>
+
+        {lastInvitationEmail && (
+          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            Invitation email sent to{" "}
+            <span className="font-semibold">{lastInvitationEmail}</span>.
+          </div>
+        )}
       </Card>
 
       <Card className="bg-white">
@@ -280,9 +342,15 @@ export default function AdminsManagementPage() {
                     {admin.permissions.map((permission) => (
                       <span
                         key={`${admin.id}-${permission}`}
-                        className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                          permission === "all_permissions"
+                            ? "bg-power-orange/10 text-power-orange border border-power-orange/20"
+                            : permission.startsWith("manage_")
+                              ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                              : "bg-slate-100 text-slate-700 border border-slate-200"
+                        }`}
                       >
-                        {permission}
+                        {formatPermissionLabel(permission)}
                       </span>
                     ))}
                   </div>

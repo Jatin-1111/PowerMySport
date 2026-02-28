@@ -1,5 +1,11 @@
 import Admin, { IAdmin } from "../models/Admin";
+import {
+  ADMIN_BASE_PERMISSIONS,
+  SUPER_ADMIN_PERMISSIONS,
+} from "../constants/adminPermissions";
+import { sendAdminTemporaryCredentialsEmail } from "../utils/email";
 import { generateToken } from "../utils/jwt";
+import { randomInt } from "crypto";
 
 interface LoginPayload {
   email: string;
@@ -9,10 +15,28 @@ interface LoginPayload {
 interface CreateAdminPayload {
   name: string;
   email: string;
-  password: string;
   role?: "SUPER_ADMIN" | "ADMIN";
   permissions?: string[];
 }
+
+interface ChangeAdminPasswordPayload {
+  adminId: string;
+  currentPassword: string;
+  newPassword: string;
+}
+
+const TEMP_PASSWORD_CHARS =
+  "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@$!%*?&";
+
+const generateTemporaryPassword = (length: number = 12): string => {
+  let password = "";
+
+  for (let index = 0; index < length; index += 1) {
+    password += TEMP_PASSWORD_CHARS[randomInt(0, TEMP_PASSWORD_CHARS.length)];
+  }
+
+  return password;
+};
 
 export const loginAdmin = async (data: LoginPayload) => {
   const { email, password } = data;
@@ -62,7 +86,65 @@ export const createAdmin = async (
     throw new Error("Admin with this email already exists");
   }
 
-  const admin = new Admin(data);
+  const role = data.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
+  const permissions =
+    role === "SUPER_ADMIN"
+      ? [...SUPER_ADMIN_PERMISSIONS]
+      : Array.isArray(data.permissions) && data.permissions.length > 0
+        ? Array.from(new Set(data.permissions))
+        : [...ADMIN_BASE_PERMISSIONS];
+
+  const temporaryPassword = generateTemporaryPassword();
+  const admin = new Admin({
+    name: data.name,
+    email: data.email,
+    role,
+    permissions,
+    password: temporaryPassword,
+    mustChangePassword: true,
+  });
+
+  await admin.save();
+
+  try {
+    const adminPortalUrl =
+      process.env.ADMIN_URL || "http://localhost:3001/admin/login";
+    await sendAdminTemporaryCredentialsEmail({
+      name: admin.name,
+      email: admin.email,
+      role: admin.role,
+      temporaryPassword,
+      loginUrl: adminPortalUrl,
+    });
+  } catch (error) {
+    await Admin.findByIdAndDelete(admin._id);
+    throw new Error(
+      error instanceof Error
+        ? `Failed to send temporary credentials email: ${error.message}`
+        : "Failed to send temporary credentials email",
+    );
+  }
+
+  return admin;
+};
+
+export const changeAdminPassword = async (
+  payload: ChangeAdminPasswordPayload,
+): Promise<IAdmin> => {
+  const { adminId, currentPassword, newPassword } = payload;
+
+  const admin = await Admin.findById(adminId).select("+password");
+  if (!admin || !admin.isActive) {
+    throw new Error("Admin not found");
+  }
+
+  const isPasswordValid = await admin.comparePassword(currentPassword);
+  if (!isPasswordValid) {
+    throw new Error("Current password is incorrect");
+  }
+
+  admin.password = newPassword;
+  admin.mustChangePassword = false;
   await admin.save();
 
   return admin;

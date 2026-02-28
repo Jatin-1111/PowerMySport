@@ -9,6 +9,7 @@ export interface Admin {
   role: "SUPER_ADMIN" | "ADMIN";
   permissions: string[];
   isActive: boolean;
+  mustChangePassword?: boolean;
   lastLogin?: string;
 }
 
@@ -23,6 +24,9 @@ const normalizeAdmin = (admin: Partial<Admin> | null | undefined): Admin => {
     role: admin?.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN",
     permissions: Array.isArray(admin?.permissions) ? admin.permissions : [],
     isActive: Boolean(admin?.isActive),
+    ...(typeof admin?.mustChangePassword === "boolean"
+      ? { mustChangePassword: admin.mustChangePassword }
+      : {}),
     ...(admin?.lastLogin ? { lastLogin: admin.lastLogin } : {}),
   };
 };
@@ -55,10 +59,20 @@ export const adminApi = {
   createAdmin: async (data: {
     name: string;
     email: string;
-    password: string;
     role?: "SUPER_ADMIN" | "ADMIN";
   }): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.post("/admin/create", data);
+    if (response.data?.data) {
+      response.data.data = normalizeAdmin(response.data.data);
+    }
+    return response.data;
+  },
+
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<ApiResponse<Admin>> => {
+    const response = await axiosInstance.post("/admin/change-password", data);
     if (response.data?.data) {
       response.data.data = normalizeAdmin(response.data.data);
     }

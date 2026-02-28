@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { toast } from "@/lib/toast";
+import { authApi } from "@/modules/auth/services/auth";
 import {
   CheckoutDetailItem,
   CheckoutDetailList,
@@ -34,7 +35,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { coachApi } from "@/modules/coach/services/coach";
 import { venueApi } from "@/modules/venue/services/venue";
-import { Coach, Venue } from "@/types";
+import { Coach, User, Venue } from "@/types";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
 
 const paymentOptions: PaymentMethodOption[] = [
@@ -78,6 +79,8 @@ function CheckoutPageContent() {
   // State
   const [coach, setCoach] = useState<Coach | null>(null);
   const [venue, setVenue] = useState<Venue | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [selectedDependentId, setSelectedDependentId] = useState(dependentId);
   const [loading, setLoading] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [promoCode, setPromoCode] = useState("");
@@ -86,24 +89,41 @@ function CheckoutPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
+  useEffect(() => {
+    setSelectedDependentId(dependentId);
+  }, [dependentId]);
+
   // Load coach or venue details
   useEffect(() => {
     const loadDetails = async () => {
       try {
-        if (type === "coach" && coachId) {
-          const response = await coachApi.getCoachById(coachId);
-          if (response.success && response.data) {
-            setCoach(response.data);
+        const [detailsResponse, profileResponse] = await Promise.all([
+          type === "coach" && coachId
+            ? coachApi.getCoachById(coachId)
+            : type === "venue" && venueId
+              ? venueApi.getVenue(venueId)
+              : Promise.resolve(null),
+          authApi.getProfile().catch(() => null),
+        ]);
+
+        if (type === "coach" && detailsResponse) {
+          if (detailsResponse.success && detailsResponse.data) {
+            setCoach(detailsResponse.data as Coach);
           } else {
             toast.error("Unable to load coach details");
           }
-        } else if (type === "venue" && venueId) {
-          const response = await venueApi.getVenue(venueId);
-          if (response.success && response.data) {
-            setVenue(response.data);
+        }
+
+        if (type === "venue" && detailsResponse) {
+          if (detailsResponse.success && detailsResponse.data) {
+            setVenue(detailsResponse.data as Venue);
           } else {
             toast.error("Unable to load venue details");
           }
+        }
+
+        if (profileResponse?.success && profileResponse.data) {
+          setUser(profileResponse.data);
         }
       } catch (error) {
         console.error("Failed to load details:", error);
@@ -130,6 +150,11 @@ function CheckoutPageContent() {
     if (!durationMinutes) return 0;
     return Number((durationMinutes / 60).toFixed(2));
   }, [durationMinutes]);
+
+  const selectedDependent =
+    user?.dependents?.find(
+      (dependent) => dependent._id === selectedDependentId,
+    ) || null;
 
   // Price calculation
   const getPricePerHour = () => {
@@ -169,6 +194,11 @@ function CheckoutPageContent() {
     {
       label: "Sport",
       value: sport || "Not selected",
+    },
+    {
+      label: "Participant",
+      value: selectedDependent ? selectedDependent.name : user?.name || "Me",
+      hint: selectedDependent ? "Booking for dependent" : "Booking for self",
     },
     {
       label: "Duration",
@@ -353,7 +383,7 @@ function CheckoutPageContent() {
           startTime,
           endTime,
           playerLocation,
-          dependentId: dependentId || undefined,
+          dependentId: selectedDependentId || undefined,
         });
       } else {
         // Venue booking doesn't need player location
@@ -363,7 +393,7 @@ function CheckoutPageContent() {
           date: bookingDate,
           startTime,
           endTime,
-          dependentId: dependentId || undefined,
+          dependentId: selectedDependentId || undefined,
         });
       }
 
@@ -639,6 +669,27 @@ function CheckoutPageContent() {
                 </span>
               }
             >
+              {user?.dependents && user.dependents.length > 0 && (
+                <div className="mb-4">
+                  <label className="mb-2 block text-sm font-medium text-slate-900">
+                    Who is attending?
+                  </label>
+                  <select
+                    value={selectedDependentId}
+                    onChange={(event) =>
+                      setSelectedDependentId(event.target.value)
+                    }
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                  >
+                    <option value="">Me ({user.name})</option>
+                    {user.dependents.map((dependent) => (
+                      <option key={dependent._id} value={dependent._id || ""}>
+                        {dependent.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <CheckoutDetailList items={bookingDetails} />
               <div className="mt-4 flex flex-wrap gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
                 <span className="flex items-center gap-2">

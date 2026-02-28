@@ -259,6 +259,15 @@ export default function BookingsPage() {
                         </p>
                       )}
 
+                      {booking.participantName && (
+                        <p className="text-sm text-slate-600 mt-1">
+                          Participant:{" "}
+                          <span className="font-medium">
+                            {booking.participantName}
+                          </span>
+                        </p>
+                      )}
+
                       {booking.status === "CONFIRMED" &&
                         booking.checkInCode && (
                           <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">

@@ -68,11 +68,11 @@ function ResetPasswordContent() {
   return (
     <Card className="max-w-md w-full">
       <CardHeader>
-        <h1 className="text-3xl font-bold text-center text-slate-900">
+        <h1 className="text-3xl font-bold text-center text-white">
           Reset Password
         </h1>
         {!success && (
-          <p className="text-center text-slate-600 mt-2">
+          <p className="text-center text-slate-300 mt-2">
             Enter your new password below
           </p>
         )}
@@ -92,7 +92,7 @@ function ResetPasswordContent() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-200 mb-2">
                   New Password
                 </label>
                 <div className="relative">
@@ -115,7 +115,7 @@ function ResetPasswordContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-slate-200 mb-2">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -151,7 +151,7 @@ function ResetPasswordContent() {
               </Button>
             </form>
 
-            <p className="text-center mt-6 text-slate-600">
+            <p className="text-center mt-6 text-slate-300">
               Remember your password?{" "}
               <Link
                 href="/login"

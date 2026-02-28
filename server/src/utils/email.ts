@@ -365,6 +365,14 @@ interface CredentialsEmailOptions {
   loginUrl: string;
 }
 
+interface AdminTemporaryCredentialsEmailOptions {
+  name: string;
+  email: string;
+  role: "SUPER_ADMIN" | "ADMIN";
+  temporaryPassword: string;
+  loginUrl: string;
+}
+
 export const sendCredentialsEmail = async (
   options: CredentialsEmailOptions,
 ): Promise<void> => {
@@ -458,6 +466,96 @@ export const sendCredentialsEmail = async (
   await sendEmail({
     to: options.email,
     subject: "Your Venue Lister Account Approved! 🏟️",
+    html,
+  });
+};
+
+export const sendAdminTemporaryCredentialsEmail = async (
+  options: AdminTemporaryCredentialsEmailOptions,
+): Promise<void> => {
+  const roleLabel = options.role === "SUPER_ADMIN" ? "Super Admin" : "Admin";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;">
+    Your ${roleLabel} account is ready. Use the temporary credentials to sign in and update your password.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dbe3ee;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:30px 28px 24px;text-align:center;">
+              <div style="display:inline-block;background:#1f2937;border:1px solid #334155;color:#e2e8f0;padding:6px 12px;border-radius:9999px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">${roleLabel}</div>
+              <h1 style="margin:14px 0 0;font-size:30px;line-height:34px;color:#ffffff;font-weight:800;">Admin Access Created</h1>
+              <p style="margin:10px 0 0;font-size:15px;line-height:22px;color:#cbd5e1;">Temporary credentials are ready for first login.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px;background-color:#ffffff;">
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Your ${roleLabel.toLowerCase()} account has been created successfully. Use the details below to sign in.</p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dbeafe;border-radius:12px;background-color:#f8fbff;margin:0 0 16px;">
+                <tr>
+                  <td style="padding:14px 16px;border-bottom:1px solid #dbeafe;">
+                    <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#64748b;">Email</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.email}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:14px 16px;">
+                    <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#64748b;">Temporary Password</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.temporaryPassword}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 22px;">
+                <tr>
+                  <td style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;font-size:14px;line-height:22px;color:#9a3412;">
+                    For security, you must change this temporary password immediately after first login.
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;">
+                <tr>
+                  <td align="center" style="border-radius:10px;background:#0f172a;">
+                    <a href="${options.loginUrl}" style="display:inline-block;padding:12px 24px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;">Login to Admin Portal</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0;font-size:12px;line-height:18px;color:#64748b;text-align:center;word-break:break-all;">${options.loginUrl}</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:18px 28px;background-color:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
+              <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:#64748b;">This email was sent to ${options.email}</p>
+              <p style="margin:0;font-size:12px;line-height:18px;color:#94a3b8;">© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+  await sendEmail({
+    to: options.email,
+    subject: "Your PowerMySport Admin Account Credentials",
     html,
   });
 };
