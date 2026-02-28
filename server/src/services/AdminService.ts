@@ -38,6 +38,63 @@ const generateTemporaryPassword = (length: number = 12): string => {
   return password;
 };
 
+const normalizeUrl = (value: string): string => value.replace(/\/+$/, "");
+
+const deriveAdminBaseUrlFromFrontend = (frontendUrl: string): string | null => {
+  try {
+    const valueWithProtocol = frontendUrl.includes("://")
+      ? frontendUrl
+      : `https://${frontendUrl}`;
+    const parsed = new URL(valueWithProtocol);
+    const hostname = parsed.hostname.replace(/^www\./, "");
+    const adminHostname = hostname.startsWith("admin.")
+      ? hostname
+      : `admin.${hostname}`;
+
+    const protocol =
+      parsed.protocol === "http:" && process.env.NODE_ENV === "production"
+        ? "https:"
+        : parsed.protocol;
+
+    const hasCustomPort =
+      parsed.port && parsed.port !== "80" && parsed.port !== "443";
+    const port = hasCustomPort ? `:${parsed.port}` : "";
+
+    return `${protocol}//${adminHostname}${port}`;
+  } catch {
+    return null;
+  }
+};
+
+const resolveAdminLoginUrl = (): string => {
+  const explicitLoginUrl = process.env.ADMIN_LOGIN_URL?.trim();
+  if (explicitLoginUrl) {
+    return explicitLoginUrl;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL?.trim();
+  if (frontendUrl) {
+    const derivedAdminBaseUrl = deriveAdminBaseUrlFromFrontend(frontendUrl);
+    if (derivedAdminBaseUrl) {
+      return `${normalizeUrl(derivedAdminBaseUrl)}/admin/login`;
+    }
+  }
+
+  const adminBaseUrl =
+    process.env.ADMIN_URL?.trim() ||
+    process.env.ADMIN_FRONTEND_URL?.trim() ||
+    process.env.ADMIN_APP_URL?.trim();
+
+  if (adminBaseUrl) {
+    const normalized = normalizeUrl(adminBaseUrl);
+    return normalized.endsWith("/admin/login")
+      ? normalized
+      : `${normalized}/admin/login`;
+  }
+
+  return "http://localhost:3001/admin/login";
+};
+
 export const loginAdmin = async (data: LoginPayload) => {
   const { email, password } = data;
 
@@ -107,8 +164,7 @@ export const createAdmin = async (
   await admin.save();
 
   try {
-    const adminPortalUrl =
-      process.env.ADMIN_URL || "http://localhost:3001/admin/login";
+    const adminPortalUrl = resolveAdminLoginUrl();
     await sendAdminTemporaryCredentialsEmail({
       name: admin.name,
       email: admin.email,
