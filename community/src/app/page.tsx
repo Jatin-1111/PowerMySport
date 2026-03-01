@@ -13,7 +13,7 @@ import {
   PlayerSearchResult,
 } from "@/modules/community/types";
 import { MessageSquare, Shield, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const privacyOptions: Array<{ value: MessagePrivacy; label: string }> = [
   { value: "EVERYONE", label: "Everyone" },
@@ -42,7 +42,9 @@ export default function CommunityPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const selectedConversationIdRef = useRef<string | null>(null);
 
   const selectedConversation = useMemo(
     () =>
@@ -138,6 +140,10 @@ export default function CommunityPage() {
   }, [selectedConversationId]);
 
   useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId;
+  }, [selectedConversationId]);
+
+  useEffect(() => {
     const query = playerSearchQuery.trim();
 
     if (query.length < 2) {
@@ -167,34 +173,69 @@ export default function CommunityPage() {
   useEffect(() => {
     const socket = getCommunitySocket();
 
-    socket.on("community:newMessage", (message: ConversationMessage) => {
-      if (message.conversationId === selectedConversationId) {
+    const handleConnect = () => {
+      setIsSocketConnected(true);
+      const currentConversationId = selectedConversationIdRef.current;
+      if (currentConversationId) {
+        socket.emit("community:joinConversation", {
+          conversationId: currentConversationId,
+        });
+      }
+    };
+
+    const handleDisconnect = () => {
+      setIsSocketConnected(false);
+    };
+
+    const handleNewMessage = (message: ConversationMessage) => {
+      if (message.conversationId === selectedConversationIdRef.current) {
         appendMessage(message);
       }
-    });
 
-    socket.on("community:conversationUpdated", async () => {
+      void communityService
+        .listConversations()
+        .then((updated) => setConversations(updated))
+        .catch(() => undefined);
+    };
+
+    const handleConversationUpdated = async () => {
       const updated = await communityService.listConversations();
       setConversations(updated);
-    });
+    };
 
-    socket.on("community:error", (payload: { message: string }) => {
+    const handleCommunityError = (payload: { message: string }) => {
       setError(payload.message);
-    });
+    };
 
-    socket.on("connect_error", (error: Error) => {
-      if (/unauthorized|authentication/i.test(error.message)) {
+    const handleConnectError = (connectError: Error) => {
+      setIsSocketConnected(false);
+      if (/unauthorized|authentication/i.test(connectError.message)) {
         redirectToMainLogin();
       }
-    });
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("community:newMessage", handleNewMessage);
+    socket.on("community:conversationUpdated", handleConversationUpdated);
+    socket.on("community:error", handleCommunityError);
+    socket.on("connect_error", handleConnectError);
+
+    if (socket.connected) {
+      handleConnect();
+    } else {
+      socket.connect();
+    }
 
     return () => {
-      socket.off("community:newMessage");
-      socket.off("community:conversationUpdated");
-      socket.off("community:error");
-      socket.off("connect_error");
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("community:newMessage", handleNewMessage);
+      socket.off("community:conversationUpdated", handleConversationUpdated);
+      socket.off("community:error", handleCommunityError);
+      socket.off("connect_error", handleConnectError);
     };
-  }, [selectedConversationId]);
+  }, []);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -202,10 +243,33 @@ export default function CommunityPage() {
     }
 
     const socket = getCommunitySocket();
-    socket.emit("community:joinConversation", {
-      conversationId: selectedConversationId,
-    });
-  }, [selectedConversationId]);
+    if (socket.connected) {
+      socket.emit("community:joinConversation", {
+        conversationId: selectedConversationId,
+      });
+    }
+  }, [selectedConversationId, isSocketConnected]);
+
+  useEffect(() => {
+    if (isSocketConnected || !selectedConversationId) {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const [messageResponse, conversationResponse] = await Promise.all([
+          communityService.getMessages(selectedConversationId),
+          communityService.listConversations(),
+        ]);
+        setMessages(messageResponse.messages);
+        setConversations(conversationResponse);
+      } catch {
+        // no-op: keep retrying while disconnected
+      }
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [isSocketConnected, selectedConversationId]);
 
   const handleProfileUpdate = async (payload: {
     isIdentityPublic?: boolean;
@@ -322,31 +386,55 @@ export default function CommunityPage() {
     setError(null);
     try {
       const socket = getCommunitySocket();
-      const payload = {
-        conversationId: selectedConversation.id,
-        content,
-      };
+      let confirmedMessage: ConversationMessage;
 
-      const ack = await new Promise<
-        | { success: true; data: ConversationMessage }
-        | { success: false; message?: string }
-      >((resolve) => {
-        socket.emit("community:sendMessage", payload, resolve);
-        setTimeout(
-          () => resolve({ success: false, message: "Message send timed out" }),
-          8000,
+      if (socket.connected) {
+        const payload = {
+          conversationId: selectedConversation.id,
+          content,
+        };
+
+        const ack = await new Promise<
+          | { success: true; data: ConversationMessage }
+          | { success: false; message?: string }
+        >((resolve) => {
+          const timeoutId = setTimeout(() => {
+            resolve({ success: false, message: "Message send timed out" });
+          }, 8000);
+
+          socket.emit("community:sendMessage", payload, (result: unknown) => {
+            clearTimeout(timeoutId);
+            resolve(
+              (result as
+                | { success: true; data: ConversationMessage }
+                | { success: false; message?: string }) || {
+                success: false,
+                message: "Invalid server response",
+              },
+            );
+          });
+        });
+
+        if (!ack.success) {
+          throw new Error(ack.message || "Failed to send message");
+        }
+
+        confirmedMessage = ack.data;
+      } else {
+        confirmedMessage = await communityService.sendMessage(
+          selectedConversation.id,
+          content,
         );
-      });
-
-      if (!ack.success) {
-        throw new Error(ack.message || "Failed to send message");
       }
 
       removeMessageById(optimisticMessageId);
 
-      if (ack.data.conversationId === selectedConversation.id) {
-        appendMessage(ack.data);
+      if (confirmedMessage.conversationId === selectedConversation.id) {
+        appendMessage(confirmedMessage);
       }
+
+      const updatedConversations = await communityService.listConversations();
+      setConversations(updatedConversations);
     } catch (e) {
       removeMessageById(optimisticMessageId);
       const message = e instanceof Error ? e.message : "Failed to send message";

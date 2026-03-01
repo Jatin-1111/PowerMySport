@@ -117,10 +117,18 @@ export const communityService = {
     return response.data.data;
   },
 
-  async sendMessage(conversationId: string, content: string): Promise<void> {
-    await axiosInstance.post("/community/messages", {
-      conversationId,
-      content,
-    });
+  async sendMessage(
+    conversationId: string,
+    content: string,
+  ): Promise<ConversationMessage> {
+    const response = await axiosInstance.post<ApiResponse<ConversationMessage>>(
+      "/community/messages",
+      {
+        conversationId,
+        content,
+      },
+    );
+
+    return response.data.data;
   },
 };
