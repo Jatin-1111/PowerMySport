@@ -62,6 +62,12 @@ export default function CommunityPage() {
     });
   };
 
+  const removeMessageById = (messageId: string) => {
+    setMessages((current) =>
+      current.filter((message) => message.id !== messageId),
+    );
+  };
+
   const totalUnread = useMemo(
     () => conversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
     [conversations],
@@ -298,13 +304,27 @@ export default function CommunityPage() {
       return;
     }
 
+    const content = newMessage.trim();
+    const optimisticMessageId = `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const optimisticMessage: ConversationMessage = {
+      id: optimisticMessageId,
+      conversationId: selectedConversation.id,
+      senderId: profile?.userId || "me",
+      senderDisplayName: "You",
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    appendMessage(optimisticMessage);
+    setNewMessage("");
+
     setIsSending(true);
     setError(null);
     try {
       const socket = getCommunitySocket();
       const payload = {
         conversationId: selectedConversation.id,
-        content: newMessage.trim(),
+        content,
       };
 
       const ack = await new Promise<
@@ -322,12 +342,13 @@ export default function CommunityPage() {
         throw new Error(ack.message || "Failed to send message");
       }
 
+      removeMessageById(optimisticMessageId);
+
       if (ack.data.conversationId === selectedConversation.id) {
         appendMessage(ack.data);
       }
-
-      setNewMessage("");
     } catch (e) {
+      removeMessageById(optimisticMessageId);
       const message = e instanceof Error ? e.message : "Failed to send message";
       setError(message);
       toast.error(message);

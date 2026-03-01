@@ -66,18 +66,21 @@ const getSocketUserId = (socket: Socket): string | null => {
     ?.replace(/^Bearer\s+/i, "")
     .trim();
   const cookieToken = extractTokenFromCookie(socket.handshake.headers.cookie);
-  const token = authToken || bearerToken || cookieToken;
 
-  if (!token) {
-    return null;
+  const candidates = [authToken, bearerToken, cookieToken].filter(
+    (token): token is string => Boolean(token),
+  );
+
+  for (const token of candidates) {
+    try {
+      const payload = verifyToken(token);
+      return payload.id;
+    } catch {
+      // Try next token source
+    }
   }
 
-  try {
-    const payload = verifyToken(token);
-    return payload.id;
-  } catch {
-    return null;
-  }
+  return null;
 };
 
 export const initializeCommunitySocket = (httpServer: HttpServer): Server => {

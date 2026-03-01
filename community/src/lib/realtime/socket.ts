@@ -13,10 +13,6 @@ export const getCommunitySocket = (): Socket => {
   socket = io(socketUrl, {
     transports: ["websocket", "polling"],
     withCredentials: true,
-    auth: {
-      token:
-        typeof window !== "undefined" ? localStorage.getItem("token") : null,
-    },
   });
 
   return socket;
