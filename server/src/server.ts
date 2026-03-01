@@ -1,6 +1,8 @@
 import "dotenv/config";
+import http from "http";
 import app from "./app";
 import { connectDB } from "./config/database";
+import { initializeCommunitySocket } from "./sockets/communitySocket";
 import { startExpirationJob } from "./utils/timer";
 const PORT = process.env.PORT || 5000;
 
@@ -10,8 +12,12 @@ const startServer = async () => {
     // Connect to Database
     await connectDB();
 
-    const server = app.listen(PORT, () => {
+    const httpServer = http.createServer(app);
+    initializeCommunitySocket(httpServer);
+
+    const server = httpServer.listen(PORT, () => {
       console.log(`\n✅ Server is running on http://localhost:${PORT}`);
+      console.log(`💬 Community socket ready`);
       console.log(`📝 API Documentation:`);
       // ... (keep existing logs if desired, or shorten them) ...
       console.log(`   AUTH:`);
@@ -74,7 +80,12 @@ const startServer = async () => {
       );
       console.log(`   - GET    /api/bookings/my-bookings`);
       console.log(`   - GET    /api/bookings/availability/:venueId`);
-      console.log(`   - DELETE /api/bookings/:bookingId\n`);
+      console.log(`   - DELETE /api/bookings/:bookingId`);
+      console.log(`   COMMUNITY:`);
+      console.log(`   - GET    /api/community/profile`);
+      console.log(`   - PATCH  /api/community/profile`);
+      console.log(`   - GET    /api/community/conversations`);
+      console.log(`   - POST   /api/community/messages\n`);
       console.log(`   GEO:`);
       console.log(`   - GET    /api/geo/autocomplete?q=...`);
       console.log(`   - GET    /api/geo/geocode?address=...`);

@@ -13,6 +13,7 @@ import adminRoutes from "./routes/adminRoutes";
 import authRoutes from "./routes/authRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
 import coachRoutes from "./routes/coachRoutes";
+import communityRoutes from "./routes/communityRoutes";
 import geoRoutes from "./routes/geoRoutes";
 import sportsRoutes from "./routes/sportsRoutes";
 import statsRoutes from "./routes/statsRoutes";
@@ -31,9 +32,11 @@ const configuredOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:3000",
   "http://localhost:3001",
+  "http://localhost:3002",
   "https://powermysport.com",
   "https://www.powermysport.com",
   "https://admin.powermysport.com",
+  "https://community.powermysport.com",
 ]
   .filter(Boolean)
   .flatMap((value) => (value as string).split(","))
@@ -100,6 +103,7 @@ app.use("/api/venues", venueRoutes);
 app.use("/api/venues/onboarding", venueOnboardingRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/coaches", coachRoutes);
+app.use("/api/community", communityRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/geo", geoRoutes);
