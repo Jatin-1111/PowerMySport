@@ -52,6 +52,16 @@ export default function CommunityPage() {
     [conversations, selectedConversationId],
   );
 
+  const appendMessage = (incoming: ConversationMessage) => {
+    setMessages((current) => {
+      const exists = current.some((message) => message.id === incoming.id);
+      if (exists) {
+        return current;
+      }
+      return [...current, incoming];
+    });
+  };
+
   const totalUnread = useMemo(
     () => conversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
     [conversations],
@@ -153,7 +163,7 @@ export default function CommunityPage() {
 
     socket.on("community:newMessage", (message: ConversationMessage) => {
       if (message.conversationId === selectedConversationId) {
-        setMessages((current) => [...current, message]);
+        appendMessage(message);
       }
     });
 
@@ -292,10 +302,30 @@ export default function CommunityPage() {
     setError(null);
     try {
       const socket = getCommunitySocket();
-      socket.emit("community:sendMessage", {
+      const payload = {
         conversationId: selectedConversation.id,
         content: newMessage.trim(),
+      };
+
+      const ack = await new Promise<
+        | { success: true; data: ConversationMessage }
+        | { success: false; message?: string }
+      >((resolve) => {
+        socket.emit("community:sendMessage", payload, resolve);
+        setTimeout(
+          () => resolve({ success: false, message: "Message send timed out" }),
+          8000,
+        );
       });
+
+      if (!ack.success) {
+        throw new Error(ack.message || "Failed to send message");
+      }
+
+      if (ack.data.conversationId === selectedConversation.id) {
+        appendMessage(ack.data);
+      }
+
       setNewMessage("");
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to send message";

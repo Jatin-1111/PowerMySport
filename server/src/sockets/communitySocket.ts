@@ -118,6 +118,15 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
 
     socket.join(`user:${userId}`);
 
+    try {
+      const conversations = await CommunityService.listConversations(userId);
+      for (const conversation of conversations) {
+        socket.join(`conversation:${conversation.id}`);
+      }
+    } catch {
+      // no-op: socket can still join lazily when conversation is opened
+    }
+
     socket.on("community:joinConversation", async (payload) => {
       try {
         const conversationId = String(payload?.conversationId || "");
@@ -140,15 +149,17 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
       }
     });
 
-    socket.on("community:sendMessage", async (payload) => {
+    socket.on("community:sendMessage", async (payload, callback) => {
       try {
         const conversationId = String(payload?.conversationId || "");
         const content = String(payload?.content || "").trim();
 
         if (!conversationId || !content) {
-          socket.emit("community:error", {
-            message: "conversationId and content are required",
-          });
+          const message = "conversationId and content are required";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
           return;
         }
 
@@ -168,11 +179,19 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
             conversationId,
           });
         }
+
+        if (typeof callback === "function") {
+          callback({ success: true, data: message });
+        }
       } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to send message";
         socket.emit("community:error", {
-          message:
-            error instanceof Error ? error.message : "Failed to send message",
+          message,
         });
+        if (typeof callback === "function") {
+          callback({ success: false, message });
+        }
       }
     });
 
