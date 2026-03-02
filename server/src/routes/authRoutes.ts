@@ -4,6 +4,7 @@ import {
   confirmProfilePictureUploadHandler,
   deleteDependentHandler,
   forgotPassword,
+  getAuthBridge,
   getProfile,
   getProfilePictureUploadUrlHandler,
   googleAuth,
@@ -25,6 +26,7 @@ router.post("/register", validateRequest(registerSchema), register);
 router.post("/login", validateRequest(loginSchema), login);
 router.post("/logout", authMiddleware, logout);
 router.get("/profile", authMiddleware, getProfile);
+router.get("/bridge", authMiddleware, getAuthBridge);
 router.put("/profile", authMiddleware, updateProfileHandler);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPasswordHandler);

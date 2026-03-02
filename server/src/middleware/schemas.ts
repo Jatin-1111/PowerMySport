@@ -49,6 +49,59 @@ export const adminChangePasswordSchema = z
     },
   );
 
+export const communityUpdateProfileSchema = z.object({
+  isIdentityPublic: z.boolean().optional(),
+  messagePrivacy: z.enum(["EVERYONE", "REQUEST_ONLY", "NONE"]).optional(),
+  readReceiptsEnabled: z.boolean().optional(),
+  lastSeenVisible: z.boolean().optional(),
+  anonymousAlias: z
+    .string()
+    .trim()
+    .min(3, "Anonymous alias must be at least 3 characters")
+    .max(40, "Anonymous alias cannot exceed 40 characters")
+    .optional(),
+});
+
+export const communityBlockSchema = z.object({
+  targetUserId: z.string().min(1, "Target user ID is required"),
+});
+
+export const communityStartConversationSchema = z.object({
+  targetUserId: z.string().min(1, "Target user ID is required"),
+});
+
+export const communitySendMessageSchema = z.object({
+  conversationId: z.string().min(1, "Conversation ID is required"),
+  content: z
+    .string()
+    .trim()
+    .min(1, "Message content is required")
+    .max(2000, "Message cannot exceed 2000 characters"),
+});
+
+export const communityCreateGroupSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Group name must be at least 2 characters")
+    .max(60, "Group name cannot exceed 60 characters"),
+  description: z
+    .string()
+    .trim()
+    .max(240, "Description cannot exceed 240 characters")
+    .optional(),
+  sport: z
+    .string()
+    .trim()
+    .max(60, "Sport cannot exceed 60 characters")
+    .optional(),
+  city: z
+    .string()
+    .trim()
+    .max(80, "City cannot exceed 80 characters")
+    .optional(),
+});
+
 const geoLocationSchema = z.object({
   type: z.literal("Point"),
   coordinates: z

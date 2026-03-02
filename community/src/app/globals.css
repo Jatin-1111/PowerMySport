@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+    --power-orange: #E97316;
+    --deep-slate: #0F172A;
+    --ghost-white: #F8FAFC;
+    --turf-green: #22C55E;
+    --error-red: #EF4444;
+    --background: #ffffff;
+    --foreground: #171717;
+    --card: #ffffff;
+    --card-foreground: #171717;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --border: #e2e8f0;
+    --ring: #94a3b8;
+    color-scheme: light;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-power-orange: var(--power-orange);
+    --color-deep-slate: var(--deep-slate);
+    --color-ghost-white: var(--ghost-white);
+    --color-turf-green: var(--turf-green);
+    --color-error-red: var(--error-red);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-border: var(--border);
+    --color-ring: var(--ring);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground antialiased;
+        min-height: 100vh;
+        text-rendering: optimizeLegibility;
+    }
+
+    ::selection {
+        background: color-mix(in oklab, var(--power-orange) 28%, white);
+        color: var(--deep-slate);
+    }
+
+    input,
+    select,
+    button {
+        font: inherit;
+    }
+
+    button {
+        @apply cursor-pointer;
+    }
+}

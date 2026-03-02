@@ -4,7 +4,14 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, MapPin, Settings, User, Users } from "lucide-react";
+import {
+  Calendar,
+  ExternalLink,
+  MapPin,
+  Settings,
+  User,
+  Users,
+} from "lucide-react";
 import React from "react";
 
 export default function DashboardLayout({
@@ -14,6 +21,10 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const communityUrl =
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3002"
+      : "https://community.powermysport.com";
 
   const handleLogout = async () => {
     try {
@@ -85,6 +96,16 @@ export default function DashboardLayout({
                 </Link>
               );
             })}
+            <a
+              href={communityUrl}
+              className="flex items-center justify-between rounded-xl px-4 py-3 text-slate-700 transition-colors hover:bg-slate-100"
+            >
+              <span className="flex items-center gap-3">
+                <Users size={18} />
+                <span className="text-sm font-semibold">Community</span>
+              </span>
+              <ExternalLink size={16} className="text-slate-500" />
+            </a>
           </nav>
 
           <div className="mt-auto border-t border-slate-200 p-6">

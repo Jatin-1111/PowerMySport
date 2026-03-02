@@ -16,6 +16,16 @@ import {
 } from "../services/AuthService";
 import { generateToken } from "../utils/jwt";
 
+const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
+
+const authCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  ...(authCookieDomain ? { domain: authCookieDomain } : {}),
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await registerUser({
@@ -29,11 +39,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       role: user.role,
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.cookie("token", token, authCookieOptions);
 
     res.status(201).json({
       success: true,
@@ -67,11 +73,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       role: user.role,
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.cookie("token", token, authCookieOptions);
 
     res.status(200).json({
       success: true,
@@ -96,7 +98,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const logout = async (req: Request, res: Response): Promise<void> => {
-  res.clearCookie("token");
+  res.clearCookie("token", authCookieOptions);
   res.status(200).json({
     success: true,
     message: "Logout successful",
@@ -119,7 +121,7 @@ export const getProfile = async (
     const user = await getUserById(req.user.id);
 
     if (!user) {
-      res.clearCookie("token");
+      res.clearCookie("token", authCookieOptions);
       res.status(401).json({
         success: false,
         message: "Session expired. Please login again.",
@@ -153,6 +155,49 @@ export const getProfile = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch profile",
+    });
+  }
+};
+
+export const getAuthBridge = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const user = await getUserById(req.user.id);
+
+    if (!user) {
+      res.clearCookie("token", authCookieOptions);
+      res.status(401).json({
+        success: false,
+        message: "Session expired. Please login again.",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Session valid",
+      data: {
+        id: user._id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to validate session",
     });
   }
 };
@@ -265,11 +310,7 @@ export const googleAuth = async (
       role: user.role,
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.cookie("token", token, authCookieOptions);
 
     res.status(200).json({
       success: true,
