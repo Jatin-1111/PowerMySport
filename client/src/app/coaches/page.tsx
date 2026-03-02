@@ -177,6 +177,20 @@ export default function CoachesPage() {
     );
   };
 
+  const getCoachDisplayName = (coach: Coach) => {
+    const coachUser =
+      typeof coach.userId === "object" && coach.userId !== null
+        ? coach.userId
+        : undefined;
+
+    const rawName = coachUser?.name;
+    if (typeof rawName === "string" && rawName.trim().length > 0) {
+      return rawName.trim();
+    }
+
+    return `${coach.sports[0] || "Professional"} Coach`;
+  };
+
   const applyCoachFilters = (baseCoaches: Coach[]) => {
     const parsedMaxRate = maxRate ? Number(maxRate) : undefined;
     const parsedMinRating = Number(minRating || 0);
@@ -534,127 +548,115 @@ export default function CoachesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredCoaches.map((coach, coachIndex) => {
                 const coachCardKey =
-                  coach.id || coach._id || `${String(coach.userId)}-${coachIndex}`;
+                  coach.id ||
+                  coach._id ||
+                  `${String(coach.userId)}-${coachIndex}`;
 
                 return (
-                <Card
-                  key={coachCardKey}
-                  className="bg-white border-2 border-slate-100 hover:border-turf-green hover:shadow-xl transition-all overflow-hidden group cursor-pointer"
-                  onClick={() =>
-                    router.push(`/coaches/${coach.id || coach._id}`)
-                  }
-                >
-                  {(() => {
-                    const coachImageCandidates = getCoachImageCandidates(coach);
-                    const venueImage = getCoachVenueImage(coach);
+                  <Card
+                    key={coachCardKey}
+                    className="bg-white border-2 border-slate-100 hover:border-turf-green hover:shadow-xl transition-all overflow-hidden group cursor-pointer"
+                    onClick={() =>
+                      router.push(`/coaches/${coach.id || coach._id}`)
+                    }
+                  >
+                    {(() => {
+                      const coachImageCandidates =
+                        getCoachImageCandidates(coach);
+                      const venueImage = getCoachVenueImage(coach);
+                      const coachName = getCoachDisplayName(coach);
 
-                    return (
-                      <div className="relative h-44 w-full overflow-hidden bg-slate-100">
-                        <CoachImageWithFallback
-                          sources={coachImageCandidates}
-                          alt={`${coach.sports[0]} coach`}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        />
-
-                        {venueImage && (
-                          <span className="absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
-                            Venue image
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-5 border-b border-slate-100">
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <Award size={20} className="text-turf-green" />
-                        <h3 className="text-lg font-bold text-slate-900">
-                          {coach.sports[0]} Coach
-                        </h3>
-                        {(() => {
-                          const badge = getVerificationBadge(coach);
-                          return (
-                            <span
-                              className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${badge.className}`}
-                            >
-                              {badge.label}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                      <p className="text-sm text-slate-600">
-                        {coach.sports.join(", ")}
-                      </p>
-                    </div>
-
-                    {/* Rating */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <Star
-                            size={18}
-                            className="text-yellow-500 fill-yellow-500"
+                      return (
+                        <div className="relative w-full overflow-hidden bg-slate-100">
+                          <CoachImageWithFallback
+                            sources={coachImageCandidates}
+                            alt={coachName}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                           />
-                          <span className="font-bold text-slate-900">
-                            {coach.rating.toFixed(1)}
+
+                          {venueImage && (
+                            <span className="absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                              Venue image
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-5 border-b border-slate-100">
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <Award size={20} className="text-turf-green" />
+                          <h3 className="text-base font-bold text-slate-900 line-clamp-1">
+                            {getCoachDisplayName(coach)}
+                          </h3>
+                          {(() => {
+                            const badge = getVerificationBadge(coach);
+                            return (
+                              <span
+                                className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${badge.className}`}
+                              >
+                                {badge.label}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <p className="text-xs text-slate-600 line-clamp-1">
+                          {coach.sports.join(", ")}
+                        </p>
+                      </div>
+
+                      {/* Rating */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <Star
+                              size={18}
+                              className="text-yellow-500 fill-yellow-500"
+                            />
+                            <span className="font-bold text-slate-900">
+                              {coach.rating.toFixed(1)}
+                            </span>
+                          </div>
+                          <span className="text-xs text-slate-500">
+                            ({coach.reviewCount} reviews)
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500">
-                          ({coach.reviewCount} reviews)
+                        <span className="px-2.5 py-1 bg-turf-green/10 border border-turf-green/30 rounded-lg text-turf-green font-semibold text-xs">
+                          {coach.serviceMode}
                         </span>
                       </div>
-                      <span className="px-2.5 py-1 bg-turf-green/10 border border-turf-green/30 rounded-lg text-turf-green font-semibold text-xs">
-                        {coach.serviceMode}
-                      </span>
                     </div>
-                  </div>
 
-                  <div className="p-5">
-                    {/* Bio */}
-                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">
-                      {coach.bio ||
-                        "Expert coach offering professional training sessions to help you improve your skills."}
-                    </p>
-
-                    {/* Price */}
-                    <div className="pt-4 border-t border-slate-100">
-                      <div className="mb-3 flex flex-wrap gap-1.5">
-                        {coach.sports.slice(0, 3).map((sport, sportIndex) => (
-                          <span
-                            key={`${coachCardKey}-${sport}-${sportIndex}`}
-                            className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700"
+                    <div className="p-5">
+                      {/* Price */}
+                      <div className="pt-2 border-t border-slate-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                              Starting from
+                            </p>
+                            <p className="text-xl font-bold text-turf-green flex items-center gap-1 mt-0.5">
+                              <IndianRupee size={18} />
+                              {getStartingRate(coach)}
+                            </p>
+                          </div>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="bg-turf-green hover:bg-green-700 group-hover:shadow-lg transition-shadow"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/coaches/${coach.id || coach._id}`);
+                            }}
                           >
-                            {sport}: ₹{getSportRate(coach, sport)}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                            Starting from
-                          </p>
-                          <p className="text-xl font-bold text-turf-green flex items-center gap-1 mt-0.5">
-                            <IndianRupee size={18} />
-                            {getStartingRate(coach)}
-                          </p>
+                            Book
+                            <ArrowRight size={16} className="ml-1" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="bg-turf-green hover:bg-green-700 group-hover:shadow-lg transition-shadow"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/coaches/${coach.id || coach._id}`);
-                          }}
-                        >
-                          Book
-                          <ArrowRight size={16} className="ml-1" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
                 );
               })}
             </div>

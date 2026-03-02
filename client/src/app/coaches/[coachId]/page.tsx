@@ -397,6 +397,14 @@ export default function CoachDetailsPage() {
   const selectedSportRate = getSportRate(selectedSport || coach.sports?.[0]);
   const coachImageCandidates = getCoachImageCandidates(coach);
   const venueImages = getVenueImages(coach);
+  const coachUserName =
+    typeof coach.userId === "object" && coach.userId?.name
+      ? coach.userId.name
+      : "";
+  const coachDisplayName =
+    coachUserName || `${coach.sports?.[0] || "Professional"} Coach`;
+  const highlightedSports = coach.sports.slice(0, 6);
+  const additionalSportsCount = Math.max(coach.sports.length - 6, 0);
 
   return (
     <div className="bg-slate-50">
@@ -414,62 +422,83 @@ export default function CoachDetailsPage() {
                 <span className="text-sm font-medium">Back to All Coaches</span>
               </Link>
 
-              <div className="flex items-center gap-3 mb-2">
-                <Award size={32} className="text-turf-green" />
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
-                  {coach.sports.join(", ")}
-                </span>
-                {(() => {
-                  const badge = getVerificationBadge(coach);
-                  return (
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${badge.className}`}
-                    >
-                      {badge.label}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+                <div className="min-w-0">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-white/80">
+                      Coach Profile
                     </span>
-                  );
-                })()}
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3">
-                {coach.sports[0]} Coach
-              </h1>
+                    <span className="inline-flex items-center rounded-full border border-turf-green/30 bg-turf-green/15 px-3 py-1 text-[11px] font-semibold tracking-wide text-turf-green">
+                      {coach.serviceMode}
+                    </span>
+                    {(() => {
+                      const badge = getVerificationBadge(coach);
+                      return (
+                        <span
+                          className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
+                    {additionalSportsCount > 0 && (
+                      <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-white/80">
+                        +{additionalSportsCount} sports
+                      </span>
+                    )}
+                  </div>
 
-              {/* Stats */}
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <Star
-                      size={20}
-                      className="text-yellow-400 fill-yellow-400"
-                    />
-                    <span className="font-bold text-lg">
-                      {coach.rating.toFixed(1)}
-                    </span>
-                    <span className="text-slate-300 text-sm">
-                      ({coach.reviewCount} reviews)
-                    </span>
+                  <h1 className="mb-2 max-w-5xl break-words text-2xl font-bold leading-tight sm:text-4xl">
+                    {coachDisplayName}
+                  </h1>
+
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {highlightedSports.map((sport, index) => (
+                      <span
+                        key={`${sport}-${index}`}
+                        className="inline-flex max-w-full items-center rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90"
+                        title={sport}
+                      >
+                        <span className="line-clamp-1 break-words">
+                          {sport}
+                        </span>
+                      </span>
+                    ))}
                   </div>
-                  <div className="h-4 w-px bg-slate-600"></div>
-                  <div className="flex items-center gap-1">
-                    <IndianRupee size={20} className="text-turf-green" />
-                    <span className="font-bold text-xl text-turf-green">
-                      {selectedSportRate}
-                    </span>
-                    <span className="text-slate-300 text-sm">/hour</span>
+
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                    <div className="flex items-center gap-2">
+                      <Star
+                        size={20}
+                        className="text-yellow-400 fill-yellow-400"
+                      />
+                      <span className="font-bold text-lg">
+                        {coach.rating.toFixed(1)}
+                      </span>
+                      <span className="text-slate-300 text-sm">
+                        ({coach.reviewCount} reviews)
+                      </span>
+                    </div>
+                    <div className="hidden h-4 w-px bg-slate-600 sm:block"></div>
+                    <div className="flex items-center gap-1">
+                      <IndianRupee size={20} className="text-turf-green" />
+                      <span className="font-bold text-xl text-turf-green">
+                        {selectedSportRate}
+                      </span>
+                      <span className="text-slate-300 text-sm">/hour</span>
+                    </div>
                   </div>
-                  <div className="h-4 w-px bg-slate-600"></div>
-                  <span className="px-2.5 py-1 bg-turf-green/20 border border-turf-green/30 rounded-lg text-turf-green font-semibold text-xs">
-                    {coach.serviceMode}
-                  </span>
                 </div>
 
-                <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10">
-                  <CoachImageWithFallback
-                    sources={coachImageCandidates}
-                    alt={`${coach.sports[0]} coach`}
-                    className="h-full w-full object-cover"
-                    iconClassName="flex h-full w-full items-center justify-center text-white/70"
-                  />
+                <div className="w-fit rounded-2xl border border-white/15 bg-white/10 p-2 backdrop-blur-xs">
+                  <div className="h-24 w-24 overflow-hidden rounded-xl border border-white/20 bg-white/10">
+                    <CoachImageWithFallback
+                      sources={coachImageCandidates}
+                      alt={`${coach.sports[0]} coach`}
+                      className="h-full w-full object-cover"
+                      iconClassName="flex h-full w-full items-center justify-center text-white/70"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -689,18 +718,21 @@ export default function CoachDetailsPage() {
                     <label className="block text-sm font-semibold text-slate-700 mb-3">
                       Select Sport
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {coach.sports?.map((sport) => (
+                    <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto pr-1">
+                      {coach.sports?.map((sport, index) => (
                         <button
-                          key={sport}
+                          key={`${sport}-${index}`}
                           onClick={() => setSelectedSport(sport)}
-                          className={`px-3 py-2.5 text-sm font-medium rounded-lg border-2 transition-all ${
+                          title={sport}
+                          className={`rounded-lg border-2 px-3 py-2.5 text-left text-sm font-medium transition-all ${
                             selectedSport === sport
                               ? "bg-turf-green text-white border-turf-green shadow-md"
                               : "bg-white text-slate-700 border-slate-200 hover:border-turf-green"
                           }`}
                         >
-                          {sport}
+                          <span className="block line-clamp-2 break-words">
+                            {sport}
+                          </span>
                         </button>
                       ))}
                     </div>
