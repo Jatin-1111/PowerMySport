@@ -3,6 +3,7 @@ import {
   CommunityConversation,
   CommunityConversationDocument,
 } from "../models/CommunityConversation";
+import { CommunityGroup } from "../models/CommunityGroup";
 import { CommunityMessage } from "../models/CommunityMessage";
 import {
   CommunityMessagePrivacy,
@@ -12,6 +13,8 @@ import { User } from "../models/User";
 
 const buildParticipantKey = (a: string, b: string): string =>
   [a, b].sort().join(":");
+
+const normalizeOptionalText = (value?: string): string => value?.trim() || "";
 
 const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -262,6 +265,189 @@ export const CommunityService = {
     }));
   },
 
+  async listGroups(userId: string, query = "", limit = 20) {
+    await ensureProfile(userId);
+
+    const normalizedQuery = query.trim();
+    const safeLimit = Math.min(50, Math.max(1, limit));
+    const regex = normalizedQuery
+      ? new RegExp(escapeRegex(normalizedQuery), "i")
+      : null;
+
+    const filter = regex
+      ? {
+          visibility: "PUBLIC",
+          $or: [{ name: regex }, { sport: regex }, { city: regex }],
+        }
+      : { visibility: "PUBLIC" };
+
+    const groups = await CommunityGroup.find(filter)
+      .sort({ updatedAt: -1 })
+      .limit(safeLimit)
+      .lean();
+
+    return groups.map((group) => {
+      const memberIds = group.members.map((memberId) => String(memberId));
+      return {
+        id: String(group._id),
+        name: group.name,
+        description: group.description || "",
+        visibility: group.visibility,
+        sport: group.sport || "",
+        city: group.city || "",
+        createdBy: String(group.createdBy),
+        memberCount: memberIds.length,
+        isMember: memberIds.includes(userId),
+      };
+    });
+  },
+
+  async createGroup(
+    userId: string,
+    payload: {
+      name: string;
+      description?: string;
+      sport?: string;
+      city?: string;
+    },
+  ) {
+    await ensureProfile(userId);
+
+    const name = payload.name.trim();
+    if (!name) {
+      throw new Error("Group name is required");
+    }
+
+    const group = await CommunityGroup.create({
+      name,
+      description: normalizeOptionalText(payload.description),
+      sport: normalizeOptionalText(payload.sport),
+      city: normalizeOptionalText(payload.city),
+      visibility: "PUBLIC",
+      createdBy: userId,
+      members: [userId],
+      admins: [userId],
+    });
+
+    const conversation = await CommunityConversation.create({
+      conversationType: "GROUP",
+      groupId: group._id,
+      participants: [userId],
+      status: "ACTIVE",
+      requestedBy: userId,
+      lastMessageAt: new Date(),
+    });
+
+    return {
+      id: String(group._id),
+      name: group.name,
+      description: group.description || "",
+      visibility: group.visibility,
+      sport: group.sport || "",
+      city: group.city || "",
+      memberCount: group.members.length,
+      conversationId: String(conversation._id),
+    };
+  },
+
+  async joinGroup(userId: string, groupId: string) {
+    await ensureProfile(userId);
+
+    const group = await CommunityGroup.findById(groupId);
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const alreadyMember = group.members.some(
+      (memberId) => String(memberId) === userId,
+    );
+    if (!alreadyMember) {
+      group.members.push(new mongoose.Types.ObjectId(userId));
+      await group.save();
+    }
+
+    const conversation = await CommunityConversation.findOneAndUpdate(
+      { conversationType: "GROUP", groupId: group._id },
+      {
+        $setOnInsert: {
+          conversationType: "GROUP",
+          groupId: group._id,
+          status: "ACTIVE",
+          requestedBy: group.createdBy,
+          lastMessageAt: new Date(),
+        },
+        $addToSet: {
+          participants: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    return {
+      groupId: String(group._id),
+      conversationId: String(conversation?._id || ""),
+      memberCount: group.members.length,
+    };
+  },
+
+  async leaveGroup(userId: string, groupId: string) {
+    await ensureProfile(userId);
+
+    const group = await CommunityGroup.findById(groupId);
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const wasMember = group.members.some(
+      (memberId) => String(memberId) === userId,
+    );
+    if (!wasMember) {
+      return { groupId, removed: false };
+    }
+
+    group.members = group.members.filter(
+      (memberId) => String(memberId) !== userId,
+    );
+    group.admins = group.admins.filter((adminId) => String(adminId) !== userId);
+
+    if (!group.admins.length && group.members.length) {
+      const fallbackAdmin = group.members[0];
+      if (fallbackAdmin) {
+        group.admins = [fallbackAdmin];
+      }
+    }
+
+    const groupConversation = await CommunityConversation.findOne({
+      conversationType: "GROUP",
+      groupId: group._id,
+    });
+
+    if (groupConversation) {
+      groupConversation.participants = groupConversation.participants.filter(
+        (participantId) => String(participantId) !== userId,
+      );
+
+      if (!groupConversation.participants.length || !group.members.length) {
+        await Promise.all([
+          CommunityMessage.deleteMany({
+            conversationId: groupConversation._id,
+          }),
+          CommunityConversation.deleteOne({ _id: groupConversation._id }),
+        ]);
+      } else {
+        await groupConversation.save();
+      }
+    }
+
+    if (!group.members.length) {
+      await CommunityGroup.deleteOne({ _id: group._id });
+      return { groupId: String(group._id), removed: true, deletedGroup: true };
+    }
+
+    await group.save();
+    return { groupId: String(group._id), removed: true, deletedGroup: false };
+  },
+
   async startConversation(userId: string, targetUserId: string) {
     if (userId === targetUserId) {
       throw new Error("You cannot chat with yourself");
@@ -289,6 +475,7 @@ export const CommunityService = {
       { participantKey },
       {
         $setOnInsert: {
+          conversationType: "DM",
           participantKey,
           participants: [userId, targetUserId],
           status: initialStatus,
@@ -317,6 +504,10 @@ export const CommunityService = {
       throw new Error("Conversation not found");
     }
 
+    if (conversation.conversationType === "GROUP") {
+      throw new Error("Group conversations do not require acceptance");
+    }
+
     const isParticipant = conversation.participants.some(
       (participantId) => String(participantId) === userId,
     );
@@ -340,6 +531,10 @@ export const CommunityService = {
     const conversation = await CommunityConversation.findById(conversationId);
     if (!conversation) {
       throw new Error("Conversation not found");
+    }
+
+    if (conversation.conversationType === "GROUP") {
+      throw new Error("Group conversations do not support rejection");
     }
 
     const isParticipant = conversation.participants.some(
@@ -375,14 +570,23 @@ export const CommunityService = {
       return [];
     }
 
-    const otherParticipantIds = conversations.map((conversation) => {
+    const dmConversations = conversations.filter(
+      (conversation) => conversation.conversationType !== "GROUP",
+    );
+
+    const otherParticipantIds = dmConversations.map((conversation) => {
       const other = conversation.participants.find(
         (participantId) => String(participantId) !== userId,
       );
       return String(other);
     });
 
-    const [users, profiles, latestMessages] = await Promise.all([
+    const groupConversationIds = conversations
+      .filter((conversation) => conversation.conversationType === "GROUP")
+      .map((conversation) => String(conversation.groupId || ""))
+      .filter(Boolean);
+
+    const [users, profiles, latestMessages, groups] = await Promise.all([
       User.find({ _id: { $in: otherParticipantIds } })
         .select("_id name photoUrl")
         .lean(),
@@ -405,6 +609,9 @@ export const CommunityService = {
           },
         },
       ]),
+      CommunityGroup.find({ _id: { $in: groupConversationIds } })
+        .select("_id name description visibility sport city members")
+        .lean(),
     ]);
 
     const unreadStats = await CommunityMessage.aggregate([
@@ -438,8 +645,10 @@ export const CommunityService = {
         Number(item.unreadCount) || 0,
       ]),
     );
+    const groupMap = new Map(groups.map((group) => [String(group._id), group]));
 
     return conversations.map((conversation) => {
+      const conversationType = conversation.conversationType || "DM";
       const otherId = String(
         conversation.participants.find(
           (participantId) => String(participantId) !== userId,
@@ -448,24 +657,53 @@ export const CommunityService = {
       const otherUser = userMap.get(otherId);
       const otherProfile = profileMap.get(otherId);
       const latest = messageMap.get(String(conversation._id));
+      const group = conversation.groupId
+        ? groupMap.get(String(conversation.groupId))
+        : null;
+      const groupMemberCount = group?.members?.length || 0;
 
       return {
         id: String(conversation._id),
+        conversationType,
         status: conversation.status,
         requestedBy: String(conversation.requestedBy),
         otherParticipant: {
-          id: otherId,
-          displayName: otherProfile?.isIdentityPublic
-            ? otherUser?.name || "Player"
-            : otherProfile?.anonymousAlias || "Anonymous Player",
-          isIdentityPublic: otherProfile?.isIdentityPublic || false,
-          photoUrl: otherProfile?.isIdentityPublic
-            ? otherUser?.photoUrl || null
-            : null,
-          lastSeenAt: otherProfile?.lastSeenVisible
-            ? otherProfile?.lastSeenAt || null
-            : null,
+          id: conversationType === "GROUP" ? String(group?._id || "") : otherId,
+          displayName:
+            conversationType === "GROUP"
+              ? group?.name || "Community Group"
+              : otherProfile?.isIdentityPublic
+                ? otherUser?.name || "Player"
+                : otherProfile?.anonymousAlias || "Anonymous Player",
+          isIdentityPublic:
+            conversationType === "GROUP"
+              ? true
+              : otherProfile?.isIdentityPublic || false,
+          photoUrl:
+            conversationType === "GROUP"
+              ? null
+              : otherProfile?.isIdentityPublic
+                ? otherUser?.photoUrl || null
+                : null,
+          lastSeenAt:
+            conversationType === "GROUP"
+              ? null
+              : otherProfile?.lastSeenVisible
+                ? otherProfile?.lastSeenAt || null
+                : null,
         },
+        group:
+          conversationType === "GROUP"
+            ? {
+                id: String(group?._id || ""),
+                name: group?.name || "Community Group",
+                description: group?.description || "",
+                visibility: group?.visibility || "PUBLIC",
+                sport: group?.sport || "",
+                city: group?.city || "",
+                memberCount: groupMemberCount,
+              }
+            : null,
         latestMessage: latest
           ? {
               content: latest.content,
@@ -553,11 +791,32 @@ export const CommunityService = {
       };
     });
 
+    const conversationType = conversation.conversationType || "DM";
+    const group =
+      conversationType === "GROUP" && conversation.groupId
+        ? await CommunityGroup.findById(conversation.groupId)
+            .select("_id name description visibility sport city members")
+            .lean()
+        : null;
+
     return {
       conversation: {
         id: String(conversation._id),
+        conversationType,
         status: conversation.status,
         requestedBy: String(conversation.requestedBy),
+        group:
+          conversationType === "GROUP"
+            ? {
+                id: String(group?._id || ""),
+                name: group?.name || "Community Group",
+                description: group?.description || "",
+                visibility: group?.visibility || "PUBLIC",
+                sport: group?.sport || "",
+                city: group?.city || "",
+                memberCount: group?.members?.length || 0,
+              }
+            : null,
       },
       messages: messageItems,
       pagination: {
@@ -581,18 +840,23 @@ export const CommunityService = {
       throw new Error("Access denied");
     }
 
-    const otherParticipantId = String(
-      conversation.participants.find(
-        (participantId) => String(participantId) !== userId,
-      ),
-    );
+    if (conversation.conversationType !== "GROUP") {
+      const otherParticipantId = String(
+        conversation.participants.find(
+          (participantId) => String(participantId) !== userId,
+        ),
+      );
 
-    const blocked = await isBlockedBetween(userId, otherParticipantId);
-    if (blocked) {
-      throw new Error("Message blocked due to privacy settings");
+      const blocked = await isBlockedBetween(userId, otherParticipantId);
+      if (blocked) {
+        throw new Error("Message blocked due to privacy settings");
+      }
     }
 
-    if (conversation.status === "PENDING") {
+    if (
+      conversation.status === "PENDING" &&
+      conversation.conversationType !== "GROUP"
+    ) {
       const requester = String(conversation.requestedBy);
       if (requester !== userId) {
         throw new Error("Please accept this message request first");
@@ -630,6 +894,7 @@ export const CommunityService = {
     return {
       id: String(message._id),
       conversationId: String(message.conversationId),
+      conversationType: conversation.conversationType || "DM",
       senderId: String(message.senderId),
       senderDisplayName: senderProfile?.isIdentityPublic
         ? sender?.name || "Player"

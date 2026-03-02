@@ -79,6 +79,29 @@ export const communitySendMessageSchema = z.object({
     .max(2000, "Message cannot exceed 2000 characters"),
 });
 
+export const communityCreateGroupSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Group name must be at least 2 characters")
+    .max(60, "Group name cannot exceed 60 characters"),
+  description: z
+    .string()
+    .trim()
+    .max(240, "Description cannot exceed 240 characters")
+    .optional(),
+  sport: z
+    .string()
+    .trim()
+    .max(60, "Sport cannot exceed 60 characters")
+    .optional(),
+  city: z
+    .string()
+    .trim()
+    .max(80, "City cannot exceed 80 characters")
+    .optional(),
+});
+
 const geoLocationSchema = z.object({
   type: z.literal("Point"),
   coordinates: z

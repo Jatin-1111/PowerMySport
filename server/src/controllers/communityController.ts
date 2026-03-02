@@ -278,3 +278,107 @@ export const sendMessage = async (
     handleError(res, error, "Failed to send message");
   }
 };
+
+export const listGroups = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const query = typeof req.query.q === "string" ? req.query.q : "";
+    const limit = Number.isFinite(Number(req.query.limit))
+      ? Number(req.query.limit)
+      : 20;
+    const data = await CommunityService.listGroups(
+      getUserId(req),
+      query,
+      limit,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Groups fetched",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch groups");
+  }
+};
+
+export const createGroup = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { name, description, sport, city } = req.body as {
+      name: string;
+      description?: string;
+      sport?: string;
+      city?: string;
+    };
+
+    const payload: {
+      name: string;
+      description?: string;
+      sport?: string;
+      city?: string;
+    } = { name };
+    if (typeof description === "string") {
+      payload.description = description;
+    }
+    if (typeof sport === "string") {
+      payload.sport = sport;
+    }
+    if (typeof city === "string") {
+      payload.city = city;
+    }
+
+    const data = await CommunityService.createGroup(getUserId(req), payload);
+
+    res.status(201).json({
+      success: true,
+      message: "Group created",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to create group");
+  }
+};
+
+export const joinGroup = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const groupId = String(req.params.groupId || "");
+    if (!groupId) {
+      throw new Error("groupId is required");
+    }
+
+    const data = await CommunityService.joinGroup(getUserId(req), groupId);
+    res.status(200).json({
+      success: true,
+      message: "Joined group",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to join group");
+  }
+};
+
+export const leaveGroup = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const groupId = String(req.params.groupId || "");
+    if (!groupId) {
+      throw new Error("groupId is required");
+    }
+
+    const data = await CommunityService.leaveGroup(getUserId(req), groupId);
+    res.status(200).json({
+      success: true,
+      message: "Left group",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to leave group");
+  }
+};

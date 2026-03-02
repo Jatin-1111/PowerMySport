@@ -1,5 +1,6 @@
 import axiosInstance from "@/lib/api/axios";
 import {
+  CommunityGroupSummary,
   CommunityProfile,
   ConversationItem,
   ConversationMessage,
@@ -99,8 +100,10 @@ export const communityService = {
   async getMessages(conversationId: string): Promise<{
     conversation: {
       id: string;
+      conversationType?: "DM" | "GROUP";
       status: "PENDING" | "ACTIVE";
       requestedBy: string;
+      group?: CommunityGroupSummary | null;
     };
     messages: ConversationMessage[];
   }> {
@@ -108,8 +111,10 @@ export const communityService = {
       ApiResponse<{
         conversation: {
           id: string;
+          conversationType?: "DM" | "GROUP";
           status: "PENDING" | "ACTIVE";
           requestedBy: string;
+          group?: CommunityGroupSummary | null;
         };
         messages: ConversationMessage[];
       }>
@@ -129,6 +134,57 @@ export const communityService = {
       },
     );
 
+    return response.data.data;
+  },
+
+  async listGroups(query = ""): Promise<CommunityGroupSummary[]> {
+    const response = await axiosInstance.get<
+      ApiResponse<CommunityGroupSummary[]>
+    >("/community/groups", {
+      params: { q: query, limit: 20 },
+    });
+    return response.data.data;
+  },
+
+  async createGroup(payload: {
+    name: string;
+    description?: string;
+    sport?: string;
+    city?: string;
+  }): Promise<CommunityGroupSummary & { conversationId: string }> {
+    const response = await axiosInstance.post<
+      ApiResponse<CommunityGroupSummary & { conversationId: string }>
+    >("/community/groups", payload);
+    return response.data.data;
+  },
+
+  async joinGroup(groupId: string): Promise<{
+    groupId: string;
+    conversationId: string;
+    memberCount: number;
+  }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{
+        groupId: string;
+        conversationId: string;
+        memberCount: number;
+      }>
+    >(`/community/groups/${groupId}/join`);
+    return response.data.data;
+  },
+
+  async leaveGroup(groupId: string): Promise<{
+    groupId: string;
+    removed: boolean;
+    deletedGroup?: boolean;
+  }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{
+        groupId: string;
+        removed: boolean;
+        deletedGroup?: boolean;
+      }>
+    >(`/community/groups/${groupId}/leave`);
     return response.data.data;
   },
 };

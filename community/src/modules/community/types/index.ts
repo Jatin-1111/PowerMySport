@@ -1,4 +1,5 @@
 export type MessagePrivacy = "EVERYONE" | "REQUEST_ONLY" | "NONE";
+export type ConversationType = "DM" | "GROUP";
 
 export interface CommunityProfile {
   _id: string;
@@ -14,6 +15,7 @@ export interface CommunityProfile {
 
 export interface ConversationItem {
   id: string;
+  conversationType?: ConversationType;
   status: "PENDING" | "ACTIVE";
   requestedBy: string;
   otherParticipant: {
@@ -28,8 +30,20 @@ export interface ConversationItem {
     createdAt: string;
     senderId: string;
   } | null;
+  group?: CommunityGroupSummary | null;
   unreadCount: number;
   updatedAt: string;
+}
+
+export interface CommunityGroupSummary {
+  id: string;
+  name: string;
+  description: string;
+  visibility: "PUBLIC";
+  sport: string;
+  city: string;
+  memberCount: number;
+  isMember?: boolean;
 }
 
 export interface PlayerSearchResult {
@@ -42,6 +56,7 @@ export interface PlayerSearchResult {
 export interface ConversationMessage {
   id: string;
   conversationId: string;
+  conversationType?: ConversationType;
   senderId: string;
   senderDisplayName: string;
   content: string;

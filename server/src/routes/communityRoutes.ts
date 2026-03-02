@@ -2,9 +2,13 @@ import { Router } from "express";
 import {
   acceptConversationRequest,
   blockUser,
+  createGroup,
   getBlockedUsers,
   getCommunityProfile,
   getConversationMessages,
+  joinGroup,
+  leaveGroup,
+  listGroups,
   listConversations,
   rejectConversationRequest,
   searchPlayers,
@@ -16,6 +20,7 @@ import {
 import { authMiddleware } from "../middleware/auth";
 import {
   communityBlockSchema,
+  communityCreateGroupSchema,
   communitySendMessageSchema,
   communityStartConversationSchema,
   communityUpdateProfileSchema,
@@ -52,5 +57,14 @@ router.post(
   validateRequest(communitySendMessageSchema),
   sendMessage,
 );
+
+router.get("/groups", listGroups);
+router.post(
+  "/groups",
+  validateRequest(communityCreateGroupSchema),
+  createGroup,
+);
+router.post("/groups/:groupId/join", joinGroup);
+router.post("/groups/:groupId/leave", leaveGroup);
 
 export default router;

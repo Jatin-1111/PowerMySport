@@ -1,18 +1,19 @@
 "use client";
 
 import { getCommunitySocket } from "@/lib/realtime/socket";
-import { redirectToMainLogin } from "@/lib/auth/redirect";
+import { getMainAppUrl, redirectToMainLogin } from "@/lib/auth/redirect";
 import { toast } from "@/lib/toast";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
 import { communityService } from "@/modules/community/services/community";
 import {
+  CommunityGroupSummary,
   CommunityProfile,
   ConversationItem,
   ConversationMessage,
   MessagePrivacy,
   PlayerSearchResult,
 } from "@/modules/community/types";
-import { MessageSquare, Shield, Users } from "lucide-react";
+import { ExternalLink, MessageSquare, Shield, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const privacyOptions: Array<{ value: MessagePrivacy; label: string }> = [
@@ -39,6 +40,10 @@ export default function CommunityPage() {
     PlayerSearchResult[]
   >([]);
   const [isSearchingPlayers, setIsSearchingPlayers] = useState(false);
+  const [groupSearchQuery, setGroupSearchQuery] = useState("");
+  const [groupResults, setGroupResults] = useState<CommunityGroupSummary[]>([]);
+  const [isSearchingGroups, setIsSearchingGroups] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -75,6 +80,8 @@ export default function CommunityPage() {
     [conversations],
   );
 
+  const mainAppUrl = useMemo(() => getMainAppUrl(), []);
+
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
     if (section) {
@@ -93,12 +100,14 @@ export default function CommunityPage() {
         return;
       }
 
-      const [profileData, conversationData] = await Promise.all([
+      const [profileData, conversationData, groupData] = await Promise.all([
         communityService.getProfile(),
         communityService.listConversations(),
+        communityService.listGroups(),
       ]);
       setProfile(profileData);
       setConversations(conversationData);
+      setGroupResults(groupData);
       if (!selectedConversationId && conversationData.length) {
         setSelectedConversationId(conversationData[0].id);
       }
@@ -169,6 +178,26 @@ export default function CommunityPage() {
 
     return () => clearTimeout(timeout);
   }, [playerSearchQuery]);
+
+  useEffect(() => {
+    const timeout = setTimeout(async () => {
+      try {
+        setIsSearchingGroups(true);
+        const groups = await communityService.listGroups(
+          groupSearchQuery.trim(),
+        );
+        setGroupResults(groups);
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Failed to load groups";
+        setError(message);
+      } finally {
+        setIsSearchingGroups(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [groupSearchQuery]);
 
   useEffect(() => {
     const socket = getCommunitySocket();
@@ -320,6 +349,51 @@ export default function CommunityPage() {
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Failed to start conversation";
+      setError(message);
+      toast.error(message);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) {
+      return;
+    }
+
+    try {
+      const created = await communityService.createGroup({
+        name: newGroupName.trim(),
+      });
+      setNewGroupName("");
+      const [updatedConversations, updatedGroups] = await Promise.all([
+        communityService.listConversations(),
+        communityService.listGroups(groupSearchQuery.trim()),
+      ]);
+      setConversations(updatedConversations);
+      setGroupResults(updatedGroups);
+      setSelectedConversationId(created.conversationId);
+      toast.success("Group created");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to create group";
+      setError(message);
+      toast.error(message);
+    }
+  };
+
+  const handleJoinGroup = async (groupId: string) => {
+    try {
+      const joined = await communityService.joinGroup(groupId);
+      const [updatedConversations, updatedGroups] = await Promise.all([
+        communityService.listConversations(),
+        communityService.listGroups(groupSearchQuery.trim()),
+      ]);
+      setConversations(updatedConversations);
+      setGroupResults(updatedGroups);
+      if (joined.conversationId) {
+        setSelectedConversationId(joined.conversationId);
+      }
+      toast.success("Joined group");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to join group";
       setError(message);
       toast.error(message);
     }
@@ -517,6 +591,15 @@ export default function CommunityPage() {
                 title="PowerMySport Community"
                 subtitle="Anonymous-first player chat with your privacy controls."
                 badge="Player Network"
+                action={
+                  <a
+                    href={mainAppUrl}
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+                  >
+                    Switch to Player
+                    <ExternalLink size={16} />
+                  </a>
+                }
               />
             </section>
 
@@ -618,7 +701,7 @@ export default function CommunityPage() {
               >
                 <h2 className="text-base font-semibold">Conversations</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Search players and select an active conversation.
+                  Search players, discover groups, and select a conversation.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <input
@@ -660,6 +743,69 @@ export default function CommunityPage() {
                   </div>
                 )}
 
+                <div className="mt-4 space-y-2 rounded-md border border-border bg-background p-3">
+                  <p className="text-sm font-medium">Groups</p>
+                  <div className="flex gap-2">
+                    <input
+                      value={newGroupName}
+                      onChange={(event) => setNewGroupName(event.target.value)}
+                      placeholder="Create group name"
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    />
+                    <button
+                      onClick={handleCreateGroup}
+                      className="rounded-md bg-power-orange px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+                    >
+                      Create
+                    </button>
+                  </div>
+                  <input
+                    value={groupSearchQuery}
+                    onChange={(event) =>
+                      setGroupSearchQuery(event.target.value)
+                    }
+                    placeholder="Search groups by name, sport, city"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  />
+                  <div className="max-h-48 space-y-1 overflow-y-auto">
+                    {isSearchingGroups ? (
+                      <p className="text-sm text-muted-foreground">
+                        Loading groups...
+                      </p>
+                    ) : groupResults.length ? (
+                      groupResults.map((group) => (
+                        <div
+                          key={group.id}
+                          className="flex items-center justify-between rounded-md border border-border px-2 py-2"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{group.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {group.memberCount} members
+                            </p>
+                          </div>
+                          {group.isMember ? (
+                            <span className="text-xs font-semibold text-turf-green">
+                              Joined
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleJoinGroup(group.id)}
+                              className="rounded-md border border-border bg-muted px-2 py-1 text-xs font-medium"
+                            >
+                              Join
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No groups found
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 <div className="mt-4 space-y-2">
                   {conversations.map((conversation) => (
                     <button
@@ -674,6 +820,11 @@ export default function CommunityPage() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-sm font-medium">
                           {conversation.otherParticipant.displayName}
+                          <span className="ml-2 text-[10px] uppercase text-muted-foreground">
+                            {conversation.conversationType === "GROUP"
+                              ? "Group"
+                              : "DM"}
+                          </span>
                         </div>
                         {conversation.unreadCount > 0 && (
                           <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-power-orange px-2 py-0.5 text-xs font-semibold text-white">
@@ -703,25 +854,26 @@ export default function CommunityPage() {
                   Messages stay anonymous unless identity is public.
                 </p>
 
-                {selectedConversation?.status === "PENDING" && (
-                  <div className="mt-3 rounded-md border border-power-orange/40 bg-power-orange/10 p-3 text-sm text-card-foreground">
-                    This conversation is pending approval.
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={handleAcceptRequest}
-                        className="rounded-md bg-power-orange px-3 py-1 text-white hover:opacity-90"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={handleRejectRequest}
-                        className="rounded-md border border-border bg-background px-3 py-1"
-                      >
-                        Reject
-                      </button>
+                {selectedConversation?.status === "PENDING" &&
+                  selectedConversation?.conversationType !== "GROUP" && (
+                    <div className="mt-3 rounded-md border border-power-orange/40 bg-power-orange/10 p-3 text-sm text-card-foreground">
+                      This conversation is pending approval.
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={handleAcceptRequest}
+                          className="rounded-md bg-power-orange px-3 py-1 text-white hover:opacity-90"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={handleRejectRequest}
+                          className="rounded-md border border-border bg-background px-3 py-1"
+                        >
+                          Reject
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 <div className="mt-4 h-[55vh] space-y-2 overflow-y-auto rounded-md border border-border bg-background p-3">
                   {messages.map((message) => (
