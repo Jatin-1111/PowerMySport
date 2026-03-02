@@ -41,6 +41,23 @@
     }
 
     body {
-        @apply bg-background text-foreground;
+        @apply bg-background text-foreground antialiased;
+        min-height: 100vh;
+        text-rendering: optimizeLegibility;
+    }
+
+    ::selection {
+        background: color-mix(in oklab, var(--power-orange) 28%, white);
+        color: var(--deep-slate);
+    }
+
+    input,
+    select,
+    button {
+        font: inherit;
+    }
+
+    button {
+        @apply cursor-pointer;
     }
 }
