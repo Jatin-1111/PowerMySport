@@ -25,7 +25,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const privacyOptions: Array<{ value: MessagePrivacy; label: string }> = [
   { value: "EVERYONE", label: "Everyone" },
@@ -154,6 +154,17 @@ export default function CommunityPage() {
     );
   };
 
+  const updateMessageById = (
+    messageId: string,
+    updater: (message: ConversationMessage) => ConversationMessage,
+  ) => {
+    setMessages((current) =>
+      current.map((message) =>
+        message.id === messageId ? updater(message) : message,
+      ),
+    );
+  };
+
   const totalUnread = useMemo(
     () => conversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
     [conversations],
@@ -172,7 +183,6 @@ export default function CommunityPage() {
   const selectedConversationIsPending =
     selectedConversation?.status === "PENDING" &&
     selectedConversation?.conversationType !== "GROUP";
-  const isPrivacySidebarActive = activeSidebarTab === "privacy-settings";
   const isCommunityView = activeSidebarTab === "community-overview";
   const isConversationsView = activeSidebarTab === "conversations";
   const isPrivacyView = activeSidebarTab === "privacy-settings";
@@ -298,6 +308,22 @@ export default function CommunityPage() {
     return `${diffDays}d`;
   };
 
+  const getMessageTimestamp = (value?: string | null) => {
+    if (!value) {
+      return "";
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+
   const scrollToSection = (sectionId: string) => {
     if (
       sectionId === "community-overview" ||
@@ -320,7 +346,7 @@ export default function CommunityPage() {
     }
   };
 
-  const loadBootstrap = async () => {
+  const loadBootstrap = useCallback(async () => {
     setError(null);
     setIsLoading(true);
     try {
@@ -339,16 +365,20 @@ export default function CommunityPage() {
       setProfile(profileData);
       setConversations(conversationData);
       setGroupResults(groupData);
-      if (!conversationData.length) {
-        setSelectedConversationId(null);
-      } else if (
-        !selectedConversationId ||
-        !conversationData.some(
-          (conversation) => conversation.id === selectedConversationId,
-        )
-      ) {
-        setSelectedConversationId(conversationData[0].id);
-      }
+      setSelectedConversationId((current) => {
+        if (!conversationData.length) {
+          return null;
+        }
+
+        if (
+          current &&
+          conversationData.some((conversation) => conversation.id === current)
+        ) {
+          return current;
+        }
+
+        return conversationData[0].id;
+      });
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Failed to load community";
@@ -357,7 +387,7 @@ export default function CommunityPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const loadMessages = async (conversationId: string) => {
     try {
@@ -365,6 +395,13 @@ export default function CommunityPage() {
       setMessages(response.messages);
       const refreshedConversations = await communityService.listConversations();
       setConversations(refreshedConversations);
+
+      const socket = getCommunitySocket();
+      if (socket.connected) {
+        socket.emit("community:markRead", {
+          conversationId,
+        });
+      }
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Failed to load messages";
@@ -374,8 +411,8 @@ export default function CommunityPage() {
   };
 
   useEffect(() => {
-    loadBootstrap();
-  }, []);
+    void loadBootstrap();
+  }, [loadBootstrap]);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -501,12 +538,44 @@ export default function CommunityPage() {
     const handleNewMessage = (message: ConversationMessage) => {
       if (message.conversationId === selectedConversationIdRef.current) {
         appendMessage(message);
+
+        socket.emit("community:markRead", {
+          conversationId: message.conversationId,
+        });
       }
 
       void communityService
         .listConversations()
         .then((updated) => setConversations(updated))
         .catch(() => undefined);
+    };
+
+    const handleMessagesRead = (payload: {
+      conversationId: string;
+      readerId: string;
+      messageIds: string[];
+    }) => {
+      if (payload.conversationId !== selectedConversationIdRef.current) {
+        return;
+      }
+
+      setMessages((current) =>
+        current.map((message) => {
+          if (!payload.messageIds.includes(message.id)) {
+            return message;
+          }
+
+          const readBy = message.readBy || [];
+          if (readBy.includes(payload.readerId)) {
+            return message;
+          }
+
+          return {
+            ...message,
+            readBy: [...readBy, payload.readerId],
+          };
+        }),
+      );
     };
 
     const handleConversationUpdated = async (payload?: {
@@ -541,6 +610,7 @@ export default function CommunityPage() {
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("community:newMessage", handleNewMessage);
+    socket.on("community:messagesRead", handleMessagesRead);
     socket.on("community:conversationUpdated", handleConversationUpdated);
     socket.on("community:error", handleCommunityError);
     socket.on("connect_error", handleConnectError);
@@ -555,6 +625,7 @@ export default function CommunityPage() {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
       socket.off("community:newMessage", handleNewMessage);
+      socket.off("community:messagesRead", handleMessagesRead);
       socket.off("community:conversationUpdated", handleConversationUpdated);
       socket.off("community:error", handleCommunityError);
       socket.off("connect_error", handleConnectError);
@@ -763,6 +834,99 @@ export default function CommunityPage() {
     }
   };
 
+  const sendMessageWithTransport = async (
+    conversationId: string,
+    content: string,
+  ): Promise<ConversationMessage> => {
+    const socket = getCommunitySocket();
+
+    if (socket.connected) {
+      const payload = {
+        conversationId,
+        content,
+      };
+
+      const ack = await new Promise<
+        | { success: true; data: ConversationMessage }
+        | { success: false; message?: string }
+      >((resolve) => {
+        const timeoutId = setTimeout(() => {
+          resolve({ success: false, message: "Message send timed out" });
+        }, 8000);
+
+        socket.emit("community:sendMessage", payload, (result: unknown) => {
+          clearTimeout(timeoutId);
+          resolve(
+            (result as
+              | { success: true; data: ConversationMessage }
+              | { success: false; message?: string }) || {
+              success: false,
+              message: "Invalid server response",
+            },
+          );
+        });
+      });
+
+      if (!ack.success) {
+        throw new Error(ack.message || "Failed to send message");
+      }
+
+      return {
+        ...ack.data,
+        messageStatus: "SENT",
+      };
+    }
+
+    const fallbackMessage = await communityService.sendMessage(
+      conversationId,
+      content,
+    );
+
+    return {
+      ...fallbackMessage,
+      messageStatus: "SENT",
+    };
+  };
+
+  const retryFailedMessage = async (message: ConversationMessage) => {
+    if (!message.content?.trim()) {
+      return;
+    }
+
+    updateMessageById(message.id, (current) => ({
+      ...current,
+      messageStatus: "SENDING",
+    }));
+
+    setIsSending(true);
+    setError(null);
+    try {
+      const confirmedMessage = await sendMessageWithTransport(
+        message.conversationId,
+        message.content,
+      );
+
+      updateMessageById(message.id, (current) => ({
+        ...current,
+        ...confirmedMessage,
+      }));
+
+      const updatedConversations = await communityService.listConversations();
+      setConversations(updatedConversations);
+    } catch (e) {
+      updateMessageById(message.id, (current) => ({
+        ...current,
+        messageStatus: "FAILED",
+      }));
+      const errorMessage =
+        e instanceof Error ? e.message : "Failed to resend message";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim()) {
       return;
@@ -773,10 +937,17 @@ export default function CommunityPage() {
     const optimisticMessage: ConversationMessage = {
       id: optimisticMessageId,
       conversationId: selectedConversation.id,
+      conversationType: selectedConversation.conversationType,
       senderId: profile?.userId || "me",
       senderDisplayName: "You",
       content,
       createdAt: new Date().toISOString(),
+      messageStatus: "SENDING",
+      readBy: profile?.userId ? [profile.userId] : [],
+      participantIds: [
+        profile?.userId || "me",
+        selectedConversation.otherParticipant.id,
+      ],
     };
 
     appendMessage(optimisticMessage);
@@ -785,47 +956,10 @@ export default function CommunityPage() {
     setIsSending(true);
     setError(null);
     try {
-      const socket = getCommunitySocket();
-      let confirmedMessage: ConversationMessage;
-
-      if (socket.connected) {
-        const payload = {
-          conversationId: selectedConversation.id,
-          content,
-        };
-
-        const ack = await new Promise<
-          | { success: true; data: ConversationMessage }
-          | { success: false; message?: string }
-        >((resolve) => {
-          const timeoutId = setTimeout(() => {
-            resolve({ success: false, message: "Message send timed out" });
-          }, 8000);
-
-          socket.emit("community:sendMessage", payload, (result: unknown) => {
-            clearTimeout(timeoutId);
-            resolve(
-              (result as
-                | { success: true; data: ConversationMessage }
-                | { success: false; message?: string }) || {
-                success: false,
-                message: "Invalid server response",
-              },
-            );
-          });
-        });
-
-        if (!ack.success) {
-          throw new Error(ack.message || "Failed to send message");
-        }
-
-        confirmedMessage = ack.data;
-      } else {
-        confirmedMessage = await communityService.sendMessage(
-          selectedConversation.id,
-          content,
-        );
-      }
+      const confirmedMessage = await sendMessageWithTransport(
+        selectedConversation.id,
+        content,
+      );
 
       removeMessageById(optimisticMessageId);
 
@@ -836,7 +970,10 @@ export default function CommunityPage() {
       const updatedConversations = await communityService.listConversations();
       setConversations(updatedConversations);
     } catch (e) {
-      removeMessageById(optimisticMessageId);
+      updateMessageById(optimisticMessageId, (message) => ({
+        ...message,
+        messageStatus: "FAILED",
+      }));
       const message = e instanceof Error ? e.message : "Failed to send message";
       setError(message);
       toast.error(message);
@@ -1580,6 +1717,26 @@ export default function CommunityPage() {
                   <div className="mt-3 min-h-80 flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-background p-3">
                     {messages.map((message) => {
                       const isOwnMessage = message.senderId === profile?.userId;
+                      const isGroupConversation =
+                        selectedConversation?.conversationType === "GROUP";
+                      const participantIds = message.participantIds || [];
+                      const otherParticipantId = participantIds.find(
+                        (participantId) => participantId !== profile?.userId,
+                      );
+                      const hasBeenSeenByOther = Boolean(
+                        isOwnMessage &&
+                          otherParticipantId &&
+                          message.readBy?.includes(otherParticipantId),
+                      );
+                      const messageStateLabel = isOwnMessage
+                        ? message.messageStatus === "FAILED"
+                          ? "Not sent"
+                          : message.messageStatus === "SENDING"
+                            ? "Sending"
+                            : hasBeenSeenByOther
+                              ? "Seen"
+                              : "Sent"
+                        : null;
                       return (
                         <div
                           key={message.id}
@@ -1592,17 +1749,37 @@ export default function CommunityPage() {
                                 : "border border-border bg-white text-slate-800"
                             }`}
                           >
+                            {isGroupConversation && (
+                              <div
+                                className={`text-[11px] ${
+                                  isOwnMessage
+                                    ? "text-orange-100"
+                                    : "text-slate-500"
+                                }`}
+                              >
+                                {message.senderDisplayName}
+                              </div>
+                            )}
+                            <div className="mt-0.5 wrap-break-word">
+                              {message.content}
+                            </div>
                             <div
-                              className={`text-[11px] ${
+                              className={`mt-1 flex items-center justify-end gap-2 text-[10px] ${
                                 isOwnMessage
                                   ? "text-orange-100"
                                   : "text-slate-500"
                               }`}
                             >
-                              {message.senderDisplayName}
-                            </div>
-                            <div className="mt-0.5 wrap-break-word">
-                              {message.content}
+                              <span>{getMessageTimestamp(message.createdAt)}</span>
+                              {messageStateLabel && <span>{messageStateLabel}</span>}
+                              {isOwnMessage && message.messageStatus === "FAILED" && (
+                                <button
+                                  onClick={() => retryFailedMessage(message)}
+                                  className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30"
+                                >
+                                  Retry
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>

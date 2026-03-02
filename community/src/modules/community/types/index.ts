@@ -61,4 +61,7 @@ export interface ConversationMessage {
   senderDisplayName: string;
   content: string;
   createdAt: string;
+  readBy?: string[];
+  participantIds?: string[];
+  messageStatus?: "SENDING" | "SENT" | "FAILED";
 }

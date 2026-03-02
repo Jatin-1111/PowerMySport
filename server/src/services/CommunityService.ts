@@ -717,6 +717,57 @@ export const CommunityService = {
     });
   },
 
+  async markConversationRead(userId: string, conversationId: string) {
+    const conversation = await CommunityConversation.findById(conversationId);
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    const isParticipant = conversation.participants.some(
+      (participantId) => String(participantId) === userId,
+    );
+    if (!isParticipant) {
+      throw new Error("Access denied");
+    }
+
+    const unreadMessages = await CommunityMessage.find({
+      conversationId,
+      senderId: { $ne: new mongoose.Types.ObjectId(userId) },
+      readBy: { $ne: new mongoose.Types.ObjectId(userId) },
+    })
+      .select("_id")
+      .lean();
+
+    if (!unreadMessages.length) {
+      return {
+        conversationId: String(conversation._id),
+        participantIds: conversation.participants.map((participantId) =>
+          String(participantId),
+        ),
+        readerId: userId,
+        messageIds: [] as string[],
+      };
+    }
+
+    await CommunityMessage.updateMany(
+      {
+        _id: { $in: unreadMessages.map((message) => message._id) },
+      },
+      {
+        $addToSet: { readBy: new mongoose.Types.ObjectId(userId) },
+      },
+    );
+
+    return {
+      conversationId: String(conversation._id),
+      participantIds: conversation.participants.map((participantId) =>
+        String(participantId),
+      ),
+      readerId: userId,
+      messageIds: unreadMessages.map((message) => String(message._id)),
+    };
+  },
+
   async getMessages(
     userId: string,
     conversationId: string,
@@ -736,16 +787,7 @@ export const CommunityService = {
       throw new Error("Access denied");
     }
 
-    await CommunityMessage.updateMany(
-      {
-        conversationId,
-        senderId: { $ne: new mongoose.Types.ObjectId(userId) },
-        readBy: { $ne: new mongoose.Types.ObjectId(userId) },
-      },
-      {
-        $addToSet: { readBy: new mongoose.Types.ObjectId(userId) },
-      },
-    );
+    await this.markConversationRead(userId, conversationId);
 
     const [messages, total] = await Promise.all([
       CommunityMessage.find({ conversationId })
@@ -763,7 +805,7 @@ export const CommunityService = {
     const profiles = await CommunityProfile.find({
       userId: { $in: allParticipantIds },
     })
-      .select("userId anonymousAlias isIdentityPublic")
+      .select("userId anonymousAlias isIdentityPublic readReceiptsEnabled")
       .lean();
 
     const userMap = new Map(users.map((user) => [String(user._id), user]));
@@ -776,10 +818,21 @@ export const CommunityService = {
       const sender = userMap.get(senderId);
       const senderProfile = profileMap.get(senderId);
       const isSelf = senderId === userId;
+      const readBy = (message.readBy || [])
+        .map((readerId) => String(readerId))
+        .filter((readerId) => {
+          if (readerId === userId) {
+            return true;
+          }
+
+          const readerProfile = profileMap.get(readerId);
+          return readerProfile?.readReceiptsEnabled !== false;
+        });
 
       return {
         id: String(message._id),
         conversationId: String(message.conversationId),
+        conversationType: conversation.conversationType || "DM",
         senderId,
         senderDisplayName: isSelf
           ? sender?.name || "Me"
@@ -788,6 +841,8 @@ export const CommunityService = {
             : senderProfile?.anonymousAlias || "Anonymous Player",
         content: message.content,
         createdAt: message.createdAt,
+        readBy,
+        participantIds: allParticipantIds,
       };
     });
 
@@ -847,6 +902,11 @@ export const CommunityService = {
         ),
       );
 
+      const otherProfile = await ensureProfile(otherParticipantId);
+      if (otherProfile.messagePrivacy === "NONE") {
+        throw new Error("This player is not accepting new messages");
+      }
+
       const blocked = await isBlockedBetween(userId, otherParticipantId);
       if (blocked) {
         throw new Error("Message blocked due to privacy settings");
@@ -901,6 +961,7 @@ export const CommunityService = {
         : senderProfile?.anonymousAlias || "Anonymous Player",
       content: message.content,
       createdAt: message.createdAt,
+      readBy: [String(message.senderId)],
       participantIds: conversation.participants.map((participantId) =>
         String(participantId),
       ),

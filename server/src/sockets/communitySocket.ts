@@ -152,6 +152,58 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
       }
     });
 
+    socket.on("community:markRead", async (payload, callback) => {
+      try {
+        const conversationId = String(payload?.conversationId || "");
+        if (!conversationId) {
+          const message = "conversationId is required";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
+          return;
+        }
+
+        const result = await CommunityService.markConversationRead(
+          userId,
+          conversationId,
+        );
+
+        if (result.messageIds.length) {
+          io.to(`conversation:${conversationId}`).emit(
+            "community:messagesRead",
+            {
+              conversationId,
+              readerId: userId,
+              messageIds: result.messageIds,
+            },
+          );
+
+          for (const participantId of result.participantIds) {
+            io.to(`user:${participantId}`).emit(
+              "community:conversationUpdated",
+              {
+                conversationId,
+              },
+            );
+          }
+        }
+
+        if (typeof callback === "function") {
+          callback({ success: true, data: result });
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to mark messages as read";
+        socket.emit("community:error", { message });
+        if (typeof callback === "function") {
+          callback({ success: false, message });
+        }
+      }
+    });
+
     socket.on("community:sendMessage", async (payload, callback) => {
       try {
         const conversationId = String(payload?.conversationId || "");
