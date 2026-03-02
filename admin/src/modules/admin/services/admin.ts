@@ -116,6 +116,13 @@ export const adminApi = {
     return response.data;
   },
 
+  getCoachVerificationById: async (
+    coachId: string,
+  ): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.get(`/admin/coaches/${coachId}`);
+    return response.data;
+  },
+
   approveCoachVerification: async (
     coachId: string,
   ): Promise<ApiResponse<Coach>> => {

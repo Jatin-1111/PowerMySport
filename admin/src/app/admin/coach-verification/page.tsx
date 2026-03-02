@@ -7,6 +7,7 @@ import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
 import { Card } from "@/modules/shared/ui/Card";
 import { Coach, CoachVerificationStatus } from "@/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 interface PaginationData {
@@ -253,15 +254,25 @@ export default function AdminCoachVerificationPage() {
                 ? (coach.userId as Record<string, string>)
                 : null;
             const coachId = getCoachId(coach);
+            const coachDetailsHref = `/admin/coach-verification/${coachId}`;
 
             return (
               <Card key={coachId} className="bg-white">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-lg font-semibold text-slate-900">
-                        {userInfo?.name || "Coach"}
-                      </h3>
+                      {coachId ? (
+                        <Link
+                          href={coachDetailsHref}
+                          className="text-lg font-semibold text-slate-900 transition-colors hover:text-power-orange"
+                        >
+                          {userInfo?.name || "Coach"}
+                        </Link>
+                      ) : (
+                        <h3 className="text-lg font-semibold text-slate-900">
+                          {userInfo?.name || "Coach"}
+                        </h3>
+                      )}
                       <span
                         className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
                           coach.verificationStatus,
@@ -270,9 +281,18 @@ export default function AdminCoachVerificationPage() {
                         {coach.verificationStatus || "UNVERIFIED"}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-600">
-                      {userInfo?.email || "No email"}
-                    </p>
+                    {coachId ? (
+                      <Link
+                        href={coachDetailsHref}
+                        className="block text-sm text-slate-600 transition-colors hover:text-power-orange"
+                      >
+                        {userInfo?.email || "No email"}
+                      </Link>
+                    ) : (
+                      <p className="text-sm text-slate-600">
+                        {userInfo?.email || "No email"}
+                      </p>
+                    )}
                     <p className="text-sm text-slate-500">
                       Sports: {coach.sports.join(", ")}
                     </p>
@@ -284,6 +304,12 @@ export default function AdminCoachVerificationPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={`/admin/coach-verification/${coachId}`}
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      View Details
+                    </Link>
                     <button
                       onClick={() => handleApprove(coach)}
                       disabled={actionLoading}

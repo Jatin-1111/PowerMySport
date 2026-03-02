@@ -5,6 +5,7 @@ import {
   approveCoachVerification,
   changeAdminPasswordHandler,
   createAdminAccount,
+  getCoachVerificationDetails,
   getAdminProfile,
   handleDispute,
   listAdmins,
@@ -47,6 +48,12 @@ router.get(
   authMiddleware,
   adminMiddleware,
   listCoachVerifications,
+);
+router.get(
+  "/coaches/:coachId",
+  authMiddleware,
+  adminMiddleware,
+  getCoachVerificationDetails,
 );
 router.post(
   "/coaches/:coachId/verify",

@@ -239,6 +239,11 @@ export const coachVerificationStep2Schema = z
         address: z.string().min(1, "Venue address is required"),
         description: z.string().optional().default(""),
         openingHours: z.string().optional().default("09:00-18:00"),
+        images: z
+          .array(z.string().url("Venue image URL must be valid"))
+          .optional()
+          .default([]),
+        imageS3Keys: z.array(z.string().min(1)).optional().default([]),
         coordinates: z.tuple([z.number(), z.number()]).optional(),
         location: z
           .object({
@@ -295,13 +300,8 @@ export const coachVerificationStep3Schema = z.object({
         uploadedAt: z.union([z.string().datetime(), z.date()]).optional(),
       }),
     )
-    .min(2, "At least two verification documents are required")
-    .refine((docs) => docs.some((doc) => doc.type === "CERTIFICATION"), {
-      message: "A CERTIFICATION document is required",
-    })
-    .refine((docs) => docs.some((doc) => doc.type === "ID_PROOF"), {
-      message: "An ID_PROOF document is required",
-    }),
+    .optional()
+    .default([]),
 });
 
 // ============================================
