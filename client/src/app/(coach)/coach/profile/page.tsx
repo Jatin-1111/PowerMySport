@@ -16,6 +16,7 @@ import {
   LogOut,
   Plus,
   Trash2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -93,6 +94,9 @@ export default function CoachProfilePage() {
   });
   const [isEditingCoaching, setIsEditingCoaching] = useState(false);
   const [isSavingCoaching, setIsSavingCoaching] = useState(false);
+  const [selectedVenueImage, setSelectedVenueImage] = useState<string | null>(
+    null,
+  );
   const [coachingForm, setCoachingForm] = useState({
     selectedSports: [] as string[],
     pricingMode: "PER_SPORT" as "SAME" | "PER_SPORT",
@@ -162,9 +166,9 @@ export default function CoachProfilePage() {
       case "REVIEW":
         return "Your verification is currently under review. Edits are temporarily disabled.";
       case "VERIFIED":
-        return "You are verified! Use the verification page to update your profile or resubmit documents.";
+        return "You are verified and your profile is visible to players.";
       case "REJECTED":
-        return "Your verification was rejected. Update documents and resubmit through the verification page.";
+        return "Your verification was rejected. Update your profile details here and submit required verification updates when prompted.";
       default:
         return "Get started with our 3-step verification process to become a verified coach.";
     }
@@ -710,61 +714,123 @@ export default function CoachProfilePage() {
     (coachProfile?.isVerified ? "VERIFIED" : "UNVERIFIED");
   const guidance = getStatusGuidance(status);
   const BadgeIcon = badge.icon;
+  const sportsCount = coachProfile?.sports?.length || 0;
+  const pricingValues = coachProfile?.sportPricing
+    ? Object.values(coachProfile.sportPricing)
+    : [];
+  const basePrice =
+    pricingValues.length > 0
+      ? Math.min(...pricingValues)
+      : (coachProfile?.hourlyRate ?? 0);
+  const totalSlots =
+    coachProfile?.availabilityBySport &&
+    Object.keys(coachProfile.availabilityBySport).length > 0
+      ? Object.values(coachProfile.availabilityBySport).reduce(
+          (count, slots) => count + (slots?.length || 0),
+          0,
+        )
+      : (coachProfile?.availability?.length ?? 0);
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-white">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <ProfilePictureUpload
-              currentPhotoUrl={user?.photoUrl}
-              onUploadSuccess={(updatedUser) => {
-                setUser(updatedUser);
-              }}
-              size="xl"
-            />
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                Coach Profile
-              </p>
-              <h2 className="text-3xl font-bold text-slate-900">
-                {user?.name || "Coach"}
-              </h2>
-              {user?.email && (
-                <p className="text-sm text-slate-600">{user.email}</p>
-              )}
-              {user?.phone && (
-                <p className="text-sm text-slate-600">{user.phone}</p>
-              )}
+    <div className="space-y-8 pb-8">
+      <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm">
+        <div className="bg-linear-to-r from-slate-50 to-white px-6 py-6 md:px-8">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <ProfilePictureUpload
+                currentPhotoUrl={user?.photoUrl}
+                onUploadSuccess={(updatedUser) => {
+                  setUser(updatedUser);
+                }}
+                size="xl"
+              />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Coach Dashboard
+                </p>
+                <h2 className="mt-1 text-3xl font-bold text-slate-900 md:text-4xl">
+                  {user?.name || "Coach"}
+                </h2>
+                <div className="mt-2 space-y-1">
+                  {user?.email && (
+                    <p className="break-all text-sm font-medium text-slate-600">
+                      {user.email}
+                    </p>
+                  )}
+                  {user?.phone && (
+                    <p className="text-sm text-slate-600">{user.phone}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <span
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}
+              >
+                <BadgeIcon size={14} />
+                {badge.label}
+              </span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <span
-              className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full ${badge.className}`}
-            >
-              <BadgeIcon size={14} />
-              {badge.label}
-            </span>
-          </div>
-        </div>
 
-        <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-          {guidance}
-        </div>
-
-        {coachProfile?.verificationNotes && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <p className="font-semibold mb-1">Rejection Notes:</p>
-            {coachProfile.verificationNotes}
+          <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            {guidance}
           </div>
-        )}
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Sports
+              </p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {sportsCount}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Starting Price
+              </p>
+              <p className="mt-1 text-2xl font-bold text-power-orange">
+                ₹{basePrice || 0}/hr
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Service Mode
+              </p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {coachProfile?.serviceMode === "OWN_VENUE"
+                  ? "Own Venue"
+                  : coachProfile?.serviceMode === "HYBRID"
+                    ? "Hybrid"
+                    : "Freelance"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Time Slots
+              </p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">
+                {totalSlots}
+              </p>
+            </div>
+          </div>
+
+          {coachProfile?.verificationNotes && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <p className="mb-1 font-semibold">Rejection Notes:</p>
+              {coachProfile.verificationNotes}
+            </div>
+          )}
+        </div>
       </Card>
 
       {coachProfile ? (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="bg-white">
-              <div className="mb-4 flex items-center justify-between">
+        <div className="grid gap-6 xl:grid-cols-12 xl:items-start">
+          <div className="space-y-6 xl:col-span-8">
+            <Card className="border border-slate-200 bg-white shadow-sm">
+              <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-semibold text-slate-900">
                   About You
                 </h3>
@@ -817,8 +883,8 @@ export default function CoachProfilePage() {
               )}
             </Card>
 
-            <Card className="bg-white">
-              <div className="mb-4 flex items-center justify-between">
+            <Card className="border border-slate-200 bg-white shadow-sm">
+              <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Coaching Details
                 </h3>
@@ -1183,6 +1249,43 @@ export default function CoachProfilePage() {
                               </p>
                             </div>
                           )}
+
+                          <div>
+                            <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+                              Venue Images
+                            </p>
+                            {coachProfile.ownVenueDetails.images &&
+                            coachProfile.ownVenueDetails.images.length > 0 ? (
+                              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {coachProfile.ownVenueDetails.images.map(
+                                  (imageUrl, index) => (
+                                    <button
+                                      type="button"
+                                      key={`${imageUrl}-${index}`}
+                                      onClick={() =>
+                                        setSelectedVenueImage(imageUrl)
+                                      }
+                                      className="group relative overflow-hidden rounded-lg border border-slate-200"
+                                    >
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Venue image ${index + 1}`}
+                                        className="h-32 w-full object-cover"
+                                      />
+                                      <div className="pointer-events-none absolute inset-0 bg-slate-900/0 transition-colors group-hover:bg-slate-900/25" />
+                                      <span className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-white/90 px-2 py-1 text-xs font-semibold text-slate-800 opacity-0 transition-opacity group-hover:opacity-100">
+                                        View
+                                      </span>
+                                    </button>
+                                  ),
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-slate-500">
+                                No venue images uploaded yet.
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1212,8 +1315,8 @@ export default function CoachProfilePage() {
               )}
             </Card>
 
-            <Card className="bg-white">
-              <div className="mb-4 flex items-center justify-between">
+            <Card className="border border-slate-200 bg-white shadow-sm">
+              <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Availability / Time Slots
                 </h3>
@@ -1351,7 +1454,7 @@ export default function CoachProfilePage() {
 
             {coachProfile.verificationDocuments &&
               coachProfile.verificationDocuments.length > 0 && (
-                <Card className="bg-white">
+                <Card className="border border-slate-200 bg-white shadow-sm">
                   <h3 className="text-lg font-semibold text-slate-900 mb-4">
                     Verification Documents
                   </h3>
@@ -1377,9 +1480,38 @@ export default function CoachProfilePage() {
               )}
           </div>
 
-          <div className="space-y-6">
-            <Card className="bg-white">
-              <div className="flex items-center justify-between mb-3">
+          <div className="space-y-6 xl:col-span-4 xl:sticky xl:top-6 xl:self-start">
+            <Card className="border border-slate-200 bg-white shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900 mb-3">
+                Verification Status
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                    Status
+                  </p>
+                  <span
+                    className={`inline-flex items-center gap-2 px-2 py-1 text-xs font-semibold rounded ${badge.className}`}
+                  >
+                    <BadgeIcon size={12} />
+                    {badge.label}
+                  </span>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-slate-700">
+                  {guidance}
+                </div>
+                {status === "VERIFIED" && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-2">
+                    <p className="text-xs font-medium text-green-700">
+                      ✓ Profile verified and visible to players
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            <Card className="border border-slate-200 bg-white shadow-sm">
+              <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Profile Info
                 </h3>
@@ -1467,7 +1599,7 @@ export default function CoachProfilePage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3 text-sm">
+                <div className="grid gap-3 text-sm sm:grid-cols-2">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500">
                       Name
@@ -1480,7 +1612,9 @@ export default function CoachProfilePage() {
                     <p className="text-xs uppercase tracking-wide text-slate-500">
                       Email
                     </p>
-                    <p className="font-medium text-slate-900">{user?.email}</p>
+                    <p className="break-all font-medium text-slate-900">
+                      {user?.email}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500">
@@ -1500,43 +1634,22 @@ export default function CoachProfilePage() {
               )}
             </Card>
 
-            <Card className="bg-white">
+            <Card className="border border-slate-200 bg-white shadow-sm">
               <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                Verification Status
+                Quick Actions
               </h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                    Status
-                  </p>
-                  <span
-                    className={`inline-flex items-center gap-2 px-2 py-1 text-xs font-semibold rounded ${badge.className}`}
-                  >
-                    <BadgeIcon size={12} />
-                    {badge.label}
-                  </span>
-                </div>
-                {status === "VERIFIED" && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-2">
-                    <p className="text-xs font-medium text-green-700">
-                      ✓ Profile verified and visible to players
-                    </p>
-                  </div>
-                )}
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  onClick={handleLogout}
+                  variant="secondary"
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </Button>
               </div>
             </Card>
-
-            <div className="pt-3">
-              <Button
-                type="button"
-                onClick={handleLogout}
-                variant="secondary"
-                className="w-full flex items-center justify-center gap-2"
-              >
-                <LogOut size={18} />
-                Logout
-              </Button>
-            </div>
           </div>
         </div>
       ) : (
@@ -1557,6 +1670,32 @@ export default function CoachProfilePage() {
             </Link>
           </div>
         </Card>
+      )}
+
+      {selectedVenueImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
+          onClick={() => setSelectedVenueImage(null)}
+        >
+          <div
+            className="relative w-full max-w-5xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedVenueImage(null)}
+              className="absolute right-2 top-2 z-10 rounded-full bg-white/95 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white"
+              aria-label="Close image preview"
+            >
+              <X size={18} />
+            </button>
+            <img
+              src={selectedVenueImage}
+              alt="Venue image preview"
+              className="max-h-[85vh] w-full rounded-xl object-contain"
+            />
+          </div>
+        </div>
       )}
     </div>
   );

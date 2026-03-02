@@ -105,7 +105,7 @@ export const coachVerificationCompletedMiddleware = async (
     }
 
     const coach = await Coach.findOne({ userId: req.user.id }).select(
-      "bio sports verificationDocuments verificationStatus isVerified",
+      "bio sports verificationStatus isVerified",
     );
 
     if (!coach) {
@@ -121,15 +121,9 @@ export const coachVerificationCompletedMiddleware = async (
       (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
     const hasBio = Boolean(coach.bio?.trim());
     const hasSports = Array.isArray(coach.sports) && coach.sports.length > 0;
-    const hasDocuments =
-      Array.isArray(coach.verificationDocuments) &&
-      coach.verificationDocuments.length > 0;
 
     const isCompleted =
-      ["PENDING", "REVIEW", "VERIFIED"].includes(status) &&
-      hasBio &&
-      hasSports &&
-      hasDocuments;
+      ["PENDING", "REVIEW", "VERIFIED"].includes(status) && hasBio && hasSports;
 
     if (!isCompleted) {
       res.status(403).json({

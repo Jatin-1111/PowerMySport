@@ -17,8 +17,32 @@ import {
   Users2,
   Zap,
 } from "lucide-react";
+import Script from "next/script";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 export default function HomePage() {
   const { user } = useAuthStore();
+
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "PowerMySport",
+    url: siteUrl,
+    logo: `${siteUrl}/icon.svg`,
+    sameAs: [],
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "PowerMySport",
+    url: siteUrl,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${siteUrl}/venues?search={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
 
   // Features data
   const features = [
@@ -121,6 +145,19 @@ export default function HomePage() {
 
   return (
     <main>
+      <Script
+        id="organization-jsonld"
+        type="application/ld+json"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <Script
+        id="website-jsonld"
+        type="application/ld+json"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+
       {/* Hero Section */}
       <Hero
         variant="home"

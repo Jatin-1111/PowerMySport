@@ -4,10 +4,11 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { coachApi } from "@/modules/coach/services/coach";
 import { isCoachVerificationFlowComplete } from "@/modules/coach/utils/verification";
+import { toast } from "@/lib/toast";
 import { Calendar, Settings, ShieldCheck, Store, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export default function CoachLayout({
   children,
@@ -20,6 +21,7 @@ export default function CoachLayout({
   const [isGateLoading, setIsGateLoading] = useState(true);
   const [isVerificationLocked, setIsVerificationLocked] = useState(false);
   const [isCoachVerified, setIsCoachVerified] = useState(false);
+  const lastGateToastKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -49,6 +51,13 @@ export default function CoachLayout({
         setIsCoachVerified(status === "VERIFIED");
 
         if (!isComplete && pathname !== "/coach/verification") {
+          const toastKey = `incomplete:${pathname}`;
+          if (lastGateToastKeyRef.current !== toastKey) {
+            lastGateToastKeyRef.current = toastKey;
+            toast.error(
+              "Coach verification is incomplete. Redirected to verification page.",
+            );
+          }
           router.replace("/coach/verification");
         }
       } catch {
@@ -59,6 +68,13 @@ export default function CoachLayout({
         setIsVerificationLocked(true);
         setIsCoachVerified(false);
         if (pathname !== "/coach/verification") {
+          const toastKey = `fetch-failed:${pathname}`;
+          if (lastGateToastKeyRef.current !== toastKey) {
+            lastGateToastKeyRef.current = toastKey;
+            toast.error(
+              "Unable to load coach profile. Redirected to verification page.",
+            );
+          }
           router.replace("/coach/verification");
         }
       } finally {
