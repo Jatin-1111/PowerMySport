@@ -231,7 +231,7 @@ export const getAllCoaches = async (
 };
 
 export interface CoachVerificationSubmission {
-  documents: Array<
+  documents?: Array<
     Omit<CoachDocumentFile, "uploadedAt" | "id"> & {
       uploadedAt?: Date;
     }
@@ -247,11 +247,18 @@ export const submitCoachVerification = async (
     throw new Error("Coach profile not found");
   }
 
-  if (!payload.documents || payload.documents.length === 0) {
-    throw new Error("At least one verification document is required");
+  if (coach.serviceMode === "OWN_VENUE") {
+    const venueImagesCount = coach.ownVenueDetails?.images?.length || 0;
+    if (venueImagesCount < 3) {
+      throw new Error(
+        "OWN_VENUE coaches must upload at least 3 venue images before verification submission",
+      );
+    }
   }
 
-  coach.verificationDocuments = payload.documents.map((doc) => ({
+  const documents = payload.documents || [];
+
+  coach.verificationDocuments = documents.map((doc) => ({
     ...doc,
     uploadedAt: doc.uploadedAt || new Date(),
   }));
@@ -449,8 +456,9 @@ export const updateCoach = async (
           amenities: venueData.amenities || [],
           pricePerHour: venueData.pricePerHour,
           description: venueData.description,
-          images: venueData.images || [],
-          imageS3Keys: venueData.imageS3Keys || [],
+          images: venueData.images || coach.ownVenueDetails?.images || [],
+          imageS3Keys:
+            venueData.imageS3Keys || coach.ownVenueDetails?.imageS3Keys || [],
           openingHours: venueData.openingHours,
         };
 

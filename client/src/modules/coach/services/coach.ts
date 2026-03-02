@@ -45,6 +45,8 @@ export const coachApi = {
       address: string;
       description?: string;
       openingHours?: string;
+      images?: string[];
+      imageS3Keys?: string[];
       coordinates?: [number, number];
       location?: {
         type: "Point";
@@ -61,7 +63,7 @@ export const coachApi = {
 
   // Submit verification step 3 (documents)
   submitVerificationStep3: async (payload: {
-    documents: CoachVerificationDocument[];
+    documents?: CoachVerificationDocument[];
   }): Promise<ApiResponse<Coach>> => {
     const response = await axiosInstance.post(
       "/coaches/verification/step3",

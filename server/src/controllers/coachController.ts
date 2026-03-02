@@ -503,19 +503,6 @@ const normalizeVerificationDocuments = (
     };
   });
 
-  const hasCertification = normalizedDocs.some(
-    (doc) => doc.type === "CERTIFICATION",
-  );
-  const hasIdProof = normalizedDocs.some((doc) => doc.type === "ID_PROOF");
-
-  if (!hasCertification) {
-    throw new Error("A CERTIFICATION document is required");
-  }
-
-  if (!hasIdProof) {
-    throw new Error("An ID_PROOF document is required");
-  }
-
   return normalizedDocs;
 };
 
@@ -624,6 +611,8 @@ export const saveCoachVerificationStep2Handler = async (
         address: string;
         description?: string;
         openingHours?: string;
+        images?: string[];
+        imageS3Keys?: string[];
         coordinates?: [number, number];
         location?: {
           type: string;
@@ -667,8 +656,8 @@ export const saveCoachVerificationStep2Handler = async (
         amenities: [],
         pricePerHour: hourlyRate,
         description: ownVenueDetails.description || "",
-        images: [],
-        imageS3Keys: [],
+        images: ownVenueDetails.images || [],
+        imageS3Keys: ownVenueDetails.imageS3Keys || [],
         openingHours: ownVenueDetails.openingHours || "09:00-18:00",
       };
     }

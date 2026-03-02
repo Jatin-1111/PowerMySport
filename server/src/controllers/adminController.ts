@@ -8,6 +8,7 @@ import {
   loginAdmin,
 } from "../services/AdminService";
 import {
+  getCoachById,
   listCoachVerificationRequests,
   updateCoachVerificationStatus,
 } from "../services/CoachService";
@@ -372,6 +373,42 @@ export const listCoachVerifications = async (
         error instanceof Error
           ? error.message
           : "Failed to fetch coach verifications",
+    });
+  }
+};
+
+/**
+ * Get single coach details for admin verification review
+ * GET /api/admin/coaches/:coachId
+ */
+export const getCoachVerificationDetails = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const coachId = (req.params as Record<string, unknown>).coachId as string;
+    const coach = await getCoachById(coachId);
+
+    if (!coach) {
+      res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Coach details retrieved",
+      data: normalizeAdminResponse(coach),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch coach details",
     });
   }
 };

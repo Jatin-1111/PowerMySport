@@ -36,6 +36,7 @@ const ALLOWED_FILE_TYPES = [
   "image/webp",
   "application/pdf",
 ];
+const ALLOWED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const getInitialServiceMode = (): ServiceMode => {
   if (typeof window === "undefined") {
@@ -165,9 +166,9 @@ const getStatusGuidance = (status: string) => {
     case "VERIFIED":
       return "You are verified! Redirecting to your profile...";
     case "REJECTED":
-      return "Your verification was rejected. Update documents and resubmit.";
+      return "Your verification was rejected. Update required details and resubmit.";
     default:
-      return "Complete all 3 steps: Profile info, Sports & Pricing, and upload both certification and ID proof documents.";
+      return "Complete all 3 steps: Profile info, Sports & Pricing, and final submission. Documents are optional.";
   }
 };
 
@@ -178,6 +179,8 @@ export default function CoachVerificationPage() {
   const [uploadingDocIndex, setUploadingDocIndex] = useState<number | null>(
     null,
   );
+  const [isUploadingVenueImage, setIsUploadingVenueImage] = useState(false);
+  const [isDraggingVenueImages, setIsDraggingVenueImages] = useState(false);
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [step, setStep] = useState<VerificationStep>(1);
@@ -203,6 +206,8 @@ export default function CoachVerificationPage() {
     address: "",
     description: "",
     openingHours: getDefaultOpeningHours(),
+    images: [] as string[],
+    imageS3Keys: [] as string[],
   });
 
   // Address autocomplete state
@@ -217,13 +222,11 @@ export default function CoachVerificationPage() {
     [number, number] | null
   >(null);
   const skipSearchRef = useRef(false); // Flag to skip search effect after selection
+  const venueImageInputRef = useRef<HTMLInputElement | null>(null);
 
   const [verificationDocs, setVerificationDocs] = useState<
     CoachVerificationDocument[]
-  >([
-    { type: "CERTIFICATION", url: "", fileName: "" },
-    { type: "ID_PROOF", url: "", fileName: "" },
-  ]);
+  >([]);
   const [requestedStep, setRequestedStep] = useState<VerificationStep | null>(
     null,
   );
@@ -431,6 +434,8 @@ export default function CoachVerificationPage() {
             openingHours: venue.openingHours
               ? parseOpeningHoursString(venue.openingHours)
               : getDefaultOpeningHours(),
+            images: venue.images || [],
+            imageS3Keys: venue.imageS3Keys || [],
           });
           // Load coordinates from location object
           if (venue.location?.coordinates) {
@@ -565,6 +570,88 @@ export default function CoachVerificationPage() {
     } finally {
       setUploadingDocIndex(null);
     }
+  };
+
+  const handleUploadVenueImage = async (file: File) => {
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(
+        `Image size exceeds 5MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+      );
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_FILE_TYPES.includes(file.type)) {
+      toast.error("Invalid image type. Upload JPG, PNG, or WebP only.");
+      return;
+    }
+
+    setIsUploadingVenueImage(true);
+    try {
+      const uploadResponse = await coachApi.getVerificationUploadUrl({
+        fileName: file.name,
+        contentType: file.type || "application/octet-stream",
+        documentType: "OTHER",
+      });
+
+      if (!uploadResponse.success || !uploadResponse.data) {
+        throw new Error(uploadResponse.message || "Failed to get upload URL");
+      }
+
+      const { uploadUrl, downloadUrl, key } = uploadResponse.data;
+      const uploadResult = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+        },
+      });
+
+      if (!uploadResult.ok) {
+        throw new Error("Image upload failed. Please try again.");
+      }
+
+      setVenueDetails((prev) => ({
+        ...prev,
+        images: [...(prev.images || []), downloadUrl],
+        imageS3Keys: [...(prev.imageS3Keys || []), key],
+      }));
+      toast.success("Venue image uploaded successfully.");
+    } catch (uploadError) {
+      toast.error(
+        uploadError instanceof Error ? uploadError.message : "Upload failed",
+      );
+    } finally {
+      setIsUploadingVenueImage(false);
+    }
+  };
+
+  const handleRemoveVenueImage = (index: number) => {
+    setVenueDetails((prev) => ({
+      ...prev,
+      images: (prev.images || []).filter((_, i) => i !== index),
+      imageS3Keys: (prev.imageS3Keys || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleVenueImageFile = (file?: File) => {
+    if (!file) {
+      return;
+    }
+
+    void handleUploadVenueImage(file);
+  };
+
+  const handleVenueImageDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingVenueImages(false);
+
+    if (isLockedByReview || isUploadingVenueImage) {
+      return;
+    }
+
+    const file = event.dataTransfer.files?.[0];
+    handleVenueImageFile(file);
   };
 
   const handleStepOneContinue = () => {
@@ -704,6 +791,8 @@ export default function CoachVerificationPage() {
           address: string;
           description: string;
           openingHours: string;
+          images: string[];
+          imageS3Keys: string[];
         };
       } = {
         bio: bio.trim(),
@@ -721,6 +810,8 @@ export default function CoachVerificationPage() {
           address: venueDetails.address.trim(),
           description: venueDetails.description.trim(),
           openingHours: formatOpeningHoursToString(venueDetails.openingHours),
+          images: venueDetails.images || [],
+          imageS3Keys: venueDetails.imageS3Keys || [],
           ...(venueCoordinates && {
             location: {
               type: "Point",
@@ -748,9 +839,7 @@ export default function CoachVerificationPage() {
       setCoachProfile(step2Response.data);
       localStorage.removeItem("coachServiceMode");
       setStep(3);
-      toast.success(
-        "Step 2 completed. Now upload your certification documents.",
-      );
+      toast.success("Step 2 completed. Proceed to final submission.");
     } catch (saveError) {
       toast.error(
         saveError instanceof Error
@@ -798,29 +887,15 @@ export default function CoachVerificationPage() {
       hourlyRate = Math.max(...Object.values(pricingPayload));
     }
 
-    const invalidDoc = verificationDocs.find(
-      (doc) => !doc.url.trim() || !doc.fileName.trim(),
-    );
-    if (invalidDoc) {
-      toast.error("Please upload a file for each listed document.");
-      return;
-    }
-
-    const hasCertificationDoc = verificationDocs.some(
-      (doc) => doc.type === "CERTIFICATION",
-    );
-    if (!hasCertificationDoc) {
-      toast.error("At least one uploaded document must be a CERTIFICATION.");
-      return;
-    }
-
-    const hasIdProofDoc = verificationDocs.some(
-      (doc) => doc.type === "ID_PROOF",
-    );
-    if (!hasIdProofDoc) {
-      toast.error("At least one uploaded document must be an ID_PROOF.");
-      return;
-    }
+    const normalizedDocs = verificationDocs
+      .filter((doc) => doc.url.trim() && doc.fileName.trim())
+      .map((doc) => ({
+        type: doc.type,
+        url: doc.url.trim(),
+        fileName: doc.fileName.trim(),
+        s3Key: doc.s3Key,
+        uploadedAt: doc.uploadedAt,
+      }));
 
     setSaving(true);
     try {
@@ -831,6 +906,28 @@ export default function CoachVerificationPage() {
         hourlyRate,
         sportPricing: pricingPayload,
         serviceMode,
+        ...(serviceMode === "OWN_VENUE" || serviceMode === "HYBRID"
+          ? {
+              ownVenueDetails: {
+                name: venueDetails.name.trim(),
+                address: venueDetails.address.trim(),
+                description: venueDetails.description.trim(),
+                openingHours: formatOpeningHoursToString(
+                  venueDetails.openingHours,
+                ),
+                images: venueDetails.images || [],
+                imageS3Keys: venueDetails.imageS3Keys || [],
+                ...(venueCoordinates
+                  ? {
+                      location: {
+                        type: "Point" as const,
+                        coordinates: venueCoordinates,
+                      },
+                    }
+                  : {}),
+              },
+            }
+          : {}),
         ...(serviceMode !== "OWN_VENUE" && venueCoordinates
           ? {
               baseLocation: {
@@ -849,14 +946,19 @@ export default function CoachVerificationPage() {
 
       setCoachProfile(step2SyncResponse.data);
 
+      if (serviceMode === "OWN_VENUE") {
+        const ownVenueImages =
+          step2SyncResponse.data.ownVenueDetails?.images || [];
+        if (ownVenueImages.length < 3) {
+          toast.error(
+            "OWN_VENUE coaches must upload at least 3 venue images before submitting verification.",
+          );
+          return;
+        }
+      }
+
       const response = await coachApi.submitVerificationStep3({
-        documents: verificationDocs.map((doc) => ({
-          type: doc.type,
-          url: doc.url.trim(),
-          fileName: doc.fileName.trim(),
-          s3Key: doc.s3Key,
-          uploadedAt: doc.uploadedAt,
-        })),
+        documents: normalizedDocs,
       });
 
       if (!response.success) {
@@ -906,7 +1008,7 @@ export default function CoachVerificationPage() {
               Complete Your Verification
             </h1>
             <p className="mt-1 text-sm text-slate-600">
-              3 steps: Bio, Sports, Certifications/Documents
+              3 steps: Bio, Sports/Pricing, Final Submission
             </p>
           </div>
           <span
@@ -1446,7 +1548,7 @@ export default function CoachVerificationPage() {
                 onClick={handleStepTwoContinue}
                 disabled={saving || isLockedByReview}
               >
-                {saving ? "Saving..." : "Continue to Documents"}
+                {saving ? "Saving..." : "Continue to Final Step"}
               </Button>
             </div>
           </div>
@@ -1454,10 +1556,110 @@ export default function CoachVerificationPage() {
 
         {step === 3 && (
           <div className="space-y-5">
+            {serviceMode === "OWN_VENUE" && (
+              <div className="space-y-3 rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Venue Images (Required for OWN_VENUE)
+                  </p>
+                  <span className="text-xs text-slate-500">
+                    {(venueDetails.images || []).length} uploaded (min 3)
+                  </span>
+                </div>
+
+                <div
+                  onDragEnter={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (!isLockedByReview && !isUploadingVenueImage) {
+                      setIsDraggingVenueImages(true);
+                    }
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onDragLeave={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setIsDraggingVenueImages(false);
+                  }}
+                  onDrop={handleVenueImageDrop}
+                  className={`rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
+                    isDraggingVenueImages
+                      ? "border-power-orange bg-power-orange/5"
+                      : "border-slate-300 bg-slate-50/60"
+                  }`}
+                >
+                  <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm">
+                    <Upload size={18} className="text-power-orange" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Drag & drop venue images here
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    JPG, PNG, WebP • Max 5MB per image
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => venueImageInputRef.current?.click()}
+                    disabled={isLockedByReview || isUploadingVenueImage}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {isUploadingVenueImage ? "Uploading..." : "Browse Images"}
+                  </button>
+                  <input
+                    ref={venueImageInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    className="hidden"
+                    disabled={isLockedByReview || isUploadingVenueImage}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      handleVenueImageFile(file);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </div>
+
+                {!!venueDetails.images?.length && (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {venueDetails.images.map((imageUrl, index) => (
+                      <div
+                        key={`${imageUrl}-${index}`}
+                        className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                      >
+                        <div className="aspect-4/3 bg-slate-100">
+                          <img
+                            src={imageUrl}
+                            alt={`Venue image ${index + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between px-3 py-2">
+                          <span className="text-xs font-medium text-slate-600">
+                            Venue Image {index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            className="rounded border border-red-200 px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                            onClick={() => handleRemoveVenueImage(index)}
+                            disabled={isLockedByReview || isUploadingVenueImage}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-900">
-                  Upload Verification Documents
+                  Verification Documents (Optional)
                 </p>
                 <Button
                   type="button"
@@ -1580,7 +1782,10 @@ export default function CoachVerificationPage() {
                 type="button"
                 variant="primary"
                 disabled={
-                  saving || isLockedByReview || uploadingDocIndex !== null
+                  saving ||
+                  isLockedByReview ||
+                  uploadingDocIndex !== null ||
+                  isUploadingVenueImage
                 }
                 onClick={handleSubmitVerification}
               >
