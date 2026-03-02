@@ -413,9 +413,22 @@ export default function CommunityPage() {
         .catch(() => undefined);
     };
 
-    const handleConversationUpdated = async () => {
-      const updated = await communityService.listConversations();
-      setConversations(updated);
+    const handleConversationUpdated = async (payload?: {
+      conversationId?: string;
+    }) => {
+      const conversationId = payload?.conversationId;
+      if (conversationId && socket.connected) {
+        socket.emit("community:joinConversation", {
+          conversationId,
+        });
+      }
+
+      try {
+        const updated = await communityService.listConversations();
+        setConversations(updated);
+      } catch {
+        // no-op: keep realtime listeners active even if refresh fails once
+      }
     };
 
     const handleCommunityError = (payload: { message: string }) => {

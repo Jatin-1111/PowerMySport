@@ -178,6 +178,10 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
         );
 
         for (const participantId of message.participantIds) {
+          io.to(`user:${participantId}`).emit("community:newMessage", message);
+        }
+
+        for (const participantId of message.participantIds) {
           io.to(`user:${participantId}`).emit("community:conversationUpdated", {
             conversationId,
             conversationType: message.conversationType || "DM",
