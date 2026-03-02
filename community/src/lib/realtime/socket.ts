@@ -15,14 +15,27 @@ const buildSocketAuth = (): { token?: string } => {
   return token ? { token } : {};
 };
 
+const resolveSocketUrl = (): string => {
+  const explicitSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+  if (explicitSocketUrl) {
+    return explicitSocketUrl;
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (apiUrl) {
+    return apiUrl.replace(/\/?api\/?$/i, "").replace(/\/$/, "");
+  }
+
+  return "http://localhost:5000";
+};
+
 export const getCommunitySocket = (): Socket => {
   if (socket) {
     socket.auth = buildSocketAuth();
     return socket;
   }
 
-  const socketUrl =
-    process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+  const socketUrl = resolveSocketUrl();
 
   socket = io(socketUrl, {
     transports: ["websocket", "polling"],

@@ -39,16 +39,59 @@ const shellNavItems = [
   { id: "privacy-settings", label: "Privacy", icon: Shield },
 ] as const;
 
+const COMMUNITY_ACTIVE_TAB_KEY = "community:activeSidebarTab";
+const COMMUNITY_WORKSPACE_VIEW_KEY = "community:workspaceView";
+const COMMUNITY_DIRECTORY_VIEW_KEY = "community:directoryView";
+const COMMUNITY_SELECTED_CONVERSATION_KEY = "community:selectedConversationId";
+
+const isValidSidebarTab = (
+  value: string | null,
+): value is "community-overview" | "conversations" | "privacy-settings" =>
+  value === "community-overview" ||
+  value === "conversations" ||
+  value === "privacy-settings";
+
+const isValidWorkspaceView = (
+  value: string | null,
+): value is "CHAT" | "DIRECTORY" | "PRIVACY" =>
+  value === "CHAT" || value === "DIRECTORY" || value === "PRIVACY";
+
+const isValidDirectoryView = (
+  value: string | null,
+): value is "ALL" | "CONTACTS" | "GROUPS" =>
+  value === "ALL" || value === "CONTACTS" || value === "GROUPS";
+
 export default function CommunityPage() {
   const [activeSidebarTab, setActiveSidebarTab] = useState<
     "community-overview" | "conversations" | "privacy-settings"
-  >("community-overview");
+  >(() => {
+    if (typeof window === "undefined") {
+      return "community-overview";
+    }
+
+    const stored = window.localStorage.getItem(COMMUNITY_ACTIVE_TAB_KEY);
+    return isValidSidebarTab(stored) ? stored : "community-overview";
+  });
   const [workspaceView, setWorkspaceView] = useState<
     "CHAT" | "DIRECTORY" | "PRIVACY"
-  >("CHAT");
+  >(() => {
+    if (typeof window === "undefined") {
+      return "CHAT";
+    }
+
+    const stored = window.localStorage.getItem(COMMUNITY_WORKSPACE_VIEW_KEY);
+    return isValidWorkspaceView(stored) ? stored : "CHAT";
+  });
   const [directoryView, setDirectoryView] = useState<
     "ALL" | "CONTACTS" | "GROUPS"
-  >("ALL");
+  >(() => {
+    if (typeof window === "undefined") {
+      return "ALL";
+    }
+
+    const stored = window.localStorage.getItem(COMMUNITY_DIRECTORY_VIEW_KEY);
+    return isValidDirectoryView(stored) ? stored : "ALL";
+  });
   const [conversationMode, setConversationMode] = useState<
     "ALL" | "UNREAD" | "REQUESTS"
   >("ALL");
@@ -60,7 +103,13 @@ export default function CommunityPage() {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
-  >(null);
+  >(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return window.localStorage.getItem(COMMUNITY_SELECTED_CONVERSATION_KEY);
+  });
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [aliasDraft, setAliasDraft] = useState("");
   const [playerSearchQuery, setPlayerSearchQuery] = useState("");
@@ -290,7 +339,14 @@ export default function CommunityPage() {
       setProfile(profileData);
       setConversations(conversationData);
       setGroupResults(groupData);
-      if (!selectedConversationId && conversationData.length) {
+      if (!conversationData.length) {
+        setSelectedConversationId(null);
+      } else if (
+        !selectedConversationId ||
+        !conversationData.some(
+          (conversation) => conversation.id === selectedConversationId,
+        )
+      ) {
         setSelectedConversationId(conversationData[0].id);
       }
     } catch (e) {
@@ -332,6 +388,46 @@ export default function CommunityPage() {
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId;
+  }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(COMMUNITY_ACTIVE_TAB_KEY, activeSidebarTab);
+  }, [activeSidebarTab]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(COMMUNITY_WORKSPACE_VIEW_KEY, workspaceView);
+  }, [workspaceView]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(COMMUNITY_DIRECTORY_VIEW_KEY, directoryView);
+  }, [directoryView]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (selectedConversationId) {
+      window.localStorage.setItem(
+        COMMUNITY_SELECTED_CONVERSATION_KEY,
+        selectedConversationId,
+      );
+      return;
+    }
+
+    window.localStorage.removeItem(COMMUNITY_SELECTED_CONVERSATION_KEY);
   }, [selectedConversationId]);
 
   useEffect(() => {
