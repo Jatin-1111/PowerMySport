@@ -7,6 +7,7 @@ import { Coach } from "@/types";
 import {
   ArrowRight,
   Award,
+  ImageIcon,
   IndianRupee,
   Search,
   Star,
@@ -14,6 +15,79 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const normalizeImageUrl = (value?: string) => {
+  if (!value || typeof value !== "string") {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("data:image")
+  ) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+
+  if (trimmed.includes("amazonaws.com")) {
+    return `https://${trimmed}`;
+  }
+
+  return trimmed;
+};
+
+const CoachImageWithFallback = ({
+  sources,
+  alt,
+  className,
+}: {
+  sources: string[];
+  alt: string;
+  className: string;
+}) => {
+  const cleanedSources = Array.from(
+    new Set(
+      sources
+        .map((source) => normalizeImageUrl(source))
+        .filter((source) => source.length > 0),
+    ),
+  );
+
+  const [sourceIndex, setSourceIndex] = useState(0);
+
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [cleanedSources.join("|")]);
+
+  const currentSource = cleanedSources[sourceIndex];
+
+  if (!currentSource) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-slate-400">
+        <ImageIcon size={28} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={currentSource}
+      alt={alt}
+      className={className}
+      onError={() => setSourceIndex((previous) => previous + 1)}
+    />
+  );
+};
 
 export default function CoachesPage() {
   const [loading, setLoading] = useState(true);
@@ -79,6 +153,28 @@ export default function CoachesPage() {
       return Math.min(...values);
     }
     return coach.hourlyRate;
+  };
+
+  const getCoachImageCandidates = (coach: Coach) => {
+    const coachUser =
+      typeof coach.userId === "object" && coach.userId !== null
+        ? coach.userId
+        : undefined;
+
+    return [
+      coach.photoUrl,
+      coach.profileImage,
+      coachUser?.photoUrl,
+      coach.ownVenueDetails?.images?.[0],
+    ].filter((value): value is string => typeof value === "string");
+  };
+
+  const getCoachVenueImage = (coach: Coach) => {
+    const venueImages = coach.ownVenueDetails?.images || [];
+    return venueImages.find(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    );
   };
 
   const applyCoachFilters = (baseCoaches: Coach[]) => {
@@ -436,14 +532,39 @@ export default function CoachesPage() {
 
             {/* Coaches Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {filteredCoaches.map((coach) => (
+              {filteredCoaches.map((coach, coachIndex) => {
+                const coachCardKey =
+                  coach.id || coach._id || `${String(coach.userId)}-${coachIndex}`;
+
+                return (
                 <Card
-                  key={coach.id}
+                  key={coachCardKey}
                   className="bg-white border-2 border-slate-100 hover:border-turf-green hover:shadow-xl transition-all overflow-hidden group cursor-pointer"
                   onClick={() =>
                     router.push(`/coaches/${coach.id || coach._id}`)
                   }
                 >
+                  {(() => {
+                    const coachImageCandidates = getCoachImageCandidates(coach);
+                    const venueImage = getCoachVenueImage(coach);
+
+                    return (
+                      <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+                        <CoachImageWithFallback
+                          sources={coachImageCandidates}
+                          alt={`${coach.sports[0]} coach`}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        />
+
+                        {venueImage && (
+                          <span className="absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                            Venue image
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-5 border-b border-slate-100">
                     <div className="mb-3">
                       <div className="flex items-center justify-between gap-2 mb-2">
@@ -499,9 +620,9 @@ export default function CoachesPage() {
                     {/* Price */}
                     <div className="pt-4 border-t border-slate-100">
                       <div className="mb-3 flex flex-wrap gap-1.5">
-                        {coach.sports.slice(0, 3).map((sport) => (
+                        {coach.sports.slice(0, 3).map((sport, sportIndex) => (
                           <span
-                            key={sport}
+                            key={`${coachCardKey}-${sport}-${sportIndex}`}
                             className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700"
                           >
                             {sport}: ₹{getSportRate(coach, sport)}
@@ -534,7 +655,8 @@ export default function CoachesPage() {
                     </div>
                   </div>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           </>
         )}

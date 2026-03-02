@@ -6,6 +6,7 @@ import {
   CoachDocumentFile,
   CoachVerificationStatus,
 } from "../models/Coach";
+import { s3Service } from "./S3Service";
 import { ICoach, IOwnVenueDetails, ServiceMode } from "../types";
 
 const toRadians = (value: number): number => (value * Math.PI) / 180;
@@ -30,6 +31,59 @@ const calculateDistanceKm = (
   const earthRadiusKm = 6371;
 
   return earthRadiusKm * arc;
+};
+
+const refreshCoachMediaUrls = async <T extends Record<string, any>>(
+  coach: T,
+): Promise<T> => {
+  if (!coach) {
+    return coach;
+  }
+
+  const mutableCoach = coach as any;
+
+  const user = mutableCoach.userId;
+  if (user && typeof user === "object" && user.photoS3Key) {
+    try {
+      user.photoUrl = await s3Service.generateDownloadUrl(
+        user.photoS3Key,
+        "images",
+        604800,
+      );
+    } catch (error) {
+      console.error("Failed to refresh coach profile photo URL:", error);
+    }
+  }
+
+  const venueKeys: string[] = Array.isArray(
+    mutableCoach.ownVenueDetails?.imageS3Keys,
+  )
+    ? mutableCoach.ownVenueDetails.imageS3Keys
+    : [];
+
+  if (venueKeys.length > 0) {
+    const refreshedVenueImages = await Promise.all(
+      venueKeys.map(async (key) => {
+        try {
+          return await s3Service.generateDownloadUrl(key, "images", 604800);
+        } catch (error) {
+          console.error(
+            `Failed to refresh coach venue image URL for ${key}:`,
+            error,
+          );
+          return "";
+        }
+      }),
+    );
+
+    if (!mutableCoach.ownVenueDetails) {
+      mutableCoach.ownVenueDetails = {};
+    }
+
+    mutableCoach.ownVenueDetails.images = refreshedVenueImages.filter(Boolean);
+  }
+
+  return coach;
 };
 
 export interface CreateCoachPayload {
@@ -196,9 +250,11 @@ export const findCoachesNearby = async (
     });
 
     // Populate the final documents (aggregate doesn't return full mongoose documents)
-    return Coach.populate(filteredCoaches, { path: "userId" }) as Promise<
-      CoachDocument[]
-    >;
+    const populatedCoaches = (await Coach.populate(filteredCoaches, {
+      path: "userId",
+    })) as CoachDocument[];
+
+    return Promise.all(populatedCoaches.map(refreshCoachMediaUrls));
   } catch (error) {
     throw new Error(
       `Failed to find coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -222,7 +278,8 @@ export const getAllCoaches = async (
       query.sports = sport;
     }
 
-    return Coach.find(query).populate("userId");
+    const coaches = await Coach.find(query).populate("userId");
+    return Promise.all(coaches.map(refreshCoachMediaUrls));
   } catch (error) {
     throw new Error(
       `Failed to fetch coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -400,7 +457,12 @@ export const getCoachById = async (
   if (!coachId || coachId === "undefined") {
     return null;
   }
-  return Coach.findById(coachId).populate("userId");
+  const coach = await Coach.findById(coachId).populate("userId");
+  if (!coach) {
+    return null;
+  }
+
+  return refreshCoachMediaUrls(coach);
 };
 
 /**
@@ -409,7 +471,12 @@ export const getCoachById = async (
 export const getCoachByUserId = async (
   userId: string,
 ): Promise<CoachDocument | null> => {
-  return Coach.findOne({ userId }).populate("userId");
+  const coach = await Coach.findOne({ userId }).populate("userId");
+  if (!coach) {
+    return null;
+  }
+
+  return refreshCoachMediaUrls(coach);
 };
 
 /**

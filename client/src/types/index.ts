@@ -114,10 +114,20 @@ export interface CoachVerificationDocument {
   uploadedAt?: string;
 }
 
+export interface CoachUserRef {
+  _id?: string;
+  id?: string;
+  name?: string;
+  email?: string;
+  photoUrl?: string;
+}
+
 export interface Coach {
   _id?: string;
   id: string;
-  userId: string;
+  userId: string | CoachUserRef;
+  photoUrl?: string;
+  profileImage?: string;
   bio: string;
   certifications: string[];
   sports: string[];

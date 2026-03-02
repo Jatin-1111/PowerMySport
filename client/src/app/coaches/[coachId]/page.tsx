@@ -13,6 +13,7 @@ import {
   Award,
   Calendar,
   Check,
+  ImageIcon,
   IndianRupee,
   Info,
   Star,
@@ -21,6 +22,81 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+
+const normalizeImageUrl = (value?: string) => {
+  if (!value || typeof value !== "string") {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("data:image")
+  ) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+
+  if (trimmed.includes("amazonaws.com")) {
+    return `https://${trimmed}`;
+  }
+
+  return trimmed;
+};
+
+const CoachImageWithFallback = ({
+  sources,
+  alt,
+  className,
+  iconClassName,
+}: {
+  sources: string[];
+  alt: string;
+  className: string;
+  iconClassName: string;
+}) => {
+  const cleanedSources = Array.from(
+    new Set(
+      sources
+        .map((source) => normalizeImageUrl(source))
+        .filter((source) => source.length > 0),
+    ),
+  );
+
+  const [sourceIndex, setSourceIndex] = useState(0);
+
+  useEffect(() => {
+    setSourceIndex(0);
+  }, [cleanedSources.join("|")]);
+
+  const currentSource = cleanedSources[sourceIndex];
+
+  if (!currentSource) {
+    return (
+      <div className={iconClassName}>
+        <ImageIcon size={24} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={currentSource}
+      alt={alt}
+      className={className}
+      onError={() => setSourceIndex((previous) => previous + 1)}
+    />
+  );
+};
 
 export default function CoachDetailsPage() {
   const params = useParams();
@@ -64,6 +140,26 @@ export default function CoachDetailsPage() {
       return sportRate;
     }
     return coach.hourlyRate;
+  };
+
+  const getCoachImageCandidates = (coachData: Coach) => {
+    const coachUser =
+      typeof coachData.userId === "object" && coachData.userId !== null
+        ? coachData.userId
+        : undefined;
+
+    return [
+      coachData.photoUrl,
+      coachData.profileImage,
+      coachUser?.photoUrl,
+      coachData.ownVenueDetails?.images?.[0],
+    ].filter((value): value is string => typeof value === "string");
+  };
+
+  const getVenueImages = (coachData: Coach) => {
+    return (coachData.ownVenueDetails?.images || [])
+      .map((value) => normalizeImageUrl(value))
+      .filter((value): value is string => value.length > 0);
   };
 
   const getVerificationBadge = (coachData: Coach) => {
@@ -299,6 +395,8 @@ export default function CoachDetailsPage() {
   }
 
   const selectedSportRate = getSportRate(selectedSport || coach.sports?.[0]);
+  const coachImageCandidates = getCoachImageCandidates(coach);
+  const venueImages = getVenueImages(coach);
 
   return (
     <div className="bg-slate-50">
@@ -337,28 +435,42 @@ export default function CoachDetailsPage() {
               </h1>
 
               {/* Stats */}
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Star size={20} className="text-yellow-400 fill-yellow-400" />
-                  <span className="font-bold text-lg">
-                    {coach.rating.toFixed(1)}
-                  </span>
-                  <span className="text-slate-300 text-sm">
-                    ({coach.reviewCount} reviews)
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Star
+                      size={20}
+                      className="text-yellow-400 fill-yellow-400"
+                    />
+                    <span className="font-bold text-lg">
+                      {coach.rating.toFixed(1)}
+                    </span>
+                    <span className="text-slate-300 text-sm">
+                      ({coach.reviewCount} reviews)
+                    </span>
+                  </div>
+                  <div className="h-4 w-px bg-slate-600"></div>
+                  <div className="flex items-center gap-1">
+                    <IndianRupee size={20} className="text-turf-green" />
+                    <span className="font-bold text-xl text-turf-green">
+                      {selectedSportRate}
+                    </span>
+                    <span className="text-slate-300 text-sm">/hour</span>
+                  </div>
+                  <div className="h-4 w-px bg-slate-600"></div>
+                  <span className="px-2.5 py-1 bg-turf-green/20 border border-turf-green/30 rounded-lg text-turf-green font-semibold text-xs">
+                    {coach.serviceMode}
                   </span>
                 </div>
-                <div className="h-4 w-px bg-slate-600"></div>
-                <div className="flex items-center gap-1">
-                  <IndianRupee size={20} className="text-turf-green" />
-                  <span className="font-bold text-xl text-turf-green">
-                    {selectedSportRate}
-                  </span>
-                  <span className="text-slate-300 text-sm">/hour</span>
+
+                <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-white/20 bg-white/10">
+                  <CoachImageWithFallback
+                    sources={coachImageCandidates}
+                    alt={`${coach.sports[0]} coach`}
+                    className="h-full w-full object-cover"
+                    iconClassName="flex h-full w-full items-center justify-center text-white/70"
+                  />
                 </div>
-                <div className="h-4 w-px bg-slate-600"></div>
-                <span className="px-2.5 py-1 bg-turf-green/20 border border-turf-green/30 rounded-lg text-turf-green font-semibold text-xs">
-                  {coach.serviceMode}
-                </span>
               </div>
             </div>
             <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-turf-green/20 blur-3xl" />
@@ -387,6 +499,34 @@ export default function CoachDetailsPage() {
                 </p>
               </div>
             </Card>
+
+            {/* Venue Images */}
+            {venueImages.length > 0 && (
+              <Card className="bg-white border-2 border-slate-100 overflow-hidden">
+                <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <ImageIcon size={24} className="text-turf-green" />
+                    Venue Images
+                  </h2>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {venueImages.map((imageUrl, index) => (
+                      <div
+                        key={`${imageUrl}-${index}`}
+                        className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={`Venue image ${index + 1}`}
+                          className="h-44 w-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Certifications */}
             <Card className="bg-white border-2 border-slate-100 overflow-hidden">
