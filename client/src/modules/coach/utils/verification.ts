@@ -13,9 +13,6 @@ export const isCoachVerificationFlowComplete = (
     coach.verificationStatus || (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
   const hasBio = Boolean(coach.bio?.trim());
   const hasSports = Array.isArray(coach.sports) && coach.sports.length > 0;
-  const hasDocs =
-    Array.isArray(coach.verificationDocuments) &&
-    coach.verificationDocuments.length > 0;
 
-  return COMPLETED_STATUSES.has(status) && hasBio && hasSports && hasDocs;
+  return COMPLETED_STATUSES.has(status) && hasBio && hasSports;
 };
