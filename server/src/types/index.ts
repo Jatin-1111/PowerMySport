@@ -14,7 +14,9 @@ export type BookingStatus =
 // USER TYPES
 // ============================================
 
-export interface IPlayerProfile {}
+export interface IPlayerProfile {
+  sports?: string[];
+}
 
 export interface IBusinessDetails {
   name: string;

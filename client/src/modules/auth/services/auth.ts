@@ -37,6 +37,9 @@ export const authApi = {
     email?: string;
     phone?: string;
     dob?: string | Date;
+    playerProfile?: {
+      sports?: string[];
+    };
   }): Promise<ApiResponse<User>> => {
     const response = await axiosInstance.put("/auth/profile", data);
     return response.data;

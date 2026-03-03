@@ -1,6 +1,10 @@
 ﻿// ============================================
 // USER & AUTH TYPES
 // ============================================
+export interface IPlayerProfile {
+  sports?: string[];
+}
+
 export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH";
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
@@ -53,6 +57,7 @@ export interface User {
   role: UserRole;
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
+  playerProfile?: IPlayerProfile;
   venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];
 }

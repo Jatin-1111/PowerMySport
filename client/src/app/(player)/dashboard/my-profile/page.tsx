@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Modal } from "@/modules/shared/ui/Modal";
@@ -64,6 +65,9 @@ export default function ProfilePage() {
     phone: "",
     dob: "",
   });
+  const [isEditingSports, setIsEditingSports] = useState(false);
+  const [isSavingSports, setIsSavingSports] = useState(false);
+  const [selectedSports, setSelectedSports] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProfile();
@@ -269,6 +273,31 @@ export default function ProfilePage() {
       toast.error(getErrorMessage(error) || "Failed to update profile");
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  const handleEditSportsClick = () => {
+    if (!user) return;
+    setSelectedSports(user.playerProfile?.sports || []);
+    setIsEditingSports(true);
+  };
+
+  const handleSaveSports = async () => {
+    setIsSavingSports(true);
+
+    try {
+      await authApi.updateProfile({
+        playerProfile: {
+          sports: selectedSports,
+        },
+      });
+      await fetchProfile();
+      setIsEditingSports(false);
+      toast.success("Sports updated successfully!");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error) || "Failed to update sports");
+    } finally {
+      setIsSavingSports(false);
     }
   };
 
@@ -496,6 +525,81 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+      </Card>
+
+      {/* My Sports Section */}
+      <Card className="bg-white">
+        <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">My Sports</h2>
+            <p className="text-sm text-slate-500">
+              The sports you play. Helps coaches find you for relevant bookings.
+            </p>
+          </div>
+          {!isEditingSports && (
+            <button
+              onClick={handleEditSportsClick}
+              className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+
+        {isEditingSports ? (
+          <div className="px-6 py-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-slate-600 text-sm font-semibold mb-3">
+                  Select Your Sports
+                </label>
+                <SportsMultiSelect
+                  value={selectedSports}
+                  onChange={setSelectedSports}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <button
+                  onClick={handleSaveSports}
+                  disabled={isSavingSports}
+                  className="px-6 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {isSavingSports ? "Saving..." : "Save Sports"}
+                </button>
+                <button
+                  onClick={() => setIsEditingSports(false)}
+                  disabled={isSavingSports}
+                  className="px-6 py-2.5 bg-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-300 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="px-6 py-6">
+            {user.playerProfile?.sports &&
+            user.playerProfile.sports.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {user.playerProfile.sports.map((sport) => (
+                  <span
+                    key={sport}
+                    className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700 border border-orange-200"
+                  >
+                    {sport}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+                <p className="text-sm text-slate-500">
+                  No sports added yet. Click Edit to add your sports!
+                </p>
+              </div>
+            )}
           </div>
         )}
       </Card>

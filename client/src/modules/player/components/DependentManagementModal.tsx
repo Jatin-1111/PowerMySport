@@ -3,6 +3,7 @@
 import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -41,7 +42,6 @@ export default function DependentManagementModal({
       sports: [],
     },
   );
-  const [sportInput, setSportInput] = useState("");
 
   // Update form data when modal opens or initialDependent changes
   useEffect(() => {
@@ -66,7 +66,6 @@ export default function DependentManagementModal({
           sports: [],
         });
       }
-      setSportInput("");
     }
   }, [isOpen, initialDependent]);
 
@@ -74,23 +73,6 @@ export default function DependentManagementModal({
     setFormData((prev) => ({
       ...prev,
       [field]: value,
-    }));
-  };
-
-  const addSport = () => {
-    if (sportInput.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        sports: [...(prev.sports || []), sportInput.trim()],
-      }));
-      setSportInput("");
-    }
-  };
-
-  const removeSport = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      sports: prev.sports?.filter((_, i) => i !== index) || [],
     }));
   };
 
@@ -116,7 +98,6 @@ export default function DependentManagementModal({
         relation: "CHILD",
         sports: [],
       });
-      setSportInput("");
       onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to save dependent");
@@ -197,52 +178,13 @@ export default function DependentManagementModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               Sports
             </label>
-            <div className="mb-2 flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                value={sportInput}
-                onChange={(e) => setSportInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addSport();
-                  }
-                }}
-                placeholder="e.g., Cricket"
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50 text-sm"
-              />
-              <Button
-                type="button"
-                onClick={addSport}
-                variant="secondary"
-                className="w-full sm:w-auto sm:whitespace-nowrap"
-              >
-                Add
-              </Button>
-            </div>
-
-            {(formData.sports || []).length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {(formData.sports || []).map((sport, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center gap-2 bg-power-orange/10 border border-power-orange/30 text-power-orange px-3 py-1 rounded-full text-sm"
-                  >
-                    {sport}
-                    <button
-                      type="button"
-                      onClick={() => removeSport(index)}
-                      className="hover:text-power-orange font-bold"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+            <SportsMultiSelect
+              value={formData.sports || []}
+              onChange={(sports) => handleChange("sports", sports)}
+            />
           </div>
 
           <div className="flex flex-col justify-end gap-3 border-t border-slate-200 pt-4 sm:flex-row">

@@ -377,6 +377,9 @@ export interface UpdateProfilePayload {
   email?: string;
   phone?: string;
   dob?: string | Date;
+  playerProfile?: {
+    sports?: string[];
+  };
 }
 
 export const updateProfile = async (
@@ -408,6 +411,16 @@ export const updateProfile = async (
   if (payload.email) user.email = payload.email;
   if (payload.phone) user.phone = payload.phone;
   if (payload.dob) user.dob = new Date(payload.dob);
+
+  // Update player profile if provided
+  if (payload.playerProfile) {
+    if (!user.playerProfile) {
+      user.playerProfile = {};
+    }
+    if (Array.isArray(payload.playerProfile.sports)) {
+      user.playerProfile.sports = payload.playerProfile.sports;
+    }
+  }
 
   await user.save();
   return user;

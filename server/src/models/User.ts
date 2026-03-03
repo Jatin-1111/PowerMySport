@@ -58,6 +58,7 @@ const userSchema = new Schema<UserDocument>(
       default: "PLAYER",
     },
     playerProfile: {
+      sports: [String],
       paymentHistory: [
         {
           bookingId: {

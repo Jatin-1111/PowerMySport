@@ -215,13 +215,14 @@ export const updateProfileHandler = async (
       return;
     }
 
-    const { name, email, phone, dob } = req.body;
+    const { name, email, phone, dob, playerProfile } = req.body;
 
     const updatedUser = await updateProfile(req.user.id, {
       name,
       email,
       phone,
       dob,
+      playerProfile,
     });
 
     res.status(200).json({
@@ -236,6 +237,7 @@ export const updateProfileHandler = async (
         dob: updatedUser.dob,
         photoUrl: updatedUser.photoUrl,
         photoS3Key: updatedUser.photoS3Key,
+        playerProfile: updatedUser.playerProfile,
         venueListerProfile: updatedUser.venueListerProfile,
         dependents: updatedUser.dependents,
       },
