@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
     },
     {
       name: "Instagram",
-      href: "#",
+      href: "https://www.instagram.com/powermysport",
       icon: <Instagram className="h-6 w-6" />,
     },
     {
