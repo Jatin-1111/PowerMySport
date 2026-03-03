@@ -168,13 +168,38 @@ export default function CommunityPage() {
     () => (Array.isArray(groupResults) ? groupResults : []),
     [groupResults],
   );
+  const getConversationById = useCallback(
+    (conversationId: string | null) => {
+      if (!conversationId) {
+        return null;
+      }
+
+      for (const conversation of safeConversations) {
+        if (conversation.id === conversationId) {
+          return conversation;
+        }
+      }
+
+      return null;
+    },
+    [safeConversations],
+  );
+  const getGroupConversationByGroupId = useCallback(
+    (groupId: string) => {
+      for (const conversation of safeConversations) {
+        if (conversation.group?.id === groupId) {
+          return conversation;
+        }
+      }
+
+      return null;
+    },
+    [safeConversations],
+  );
 
   const selectedConversation = useMemo(
-    () =>
-      safeConversations.find(
-        (conversation) => conversation.id === selectedConversationId,
-      ) || null,
-    [safeConversations, selectedConversationId],
+    () => getConversationById(selectedConversationId),
+    [getConversationById, selectedConversationId],
   );
 
   const appendMessage = (incoming: ConversationMessage) => {
@@ -1059,9 +1084,7 @@ export default function CommunityPage() {
       return "Join";
     }
 
-    const groupConversation = safeConversations.find(
-      (conversation) => conversation.group?.id === group.id,
-    );
+    const groupConversation = getGroupConversationByGroupId(group.id);
 
     return groupConversation ? "Open chat" : "View groups";
   };
@@ -1072,9 +1095,7 @@ export default function CommunityPage() {
       return;
     }
 
-    const groupConversation = safeConversations.find(
-      (conversation) => conversation.group?.id === group.id,
-    );
+    const groupConversation = getGroupConversationByGroupId(group.id);
 
     setActiveSidebarTab("conversations");
     if (groupConversation) {
@@ -2099,10 +2120,8 @@ export default function CommunityPage() {
                                 const canCurrentUserAddMembers =
                                   memberAddPolicy === "ANY_MEMBER" ||
                                   !!group.isAdmin;
-                                const groupConversation = safeConversations.find(
-                                  (conversation) =>
-                                    conversation.group?.id === group.id,
-                                );
+                                const groupConversation =
+                                  getGroupConversationByGroupId(group.id);
 
                                 return (
                                   <div
@@ -2370,9 +2389,13 @@ export default function CommunityPage() {
                       const participantIds = Array.isArray(message.participantIds)
                         ? message.participantIds
                         : [];
-                      const otherParticipantId = participantIds.find(
-                        (participantId) => participantId !== profile?.userId,
-                      );
+                      let otherParticipantId: string | undefined;
+                      for (const participantId of participantIds) {
+                        if (participantId !== profile?.userId) {
+                          otherParticipantId = participantId;
+                          break;
+                        }
+                      }
                       const hasBeenSeenByOther = Boolean(
                         isOwnMessage &&
                           otherParticipantId &&
