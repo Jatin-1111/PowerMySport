@@ -8,6 +8,7 @@ import {
   apiRateLimitMiddleware,
   securityHeadersMiddleware,
 } from "./middleware/security";
+import { initializeScheduledJobs } from "./utils/scheduledJobs";
 
 import adminRoutes from "./routes/adminRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -23,6 +24,9 @@ import venueRoutes from "./routes/venueRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
 
 export const app: Express = express();
+
+// Initialize scheduled cleanup jobs
+initializeScheduledJobs();
 
 const normalizeOrigin = (origin: string): string =>
   origin.trim().replace(/\/$/, "").toLowerCase();

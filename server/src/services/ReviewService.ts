@@ -6,14 +6,14 @@ import { Venue } from "../models/Venue";
 export interface CreateReviewPayload {
   bookingId: string;
   userId: string;
-  venueRating: number;
-  coachRating?: number;
-  venueReview?: string;
-  coachReview?: string;
+  targetType: "VENUE" | "COACH";
+  rating: number;
+  review?: string;
 }
 
 /**
  * Create a review for a completed booking
+ * Allows separate reviews for venue and coach
  * Only allows reviews for COMPLETED bookings
  * Updates venue and coach average ratings
  */
@@ -35,40 +35,58 @@ export const createReview = async (
     throw new Error("You can only review your own bookings");
   }
 
-  // Check if review already exists
-  const existingReview = await Review.findOne({ bookingId: payload.bookingId });
-  if (existingReview) {
-    throw new Error("Review already exists for this booking");
+  // Determine target ID based on target type
+  let targetId;
+  if (payload.targetType === "VENUE") {
+    if (!booking.venueId) {
+      throw new Error("This booking has no venue to review");
+    }
+    targetId = booking.venueId;
+  } else if (payload.targetType === "COACH") {
+    if (!booking.coachId) {
+      throw new Error("This booking has no coach to review");
+    }
+    targetId = booking.coachId;
+  } else {
+    throw new Error("Invalid target type");
   }
 
-  // Validate coach rating if coach was part of booking
-  if (booking.coachId && !payload.coachRating) {
-    throw new Error("Coach rating is required when coach was booked");
+  // Check if review already exists for this specific target
+  const existingReview = await Review.findOne({
+    bookingId: payload.bookingId,
+    targetType: payload.targetType,
+    userId: payload.userId,
+  });
+
+  if (existingReview) {
+    throw new Error(
+      `You have already reviewed this ${payload.targetType.toLowerCase()}`,
+    );
+  }
+
+  // Validate rating
+  if (payload.rating < 1 || payload.rating > 5) {
+    throw new Error("Rating must be between 1 and 5");
   }
 
   // Create review
   const review = new Review({
     bookingId: payload.bookingId,
     userId: payload.userId,
-    venueId: booking.venueId,
-    coachId: booking.coachId,
-    venueRating: payload.venueRating,
-    coachRating: payload.coachRating,
-    venueReview: payload.venueReview,
-    coachReview: payload.coachReview,
+    targetType: payload.targetType,
+    targetId,
+    rating: payload.rating,
+    review: payload.review,
     isVerified: true, // From completed booking
   });
 
   await review.save();
 
-  // Update venue rating
-  if (booking.venueId) {
-    await updateVenueRating(booking.venueId.toString());
-  }
-
-  // Update coach rating if coach was involved
-  if (booking.coachId) {
-    await updateCoachRating(booking.coachId.toString());
+  // Update venue or coach rating
+  if (payload.targetType === "VENUE") {
+    await updateVenueRating(targetId.toString());
+  } else if (payload.targetType === "COACH") {
+    await updateCoachRating(targetId.toString());
   }
 
   return review;
@@ -79,11 +97,11 @@ export const createReview = async (
  */
 const updateVenueRating = async (venueId: string): Promise<void> => {
   const stats = await Review.aggregate([
-    { $match: { venueId: venueId as any } },
+    { $match: { targetType: "VENUE", targetId: venueId as any } },
     {
       $group: {
         _id: null,
-        avgRating: { $avg: "$venueRating" },
+        avgRating: { $avg: "$rating" },
         count: { $sum: 1 },
       },
     },
@@ -101,17 +119,16 @@ const updateVenueRating = async (venueId: string): Promise<void> => {
  * Update coach's average rating and review count
  */
 const updateCoachRating = async (coachId: string): Promise<void> => {
-  // Validate coachId
   if (!coachId) {
     return;
   }
 
   const stats = await Review.aggregate([
-    { $match: { coachId: coachId as any, coachRating: { $exists: true } } },
+    { $match: { targetType: "COACH", targetId: coachId as any } },
     {
       $group: {
         _id: null,
-        avgRating: { $avg: "$coachRating" },
+        avgRating: { $avg: "$rating" },
         count: { $sum: 1 },
       },
     },
@@ -140,8 +157,15 @@ export const getVenueReviews = async (
 }> => {
   const skip = (page - 1) * limit;
 
-  const total = await Review.countDocuments({ venueId });
-  const reviews = await Review.find({ venueId })
+  const query = {
+    targetType: "VENUE" as const,
+    targetId: venueId,
+    isHidden: false,
+    moderationStatus: { $ne: "REMOVED" },
+  };
+
+  const total = await Review.countDocuments(query);
+  const reviews = await Review.find(query)
     .populate("userId", "name")
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -170,11 +194,15 @@ export const getCoachReviews = async (
 }> => {
   const skip = (page - 1) * limit;
 
-  const total = await Review.countDocuments({
-    coachId,
-    coachRating: { $exists: true },
-  });
-  const reviews = await Review.find({ coachId, coachRating: { $exists: true } })
+  const query = {
+    targetType: "COACH" as const,
+    targetId: coachId,
+    isHidden: false,
+    moderationStatus: { $ne: "REMOVED" },
+  };
+
+  const total = await Review.countDocuments(query);
+  const reviews = await Review.find(query)
     .populate("userId", "name")
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -202,14 +230,108 @@ export const markReviewHelpful = async (
 };
 
 /**
- * Report a review (for moderation)
+ * Report a review with reason (for moderation)
  */
 export const reportReview = async (
   reviewId: string,
+  userId: string,
+  reason: string,
 ): Promise<ReviewDocument | null> => {
-  return Review.findByIdAndUpdate(
+  const review = await Review.findById(reviewId);
+
+  if (!review) {
+    throw new Error("Review not found");
+  }
+
+  // Check if user already reported this review
+  const alreadyReported = review.reports?.some(
+    (report) => report.userId.toString() === userId,
+  );
+
+  if (alreadyReported) {
+    throw new Error("You have already reported this review");
+  }
+
+  // Add report and increment count
+  const updatedReview = await Review.findByIdAndUpdate(
     reviewId,
-    { $inc: { reportCount: 1 } },
+    {
+      $inc: { reportCount: 1 },
+      $push: {
+        reports: {
+          userId,
+          reason,
+          reportedAt: new Date(),
+        },
+      },
+      // Auto-flag if 3+ reports
+      $set: {
+        moderationStatus:
+          review.reportCount + 1 >= 3 ? "FLAGGED" : review.moderationStatus,
+      },
+    },
     { new: true },
   );
+
+  return updatedReview;
+};
+
+/**
+ * Get flagged reviews for moderation (admin only)
+ */
+export const getFlaggedReviews = async (
+  page: number = 1,
+  limit: number = 20,
+): Promise<{
+  reviews: ReviewDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
+  const skip = (page - 1) * limit;
+
+  const total = await Review.countDocuments({
+    moderationStatus: { $in: ["FLAGGED", "PENDING"] },
+  });
+
+  const reviews = await Review.find({
+    moderationStatus: { $in: ["FLAGGED", "PENDING"] },
+  })
+    .populate("userId", "name email")
+    .populate("targetId", "name")
+    .sort({ reportCount: -1, createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  return {
+    reviews,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+
+/**
+ * Moderate a review (admin only)
+ */
+export const moderateReview = async (
+  reviewId: string,
+  action: "APPROVE" | "REMOVE" | "HIDE",
+  moderationNotes?: string,
+): Promise<ReviewDocument | null> => {
+  const update: any = {
+    moderationNotes,
+  };
+
+  if (action === "APPROVE") {
+    update.moderationStatus = "APPROVED";
+    update.isHidden = false;
+  } else if (action === "REMOVE") {
+    update.moderationStatus = "REMOVED";
+    update.isHidden = true;
+  } else if (action === "HIDE") {
+    update.isHidden = true;
+  }
+
+  return Review.findByIdAndUpdate(reviewId, update, { new: true });
 };

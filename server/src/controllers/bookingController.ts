@@ -282,10 +282,11 @@ export const cancelBookingById = async (
   try {
     const bookingId = (req.params as Record<string, unknown>)
       .bookingId as string;
+    const { cancellationReason } = req.body as { cancellationReason?: string };
 
-    const booking = await cancelBooking(bookingId);
+    const result = await cancelBooking(bookingId, cancellationReason);
 
-    if (!booking) {
+    if (!result.booking) {
       res.status(404).json({
         success: false,
         message: "Booking not found",
@@ -295,8 +296,12 @@ export const cancelBookingById = async (
 
     res.status(200).json({
       success: true,
-      message: "Booking cancelled successfully",
-      data: booking,
+      message: `Booking cancelled successfully. ${result.refundPercentage}% refund (₹${result.refundAmount}) will be processed.`,
+      data: {
+        booking: result.booking,
+        refundAmount: result.refundAmount,
+        refundPercentage: result.refundPercentage,
+      },
     });
   } catch (error) {
     res.status(500).json({

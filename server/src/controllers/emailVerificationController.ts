@@ -65,7 +65,7 @@ export const verifyEmailHandler = async (
     }
 
     // Verify the code
-    const result = verifyCode(email, code);
+    const result = await verifyCode(email, code);
 
     if (!result.success) {
       res.status(400).json(result);

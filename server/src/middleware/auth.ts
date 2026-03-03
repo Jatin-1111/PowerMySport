@@ -138,13 +138,14 @@ export const coachVerificationCompletedMiddleware = async (
     const hasBio = Boolean(coach.bio?.trim());
     const hasSports = Array.isArray(coach.sports) && coach.sports.length > 0;
 
-    const isCompleted =
-      ["PENDING", "REVIEW", "VERIFIED"].includes(status) && hasBio && hasSports;
+    // Only allow VERIFIED coaches to take bookings - prevent unverified coaches from operating
+    const isVerified = status === "VERIFIED" && hasBio && hasSports;
 
-    if (!isCompleted) {
+    if (!isVerified) {
       res.status(403).json({
         success: false,
-        message: "Complete coach verification to access this feature.",
+        message:
+          "Coach verification must be approved by admin before taking bookings.",
       });
       return;
     }

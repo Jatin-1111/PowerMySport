@@ -1,21 +1,7 @@
 import crypto from "crypto";
 import { sendEmail } from "../utils/email";
-
-// In-memory store for verification codes (in production, use Redis)
-interface VerificationCode {
-  code: string;
-  email: string;
-  expiresAt: Date;
-  attempts: number;
-}
-
-interface RateLimitEntry {
-  count: number;
-  resetAt: Date;
-}
-
-const verificationCodes = new Map<string, VerificationCode>();
-const rateLimits = new Map<string, RateLimitEntry>();
+import { EmailVerification } from "../models/EmailVerification";
+import { RateLimit } from "../models/RateLimit";
 
 // Configuration
 const CODE_EXPIRY_MINUTES = 5;
@@ -33,17 +19,20 @@ const generateOTP = (): string => {
 /**
  * Check if email has exceeded rate limit
  */
-export const checkRateLimit = (email: string): boolean => {
+export const checkRateLimit = async (email: string): Promise<boolean> => {
   const now = new Date();
-  const limit = rateLimits.get(email);
+  const limit = await RateLimit.findOne({
+    key: email.toLowerCase(),
+    type: "EMAIL_VERIFICATION",
+  });
 
   if (!limit) {
     return true; // No limit yet, allow
   }
 
   if (now > limit.resetAt) {
-    // Reset window has passed
-    rateLimits.delete(email);
+    // Reset window has passed, delete old record
+    await RateLimit.deleteOne({ _id: limit._id });
     return true;
   }
 
@@ -53,21 +42,26 @@ export const checkRateLimit = (email: string): boolean => {
 /**
  * Increment rate limit counter
  */
-const incrementRateLimit = (email: string): void => {
+const incrementRateLimit = async (email: string): Promise<void> => {
   const now = new Date();
-  const limit = rateLimits.get(email);
+  const resetAt = new Date(
+    now.getTime() + RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000,
+  );
 
-  if (!limit || now > limit.resetAt) {
-    // Create new rate limit window
-    rateLimits.set(email, {
-      count: 1,
-      resetAt: new Date(
-        now.getTime() + RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000,
-      ),
-    });
-  } else {
-    limit.count++;
-  }
+  await RateLimit.findOneAndUpdate(
+    {
+      key: email.toLowerCase(),
+      type: "EMAIL_VERIFICATION",
+    },
+    {
+      $inc: { count: 1 },
+      $setOnInsert: { resetAt },
+    },
+    {
+      upsert: true,
+      new: true,
+    },
+  );
 };
 
 /**
@@ -79,8 +73,12 @@ export const sendVerificationCode = async (
 ): Promise<{ success: boolean; message: string }> => {
   try {
     // Check rate limit
-    if (!checkRateLimit(email)) {
-      const limit = rateLimits.get(email);
+    const canProceed = await checkRateLimit(email);
+    if (!canProceed) {
+      const limit = await RateLimit.findOne({
+        key: email.toLowerCase(),
+        type: "EMAIL_VERIFICATION",
+      });
       const minutesLeft = limit
         ? Math.ceil((limit.resetAt.getTime() - Date.now()) / (60 * 1000))
         : 0;
@@ -94,16 +92,24 @@ export const sendVerificationCode = async (
     const code = generateOTP();
     const expiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000);
 
-    // Store verification code
-    verificationCodes.set(email, {
-      code,
-      email,
-      expiresAt,
-      attempts: 0,
-    });
+    // Store/update verification code in database
+    await EmailVerification.findOneAndUpdate(
+      { email: email.toLowerCase(), verified: false },
+      {
+        code,
+        email: email.toLowerCase(),
+        expiresAt,
+        attempts: 0,
+        verified: false,
+      },
+      {
+        upsert: true,
+        new: true,
+      },
+    );
 
     // Increment rate limit
-    incrementRateLimit(email);
+    await incrementRateLimit(email);
 
     // Send email
     const html = `
@@ -225,11 +231,14 @@ export const sendVerificationCode = async (
 /**
  * Verify the submitted code
  */
-export const verifyCode = (
+export const verifyCode = async (
   email: string,
   submittedCode: string,
-): { success: boolean; message: string } => {
-  const stored = verificationCodes.get(email);
+): Promise<{ success: boolean; message: string }> => {
+  const stored = await EmailVerification.findOne({
+    email: email.toLowerCase(),
+    verified: false,
+  });
 
   if (!stored) {
     return {
@@ -240,7 +249,7 @@ export const verifyCode = (
 
   // Check expiry
   if (new Date() > stored.expiresAt) {
-    verificationCodes.delete(email);
+    await EmailVerification.deleteOne({ _id: stored._id });
     return {
       success: false,
       message: "Verification code has expired. Please request a new code.",
@@ -249,7 +258,7 @@ export const verifyCode = (
 
   // Check attempts
   if (stored.attempts >= MAX_ATTEMPTS) {
-    verificationCodes.delete(email);
+    await EmailVerification.deleteOne({ _id: stored._id });
     return {
       success: false,
       message: "Too many failed attempts. Please request a new code.",
@@ -259,14 +268,16 @@ export const verifyCode = (
   // Verify code
   if (stored.code !== submittedCode) {
     stored.attempts++;
+    await stored.save();
     return {
       success: false,
       message: `Invalid code. ${MAX_ATTEMPTS - stored.attempts} attempts remaining.`,
     };
   }
 
-  // Success - remove code
-  verificationCodes.delete(email);
+  // Success - mark as verified
+  stored.verified = true;
+  await stored.save();
 
   return {
     success: true,
@@ -275,23 +286,20 @@ export const verifyCode = (
 };
 
 /**
- * Clean up expired codes (should be run periodically)
+ * Clean up expired codes and rate limits
+ * Note: This is handled automatically by MongoDB TTL indexes,
+ * but can be called manually if needed
  */
-export const cleanupExpiredCodes = (): void => {
+export const cleanupExpiredCodes = async (): Promise<void> => {
   const now = new Date();
 
-  for (const [email, data] of verificationCodes.entries()) {
-    if (now > data.expiresAt) {
-      verificationCodes.delete(email);
-    }
-  }
+  // Delete expired verification codes
+  await EmailVerification.deleteMany({
+    expiresAt: { $lt: now },
+  });
 
-  for (const [email, limit] of rateLimits.entries()) {
-    if (now > limit.resetAt) {
-      rateLimits.delete(email);
-    }
-  }
+  // Delete expired rate limits
+  await RateLimit.deleteMany({
+    resetAt: { $lt: now },
+  });
 };
-
-// Run cleanup every 10 minutes
-setInterval(cleanupExpiredCodes, 10 * 60 * 1000);

@@ -20,6 +20,8 @@ export interface BookingDocument extends Document {
   totalAmount: number;
   serviceFee?: number;
   taxAmount?: number;
+  promoCode?: string;
+  discountAmount?: number;
   status: BookingStatus;
   expiresAt: Date;
   checkInCode?: string;
@@ -28,6 +30,10 @@ export interface BookingDocument extends Document {
   participantAge?: number;
   paymentConfirmedAt?: Date;
   confirmationEmailSentAt?: Date;
+  cancelledAt?: Date;
+  cancellationReason?: string;
+  refundAmount?: number;
+  refundStatus?: "PENDING" | "PROCESSED" | "REJECTED";
   payments: BookingPayment[];
   createdAt: Date;
   updatedAt: Date;
@@ -89,6 +95,16 @@ const bookingSchema = new Schema<BookingDocument>(
       default: 0,
       min: 0,
     },
+    promoCode: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     status: {
       type: String,
       enum: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"],
@@ -103,8 +119,8 @@ const bookingSchema = new Schema<BookingDocument>(
       select: false,
       uppercase: true,
       trim: true,
-      minlength: 6,
-      maxlength: 6,
+      minlength: 8,
+      maxlength: 8,
     },
     participantName: {
       type: String,
@@ -121,6 +137,21 @@ const bookingSchema = new Schema<BookingDocument>(
     },
     confirmationEmailSentAt: {
       type: Date,
+    },
+    cancelledAt: {
+      type: Date,
+    },
+    cancellationReason: {
+      type: String,
+      trim: true,
+    },
+    refundAmount: {
+      type: Number,
+      min: 0,
+    },
+    refundStatus: {
+      type: String,
+      enum: ["PENDING", "PROCESSED", "REJECTED"],
     },
     payments: [
       {

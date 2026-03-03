@@ -151,12 +151,12 @@ export const createNewVenue = async (
     const venue = await createVenue({
       ...req.body,
       ownerId: req.user.id,
-      approvalStatus: "APPROVED", // Auto-approve venues created by authenticated users
+      approvalStatus: "PENDING", // Require admin approval for quality control
     });
 
     res.status(201).json({
       success: true,
-      message: "Venue created successfully",
+      message: "Venue created successfully and pending admin approval",
       data: venue,
     });
   } catch (error) {

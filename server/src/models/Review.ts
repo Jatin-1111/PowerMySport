@@ -16,6 +16,14 @@ export interface ReviewDocument extends Document {
   isVerified: boolean; // Only from COMPLETED bookings
   helpfulCount: number;
   reportCount: number;
+  isHidden: boolean; // Hidden by moderators
+  moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
+  moderationNotes?: string;
+  reports: Array<{
+    userId: mongoose.Types.ObjectId;
+    reason: string;
+    reportedAt: Date;
+  }>;
 
   createdAt: Date;
   updatedAt: Date;
@@ -64,6 +72,36 @@ const reviewSchema = new Schema<ReviewDocument>(
       type: Number,
       default: 0,
     },
+    isHidden: {
+      type: Boolean,
+      default: false,
+    },
+    moderationStatus: {
+      type: String,
+      enum: ["PENDING", "APPROVED", "FLAGGED", "REMOVED"],
+      default: "APPROVED",
+    },
+    moderationNotes: {
+      type: String,
+    },
+    reports: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        reason: {
+          type: String,
+          required: true,
+          maxlength: 500,
+        },
+        reportedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true },
 );
@@ -71,6 +109,11 @@ const reviewSchema = new Schema<ReviewDocument>(
 // Indexes
 reviewSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
 reviewSchema.index({ userId: 1 });
-reviewSchema.index({ bookingId: 1, targetType: 1 }, { unique: true });
+reviewSchema.index({ moderationStatus: 1, reportCount: -1 });
+// Allow multiple reviews per booking (one for venue, one for coach)
+reviewSchema.index(
+  { bookingId: 1, targetType: 1, userId: 1 },
+  { unique: true },
+);
 
 export const Review = mongoose.model<ReviewDocument>("Review", reviewSchema);

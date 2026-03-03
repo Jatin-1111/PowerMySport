@@ -46,6 +46,12 @@ bookingSlotLockSchema.index(
   { unique: true, name: "unique_booking_slot_lock" },
 );
 
+// TTL index to auto-delete locks after 7 days (stale locks from past bookings)
+bookingSlotLockSchema.index(
+  { lastLockedAt: 1 },
+  { expireAfterSeconds: 7 * 24 * 60 * 60, name: "lock_ttl" },
+);
+
 export const BookingSlotLock = mongoose.model<BookingSlotLockDocument>(
   "BookingSlotLock",
   bookingSlotLockSchema,

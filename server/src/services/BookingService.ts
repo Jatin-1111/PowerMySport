@@ -7,6 +7,8 @@ import { User } from "../models/User";
 import { Venue, VenueDocument } from "../models/Venue";
 import { sendBookingConfirmationEmail } from "../utils/email";
 import { getBookingExpirationTime } from "../utils/timer";
+import { validatePromoCode, applyPromoCode } from "./PromoCodeService";
+import { isWithinOpeningHours } from "../utils/openingHours";
 
 /**
  * Booking State Machine:
@@ -28,6 +30,7 @@ export interface InitiateBookingPayload {
   startTime: string;
   endTime: string;
   dependentId?: string;
+  promoCode?: string;
 }
 
 export interface InitiateBookingResponse {
@@ -49,6 +52,8 @@ interface BookingCreatePayload {
   totalAmount: number;
   serviceFee: number;
   taxAmount: number;
+  promoCode?: string;
+  discountAmount?: number;
   checkInCode: string;
   participantName: string;
   participantId: mongoose.Types.ObjectId;
@@ -56,10 +61,10 @@ interface BookingCreatePayload {
 }
 
 const generateRandomCheckInCode = (): string => {
-  const bytes = randomBytes(6);
+  const bytes = randomBytes(8); // Increased from 6 to 8 for better security
   let code = "";
 
-  for (let index = 0; index < 6; index += 1) {
+  for (let index = 0; index < 8; index += 1) {
     const byte = bytes[index] ?? 0;
     code += CHECK_IN_CODE_CHARS[byte % CHECK_IN_CODE_CHARS.length];
   }
@@ -292,6 +297,10 @@ const createBookingAtomically = async (
           totalAmount: payload.totalAmount,
           serviceFee: payload.serviceFee,
           taxAmount: payload.taxAmount,
+          ...(payload.promoCode ? { promoCode: payload.promoCode } : {}),
+          ...(payload.discountAmount
+            ? { discountAmount: payload.discountAmount }
+            : {}),
           status: "CONFIRMED",
           checkInCode: payload.checkInCode,
           expiresAt: getBookingExpirationTime(),
@@ -417,11 +426,47 @@ export const initiateBooking = async (
       if (!dependent) {
         throw new Error("Dependent not found");
       }
+
+      // Validate dependent's date of birth
+      if (!dependent.dob || isNaN(dependent.dob.getTime())) {
+        throw new Error("Invalid date of birth for dependent");
+      }
+
       participantName = dependent.name;
       participantId = dependent._id;
-      // Calculate age from DOB
-      const ageInMs = Date.now() - dependent.dob.getTime();
-      participantAge = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 365.25));
+
+      // Calculate age from DOB with proper validation
+      const now = new Date();
+      const birthDate = new Date(dependent.dob);
+
+      // Check if DOB is in the future
+      if (birthDate > now) {
+        throw new Error("Date of birth cannot be in the future");
+      }
+
+      // Calculate age in years
+      let age = now.getFullYear() - birthDate.getFullYear();
+      const monthDiff = now.getMonth() - birthDate.getMonth();
+      const dayDiff = now.getDate() - birthDate.getDate();
+
+      // Adjust age if birthday hasn't occurred this year
+      if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+        age--;
+      }
+
+      participantAge = age;
+
+      // Validate minimum age (must be at least 3 years old)
+      if (participantAge < 3) {
+        throw new Error("Participant must be at least 3 years old to book");
+      }
+
+      // Validate maximum age for dependents (must be under 18)
+      if (participantAge >= 18) {
+        throw new Error(
+          "Dependents must be under 18 years old. Please book as an adult.",
+        );
+      }
     } else {
       // Booking is for the parent/user themselves
       participantId = user._id;
@@ -448,6 +493,23 @@ export const initiateBooking = async (
 
       if (!payload.sport || !venue.sports.includes(payload.sport)) {
         throw new Error("Selected sport is not available at this venue");
+      }
+
+      // Validate booking falls within venue opening hours
+      if (venue.openingHours) {
+        const hoursCheck = isWithinOpeningHours(
+          payload.date,
+          normalizedStartTime,
+          normalizedEndTime,
+          venue.openingHours,
+        );
+
+        if (!hoursCheck.isValid) {
+          throw new Error(
+            hoursCheck.message ||
+              "Booking time is outside venue operating hours",
+          );
+        }
       }
     }
 
@@ -546,7 +608,30 @@ export const initiateBooking = async (
     const subtotal = venuePrice + coachPrice;
     const serviceFee = Math.round(subtotal * 0.02);
     const taxAmount = Math.round(subtotal * 0.05);
-    const totalAmount = Math.max(0, subtotal + serviceFee + taxAmount);
+    let discountAmount = 0;
+    let validPromoCode: string | undefined = undefined;
+
+    // Validate and apply promo code if provided
+    if (payload.promoCode) {
+      const promoValidation = await validatePromoCode(
+        payload.promoCode,
+        payload.userId,
+        subtotal,
+        Boolean(payload.coachId),
+      );
+
+      if (!promoValidation.isValid) {
+        throw new Error(promoValidation.message || "Invalid promo code");
+      }
+
+      discountAmount = promoValidation.discountAmount;
+      validPromoCode = payload.promoCode.toUpperCase();
+    }
+
+    const totalAmount = Math.max(
+      0,
+      subtotal + serviceFee + taxAmount - discountAmount,
+    );
 
     const checkInCode = await generateUniqueCheckInCode();
 
@@ -561,6 +646,8 @@ export const initiateBooking = async (
       totalAmount,
       serviceFee,
       taxAmount,
+      ...(validPromoCode ? { promoCode: validPromoCode } : {}),
+      ...(discountAmount > 0 ? { discountAmount } : {}),
       checkInCode,
       participantName,
       participantId,
@@ -585,6 +672,12 @@ export const initiateBooking = async (
             totalAmount: bookingPayload.totalAmount,
             serviceFee: bookingPayload.serviceFee,
             taxAmount: bookingPayload.taxAmount,
+            ...(bookingPayload.promoCode
+              ? { promoCode: bookingPayload.promoCode }
+              : {}),
+            ...(bookingPayload.discountAmount
+              ? { discountAmount: bookingPayload.discountAmount }
+              : {}),
             status: "CONFIRMED",
             checkInCode: bookingPayload.checkInCode,
             expiresAt: getBookingExpirationTime(),
@@ -594,6 +687,16 @@ export const initiateBooking = async (
               ? { participantAge: bookingPayload.participantAge }
               : {}),
           });
+
+    // Record promo code usage after successful booking
+    if (validPromoCode && discountAmount > 0) {
+      await applyPromoCode(
+        validPromoCode,
+        payload.userId,
+        booking._id.toString(),
+        discountAmount,
+      );
+    }
 
     return {
       booking,
@@ -724,19 +827,78 @@ export const getVenueListerBookings = async (
 /**
  * Cancel a booking
  */
+/**
+ * Cancel booking with time-based refund policy
+ *
+ * Refund Policy:
+ * - > 48 hours before booking: 100% refund
+ * - 24-48 hours before: 50% refund
+ * - < 24 hours before: 0% refund (no refund)
+ * - After booking start: 0% refund
+ */
 export const cancelBooking = async (
   bookingId: string,
-): Promise<BookingDocument | null> => {
-  return Booking.findOneAndUpdate(
+  cancellationReason?: string,
+): Promise<{
+  booking: BookingDocument | null;
+  refundAmount: number;
+  refundPercentage: number;
+}> => {
+  const booking = await Booking.findOne({
+    _id: bookingId,
+    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+  });
+
+  if (!booking) {
+    throw new Error("Booking not found or already cancelled");
+  }
+
+  // Calculate booking start time
+  const [hours, minutes] = booking.startTime.split(":").map(Number);
+  const bookingStartTime = new Date(booking.date);
+  bookingStartTime.setHours(hours || 0, minutes || 0, 0, 0);
+
+  const now = new Date();
+  const hoursUntilBooking =
+    (bookingStartTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  // Determine refund percentage based on cancellation policy
+  let refundPercentage = 0;
+  if (hoursUntilBooking > 48) {
+    refundPercentage = 100; // Full refund
+  } else if (hoursUntilBooking > 24) {
+    refundPercentage = 50; // Half refund
+  } else {
+    refundPercentage = 0; // No refund
+  }
+
+  const refundAmount = Math.round(
+    (booking.totalAmount * refundPercentage) / 100,
+  );
+
+  // Update booking status
+  const updatedBooking = await Booking.findOneAndUpdate(
     {
       _id: bookingId,
       status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
     },
     {
-      $set: { status: "CANCELLED" },
+      $set: {
+        status: "CANCELLED",
+        cancelledAt: new Date(),
+        cancellationReason: cancellationReason || "Cancelled by user",
+        refundAmount,
+        refundStatus: refundAmount > 0 ? "PENDING" : undefined,
+      },
     },
     { new: true },
   );
+
+  return {
+    booking: updatedBooking,
+    refundAmount,
+    refundPercentage,
+  };
 };
 
 export const checkInBookingByCode = async (
@@ -746,7 +908,9 @@ export const checkInBookingByCode = async (
 ): Promise<BookingDocument> => {
   const normalizedCode = checkInCode.trim().toUpperCase();
 
-  const booking = await Booking.findOne({ checkInCode: normalizedCode });
+  const booking = await Booking.findOne({ checkInCode: normalizedCode }).select(
+    "+checkInCode",
+  );
 
   if (!booking) {
     throw new Error("Invalid check-in code");
@@ -756,6 +920,7 @@ export const checkInBookingByCode = async (
     throw new Error(`Cannot check-in. Booking status is ${booking.status}`);
   }
 
+  // Verify authorization
   if (requesterRole !== "ADMIN") {
     const venue = await Venue.findById(booking.venueId).select("ownerId");
     if (!venue || venue.ownerId?.toString() !== requesterUserId) {
@@ -780,9 +945,28 @@ export const checkInBookingByCode = async (
 
   bookingDateTime.setHours(startHour, startMin, 0, 0);
 
+  // Check-in window: 15 minutes before start time
   const checkInWindow = new Date(bookingDateTime.getTime() - 15 * 60 * 1000);
   if (now < checkInWindow) {
-    throw new Error("Cannot check-in before the scheduled time");
+    throw new Error(
+      "Check-in not yet available. You can check in 15 minutes before the booking starts.",
+    );
+  }
+
+  // Check-in code expiration: 24 hours after booking end time
+  const endTimeParts = booking.endTime.split(":").map(Number);
+  const endHour = endTimeParts[0];
+  const endMin = endTimeParts[1];
+  const bookingEndTime = new Date(booking.date);
+  bookingEndTime.setHours(endHour || 0, endMin || 0, 0, 0);
+  const codeExpiryTime = new Date(
+    bookingEndTime.getTime() + 24 * 60 * 60 * 1000,
+  );
+
+  if (now > codeExpiryTime) {
+    throw new Error(
+      "Check-in code has expired. This booking is no longer active.",
+    );
   }
 
   const updatedBooking = await Booking.findOneAndUpdate(
@@ -968,3 +1152,46 @@ export const updatePaymentStatus = async (
 
 // Legacy function for backward compatibility
 export const createBooking = initiateBooking;
+
+/**
+ * Cleanup stale booking slot locks
+ * Removes locks for dates in the past (older than today)
+ * Can be called periodically via cron job
+ */
+export const cleanupStaleBookingLocks = async (): Promise<number> => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayKey = today.toISOString().split("T")[0] || "";
+
+  // Delete locks with dateKey < today (past dates)
+  const result = await BookingSlotLock.deleteMany({
+    dateKey: { $lt: todayKey },
+  });
+
+  return result.deletedCount || 0;
+};
+
+/**
+ * Cleanup expired bookings
+ * Updates bookings that have passed their expiration time to CANCELLED
+ * Returns number of expired bookings cancelled
+ */
+export const cleanupExpiredBookings = async (): Promise<number> => {
+  const now = new Date();
+
+  const result = await Booking.updateMany(
+    {
+      status: "CONFIRMED",
+      expiresAt: { $lt: now },
+    },
+    {
+      $set: {
+        status: "CANCELLED",
+        cancelledAt: now,
+        cancellationReason: "Booking expired - payment not confirmed",
+      },
+    },
+  );
+
+  return result.modifiedCount || 0;
+};
