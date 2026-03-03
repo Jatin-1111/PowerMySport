@@ -163,7 +163,7 @@ export default function HomePage() {
         variant="home"
         title="Power Your Sports Journey"
         subtitle="India's Premier Sports Booking Platform"
-        description="Book badminton courts, cricket grounds, football fields, and connect with professional coaches. All in one platform."
+        description="Book sports facilities, coaches, experts and tournaments. All on one platform!"
         primaryCTA={{
           label: user ? "Go to Dashboard" : "Start Booking Now",
           href: getDashboardLink(),
