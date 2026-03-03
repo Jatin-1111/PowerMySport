@@ -25,7 +25,7 @@ export const Stats: React.FC<StatsProps> = ({
   const gridCols = {
     2: "grid-cols-1 sm:grid-cols-2",
     3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-    4: "grid-cols-2 lg:grid-cols-4",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
   };
 
   return (
@@ -34,7 +34,7 @@ export const Stats: React.FC<StatsProps> = ({
         "py-16 sm:py-20 lg:py-24",
         variant === "default" && "bg-gray-50",
         variant === "gradient" &&
-          "bg-gradient-to-br from-power-orange to-turf-green",
+          "bg-linear-to-br from-power-orange to-turf-green",
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

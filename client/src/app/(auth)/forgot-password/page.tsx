@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <Card className="max-w-md w-full">
+    <Card className="w-full">
       <CardHeader>
         <h1 className="text-3xl font-bold text-center text-white">
           Forgot Password

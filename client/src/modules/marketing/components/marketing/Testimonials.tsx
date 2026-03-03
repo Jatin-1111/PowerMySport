@@ -48,9 +48,9 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
         )}
 
         {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} variant="elevated">
+            <Card key={index} variant="elevated" className="h-full">
               <CardContent className="pt-6">
                 {/* Rating */}
                 {testimonial.rating && (
@@ -91,7 +91,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold text-white">
+                    <div className="font-semibold text-slate-900">
                       {testimonial.author}
                     </div>
                     <div className="text-sm text-muted-foreground">

@@ -43,7 +43,7 @@ export const Hero: React.FC<HeroProps> = ({
       <section
         className={cn(
           "relative py-20 sm:py-24 lg:py-32",
-          gradient && "bg-gradient-to-br from-power-orange to-turf-green",
+          gradient && "bg-linear-to-br from-power-orange to-turf-green",
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -61,16 +61,16 @@ export const Hero: React.FC<HeroProps> = ({
                 {description}
               </p>
             )}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
               {primaryCTA && (
-                <Link href={primaryCTA.href}>
+                <Link href={primaryCTA.href} className="w-full sm:w-auto">
                   <Button variant="secondary" size="lg">
                     {primaryCTA.label}
                   </Button>
                 </Link>
               )}
               {secondaryCTA && (
-                <Link href={secondaryCTA.href}>
+                <Link href={secondaryCTA.href} className="w-full sm:w-auto">
                   <Button variant="outline" size="lg">
                     {secondaryCTA.label}
                   </Button>
@@ -129,16 +129,16 @@ export const Hero: React.FC<HeroProps> = ({
                   {description}
                 </p>
               )}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
                 {primaryCTA && (
-                  <Link href={primaryCTA.href}>
+                  <Link href={primaryCTA.href} className="w-full sm:w-auto">
                     <Button variant="primary" size="lg">
                       {primaryCTA.label}
                     </Button>
                   </Link>
                 )}
                 {secondaryCTA && (
-                  <Link href={secondaryCTA.href}>
+                  <Link href={secondaryCTA.href} className="w-full sm:w-auto">
                     <Button variant="outline" size="lg">
                       {secondaryCTA.label}
                     </Button>
@@ -149,7 +149,7 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Image */}
             {imageSrc && (
-              <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden shadow-2xl">
+              <div className="relative h-96 overflow-hidden rounded-lg shadow-2xl lg:h-125">
                 <Image
                   src={imageSrc}
                   alt={imageAlt || title}
@@ -166,5 +166,3 @@ export const Hero: React.FC<HeroProps> = ({
 
   return null;
 };
-
-

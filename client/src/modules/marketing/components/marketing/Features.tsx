@@ -78,9 +78,11 @@ export const Features: React.FC<FeaturesProps> = ({
         )}
 
         {/* Features Grid */}
-        <div className={cn("grid grid-cols-1 gap-8", gridCols[columns])}>
+        <div
+          className={cn("grid grid-cols-1 gap-6 sm:gap-8", gridCols[columns])}
+        >
           {features.map((feature, index) => (
-            <Card key={index} variant="elevated">
+            <Card key={index} variant="elevated" className="h-full">
               <CardContent className="pt-6">
                 {/* Icon */}
                 {feature.icon && (
@@ -114,5 +116,3 @@ export const FeatureIcons = {
   Star: <Star className="h-10 w-10" />,
   Chart: <BarChart3 className="h-10 w-10" />,
 };
-
-

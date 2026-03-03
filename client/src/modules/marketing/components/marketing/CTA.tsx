@@ -41,14 +41,14 @@ export const CTA: React.FC<CTAProps> = ({
           <p className="text-lg sm:text-xl text-white/90 mb-10">
             {description}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href={primaryCTA.href}>
+          <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+            <Link href={primaryCTA.href} className="w-full sm:w-auto">
               <Button variant="primary" size="lg">
                 {primaryCTA.label}
               </Button>
             </Link>
             {secondaryCTA && (
-              <Link href={secondaryCTA.href}>
+              <Link href={secondaryCTA.href} className="w-full sm:w-auto">
                 <Button variant="outline" size="lg">
                   {secondaryCTA.label}
                 </Button>
@@ -71,14 +71,14 @@ export const CTA: React.FC<CTAProps> = ({
           <p className="text-lg sm:text-xl text-white/95 mb-10">
             {description}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href={primaryCTA.href}>
+          <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+            <Link href={primaryCTA.href} className="w-full sm:w-auto">
               <Button variant="secondary" size="lg">
                 {primaryCTA.label}
               </Button>
             </Link>
             {secondaryCTA && (
-              <Link href={secondaryCTA.href}>
+              <Link href={secondaryCTA.href} className="w-full sm:w-auto">
                 <Button variant="outline" size="lg">
                   {secondaryCTA.label}
                 </Button>
@@ -110,14 +110,14 @@ export const CTA: React.FC<CTAProps> = ({
           <p className="text-lg sm:text-xl text-white/95 mb-10">
             {description}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href={primaryCTA.href}>
+          <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
+            <Link href={primaryCTA.href} className="w-full sm:w-auto">
               <Button variant="primary" size="lg">
                 {primaryCTA.label}
               </Button>
             </Link>
             {secondaryCTA && (
-              <Link href={secondaryCTA.href}>
+              <Link href={secondaryCTA.href} className="w-full sm:w-auto">
                 <Button variant="outline" size="lg">
                   {secondaryCTA.label}
                 </Button>

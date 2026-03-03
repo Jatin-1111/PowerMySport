@@ -10,10 +10,10 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-green-50 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-linear-to-br from-orange-50 via-white to-green-50 px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-center">
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="mb-6 text-center sm:mb-8">
           <Link href="/" className="inline-block">
             <h1 className="text-3xl font-bold text-power-orange">
               PowerMySport
@@ -27,7 +27,7 @@ export default function AuthLayout({
         {children}
 
         {/* Footer */}
-        <div className="text-center mt-6 text-sm text-muted-foreground">
+        <div className="mt-5 text-center text-sm text-muted-foreground sm:mt-6">
           <Link
             href="/"
             className="text-sm text-power-orange hover:underline inline-flex items-center gap-1"

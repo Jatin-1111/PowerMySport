@@ -66,7 +66,7 @@ function ResetPasswordContent() {
   };
 
   return (
-    <Card className="max-w-md w-full">
+    <Card className="w-full">
       <CardHeader>
         <h1 className="text-3xl font-bold text-center text-white">
           Reset Password
@@ -189,7 +189,13 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-white py-10 text-sm text-slate-500">
+          Loading reset form...
+        </div>
+      }
+    >
       <ResetPasswordContent />
     </Suspense>
   );

@@ -146,7 +146,7 @@ function RegisterContent() {
     <GoogleOAuthProvider
       clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
     >
-      <Card className="max-w-md w-full">
+      <Card className="w-full">
         <CardHeader>
           <h1 className="text-3xl font-bold text-center text-white">
             Create Account
@@ -258,12 +258,12 @@ function RegisterContent() {
               </select>
               <p className="text-xs text-slate-300 mt-2">
                 Want to list your venue?{" "}
-                <a
+                <Link
                   href="/onboarding"
                   className="text-power-orange hover:text-orange-600 transition-colors"
                 >
                   Submit an inquiry
-                </a>
+                </Link>
               </p>
             </div>
 
@@ -342,7 +342,13 @@ function RegisterContent() {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-white py-10 text-sm text-slate-500">
+          Loading registration...
+        </div>
+      }
+    >
       <RegisterContent />
     </Suspense>
   );

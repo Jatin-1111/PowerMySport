@@ -381,7 +381,7 @@ export default function CoachesPage() {
                 <Button
                   type="submit"
                   variant="primary"
-                  className="whitespace-nowrap px-8 shadow-lg"
+                  className="w-full px-8 shadow-lg sm:w-auto sm:whitespace-nowrap"
                 >
                   <Search size={18} className="mr-2" />
                   Apply Sport

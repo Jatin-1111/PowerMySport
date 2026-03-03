@@ -121,7 +121,7 @@ export default function LoginPage() {
     <GoogleOAuthProvider
       clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
     >
-      <Card className="max-w-md w-full">
+      <Card className="w-full">
         <CardHeader>
           <h1 className="text-3xl font-bold text-center text-white">
             Welcome Back

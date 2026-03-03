@@ -502,11 +502,11 @@ export default function ProfilePage() {
 
       {/* Dependents Section */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <h2 className="text-2xl font-bold text-slate-900">My Dependents</h2>
           <Button
             onClick={handleAddDependent}
-            className="inline-flex items-center gap-2 whitespace-nowrap"
+            className="inline-flex w-full items-center justify-center gap-2 sm:w-auto sm:whitespace-nowrap"
           >
             <Plus size={16} />
             Add Dependent
@@ -544,7 +544,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="ml-0 flex flex-wrap items-center justify-end gap-2 sm:ml-4">
                     <Button
                       onClick={() => handleEditDependent(dependent)}
                       variant="secondary"
@@ -571,7 +571,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-slate-200 flex gap-2">
+                <div className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row">
                   {(() => {
                     const age = getDependentAge(dependent.dob);
                     const isEligible = age !== null && age >= 18;
@@ -582,7 +582,7 @@ export default function ProfilePage() {
                           !isEligible || graduatingDependentId === dependent._id
                         }
                         variant={isEligible ? "primary" : "secondary"}
-                        className="whitespace-nowrap"
+                        className="w-full text-left sm:w-auto sm:text-center sm:whitespace-nowrap"
                         size="sm"
                       >
                         {graduatingDependentId === dependent._id
@@ -743,7 +743,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col justify-end gap-3 sm:flex-row">
                 <Button
                   type="button"
                   variant="secondary"
@@ -757,7 +757,7 @@ export default function ProfilePage() {
                       phone: "",
                     });
                   }}
-                  className="whitespace-nowrap"
+                  className="w-full sm:w-auto sm:whitespace-nowrap"
                 >
                   Cancel
                 </Button>
@@ -770,7 +770,7 @@ export default function ProfilePage() {
                     !graduationForm.password ||
                     !graduationForm.phone
                   }
-                  className="whitespace-nowrap"
+                  className="w-full sm:w-auto sm:whitespace-nowrap"
                 >
                   {graduatingDependentId === graduationForm.dependentId
                     ? "Graduating..."

@@ -200,7 +200,7 @@ export default function DependentManagementModal({
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Sports
             </label>
-            <div className="flex gap-2 mb-2">
+            <div className="mb-2 flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={sportInput}
@@ -218,7 +218,7 @@ export default function DependentManagementModal({
                 type="button"
                 onClick={addSport}
                 variant="secondary"
-                className="whitespace-nowrap"
+                className="w-full sm:w-auto sm:whitespace-nowrap"
               >
                 Add
               </Button>
@@ -245,19 +245,20 @@ export default function DependentManagementModal({
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex flex-col justify-end gap-3 border-t border-slate-200 pt-4 sm:flex-row">
             <Button
               type="button"
               variant="secondary"
               onClick={onClose}
               disabled={isLoading}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="min-w-[100px]"
+              className="w-full sm:min-w-25 sm:w-auto"
             >
               {isLoading
                 ? "Saving..."

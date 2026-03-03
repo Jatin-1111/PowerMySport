@@ -288,7 +288,7 @@ export default function SportsMultiSelect({
                       disabled={isVerifyingCustom || !customSportInput.trim()}
                       size="sm"
                       variant="primary"
-                      className="whitespace-nowrap"
+                      className="sm:whitespace-nowrap"
                     >
                       {isVerifyingCustom ? (
                         <Loader size={14} className="animate-spin" />
@@ -301,7 +301,7 @@ export default function SportsMultiSelect({
                   {/* Custom Sport Error */}
                   {customSportError && (
                     <div className="mt-2 flex items-start gap-2 rounded bg-red-50 p-2 text-xs text-red-600">
-                      <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                      <AlertCircle size={14} className="mt-0.5 shrink-0" />
                       <span>{customSportError}</span>
                     </div>
                   )}
