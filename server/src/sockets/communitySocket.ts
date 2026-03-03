@@ -83,6 +83,34 @@ const getSocketUserId = (socket: Socket): string | null => {
   return null;
 };
 
+type RateLimitState = {
+  windowStart: number;
+  count: number;
+};
+
+const consumeRateLimit = (
+  state: Map<string, RateLimitState>,
+  key: string,
+  limit: number,
+  windowMs: number,
+): boolean => {
+  const now = Date.now();
+  const current = state.get(key);
+
+  if (!current || now - current.windowStart > windowMs) {
+    state.set(key, { windowStart: now, count: 1 });
+    return true;
+  }
+
+  if (current.count >= limit) {
+    return false;
+  }
+
+  current.count += 1;
+  state.set(key, current);
+  return true;
+};
+
 export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
   const io = new Server(httpServer, {
     cors: {
@@ -117,14 +145,16 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
 
   io.on("connection", async (socket) => {
     const userId = socket.data.userId as string;
+    const socketRateLimit = new Map<string, RateLimitState>();
     await CommunityService.touchLastSeen(userId);
 
     socket.join(`user:${userId}`);
 
     try {
-      const conversations = await CommunityService.listConversations(userId);
-      for (const conversation of conversations) {
-        socket.join(`conversation:${conversation.id}`);
+      const recentConversationIds =
+        await CommunityService.listRecentConversationIdsForRealtime(userId, 30);
+      for (const conversationId of recentConversationIds) {
+        socket.join(`conversation:${conversationId}`);
       }
     } catch {
       // no-op: socket can still join lazily when conversation is opened
@@ -132,6 +162,19 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
 
     socket.on("community:joinConversation", async (payload) => {
       try {
+        const allowed = consumeRateLimit(
+          socketRateLimit,
+          "community:joinConversation",
+          60,
+          10_000,
+        );
+        if (!allowed) {
+          socket.emit("community:error", {
+            message: "Too many join requests, please slow down",
+          });
+          return;
+        }
+
         const conversationId = String(payload?.conversationId || "");
         if (!conversationId) {
           socket.emit("community:error", {
@@ -154,6 +197,21 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
 
     socket.on("community:markRead", async (payload, callback) => {
       try {
+        const allowed = consumeRateLimit(
+          socketRateLimit,
+          "community:markRead",
+          80,
+          10_000,
+        );
+        if (!allowed) {
+          const message = "Too many read updates, please slow down";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
+          return;
+        }
+
         const conversationId = String(payload?.conversationId || "");
         if (!conversationId) {
           const message = "conversationId is required";
@@ -206,6 +264,21 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
 
     socket.on("community:sendMessage", async (payload, callback) => {
       try {
+        const allowed = consumeRateLimit(
+          socketRateLimit,
+          "community:sendMessage",
+          30,
+          10_000,
+        );
+        if (!allowed) {
+          const message = "Too many messages sent, please slow down";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
+          return;
+        }
+
         const conversationId = String(payload?.conversationId || "");
         const content = String(payload?.content || "").trim();
 
@@ -228,10 +301,6 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
           "community:newMessage",
           message,
         );
-
-        for (const participantId of message.participantIds) {
-          io.to(`user:${participantId}`).emit("community:newMessage", message);
-        }
 
         for (const participantId of message.participantIds) {
           io.to(`user:${participantId}`).emit("community:conversationUpdated", {

@@ -35,15 +35,27 @@ export interface ConversationItem {
   updatedAt: string;
 }
 
+export interface ConversationListResponse {
+  items: ConversationItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+}
+
 export interface CommunityGroupSummary {
   id: string;
   name: string;
   description: string;
   visibility: "PUBLIC";
+  memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
   sport: string;
   city: string;
   memberCount: number;
   isMember?: boolean;
+  isAdmin?: boolean;
 }
 
 export interface PlayerSearchResult {

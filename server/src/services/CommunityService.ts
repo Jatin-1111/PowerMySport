@@ -288,6 +288,7 @@ export const CommunityService = {
 
     return groups.map((group) => {
       const memberIds = group.members.map((memberId) => String(memberId));
+      const adminIds = group.admins.map((adminId) => String(adminId));
       return {
         id: String(group._id),
         name: group.name,
@@ -298,6 +299,8 @@ export const CommunityService = {
         createdBy: String(group.createdBy),
         memberCount: memberIds.length,
         isMember: memberIds.includes(userId),
+        isAdmin: adminIds.includes(userId),
+        memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
       };
     });
   },
@@ -324,6 +327,7 @@ export const CommunityService = {
       sport: normalizeOptionalText(payload.sport),
       city: normalizeOptionalText(payload.city),
       visibility: "PUBLIC",
+      memberAddPolicy: "ADMIN_ONLY",
       createdBy: userId,
       members: [userId],
       admins: [userId],
@@ -345,8 +349,37 @@ export const CommunityService = {
       visibility: group.visibility,
       sport: group.sport || "",
       city: group.city || "",
+      memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
       memberCount: group.members.length,
       conversationId: String(conversation._id),
+    };
+  },
+
+  async updateGroupSettings(
+    userId: string,
+    groupId: string,
+    payload: { memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER" },
+  ) {
+    await ensureProfile(userId);
+
+    const group = await CommunityGroup.findById(groupId);
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const requesterIsAdmin = group.admins.some(
+      (adminId) => String(adminId) === userId,
+    );
+    if (!requesterIsAdmin) {
+      throw new Error("Only group admins can update settings");
+    }
+
+    group.memberAddPolicy = payload.memberAddPolicy;
+    await group.save();
+
+    return {
+      groupId: String(group._id),
+      memberAddPolicy: group.memberAddPolicy,
     };
   },
 
@@ -446,6 +479,72 @@ export const CommunityService = {
 
     await group.save();
     return { groupId: String(group._id), removed: true, deletedGroup: false };
+  },
+
+  async addGroupMember(userId: string, groupId: string, targetUserId: string) {
+    await Promise.all([ensureProfile(userId), ensurePlayerUser(targetUserId)]);
+
+    if (userId === targetUserId) {
+      throw new Error("Use join group to add yourself");
+    }
+
+    const group = await CommunityGroup.findById(groupId);
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const requesterIsAdmin = group.admins.some(
+      (adminId) => String(adminId) === userId,
+    );
+    const requesterIsMember = group.members.some(
+      (memberId) => String(memberId) === userId,
+    );
+    if (!requesterIsMember) {
+      throw new Error("Only group members can add members");
+    }
+
+    const memberAddPolicy = group.memberAddPolicy || "ADMIN_ONLY";
+    if (memberAddPolicy === "ADMIN_ONLY" && !requesterIsAdmin) {
+      throw new Error("Only group admins can add members");
+    }
+
+    const blocked = await isBlockedBetween(userId, targetUserId);
+    if (blocked) {
+      throw new Error("Cannot add this player due to privacy settings");
+    }
+
+    const alreadyMember = group.members.some(
+      (memberId) => String(memberId) === targetUserId,
+    );
+    if (!alreadyMember) {
+      group.members.push(new mongoose.Types.ObjectId(targetUserId));
+      await group.save();
+    }
+
+    const conversation = await CommunityConversation.findOneAndUpdate(
+      { conversationType: "GROUP", groupId: group._id },
+      {
+        $setOnInsert: {
+          conversationType: "GROUP",
+          groupId: group._id,
+          status: "ACTIVE",
+          requestedBy: group.createdBy,
+          lastMessageAt: new Date(),
+        },
+        $addToSet: {
+          participants: new mongoose.Types.ObjectId(targetUserId),
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    return {
+      groupId: String(group._id),
+      conversationId: String(conversation?._id || ""),
+      memberCount: group.members.length,
+      addedUserId: targetUserId,
+      alreadyMember,
+    };
   },
 
   async startConversation(userId: string, targetUserId: string) {
@@ -557,17 +656,67 @@ export const CommunityService = {
     return { rejected: true };
   },
 
-  async listConversations(userId: string) {
+  async listConversations(
+    userId: string,
+    page = 1,
+    limit = 25,
+    filters?: {
+      mode?: "ALL" | "UNREAD" | "REQUESTS";
+      type?: "ALL" | "CONTACTS" | "GROUPS";
+      search?: string;
+    },
+  ) {
     await ensureProfile(userId);
 
-    const conversations = await CommunityConversation.find({
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
+
+    const mode = filters?.mode || "ALL";
+    const type = filters?.type || "ALL";
+    const normalizedSearch = (filters?.search || "").trim().toLowerCase();
+    const requiresInMemoryFiltering =
+      mode !== "ALL" || normalizedSearch.length > 0;
+
+    const conversationQuery: {
+      participants: string;
+      conversationType?: "GROUP" | { $ne: "GROUP" };
+    } = {
       participants: userId,
-    })
-      .sort({ updatedAt: -1 })
-      .lean();
+    };
+    if (type === "GROUPS") {
+      conversationQuery.conversationType = "GROUP";
+    } else if (type === "CONTACTS") {
+      conversationQuery.conversationType = { $ne: "GROUP" };
+    }
+
+    let total = 0;
+    let conversations: any[] = [];
+
+    if (requiresInMemoryFiltering) {
+      conversations = await CommunityConversation.find(conversationQuery)
+        .sort({ updatedAt: -1 })
+        .lean();
+      total = conversations.length;
+    } else {
+      total = await CommunityConversation.countDocuments(conversationQuery);
+      conversations = await CommunityConversation.find(conversationQuery)
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean();
+    }
 
     if (!conversations.length) {
-      return [];
+      return {
+        items: [],
+        pagination: {
+          page: safePage,
+          limit: safeLimit,
+          total,
+          hasMore: skip + conversations.length < total,
+        },
+      };
     }
 
     const dmConversations = conversations.filter(
@@ -576,7 +725,8 @@ export const CommunityService = {
 
     const otherParticipantIds = dmConversations.map((conversation) => {
       const other = conversation.participants.find(
-        (participantId) => String(participantId) !== userId,
+        (participantId: mongoose.Types.ObjectId) =>
+          String(participantId) !== userId,
       );
       return String(other);
     });
@@ -647,11 +797,12 @@ export const CommunityService = {
     );
     const groupMap = new Map(groups.map((group) => [String(group._id), group]));
 
-    return conversations.map((conversation) => {
+    const mappedItems = conversations.map((conversation) => {
       const conversationType = conversation.conversationType || "DM";
       const otherId = String(
         conversation.participants.find(
-          (participantId) => String(participantId) !== userId,
+          (participantId: mongoose.Types.ObjectId) =>
+            String(participantId) !== userId,
         ),
       );
       const otherUser = userMap.get(otherId);
@@ -715,6 +866,69 @@ export const CommunityService = {
         updatedAt: conversation.updatedAt,
       };
     });
+
+    const filteredItems = mappedItems.filter((conversation) => {
+      const modeMatches =
+        mode === "UNREAD"
+          ? conversation.unreadCount > 0
+          : mode === "REQUESTS"
+            ? conversation.status === "PENDING" &&
+              conversation.conversationType !== "GROUP"
+            : true;
+
+      if (!modeMatches) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const displayName = conversation.otherParticipant.displayName
+        .toLowerCase()
+        .trim();
+      const latestMessage = (conversation.latestMessage?.content || "")
+        .toLowerCase()
+        .trim();
+      return (
+        displayName.includes(normalizedSearch) ||
+        latestMessage.includes(normalizedSearch)
+      );
+    });
+
+    const pagedItems = requiresInMemoryFiltering
+      ? filteredItems.slice(skip, skip + safeLimit)
+      : filteredItems;
+    const effectiveTotal = requiresInMemoryFiltering
+      ? filteredItems.length
+      : total;
+
+    return {
+      items: pagedItems,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total: effectiveTotal,
+        hasMore: skip + pagedItems.length < effectiveTotal,
+      },
+    };
+  },
+
+  async listRecentConversationIdsForRealtime(userId: string, limit = 30) {
+    await ensureProfile(userId);
+
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const conversations = await CommunityConversation.find(
+      {
+        participants: userId,
+      },
+      { _id: 1 },
+    )
+      .sort({ updatedAt: -1 })
+      .limit(safeLimit)
+      .lean();
+
+    return conversations.map((conversation) => String(conversation._id));
   },
 
   async markConversationRead(userId: string, conversationId: string) {

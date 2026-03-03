@@ -2,6 +2,7 @@ import axiosInstance from "@/lib/api/axios";
 import {
   CommunityGroupSummary,
   CommunityProfile,
+  ConversationListResponse,
   ConversationItem,
   ConversationMessage,
   MessagePrivacy,
@@ -61,11 +62,62 @@ export const communityService = {
     return response.data.data;
   },
 
-  async listConversations(): Promise<ConversationItem[]> {
-    const response = await axiosInstance.get<ApiResponse<ConversationItem[]>>(
-      "/community/conversations",
-    );
-    return response.data.data;
+  async listConversations(
+    page = 1,
+    limit = 25,
+    filters?: {
+      mode?: "ALL" | "UNREAD" | "REQUESTS";
+      type?: "ALL" | "CONTACTS" | "GROUPS";
+      q?: string;
+    },
+  ): Promise<ConversationListResponse> {
+    const response = await axiosInstance.get<
+      ApiResponse<ConversationListResponse | ConversationItem[]>
+    >("/community/conversations", {
+      params: {
+        page,
+        limit,
+        ...(filters?.mode ? { mode: filters.mode } : {}),
+        ...(filters?.type ? { type: filters.type } : {}),
+        ...(filters?.q ? { q: filters.q } : {}),
+      },
+    });
+
+    const raw = response.data.data;
+    if (Array.isArray(raw)) {
+      return {
+        items: raw,
+        pagination: {
+          page,
+          limit,
+          total: raw.length,
+          hasMore: raw.length >= limit,
+        },
+      };
+    }
+
+    return {
+      items: Array.isArray(raw?.items) ? raw.items : [],
+      pagination: {
+        page: raw?.pagination?.page || page,
+        limit: raw?.pagination?.limit || limit,
+        total: raw?.pagination?.total || 0,
+        hasMore: Boolean(raw?.pagination?.hasMore),
+      },
+    };
+  },
+
+  async listConversationsItems(
+    page = 1,
+    limit = 25,
+    filters?: {
+      mode?: "ALL" | "UNREAD" | "REQUESTS";
+      type?: "ALL" | "CONTACTS" | "GROUPS";
+      q?: string;
+    },
+  ): Promise<ConversationItem[]> {
+    const response = await this.listConversations(page, limit, filters);
+    return response.items;
   },
 
   async startConversation(targetUserId: string): Promise<{
@@ -185,6 +237,46 @@ export const communityService = {
         deletedGroup?: boolean;
       }>
     >(`/community/groups/${groupId}/leave`);
+    return response.data.data;
+  },
+
+  async addGroupMember(
+    groupId: string,
+    targetUserId: string,
+  ): Promise<{
+    groupId: string;
+    conversationId: string;
+    memberCount: number;
+    addedUserId: string;
+    alreadyMember?: boolean;
+  }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{
+        groupId: string;
+        conversationId: string;
+        memberCount: number;
+        addedUserId: string;
+        alreadyMember?: boolean;
+      }>
+    >(`/community/groups/${groupId}/members`, {
+      targetUserId,
+    });
+    return response.data.data;
+  },
+
+  async updateGroupSettings(
+    groupId: string,
+    payload: { memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER" },
+  ): Promise<{
+    groupId: string;
+    memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER";
+  }> {
+    const response = await axiosInstance.patch<
+      ApiResponse<{
+        groupId: string;
+        memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER";
+      }>
+    >(`/community/groups/${groupId}/settings`, payload);
     return response.data.data;
   },
 };

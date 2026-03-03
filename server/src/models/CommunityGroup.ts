@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export type CommunityGroupVisibility = "PUBLIC";
+export type CommunityGroupMemberAddPolicy = "ADMIN_ONLY" | "ANY_MEMBER";
 
 export interface CommunityGroupDocument extends Document {
   name: string;
@@ -8,6 +9,7 @@ export interface CommunityGroupDocument extends Document {
   visibility: CommunityGroupVisibility;
   sport?: string;
   city?: string;
+  memberAddPolicy: CommunityGroupMemberAddPolicy;
   createdBy: mongoose.Types.ObjectId;
   members: mongoose.Types.ObjectId[];
   admins: mongoose.Types.ObjectId[];
@@ -47,6 +49,11 @@ const communityGroupSchema = new Schema<CommunityGroupDocument>(
       trim: true,
       maxlength: 80,
       default: "",
+    },
+    memberAddPolicy: {
+      type: String,
+      enum: ["ADMIN_ONLY", "ANY_MEMBER"],
+      default: "ADMIN_ONLY",
     },
     createdBy: {
       type: Schema.Types.ObjectId,
