@@ -4,6 +4,9 @@ import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { EmptyState } from "@/modules/shared/ui/EmptyState";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { Booking, Coach, Venue } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import {
@@ -14,9 +17,11 @@ import {
   ChevronRight,
   MapPin,
   Award,
+  CalendarX,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 
 interface PaginationInfo {
   total: number;
@@ -37,6 +42,9 @@ export default function BookingsPage() {
   });
   const [itemsPerPage] = useState(10);
   const [activeTab, setActiveTab] = useState<TabType>("venues");
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -62,12 +70,26 @@ export default function BookingsPage() {
     fetchBookings();
   }, [currentPage, itemsPerPage]);
 
-  const handleCancel = async (bookingId: string) => {
+  const handleCancelClick = (bookingId: string) => {
+    setBookingToCancel(bookingId);
+    setConfirmDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!bookingToCancel) return;
+
     try {
-      await bookingApi.cancelBooking(bookingId);
-      setBookings(bookings.filter((b) => b.id !== bookingId));
+      setIsCancelling(true);
+      await bookingApi.cancelBooking(bookingToCancel);
+      setBookings(bookings.filter((b) => b.id !== bookingToCancel));
+      toast.success("Booking cancelled successfully");
+      setConfirmDialogOpen(false);
+      setBookingToCancel(null);
     } catch (error) {
       console.error("Failed to cancel booking:", error);
+      toast.error("Failed to cancel booking. Please try again.");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -78,7 +100,16 @@ export default function BookingsPage() {
     activeTab === "venues" ? venueBookings : coachBookings;
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading bookings...</div>;
+    return (
+      <div className="space-y-6">
+        <PlayerPageHeader
+          badge="Player"
+          title="My Bookings"
+          subtitle="Keep track of your upcoming sessions, payments, and history in one place."
+        />
+        <ListSkeleton count={5} />
+      </div>
+    );
   }
 
   return (
@@ -101,23 +132,15 @@ export default function BookingsPage() {
 
       {bookings.length === 0 ? (
         <Card className="bg-white">
-          <div className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
-              No bookings yet
-            </div>
-            <p className="max-w-md text-slate-600">
-              Explore venues or connect with a coach to schedule your first
-              session.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/venues">
-                <Button variant="secondary">Browse Venues</Button>
-              </Link>
-              <Link href="/coaches">
-                <Button variant="primary">Browse Coaches</Button>
-              </Link>
-            </div>
-          </div>
+          <EmptyState
+            icon={CalendarX}
+            title="No bookings yet"
+            description="Explore venues or connect with a coach to schedule your first session."
+            actionLabel="Browse Venues"
+            onAction={() => (window.location.href = "/venues")}
+            secondaryActionLabel="Find a Coach"
+            onSecondaryAction={() => (window.location.href = "/coaches")}
+          />
         </Card>
       ) : (
         <div className="space-y-6">
@@ -168,21 +191,22 @@ export default function BookingsPage() {
           {/* Bookings List */}
           {filteredBookings.length === 0 ? (
             <Card className="bg-white">
-              <div className="flex flex-col items-center gap-4 py-10 text-center">
-                <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600">
-                  No {activeTab} bookings
-                </div>
-                <p className="max-w-md text-slate-600">
-                  {activeTab === "venues"
+              <EmptyState
+                icon={activeTab === "venues" ? MapPin : Award}
+                title={`No ${activeTab} bookings`}
+                description={
+                  activeTab === "venues"
                     ? "You haven't booked any venues yet."
-                    : "You haven't booked any coaches yet."}
-                </p>
-                <Link href={activeTab === "venues" ? "/venues" : "/coaches"}>
-                  <Button variant="primary">
-                    {activeTab === "venues" ? "Browse Venues" : "Find a Coach"}
-                  </Button>
-                </Link>
-              </div>
+                    : "You haven't booked any coaches yet."
+                }
+                actionLabel={
+                  activeTab === "venues" ? "Browse Venues" : "Find a Coach"
+                }
+                onAction={() =>
+                  (window.location.href =
+                    activeTab === "venues" ? "/venues" : "/coaches")
+                }
+              />
             </Card>
           ) : (
             <div className="space-y-4">
@@ -303,7 +327,7 @@ export default function BookingsPage() {
                     </div>
                     {booking.status === "CONFIRMED" && (
                       <Button
-                        onClick={() => handleCancel(booking.id)}
+                        onClick={() => handleCancelClick(booking.id)}
                         variant="danger"
                       >
                         Cancel
@@ -354,6 +378,19 @@ export default function BookingsPage() {
           )}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+        onConfirm={handleCancelConfirm}
+        title="Cancel Booking"
+        message="Are you sure you want to cancel this booking? This action cannot be undone."
+        confirmLabel="Yes, Cancel Booking"
+        cancelLabel="Keep Booking"
+        variant="danger"
+        loading={isCancelling}
+      />
     </div>
   );
 }

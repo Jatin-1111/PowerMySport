@@ -36,8 +36,8 @@ function ResetPasswordContent() {
       return;
     }
 
-    if (formData.newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (formData.newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
       return;
     }
 
@@ -108,6 +108,8 @@ function ResetPasswordContent() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    title="Toggle password visibility"
+                    aria-label="Toggle password visibility"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -131,6 +133,8 @@ function ResetPasswordContent() {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    title="Toggle password visibility"
+                    aria-label="Toggle password visibility"
                   >
                     {showConfirmPassword ? (
                       <EyeOff size={20} />

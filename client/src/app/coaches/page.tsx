@@ -509,6 +509,7 @@ export default function CoachesPage() {
                     onChange={(e) => setSportInput(e.target.value)}
                     placeholder="Search by sport (e.g. Cricket, Tennis, Basketball)..."
                     className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green bg-white text-slate-900 font-medium"
+                    aria-label="Search coaches by sport"
                   />
                 </div>
                 <Button
