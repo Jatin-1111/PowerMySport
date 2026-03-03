@@ -127,7 +127,7 @@ const promoCodeSchema = new Schema<PromoCodeDocument>(
 );
 
 // Indexes
-promoCodeSchema.index({ code: 1 });
+// Note: code field already has unique index from schema definition
 promoCodeSchema.index({ isActive: 1, validUntil: 1 });
 
 export const PromoCode = mongoose.model<PromoCodeDocument>(
