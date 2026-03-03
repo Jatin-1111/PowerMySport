@@ -30,6 +30,14 @@ export const initiateNewBooking = async (
       return;
     }
 
+    if (req.user.role !== "PLAYER") {
+      res.status(403).json({
+        success: false,
+        message: "Booking is available for player accounts only.",
+      });
+      return;
+    }
+
     const result = await initiateBooking({
       userId: req.user.id,
       ...req.body,

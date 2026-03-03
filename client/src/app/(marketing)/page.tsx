@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { getDashboardPathByRole } from "@/utils/roleDashboard";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import {
@@ -135,12 +136,7 @@ export default function HomePage() {
 
   const getDashboardLink = () => {
     if (!user) return "/register?role=PLAYER";
-    const dashboards = {
-      PLAYER: "/dashboard/my-bookings",
-      VENUE_LISTER: "/venue-lister/inventory",
-      COACH: "/coach/profile",
-    };
-    return dashboards[user.role] || "/dashboard/my-bookings";
+    return getDashboardPathByRole(user.role);
   };
 
   return (

@@ -9,6 +9,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Coach, User, Venue } from "@/types";
+import { getDashboardPathByRole } from "@/utils/roleDashboard";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -52,6 +53,12 @@ export default function BookCoachPage() {
       const userResponse = await authApi.getProfile();
       if (userResponse.success && userResponse.data) {
         setUser(userResponse.data);
+
+        if (userResponse.data.role !== "PLAYER") {
+          toast.error("Only player accounts can create bookings.");
+          router.replace(getDashboardPathByRole(userResponse.data.role));
+          return;
+        }
       }
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -113,6 +120,11 @@ export default function BookCoachPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (user && user.role !== "PLAYER") {
+      toast.error("Only player accounts can create bookings.");
+      return;
+    }
 
     if (
       !bookingData.date ||

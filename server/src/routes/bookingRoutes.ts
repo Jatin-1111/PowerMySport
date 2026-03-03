@@ -11,6 +11,7 @@ import {
 import {
   authMiddleware,
   coachVerificationCompletedMiddleware,
+  playerOnlyMiddleware,
 } from "../middleware/auth";
 import { bookingCheckInCodeSchema, bookingSchema } from "../middleware/schemas";
 import { validateRequest } from "../middleware/validation";
@@ -21,6 +22,7 @@ const router = Router();
 router.post(
   "/initiate",
   authMiddleware,
+  playerOnlyMiddleware,
   coachVerificationCompletedMiddleware,
   validateRequest(bookingSchema),
   initiateNewBooking,

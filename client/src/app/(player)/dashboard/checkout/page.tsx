@@ -37,6 +37,7 @@ import { coachApi } from "@/modules/coach/services/coach";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Coach, User, Venue } from "@/types";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
+import { getDashboardPathByRole } from "@/utils/roleDashboard";
 
 const paymentOptions: PaymentMethodOption[] = [
   {
@@ -124,6 +125,12 @@ function CheckoutPageContent() {
 
         if (profileResponse?.success && profileResponse.data) {
           setUser(profileResponse.data);
+
+          if (profileResponse.data.role !== "PLAYER") {
+            toast.error("Only player accounts can create bookings.");
+            router.replace(getDashboardPathByRole(profileResponse.data.role));
+            return;
+          }
         }
       } catch (error) {
         console.error("Failed to load details:", error);
@@ -320,6 +327,11 @@ function CheckoutPageContent() {
   };
 
   const handleCheckout = async () => {
+    if (user && user.role !== "PLAYER") {
+      toast.error("Only player accounts can create bookings.");
+      return;
+    }
+
     if (!hasRequiredDetails) {
       toast.error("Missing booking details. Please edit your booking first.");
       return;

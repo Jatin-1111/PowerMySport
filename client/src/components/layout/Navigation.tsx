@@ -3,6 +3,7 @@
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { cn } from "@/utils/cn";
+import { getDashboardPathByRole } from "@/utils/roleDashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import { LayoutDashboard, LogOut, Menu, Settings, User, X } from "lucide-react";
 import Link from "next/link";
@@ -71,14 +72,7 @@ export const Navigation: React.FC<NavProps> = ({
   // If user is logged in, show dashboard link instead of register
   const getDashboardLink = () => {
     if (!user) return null;
-
-    const dashboards = {
-      PLAYER: "/dashboard/my-bookings",
-      VENUE_LISTER: "/venue-lister/inventory",
-      COACH: "/coach/profile",
-    };
-
-    return dashboards[user.role] || "/dashboard/my-bookings";
+    return getDashboardPathByRole(user.role);
   };
 
   return (

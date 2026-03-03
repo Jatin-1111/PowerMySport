@@ -59,6 +59,22 @@ export const venueListerMiddleware = (
   next();
 };
 
+export const playerOnlyMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  if (req.user?.role !== "PLAYER") {
+    res.status(403).json({
+      success: false,
+      message: "Booking is available for player accounts only.",
+    });
+    return;
+  }
+
+  next();
+};
+
 // Alias for backward compatibility - will be removed in future
 export const vendorMiddleware = venueListerMiddleware;
 

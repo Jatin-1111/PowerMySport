@@ -46,6 +46,9 @@ const normalizeImageUrl = (value?: string) => {
   return trimmed;
 };
 
+const normalizeSearchTerm = (value: string) =>
+  value.toLocaleLowerCase().trim().replace(/\s+/g, " ");
+
 const CoachImageWithFallback = ({
   sources,
   alt,
@@ -194,16 +197,21 @@ export default function CoachesPage() {
   const applyCoachFilters = (baseCoaches: Coach[]) => {
     const parsedMaxRate = maxRate ? Number(maxRate) : undefined;
     const parsedMinRating = Number(minRating || 0);
+    const normalizedSearchTerm = normalizeSearchTerm(appliedSportFilter);
 
     let next = baseCoaches.filter((coach) => {
       const status =
         coach.verificationStatus ||
         (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
-      const matchesSport =
-        !appliedSportFilter ||
+      const coachName = normalizeSearchTerm(getCoachDisplayName(coach));
+      const coachBio = normalizeSearchTerm(coach.bio || "");
+      const matchesSearchTerm =
+        !normalizedSearchTerm ||
         coach.sports.some((sport) =>
-          sport.toLowerCase().includes(appliedSportFilter.toLowerCase()),
-        );
+          normalizeSearchTerm(sport).includes(normalizedSearchTerm),
+        ) ||
+        coachName.includes(normalizedSearchTerm) ||
+        coachBio.includes(normalizedSearchTerm);
 
       const matchesServiceMode =
         serviceModeFilter === "ALL" || coach.serviceMode === serviceModeFilter;
@@ -220,7 +228,7 @@ export default function CoachesPage() {
       const matchesRating = (coach.rating || 0) >= parsedMinRating;
 
       return (
-        matchesSport &&
+        matchesSearchTerm &&
         matchesServiceMode &&
         matchesVerification &&
         matchesRate &&
@@ -297,7 +305,7 @@ export default function CoachesPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setAppliedSportFilter(sportInput.trim());
+    setAppliedSportFilter(normalizeSearchTerm(sportInput));
   };
 
   const handleClearFilters = () => {

@@ -193,6 +193,11 @@ export default function VenueDetailsPage() {
       return;
     }
 
+    if (user.role !== "PLAYER") {
+      toast.error("Only player accounts can create bookings.");
+      return;
+    }
+
     if (!selectedSlot || !selectedSport) {
       toast.error("Please select a sport and time slot");
       return;
