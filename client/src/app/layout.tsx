@@ -21,6 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  manifest: "/site.webmanifest",
   title: {
     default: `${siteTitle} | Sports Venue Booking & Coach Discovery`,
     template: `%s | ${siteTitle}`,
@@ -36,6 +37,16 @@ export const metadata: Metadata = {
     "PowerMySport",
   ],
   category: "sports",
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    shortcut: "/favicon.png",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   alternates: {
     canonical: "/",
   },
@@ -48,10 +59,10 @@ export const metadata: Metadata = {
     description: siteDescription,
     images: [
       {
-        url: "/icon.svg",
-        width: 512,
-        height: 512,
-        alt: `${siteTitle} logo`,
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: `${siteTitle} preview`,
       },
     ],
   },
@@ -59,7 +70,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${siteTitle} | Sports Venue Booking & Coach Discovery`,
     description: siteDescription,
-    images: ["/icon.svg"],
+    images: ["/twitter-image.png"],
   },
   robots: {
     index: true,
