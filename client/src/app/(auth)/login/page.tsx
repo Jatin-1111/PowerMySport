@@ -123,10 +123,10 @@ export default function LoginPage() {
     >
       <Card className="w-full">
         <CardHeader>
-          <h1 className="text-3xl font-bold text-center text-white">
+          <h1 className="text-2xl font-bold text-center text-white sm:text-3xl">
             Welcome Back
           </h1>
-          <p className="text-center mt-2 text-slate-300">
+          <p className="text-center mt-2 text-sm text-slate-300 sm:text-base">
             Sign in to continue to PowerMySport
           </p>
         </CardHeader>

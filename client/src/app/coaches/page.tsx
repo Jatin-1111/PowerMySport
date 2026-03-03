@@ -3,6 +3,7 @@
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { Modal } from "@/modules/shared/ui/Modal";
 import { Coach } from "@/types";
 import {
   ArrowRight,
@@ -48,6 +49,8 @@ const normalizeImageUrl = (value?: string) => {
 
 const normalizeSearchTerm = (value: string) =>
   value.toLocaleLowerCase().trim().replace(/\s+/g, " ");
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 const CoachImageWithFallback = ({
   sources,
@@ -105,6 +108,65 @@ export default function CoachesPage() {
   const [sortBy, setSortBy] = useState("relevance");
   const [locationError, setLocationError] = useState("");
   const router = useRouter();
+
+  const requestCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError(
+        "Location access is required to discover nearby coaches.",
+      );
+      setCoaches([]);
+      setFilteredCoaches([]);
+      setLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        setLocationError("");
+        await loadCoaches(position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        const permissionMessage =
+          error.code === error.PERMISSION_DENIED
+            ? "Location permission is blocked. Please enable location access in your browser site settings and try again."
+            : "Location access is required to discover nearby coaches. Please enable location and try again.";
+
+        setLocationError(permissionMessage);
+        setCoaches([]);
+        setFilteredCoaches([]);
+        setLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000,
+      },
+    );
+  };
+
+  const requestLocationAndLoadCoaches = () => {
+    setLoading(true);
+    requestCurrentLocation();
+  };
+
+  const handleTryLocationAgain = () => {
+    setLoading(true);
+    requestCurrentLocation();
+  };
+
+  const handleOpenLocationSettings = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    const settingsHelpUrl = userAgent.includes("edg/")
+      ? "https://support.microsoft.com/microsoft-edge/website-permissions-3f2e58fa-0b99-4f9a-9f3f-7a90f0cc01bb"
+      : userAgent.includes("chrome")
+        ? "https://support.google.com/chrome/answer/142065"
+        : userAgent.includes("firefox")
+          ? "https://support.mozilla.org/en-US/kb/permission-manager-give-or-revoke-site-permissions"
+          : "https://support.apple.com/guide/safari/customize-website-settings-sfri40734/mac";
+
+    window.open(settingsHelpUrl, "_blank", "noopener,noreferrer");
+  };
 
   const getVerificationBadge = (coach: Coach) => {
     const status =
@@ -194,6 +256,59 @@ export default function CoachesPage() {
     return `${coach.sports[0] || "Professional"} Coach`;
   };
 
+  const getRelevanceScore = (coach: Coach, normalizedSearchTerm: string) => {
+    const ratingScore = clamp01((coach.rating || 0) / 5);
+    const reviewScore = clamp01((coach.reviewCount || 0) / 50);
+
+    const startingRate = getStartingRate(coach);
+    const priceScore = clamp01(1 - Math.min(startingRate, 5000) / 5000);
+
+    let verificationRecencyScore = 0;
+    if (coach.verifiedAt) {
+      const verifiedTime = new Date(coach.verifiedAt).getTime();
+      if (!Number.isNaN(verifiedTime)) {
+        const daysSinceVerified =
+          (Date.now() - verifiedTime) / (1000 * 60 * 60 * 24);
+        verificationRecencyScore = clamp01(1 - daysSinceVerified / 365);
+      }
+    }
+
+    let sportMatchScore = 0;
+    let nameBioMatchScore = 0;
+
+    if (normalizedSearchTerm) {
+      const exactSportMatch = coach.sports.some(
+        (sport) => normalizeSearchTerm(sport) === normalizedSearchTerm,
+      );
+      const partialSportMatch = coach.sports.some((sport) =>
+        normalizeSearchTerm(sport).includes(normalizedSearchTerm),
+      );
+
+      if (exactSportMatch) {
+        sportMatchScore = 1;
+      } else if (partialSportMatch) {
+        sportMatchScore = 0.6;
+      }
+
+      const coachName = normalizeSearchTerm(getCoachDisplayName(coach));
+      const coachBio = normalizeSearchTerm(coach.bio || "");
+      if (coachName.includes(normalizedSearchTerm)) {
+        nameBioMatchScore = 0.6;
+      } else if (coachBio.includes(normalizedSearchTerm)) {
+        nameBioMatchScore = 0.4;
+      }
+    }
+
+    return (
+      ratingScore * 0.4 +
+      reviewScore * 0.15 +
+      priceScore * 0.15 +
+      verificationRecencyScore * 0.1 +
+      sportMatchScore * 0.15 +
+      nameBioMatchScore * 0.05
+    );
+  };
+
   const applyCoachFilters = (baseCoaches: Coach[]) => {
     const parsedMaxRate = maxRate ? Number(maxRate) : undefined;
     const parsedMinRating = Number(minRating || 0);
@@ -242,6 +357,12 @@ export default function CoachesPage() {
       next = [...next].sort((a, b) => getStartingRate(b) - getStartingRate(a));
     } else if (sortBy === "ratingDesc") {
       next = [...next].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortBy === "relevance") {
+      next = [...next].sort(
+        (a, b) =>
+          getRelevanceScore(b, normalizedSearchTerm) -
+          getRelevanceScore(a, normalizedSearchTerm),
+      );
     }
 
     setFilteredCoaches(next);
@@ -260,30 +381,7 @@ export default function CoachesPage() {
   ]);
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocationError("Location is required to discover nearby coaches.");
-      setLoading(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        await loadCoaches(position.coords.latitude, position.coords.longitude);
-      },
-      () => {
-        setLocationError(
-          "Please enable location to see coaches in your range.",
-        );
-        setCoaches([]);
-        setFilteredCoaches([]);
-        setLoading(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000,
-      },
-    );
+    requestLocationAndLoadCoaches();
   }, []);
 
   const loadCoaches = async (latitude: number, longitude: number) => {
@@ -341,6 +439,41 @@ export default function CoachesPage() {
 
   return (
     <div className="bg-slate-50">
+      <Modal
+        isOpen={Boolean(locationError)}
+        onClose={() => {}}
+        title="Location Access Required"
+        closeButton={false}
+        footer={
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleOpenLocationSettings}
+            >
+              Open Location Settings
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleTryLocationAgain}
+            >
+              Try Again
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-700">
+          Location is necessary to find nearby coaches. Please enable location
+          permission in your browser and try again.
+        </p>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-slate-600">
+          <li>Open your browser site permissions for this page.</li>
+          <li>Allow location access for this site.</li>
+          <li>Come back and click Try Again.</li>
+        </ul>
+      </Modal>
+
       {/* Header Section */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -540,7 +673,7 @@ export default function CoachesPage() {
             {/* Results Header */}
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">
+                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
                   {appliedSportFilter
                     ? `${appliedSportFilter} Coaches`
                     : "All Coaches"}

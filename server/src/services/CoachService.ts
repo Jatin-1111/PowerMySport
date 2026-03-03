@@ -33,6 +33,102 @@ const calculateDistanceKm = (
   return earthRadiusKm * arc;
 };
 
+const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
+
+const getCoachStartingRate = (coach: any): number => {
+  const sportPricing = coach?.sportPricing;
+  if (sportPricing && typeof sportPricing === "object") {
+    const values = Object.values(sportPricing as Record<string, number>).filter(
+      (price) =>
+        typeof price === "number" && Number.isFinite(price) && price > 0,
+    );
+    if (values.length > 0) {
+      return Math.min(...values);
+    }
+  }
+
+  if (
+    typeof coach?.hourlyRate === "number" &&
+    Number.isFinite(coach.hourlyRate)
+  ) {
+    return coach.hourlyRate;
+  }
+
+  return 0;
+};
+
+const getVerificationRecencyScore = (
+  verifiedAt?: Date | string | null,
+): number => {
+  if (!verifiedAt) {
+    return 0;
+  }
+
+  const verifiedTime = new Date(verifiedAt).getTime();
+  if (Number.isNaN(verifiedTime)) {
+    return 0;
+  }
+
+  const daysSinceVerified = (Date.now() - verifiedTime) / (1000 * 60 * 60 * 24);
+  return clamp01(1 - daysSinceVerified / 365);
+};
+
+const buildCoachRelevanceScore = (params: {
+  coach: any;
+  sportFilter?: string | undefined;
+  distanceKm?: number | undefined;
+  maxDistanceKm?: number | undefined;
+}): number => {
+  const { coach, sportFilter, distanceKm, maxDistanceKm } = params;
+
+  const ratingScore = clamp01(Number(coach?.rating || 0) / 5);
+
+  const reviewCount = Number(coach?.reviewCount || 0);
+  const socialProofScore = clamp01(reviewCount / 50);
+
+  const startingRate = getCoachStartingRate(coach);
+  const priceScore = clamp01(1 - Math.min(startingRate, 5000) / 5000);
+
+  const verificationRecencyScore = getVerificationRecencyScore(
+    coach?.verifiedAt,
+  );
+
+  let distanceScore = 0;
+  if (
+    typeof distanceKm === "number" &&
+    Number.isFinite(distanceKm) &&
+    typeof maxDistanceKm === "number" &&
+    Number.isFinite(maxDistanceKm) &&
+    maxDistanceKm > 0
+  ) {
+    distanceScore = clamp01(1 - distanceKm / maxDistanceKm);
+  }
+
+  const normalizedSportFilter = (sportFilter || "").trim().toLowerCase();
+  const sportMatchScore =
+    normalizedSportFilter.length === 0
+      ? 0
+      : coach?.sports?.some(
+            (sport: string) =>
+              sport.trim().toLowerCase() === normalizedSportFilter,
+          )
+        ? 1
+        : coach?.sports?.some((sport: string) =>
+              sport.trim().toLowerCase().includes(normalizedSportFilter),
+            )
+          ? 0.6
+          : 0;
+
+  return (
+    ratingScore * 0.35 +
+    distanceScore * 0.25 +
+    priceScore * 0.15 +
+    socialProofScore * 0.1 +
+    verificationRecencyScore * 0.1 +
+    sportMatchScore * 0.05
+  );
+};
+
 const refreshCoachMediaUrls = async <T extends Record<string, any>>(
   coach: T,
 ): Promise<T> => {
@@ -222,32 +318,69 @@ export const findCoachesNearby = async (
 
     const coaches = await Coach.aggregate(pipeline);
 
-    const filteredCoaches = coaches.filter((coach: any) => {
-      if (coach.serviceMode !== "FREELANCE") {
-        return true;
-      }
+    const rankedCoaches = coaches
+      .map((coach: any) => {
+        const coachCoordinates = coach.baseLocation?.coordinates;
+        const serviceRadius =
+          typeof coach.serviceRadiusKm === "number" && coach.serviceRadiusKm > 0
+            ? coach.serviceRadiusKm
+            : 10;
 
-      const coachCoordinates = coach.baseLocation?.coordinates;
-      if (!Array.isArray(coachCoordinates) || coachCoordinates.length !== 2) {
-        return false;
-      }
+        if (coach.serviceMode === "FREELANCE") {
+          if (
+            !Array.isArray(coachCoordinates) ||
+            coachCoordinates.length !== 2 ||
+            !Number.isFinite(Number(coachCoordinates[0])) ||
+            !Number.isFinite(Number(coachCoordinates[1]))
+          ) {
+            return null;
+          }
 
-      const normalizedCoachCoordinates: [number, number] = [
-        Number(coachCoordinates[0]),
-        Number(coachCoordinates[1]),
-      ];
+          const normalizedCoachCoordinates: [number, number] = [
+            Number(coachCoordinates[0]),
+            Number(coachCoordinates[1]),
+          ];
 
-      const serviceRadius =
-        typeof coach.serviceRadiusKm === "number" && coach.serviceRadiusKm > 0
-          ? coach.serviceRadiusKm
-          : 10;
+          const distanceKm = calculateDistanceKm(normalizedCoachCoordinates, [
+            lng,
+            lat,
+          ]);
 
-      const distance = calculateDistanceKm(normalizedCoachCoordinates, [
-        lng,
-        lat,
-      ]);
-      return distance <= serviceRadius;
-    });
+          if (distanceKm > serviceRadius) {
+            return null;
+          }
+
+          const relevanceScore = buildCoachRelevanceScore({
+            coach,
+            sportFilter: sport,
+            distanceKm,
+            maxDistanceKm: Math.max(radiusKm, serviceRadius),
+          });
+
+          return {
+            coach,
+            relevanceScore,
+          };
+        }
+
+        const relevanceScore = buildCoachRelevanceScore({
+          coach,
+          sportFilter: sport,
+          maxDistanceKm: radiusKm,
+        });
+
+        return {
+          coach,
+          relevanceScore,
+        };
+      })
+      .filter(
+        (entry): entry is { coach: any; relevanceScore: number } =>
+          entry !== null,
+      )
+      .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+    const filteredCoaches = rankedCoaches.map((entry) => entry.coach);
 
     // Populate the final documents (aggregate doesn't return full mongoose documents)
     const populatedCoaches = (await Coach.populate(filteredCoaches, {
@@ -279,6 +412,11 @@ export const getAllCoaches = async (
     }
 
     const coaches = await Coach.find(query).populate("userId");
+    coaches.sort((a, b) => {
+      const scoreA = buildCoachRelevanceScore({ coach: a, sportFilter: sport });
+      const scoreB = buildCoachRelevanceScore({ coach: b, sportFilter: sport });
+      return scoreB - scoreA;
+    });
     return Promise.all(coaches.map(refreshCoachMediaUrls));
   } catch (error) {
     throw new Error(

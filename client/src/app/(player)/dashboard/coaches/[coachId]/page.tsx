@@ -221,7 +221,7 @@ export default function BookCoachPage() {
 
             <div>
               <p className="text-sm text-slate-600">Coach Rate</p>
-              <p className="text-2xl font-bold text-power-orange">
+              <p className="text-xl font-bold text-power-orange sm:text-2xl">
                 ₹{coach.hourlyRate}
                 <span className="text-sm text-slate-600">/hour</span>
               </p>

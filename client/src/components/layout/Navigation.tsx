@@ -6,6 +6,7 @@ import { cn } from "@/utils/cn";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import { LayoutDashboard, LogOut, Menu, Settings, User, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -86,12 +87,16 @@ export const Navigation: React.FC<NavProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="shrink-0">
-            <Link
-              href="/"
-              className="text-2xl font-bold text-power-orange hover:text-orange-600 transition-colors"
-            >
-              PowerMySport
+          <div className="shrink-0 relative z-50 h-full">
+            <Link href="/" className="inline-flex items-center h-full">
+              <Image
+                src="/header_logo_1.png"
+                alt="PowerMySport"
+                width={180}
+                height={40}
+                className="h-36 w-auto"
+                priority
+              />
             </Link>
           </div>
 

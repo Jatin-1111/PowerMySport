@@ -748,7 +748,7 @@ export default function CoachProfilePage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Coach Dashboard
                 </p>
-                <h2 className="mt-1 text-3xl font-bold text-slate-900 md:text-4xl">
+                <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">
                   {user?.name || "Coach"}
                 </h2>
                 <div className="mt-2 space-y-1">
@@ -791,7 +791,7 @@ export default function CoachProfilePage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Starting Price
               </p>
-              <p className="mt-1 text-2xl font-bold text-power-orange">
+              <p className="mt-1 text-xl font-bold text-power-orange sm:text-2xl">
                 ₹{basePrice || 0}/hr
               </p>
             </div>
@@ -903,7 +903,7 @@ export default function CoachProfilePage() {
                 <div className="space-y-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Sports You Can Teach
+                      Sports You Can Coach
                     </label>
                     <SportsMultiSelect
                       value={coachingForm.selectedSports}
@@ -1141,7 +1141,7 @@ export default function CoachProfilePage() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                      Sports You Teach
+                      Sports You Coach
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {coachProfile.sports && coachProfile.sports.length > 0 ? (

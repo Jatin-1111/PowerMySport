@@ -707,7 +707,7 @@ export default function CoachVerificationPage() {
   const handleStepTwoContinue = async () => {
     const sports = selectedSports;
     if (sports.length === 0) {
-      toast.error("Please add at least one sport you can teach.");
+      toast.error("Please add at least one sport you can coach.");
       return;
     }
 
@@ -1004,7 +1004,7 @@ export default function CoachVerificationPage() {
             <p className="text-xs uppercase tracking-wide text-slate-500">
               Coach Verification
             </p>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
               Complete Your Verification
             </h1>
             <p className="mt-1 text-sm text-slate-600">
@@ -1218,7 +1218,7 @@ export default function CoachVerificationPage() {
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-900">
-                Sports You Can Teach
+                Sports You Can Coach
               </label>
               <SportsMultiSelect
                 value={selectedSports}
@@ -1252,7 +1252,7 @@ export default function CoachVerificationPage() {
             {pricingMode === "PER_SPORT" && selectedSports.length > 0 && (
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-slate-900">
-                  Price per Sport
+                  Price per Sport (Hourly Price)
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {selectedSports.map((sport) => (

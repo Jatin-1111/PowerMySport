@@ -320,7 +320,7 @@ export default function ProfilePage() {
       <Card className="bg-white">
         <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
               Account Details
             </h2>
             <p className="text-sm text-slate-500">
@@ -533,7 +533,9 @@ export default function ProfilePage() {
       <Card className="bg-white">
         <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">My Sports</h2>
+            <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
+              My Sports
+            </h2>
             <p className="text-sm text-slate-500">
               The sports you play. Helps coaches find you for relevant bookings.
             </p>
@@ -607,7 +609,9 @@ export default function ProfilePage() {
       {/* Dependents Section */}
       <div>
         <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-          <h2 className="text-2xl font-bold text-slate-900">My Dependents</h2>
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            My Dependents
+          </h2>
           <Button
             onClick={handleAddDependent}
             className="inline-flex w-full items-center justify-center gap-2 sm:w-auto sm:whitespace-nowrap"
@@ -623,7 +627,7 @@ export default function ProfilePage() {
               <Card key={dependent._id} className="bg-white">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-slate-900">
+                    <h3 className="text-base font-bold text-slate-900 sm:text-lg">
                       {dependent.name}
                     </h3>
                     <div className="mt-2 space-y-1 text-sm text-slate-600">

@@ -1,4 +1,5 @@
 ﻿import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
@@ -75,11 +76,14 @@ export const Footer: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
             {/* Brand Section */}
             <div className="lg:col-span-1">
-              <Link
-                href="/"
-                className="text-3xl font-bold bg-linear-to-r from-power-orange to-orange-400 bg-clip-text text-transparent hover:from-orange-400 hover:to-orange-500 transition-all duration-300 inline-block"
-              >
-                PowerMySport
+              <Link href="/" className="inline-flex items-center">
+                <Image
+                  src="/header_logo_1.png"
+                  alt="PowerMySport"
+                  width={220}
+                  height={56}
+                  className="h-40 w-auto"
+                />
               </Link>
               <p className="mt-4 text-sm text-slate-300 leading-relaxed">
                 Connect with premium sports venues and professional coaches near

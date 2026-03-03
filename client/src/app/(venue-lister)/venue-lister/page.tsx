@@ -127,14 +127,14 @@ export default function VenueListerDashboard() {
 
         <Card className="bg-white">
           <p className="text-sm text-slate-600 mb-1">Total Earnings</p>
-          <p className="text-3xl font-bold text-power-orange">
+          <p className="text-xl font-bold text-power-orange sm:text-2xl">
             {formatCurrency(stats.totalEarnings)}
           </p>
         </Card>
 
         <Card className="bg-white">
           <p className="text-sm text-slate-600 mb-1">Pending Bookings</p>
-          <p className="text-3xl font-bold text-yellow-600">
+          <p className="text-xl font-bold text-yellow-600 sm:text-2xl">
             {stats.pendingBookings}
           </p>
         </Card>

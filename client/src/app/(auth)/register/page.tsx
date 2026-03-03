@@ -279,7 +279,7 @@ function RegisterContent() {
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
                 >
                   <option value="OWN_VENUE">
-                    Own Venue (Teach at your own location)
+                    Own Venue (Coach at your own location)
                   </option>
                   <option value="FREELANCE">
                     Freelance (Travel to player locations)
@@ -292,7 +292,7 @@ function RegisterContent() {
                   {formData.serviceMode === "FREELANCE" &&
                     "Travel to players for coaching sessions."}
                   {formData.serviceMode === "HYBRID" &&
-                    "Teach at your venue or travel to players."}
+                    "Coach at your venue or travel to players."}
                 </p>
               </div>
             )}
