@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   acceptConversationRequest,
+  addGroupMember,
   blockUser,
   createGroup,
   getBlockedUsers,
@@ -15,12 +16,15 @@ import {
   sendMessage,
   startConversation,
   unblockUser,
+  updateGroupSettings,
   updateCommunityProfile,
 } from "../controllers/communityController";
 import { authMiddleware } from "../middleware/auth";
 import {
   communityBlockSchema,
+  communityAddGroupMemberSchema,
   communityCreateGroupSchema,
+  communityUpdateGroupSettingsSchema,
   communitySendMessageSchema,
   communityStartConversationSchema,
   communityUpdateProfileSchema,
@@ -63,6 +67,16 @@ router.post(
   "/groups",
   validateRequest(communityCreateGroupSchema),
   createGroup,
+);
+router.post(
+  "/groups/:groupId/members",
+  validateRequest(communityAddGroupMemberSchema),
+  addGroupMember,
+);
+router.patch(
+  "/groups/:groupId/settings",
+  validateRequest(communityUpdateGroupSettingsSchema),
+  updateGroupSettings,
 );
 router.post("/groups/:groupId/join", joinGroup);
 router.post("/groups/:groupId/leave", leaveGroup);

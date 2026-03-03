@@ -102,6 +102,14 @@ export const communityCreateGroupSchema = z.object({
     .optional(),
 });
 
+export const communityAddGroupMemberSchema = z.object({
+  targetUserId: z.string().min(1, "Target user ID is required"),
+});
+
+export const communityUpdateGroupSettingsSchema = z.object({
+  memberAddPolicy: z.enum(["ADMIN_ONLY", "ANY_MEMBER"]),
+});
+
 const geoLocationSchema = z.object({
   type: z.literal("Point"),
   coordinates: z

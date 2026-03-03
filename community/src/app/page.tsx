@@ -4,10 +4,12 @@ import { getCommunitySocket } from "@/lib/realtime/socket";
 import { getMainAppUrl, redirectToMainLogin } from "@/lib/auth/redirect";
 import { toast } from "@/lib/toast";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
+import { FeaturedCommunitiesStrip } from "@/modules/community/components/FeaturedCommunitiesStrip";
 import { communityService } from "@/modules/community/services/community";
 import {
   CommunityGroupSummary,
   CommunityProfile,
+  ConversationListResponse,
   ConversationItem,
   ConversationMessage,
   MessagePrivacy,
@@ -15,9 +17,9 @@ import {
 } from "@/modules/community/types";
 import {
   Activity,
+  ChevronLeft,
   Clock3,
   ExternalLink,
-  Filter,
   MessageSquare,
   Search,
   Shield,
@@ -25,7 +27,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const privacyOptions: Array<{ value: MessagePrivacy; label: string }> = [
   { value: "EVERYONE", label: "Everyone" },
@@ -43,6 +45,7 @@ const COMMUNITY_ACTIVE_TAB_KEY = "community:activeSidebarTab";
 const COMMUNITY_WORKSPACE_VIEW_KEY = "community:workspaceView";
 const COMMUNITY_DIRECTORY_VIEW_KEY = "community:directoryView";
 const COMMUNITY_SELECTED_CONVERSATION_KEY = "community:selectedConversationId";
+const CONVERSATION_PAGE_SIZE = 25;
 
 const isValidSidebarTab = (
   value: string | null,
@@ -82,16 +85,20 @@ export default function CommunityPage() {
     const stored = window.localStorage.getItem(COMMUNITY_WORKSPACE_VIEW_KEY);
     return isValidWorkspaceView(stored) ? stored : "CHAT";
   });
-  const [directoryView, setDirectoryView] = useState<
-    "ALL" | "CONTACTS" | "GROUPS"
-  >(() => {
+  const [directoryView, setDirectoryView] = useState<"CONTACTS" | "GROUPS">(
+    () => {
     if (typeof window === "undefined") {
-      return "ALL";
+      return "CONTACTS";
     }
 
     const stored = window.localStorage.getItem(COMMUNITY_DIRECTORY_VIEW_KEY);
-    return isValidDirectoryView(stored) ? stored : "ALL";
-  });
+      if (!isValidDirectoryView(stored)) {
+        return "CONTACTS";
+      }
+
+      return stored === "GROUPS" ? "GROUPS" : "CONTACTS";
+    },
+  );
   const [conversationMode, setConversationMode] = useState<
     "ALL" | "UNREAD" | "REQUESTS"
   >("ALL");
@@ -101,6 +108,10 @@ export default function CommunityPage() {
   const [conversationFilterQuery, setConversationFilterQuery] = useState("");
   const [profile, setProfile] = useState<CommunityProfile | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [conversationPage, setConversationPage] = useState(1);
+  const [hasMoreConversations, setHasMoreConversations] = useState(false);
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] =
+    useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(() => {
@@ -120,7 +131,24 @@ export default function CommunityPage() {
   const [groupSearchQuery, setGroupSearchQuery] = useState("");
   const [groupResults, setGroupResults] = useState<CommunityGroupSummary[]>([]);
   const [isSearchingGroups, setIsSearchingGroups] = useState(false);
+  const [directoryToolsView, setDirectoryToolsView] = useState<
+    "NONE" | "CONTACTS" | "GROUPS"
+  >("NONE");
   const [newGroupName, setNewGroupName] = useState("");
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [inviteGroupId, setInviteGroupId] = useState<string | null>(null);
+  const [inviteSearchQuery, setInviteSearchQuery] = useState("");
+  const [inviteSearchResults, setInviteSearchResults] = useState<
+    PlayerSearchResult[]
+  >([]);
+  const [isSearchingInvitePlayers, setIsSearchingInvitePlayers] =
+    useState(false);
+  const [isAddingMemberUserId, setIsAddingMemberUserId] = useState<
+    string | null
+  >(null);
+  const [isUpdatingGroupPolicyId, setIsUpdatingGroupPolicyId] = useState<
+    string | null
+  >(null);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -129,50 +157,99 @@ export default function CommunityPage() {
   const [error, setError] = useState<string | null>(null);
   const selectedConversationIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isRefreshingConversationsRef = useRef(false);
+  const shouldRefreshConversationsRef = useRef(false);
+  const safeConversations = useMemo(
+    () => (Array.isArray(conversations) ? conversations : []),
+    [conversations],
+  );
+  const safeGroupResults = useMemo(
+    () => (Array.isArray(groupResults) ? groupResults : []),
+    [groupResults],
+  );
+  const getConversationById = useCallback(
+    (conversationId: string | null) => {
+      if (!conversationId) {
+        return null;
+      }
+
+      for (const conversation of safeConversations) {
+        if (conversation.id === conversationId) {
+          return conversation;
+        }
+      }
+
+      return null;
+    },
+    [safeConversations],
+  );
+  const getGroupConversationByGroupId = useCallback(
+    (groupId: string) => {
+      for (const conversation of safeConversations) {
+        if (conversation.group?.id === groupId) {
+          return conversation;
+        }
+      }
+
+      return null;
+    },
+    [safeConversations],
+  );
 
   const selectedConversation = useMemo(
-    () =>
-      conversations.find(
-        (conversation) => conversation.id === selectedConversationId,
-      ) || null,
-    [conversations, selectedConversationId],
+    () => getConversationById(selectedConversationId),
+    [getConversationById, selectedConversationId],
   );
 
   const appendMessage = (incoming: ConversationMessage) => {
     setMessages((current) => {
-      const exists = current.some((message) => message.id === incoming.id);
+      const safeCurrent = Array.isArray(current) ? current : [];
+      const exists = safeCurrent.some((message) => message.id === incoming.id);
       if (exists) {
-        return current;
+        return safeCurrent;
       }
-      return [...current, incoming];
+      return [...safeCurrent, incoming];
     });
   };
 
   const removeMessageById = (messageId: string) => {
     setMessages((current) =>
-      current.filter((message) => message.id !== messageId),
+      (Array.isArray(current) ? current : []).filter(
+        (message) => message.id !== messageId,
+      ),
+    );
+  };
+
+  const updateMessageById = (
+    messageId: string,
+    updater: (message: ConversationMessage) => ConversationMessage,
+  ) => {
+    setMessages((current) =>
+      (Array.isArray(current) ? current : []).map((message) =>
+        message.id === messageId ? updater(message) : message,
+      ),
     );
   };
 
   const totalUnread = useMemo(
-    () => conversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
-    [conversations],
+    () => safeConversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
+    [safeConversations],
   );
   const pendingRequestsCount = useMemo(
     () =>
-      conversations.filter(
+      safeConversations.filter(
         (conversation) =>
           conversation.status === "PENDING" &&
           conversation.conversationType !== "GROUP",
       ).length,
-    [conversations],
+    [safeConversations],
   );
 
   const mainAppUrl = useMemo(() => getMainAppUrl(), []);
   const selectedConversationIsPending =
     selectedConversation?.status === "PENDING" &&
     selectedConversation?.conversationType !== "GROUP";
-  const isPrivacySidebarActive = activeSidebarTab === "privacy-settings";
   const isCommunityView = activeSidebarTab === "community-overview";
   const isConversationsView = activeSidebarTab === "conversations";
   const isPrivacyView = activeSidebarTab === "privacy-settings";
@@ -187,30 +264,26 @@ export default function CommunityPage() {
       ? "Manage contacts, groups, and active chats."
       : "Anonymous-first player networking and realtime chat.";
   const groupsJoinedCount = useMemo(
-    () => groupResults.filter((group) => group.isMember).length,
-    [groupResults],
+    () => safeGroupResults.filter((group) => group.isMember).length,
+    [safeGroupResults],
   );
   const contactConversations = useMemo(
     () =>
-      conversations.filter(
+      safeConversations.filter(
         (conversation) => conversation.conversationType !== "GROUP",
       ),
-    [conversations],
+    [safeConversations],
   );
   const groupConversations = useMemo(
     () =>
-      conversations.filter(
+      safeConversations.filter(
         (conversation) => conversation.conversationType === "GROUP",
       ),
-    [conversations],
+    [safeConversations],
   );
   const visibleConversations = useMemo(() => {
     const source =
-      directoryView === "CONTACTS"
-        ? contactConversations
-        : directoryView === "GROUPS"
-          ? groupConversations
-          : conversations;
+      directoryView === "GROUPS" ? groupConversations : contactConversations;
 
     const query = conversationFilterQuery.trim().toLowerCase();
     if (!query) {
@@ -228,7 +301,6 @@ export default function CommunityPage() {
     directoryView,
     contactConversations,
     groupConversations,
-    conversations,
     conversationFilterQuery,
   ]);
   const managedConversations = useMemo(() => {
@@ -265,15 +337,137 @@ export default function CommunityPage() {
       return bTime - aTime;
     });
   }, [visibleConversations, conversationMode]);
+  const hasConversationFilters =
+    conversationMode !== "ALL" ||
+    !!conversationFilterQuery.trim();
+  const isGroupsDirectory = directoryView === "GROUPS";
+  const conversationModeOptions: Array<{
+    value: "ALL" | "UNREAD" | "REQUESTS";
+    label: string;
+  }> = isGroupsDirectory
+    ? [
+        { value: "ALL", label: "All" },
+        { value: "UNREAD", label: "Unread" },
+      ]
+    : [
+        { value: "ALL", label: "All" },
+        { value: "UNREAD", label: "Unread" },
+        { value: "REQUESTS", label: "Requests" },
+      ];
   const visibleGroups = useMemo(() => {
     if (groupMode === "JOINED") {
-      return groupResults.filter((group) => group.isMember);
+      return safeGroupResults.filter((group) => group.isMember);
     }
     if (groupMode === "DISCOVER") {
-      return groupResults.filter((group) => !group.isMember);
+      return safeGroupResults.filter((group) => !group.isMember);
     }
-    return groupResults;
-  }, [groupResults, groupMode]);
+    return safeGroupResults;
+  }, [safeGroupResults, groupMode]);
+
+  const applyConversationPage = useCallback(
+    (
+      response: ConversationListResponse,
+      options?: {
+        append?: boolean;
+        preserveSelection?: boolean;
+      },
+    ) => {
+      const append = options?.append || false;
+      const preserveSelection = options?.preserveSelection ?? true;
+      const safeItems = Array.isArray(response.items) ? response.items : [];
+      const safePagination = response.pagination || {
+        page: 1,
+        limit: CONVERSATION_PAGE_SIZE,
+        total: safeItems.length,
+        hasMore: false,
+      };
+
+      setConversations((current) => {
+        const safeCurrent = Array.isArray(current) ? current : [];
+        if (!append) {
+          return safeItems;
+        }
+
+        const existingIds = new Set(
+          safeCurrent.map((conversation) => conversation.id),
+        );
+        const nextItems = safeItems.filter(
+          (conversation) => !existingIds.has(conversation.id),
+        );
+        return [...safeCurrent, ...nextItems];
+      });
+
+      setConversationPage(safePagination.page);
+      setHasMoreConversations(safePagination.hasMore);
+
+      if (!append) {
+        setSelectedConversationId((current) => {
+          if (!safeItems.length) {
+            return null;
+          }
+
+          if (
+            preserveSelection &&
+            current &&
+            safeItems.some((conversation) => conversation.id === current)
+          ) {
+            return current;
+          }
+
+          return safeItems[0].id;
+        });
+      }
+    },
+    [],
+  );
+
+  const refreshConversationsNow = useCallback(async () => {
+    if (isRefreshingConversationsRef.current) {
+      shouldRefreshConversationsRef.current = true;
+      return;
+    }
+
+    isRefreshingConversationsRef.current = true;
+    try {
+      const updated = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updated, { preserveSelection: true });
+    } catch {
+      // no-op: non-critical refresh path should not interrupt UX flow
+    } finally {
+      isRefreshingConversationsRef.current = false;
+      if (shouldRefreshConversationsRef.current) {
+        shouldRefreshConversationsRef.current = false;
+        void refreshConversationsNow();
+      }
+    }
+  }, [applyConversationPage]);
+
+  const queueConversationRefresh = useCallback(
+    (delayMs = 180) => {
+      if (refreshTimeoutRef.current) {
+        return;
+      }
+
+      refreshTimeoutRef.current = setTimeout(() => {
+        refreshTimeoutRef.current = null;
+        void refreshConversationsNow();
+      }, delayMs);
+    },
+    [refreshConversationsNow],
+  );
+  const featuredGroups = useMemo(() => {
+    return [...safeGroupResults]
+      .sort((a, b) => {
+        if (!!a.isMember !== !!b.isMember) {
+          return a.isMember ? 1 : -1;
+        }
+        return (b.memberCount || 0) - (a.memberCount || 0);
+      })
+      .slice(0, 6);
+  }, [safeGroupResults]);
 
   const getRelativeTime = (value?: string | null) => {
     if (!value) {
@@ -298,6 +492,22 @@ export default function CommunityPage() {
     return `${diffDays}d`;
   };
 
+  const getMessageTimestamp = (value?: string | null) => {
+    if (!value) {
+      return "";
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+
   const scrollToSection = (sectionId: string) => {
     if (
       sectionId === "community-overview" ||
@@ -320,7 +530,7 @@ export default function CommunityPage() {
     }
   };
 
-  const loadBootstrap = async () => {
+  const loadBootstrap = useCallback(async () => {
     setError(null);
     setIsLoading(true);
     try {
@@ -333,22 +543,12 @@ export default function CommunityPage() {
 
       const [profileData, conversationData, groupData] = await Promise.all([
         communityService.getProfile(),
-        communityService.listConversations(),
+        communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
         communityService.listGroups(),
       ]);
       setProfile(profileData);
-      setConversations(conversationData);
+      applyConversationPage(conversationData, { preserveSelection: true });
       setGroupResults(groupData);
-      if (!conversationData.length) {
-        setSelectedConversationId(null);
-      } else if (
-        !selectedConversationId ||
-        !conversationData.some(
-          (conversation) => conversation.id === selectedConversationId,
-        )
-      ) {
-        setSelectedConversationId(conversationData[0].id);
-      }
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Failed to load community";
@@ -357,25 +557,34 @@ export default function CommunityPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [applyConversationPage]);
 
-  const loadMessages = async (conversationId: string) => {
-    try {
-      const response = await communityService.getMessages(conversationId);
-      setMessages(response.messages);
-      const refreshedConversations = await communityService.listConversations();
-      setConversations(refreshedConversations);
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to load messages";
-      setError(message);
-      toast.error(message);
-    }
-  };
+  const loadMessages = useCallback(
+    async (conversationId: string) => {
+      try {
+        const response = await communityService.getMessages(conversationId);
+        setMessages(Array.isArray(response.messages) ? response.messages : []);
+        await refreshConversationsNow();
+
+        const socket = getCommunitySocket();
+        if (socket.connected) {
+          socket.emit("community:markRead", {
+            conversationId,
+          });
+        }
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Failed to load messages";
+        setError(message);
+        toast.error(message);
+      }
+    },
+    [refreshConversationsNow],
+  );
 
   useEffect(() => {
-    loadBootstrap();
-  }, []);
+    void loadBootstrap();
+  }, [loadBootstrap]);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -384,7 +593,7 @@ export default function CommunityPage() {
     }
 
     loadMessages(selectedConversationId);
-  }, [selectedConversationId]);
+  }, [loadMessages, selectedConversationId]);
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId;
@@ -413,6 +622,17 @@ export default function CommunityPage() {
 
     window.localStorage.setItem(COMMUNITY_DIRECTORY_VIEW_KEY, directoryView);
   }, [directoryView]);
+
+  useEffect(() => {
+    if (directoryView === "GROUPS" && conversationMode === "REQUESTS") {
+      setConversationMode("ALL");
+    }
+
+    if (directoryView !== "GROUPS") {
+      setIsCreateGroupOpen(false);
+      setInviteGroupId(null);
+    }
+  }, [conversationMode, directoryView]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -482,6 +702,39 @@ export default function CommunityPage() {
   }, [groupSearchQuery]);
 
   useEffect(() => {
+    if (!inviteGroupId) {
+      setInviteSearchResults([]);
+      setInviteSearchQuery("");
+      setIsSearchingInvitePlayers(false);
+      return;
+    }
+
+    const query = inviteSearchQuery.trim();
+    if (query.length < 2) {
+      setInviteSearchResults([]);
+      setIsSearchingInvitePlayers(false);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        setIsSearchingInvitePlayers(true);
+        const players = await communityService.searchPlayers(query);
+        setInviteSearchResults(players);
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Failed to search players";
+        setError(message);
+        toast.error(message);
+      } finally {
+        setIsSearchingInvitePlayers(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [inviteGroupId, inviteSearchQuery]);
+
+  useEffect(() => {
     const socket = getCommunitySocket();
 
     const handleConnect = () => {
@@ -501,15 +754,44 @@ export default function CommunityPage() {
     const handleNewMessage = (message: ConversationMessage) => {
       if (message.conversationId === selectedConversationIdRef.current) {
         appendMessage(message);
+
+        socket.emit("community:markRead", {
+          conversationId: message.conversationId,
+        });
       }
 
-      void communityService
-        .listConversations()
-        .then((updated) => setConversations(updated))
-        .catch(() => undefined);
+      queueConversationRefresh();
     };
 
-    const handleConversationUpdated = async (payload?: {
+    const handleMessagesRead = (payload: {
+      conversationId: string;
+      readerId: string;
+      messageIds: string[];
+    }) => {
+      if (payload.conversationId !== selectedConversationIdRef.current) {
+        return;
+      }
+
+      setMessages((current) =>
+        (Array.isArray(current) ? current : []).map((message) => {
+          if (!payload.messageIds.includes(message.id)) {
+            return message;
+          }
+
+          const readBy = message.readBy || [];
+          if (readBy.includes(payload.readerId)) {
+            return message;
+          }
+
+          return {
+            ...message,
+            readBy: [...readBy, payload.readerId],
+          };
+        }),
+      );
+    };
+
+    const handleConversationUpdated = (payload?: {
       conversationId?: string;
     }) => {
       const conversationId = payload?.conversationId;
@@ -519,12 +801,7 @@ export default function CommunityPage() {
         });
       }
 
-      try {
-        const updated = await communityService.listConversations();
-        setConversations(updated);
-      } catch {
-        // no-op: keep realtime listeners active even if refresh fails once
-      }
+      queueConversationRefresh(100);
     };
 
     const handleCommunityError = (payload: { message: string }) => {
@@ -541,6 +818,7 @@ export default function CommunityPage() {
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("community:newMessage", handleNewMessage);
+    socket.on("community:messagesRead", handleMessagesRead);
     socket.on("community:conversationUpdated", handleConversationUpdated);
     socket.on("community:error", handleCommunityError);
     socket.on("connect_error", handleConnectError);
@@ -555,11 +833,17 @@ export default function CommunityPage() {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
       socket.off("community:newMessage", handleNewMessage);
+      socket.off("community:messagesRead", handleMessagesRead);
       socket.off("community:conversationUpdated", handleConversationUpdated);
       socket.off("community:error", handleCommunityError);
       socket.off("connect_error", handleConnectError);
+
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+        refreshTimeoutRef.current = null;
+      }
     };
-  }, []);
+  }, [queueConversationRefresh]);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -583,17 +867,26 @@ export default function CommunityPage() {
       try {
         const [messageResponse, conversationResponse] = await Promise.all([
           communityService.getMessages(selectedConversationId),
-          communityService.listConversations(),
+          communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
         ]);
-        setMessages(messageResponse.messages);
-        setConversations(conversationResponse);
+        setMessages(
+          Array.isArray(messageResponse.messages)
+            ? messageResponse.messages
+            : [],
+        );
+        applyConversationPage(conversationResponse, { preserveSelection: true });
       } catch {
         // no-op: keep retrying while disconnected
       }
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [isSocketConnected, selectedConversationId]);
+  }, [
+    applyConversationPage,
+    isSocketConnected,
+    refreshConversationsNow,
+    selectedConversationId,
+  ]);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -658,8 +951,12 @@ export default function CommunityPage() {
       );
       setPlayerSearchQuery("");
       setPlayerSearchResults([]);
-      const updated = await communityService.listConversations();
-      setConversations(updated);
+      const updated = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updated, { preserveSelection: true });
+      setDirectoryToolsView("NONE");
       setSelectedConversationId(conversation.id);
       setActiveSidebarTab("conversations");
       setWorkspaceView("CHAT");
@@ -687,12 +984,14 @@ export default function CommunityPage() {
       });
       setNewGroupName("");
       const [updatedConversations, updatedGroups] = await Promise.all([
-        communityService.listConversations(),
+        communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
         communityService.listGroups(groupSearchQuery.trim()),
       ]);
-      setConversations(updatedConversations);
+      applyConversationPage(updatedConversations, { preserveSelection: true });
       setGroupResults(updatedGroups);
+      setDirectoryToolsView("NONE");
       setSelectedConversationId(created.conversationId);
+      setIsCreateGroupOpen(false);
       setActiveSidebarTab("conversations");
       setWorkspaceView("CHAT");
       toast.success("Group created");
@@ -707,12 +1006,13 @@ export default function CommunityPage() {
     try {
       const joined = await communityService.joinGroup(groupId);
       const [updatedConversations, updatedGroups] = await Promise.all([
-        communityService.listConversations(),
+        communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
         communityService.listGroups(groupSearchQuery.trim()),
       ]);
-      setConversations(updatedConversations);
+      applyConversationPage(updatedConversations, { preserveSelection: true });
       setGroupResults(updatedGroups);
       if (joined.conversationId) {
+        setDirectoryToolsView("NONE");
         setSelectedConversationId(joined.conversationId);
         setActiveSidebarTab("conversations");
         setWorkspaceView("CHAT");
@@ -725,6 +1025,90 @@ export default function CommunityPage() {
     }
   };
 
+  const handleAddMemberToGroup = async (groupId: string, targetUserId: string) => {
+    try {
+      setIsAddingMemberUserId(targetUserId);
+      const response = await communityService.addGroupMember(groupId, targetUserId);
+
+      const [updatedConversations, updatedGroups] = await Promise.all([
+        communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
+        communityService.listGroups(groupSearchQuery.trim()),
+      ]);
+      applyConversationPage(updatedConversations, { preserveSelection: true });
+      setGroupResults(updatedGroups);
+      setInviteSearchQuery("");
+      setInviteSearchResults([]);
+
+      toast.success(
+        response.alreadyMember
+          ? "Player is already in this group"
+          : "Member added to group",
+      );
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "Failed to add member";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsAddingMemberUserId(null);
+    }
+  };
+
+  const handleUpdateGroupMemberAddPolicy = async (
+    groupId: string,
+    memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER",
+  ) => {
+    try {
+      setIsUpdatingGroupPolicyId(groupId);
+      await communityService.updateGroupSettings(groupId, {
+        memberAddPolicy,
+      });
+
+      const updatedGroups = await communityService.listGroups(
+        groupSearchQuery.trim(),
+      );
+      setGroupResults(updatedGroups);
+      toast.success("Group settings updated");
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "Failed to update group settings";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsUpdatingGroupPolicyId(null);
+    }
+  };
+
+  const getFeaturedGroupActionLabel = (group: CommunityGroupSummary) => {
+    if (!group.isMember) {
+      return "Join";
+    }
+
+    const groupConversation = getGroupConversationByGroupId(group.id);
+
+    return groupConversation ? "Open chat" : "View groups";
+  };
+
+  const handleFeaturedGroupAction = async (group: CommunityGroupSummary) => {
+    if (!group.isMember) {
+      await handleJoinGroup(group.id);
+      return;
+    }
+
+    const groupConversation = getGroupConversationByGroupId(group.id);
+
+    setActiveSidebarTab("conversations");
+    if (groupConversation) {
+      setSelectedConversationId(groupConversation.id);
+      setWorkspaceView("CHAT");
+      return;
+    }
+
+    setWorkspaceView("DIRECTORY");
+    setDirectoryView("GROUPS");
+    setGroupSearchQuery(group.name);
+  };
+
   const handleAcceptRequest = async () => {
     if (!selectedConversation) {
       return;
@@ -732,8 +1116,11 @@ export default function CommunityPage() {
 
     try {
       await communityService.acceptRequest(selectedConversation.id);
-      const updated = await communityService.listConversations();
-      setConversations(updated);
+      const updated = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updated, { preserveSelection: true });
       await loadMessages(selectedConversation.id);
       toast.success("Message request accepted");
     } catch (e) {
@@ -751,15 +1138,146 @@ export default function CommunityPage() {
 
     try {
       await communityService.rejectRequest(selectedConversation.id);
-      const updated = await communityService.listConversations();
-      setConversations(updated);
-      setSelectedConversationId(updated.length ? updated[0].id : null);
+      const updated = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updated, { preserveSelection: true });
+      setSelectedConversationId(updated.items.length ? updated.items[0].id : null);
       toast.success("Message request rejected");
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Failed to reject request";
       setError(message);
       toast.error(message);
+    }
+  };
+
+  const handleOpenConversation = (conversationId: string) => {
+    setDirectoryToolsView("NONE");
+    setSelectedConversationId(conversationId);
+    setActiveSidebarTab("conversations");
+    setWorkspaceView("CHAT");
+  };
+
+  const handleLoadMoreConversations = async () => {
+    if (isLoadingMoreConversations || !hasMoreConversations) {
+      return;
+    }
+
+    setIsLoadingMoreConversations(true);
+    try {
+      const nextPage = conversationPage + 1;
+      const next = await communityService.listConversations(
+        nextPage,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(next, {
+        append: true,
+      });
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "Failed to load more conversations";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsLoadingMoreConversations(false);
+    }
+  };
+
+  const sendMessageWithTransport = async (
+    conversationId: string,
+    content: string,
+  ): Promise<ConversationMessage> => {
+    const socket = getCommunitySocket();
+
+    if (socket.connected) {
+      const payload = {
+        conversationId,
+        content,
+      };
+
+      const ack = await new Promise<
+        | { success: true; data: ConversationMessage }
+        | { success: false; message?: string }
+      >((resolve) => {
+        const timeoutId = setTimeout(() => {
+          resolve({ success: false, message: "Message send timed out" });
+        }, 8000);
+
+        socket.emit("community:sendMessage", payload, (result: unknown) => {
+          clearTimeout(timeoutId);
+          resolve(
+            (result as
+              | { success: true; data: ConversationMessage }
+              | { success: false; message?: string }) || {
+              success: false,
+              message: "Invalid server response",
+            },
+          );
+        });
+      });
+
+      if (!ack.success) {
+        throw new Error(ack.message || "Failed to send message");
+      }
+
+      return {
+        ...ack.data,
+        messageStatus: "SENT",
+      };
+    }
+
+    const fallbackMessage = await communityService.sendMessage(
+      conversationId,
+      content,
+    );
+
+    return {
+      ...fallbackMessage,
+      messageStatus: "SENT",
+    };
+  };
+
+  const retryFailedMessage = async (message: ConversationMessage) => {
+    if (!message.content?.trim()) {
+      return;
+    }
+
+    updateMessageById(message.id, (current) => ({
+      ...current,
+      messageStatus: "SENDING",
+    }));
+
+    setIsSending(true);
+    setError(null);
+    try {
+      const confirmedMessage = await sendMessageWithTransport(
+        message.conversationId,
+        message.content,
+      );
+
+      updateMessageById(message.id, (current) => ({
+        ...current,
+        ...confirmedMessage,
+      }));
+
+      const updatedConversations = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updatedConversations, { preserveSelection: true });
+    } catch (e) {
+      updateMessageById(message.id, (current) => ({
+        ...current,
+        messageStatus: "FAILED",
+      }));
+      const errorMessage =
+        e instanceof Error ? e.message : "Failed to resend message";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -773,10 +1291,17 @@ export default function CommunityPage() {
     const optimisticMessage: ConversationMessage = {
       id: optimisticMessageId,
       conversationId: selectedConversation.id,
+      conversationType: selectedConversation.conversationType,
       senderId: profile?.userId || "me",
       senderDisplayName: "You",
       content,
       createdAt: new Date().toISOString(),
+      messageStatus: "SENDING",
+      readBy: profile?.userId ? [profile.userId] : [],
+      participantIds: [
+        profile?.userId || "me",
+        selectedConversation.otherParticipant.id,
+      ],
     };
 
     appendMessage(optimisticMessage);
@@ -785,47 +1310,10 @@ export default function CommunityPage() {
     setIsSending(true);
     setError(null);
     try {
-      const socket = getCommunitySocket();
-      let confirmedMessage: ConversationMessage;
-
-      if (socket.connected) {
-        const payload = {
-          conversationId: selectedConversation.id,
-          content,
-        };
-
-        const ack = await new Promise<
-          | { success: true; data: ConversationMessage }
-          | { success: false; message?: string }
-        >((resolve) => {
-          const timeoutId = setTimeout(() => {
-            resolve({ success: false, message: "Message send timed out" });
-          }, 8000);
-
-          socket.emit("community:sendMessage", payload, (result: unknown) => {
-            clearTimeout(timeoutId);
-            resolve(
-              (result as
-                | { success: true; data: ConversationMessage }
-                | { success: false; message?: string }) || {
-                success: false,
-                message: "Invalid server response",
-              },
-            );
-          });
-        });
-
-        if (!ack.success) {
-          throw new Error(ack.message || "Failed to send message");
-        }
-
-        confirmedMessage = ack.data;
-      } else {
-        confirmedMessage = await communityService.sendMessage(
-          selectedConversation.id,
-          content,
-        );
-      }
+      const confirmedMessage = await sendMessageWithTransport(
+        selectedConversation.id,
+        content,
+      );
 
       removeMessageById(optimisticMessageId);
 
@@ -833,10 +1321,16 @@ export default function CommunityPage() {
         appendMessage(confirmedMessage);
       }
 
-      const updatedConversations = await communityService.listConversations();
-      setConversations(updatedConversations);
+      const updatedConversations = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updatedConversations, { preserveSelection: true });
     } catch (e) {
-      removeMessageById(optimisticMessageId);
+      updateMessageById(optimisticMessageId, (message) => ({
+        ...message,
+        messageStatus: "FAILED",
+      }));
       const message = e instanceof Error ? e.message : "Failed to send message";
       setError(message);
       toast.error(message);
@@ -951,8 +1445,8 @@ export default function CommunityPage() {
                 {!isPrivacyView && (
                   <>
                     <div className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      {conversations.length} conversation
-                      {conversations.length === 1 ? "" : "s"}
+                      {safeConversations.length} conversation
+                      {safeConversations.length === 1 ? "" : "s"}
                     </div>
                     <div className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
                       {totalUnread} unread
@@ -1015,13 +1509,26 @@ export default function CommunityPage() {
                   />
                 </section>
 
+                <FeaturedCommunitiesStrip
+                  groups={featuredGroups}
+                  getActionLabel={getFeaturedGroupActionLabel}
+                  onGroupAction={(group) => {
+                    void handleFeaturedGroupAction(group);
+                  }}
+                  onViewAll={() => {
+                    setActiveSidebarTab("conversations");
+                    setWorkspaceView("DIRECTORY");
+                    setDirectoryView("GROUPS");
+                  }}
+                />
+
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Conversations
                     </p>
                     <p className="mt-2 text-2xl font-bold text-slate-900">
-                      {conversations.length}
+                      {safeConversations.length}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
                       Active threads
@@ -1223,12 +1730,24 @@ export default function CommunityPage() {
                     Search players, discover groups, and select a conversation.
                   </p>
 
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                      {managedConversations.length} result
+                      {managedConversations.length === 1 ? "" : "s"}
+                    </span>
+                    <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
+                      {pendingRequestsCount} request
+                      {pendingRequestsCount === 1 ? "" : "s"}
+                    </span>
+                    {!!conversationFilterQuery.trim() && (
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                        “{conversationFilterQuery.trim()}”
+                      </span>
+                    )}
+                  </div>
+
                   <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-border bg-slate-50 p-1">
-                    {[
-                      { value: "ALL", label: "All" },
-                      { value: "UNREAD", label: "Unread" },
-                      { value: "REQUESTS", label: "Requests" },
-                    ].map((item) => (
+                    {conversationModeOptions.map((item) => (
                       <button
                         key={item.value}
                         onClick={() =>
@@ -1247,47 +1766,33 @@ export default function CommunityPage() {
                     ))}
                   </div>
 
-                  <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-border bg-slate-50 p-1">
-                    {[
-                      { value: "ALL", label: "All" },
-                      { value: "CONTACTS", label: "Contacts" },
-                      { value: "GROUPS", label: "Groups" },
-                    ].map((item) => (
-                      <button
-                        key={item.value}
-                        onClick={() =>
-                          setDirectoryView(
-                            item.value as "ALL" | "CONTACTS" | "GROUPS",
-                          )
-                        }
-                        className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
-                          directoryView === item.value
-                            ? "bg-white text-slate-900 shadow-xs"
-                            : "text-slate-500 hover:text-slate-800"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <div className="rounded-lg border border-border bg-slate-50 px-3 py-2">
-                      <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                        Contacts
-                      </p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {contactConversations.length}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-border bg-slate-50 px-3 py-2">
-                      <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                        Group chats
-                      </p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {groupConversations.length}
-                      </p>
-                    </div>
+                  <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-1">
+                    <button
+                      onClick={() => setDirectoryView("CONTACTS")}
+                      title="DM chats"
+                      aria-label="DM chats"
+                      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
+                        directoryView === "CONTACTS"
+                          ? "bg-white text-slate-900 shadow-xs"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <MessageSquare size={14} />
+                      DM
+                    </button>
+                    <button
+                      onClick={() => setDirectoryView("GROUPS")}
+                      title="Group chats"
+                      aria-label="Group chats"
+                      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
+                        directoryView === "GROUPS"
+                          ? "bg-white text-slate-900 shadow-xs"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <Users size={14} />
+                      Groups
+                    </button>
                   </div>
 
                   <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
@@ -1297,7 +1802,11 @@ export default function CommunityPage() {
                       onChange={(event) =>
                         setConversationFilterQuery(event.target.value)
                       }
-                      placeholder="Filter contacts or groups"
+                      placeholder={
+                        directoryView === "GROUPS"
+                          ? "Filter group chats"
+                          : "Filter DM chats"
+                      }
                       className="w-full bg-transparent py-2 text-sm outline-none"
                     />
                     {!!conversationFilterQuery.trim() && (
@@ -1310,167 +1819,48 @@ export default function CommunityPage() {
                       </button>
                     )}
                   </div>
-
-                  <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Find new contacts
-                  </p>
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
-                    <Search size={14} className="text-slate-400" />
-                    <input
-                      value={playerSearchQuery}
-                      onChange={(event) =>
-                        setPlayerSearchQuery(event.target.value)
-                      }
-                      placeholder="Search by name or alias"
-                      className="w-full bg-transparent py-2 text-sm outline-none"
-                    />
-                  </div>
-
-                  {(directoryView === "ALL" || directoryView === "CONTACTS") &&
-                    playerSearchQuery.trim().length >= 2 && (
-                      <div className="mt-2 rounded-lg border border-border bg-background p-2">
-                        {isSearchingPlayers ? (
-                          <p className="text-sm text-slate-500">Searching...</p>
-                        ) : playerSearchResults.length ? (
-                          <div className="space-y-1">
-                            {playerSearchResults.map((player) => (
-                              <button
-                                key={player.id}
-                                onClick={() =>
-                                  handleStartConversation(player.id)
-                                }
-                                className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
-                              >
-                                <span>{player.displayName}</span>
-                                <span className="text-xs text-slate-500">
-                                  {player.isIdentityPublic
-                                    ? "Public"
-                                    : "Anonymous"}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-slate-500">
-                            No players found
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                  {(directoryView === "ALL" || directoryView === "GROUPS") && (
-                    <div className="mt-4 space-y-2 rounded-xl border border-border bg-slate-50/70 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold tracking-tight text-slate-800">
-                          Groups
-                        </p>
-                        <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-500">
-                          <Filter size={12} />
-                          {groupMode === "ALL"
-                            ? "All"
-                            : groupMode === "JOINED"
-                              ? "Joined"
-                              : "Discover"}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
-                        {[
-                          { value: "ALL", label: "All" },
-                          { value: "JOINED", label: "Joined" },
-                          { value: "DISCOVER", label: "Discover" },
-                        ].map((item) => (
-                          <button
-                            key={item.value}
-                            onClick={() =>
-                              setGroupMode(
-                                item.value as "ALL" | "JOINED" | "DISCOVER",
-                              )
-                            }
-                            className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
-                              groupMode === item.value
-                                ? "bg-slate-900 text-white"
-                                : "text-slate-500 hover:bg-slate-100"
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          value={newGroupName}
-                          onChange={(event) =>
-                            setNewGroupName(event.target.value)
-                          }
-                          placeholder="Create group name"
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                        />
-                        <button
-                          onClick={handleCreateGroup}
-                          className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
-                        >
-                          Create
-                        </button>
-                      </div>
-                      <input
-                        value={groupSearchQuery}
-                        onChange={(event) =>
-                          setGroupSearchQuery(event.target.value)
-                        }
-                        placeholder="Search groups by name, sport, city"
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                      />
-                      <div className="max-h-48 space-y-1 overflow-y-auto pr-1">
-                        {isSearchingGroups ? (
-                          <p className="text-sm text-slate-500">
-                            Loading groups...
-                          </p>
-                        ) : visibleGroups.length ? (
-                          visibleGroups.map((group) => (
-                            <div
-                              key={group.id}
-                              className="flex items-center justify-between rounded-lg border border-border bg-white px-2 py-2"
-                            >
-                              <div>
-                                <p className="text-sm font-medium">
-                                  {group.name}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  {group.memberCount} members
-                                </p>
-                              </div>
-                              {group.isMember ? (
-                                <span className="text-xs font-semibold text-turf-green">
-                                  Joined
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={() => handleJoinGroup(group.id)}
-                                  className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
-                                >
-                                  Join
-                                </button>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm text-slate-500">
-                            No groups found in this filter
-                          </p>
-                        )}
-                      </div>
+                  {hasConversationFilters && (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => {
+                          setConversationMode("ALL");
+                          setConversationFilterQuery("");
+                        }}
+                        className="text-xs font-medium text-slate-500 transition hover:text-slate-700"
+                      >
+                        Reset conversation filters
+                      </button>
                     </div>
                   )}
+
+                  <div className="mt-3 rounded-xl border border-border bg-slate-50 p-2">
+                    <button
+                      onClick={() => {
+                        const targetView =
+                          directoryView === "GROUPS" ? "GROUPS" : "CONTACTS";
+                        setDirectoryToolsView((current) =>
+                          current === targetView ? "NONE" : targetView,
+                        );
+                        setWorkspaceView("CHAT");
+                      }}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      {directoryView === "GROUPS" ? (
+                        <Users size={14} />
+                      ) : (
+                        <MessageSquare size={14} />
+                      )}
+                      {directoryView === "GROUPS"
+                        ? "Open group tools"
+                        : "Start new chat"}
+                    </button>
+                  </div>
 
                   <div className="mt-4 max-h-90 space-y-2 overflow-y-auto pr-1">
                     {managedConversations.map((conversation) => (
                       <button
                         key={conversation.id}
-                        onClick={() => {
-                          setSelectedConversationId(conversation.id);
-                          setActiveSidebarTab("conversations");
-                          setWorkspaceView("CHAT");
-                        }}
+                        onClick={() => handleOpenConversation(conversation.id)}
                         className={`w-full rounded-lg border p-3 text-left transition-all ${
                           conversation.id === selectedConversationId
                             ? "border-power-orange/60 bg-power-orange/5 shadow-xs"
@@ -1478,18 +1868,42 @@ export default function CommunityPage() {
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <div className="text-sm font-medium">
-                            {conversation.otherParticipant.displayName}
-                            <span className="ml-2 text-[10px] uppercase text-slate-500">
-                              {conversation.conversationType === "GROUP"
-                                ? "Group"
-                                : "DM"}
-                            </span>
-                            {conversation.status === "PENDING" && (
-                              <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
-                                Request
-                              </span>
-                            )}
+                          <div className="flex min-w-0 items-start gap-2">
+                            <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-slate-100 text-[11px] font-semibold uppercase text-slate-600">
+                              {(conversation.conversationType === "GROUP"
+                                ? conversation.group?.name ||
+                                  conversation.otherParticipant.displayName
+                                : conversation.otherParticipant.displayName
+                              )
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-900">
+                                <span className="truncate">
+                                  {conversation.conversationType === "GROUP"
+                                    ? conversation.group?.name ||
+                                      conversation.otherParticipant.displayName
+                                    : conversation.otherParticipant.displayName}
+                                </span>
+                                <span className="text-[10px] uppercase text-slate-500">
+                                  {conversation.conversationType === "GROUP"
+                                    ? "Group"
+                                    : "DM"}
+                                </span>
+                                {conversation.status === "PENDING" && (
+                                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+                                    Request
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+                                {conversation.status === "PENDING"
+                                  ? "Message request"
+                                  : conversation.latestMessage?.content ||
+                                    "No messages yet"}
+                              </div>
+                            </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {conversation.latestMessage?.createdAt && (
@@ -1507,19 +1921,26 @@ export default function CommunityPage() {
                             )}
                           </div>
                         </div>
-                        <div className="mt-1 line-clamp-1 text-xs text-slate-500">
-                          {conversation.status === "PENDING"
-                            ? "Message request"
-                            : conversation.latestMessage?.content ||
-                              "No messages yet"}
-                        </div>
                       </button>
                     ))}
                     {!managedConversations.length && (
                       <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
-                        No matches in this view. Try a different filter or start
-                        a new contact/group.
+                        {hasConversationFilters
+                          ? "No matches for current filters. Reset filters to see all conversations."
+                          : "No conversations yet. Start a new contact chat or join a group."}
                       </div>
+                    )}
+
+                    {!hasConversationFilters && hasMoreConversations && (
+                      <button
+                        onClick={() => void handleLoadMoreConversations()}
+                        disabled={isLoadingMoreConversations}
+                        className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                      >
+                        {isLoadingMoreConversations
+                          ? "Loading more..."
+                          : "Load more conversations"}
+                      </button>
                     )}
                   </div>
                 </section>
@@ -1533,15 +1954,386 @@ export default function CommunityPage() {
                         : "hidden xl:block"
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <MessageSquare size={16} className="text-slate-600" />
-                    <h2 className="text-base font-semibold tracking-tight">
-                      Chat
-                    </h2>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare size={16} className="text-slate-600" />
+                      <h2 className="text-base font-semibold tracking-tight">
+                        Chat
+                      </h2>
+                    </div>
+                    <button
+                      onClick={() => setWorkspaceView("DIRECTORY")}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 xl:hidden"
+                    >
+                      <ChevronLeft size={14} />
+                      Back to list
+                    </button>
                   </div>
                   <p className="mt-1 text-sm text-slate-500">
                     Messages stay anonymous unless identity is public.
                   </p>
+
+                  {directoryToolsView !== "NONE" && (
+                    <>
+                      <button
+                        onClick={() => setDirectoryToolsView("NONE")}
+                        aria-label="Close tools overlay"
+                        className="fixed inset-0 z-30 bg-slate-900/30 xl:hidden"
+                      />
+
+                      <div className="fixed inset-x-3 bottom-3 top-20 z-40 overflow-y-auto rounded-2xl border border-border bg-slate-50 p-3 shadow-lg xl:static xl:inset-auto xl:mt-3 xl:rounded-xl xl:shadow-none">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold tracking-tight text-slate-800">
+                          {directoryToolsView === "GROUPS"
+                            ? "Group tools"
+                            : "New direct chat"}
+                        </p>
+                        <button
+                          onClick={() => setDirectoryToolsView("NONE")}
+                          className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 transition hover:bg-slate-100"
+                          aria-label="Close tools"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+
+                      {directoryToolsView === "CONTACTS" ? (
+                        <>
+                          <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
+                            <Search size={14} className="text-slate-400" />
+                            <input
+                              value={playerSearchQuery}
+                              onChange={(event) =>
+                                setPlayerSearchQuery(event.target.value)
+                              }
+                              placeholder="Search by name or alias"
+                              className="w-full bg-transparent py-2 text-sm outline-none"
+                            />
+                          </div>
+                          {playerSearchQuery.trim().length >= 2 && (
+                            <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-2">
+                              {isSearchingPlayers ? (
+                                <p className="text-sm text-slate-500">
+                                  Searching...
+                                </p>
+                              ) : playerSearchResults.length ? (
+                                playerSearchResults.map((player) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() =>
+                                      void handleStartConversation(player.id)
+                                    }
+                                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
+                                  >
+                                    <span>{player.displayName}</span>
+                                    <span className="text-xs text-slate-500">
+                                      {player.isIdentityPublic
+                                        ? "Public"
+                                        : "Anonymous"}
+                                    </span>
+                                  </button>
+                                ))
+                              ) : (
+                                <p className="text-sm text-slate-500">
+                                  No players found
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <div className="grid grow grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
+                              {[
+                                { value: "ALL", label: "All" },
+                                { value: "JOINED", label: "Joined" },
+                                { value: "DISCOVER", label: "Discover" },
+                              ].map((item) => (
+                                <button
+                                  key={item.value}
+                                  onClick={() =>
+                                    setGroupMode(
+                                      item.value as
+                                        | "ALL"
+                                        | "JOINED"
+                                        | "DISCOVER",
+                                    )
+                                  }
+                                  className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                                    groupMode === item.value
+                                      ? "bg-slate-900 text-white"
+                                      : "text-slate-500 hover:bg-slate-100"
+                                  }`}
+                                >
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+                            <button
+                              onClick={() =>
+                                setIsCreateGroupOpen((current) => !current)
+                              }
+                              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
+                            >
+                              {isCreateGroupOpen ? "Close" : "New group"}
+                            </button>
+                          </div>
+
+                          {isCreateGroupOpen && (
+                            <div className="mt-2 flex gap-2">
+                              <input
+                                value={newGroupName}
+                                onChange={(event) =>
+                                  setNewGroupName(event.target.value)
+                                }
+                                placeholder="Create group name"
+                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                              />
+                              <button
+                                onClick={() => void handleCreateGroup()}
+                                className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                              >
+                                Create
+                              </button>
+                            </div>
+                          )}
+
+                          <input
+                            value={groupSearchQuery}
+                            onChange={(event) =>
+                              setGroupSearchQuery(event.target.value)
+                            }
+                            placeholder="Search groups by name, sport, city"
+                            className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                          />
+
+                          <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
+                            {isSearchingGroups ? (
+                              <p className="text-sm text-slate-500">
+                                Loading groups...
+                              </p>
+                            ) : visibleGroups.length ? (
+                              visibleGroups.map((group) => {
+                                const memberAddPolicy =
+                                  group.memberAddPolicy || "ADMIN_ONLY";
+                                const canCurrentUserAddMembers =
+                                  memberAddPolicy === "ANY_MEMBER" ||
+                                  !!group.isAdmin;
+                                const groupConversation =
+                                  getGroupConversationByGroupId(group.id);
+
+                                return (
+                                  <div
+                                    key={group.id}
+                                    className="space-y-2 rounded-lg border border-border bg-white px-2 py-2"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div>
+                                        <p className="text-sm font-medium">
+                                          {group.name}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                          {group.memberCount} members
+                                        </p>
+                                      </div>
+                                      {group.isMember ? (
+                                        <button
+                                          onClick={() => {
+                                            if (groupConversation) {
+                                              handleOpenConversation(
+                                                groupConversation.id,
+                                              );
+                                              return;
+                                            }
+
+                                            setDirectoryView("GROUPS");
+                                            setGroupSearchQuery(group.name);
+                                          }}
+                                          className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
+                                        >
+                                          {groupConversation
+                                            ? "Open"
+                                            : "View"}
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() =>
+                                            void handleJoinGroup(group.id)
+                                          }
+                                          className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
+                                        >
+                                          Join
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {group.isMember && (
+                                      <div className="space-y-2 border-t border-border pt-2">
+                                        <div className="rounded-md border border-border bg-slate-50 p-2">
+                                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                            Group settings
+                                          </p>
+                                          <div className="mt-1 flex items-center justify-between gap-2">
+                                            <span className="text-xs text-slate-600">
+                                              Who can add members
+                                            </span>
+                                            {group.isAdmin ? (
+                                              <select
+                                                value={memberAddPolicy}
+                                                onChange={(event) =>
+                                                  void handleUpdateGroupMemberAddPolicy(
+                                                    group.id,
+                                                    event.target
+                                                      .value as
+                                                      | "ADMIN_ONLY"
+                                                      | "ANY_MEMBER",
+                                                  )
+                                                }
+                                                disabled={
+                                                  isUpdatingGroupPolicyId ===
+                                                  group.id
+                                                }
+                                                className="rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-power-orange focus:outline-none disabled:opacity-50"
+                                              >
+                                                <option value="ADMIN_ONLY">
+                                                  Admins only
+                                                </option>
+                                                <option value="ANY_MEMBER">
+                                                  Any member
+                                                </option>
+                                              </select>
+                                            ) : (
+                                              <span className="text-xs font-medium text-slate-600">
+                                                {memberAddPolicy ===
+                                                "ANY_MEMBER"
+                                                  ? "Any member"
+                                                  : "Admins only"}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                            Add member
+                                          </p>
+                                          {canCurrentUserAddMembers ? (
+                                            <button
+                                              onClick={() => {
+                                                if (inviteGroupId === group.id) {
+                                                  setInviteGroupId(null);
+                                                  setInviteSearchQuery("");
+                                                  setInviteSearchResults([]);
+                                                  return;
+                                                }
+
+                                                setInviteGroupId(group.id);
+                                                setInviteSearchQuery("");
+                                                setInviteSearchResults([]);
+                                              }}
+                                              className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
+                                            >
+                                              {inviteGroupId === group.id
+                                                ? "Close"
+                                                : "Add"}
+                                            </button>
+                                          ) : (
+                                            <span className="text-[11px] text-slate-500">
+                                              Admin-only action
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {!canCurrentUserAddMembers && (
+                                          <p className="text-xs text-slate-500">
+                                            Only admins can add members in this
+                                            group.
+                                          </p>
+                                        )}
+
+                                        {canCurrentUserAddMembers &&
+                                          inviteGroupId === group.id && (
+                                            <>
+                                              <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
+                                                <Search
+                                                  size={13}
+                                                  className="text-slate-400"
+                                                />
+                                                <input
+                                                  value={inviteSearchQuery}
+                                                  onChange={(event) =>
+                                                    setInviteSearchQuery(
+                                                      event.target.value,
+                                                    )
+                                                  }
+                                                  placeholder="Search player to add"
+                                                  className="w-full bg-transparent py-1.5 text-xs outline-none"
+                                                />
+                                              </div>
+                                              {inviteSearchQuery.trim().length >=
+                                                2 && (
+                                                <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
+                                                  {isSearchingInvitePlayers ? (
+                                                    <p className="text-xs text-slate-500">
+                                                      Searching players...
+                                                    </p>
+                                                  ) : inviteSearchResults.length ? (
+                                                    inviteSearchResults.map(
+                                                      (player) => (
+                                                        <div
+                                                          key={player.id}
+                                                          className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
+                                                        >
+                                                          <span className="truncate text-xs text-slate-700">
+                                                            {player.displayName}
+                                                          </span>
+                                                          <button
+                                                            disabled={
+                                                              isAddingMemberUserId ===
+                                                              player.id
+                                                            }
+                                                            onClick={() =>
+                                                              void handleAddMemberToGroup(
+                                                                group.id,
+                                                                player.id,
+                                                              )
+                                                            }
+                                                            className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                          >
+                                                            {isAddingMemberUserId ===
+                                                            player.id
+                                                              ? "Adding"
+                                                              : "Add"}
+                                                          </button>
+                                                        </div>
+                                                      ),
+                                                    )
+                                                  ) : (
+                                                    <p className="text-xs text-slate-500">
+                                                      No players found
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </>
+                                          )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <p className="text-sm text-slate-500">
+                                No groups found in this filter
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
+                      </div>
+                    </>
+                  )}
 
                   {selectedConversationIsPending && (
                     <div className="mt-3 rounded-xl border border-power-orange/40 bg-power-orange/10 p-3 text-sm text-card-foreground">
@@ -1566,11 +2358,23 @@ export default function CommunityPage() {
                   )}
 
                   <div className="mt-4 flex items-center justify-between rounded-lg border border-border bg-slate-50 px-3 py-2">
-                    <p className="text-sm font-medium text-slate-700">
-                      {selectedConversation
-                        ? selectedConversation.otherParticipant.displayName
-                        : "No conversation selected"}
-                    </p>
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">
+                        {selectedConversation
+                          ? selectedConversation.conversationType === "GROUP"
+                            ? selectedConversation.group?.name ||
+                              selectedConversation.otherParticipant.displayName
+                            : selectedConversation.otherParticipant.displayName
+                          : "No conversation selected"}
+                      </p>
+                      {!!selectedConversation?.conversationType && (
+                        <p className="text-xs text-slate-500">
+                          {selectedConversation.conversationType === "GROUP"
+                            ? "Group conversation"
+                            : "Direct message"}
+                        </p>
+                      )}
+                    </div>
                     <p className="inline-flex items-center gap-1 text-xs text-slate-500">
                       <Activity size={13} />
                       {isSocketConnected ? "Live" : "Syncing"}
@@ -1580,6 +2384,32 @@ export default function CommunityPage() {
                   <div className="mt-3 min-h-80 flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-background p-3">
                     {messages.map((message) => {
                       const isOwnMessage = message.senderId === profile?.userId;
+                      const isGroupConversation =
+                        selectedConversation?.conversationType === "GROUP";
+                      const participantIds = Array.isArray(message.participantIds)
+                        ? message.participantIds
+                        : [];
+                      let otherParticipantId: string | undefined;
+                      for (const participantId of participantIds) {
+                        if (participantId !== profile?.userId) {
+                          otherParticipantId = participantId;
+                          break;
+                        }
+                      }
+                      const hasBeenSeenByOther = Boolean(
+                        isOwnMessage &&
+                          otherParticipantId &&
+                          message.readBy?.includes(otherParticipantId),
+                      );
+                      const messageStateLabel = isOwnMessage
+                        ? message.messageStatus === "FAILED"
+                          ? "Not sent"
+                          : message.messageStatus === "SENDING"
+                            ? "Sending"
+                            : hasBeenSeenByOther
+                              ? "Seen"
+                              : "Sent"
+                        : null;
                       return (
                         <div
                           key={message.id}
@@ -1592,17 +2422,37 @@ export default function CommunityPage() {
                                 : "border border-border bg-white text-slate-800"
                             }`}
                           >
+                            {isGroupConversation && (
+                              <div
+                                className={`text-[11px] ${
+                                  isOwnMessage
+                                    ? "text-orange-100"
+                                    : "text-slate-500"
+                                }`}
+                              >
+                                {message.senderDisplayName}
+                              </div>
+                            )}
+                            <div className="mt-0.5 wrap-break-word">
+                              {message.content}
+                            </div>
                             <div
-                              className={`text-[11px] ${
+                              className={`mt-1 flex items-center justify-end gap-2 text-[10px] ${
                                 isOwnMessage
                                   ? "text-orange-100"
                                   : "text-slate-500"
                               }`}
                             >
-                              {message.senderDisplayName}
-                            </div>
-                            <div className="mt-0.5 wrap-break-word">
-                              {message.content}
+                              <span>{getMessageTimestamp(message.createdAt)}</span>
+                              {messageStateLabel && <span>{messageStateLabel}</span>}
+                              {isOwnMessage && message.messageStatus === "FAILED" && (
+                                <button
+                                  onClick={() => retryFailedMessage(message)}
+                                  className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30"
+                                >
+                                  Retry
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1625,11 +2475,12 @@ export default function CommunityPage() {
                   </div>
 
                   <div className="mt-3 flex gap-2 rounded-xl border border-border bg-white p-2 xl:sticky xl:bottom-0">
-                    <input
+                    <textarea
                       value={newMessage}
                       onChange={(event) => setNewMessage(event.target.value)}
                       onKeyDown={(event) => {
-                        if (event.key === "Enter") {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
                           handleSendMessage();
                         }
                       }}
@@ -1639,7 +2490,8 @@ export default function CommunityPage() {
                           : "Select a conversation to reply"
                       }
                       disabled={!selectedConversation || isSending}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
+                      rows={1}
+                      className="max-h-28 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
                     />
                     <button
                       disabled={
@@ -1651,6 +2503,9 @@ export default function CommunityPage() {
                       {isSending ? "Sending" : "Send"}
                     </button>
                   </div>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Press Enter to send, Shift+Enter for a new line.
+                  </p>
 
                   {error && (
                     <p className="mt-2 text-sm text-error-red">{error}</p>

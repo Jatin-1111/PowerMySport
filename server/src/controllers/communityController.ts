@@ -218,7 +218,23 @@ export const listConversations = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const data = await CommunityService.listConversations(getUserId(req));
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    const mode =
+      typeof req.query.mode === "string" ? req.query.mode.toUpperCase() : "ALL";
+    const type =
+      typeof req.query.type === "string" ? req.query.type.toUpperCase() : "ALL";
+    const search = typeof req.query.q === "string" ? req.query.q : "";
+    const data = await CommunityService.listConversations(
+      getUserId(req),
+      page,
+      limit,
+      {
+        mode: mode === "UNREAD" || mode === "REQUESTS" ? mode : "ALL",
+        type: type === "CONTACTS" || type === "GROUPS" ? type : "ALL",
+        search,
+      },
+    );
     res.status(200).json({
       success: true,
       message: "Conversations fetched",
@@ -380,5 +396,63 @@ export const leaveGroup = async (
     });
   } catch (error) {
     handleError(res, error, "Failed to leave group");
+  }
+};
+
+export const addGroupMember = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const groupId = String(req.params.groupId || "");
+    if (!groupId) {
+      throw new Error("groupId is required");
+    }
+
+    const { targetUserId } = req.body as { targetUserId: string };
+    const data = await CommunityService.addGroupMember(
+      getUserId(req),
+      groupId,
+      targetUserId,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Member added to group",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to add group member");
+  }
+};
+
+export const updateGroupSettings = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const groupId = String(req.params.groupId || "");
+    if (!groupId) {
+      throw new Error("groupId is required");
+    }
+
+    const { memberAddPolicy } = req.body as {
+      memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER";
+    };
+    const data = await CommunityService.updateGroupSettings(
+      getUserId(req),
+      groupId,
+      {
+        memberAddPolicy,
+      },
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Group settings updated",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to update group settings");
   }
 };
