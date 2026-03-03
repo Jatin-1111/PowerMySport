@@ -160,35 +160,39 @@ export default function CommunityPage() {
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRefreshingConversationsRef = useRef(false);
   const shouldRefreshConversationsRef = useRef(false);
+  const safeConversations = useMemo(
+    () => (Array.isArray(conversations) ? conversations : []),
+    [conversations],
+  );
+  const safeGroupResults = useMemo(
+    () => (Array.isArray(groupResults) ? groupResults : []),
+    [groupResults],
+  );
 
   const selectedConversation = useMemo(
-    () => {
-      const safeConversations = Array.isArray(conversations)
-        ? conversations
-        : [];
-
-      return (
-        safeConversations.find(
-          (conversation) => conversation.id === selectedConversationId,
-        ) || null
-      );
-    },
-    [conversations, selectedConversationId],
+    () =>
+      safeConversations.find(
+        (conversation) => conversation.id === selectedConversationId,
+      ) || null,
+    [safeConversations, selectedConversationId],
   );
 
   const appendMessage = (incoming: ConversationMessage) => {
     setMessages((current) => {
-      const exists = current.some((message) => message.id === incoming.id);
+      const safeCurrent = Array.isArray(current) ? current : [];
+      const exists = safeCurrent.some((message) => message.id === incoming.id);
       if (exists) {
-        return current;
+        return safeCurrent;
       }
-      return [...current, incoming];
+      return [...safeCurrent, incoming];
     });
   };
 
   const removeMessageById = (messageId: string) => {
     setMessages((current) =>
-      current.filter((message) => message.id !== messageId),
+      (Array.isArray(current) ? current : []).filter(
+        (message) => message.id !== messageId,
+      ),
     );
   };
 
@@ -197,24 +201,24 @@ export default function CommunityPage() {
     updater: (message: ConversationMessage) => ConversationMessage,
   ) => {
     setMessages((current) =>
-      current.map((message) =>
+      (Array.isArray(current) ? current : []).map((message) =>
         message.id === messageId ? updater(message) : message,
       ),
     );
   };
 
   const totalUnread = useMemo(
-    () => conversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
-    [conversations],
+    () => safeConversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
+    [safeConversations],
   );
   const pendingRequestsCount = useMemo(
     () =>
-      conversations.filter(
+      safeConversations.filter(
         (conversation) =>
           conversation.status === "PENDING" &&
           conversation.conversationType !== "GROUP",
       ).length,
-    [conversations],
+    [safeConversations],
   );
 
   const mainAppUrl = useMemo(() => getMainAppUrl(), []);
@@ -235,22 +239,22 @@ export default function CommunityPage() {
       ? "Manage contacts, groups, and active chats."
       : "Anonymous-first player networking and realtime chat.";
   const groupsJoinedCount = useMemo(
-    () => groupResults.filter((group) => group.isMember).length,
-    [groupResults],
+    () => safeGroupResults.filter((group) => group.isMember).length,
+    [safeGroupResults],
   );
   const contactConversations = useMemo(
     () =>
-      conversations.filter(
+      safeConversations.filter(
         (conversation) => conversation.conversationType !== "GROUP",
       ),
-    [conversations],
+    [safeConversations],
   );
   const groupConversations = useMemo(
     () =>
-      conversations.filter(
+      safeConversations.filter(
         (conversation) => conversation.conversationType === "GROUP",
       ),
-    [conversations],
+    [safeConversations],
   );
   const visibleConversations = useMemo(() => {
     const source =
@@ -327,13 +331,13 @@ export default function CommunityPage() {
       ];
   const visibleGroups = useMemo(() => {
     if (groupMode === "JOINED") {
-      return groupResults.filter((group) => group.isMember);
+      return safeGroupResults.filter((group) => group.isMember);
     }
     if (groupMode === "DISCOVER") {
-      return groupResults.filter((group) => !group.isMember);
+      return safeGroupResults.filter((group) => !group.isMember);
     }
-    return groupResults;
-  }, [groupResults, groupMode]);
+    return safeGroupResults;
+  }, [safeGroupResults, groupMode]);
 
   const applyConversationPage = useCallback(
     (
@@ -354,17 +358,18 @@ export default function CommunityPage() {
       };
 
       setConversations((current) => {
+        const safeCurrent = Array.isArray(current) ? current : [];
         if (!append) {
           return safeItems;
         }
 
         const existingIds = new Set(
-          current.map((conversation) => conversation.id),
+          safeCurrent.map((conversation) => conversation.id),
         );
         const nextItems = safeItems.filter(
           (conversation) => !existingIds.has(conversation.id),
         );
-        return [...current, ...nextItems];
+        return [...safeCurrent, ...nextItems];
       });
 
       setConversationPage(safePagination.page);
@@ -429,7 +434,7 @@ export default function CommunityPage() {
     [refreshConversationsNow],
   );
   const featuredGroups = useMemo(() => {
-    return [...groupResults]
+    return [...safeGroupResults]
       .sort((a, b) => {
         if (!!a.isMember !== !!b.isMember) {
           return a.isMember ? 1 : -1;
@@ -437,7 +442,7 @@ export default function CommunityPage() {
         return (b.memberCount || 0) - (a.memberCount || 0);
       })
       .slice(0, 6);
-  }, [groupResults]);
+  }, [safeGroupResults]);
 
   const getRelativeTime = (value?: string | null) => {
     if (!value) {
@@ -533,7 +538,7 @@ export default function CommunityPage() {
     async (conversationId: string) => {
       try {
         const response = await communityService.getMessages(conversationId);
-        setMessages(response.messages);
+        setMessages(Array.isArray(response.messages) ? response.messages : []);
         await refreshConversationsNow();
 
         const socket = getCommunitySocket();
@@ -743,7 +748,7 @@ export default function CommunityPage() {
       }
 
       setMessages((current) =>
-        current.map((message) => {
+        (Array.isArray(current) ? current : []).map((message) => {
           if (!payload.messageIds.includes(message.id)) {
             return message;
           }
@@ -839,7 +844,11 @@ export default function CommunityPage() {
           communityService.getMessages(selectedConversationId),
           communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
         ]);
-        setMessages(messageResponse.messages);
+        setMessages(
+          Array.isArray(messageResponse.messages)
+            ? messageResponse.messages
+            : [],
+        );
         applyConversationPage(conversationResponse, { preserveSelection: true });
       } catch {
         // no-op: keep retrying while disconnected
@@ -1050,7 +1059,7 @@ export default function CommunityPage() {
       return "Join";
     }
 
-    const groupConversation = conversations.find(
+    const groupConversation = safeConversations.find(
       (conversation) => conversation.group?.id === group.id,
     );
 
@@ -1063,7 +1072,7 @@ export default function CommunityPage() {
       return;
     }
 
-    const groupConversation = conversations.find(
+    const groupConversation = safeConversations.find(
       (conversation) => conversation.group?.id === group.id,
     );
 
@@ -1415,8 +1424,8 @@ export default function CommunityPage() {
                 {!isPrivacyView && (
                   <>
                     <div className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      {conversations.length} conversation
-                      {conversations.length === 1 ? "" : "s"}
+                      {safeConversations.length} conversation
+                      {safeConversations.length === 1 ? "" : "s"}
                     </div>
                     <div className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
                       {totalUnread} unread
@@ -1498,7 +1507,7 @@ export default function CommunityPage() {
                       Conversations
                     </p>
                     <p className="mt-2 text-2xl font-bold text-slate-900">
-                      {conversations.length}
+                      {safeConversations.length}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
                       Active threads
@@ -2090,7 +2099,7 @@ export default function CommunityPage() {
                                 const canCurrentUserAddMembers =
                                   memberAddPolicy === "ANY_MEMBER" ||
                                   !!group.isAdmin;
-                                const groupConversation = conversations.find(
+                                const groupConversation = safeConversations.find(
                                   (conversation) =>
                                     conversation.group?.id === group.id,
                                 );
@@ -2358,7 +2367,9 @@ export default function CommunityPage() {
                       const isOwnMessage = message.senderId === profile?.userId;
                       const isGroupConversation =
                         selectedConversation?.conversationType === "GROUP";
-                      const participantIds = message.participantIds || [];
+                      const participantIds = Array.isArray(message.participantIds)
+                        ? message.participantIds
+                        : [];
                       const otherParticipantId = participantIds.find(
                         (participantId) => participantId !== profile?.userId,
                       );
