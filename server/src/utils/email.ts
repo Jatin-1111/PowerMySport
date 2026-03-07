@@ -298,6 +298,398 @@ export const sendPasswordResetEmail = async (
   });
 };
 
+interface FriendRequestEmailOptions {
+  recipientName: string;
+  recipientEmail: string;
+  requesterName: string;
+  requesterPhotoUrl?: string | undefined;
+}
+
+export const sendFriendRequestEmail = async (
+  options: FriendRequestEmailOptions,
+): Promise<void> => {
+  const dashboardUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/friends`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+      border-radius: 10px 10px 0 0;
+    }
+    .content {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 0 0 10px 10px;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background: #ff6b35;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .user-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+      border: 2px solid #ff6b35;
+    }
+    .avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 15px;
+      ${options.requesterPhotoUrl ? `background-image: url(${options.requesterPhotoUrl});` : "background-color: #ff6b35;"}
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>👥 New Friend Request!</h1>
+  </div>
+  
+  <div class="content">
+    <h2>Hi ${options.recipientName},</h2>
+    
+    <p><strong>${options.requesterName}</strong> wants to connect with you on PowerMySport!</p>
+    
+    <div class="user-card">
+      <div class="avatar">${!options.requesterPhotoUrl ? options.requesterName.charAt(0).toUpperCase() : ""}</div>
+      <h3>${options.requesterName}</h3>
+      <p>Wants to be your friend</p>
+    </div>
+    
+    <p>Accept the request to book together, share activities, and stay connected!</p>
+    
+    <center>
+      <a href="${dashboardUrl}" class="button">
+        View Friend Request
+      </a>
+    </center>
+    
+    <p>Best regards,<br>
+    <strong>The PowerMySport Team</strong></p>
+  </div>
+  
+  <div class="footer">
+    <p>This email was sent to ${options.recipientEmail}</p>
+    <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+  </div>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.recipientEmail,
+    subject: `${options.requesterName} wants to connect with you on PowerMySport`,
+    html,
+  });
+};
+
+interface FriendRequestAcceptedEmailOptions {
+  requesterName: string;
+  requesterEmail: string;
+  acceptedByName: string;
+  acceptedByPhotoUrl?: string | undefined;
+}
+
+export const sendFriendRequestAcceptedEmail = async (
+  options: FriendRequestAcceptedEmailOptions,
+): Promise<void> => {
+  const dashboardUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/friends`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+      border-radius: 10px 10px 0 0;
+    }
+    .content {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 0 0 10px 10px;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background: #28a745;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .user-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+      border: 2px solid #28a745;
+    }
+    .avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 15px;
+      ${options.acceptedByPhotoUrl ? `background-image: url(${options.acceptedByPhotoUrl});` : "background-color: #28a745;"}
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎉 Friend Request Accepted!</h1>
+  </div>
+  
+  <div class="content">
+    <h2>Great news, ${options.requesterName}!</h2>
+    
+    <p><strong>${options.acceptedByName}</strong> has accepted your friend request!</p>
+    
+    <div class="user-card">
+      <div class="avatar">${!options.acceptedByPhotoUrl ? options.acceptedByName.charAt(0).toUpperCase() : ""}</div>
+      <h3>${options.acceptedByName}</h3>
+      <p>✓ Now friends</p>
+    </div>
+    
+    <p>You can now invite ${options.acceptedByName} to group bookings and stay connected through PowerMySport!</p>
+    
+    <center>
+      <a href="${dashboardUrl}" class="button">
+        View Friends List
+      </a>
+    </center>
+    
+    <p>Best regards,<br>
+    <strong>The PowerMySport Team</strong></p>
+  </div>
+  
+  <div class="footer">
+    <p>This email was sent to ${options.requesterEmail}</p>
+    <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+  </div>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.requesterEmail,
+    subject: `${options.acceptedByName} accepted your friend request!`,
+    html,
+  });
+};
+
+interface BookingInvitationEmailOptions {
+  inviteeName: string;
+  inviteeEmail: string;
+  inviterName: string;
+  venueName: string;
+  sport: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  estimatedAmount?: number;
+}
+
+export const sendBookingInvitationEmail = async (
+  options: BookingInvitationEmailOptions,
+): Promise<void> => {
+  const invitationsUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/invitations`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+      border-radius: 10px 10px 0 0;
+    }
+    .content {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 0 0 10px 10px;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background: #ff6b35;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-weight: bold;
+    }
+    .booking-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #ff6b35;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .detail-label {
+      font-weight: bold;
+      color: #666;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎾 You're Invited to a Booking!</h1>
+  </div>
+  
+  <div class="content">
+    <h2>Hi ${options.inviteeName},</h2>
+    
+    <p><strong>${options.inviterName}</strong> has invited you to join a group booking!</p>
+    
+    <div class="booking-card">
+      <h3>📅 Booking Details</h3>
+      <div class="detail-row">
+        <span class="detail-label">Sport:</span>
+        <span>${options.sport}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Venue:</span>
+        <span>${options.venueName}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Date:</span>
+        <span>${new Date(options.date).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Time:</span>
+        <span>${options.startTime} - ${options.endTime}</span>
+      </div>
+      ${
+        options.estimatedAmount
+          ? `
+      <div class="detail-row">
+        <span class="detail-label">Your Share:</span>
+        <span><strong>₹${options.estimatedAmount.toFixed(2)}</strong></span>
+      </div>
+      `
+          : ""
+      }
+    </div>
+    
+    <p>Accept the invitation to confirm your spot and join the fun!</p>
+    
+    <center>
+      <a href="${invitationsUrl}" class="button">
+        View Invitation
+      </a>
+    </center>
+    
+    <p>Best regards,<br>
+    <strong>The PowerMySport Team</strong></p>
+  </div>
+  
+  <div class="footer">
+    <p>This email was sent to ${options.inviteeEmail}</p>
+    <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+  </div>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.inviteeEmail,
+    subject: `${options.inviterName} invited you to play ${options.sport}!`,
+    html,
+  });
+};
+
 interface CoachVerificationStatusEmailOptions {
   name: string;
   email: string;

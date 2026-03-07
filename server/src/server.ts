@@ -1,10 +1,51 @@
 import "dotenv/config";
 import http from "http";
+import { Server } from "socket.io";
 import app from "./app";
 import { connectDB } from "./config/database";
-import { initializeCommunitySocket } from "./sockets/communitySocket";
+import { setupCommunitySocket } from "./sockets/communitySocket";
+import {
+  setupFriendSocket,
+  setFriendSocketInstance,
+} from "./sockets/friendSocket";
 import { startExpirationJob } from "./utils/timer";
 const PORT = process.env.PORT || 5000;
+
+const normalizeOrigin = (origin: string): string =>
+  origin.trim().replace(/\/$/, "").toLowerCase();
+
+const configuredOrigins = [
+  process.env.FRONTEND_URLS,
+  process.env.FRONTEND_URL,
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://powermysport.com",
+  "https://www.powermysport.com",
+  "https://admin.powermysport.com",
+  "https://community.powermysport.com",
+]
+  .filter(Boolean)
+  .flatMap((value) => (value as string).split(","))
+  .map((origin) => normalizeOrigin(origin))
+  .filter(Boolean);
+
+const allowedOrigins = new Set(configuredOrigins);
+const allowedOriginPatterns = [
+  /^https:\/\/([a-z0-9-]+\.)*powermysport\.com$/i,
+  /^http:\/\/localhost:\d+$/i,
+];
+
+const isOriginAllowed = (origin: string): boolean => {
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  if (allowedOrigins.has(normalizedOrigin)) {
+    return true;
+  }
+
+  return allowedOriginPatterns.some((pattern) =>
+    pattern.test(normalizedOrigin),
+  );
+};
 
 // Start server function
 const startServer = async () => {
@@ -13,11 +54,35 @@ const startServer = async () => {
     await connectDB();
 
     const httpServer = http.createServer(app);
-    initializeCommunitySocket(httpServer);
+
+    // Create ONE Socket.IO instance
+    const io = new Server(httpServer, {
+      cors: {
+        origin: (origin, callback) => {
+          if (!origin || isOriginAllowed(origin)) {
+            callback(null, true);
+            return;
+          }
+          callback(new Error("Origin not allowed"));
+        },
+        credentials: true,
+        methods: ["GET", "POST"],
+      },
+    });
+
+    // Setup both socket handlers on the same instance
+    setupCommunitySocket(io);
+    setupFriendSocket(io);
+    setFriendSocketInstance(io);
+
+    console.log("🔧 Socket.IO namespaces configured:");
+    console.log("   - /community (requires community profile)");
+    console.log("   - /friends (basic auth)");
 
     const server = httpServer.listen(PORT, () => {
       console.log(`\n✅ Server is running on http://localhost:${PORT}`);
       console.log(`💬 Community socket ready`);
+      console.log(`👥 Friend socket ready`);
       console.log(`📝 API Documentation:`);
       // ... (keep existing logs if desired, or shorten them) ...
       console.log(`   AUTH:`);

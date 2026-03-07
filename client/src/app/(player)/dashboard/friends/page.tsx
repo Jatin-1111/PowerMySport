@@ -7,6 +7,7 @@ import {
   FriendRequest,
   SearchUserResult,
 } from "@/modules/shared/services/friend";
+import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
 import {
@@ -20,11 +21,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { toast } from "sonner";
-import { Users, UserPlus, Clock, Search } from "lucide-react";
+import {
+  Users,
+  UserPlus,
+  Clock,
+  Search,
+  MoreVertical,
+  UserX,
+  Ban,
+} from "lucide-react";
 
 export default function FriendsPage() {
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -36,11 +51,20 @@ export default function FriendsPage() {
   const [searching, setSearching] = useState(false);
   const [activeTab, setActiveTab] = useState("friends");
 
+  const { connected, refreshFriends: socketRefreshFriends } = useFriendSocket();
+
   useEffect(() => {
     loadFriends();
     loadPendingRequests();
     loadSentRequests();
   }, []);
+
+  // Refresh data when socket reconnects
+  useEffect(() => {
+    if (connected) {
+      loadPendingRequests();
+    }
+  }, [connected]);
 
   const loadFriends = async () => {
     try {
@@ -100,6 +124,24 @@ export default function FriendsPage() {
       loadFriends();
     } catch (error) {
       toast.error("Failed to remove friend");
+    }
+  };
+
+  const handleBlockUser = async (userId: string, userName: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to block ${userName}? They will be removed from your friends list and won't be able to send you friend requests.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await friendService.blockUser(userId);
+      toast.success(`${userName} has been blocked`);
+      loadFriends();
+    } catch (error) {
+      toast.error("Failed to block user");
     }
   };
 
@@ -217,14 +259,14 @@ export default function FriendsPage() {
                   >
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 flex-1">
                           <Avatar className="h-12 w-12">
                             <AvatarImage src={friend.photoUrl} />
                             <AvatarFallback>
                               {friend.name.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
-                          <div>
+                          <div className="flex-1">
                             <h3 className="font-semibold text-slate-900">
                               {friend.name}
                             </h3>
@@ -236,13 +278,31 @@ export default function FriendsPage() {
                             </p>
                           </div>
                         </div>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleRemoveFriend(friend.id)}
-                        >
-                          Remove
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleRemoveFriend(friend.id)}
+                              className="text-slate-700 cursor-pointer"
+                            >
+                              <UserX className="h-4 w-4 mr-2" />
+                              Remove Friend
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleBlockUser(friend.id, friend.name)
+                              }
+                              className="text-red-600 cursor-pointer"
+                            >
+                              <Ban className="h-4 w-4 mr-2" />
+                              Block User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </CardContent>
                   </Card>

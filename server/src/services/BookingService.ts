@@ -5,7 +5,10 @@ import { BookingSlotLock } from "../models/BookingSlotLock";
 import { Coach } from "../models/Coach";
 import { User } from "../models/User";
 import { Venue, VenueDocument } from "../models/Venue";
-import { sendBookingConfirmationEmail } from "../utils/email";
+import {
+  sendBookingConfirmationEmail,
+  sendBookingInvitationEmail,
+} from "../utils/email";
 import { getBookingExpirationTime } from "../utils/timer";
 import { validatePromoCode, applyPromoCode } from "./PromoCodeService";
 import { isWithinOpeningHours } from "../utils/openingHours";
@@ -1320,7 +1323,36 @@ export const initiateGroupBooking = async (
 
     await BookingInvitation.insertMany(invitations, { session });
 
-    // TODO: Send invitation emails/notifications
+    // Send invitation emails/notifications
+    const venue = await Venue.findById(booking.venueId).session(session);
+    const inviter = await User.findById(payload.userId).session(session);
+
+    if (venue && inviter) {
+      // Send emails to all invitees (async, don't wait)
+      for (const invitee of invitees) {
+        const invitation = invitations.find(
+          (inv) => inv.inviteeId.toString() === invitee._id.toString(),
+        );
+        if (invitation) {
+          sendBookingInvitationEmail({
+            inviteeName: invitee.name,
+            inviteeEmail: invitee.email,
+            inviterName: inviter.name,
+            venueName: venue.name,
+            sport: booking.sport,
+            date: booking.date.toISOString(),
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            estimatedAmount: invitation.estimatedAmount,
+          }).catch((err) =>
+            console.error(
+              `Failed to send booking invitation email to ${invitee.email}:`,
+              err,
+            ),
+          );
+        }
+      }
+    }
 
     await session.commitTransaction();
     session.endSession();

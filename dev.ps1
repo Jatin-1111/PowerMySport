@@ -30,7 +30,7 @@ Start-Sleep -Milliseconds 500
 
 Start-Service -Name "COMMUNITY (Port 3002)" -Command "cd community; npm run dev -- --port 3002" -Color "Magenta"
 
-Write-Host "`n✓ All services started in separate windows!" -ForegroundColor Green
+Write-Host "`nAll services started in separate windows!" -ForegroundColor Green
 Write-Host "`nTo stop all services, close each PowerShell window." -ForegroundColor Yellow
 Write-Host "Press any key to close this window (services will continue running)..." -ForegroundColor Gray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

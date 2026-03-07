@@ -1,43 +1,6 @@
-import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import { CommunityService } from "../services/CommunityService";
 import { verifyToken } from "../utils/jwt";
-
-const normalizeOrigin = (origin: string): string =>
-  origin.trim().replace(/\/$/, "").toLowerCase();
-
-const configuredOrigins = [
-  process.env.FRONTEND_URLS,
-  process.env.FRONTEND_URL,
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "https://powermysport.com",
-  "https://www.powermysport.com",
-  "https://admin.powermysport.com",
-  "https://community.powermysport.com",
-]
-  .filter(Boolean)
-  .flatMap((value) => (value as string).split(","))
-  .map((origin) => normalizeOrigin(origin))
-  .filter(Boolean);
-
-const allowedOrigins = new Set(configuredOrigins);
-const allowedOriginPatterns = [
-  /^https:\/\/([a-z0-9-]+\.)*powermysport\.com$/i,
-  /^http:\/\/localhost:\d+$/i,
-];
-
-const isOriginAllowed = (origin: string): boolean => {
-  const normalizedOrigin = normalizeOrigin(origin);
-
-  if (allowedOrigins.has(normalizedOrigin)) {
-    return true;
-  }
-
-  return allowedOriginPatterns.some((pattern) =>
-    pattern.test(normalizedOrigin),
-  );
-};
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   if (!cookieHeader) {
@@ -111,23 +74,11 @@ const consumeRateLimit = (
   return true;
 };
 
-export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
-  const io = new Server(httpServer, {
-    cors: {
-      origin: (origin, callback) => {
-        if (!origin || isOriginAllowed(origin)) {
-          callback(null, true);
-          return;
-        }
+export const setupCommunitySocket = (io: Server): void => {
+  // Use /community namespace for community features
+  const communityNamespace = io.of("/community");
 
-        callback(new Error("Origin not allowed"));
-      },
-      credentials: true,
-      methods: ["GET", "POST"],
-    },
-  });
-
-  io.use(async (socket, next) => {
+  communityNamespace.use(async (socket, next) => {
     const userId = getSocketUserId(socket);
     if (!userId) {
       next(new Error("Unauthorized"));
@@ -143,7 +94,7 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
     }
   });
 
-  io.on("connection", async (socket) => {
+  communityNamespace.on("connection", async (socket) => {
     const userId = socket.data.userId as string;
     const socketRateLimit = new Map<string, RateLimitState>();
     await CommunityService.touchLastSeen(userId);
@@ -328,6 +279,4 @@ export const initializeCommunitySocket = (httpServer: HttpServer): Server => {
       await CommunityService.touchLastSeen(userId);
     });
   });
-
-  return io;
 };

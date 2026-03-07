@@ -1,4 +1,5 @@
 ﻿import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
+import { FriendSocketProvider } from "@/hooks/useFriendSocket";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
@@ -95,7 +96,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <HydrationBoundary>{children}</HydrationBoundary>
+        <HydrationBoundary>
+          <FriendSocketProvider>{children}</FriendSocketProvider>
+        </HydrationBoundary>
         <Toaster richColors closeButton position="top-right" />
       </body>
     </html>
