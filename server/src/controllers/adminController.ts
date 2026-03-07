@@ -6,6 +6,9 @@ import {
   getAdminById,
   getAllAdmins,
   loginAdmin,
+  updateAdminPermissions,
+  updateAdminRole,
+  getRoleTemplatesData,
 } from "../services/AdminService";
 import {
   getCoachById,
@@ -108,8 +111,8 @@ export const createAdminAccount = async (
     res.status(201).json({
       success: true,
       message:
-        role === "SUPER_ADMIN"
-          ? "Super admin created successfully. Temporary password has been emailed."
+        role === "SYSTEM_ADMIN"
+          ? "System admin created successfully. Temporary password has been emailed."
           : "Admin created successfully. Temporary password has been emailed.",
       data: normalizeAdminResponse(admin),
     });
@@ -227,6 +230,99 @@ export const listAdmins = async (
     res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : "Failed to get admins",
+    });
+  }
+};
+
+// Get role templates
+export const getRoleTemplates = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const templates = getRoleTemplatesData();
+
+    res.status(200).json({
+      success: true,
+      message: "Role templates retrieved successfully",
+      data: templates,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to get role templates",
+    });
+  }
+};
+
+// Update admin permissions
+export const updateAdminPermissionsHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { adminId } = req.params;
+    const { permissions } = req.body;
+
+    if (!Array.isArray(permissions)) {
+      res.status(400).json({
+        success: false,
+        message: "Permissions must be an array",
+      });
+      return;
+    }
+
+    const updatedAdmin = await updateAdminPermissions(
+      adminId as string,
+      permissions as string[],
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Admin permissions updated successfully",
+      data: normalizeAdminResponse(updatedAdmin),
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update permissions",
+    });
+  }
+};
+
+// Update admin role
+export const updateAdminRoleHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { adminId } = req.params;
+    const { role } = req.body;
+
+    if (!role) {
+      res.status(400).json({
+        success: false,
+        message: "Role is required",
+      });
+      return;
+    }
+
+    const updatedAdmin = await updateAdminRole(
+      adminId as string,
+      role as string,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Admin role updated successfully",
+      data: normalizeAdminResponse(updatedAdmin),
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update role",
     });
   }
 };

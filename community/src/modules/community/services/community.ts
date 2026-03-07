@@ -17,7 +17,15 @@ interface ApiResponse<T> {
 
 interface AuthBridgeSession {
   id: string;
-  role: "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN" | "SUPER_ADMIN";
+  role:
+    | "PLAYER"
+    | "VENUE_LISTER"
+    | "COACH"
+    | "SUPPORT_ADMIN"
+    | "OPERATIONS_ADMIN"
+    | "FINANCE_ADMIN"
+    | "ANALYTICS_ADMIN"
+    | "SYSTEM_ADMIN";
   name: string;
   email: string;
 }

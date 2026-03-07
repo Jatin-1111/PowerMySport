@@ -51,7 +51,9 @@ function PaymentPageContent() {
   const description = isSuccess
     ? isMockPayment
       ? "Mock payment completed successfully. Your booking is confirmed."
-      : "Thanks! Your payment is confirmed. We will update your booking shortly."
+      : booking?.bookingType === "GROUP" && booking?.paymentType === "SPLIT"
+        ? "Your payment share is confirmed. We'll notify you once all participants complete their payments."
+        : "Thanks! Your payment is confirmed. We will update your booking shortly."
     : isCancel
       ? "No charge was made. You can try again whenever you are ready."
       : "We are confirming your payment. You can safely leave this page.";
@@ -79,6 +81,19 @@ function PaymentPageContent() {
             {/* Booking Details */}
             {isSuccess && booking && (
               <div className="bg-slate-50 rounded-lg p-4 text-left space-y-3 border border-slate-200">
+                {/* Booking Type Badge */}
+                {booking.bookingType === "GROUP" && (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                      Group Booking
+                    </span>
+                    {booking.paymentType === "SPLIT" && (
+                      <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                        Split Payment
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-slate-500 uppercase font-semibold">
                     {type === "coach" ? "Coach" : "Venue"}
@@ -127,13 +142,109 @@ function PaymentPageContent() {
                     </p>
                   </div>
                 )}
+                {/* Group Booking Participants */}
+                {booking.bookingType === "GROUP" && booking.participants && (
+                  <div className="border-t border-slate-200">
+                    <p className="text-xs text-slate-500 uppercase font-semibold mb-2">
+                      Participants (
+                      {booking.participants.filter(
+                        (p) => p.status === "ACCEPTED",
+                      ).length + 1}
+                      )
+                    </p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="w-6 h-6 rounded-full bg-power-orange text-white flex items-center justify-center text-xs font-semibold">
+                          O
+                        </div>
+                        <span className="text-slate-900 font-medium">
+                          You (Organizer)
+                        </span>
+                      </div>
+                      {booking.participants
+                        .filter((p) => p.status === "ACCEPTED")
+                        .map((participant, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-xs font-semibold">
+                              {participant.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-slate-700">
+                              {participant.name}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+                {/* Payment Split Details */}
+                {booking.bookingType === "GROUP" &&
+                  booking.paymentType === "SPLIT" &&
+                  booking.payments && (
+                    <div className="border-t border-slate-200">
+                      <p className="text-xs text-slate-500 uppercase font-semibold mb-2">
+                        Payment Split
+                      </p>
+                      <div className="space-y-1.5">
+                        {booking.payments
+                          .filter((p) => p.userType === "PLAYER")
+                          .map((payment, idx) => (
+                            <div
+                              key={idx}
+                              className="flex justify-between items-center text-sm"
+                            >
+                              <span className="text-slate-700">
+                                {payment.userId === booking.userId
+                                  ? "Your share"
+                                  : "Friend's share"}
+                              </span>
+                              <span className="font-semibold text-slate-900">
+                                ₹{payment.amount}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 {booking.totalAmount && (
                   <div className="border-t border-slate-200">
                     <p className="text-xs text-slate-500 uppercase font-semibold">
-                      Amount Paid
+                      {booking.bookingType === "GROUP" &&
+                      booking.paymentType === "SPLIT"
+                        ? "Total Booking Amount"
+                        : "Amount Paid"}
                     </p>
                     <p className="text-lg font-bold text-power-orange mt-1">
                       ₹{booking.totalAmount}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Group Booking Info */}
+            {isSuccess && booking?.bookingType === "GROUP" && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-left text-xs text-blue-800">
+                {booking.paymentType === "SPLIT" ? (
+                  <div className="space-y-1">
+                    <p className="font-semibold">
+                      ℹ️ Group Booking - Split Payment
+                    </p>
+                    <p>
+                      Your payment share has been confirmed. The booking will be
+                      finalized once all participants complete their payments.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="font-semibold">
+                      ℹ️ Group Booking - Single Payment
+                    </p>
+                    <p>
+                      You've paid the full amount for the group booking. All
+                      invited participants have been notified.
                     </p>
                   </div>
                 )}

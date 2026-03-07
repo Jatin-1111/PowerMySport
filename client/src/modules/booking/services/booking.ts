@@ -100,4 +100,68 @@ export const bookingApi = {
     const response = await axiosInstance.get(`/bookings/${bookingId}`);
     return response.data;
   },
+
+  // ============================================
+  // GROUP BOOKING METHODS
+  // ============================================
+
+  // Initiate group booking with friends
+  initiateGroupBooking: async (data: {
+    venueId?: string;
+    coachId?: string;
+    playerLocation?: {
+      type: "Point";
+      coordinates: [number, number];
+    };
+    sport: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    invitedFriendIds: string[];
+    paymentType: "SINGLE" | "SPLIT";
+  }): Promise<InitiateBookingResponse> => {
+    const response = await axiosInstance.post("/bookings/initiate-group", data);
+    return response.data.data;
+  },
+
+  // Get booking invitations
+  getMyInvitations: async (
+    status?: "PENDING" | "ACCEPTED" | "DECLINED",
+  ): Promise<any[]> => {
+    const params = status ? { status } : {};
+    const response = await axiosInstance.get("/bookings/invitations", {
+      params,
+    });
+    return response.data.data;
+  },
+
+  // Respond to booking invitation
+  respondToInvitation: async (
+    invitationId: string,
+    accept: boolean,
+  ): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post(
+      `/bookings/invitations/${invitationId}/respond`,
+      { accept },
+    );
+    return response.data;
+  },
+
+  // Organizer covers unpaid shares
+  coverUnpaidShares: async (
+    bookingId: string,
+  ): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/cover-payments`,
+    );
+    return response.data;
+  },
+
+  // Get count of pending booking invitations
+  getPendingInvitationsCount: async (): Promise<{ count: number }> => {
+    const response = await axiosInstance.get(
+      "/bookings/invitations/pending-count",
+    );
+    return response.data.data;
+  },
 };

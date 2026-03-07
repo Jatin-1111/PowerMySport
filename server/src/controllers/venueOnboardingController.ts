@@ -15,6 +15,12 @@ import {
 } from "../services/VenueOnboardingService";
 import { sendVerificationCode } from "../services/EmailVerificationService";
 import { getPaginationParams } from "../utils/pagination";
+import { ADMIN_ROLES } from "../constants/adminPermissions";
+
+// Helper to check if role is an admin role
+const isAdminRole = (role: string): boolean => {
+  return Object.values(ADMIN_ROLES).includes(role as any);
+};
 
 /**
  * Venue Onboarding Controller
@@ -449,10 +455,7 @@ export const listPendingVenues = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (
-      !req.user?.id ||
-      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
-    ) {
+    if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -495,10 +498,7 @@ export const getVenueOnboardingDetailsForAdmin = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (
-      !req.user?.id ||
-      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
-    ) {
+    if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -542,10 +542,7 @@ export const approveVenueHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (
-      !req.user?.id ||
-      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
-    ) {
+    if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -586,10 +583,7 @@ export const rejectVenueHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (
-      !req.user?.id ||
-      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
-    ) {
+    if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
         success: false,
         message: "Admin access required",
@@ -641,10 +635,7 @@ export const markVenueForReviewHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (
-      !req.user?.id ||
-      (req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN")
-    ) {
+    if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
         success: false,
         message: "Admin access required",

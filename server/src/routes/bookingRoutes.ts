@@ -7,6 +7,11 @@ import {
   getMyBookings,
   getVenueAvailability,
   initiateNewBooking,
+  initiateNewGroupBooking,
+  respondToInvitation,
+  getMyInvitations,
+  coverUnpaidPayments,
+  getPendingInvitationsCount,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
@@ -26,6 +31,47 @@ router.post(
   coachVerificationCompletedMiddleware,
   validateRequest(bookingSchema),
   initiateNewBooking,
+);
+
+// Initiate group booking with friends
+router.post(
+  "/initiate-group",
+  authMiddleware,
+  playerOnlyMiddleware,
+  coachVerificationCompletedMiddleware,
+  initiateNewGroupBooking,
+);
+
+// Get booking invitations
+router.get(
+  "/invitations",
+  authMiddleware,
+  playerOnlyMiddleware,
+  getMyInvitations,
+);
+
+// Get pending invitations count
+router.get(
+  "/invitations/pending-count",
+  authMiddleware,
+  playerOnlyMiddleware,
+  getPendingInvitationsCount,
+);
+
+// Respond to booking invitation
+router.post(
+  "/invitations/:invitationId/respond",
+  authMiddleware,
+  playerOnlyMiddleware,
+  respondToInvitation,
+);
+
+// Organizer covers unpaid shares
+router.post(
+  "/:bookingId/cover-payments",
+  authMiddleware,
+  playerOnlyMiddleware,
+  coverUnpaidPayments,
 );
 
 // Check-in to booking with random code

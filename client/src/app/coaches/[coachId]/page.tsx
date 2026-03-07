@@ -7,6 +7,7 @@ import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { reviewApi } from "@/modules/review/services/review";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Availability, Coach, ReviewItem, ReviewSummary } from "@/types";
 import {
   ArrowLeft,
@@ -411,6 +412,16 @@ export default function CoachDetailsPage() {
       {/* Header Section */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Breadcrumbs */}
+          <div className="mb-3">
+            <Breadcrumbs
+              items={[
+                { label: "Browse Coaches", href: "/coaches" },
+                { label: coachDisplayName },
+              ]}
+            />
+          </div>
+
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
             <div className="relative z-10">
               {/* Back button */}
@@ -448,7 +459,7 @@ export default function CoachDetailsPage() {
                     )}
                   </div>
 
-                  <h1 className="mb-2 max-w-5xl break-words text-2xl font-bold leading-tight sm:text-4xl">
+                  <h1 className="mb-2 max-w-5xl wrap-break-word text-2xl font-bold leading-tight sm:text-4xl">
                     {coachDisplayName}
                   </h1>
 
@@ -459,7 +470,7 @@ export default function CoachDetailsPage() {
                         className="inline-flex max-w-full items-center rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90"
                         title={sport}
                       >
-                        <span className="line-clamp-1 break-words">
+                        <span className="line-clamp-1 wrap-break-word">
                           {sport}
                         </span>
                       </span>
@@ -730,7 +741,7 @@ export default function CoachDetailsPage() {
                               : "bg-white text-slate-700 border-slate-200 hover:border-turf-green"
                           }`}
                         >
-                          <span className="block line-clamp-2 break-words">
+                          <span className="block line-clamp-2 wrap-break-word">
                             {sport}
                           </span>
                         </button>

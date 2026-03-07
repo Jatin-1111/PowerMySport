@@ -1,12 +1,25 @@
 ﻿// ============================================
 // USER & AUTH TYPES
 // ============================================
-export type UserRole =
-  | "PLAYER"
-  | "VENUE_LISTER"
-  | "COACH"
-  | "ADMIN"
-  | "SUPER_ADMIN";
+export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
+
+// Admin role types
+export type AdminRole =
+  | "SUPPORT_ADMIN"
+  | "OPERATIONS_ADMIN"
+  | "FINANCE_ADMIN"
+  | "ANALYTICS_ADMIN"
+  | "SYSTEM_ADMIN";
+
+export type Permission = string; // e.g., "users:view", "venues:manage"
+
+export interface RoleTemplate {
+  role: string;
+  name: string;
+  description: string;
+  permissions: readonly string[];
+}
+
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
   | "CONFIRMED"

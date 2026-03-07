@@ -19,7 +19,7 @@ import React, { useEffect, useMemo, useSyncExternalStore } from "react";
 type StoredAdmin = {
   name?: string;
   email?: string;
-  role?: "ADMIN" | "SUPER_ADMIN";
+  role?: string;
   mustChangePassword?: boolean;
 };
 
@@ -68,7 +68,7 @@ export default function AdminLayout({
   }, [storedAdminRaw]);
 
   const adminName = storedAdmin?.name || storedAdmin?.email || "Admin";
-  const isSuperAdmin = storedAdmin?.role === "SUPER_ADMIN";
+  const isSuperAdmin = storedAdmin?.role === "SYSTEM_ADMIN";
   const mustChangePassword = storedAdmin?.mustChangePassword === true;
 
   useEffect(() => {

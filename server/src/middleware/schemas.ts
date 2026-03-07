@@ -24,7 +24,16 @@ export const adminLoginSchema = z.object({
 export const adminCreateSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   email: z.string().email("Invalid email format"),
-  role: z.enum(["ADMIN", "SUPER_ADMIN"]).optional().default("ADMIN"),
+  role: z
+    .enum([
+      "SUPPORT_ADMIN",
+      "OPERATIONS_ADMIN",
+      "FINANCE_ADMIN",
+      "ANALYTICS_ADMIN",
+      "SYSTEM_ADMIN",
+    ])
+    .optional()
+    .default("SUPPORT_ADMIN"),
   permissions: z.array(z.string().min(1)).optional(),
 });
 

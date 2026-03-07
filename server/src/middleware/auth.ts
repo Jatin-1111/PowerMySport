@@ -2,6 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import { Coach } from "../models/Coach";
 import { verifyToken } from "../utils/jwt";
 import { IUserPayload } from "../types/index";
+import {
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
+} from "../utils/permissions";
+import { ADMIN_ROLES } from "../constants/adminPermissions";
+import Admin from "../models/Admin";
 
 declare global {
   namespace Express {
@@ -83,7 +90,9 @@ export const adminMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "ADMIN" && req.user?.role !== "SUPER_ADMIN") {
+  // Check if user has any admin role
+  const validAdminRoles = Object.values(ADMIN_ROLES);
+  if (!req.user?.role || !validAdminRoles.includes(req.user.role as any)) {
     res.status(403).json({
       success: false,
       message: "Access denied. Admin role required.",
@@ -98,10 +107,10 @@ export const superAdminMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "SUPER_ADMIN") {
+  if (req.user?.role !== ADMIN_ROLES.SYSTEM_ADMIN) {
     res.status(403).json({
       success: false,
-      message: "Access denied. Super admin role required.",
+      message: "Access denied. System Admin role required.",
     });
     return;
   }
@@ -207,4 +216,164 @@ export const coachVerifiedMiddleware = async (
           : "Failed to verify coach status",
     });
   }
+};
+
+// ============================================
+// PERMISSION-BASED MIDDLEWARE
+// ============================================
+
+/**
+ * Middleware factory to check if admin has a specific permission
+ * Usage: requirePermission('users:view')
+ */
+export const requirePermission = (requiredPermission: string) => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: "Authentication required",
+        });
+        return;
+      }
+
+      // Fetch admin with permissions
+      const admin = await Admin.findById(req.user.id).select(
+        "role permissions isActive",
+      );
+
+      if (!admin || !admin.isActive) {
+        res.status(403).json({
+          success: false,
+          message: "Admin account not found or inactive",
+        });
+        return;
+      }
+
+      // Check permission
+      if (!hasPermission(admin.permissions, admin.role, requiredPermission)) {
+        res.status(403).json({
+          success: false,
+          message: `Access denied. Required permission: ${requiredPermission}`,
+        });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Permission check failed",
+      });
+    }
+  };
+};
+
+/**
+ * Middleware factory to check if admin has any of the required permissions
+ * Usage: requireAnyPermission(['users:view', 'users:manage'])
+ */
+export const requireAnyPermission = (requiredPermissions: string[]) => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: "Authentication required",
+        });
+        return;
+      }
+
+      const admin = await Admin.findById(req.user.id).select(
+        "role permissions isActive",
+      );
+
+      if (!admin || !admin.isActive) {
+        res.status(403).json({
+          success: false,
+          message: "Admin account not found or inactive",
+        });
+        return;
+      }
+
+      if (
+        !hasAnyPermission(admin.permissions, admin.role, requiredPermissions)
+      ) {
+        res.status(403).json({
+          success: false,
+          message: `Access denied. Required any of: ${requiredPermissions.join(", ")}`,
+        });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Permission check failed",
+      });
+    }
+  };
+};
+
+/**
+ * Middleware factory to check if admin has all of the required permissions
+ * Usage: requireAllPermissions(['users:view', 'venues:view'])
+ */
+export const requireAllPermissions = (requiredPermissions: string[]) => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      if (!req.user?.id) {
+        res.status(401).json({
+          success: false,
+          message: "Authentication required",
+        });
+        return;
+      }
+
+      const admin = await Admin.findById(req.user.id).select(
+        "role permissions isActive",
+      );
+
+      if (!admin || !admin.isActive) {
+        res.status(403).json({
+          success: false,
+          message: "Admin account not found or inactive",
+        });
+        return;
+      }
+
+      if (
+        !hasAllPermissions(admin.permissions, admin.role, requiredPermissions)
+      ) {
+        res.status(403).json({
+          success: false,
+          message: `Access denied. Required all of: ${requiredPermissions.join(", ")}`,
+        });
+        return;
+      }
+
+      next();
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Permission check failed",
+      });
+    }
+  };
 };

@@ -1,7 +1,7 @@
 import { UserRole } from "@/types";
 
 const dashboardByRole: Record<UserRole, string> = {
-  PLAYER: "/dashboard/my-bookings",
+  PLAYER: "/dashboard",
   VENUE_LISTER: "/venue-lister/inventory",
   COACH: "/coach/profile",
 };

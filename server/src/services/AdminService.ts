@@ -1,11 +1,18 @@
 import Admin, { IAdmin } from "../models/Admin";
 import {
-  ADMIN_BASE_PERMISSIONS,
-  SUPER_ADMIN_PERMISSIONS,
+  ADMIN_ROLES,
+  getRolePermissions,
+  ALL_PERMISSIONS,
+  ROLE_TEMPLATES,
 } from "../constants/adminPermissions";
+import {
+  normalizePermissions,
+  areValidPermissions,
+} from "../utils/permissions";
 import { sendAdminTemporaryCredentialsEmail } from "../utils/email";
 import { generateToken } from "../utils/jwt";
 import { randomInt } from "crypto";
+import { AdminRole } from "../types";
 
 interface LoginPayload {
   email: string;
@@ -15,7 +22,7 @@ interface LoginPayload {
 interface CreateAdminPayload {
   name: string;
   email: string;
-  role?: "SUPER_ADMIN" | "ADMIN";
+  role?: string;
   permissions?: string[];
 }
 
@@ -121,7 +128,7 @@ export const loginAdmin = async (data: LoginPayload) => {
   const token = generateToken({
     id: admin._id.toString(),
     email: admin.email,
-    role: admin.role,
+    role: admin.role as AdminRole,
   });
 
   // Return admin without password
@@ -143,13 +150,25 @@ export const createAdmin = async (
     throw new Error("Admin with this email already exists");
   }
 
-  const role = data.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
-  const permissions =
-    role === "SUPER_ADMIN"
-      ? [...SUPER_ADMIN_PERMISSIONS]
-      : Array.isArray(data.permissions) && data.permissions.length > 0
-        ? Array.from(new Set(data.permissions))
-        : [...ADMIN_BASE_PERMISSIONS];
+  // Validate role
+  const validRoles = Object.values(ADMIN_ROLES);
+  const role =
+    data.role && validRoles.includes(data.role as any)
+      ? data.role
+      : ADMIN_ROLES.SUPPORT_ADMIN;
+
+  // Determine permissions
+  let permissions: string[];
+  if (Array.isArray(data.permissions) && data.permissions.length > 0) {
+    // Custom permissions provided - validate them
+    if (!areValidPermissions(data.permissions, ALL_PERMISSIONS)) {
+      throw new Error("Invalid permissions provided");
+    }
+    permissions = normalizePermissions(data.permissions);
+  } else {
+    // Use role template permissions
+    permissions = [...getRolePermissions(role)];
+  }
 
   const temporaryPassword = generateTemporaryPassword();
   const admin = new Admin({
@@ -235,4 +254,59 @@ export const deactivateAdmin = async (adminId: string): Promise<void> => {
 
   admin.isActive = false;
   await admin.save();
+};
+
+/**
+ * Update admin permissions
+ */
+export const updateAdminPermissions = async (
+  adminId: string,
+  permissions: string[],
+): Promise<IAdmin> => {
+  // Validate permissions
+  if (!areValidPermissions(permissions, ALL_PERMISSIONS)) {
+    throw new Error("Invalid permissions provided");
+  }
+
+  const admin = await Admin.findById(adminId);
+  if (!admin) {
+    throw new Error("Admin not found");
+  }
+
+  admin.permissions = normalizePermissions(permissions);
+  await admin.save();
+
+  return admin;
+};
+
+/**
+ * Update admin role and reset permissions to role template
+ */
+export const updateAdminRole = async (
+  adminId: string,
+  role: string,
+): Promise<IAdmin> => {
+  // Validate role
+  const validRoles = Object.values(ADMIN_ROLES);
+  if (!validRoles.includes(role as any)) {
+    throw new Error("Invalid role provided");
+  }
+
+  const admin = await Admin.findById(adminId);
+  if (!admin) {
+    throw new Error("Admin not found");
+  }
+
+  admin.role = role;
+  admin.permissions = [...getRolePermissions(role)];
+  await admin.save();
+
+  return admin;
+};
+
+/**
+ * Get all available role templates
+ */
+export const getRoleTemplatesData = () => {
+  return Object.values(ROLE_TEMPLATES);
 };

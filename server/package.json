@@ -8,8 +8,10 @@
     "build": "node ./node_modules/typescript/bin/tsc",
     "start": "node dist/server.js",
     "migrate": "ts-node src/migrations/index.ts",
+    "migrate:admin-permissions": "ts-node src/scripts/migrateAdminPermissions.ts",
     "seed:sports": "ts-node src/scripts/seedSports.ts",
     "purge:venues": "ts-node src/scripts/deleteAllVenueData.ts",
+    "purge:smoke-users": "ts-node src/scripts/deleteSmokeUsers.ts",
     "stress:booking-race": "ts-node src/scripts/stressBookingConcurrency.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

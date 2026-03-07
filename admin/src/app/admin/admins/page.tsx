@@ -1,23 +1,56 @@
 "use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import PermissionSelector from "@/modules/admin/components/PermissionSelector";
 import { Admin, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
 import { toast } from "@/lib/toast";
 import { ChevronLeft, ChevronRight, Mail } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { RoleTemplate } from "@/types";
 
 const PERMISSION_LABELS: Record<string, string> = {
-  all_permissions: "All Permissions",
-  manage_admins: "Manage Admins",
-  manage_inquiries: "Manage Inquiries",
-  manage_coach_verification: "Manage Coach Verification",
-  manage_refunds_disputes: "Manage Refunds & Disputes",
-  manage_settings: "Manage Settings",
-  view_users: "View Users",
-  view_venues: "View Venues",
-  view_bookings: "View Bookings",
-  view_analytics: "View Analytics",
+  // Users
+  "users:view": "View Users",
+  "users:manage": "Manage Users",
+  "users:delete": "Delete Users",
+  // Venues
+  "venues:view": "View Venues",
+  "venues:manage": "Manage Venues",
+  "venues:delete": "Delete Venues",
+  "venues:approve": "Approve Venues",
+  // Bookings
+  "bookings:view": "View Bookings",
+  "bookings:manage": "Manage Bookings",
+  "bookings:cancel": "Cancel Bookings",
+  "bookings:refund": "Process Refunds",
+  // Coaches
+  "coaches:view": "View Coaches",
+  "coaches:manage": "Manage Coaches",
+  "coaches:verify": "Verify Coaches",
+  "coaches:delete": "Delete Coaches",
+  // Inquiries
+  "inquiries:view": "View Inquiries",
+  "inquiries:manage": "Manage Inquiries",
+  "inquiries:delete": "Delete Inquiries",
+  // Disputes
+  "disputes:view": "View Disputes",
+  "disputes:manage": "Manage Disputes",
+  "disputes:resolve": "Resolve Disputes",
+  // Analytics
+  "analytics:view": "View Analytics",
+  "analytics:export": "Export Reports",
+  // Admins
+  "admins:view": "View Admins",
+  "admins:manage": "Manage Admins",
+  "admins:delete": "Delete Admins",
+  // Settings
+  "settings:view": "View Settings",
+  "settings:manage": "Manage Settings",
+  // Reviews
+  "reviews:view": "View Reviews",
+  "reviews:manage": "Manage Reviews",
+  "reviews:delete": "Delete Reviews",
 };
 
 const formatPermissionLabel = (permission: string): string => {
@@ -33,6 +66,7 @@ const formatPermissionLabel = (permission: string): string => {
 
 export default function AdminsManagementPage() {
   const [admins, setAdmins] = useState<Admin[]>([]);
+  const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +76,8 @@ export default function AdminsManagementPage() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    role: "ADMIN" as "ADMIN" | "SUPER_ADMIN",
+    role: "",
+    permissions: [] as string[],
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"role" | "name" | "email">("role");
@@ -55,7 +90,7 @@ export default function AdminsManagementPage() {
       const raw = localStorage.getItem("admin");
       if (!raw) return false;
       const parsed = JSON.parse(raw) as { role?: string };
-      return parsed.role === "SUPER_ADMIN";
+      return parsed.role === "SYSTEM_ADMIN";
     } catch {
       return false;
     }
@@ -84,9 +119,21 @@ export default function AdminsManagementPage() {
     }
   }, [canManageAdmins]);
 
+  const loadRoleTemplates = useCallback(async () => {
+    try {
+      const response = await adminApi.getRoleTemplates();
+      if (response.success && response.data) {
+        setRoleTemplates(response.data);
+      }
+    } catch (err) {
+      console.error("Failed to load role templates:", err);
+    }
+  }, []);
+
   useEffect(() => {
     loadAdmins();
-  }, [loadAdmins]);
+    loadRoleTemplates();
+  }, [loadAdmins, loadRoleTemplates]);
 
   const handleCreateAdmin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -95,9 +142,19 @@ export default function AdminsManagementPage() {
       return;
     }
 
+    if (!form.role) {
+      toast.error("Please select a role template.");
+      return;
+    }
+
     try {
       setSubmitting(true);
-      const response = await adminApi.createAdmin(form);
+      const response = await adminApi.createAdmin({
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        permissions: form.permissions,
+      });
       if (!response.success) {
         toast.error(response.message || "Failed to create admin.");
         return;
@@ -110,7 +167,8 @@ export default function AdminsManagementPage() {
       setForm({
         name: "",
         email: "",
-        role: "ADMIN",
+        role: "",
+        permissions: [],
       });
       await loadAdmins();
     } catch (err) {
@@ -138,8 +196,13 @@ export default function AdminsManagementPage() {
       if (sortBy === "email") {
         return left.email.localeCompare(right.email);
       }
-      const roleRank = (value: "ADMIN" | "SUPER_ADMIN") =>
-        value === "SUPER_ADMIN" ? 0 : 1;
+      const roleRank = (value: string) => {
+        if (value === "SYSTEM_ADMIN") return 0;
+        if (value === "FINANCE_ADMIN") return 1;
+        if (value === "OPERATIONS_ADMIN") return 2;
+        if (value === "ANALYTICS_ADMIN") return 3;
+        return 4; // SUPPORT_ADMIN or any other
+      };
       return roleRank(left.role) - roleRank(right.role);
     });
 
@@ -207,8 +270,9 @@ export default function AdminsManagementPage() {
           Create Admin
         </h2>
         <p className="mb-5 text-sm text-slate-600">
-          Enter name, email, and role. A temporary password is auto-generated
-          and sent via email. Admin must change it on first login.
+          Enter name, email, and select a role with permissions. A temporary
+          password is auto-generated and sent via email. Admin must change it on
+          first login.
         </p>
 
         <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
@@ -221,66 +285,57 @@ export default function AdminsManagementPage() {
           </div>
         </div>
 
-        <form
-          onSubmit={handleCreateAdmin}
-          className="grid gap-4 md:grid-cols-2"
-        >
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Full name
-            </label>
-            <input
-              value={form.name}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, name: event.target.value }))
-              }
-              placeholder="Enter full name"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
-            />
+        <form onSubmit={handleCreateAdmin} className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Full name
+              </label>
+              <input
+                value={form.name}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, name: event.target.value }))
+                }
+                placeholder="Enter full name"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Email address
+              </label>
+              <input
+                value={form.email}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, email: event.target.value }))
+                }
+                placeholder="name@company.com"
+                type="email"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+              />
+              <p className="mt-1.5 text-xs text-slate-500">
+                Temporary credentials will be sent to this email.
+              </p>
+            </div>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Email address
-            </label>
-            <input
-              value={form.email}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, email: event.target.value }))
-              }
-              placeholder="name@company.com"
-              type="email"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
-            />
-            <p className="mt-1.5 text-xs text-slate-500">
-              Temporary credentials will be sent to this email.
-            </p>
-          </div>
+          <PermissionSelector
+            roleTemplates={roleTemplates}
+            selectedRole={form.role}
+            selectedPermissions={form.permissions}
+            onRoleChange={(role) => setForm((prev) => ({ ...prev, role }))}
+            onPermissionsChange={(permissions) =>
+              setForm((prev) => ({ ...prev, permissions }))
+            }
+            disabled={submitting}
+          />
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Role
-            </label>
-            <select
-              value={form.role}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  role: event.target.value as "ADMIN" | "SUPER_ADMIN",
-                }))
-              }
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
-            >
-              <option value="ADMIN">ADMIN</option>
-              <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-            </select>
-          </div>
-
-          <div className="md:col-span-2">
             <button
               type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+              disabled={submitting || !form.role}
+              className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Creating..." : "Create Admin"}
             </button>
@@ -339,20 +394,27 @@ export default function AdminsManagementPage() {
 
                 {admin.permissions?.length ? (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {admin.permissions.map((permission) => (
+                    {admin.permissions.slice(0, 8).map((permission) => (
                       <span
                         key={`${admin.id}-${permission}`}
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          permission === "all_permissions"
-                            ? "bg-power-orange/10 text-power-orange border border-power-orange/20"
-                            : permission.startsWith("manage_")
-                              ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                              : "bg-slate-100 text-slate-700 border border-slate-200"
+                          permission.includes(":manage") ||
+                          permission.includes(":delete") ||
+                          permission.includes(":verify") ||
+                          permission.includes(":approve") ||
+                          permission.includes(":resolve")
+                            ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                            : "bg-slate-100 text-slate-700 border border-slate-200"
                         }`}
                       >
                         {formatPermissionLabel(permission)}
                       </span>
                     ))}
+                    {admin.permissions.length > 8 && (
+                      <span className="rounded-full px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600">
+                        +{admin.permissions.length - 8} more
+                      </span>
+                    )}
                   </div>
                 ) : (
                   <p className="mt-3 text-xs text-slate-500">

@@ -15,6 +15,8 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
+import { BackButton } from "@/components/ui/back-button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import {
   CheckoutDetailItem,
   CheckoutDetailList,
@@ -29,6 +31,8 @@ import {
   PaymentMethodOption,
   PaymentMethodSelector,
 } from "@/modules/booking/components/checkout/PaymentMethodSelector";
+import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBookingInviteSection";
+import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
@@ -89,6 +93,11 @@ function CheckoutPageContent() {
   const [discount, setDiscount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Group booking state
+  const [isGroupBooking, setIsGroupBooking] = useState(false);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [paymentType, setPaymentType] = useState<PaymentType>("SINGLE");
 
   useEffect(() => {
     setSelectedDependentId(dependentId);
@@ -347,6 +356,12 @@ function CheckoutPageContent() {
       return;
     }
 
+    // Validate group booking
+    if (isGroupBooking && selectedFriendIds.length === 0) {
+      toast.error("Please select at least one friend for group booking.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -388,25 +403,51 @@ function CheckoutPageContent() {
           );
         });
 
-        response = await bookingApi.initiateBooking({
-          coachId,
-          sport,
-          date: bookingDate,
-          startTime,
-          endTime,
-          playerLocation,
-          dependentId: selectedDependentId || undefined,
-        });
+        // Use group booking or regular booking
+        if (isGroupBooking && selectedFriendIds.length > 0) {
+          response = await bookingApi.initiateGroupBooking({
+            coachId,
+            sport,
+            date: bookingDate,
+            startTime,
+            endTime,
+            playerLocation,
+            invitedFriendIds: selectedFriendIds,
+            paymentType,
+          });
+        } else {
+          response = await bookingApi.initiateBooking({
+            coachId,
+            sport,
+            date: bookingDate,
+            startTime,
+            endTime,
+            playerLocation,
+            dependentId: selectedDependentId || undefined,
+          });
+        }
       } else {
-        // Venue booking doesn't need player location
-        response = await bookingApi.initiateBooking({
-          venueId,
-          sport,
-          date: bookingDate,
-          startTime,
-          endTime,
-          dependentId: selectedDependentId || undefined,
-        });
+        // Venue booking - use group booking or regular booking
+        if (isGroupBooking && selectedFriendIds.length > 0) {
+          response = await bookingApi.initiateGroupBooking({
+            venueId,
+            sport,
+            date: bookingDate,
+            startTime,
+            endTime,
+            invitedFriendIds: selectedFriendIds,
+            paymentType,
+          });
+        } else {
+          response = await bookingApi.initiateBooking({
+            venueId,
+            sport,
+            date: bookingDate,
+            startTime,
+            endTime,
+            dependentId: selectedDependentId || undefined,
+          });
+        }
       }
 
       const bookingId = response.booking?.id;
@@ -458,6 +499,14 @@ function CheckoutPageContent() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Checkout" },
+        ]}
+      />
+
       <PlayerPageHeader
         badge="Checkout"
         title={
@@ -715,6 +764,22 @@ function CheckoutPageContent() {
 
         {currentStep === 2 && (
           <>
+            {/* Group Booking Section */}
+            <CheckoutSection
+              title="Group Booking"
+              description="Invite friends to join this booking and split the cost."
+            >
+              <GroupBookingInviteSection
+                isGroupBooking={isGroupBooking}
+                onGroupBookingChange={setIsGroupBooking}
+                selectedFriendIds={selectedFriendIds}
+                onFriendSelectionChange={setSelectedFriendIds}
+                paymentType={paymentType}
+                onPaymentTypeChange={setPaymentType}
+                totalAmount={total}
+              />
+            </CheckoutSection>
+
             <CheckoutSection
               title="Payment method"
               description="Choose how you want to pay for this booking."

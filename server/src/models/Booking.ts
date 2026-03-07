@@ -1,12 +1,25 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { BookingStatus } from "../types";
 
+export type BookingType = "INDIVIDUAL" | "GROUP";
+export type PaymentType = "SINGLE" | "SPLIT";
+export type SplitMethod = "EQUAL" | "CUSTOM";
+export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
+
 export interface BookingPayment {
   userId: mongoose.Types.ObjectId;
-  userType: "VENUE_LISTER" | "COACH";
+  userType: "VENUE_LISTER" | "COACH" | "PLAYER";
   amount: number;
   status: "PENDING" | "PAID" | "FAILED";
   paidAt?: Date;
+}
+
+export interface BookingParticipant {
+  userId: mongoose.Types.ObjectId;
+  name: string;
+  status: ParticipantStatus;
+  invitedAt: Date;
+  respondedAt?: Date;
 }
 
 export interface BookingDocument extends Document {
@@ -35,6 +48,12 @@ export interface BookingDocument extends Document {
   refundAmount?: number;
   refundStatus?: "PENDING" | "PROCESSED" | "REJECTED";
   payments: BookingPayment[];
+  // Group booking fields
+  bookingType: BookingType;
+  organizerId: mongoose.Types.ObjectId;
+  participants: BookingParticipant[];
+  paymentType: PaymentType;
+  splitMethod?: SplitMethod;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -107,7 +126,14 @@ const bookingSchema = new Schema<BookingDocument>(
     },
     status: {
       type: String,
-      enum: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"],
+      enum: [
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELLED",
+        "NO_SHOW",
+      ],
       default: "CONFIRMED",
     },
     expiresAt: {
@@ -162,7 +188,7 @@ const bookingSchema = new Schema<BookingDocument>(
         },
         userType: {
           type: String,
-          enum: ["VENUE_LISTER", "COACH"],
+          enum: ["VENUE_LISTER", "COACH", "PLAYER"],
           required: true,
         },
         amount: {
@@ -180,6 +206,51 @@ const bookingSchema = new Schema<BookingDocument>(
         },
       },
     ],
+    // Group booking fields
+    bookingType: {
+      type: String,
+      enum: ["INDIVIDUAL", "GROUP"],
+      default: "INDIVIDUAL",
+    },
+    organizerId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    participants: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+        },
+        status: {
+          type: String,
+          enum: ["INVITED", "ACCEPTED", "DECLINED"],
+          default: "INVITED",
+        },
+        invitedAt: {
+          type: Date,
+          required: true,
+        },
+        respondedAt: {
+          type: Date,
+        },
+      },
+    ],
+    paymentType: {
+      type: String,
+      enum: ["SINGLE", "SPLIT"],
+      default: "SINGLE",
+    },
+    splitMethod: {
+      type: String,
+      enum: ["EQUAL", "CUSTOM"],
+    },
   },
   {
     timestamps: true,

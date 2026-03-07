@@ -14,7 +14,7 @@ export type BookingStatus =
   | "NO_SHOW"
   | "CANCELLED";
 
-export type PaymentUserType = "VENUE_LISTER" | "COACH";
+export type PaymentUserType = "PLAYER" | "VENUE_LISTER" | "COACH";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {
@@ -192,6 +192,27 @@ export interface Venue {
 // ============================================
 // BOOKING TYPES
 // ============================================
+export type BookingType = "INDIVIDUAL" | "GROUP";
+export type PaymentType = "SINGLE" | "SPLIT";
+export type SplitMethod = "EQUAL" | "CUSTOM";
+export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
+
+export interface BookingPayment {
+  userId: string;
+  userType: "VENUE_LISTER" | "COACH" | "PLAYER";
+  amount: number;
+  status: "PENDING" | "PAID" | "FAILED";
+  paidAt?: string;
+}
+
+export interface BookingParticipant {
+  userId: string;
+  name: string;
+  status: ParticipantStatus;
+  invitedAt: string;
+  respondedAt?: string;
+}
+
 export interface Booking {
   id: string;
   userId: string;
@@ -219,6 +240,12 @@ export interface Booking {
   participantName?: string;
   participantId?: string;
   participantAge?: number;
+  // Group booking fields
+  bookingType?: BookingType;
+  organizerId?: string;
+  participants?: BookingParticipant[];
+  paymentType?: PaymentType;
+  splitMethod?: SplitMethod;
   createdAt: string;
   updatedAt: string;
 }

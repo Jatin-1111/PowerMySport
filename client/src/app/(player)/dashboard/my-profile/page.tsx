@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
@@ -311,6 +312,13 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "My Profile" },
+        ]}
+      />
+
       <PlayerPageHeader
         badge="Player"
         title="My Profile"

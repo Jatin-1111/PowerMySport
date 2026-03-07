@@ -5,6 +5,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";
@@ -184,6 +185,14 @@ export default function BookCoachPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Coaches", href: "/coaches" },
+          { label: coach.sports?.[0] || "Book Coach" },
+        ]}
+      />
+
       <PlayerPageHeader
         badge="Booking"
         title="Book a Coach"

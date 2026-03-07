@@ -1,12 +1,17 @@
 ﻿import axiosInstance from "@/lib/api/axios";
-import { ApiResponse, Coach, CoachVerificationStatus } from "@/types";
+import {
+  ApiResponse,
+  Coach,
+  CoachVerificationStatus,
+  RoleTemplate,
+} from "@/types";
 
 export interface Admin {
   id: string;
   _id?: string;
   name: string;
   email: string;
-  role: "SUPER_ADMIN" | "ADMIN";
+  role: string; // Changed from "SUPER_ADMIN" | "ADMIN" to string for new role system
   permissions: string[];
   isActive: boolean;
   mustChangePassword?: boolean;
@@ -21,7 +26,7 @@ const normalizeAdmin = (admin: Partial<Admin> | null | undefined): Admin => {
     _id: admin?._id,
     name: admin?.name || "",
     email: admin?.email || "",
-    role: admin?.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN",
+    role: admin?.role || "SUPPORT_ADMIN",
     permissions: Array.isArray(admin?.permissions) ? admin.permissions : [],
     isActive: Boolean(admin?.isActive),
     ...(typeof admin?.mustChangePassword === "boolean"
@@ -70,7 +75,8 @@ export const adminApi = {
   createAdmin: async (data: {
     name: string;
     email: string;
-    role?: "SUPER_ADMIN" | "ADMIN";
+    role?: string;
+    permissions?: string[];
   }): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.post("/admin/create", data);
     if (response.data?.data) {
@@ -96,6 +102,37 @@ export const adminApi = {
       response.data.data = response.data.data.map((admin: Admin) =>
         normalizeAdmin(admin),
       );
+    }
+    return response.data;
+  },
+
+  getRoleTemplates: async (): Promise<ApiResponse<RoleTemplate[]>> => {
+    const response = await axiosInstance.get("/admin/role-templates");
+    return response.data;
+  },
+
+  updateAdminPermissions: async (
+    adminId: string,
+    permissions: string[],
+  ): Promise<ApiResponse<Admin>> => {
+    const response = await axiosInstance.put(`/admin/${adminId}/permissions`, {
+      permissions,
+    });
+    if (response.data?.data) {
+      response.data.data = normalizeAdmin(response.data.data);
+    }
+    return response.data;
+  },
+
+  updateAdminRole: async (
+    adminId: string,
+    role: string,
+  ): Promise<ApiResponse<Admin>> => {
+    const response = await axiosInstance.put(`/admin/${adminId}/role`, {
+      role,
+    });
+    if (response.data?.data) {
+      response.data.data = normalizeAdmin(response.data.data);
     }
     return response.data;
   },

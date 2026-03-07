@@ -368,7 +368,7 @@ interface CredentialsEmailOptions {
 interface AdminTemporaryCredentialsEmailOptions {
   name: string;
   email: string;
-  role: "SUPER_ADMIN" | "ADMIN";
+  role: string;
   temporaryPassword: string;
   loginUrl: string;
 }
@@ -473,7 +473,11 @@ export const sendCredentialsEmail = async (
 export const sendAdminTemporaryCredentialsEmail = async (
   options: AdminTemporaryCredentialsEmailOptions,
 ): Promise<void> => {
-  const roleLabel = options.role === "SUPER_ADMIN" ? "Super Admin" : "Admin";
+  // Format role name (e.g., "SYSTEM_ADMIN" -> "System Admin")
+  const roleLabel = options.role
+    .split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
 
   const html = `
 <!DOCTYPE html>

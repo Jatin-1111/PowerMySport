@@ -2,8 +2,27 @@
 // ROLE & ENUM TYPES
 // ============================================
 export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
+
+// Admin role types
+export type AdminRole =
+  | "SUPPORT_ADMIN"
+  | "OPERATIONS_ADMIN"
+  | "FINANCE_ADMIN"
+  | "ANALYTICS_ADMIN"
+  | "SYSTEM_ADMIN";
+
+export type Permission = string; // e.g., "users:view", "venues:manage"
+
+export interface RoleTemplate {
+  role: string;
+  name: string;
+  description: string;
+  permissions: readonly string[];
+}
+
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
+  | "PENDING_INVITES" // Group booking waiting for invites to be accepted
   | "CONFIRMED"
   | "IN_PROGRESS" // Booking started, check-in completed
   | "COMPLETED" // Booking finished successfully
@@ -54,7 +73,7 @@ export interface IUser {
 export interface IUserPayload {
   id: string;
   email: string;
-  role: UserRole | "SUPER_ADMIN";
+  role: UserRole | AdminRole;
 }
 
 // ============================================
@@ -265,7 +284,7 @@ export interface IPendingVenue {
 // ============================================
 // BOOKING TYPES
 // ============================================
-export type PaymentUserType = "VENUE_LISTER" | "COACH";
+export type PaymentUserType = "VENUE_LISTER" | "COACH" | "PLAYER";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {

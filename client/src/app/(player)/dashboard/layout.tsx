@@ -6,15 +6,20 @@ import {
   DashboardNavItem,
   DashboardShell,
 } from "@/modules/shared/components/dashboard/DashboardShell";
+import { BottomNavItem } from "@/components/layout/BottomNav";
 import { useRouter } from "next/navigation";
 import {
   Calendar,
+  Home,
+  Mail,
   MapPin,
   Settings,
   User,
+  UserPlus,
   Users,
 } from "lucide-react";
 import React from "react";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function DashboardLayout({
   children,
@@ -23,6 +28,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const { counts } = useNotifications();
   const communityUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3002"
@@ -56,6 +62,19 @@ export default function DashboardLayout({
       icon: Calendar,
     },
     {
+      href: "/dashboard/friends",
+      label: "Friends",
+      icon: UserPlus,
+      badge: counts.friendRequests > 0 ? counts.friendRequests : undefined,
+    },
+    {
+      href: "/dashboard/invitations",
+      label: "Invitations",
+      icon: Mail,
+      badge:
+        counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
+    },
+    {
       href: "/dashboard/my-profile",
       label: "Profile",
       icon: User,
@@ -73,11 +92,43 @@ export default function DashboardLayout({
     },
   ] satisfies DashboardNavItem[];
 
+  const bottomNavItems: BottomNavItem[] = [
+    {
+      href: "/dashboard",
+      label: "Home",
+      icon: Home,
+    },
+    {
+      href: "/venues",
+      label: "Venues",
+      icon: MapPin,
+    },
+    {
+      href: "/dashboard/friends",
+      label: "Friends",
+      icon: UserPlus,
+      badge: counts.friendRequests > 0 ? counts.friendRequests : undefined,
+    },
+    {
+      href: "/dashboard/invitations",
+      label: "Invites",
+      icon: Mail,
+      badge:
+        counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
+    },
+    {
+      href: "/dashboard/my-profile",
+      label: "Profile",
+      icon: User,
+    },
+  ];
+
   return (
     <DashboardShell
       dashboardLabel="Player Dashboard"
       userName={user?.name}
       navItems={navItems}
+      bottomNavItems={bottomNavItems}
       onLogout={handleLogout}
     >
       {children}

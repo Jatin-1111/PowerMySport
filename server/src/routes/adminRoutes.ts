@@ -13,11 +13,15 @@ import {
   markCoachVerificationForReview,
   processRefund,
   rejectCoachVerification,
+  getRoleTemplates,
+  updateAdminPermissionsHandler,
+  updateAdminRoleHandler,
 } from "../controllers/adminController";
 import {
   adminMiddleware,
   authMiddleware,
   superAdminMiddleware,
+  requirePermission,
 } from "../middleware/auth";
 import {
   adminChangePasswordSchema,
@@ -47,48 +51,55 @@ router.get(
   "/coaches/verification",
   authMiddleware,
   adminMiddleware,
+  requirePermission("coaches:view"),
   listCoachVerifications,
 );
 router.get(
   "/coaches/:coachId",
   authMiddleware,
   adminMiddleware,
+  requirePermission("coaches:view"),
   getCoachVerificationDetails,
 );
 router.post(
   "/coaches/:coachId/verify",
   authMiddleware,
   adminMiddleware,
+  requirePermission("coaches:verify"),
   approveCoachVerification,
 );
 router.post(
   "/coaches/:coachId/reject",
   authMiddleware,
   adminMiddleware,
+  requirePermission("coaches:verify"),
   rejectCoachVerification,
 );
 router.post(
   "/coaches/:coachId/mark-review",
   authMiddleware,
   adminMiddleware,
+  requirePermission("coaches:verify"),
   markCoachVerificationForReview,
 );
 
-// Refund & dispute handling (stubs - require payment gateway)
+// Refund & dispute handling
 router.post(
   "/refunds/:bookingId",
   authMiddleware,
   adminMiddleware,
+  requirePermission("bookings:refund"),
   processRefund,
 );
 router.post(
   "/disputes/:bookingId",
   authMiddleware,
   adminMiddleware,
+  requirePermission("disputes:resolve"),
   handleDispute,
 );
 
-// Super admin only routes
+// Admin management routes (System Admin only)
 router.post(
   "/create",
   authMiddleware,
@@ -101,8 +112,28 @@ router.get(
   "/list",
   authMiddleware,
   adminMiddleware,
-  superAdminMiddleware,
+  requirePermission("admins:view"),
   listAdmins,
+);
+router.get(
+  "/role-templates",
+  authMiddleware,
+  adminMiddleware,
+  getRoleTemplates,
+);
+router.put(
+  "/:adminId/permissions",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:manage"),
+  updateAdminPermissionsHandler,
+);
+router.put(
+  "/:adminId/role",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:manage"),
+  updateAdminRoleHandler,
 );
 
 export default router;

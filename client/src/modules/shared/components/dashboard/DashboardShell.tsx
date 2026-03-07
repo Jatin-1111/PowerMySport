@@ -4,12 +4,19 @@ import { Menu, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import {
+  BottomNav,
+  BottomNavSpacer,
+  type BottomNavItem,
+} from "@/components/layout/BottomNav";
 
 export interface DashboardNavItem {
   href: string;
   label: string;
   icon: LucideIcon;
   external?: boolean;
+  badge?: number | string;
 }
 
 interface DashboardShellProps {
@@ -18,6 +25,7 @@ interface DashboardShellProps {
   navItems: DashboardNavItem[];
   onLogout: () => void | Promise<void>;
   children: React.ReactNode;
+  bottomNavItems?: BottomNavItem[]; // Optional bottom nav items for mobile
 }
 
 const isItemActive = (pathname: string, href: string) => {
@@ -38,10 +46,11 @@ const NavItems = ({
   onNavigate?: () => void;
 }) => {
   return (
-    <nav className="mt-2 space-y-1 px-4">
+    <nav className="mt-2 space-y-1 px-4" aria-label="Main navigation">
       {items.map((item) => {
         const Icon = item.icon;
         const active = isItemActive(pathname, item.href);
+        const badgeText = item.badge ? `, ${item.badge} pending` : "";
 
         if (item.external) {
           return (
@@ -49,10 +58,20 @@ const NavItems = ({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition-colors hover:bg-slate-100"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+              aria-label={`${item.label}${badgeText}`}
             >
-              <Icon size={18} />
+              <Icon size={18} aria-hidden="true" />
               <span className="text-sm font-semibold">{item.label}</span>
+              {item.badge && (
+                <Badge
+                  variant="destructive"
+                  className="ml-auto"
+                  aria-label={`${item.badge} pending`}
+                >
+                  {item.badge}
+                </Badge>
+              )}
             </a>
           );
         }
@@ -62,14 +81,25 @@ const NavItems = ({
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
               active
                 ? "bg-slate-100 text-slate-900"
                 : "text-slate-700 hover:bg-slate-100"
             }`}
+            aria-label={`${item.label}${badgeText}`}
+            aria-current={active ? "page" : undefined}
           >
-            <Icon size={18} />
+            <Icon size={18} aria-hidden="true" />
             <span className="text-sm font-semibold">{item.label}</span>
+            {item.badge && (
+              <Badge
+                variant="destructive"
+                className="ml-auto"
+                aria-label={`${item.badge} pending`}
+              >
+                {item.badge}
+              </Badge>
+            )}
           </Link>
         );
       })}
@@ -82,6 +112,7 @@ export const DashboardShell = ({
   userName,
   navItems,
   onLogout,
+  bottomNavItems,
   children,
 }: DashboardShellProps) => {
   const pathname = usePathname();
@@ -100,10 +131,12 @@ export const DashboardShell = ({
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-wide text-slate-500">
+            <p className="text-xs uppercase tracking-wide text-slate-500">
               {dashboardLabel}
             </p>
-            <p className="text-sm font-semibold text-slate-900">{displayName}</p>
+            <p className="text-sm font-semibold text-slate-900">
+              {displayName}
+            </p>
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
@@ -125,10 +158,12 @@ export const DashboardShell = ({
           <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] border-r border-slate-200 bg-white shadow-lg">
             <div className="flex items-center justify-between border-b border-slate-200 p-4">
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
                   {dashboardLabel}
                 </p>
-                <p className="text-sm font-semibold text-slate-900">{displayName}</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {displayName}
+                </p>
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -163,11 +198,13 @@ export const DashboardShell = ({
       <div className="flex min-h-screen lg:pt-0">
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-slate-200 bg-white shadow-sm lg:flex lg:flex-col">
           <div className="p-6">
-            <div className="rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-5 text-white">
+            <div className="rounded-2xl bg-gradient-to-br from-deep-slate to-slate-700 p-5 text-white shadow-lg">
               <p className="text-xs uppercase tracking-wide text-slate-300">
                 {dashboardLabel}
               </p>
-              <h1 className="mt-2 text-2xl font-bold text-white">PowerMySport</h1>
+              <h1 className="mt-2 text-2xl font-bold text-white">
+                PowerMySport
+              </h1>
               <p className="mt-1 text-sm text-slate-200">{displayName}</p>
             </div>
           </div>
@@ -188,8 +225,12 @@ export const DashboardShell = ({
           <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
             {children}
           </div>
+          {bottomNavItems && <BottomNavSpacer />}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {bottomNavItems && <BottomNav items={bottomNavItems} />}
     </div>
   );
 };

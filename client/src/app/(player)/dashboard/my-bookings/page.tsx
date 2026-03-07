@@ -2,6 +2,7 @@
 
 import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
@@ -102,6 +103,13 @@ export default function BookingsPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "My Bookings" },
+          ]}
+        />
+
         <PlayerPageHeader
           badge="Player"
           title="My Bookings"
@@ -114,6 +122,13 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-6">
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "My Bookings" },
+        ]}
+      />
+
       <PlayerPageHeader
         badge="Player"
         title="My Bookings"

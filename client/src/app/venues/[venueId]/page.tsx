@@ -2,6 +2,8 @@
 
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
+import { BackButton } from "@/components/ui/back-button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
@@ -249,6 +251,18 @@ export default function VenueDetailsPage() {
       {/* Navigation */}
       <Navigation variant="dark" sticky />
       <main className="flex-1">
+        {/* Breadcrumbs & Back Button */}
+        <div className="bg-white border-b border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-2">
+            <Breadcrumbs
+              items={[
+                { label: "Browse Venues", href: "/venues" },
+                { label: venue.name },
+              ]}
+            />
+            <BackButton label="Back to Venues" />
+          </div>
+        </div>
         {/* Header */}
         <div className="bg-white border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
