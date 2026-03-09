@@ -9,7 +9,7 @@ interface NotificationCounts {
   bookingInvitations: number;
 }
 
-export function useNotifications(pollingInterval: number = 30000) {
+export function useNotifications(pollingInterval: number = 0) {
   const [counts, setCounts] = useState<NotificationCounts>({
     friendRequests: 0,
     bookingInvitations: 0,

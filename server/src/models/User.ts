@@ -24,6 +24,60 @@ export interface UserDocument extends Document {
     relation?: string;
     sports?: string[];
   }>;
+  notificationPreferences?: {
+    email?: {
+      friendRequests?: boolean;
+      bookingInvitations?: boolean;
+      bookingConfirmations?: boolean;
+      bookingReminders?: boolean;
+      bookingCancellations?: boolean;
+      reviews?: boolean;
+      payments?: boolean;
+      admin?: boolean;
+      marketing?: boolean;
+    };
+    push?: {
+      friendRequests?: boolean;
+      bookingInvitations?: boolean;
+      bookingConfirmations?: boolean;
+      bookingReminders?: boolean;
+      bookingCancellations?: boolean;
+      reviews?: boolean;
+      payments?: boolean;
+      admin?: boolean;
+      marketing?: boolean;
+    };
+    inApp?: {
+      friendRequests?: boolean;
+      bookingInvitations?: boolean;
+      bookingConfirmations?: boolean;
+      bookingReminders?: boolean;
+      bookingCancellations?: boolean;
+      reviews?: boolean;
+      payments?: boolean;
+      admin?: boolean;
+      marketing?: boolean;
+    };
+  };
+  reminderPreferences?: {
+    bookingReminders?: {
+      enabled?: boolean;
+      intervals?: {
+        twentyFourHours?: boolean;
+        oneHour?: boolean;
+        fifteenMinutes?: boolean;
+      };
+    };
+  };
+  pushSubscriptions?: Array<{
+    endpoint: string;
+    keys: {
+      p256dh: string;
+      auth: string;
+    };
+    userAgent?: string;
+    createdAt?: Date;
+  }>;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -135,6 +189,74 @@ const userSchema = new Schema<UserDocument>(
           default: "CHILD",
         },
         sports: [String],
+      },
+    ],
+    notificationPreferences: {
+      email: {
+        friendRequests: { type: Boolean, default: true },
+        bookingInvitations: { type: Boolean, default: true },
+        bookingConfirmations: { type: Boolean, default: true },
+        bookingReminders: { type: Boolean, default: true },
+        bookingCancellations: { type: Boolean, default: true },
+        reviews: { type: Boolean, default: true },
+        payments: { type: Boolean, default: true },
+        admin: { type: Boolean, default: true },
+        marketing: { type: Boolean, default: false },
+      },
+      push: {
+        friendRequests: { type: Boolean, default: true },
+        bookingInvitations: { type: Boolean, default: true },
+        bookingConfirmations: { type: Boolean, default: true },
+        bookingReminders: { type: Boolean, default: true },
+        bookingCancellations: { type: Boolean, default: true },
+        reviews: { type: Boolean, default: true },
+        payments: { type: Boolean, default: true },
+        admin: { type: Boolean, default: true },
+        marketing: { type: Boolean, default: false },
+      },
+      inApp: {
+        friendRequests: { type: Boolean, default: true },
+        bookingInvitations: { type: Boolean, default: true },
+        bookingConfirmations: { type: Boolean, default: true },
+        bookingReminders: { type: Boolean, default: true },
+        bookingCancellations: { type: Boolean, default: true },
+        reviews: { type: Boolean, default: true },
+        payments: { type: Boolean, default: true },
+        admin: { type: Boolean, default: true },
+        marketing: { type: Boolean, default: true },
+      },
+    },
+    reminderPreferences: {
+      bookingReminders: {
+        enabled: { type: Boolean, default: true },
+        intervals: {
+          twentyFourHours: { type: Boolean, default: true },
+          oneHour: { type: Boolean, default: true },
+          fifteenMinutes: { type: Boolean, default: true },
+        },
+      },
+    },
+    pushSubscriptions: [
+      {
+        endpoint: {
+          type: String,
+          required: true,
+        },
+        keys: {
+          p256dh: {
+            type: String,
+            required: true,
+          },
+          auth: {
+            type: String,
+            required: true,
+          },
+        },
+        userAgent: String,
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
   },

@@ -11,6 +11,7 @@ import {
 } from "../types";
 import { sendEmail } from "../utils/email";
 import { s3Service } from "./S3Service";
+import { NotificationService } from "./NotificationService";
 
 /**
  * VenueOnboardingService
@@ -625,6 +626,25 @@ export const approveVenue = async (
     });
 
     console.log(`✅ Approval email sent to ${venue.ownerEmail}`);
+
+    // Send in-app notification to venue owner
+    if (user?._id) {
+      NotificationService.send({
+        userId: user._id.toString(),
+        type: "VENUE_APPROVAL_APPROVED",
+        title: "Venue Approved",
+        message: `Congratulations! Your venue "${venue.name}" has been approved.`,
+        data: {
+          venueId: venue._id.toString(),
+          venueName: venue.name,
+          approvedAt: new Date().toISOString(),
+          isNewUser,
+          ...(isNewUser && tempPassword ? { hasCredentials: true } : {}),
+        },
+      }).catch((err: Error) =>
+        console.error("Failed to send venue approval notification:", err),
+      );
+    }
   } catch (error) {
     console.error("❌ Failed to send approval email:", error);
     // Don't throw - approval was successful, just email failed
@@ -654,6 +674,24 @@ export const rejectVenue = async (
     throw new Error("Venue not found");
   }
 
+  // Send in-app notification to venue owner (if linked to a user account)
+  if (venue.ownerId) {
+    NotificationService.send({
+      userId: venue.ownerId.toString(),
+      type: "VENUE_APPROVAL_REJECTED",
+      title: "Venue Rejected",
+      message: `Your venue "${venue.name}" submission has been rejected.`,
+      data: {
+        venueId: venue._id.toString(),
+        venueName: venue.name,
+        reason: reason,
+        rejectedAt: new Date().toISOString(),
+      },
+    }).catch((err: Error) =>
+      console.error("Failed to send venue rejection notification:", err),
+    );
+  }
+
   // TODO: Send rejection email to venue owner
   // const owner = await User.findById(venue.ownerId);
   // await emailService.sendVenueRejectedEmail(owner?.email, reason);
@@ -680,6 +718,24 @@ export const markVenueForReview = async (
 
   if (!venue) {
     throw new Error("Venue not found");
+  }
+
+  // Send in-app notification to venue owner (if linked to a user account)
+  if (venue.ownerId) {
+    NotificationService.send({
+      userId: venue.ownerId.toString(),
+      type: "VENUE_MARKED_FOR_REVIEW",
+      title: "Venue Under Review",
+      message: `Your venue "${venue.name}" is being reviewed by our team.`,
+      data: {
+        venueId: venue._id.toString(),
+        venueName: venue.name,
+        notes: notes || "",
+        reviewStartedAt: new Date().toISOString(),
+      },
+    }).catch((err: Error) =>
+      console.error("Failed to send venue review notification:", err),
+    );
   }
 
   // TODO: Send review notification email to venue owner

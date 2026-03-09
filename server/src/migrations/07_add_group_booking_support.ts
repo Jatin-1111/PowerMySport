@@ -1,5 +1,8 @@
 import { Booking } from "../models/Booking";
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 /**
  * Migration: Add group booking support
@@ -9,6 +12,15 @@ export async function up(): Promise<void> {
   console.log("Starting migration: Add group booking support...");
 
   try {
+    // Ensure database connection
+    if (mongoose.connection.readyState !== 1) {
+      const mongoUri =
+        process.env.MONGO_URI ||
+        process.env.MONGODB_URI ||
+        "mongodb://localhost:27017/powermysport";
+      await mongoose.connect(mongoUri);
+      console.log("Connected to database");
+    }
     // Update all existing bookings to set default values for new fields
     const result = await Booking.updateMany(
       {
@@ -31,7 +43,8 @@ export async function up(): Promise<void> {
     );
 
     // Set organizerId to userId for all bookings that don't have it
-    const bookingsWithoutOrganizer = await Booking.updateMany(
+    // Using aggregation pipeline requires accessing the native collection
+    const bookingsWithoutOrganizer = await Booking.collection.updateMany(
       { organizerId: { $exists: false } },
       [
         {

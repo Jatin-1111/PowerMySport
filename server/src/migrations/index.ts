@@ -11,6 +11,8 @@ import { migrateBookingPayments } from "./03_migrate_booking_payments";
 import { linkVenuesToOwners } from "./04_link_venues_to_owners";
 import { addS3KeysToDocuments } from "./05_add_s3_keys_to_documents";
 import { migrateCoachVenueToProfile } from "./06_separate_coach_venue_roles";
+import { up as addGroupBookingSupport } from "./07_add_group_booking_support";
+import { up as addNotificationsSystem } from "./08_add_notifications_system";
 
 const runAllMigrations = async () => {
   console.log("=".repeat(60));
@@ -55,6 +57,18 @@ const runAllMigrations = async () => {
     );
     console.log("-".repeat(60));
     await migrateCoachVenueToProfile();
+    console.log();
+
+    // Migration 7: Add Group Booking Support
+    console.log("📋 Running Migration 7: Add Group Booking Support");
+    console.log("-".repeat(60));
+    await addGroupBookingSupport();
+    console.log();
+
+    // Migration 8: Add Notifications System
+    console.log("📋 Running Migration 8: Add Notifications System");
+    console.log("-".repeat(60));
+    await addNotificationsSystem();
     console.log();
 
     console.log("=".repeat(60));

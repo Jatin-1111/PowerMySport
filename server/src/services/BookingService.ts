@@ -15,6 +15,8 @@ import { isWithinOpeningHours } from "../utils/openingHours";
 import friendService from "./FriendService";
 import BookingInvitation from "../models/BookingInvitation";
 import { calculateGroupPaymentSplits } from "../utils/payment";
+import { NotificationService } from "./NotificationService";
+import { ScheduledNotificationService } from "./ScheduledNotificationService";
 
 /**
  * Booking State Machine:
@@ -900,6 +902,80 @@ export const cancelBooking = async (
     { new: true },
   );
 
+  // Send cancellation notifications to all participants
+  if (updatedBooking) {
+    const venue = await Venue.findById(updatedBooking.venueId);
+
+    if (venue) {
+      // Get all participant user IDs (organizer + accepted participants)
+      const participantIds = [
+        updatedBooking.organizerId.toString(),
+        ...updatedBooking.participants
+          .filter((p) => p.status === "ACCEPTED")
+          .map((p) => p.userId.toString()),
+      ];
+
+      // Send notification to each participant
+      for (const participantId of participantIds) {
+        NotificationService.send({
+          userId: participantId,
+          type: "BOOKING_CANCELLED",
+          title: "Booking Cancelled",
+          message: `Your booking for ${updatedBooking.sport} at ${venue.name} has been cancelled. ${refundPercentage > 0 ? `You will receive a ${refundPercentage}% refund.` : "No refund available."}`,
+          data: {
+            bookingId: updatedBooking._id.toString(),
+            venueName: venue.name,
+            sport: updatedBooking.sport,
+            date: updatedBooking.date.toISOString(),
+            startTime: updatedBooking.startTime,
+            endTime: updatedBooking.endTime,
+            cancellationReason: cancellationReason || "Cancelled by user",
+            refundAmount,
+            refundPercentage,
+          },
+        }).catch((err: Error) =>
+          console.error(
+            `Failed to send booking cancellation notification to ${participantId}:`,
+            err,
+          ),
+        );
+
+        // Send refund notification if refund is available
+        if (refundAmount > 0) {
+          NotificationService.send({
+            userId: participantId,
+            type: "PAYMENT_REFUND",
+            title: "Refund Initiated",
+            message: `A ${refundPercentage}% refund of ₹${refundAmount} has been initiated for your cancelled booking at ${venue.name}.`,
+            data: {
+              bookingId: updatedBooking._id.toString(),
+              venueName: venue.name,
+              sport: updatedBooking.sport,
+              refundAmount,
+              refundPercentage,
+              cancellationReason: cancellationReason || "Cancelled by user",
+            },
+          }).catch((err: Error) =>
+            console.error(
+              `Failed to send refund notification to ${participantId}:`,
+              err,
+            ),
+          );
+        }
+      }
+    }
+
+    // Cancel all pending reminders for this booking
+    ScheduledNotificationService.cancelBookingReminders(
+      updatedBooking._id,
+    ).catch((err: Error) =>
+      console.error(
+        `Failed to cancel booking reminders for ${updatedBooking._id}:`,
+        err,
+      ),
+    );
+  }
+
   return {
     booking: updatedBooking,
     refundAmount,
@@ -1106,6 +1182,56 @@ export const confirmMockPaymentSuccess = async (
     throw new Error("Booking not found");
   }
 
+  // Send payment confirmation notification
+  const venue = await Venue.findById(updatedBooking.venueId).select("name");
+  NotificationService.send({
+    userId: userId,
+    type: "PAYMENT_CONFIRMED",
+    title: "Payment Confirmed",
+    message: `Your payment for ${updatedBooking.sport} at ${venue?.name || "the venue"} has been confirmed!`,
+    data: {
+      bookingId: updatedBooking._id.toString(),
+      venueName: venue?.name || "Venue",
+      sport: updatedBooking.sport,
+      date: updatedBooking.date.toISOString(),
+      startTime: updatedBooking.startTime,
+      endTime: updatedBooking.endTime,
+      totalAmount: updatedBooking.totalAmount,
+    },
+  }).catch((err: Error) =>
+    console.error(
+      `Failed to send payment confirmation notification to ${userId}:`,
+      err,
+    ),
+  );
+
+  // Create booking reminders
+  const user = await User.findById(userId).select(
+    "reminderPreferences notificationPreferences",
+  );
+  if (user && user.reminderPreferences?.bookingReminders?.enabled) {
+    ScheduledNotificationService.createBookingReminders(
+      {
+        bookingId: updatedBooking._id,
+        userId: updatedBooking.userId,
+        bookingDate: updatedBooking.date,
+        startTime: updatedBooking.startTime,
+        endTime: updatedBooking.endTime,
+        sport: updatedBooking.sport,
+        venueName: venue?.name,
+        coachName: undefined, // TODO: Add coach name when implementing coach bookings
+      },
+      user.reminderPreferences.bookingReminders,
+      {
+        email: user.notificationPreferences?.email?.bookingReminders ?? true,
+        push: user.notificationPreferences?.push?.bookingReminders ?? true,
+        inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
+      },
+    ).catch((err: Error) =>
+      console.error(`Failed to create booking reminders for ${userId}:`, err),
+    );
+  }
+
   return updatedBooking;
 };
 
@@ -1153,6 +1279,34 @@ export const updatePaymentStatus = async (
   } else {
     await booking.save();
   }
+
+  // Send payment status notification
+  if (status === "FAILED") {
+    const venue = await Venue.findById(booking.venueId).select("name");
+    NotificationService.send({
+      userId: payerUserId,
+      type: "PAYMENT_FAILED",
+      title: "Payment Failed",
+      message: `Your payment for ${booking.sport} at ${venue?.name || "the venue"} has failed. Please try again.`,
+      data: {
+        bookingId: booking._id.toString(),
+        venueName: venue?.name || "Venue",
+        sport: booking.sport,
+        date: booking.date.toISOString(),
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        amount:
+          booking.payments.find((p) => p.userId.toString() === payerUserId)
+            ?.amount || 0,
+      },
+    }).catch((err: Error) =>
+      console.error(
+        `Failed to send payment failed notification to ${payerUserId}:`,
+        err,
+      ),
+    );
+  }
+
   return booking;
 };
 
@@ -1321,7 +1475,10 @@ export const initiateGroupBooking = async (
       status: "PENDING",
     }));
 
-    await BookingInvitation.insertMany(invitations, { session });
+    const insertedInvitations = await BookingInvitation.insertMany(
+      invitations,
+      { session },
+    );
 
     // Send invitation emails/notifications
     const venue = await Venue.findById(booking.venueId).session(session);
@@ -1330,7 +1487,7 @@ export const initiateGroupBooking = async (
     if (venue && inviter) {
       // Send emails to all invitees (async, don't wait)
       for (const invitee of invitees) {
-        const invitation = invitations.find(
+        const invitation = insertedInvitations.find(
           (inv) => inv.inviteeId.toString() === invitee._id.toString(),
         );
         if (invitation) {
@@ -1344,9 +1501,33 @@ export const initiateGroupBooking = async (
             startTime: booking.startTime,
             endTime: booking.endTime,
             estimatedAmount: invitation.estimatedAmount,
-          }).catch((err) =>
+          }).catch((err: Error) =>
             console.error(
               `Failed to send booking invitation email to ${invitee.email}:`,
+              err,
+            ),
+          );
+
+          // Send real-time notification
+          NotificationService.send({
+            userId: invitee._id.toString(),
+            type: "BOOKING_INVITATION",
+            title: "New Booking Invitation",
+            message: `${inviter.name} invited you to play ${booking.sport} at ${venue.name}`,
+            data: {
+              bookingId: booking._id.toString(),
+              organizerId: payload.userId,
+              organizerName: inviter.name,
+              venueName: venue.name,
+              sport: booking.sport,
+              date: booking.date.toISOString(),
+              startTime: booking.startTime,
+              endTime: booking.endTime,
+              estimatedAmount: invitation.estimatedAmount,
+            },
+          }).catch((err: Error) =>
+            console.error(
+              `Failed to send booking invitation notification to ${invitee._id}:`,
               err,
             ),
           );
@@ -1499,6 +1680,70 @@ export const respondToBookingInvitation = async (
     await session.commitTransaction();
     session.endSession();
 
+    // Send notifications after successful transaction
+    const invitee = await User.findById(userId);
+    const organizer = await User.findById(booking.organizerId);
+    const venue = await Venue.findById(booking.venueId);
+
+    if (accept && invitee && organizer && venue) {
+      // Notify organizer that someone accepted
+      NotificationService.send({
+        userId: booking.organizerId.toString(),
+        type: "BOOKING_CONFIRMED",
+        title: "Booking Invitation Accepted",
+        message: `${invitee.name} accepted your invitation to play ${booking.sport} at ${venue.name}`,
+        data: {
+          bookingId: booking._id.toString(),
+          participantId: userId,
+          participantName: invitee.name,
+          venueName: venue.name,
+          sport: booking.sport,
+          date: booking.date.toISOString(),
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+        },
+      }).catch((err: Error) =>
+        console.error(
+          `Failed to send booking acceptance notification to organizer:`,
+          err,
+        ),
+      );
+
+      // If booking is now confirmed, notify all accepted participants
+      if (booking.status === "CONFIRMED") {
+        const acceptedParticipants = booking.participants.filter(
+          (p) =>
+            p.status === "ACCEPTED" &&
+            p.userId.toString() !== booking.organizerId.toString(),
+        );
+
+        for (const participant of acceptedParticipants) {
+          const participantUser = await User.findById(participant.userId);
+          if (participantUser) {
+            NotificationService.send({
+              userId: participant.userId.toString(),
+              type: "BOOKING_CONFIRMED",
+              title: "Booking Confirmed",
+              message: `Your booking for ${booking.sport} at ${venue.name} is confirmed!`,
+              data: {
+                bookingId: booking._id.toString(),
+                venueName: venue.name,
+                sport: booking.sport,
+                date: booking.date.toISOString(),
+                startTime: booking.startTime,
+                endTime: booking.endTime,
+              },
+            }).catch((err: Error) =>
+              console.error(
+                `Failed to send booking confirmed notification to ${participant.userId}:`,
+                err,
+              ),
+            );
+          }
+        }
+      }
+    }
+
     return booking;
   } catch (error) {
     await session.abortTransaction();
@@ -1542,6 +1787,9 @@ export const coverUnpaidShares = async (
     throw new Error("No unpaid shares to cover");
   }
 
+  // Store user IDs for notifications
+  const coveredUserIds = unpaidPlayerPayments.map((p) => p.userId.toString());
+
   // Calculate total unpaid amount
   const totalUnpaid = unpaidPlayerPayments.reduce(
     (sum, p) => sum + p.amount,
@@ -1577,6 +1825,35 @@ export const coverUnpaidShares = async (
   );
 
   await booking.save();
+
+  // Send notifications to users whose payments were covered
+  const venue = await Venue.findById(booking.venueId).select("name");
+  const organizer = await User.findById(organizerId).select("name");
+
+  for (const userId of coveredUserIds) {
+    NotificationService.send({
+      userId: userId,
+      type: "PAYMENT_SPLIT_RECEIVED",
+      title: "Payment Covered",
+      message: `${organizer?.name || "The organizer"} has covered your share for ${booking.sport} at ${venue?.name || "the venue"}.`,
+      data: {
+        bookingId: booking._id.toString(),
+        venueName: venue?.name || "Venue",
+        sport: booking.sport,
+        date: booking.date.toISOString(),
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        organizerName: organizer?.name || "Organizer",
+        organizerId: organizerId,
+      },
+    }).catch((err: Error) =>
+      console.error(
+        `Failed to send payment split received notification to ${userId}:`,
+        err,
+      ),
+    );
+  }
+
   return booking;
 };
 

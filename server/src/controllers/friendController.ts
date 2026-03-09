@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import friendService from "../services/FriendService";
 import { z } from "zod";
-import {
-  notifyFriendRequest,
-  notifyFriendRequestAccepted,
-} from "../sockets/friendSocket";
+import { NotificationService } from "../services/NotificationService";
 import {
   sendFriendRequestEmail,
   sendFriendRequestAcceptedEmail,
@@ -59,18 +56,29 @@ export const sendFriendRequest = async (
     ]);
 
     if (requester && recipient) {
-      // Send socket notification
-      notifyFriendRequest(recipientId, {
-        requestId: friendRequest._id.toString(),
-        requester: {
-          id: requester._id.toString(),
-          name: requester.name,
-          email: requester.email,
-          ...(requester.photoUrl && { photoUrl: requester.photoUrl }),
+      // Send notification via NotificationService (socket + email + persist to DB)
+      await NotificationService.send(
+        {
+          userId: recipientId,
+          type: "FRIEND_REQUEST",
+          title: "New Friend Request",
+          message: `${requester.name} sent you a friend request`,
+          data: {
+            requestId: friendRequest._id.toString(),
+            requesterId: requester._id.toString(),
+            requesterName: requester.name,
+            requesterEmail: requester.email,
+            requesterPhotoUrl: requester.photoUrl,
+          },
         },
-      });
+        {
+          persistToDb: true,
+          sendSocket: true,
+          sendEmail: true,
+        },
+      );
 
-      // Send email notification (async, don't wait)
+      // Send detailed email notification using existing template (async, don't wait)
       sendFriendRequestEmail({
         recipientName: recipient.name,
         recipientEmail: recipient.email,
@@ -116,33 +124,45 @@ export const acceptFriendRequest = async (
       requestId,
     );
 
-    // Get user details for notifications
-    const [acceptedBy, requester] = await Promise.all([
-      User.findById(userId).select("name email photoUrl"),
-      User.findById(connection.requesterId).select("name email photoUrl"),
-    ]);
+    // Get user details for notification
+    const acceptedBy = await User.findById(userId);
+    const requester = await User.findById(connection.requesterId);
 
-    if (acceptedBy && requester) {
-      // Send socket notification to the original requester
-      notifyFriendRequestAccepted(connection.requesterId.toString(), {
-        acceptedBy: {
-          id: acceptedBy._id.toString(),
-          name: acceptedBy.name,
-          email: acceptedBy.email,
-          ...(acceptedBy.photoUrl && { photoUrl: acceptedBy.photoUrl }),
-        },
-      });
-
-      // Send email notification (async, don't wait)
-      sendFriendRequestAcceptedEmail({
-        requesterName: requester.name,
-        requesterEmail: requester.email,
-        acceptedByName: acceptedBy.name,
-        ...(acceptedBy.photoUrl && { acceptedByPhotoUrl: acceptedBy.photoUrl }),
-      }).catch((err) =>
-        console.error("Failed to send friend accepted email:", err),
-      );
+    if (!acceptedBy || !requester) {
+      throw new Error("User not found");
     }
+
+    // Send notification via NotificationService (socket + email + persist to DB)
+    await NotificationService.send(
+      {
+        userId: connection.requesterId.toString(),
+        type: "FRIEND_REQUEST_ACCEPTED",
+        title: "Friend Request Accepted",
+        message: `${acceptedBy.name} accepted your friend request`,
+        data: {
+          connectionId: connection._id.toString(),
+          acceptedById: acceptedBy._id.toString(),
+          acceptedByName: acceptedBy.name,
+          acceptedByEmail: acceptedBy.email,
+          acceptedByPhotoUrl: acceptedBy.photoUrl,
+        },
+      },
+      {
+        persistToDb: true,
+        sendSocket: true,
+        sendEmail: true,
+      },
+    );
+
+    // Send detailed email notification using existing template (async, don't wait)
+    sendFriendRequestAcceptedEmail({
+      requesterName: requester.name,
+      requesterEmail: requester.email,
+      acceptedByName: acceptedBy.name,
+      ...(acceptedBy.photoUrl && { acceptedByPhotoUrl: acceptedBy.photoUrl }),
+    }).catch((err) =>
+      console.error("Failed to send friend accepted email:", err),
+    );
 
     res.json({
       success: true,

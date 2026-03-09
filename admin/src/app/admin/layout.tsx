@@ -2,6 +2,7 @@
 
 import { adminApi } from "@/modules/admin/services/admin";
 import {
+  Bell,
   Building2,
   Calendar,
   CheckCircle,
@@ -144,6 +145,11 @@ export default function AdminLayout({
       href: "/admin/bookings",
       label: "All Bookings",
       icon: Calendar,
+    },
+    {
+      href: "/admin/notifications",
+      label: "Notifications",
+      icon: Bell,
     },
     ...(isSuperAdmin
       ? [

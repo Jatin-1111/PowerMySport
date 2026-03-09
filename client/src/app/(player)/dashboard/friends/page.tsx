@@ -279,7 +279,7 @@ export default function FriendsPage() {
                           </div>
                         </div>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger>
                             <Button variant="secondary" size="sm">
                               <MoreVertical className="h-4 w-4" />
                             </Button>

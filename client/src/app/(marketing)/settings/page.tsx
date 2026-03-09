@@ -4,7 +4,7 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { UserRole } from "@/types";
-import { Settings, Shield, UserCircle } from "lucide-react";
+import { Bell, Settings, Shield, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -100,24 +100,56 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      <div className="grid gap-4">
-        {roleSettingsLinks[user.role].map((item) => (
-          <Card key={item.href} className="bg-white">
-            <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+      {/* General Settings */}
+      <div className="mb-6">
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">
+          General Settings
+        </h2>
+        <Card className="bg-white">
+          <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Bell className="mt-0.5 text-power-orange" size={20} />
               <div>
                 <h3 className="text-base font-semibold text-slate-900">
-                  {item.label}
+                  Notification Preferences
                 </h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  {item.description}
+                  Control how you receive notifications via email, push, and
+                  in-app.
                 </p>
               </div>
-              <Link href={item.href}>
-                <Button size="sm">Open</Button>
-              </Link>
             </div>
-          </Card>
-        ))}
+            <Link href="/settings/notifications">
+              <Button size="sm">Manage</Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+
+      {/* Role-Specific Settings */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">
+          Role-Specific Settings
+        </h2>
+        <div className="grid gap-4">
+          {roleSettingsLinks[user.role].map((item) => (
+            <Card key={item.href} className="bg-white">
+              <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-900">
+                    {item.label}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {item.description}
+                  </p>
+                </div>
+                <Link href={item.href}>
+                  <Button size="sm">Open</Button>
+                </Link>
+              </div>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );

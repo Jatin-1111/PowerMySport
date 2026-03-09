@@ -1080,3 +1080,151 @@ export const sendBookingConfirmationEmail = async (
     html,
   });
 };
+
+interface BookingReminderEmailOptions {
+  email: string;
+  name: string;
+  venueName: string;
+  sport: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  interval: "24_HOURS" | "1_HOUR" | "15_MINUTES";
+  bookingId?: string;
+}
+
+export const sendBookingReminderEmail = async (
+  options: BookingReminderEmailOptions,
+): Promise<void> => {
+  const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
+  const bookingDate = options.date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  // Determine reminder message based on interval
+  let reminderTitle = "Booking Reminder";
+  let reminderIcon = "⏰";
+  let reminderMessage = "";
+  let timeframeText = "";
+  let gradientColors = "135deg, #ff6b35 0%, #f7931e 100%";
+
+  switch (options.interval) {
+    case "24_HOURS":
+      reminderTitle = "Booking Tomorrow";
+      reminderIcon = "📅";
+      reminderMessage = "Your booking is coming up tomorrow!";
+      timeframeText = "24 Hours";
+      gradientColors = "135deg, #3b82f6 0%, #2563eb 100%";
+      break;
+    case "1_HOUR":
+      reminderTitle = "Booking in 1 Hour";
+      reminderIcon = "⏰";
+      reminderMessage = "Your booking starts in 1 hour. Get ready!";
+      timeframeText = "1 Hour";
+      gradientColors = "135deg, #f59e0b 0%, #d97706 100%";
+      break;
+    case "15_MINUTES":
+      reminderTitle = "Booking in 15 Minutes";
+      reminderIcon = "🔔";
+      reminderMessage = "Your booking starts in 15 minutes. Time to head out!";
+      timeframeText = "15 Minutes";
+      gradientColors = "135deg, #ef4444 0%, #dc2626 100%";
+      break;
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;">
+    ${reminderMessage} Your ${options.sport} booking at ${options.venueName}.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dbe3ee;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(${gradientColors});padding:30px 28px 24px;text-align:center;">
+              <div style="font-size:34px;line-height:34px;">${reminderIcon}</div>
+              <h1 style="margin:12px 0 0;font-size:30px;line-height:34px;color:#ffffff;font-weight:800;">${reminderTitle}</h1>
+              <p style="margin:10px 0 0;font-size:15px;line-height:22px;color:rgba(255,255,255,0.9);">${reminderMessage}</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 28px 22px;background-color:#ffffff;">
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">This is a friendly reminder about your upcoming booking.</p>
+
+              <div style="display:inline-block;background-color:#fef3c7;border:1px solid #fde68a;color:#92400e;font-size:12px;font-weight:700;line-height:12px;padding:8px 12px;border-radius:999px;margin-bottom:16px;">STARTS IN ${timeframeText}</div>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0 16px;">
+                <tr>
+                  <td colspan="2" style="padding:14px 0 10px;font-size:15px;line-height:20px;color:#1e293b;font-weight:800;">Booking Details</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-size:13px;color:#64748b;">Venue</td>
+                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.venueName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Sport</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.sport}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Date</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${bookingDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0 14px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Time</td>
+                  <td style="padding:12px 0 14px;border-top:1px solid #e2e8f0;font-size:16px;color:#0f172a;font-weight:800;text-align:right;">${options.startTime} - ${options.endTime}</td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;background-color:#fef3f2;border:1px solid #fecaca;border-radius:12px;padding:14px 16px;">
+                <tr>
+                  <td style="font-size:13px;line-height:20px;color:#991b1b;">
+                    <strong>📍 Don't be late!</strong> Make sure to arrive a few minutes early to check in.
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+                <tr>
+                  <td align="center">
+                    <a href="${bookingsUrl}" style="display:inline-block;padding:13px 28px;background-color:#ff6b35;color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:0.2px;">View Booking Details</a>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+                <tr>
+                  <td align="center" style="font-size:12px;line-height:18px;color:#94a3b8;">
+                    Need to reschedule? Manage your booking from your dashboard.<br/>
+                    © ${new Date().getFullYear()} PowerMySport. All rights reserved.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.email,
+    subject: `${reminderTitle} - ${options.sport} at ${options.venueName} | PowerMySport`,
+    html,
+  });
+};

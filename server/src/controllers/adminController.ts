@@ -16,6 +16,7 @@ import {
   updateCoachVerificationStatus,
 } from "../services/CoachService";
 import { sendCoachVerificationStatusEmail } from "../utils/email";
+import { NotificationService } from "../services/NotificationService";
 
 const normalizeAdminResponse = (admin: unknown) => {
   if (!admin || typeof admin !== "object") {
@@ -542,6 +543,22 @@ export const approveCoachVerification = async (
           status: "VERIFIED",
         });
       }
+
+      // Send in-app notification
+      if (user?._id) {
+        NotificationService.send({
+          userId: user._id.toString(),
+          type: "COACH_VERIFICATION_VERIFIED",
+          title: "Coach Verification Approved",
+          message: "Congratulations! Your coach profile has been verified.",
+          data: {
+            coachId: coachId,
+            verifiedAt: new Date().toISOString(),
+          },
+        }).catch((err: Error) =>
+          console.error("Failed to send verification notification:", err),
+        );
+      }
     } catch (emailError) {
       console.error("Failed to send coach verification email:", emailError);
     }
@@ -604,6 +621,23 @@ export const rejectCoachVerification = async (
           notes: reason,
         });
       }
+
+      // Send in-app notification
+      if (user?._id) {
+        NotificationService.send({
+          userId: user._id.toString(),
+          type: "COACH_VERIFICATION_REJECTED",
+          title: "Coach Verification Rejected",
+          message: "Your coach verification request has been rejected.",
+          data: {
+            coachId: coachId,
+            reason: reason,
+            rejectedAt: new Date().toISOString(),
+          },
+        }).catch((err: Error) =>
+          console.error("Failed to send rejection notification:", err),
+        );
+      }
     } catch (emailError) {
       console.error("Failed to send coach verification email:", emailError);
     }
@@ -658,6 +692,23 @@ export const markCoachVerificationForReview = async (
           status: "REVIEW",
           ...(notes ? { notes } : {}),
         });
+      }
+
+      // Send in-app notification
+      if (user?._id) {
+        NotificationService.send({
+          userId: user._id.toString(),
+          type: "COACH_VERIFICATION_REVIEW",
+          title: "Coach Verification Under Review",
+          message: "Your coach verification is under review by our team.",
+          data: {
+            coachId: coachId,
+            notes: notes || "",
+            reviewStartedAt: new Date().toISOString(),
+          },
+        }).catch((err: Error) =>
+          console.error("Failed to send review notification:", err),
+        );
       }
     } catch (emailError) {
       console.error("Failed to send coach verification email:", emailError);

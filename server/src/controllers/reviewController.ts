@@ -4,6 +4,8 @@ import { Booking } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { Review } from "../models/Review";
 import { Venue } from "../models/Venue";
+import { User } from "../models/User";
+import { NotificationService } from "../services/NotificationService";
 
 type ReviewTargetType = "VENUE" | "COACH";
 
@@ -172,8 +174,51 @@ export const createReview = async (
 
     if (targetType === "VENUE") {
       await recomputeVenueRating(targetId);
+
+      // Send notification to venue owner
+      const venue = await Venue.findById(targetId).select("ownerId name");
+      const reviewer = await User.findById(req.user.id).select("name");
+
+      if (venue?.ownerId && reviewer) {
+        NotificationService.send({
+          userId: venue.ownerId.toString(),
+          type: "REVIEW_POSTED",
+          title: "New Review Received",
+          message: `${reviewer.name} left a ${rating}-star review for ${venue.name}`,
+          data: {
+            reviewId: created._id.toString(),
+            venueId: targetId,
+            venueName: venue.name,
+            reviewerId: req.user.id,
+            reviewerName: reviewer.name,
+            rating,
+            reviewText: review || "",
+          },
+        }).catch((err: Error) =>
+          console.error("Failed to send review notification:", err),
+        );
+      }
     } else {
       await recomputeCoachRating(targetId);
+
+      // Send notification to coach
+      const coach = await Coach.findById(targetId).select("userId");
+      const reviewer = await User.findById(req.user.id).select("name");
+
+      if (coach?.userId && reviewer) {
+        NotificationService.send({
+          userId: coach.userId.toString(),
+          type: "REVIEW_POSTED",
+          title: "New Review Received",
+          message: `${reviewer.name} left a ${rating}-star review for your coaching`,
+          data: {
+            reviewId: created._id.toString(),
+            coachId: targetId,
+          },
+        }).catch((err: Error) =>
+          console.error("Failed to send review notification:", err),
+        );
+      }
     }
 
     res.status(201).json({

@@ -8,7 +8,10 @@ import {
   setupFriendSocket,
   setFriendSocketInstance,
 } from "./sockets/friendSocket";
+import { setupNotificationSocket } from "./sockets/notificationSocket";
+import { setNotificationSocketInstance } from "./services/NotificationService";
 import { startExpirationJob } from "./utils/timer";
+import { initializeReminderScheduler } from "./utils/reminderScheduler";
 const PORT = process.env.PORT || 5000;
 
 const normalizeOrigin = (origin: string): string =>
@@ -73,11 +76,14 @@ const startServer = async () => {
     // Setup both socket handlers on the same instance
     setupCommunitySocket(io);
     setupFriendSocket(io);
+    setupNotificationSocket(io);
     setFriendSocketInstance(io);
+    setNotificationSocketInstance(io);
 
     console.log("🔧 Socket.IO namespaces configured:");
     console.log("   - /community (requires community profile)");
     console.log("   - /friends (basic auth)");
+    console.log("   - /notifications (real-time monitoring)");
 
     const server = httpServer.listen(PORT, () => {
       console.log(`\n✅ Server is running on http://localhost:${PORT}`);
@@ -158,7 +164,11 @@ const startServer = async () => {
 
       // Start booking expiration job
       startExpirationJob();
-      console.log(`⏰ Booking expiration job started\n`);
+      console.log(`⏰ Booking expiration job started`);
+
+      // Start reminder scheduler
+      initializeReminderScheduler();
+      console.log(`🔔 Booking reminder scheduler started\n`);
     });
 
     // Graceful shutdown

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 type FriendSocketContextType = {
   connected: boolean;
   pendingRequestCount: number;
+  pendingBookingInvitationsCount: number;
   refreshFriends: () => void;
 };
 
@@ -27,9 +28,19 @@ type FriendRemovedData = {
   removedBy?: { name: string; id: string };
 };
 
+// New unified notification type
+type NotificationData = {
+  type: string;
+  title: string;
+  message: string;
+  data?: Record<string, unknown>;
+  createdAt: Date;
+};
+
 const FriendSocketContext = createContext<FriendSocketContextType>({
   connected: false,
   pendingRequestCount: 0,
+  pendingBookingInvitationsCount: 0,
   refreshFriends: () => {},
 });
 
@@ -46,6 +57,8 @@ export function FriendSocketProvider({
 }) {
   const [connected, setConnected] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
+  const [pendingBookingInvitationsCount, setPendingBookingInvitationsCount] =
+    useState(0);
   const [socket, setSocket] = useState<Socket | null>(null);
   const { user } = useAuthStore();
 
@@ -98,10 +111,230 @@ export function FriendSocketProvider({
       setConnected(true);
     });
 
+    // Listen for the unified notification event
+    socketInstance.on("notification:new", (notification: NotificationData) => {
+      console.log("New notification received:", notification);
+
+      // Route based on notification type
+      switch (notification.type) {
+        case "FRIEND_REQUEST":
+          setPendingRequestCount((prev) => prev + 1);
+          toast.info(notification.message, {
+            duration: 5000,
+          });
+          break;
+
+        case "FRIEND_REQUEST_ACCEPTED":
+          toast.success(notification.message, {
+            duration: 5000,
+          });
+          break;
+
+        case "FRIEND_REQUEST_DECLINED":
+          toast.info(notification.message, {
+            duration: 5000,
+          });
+          break;
+
+        case "FRIEND_REMOVED":
+          toast.info(notification.message, {
+            duration: 5000,
+          });
+          break;
+
+        case "BOOKING_INVITATION":
+          setPendingBookingInvitationsCount((prev) => prev + 1);
+          toast.info(notification.message, {
+            duration: 7000,
+            action: {
+              label: "View",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/player/invitations";
+                }
+              },
+            },
+          });
+          break;
+
+        case "BOOKING_CONFIRMED":
+          toast.success(notification.message, {
+            duration: 7000,
+            action: {
+              label: "View",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/player/bookings";
+                }
+              },
+            },
+          });
+          break;
+
+        case "BOOKING_CANCELLED":
+          toast.error(notification.message, {
+            duration: 7000,
+            action: {
+              label: "View",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/player/bookings";
+                }
+              },
+            },
+          });
+          break;
+
+        case "REVIEW_POSTED":
+          toast.info(notification.message, {
+            duration: 6000,
+            action: {
+              label: "View",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/";
+                }
+              },
+            },
+          });
+          break;
+
+        case "COACH_VERIFICATION_VERIFIED":
+          toast.success(notification.message, {
+            duration: 8000,
+            action: {
+              label: "View Profile",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/coach/profile";
+                }
+              },
+            },
+          });
+          break;
+
+        case "COACH_VERIFICATION_REJECTED":
+          toast.error(notification.message, {
+            duration: 8000,
+            action: {
+              label: "View Details",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/coach/verification";
+                }
+              },
+            },
+          });
+          break;
+
+        case "COACH_VERIFICATION_REVIEW":
+          toast.info(notification.message, {
+            duration: 7000,
+          });
+          break;
+
+        case "VENUE_APPROVAL_APPROVED":
+          toast.success(notification.message, {
+            duration: 8000,
+            action: {
+              label: "View Venue",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/venue-lister/venues";
+                }
+              },
+            },
+          });
+          break;
+
+        case "VENUE_APPROVAL_REJECTED":
+          toast.error(notification.message, {
+            duration: 8000,
+            action: {
+              label: "View Details",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/venue-lister/venues";
+                }
+              },
+            },
+          });
+          break;
+
+        case "VENUE_MARKED_FOR_REVIEW":
+          toast.info(notification.message, {
+            duration: 7000,
+          });
+          break;
+
+        case "PAYMENT_CONFIRMED":
+          toast.success(notification.message, {
+            duration: 8000,
+            action: {
+              label: "View Booking",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/player/bookings";
+                }
+              },
+            },
+          });
+          break;
+
+        case "PAYMENT_FAILED":
+          toast.error(notification.message, {
+            duration: 9000,
+            action: {
+              label: "Try Again",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/player/bookings";
+                }
+              },
+            },
+          });
+          break;
+
+        case "PAYMENT_REFUND":
+          toast.success(notification.message, {
+            duration: 8000,
+            action: {
+              label: "View Details",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/player/bookings";
+                }
+              },
+            },
+          });
+          break;
+
+        case "PAYMENT_SPLIT_RECEIVED":
+          toast.info(notification.message, {
+            duration: 7000,
+            action: {
+              label: "View Booking",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/player/bookings";
+                }
+              },
+            },
+          });
+          break;
+
+        default:
+          // Handle other notification types
+          console.log("Unhandled notification type:", notification.type);
+          break;
+      }
+    });
+
+    // Keep legacy event listeners for backward compatibility (can be removed later)
     socketInstance.on(
       "friend:requestReceived",
       (data: FriendRequestReceivedData) => {
-        console.log("New friend request:", data);
+        console.log("Legacy friend request event:", data);
         setPendingRequestCount((prev) => prev + 1);
         toast.info(
           `${data.requester?.name || "Someone"} sent you a friend request!`,
@@ -115,7 +348,7 @@ export function FriendSocketProvider({
     socketInstance.on(
       "friend:requestAccepted",
       (data: FriendRequestAcceptedData) => {
-        console.log("Friend request accepted:", data);
+        console.log("Legacy friend request accepted event:", data);
         toast.success(
           `${data.friend?.name || "User"} accepted your friend request!`,
           {
@@ -128,7 +361,7 @@ export function FriendSocketProvider({
     socketInstance.on(
       "friend:requestDeclined",
       (data: FriendRequestDeclinedData) => {
-        console.log("Friend request declined:", data);
+        console.log("Legacy friend request declined event:", data);
         toast.info(`Your friend request was declined`, {
           duration: 5000,
         });
@@ -136,7 +369,7 @@ export function FriendSocketProvider({
     );
 
     socketInstance.on("friend:removed", (data: FriendRemovedData) => {
-      console.log("Friend removed:", data);
+      console.log("Legacy friend removed event:", data);
       toast.info(
         `${data.removedBy?.name || "A user"} removed you as a friend`,
         {
@@ -176,7 +409,12 @@ export function FriendSocketProvider({
 
   return (
     <FriendSocketContext.Provider
-      value={{ connected, pendingRequestCount, refreshFriends }}
+      value={{
+        connected,
+        pendingRequestCount,
+        pendingBookingInvitationsCount,
+        refreshFriends,
+      }}
     >
       {children}
     </FriendSocketContext.Provider>
