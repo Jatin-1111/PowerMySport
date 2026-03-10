@@ -36,7 +36,7 @@ export interface BookingDocument extends Document {
   promoCode?: string;
   discountAmount?: number;
   status: BookingStatus;
-  expiresAt: Date;
+  expiresAt?: Date; // Optional - only set for PENDING_PAYMENT bookings
   checkInCode?: string;
   participantName: string;
   participantId?: mongoose.Types.ObjectId;
@@ -138,7 +138,7 @@ const bookingSchema = new Schema<BookingDocument>(
     },
     expiresAt: {
       type: Date,
-      required: [true, "Expiration time is required"],
+      required: false, // Only required for PENDING_PAYMENT bookings
     },
     checkInCode: {
       type: String,
@@ -278,10 +278,24 @@ bookingSchema.index({ expiresAt: 1, status: 1 });
 // Index for fast check-in code lookups
 bookingSchema.index({ checkInCode: 1 });
 
-// Unique index to prevent duplicate bookings for same user/venue/date/time
+// Unique index for venue bookings only
 bookingSchema.index(
   { userId: 1, venueId: 1, date: 1, startTime: 1 },
-  { unique: true, name: "unique_booking_slot" },
+  {
+    unique: true,
+    name: "unique_venue_booking_slot",
+    partialFilterExpression: { venueId: { $exists: true } },
+  },
+);
+
+// Unique index for coach bookings only
+bookingSchema.index(
+  { userId: 1, coachId: 1, date: 1, startTime: 1 },
+  {
+    unique: true,
+    name: "unique_coach_booking_slot",
+    partialFilterExpression: { coachId: { $exists: true } },
+  },
 );
 
 export const Booking = mongoose.model<BookingDocument>(

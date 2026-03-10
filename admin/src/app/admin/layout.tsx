@@ -7,7 +7,6 @@ import {
   Calendar,
   CheckCircle,
   LayoutDashboard,
-  MessageSquare,
   ShieldCheck,
   UserCircle2,
   UserCheck,
@@ -115,11 +114,6 @@ export default function AdminLayout({
       href: "/admin/venue-approval",
       label: "Venue Approvals",
       icon: CheckCircle,
-    },
-    {
-      href: "/admin/inquiries",
-      label: "Inquiries",
-      icon: MessageSquare,
     },
     {
       href: "/admin/users",

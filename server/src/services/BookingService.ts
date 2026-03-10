@@ -66,6 +66,7 @@ interface BookingCreatePayload {
   participantName: string;
   participantId: mongoose.Types.ObjectId;
   participantAge?: number;
+  organizerId: mongoose.Types.ObjectId;
 }
 
 const generateRandomCheckInCode = (): string => {
@@ -311,12 +312,13 @@ const createBookingAtomically = async (
             : {}),
           status: "CONFIRMED",
           checkInCode: payload.checkInCode,
-          expiresAt: getBookingExpirationTime(),
+          // No expiration for confirmed bookings - they're already paid/confirmed
           participantName: payload.participantName,
           participantId: payload.participantId,
           ...(payload.participantAge !== undefined
             ? { participantAge: payload.participantAge }
             : {}),
+          organizerId: payload.organizerId,
         });
 
         await booking.save({ session });
@@ -660,6 +662,7 @@ export const initiateBooking = async (
       participantName,
       participantId,
       ...(participantAge !== undefined ? { participantAge } : {}),
+      organizerId: new mongoose.Types.ObjectId(payload.userId),
     };
 
     const booking =
@@ -688,12 +691,13 @@ export const initiateBooking = async (
               : {}),
             status: "CONFIRMED",
             checkInCode: bookingPayload.checkInCode,
-            expiresAt: getBookingExpirationTime(),
+            // No expiration for confirmed bookings - they're already paid/confirmed
             participantName: bookingPayload.participantName,
             participantId: bookingPayload.participantId,
             ...(bookingPayload.participantAge !== undefined
               ? { participantAge: bookingPayload.participantAge }
               : {}),
+            organizerId: bookingPayload.organizerId,
           });
 
     // Record promo code usage after successful booking
@@ -1903,6 +1907,7 @@ export const cleanupStaleBookingLocks = async (): Promise<number> => {
 /**
  * Cleanup expired bookings
  * Updates bookings that have passed their expiration time to CANCELLED
+ * Only affects bookings that are still pending payment confirmation
  * Returns number of expired bookings cancelled
  */
 export const cleanupExpiredBookings = async (): Promise<number> => {
@@ -1910,7 +1915,7 @@ export const cleanupExpiredBookings = async (): Promise<number> => {
 
   const result = await Booking.updateMany(
     {
-      status: "CONFIRMED",
+      status: "PENDING_PAYMENT", // Only cancel bookings awaiting payment
       expiresAt: { $lt: now },
     },
     {

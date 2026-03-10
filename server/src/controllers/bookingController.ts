@@ -16,6 +16,7 @@ import {
 } from "../services/BookingService";
 import { generateHourlySlots } from "../utils/booking";
 import { getPaginationParams } from "../utils/pagination";
+import { transformDocument } from "../middleware/responseTransform";
 
 /**
  * Initiate a new booking
@@ -180,10 +181,13 @@ export const getBookingById = async (
       return;
     }
 
+    // Transform booking to include id field
+    const bookingData = transformDocument(booking.toObject());
+
     res.status(200).json({
       success: true,
       message: "Booking retrieved successfully",
-      data: booking,
+      data: bookingData,
     });
   } catch (error) {
     res.status(500).json({

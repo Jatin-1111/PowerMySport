@@ -219,7 +219,7 @@ export interface Booking {
     paidAt?: string;
   }>;
   status: BookingStatus;
-  expiresAt: string;
+  expiresAt?: string; // Optional - only set for PENDING_PAYMENT bookings
   checkInCode?: string;
   createdAt: string;
   updatedAt: string;

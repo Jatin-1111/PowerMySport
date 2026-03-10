@@ -4,7 +4,7 @@ import axiosInstance from "@/lib/api/axios";
 export const venueApi = {
   createVenue: async (data: {
     name: string;
-    location: string | { type: string; coordinates: number[] };
+    location: { type: "Point"; coordinates: [number, number] };
     sports: string[];
     pricePerHour: number;
     sportPricing?: Record<string, number>;
@@ -38,9 +38,7 @@ export const venueApi = {
 
   updateVenue: async (
     venueId: string,
-    data:
-      | Partial<Venue>
-      | { location: { type: string; coordinates: number[] } },
+    data: Partial<Venue>,
   ): Promise<ApiResponse<Venue>> => {
     const response = await axiosInstance.put(`/venues/${venueId}`, data);
     return response.data;

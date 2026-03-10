@@ -20,13 +20,13 @@ export interface ApiResponse<T> {
 
 /**
  * Venue Onboarding API Service
- * Handles all 4-step onboarding process
+ * Handles 4-step onboarding process with 6 total API calls
  *
- * REFACTORED FLOW:
- * Step 1: Venue Lister Contact Info (ownerName, ownerEmail, ownerPhone)
- * Step 2: Venue Details (name, location, sports, price, etc.)
- * Step 3: Images (5-20 images with cover photo)
- * Step 4: Documents (ownership, registration, tax, insurance, certificates)
+ * FLOW:
+ * Step 1: Venue Lister Contact Info (ownerName, ownerEmail, ownerPhone) - 1 API call
+ * Step 2: Venue Details (name, location, sports, price, etc.) - 1 API call
+ * Step 3: Images - 2 API calls (3A: get upload URLs, 3B: confirm images)
+ * Step 4: Documents - 2 API calls (4A: get upload URLs, 4B: finalize with documents)
  */
 export const onboardingApi = {
   /**

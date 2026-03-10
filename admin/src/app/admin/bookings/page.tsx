@@ -17,12 +17,14 @@ interface PaginationData {
 }
 
 type BookingActionType = "REFUND" | "DISPUTE";
+type BookingTabType = "ALL" | "VENUE" | "COACH";
 const PAYMENT_ACTIONS_ENABLED = false;
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<BookingTabType>("ALL");
   const [pagination, setPagination] = useState<PaginationData>({
     total: 0,
     page: 1,
@@ -142,6 +144,21 @@ export default function AdminBookingsPage() {
     loadBookings();
   }, [loadBookings]);
 
+  // Filter bookings based on active tab
+  const filteredBookings = bookings.filter((booking) => {
+    if (activeTab === "ALL") return true;
+    if (activeTab === "COACH") return !!booking.coachId;
+    if (activeTab === "VENUE") return !!booking.venueId && !booking.coachId;
+    return true;
+  });
+
+  // Count bookings by type
+  const bookingCounts = {
+    all: bookings.length,
+    coach: bookings.filter((b) => !!b.coachId).length,
+    venue: bookings.filter((b) => !!b.venueId && !b.coachId).length,
+  };
+
   if (loading) {
     return <div className="text-center py-12">Loading bookings...</div>;
   }
@@ -174,17 +191,77 @@ export default function AdminBookingsPage() {
       <AdminPageHeader
         badge="Admin"
         title="All Bookings"
-        subtitle="View and monitor all venue bookings across the platform."
+        subtitle="View and monitor all bookings across the platform."
       />
 
-      {bookings.length === 0 ? (
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-slate-200">
+        <button
+          onClick={() => {
+            setActiveTab("ALL");
+            setCurrentPage(1);
+          }}
+          className={`px-4 py-3 font-semibold text-sm transition-colors border-b-2 ${
+            activeTab === "ALL"
+              ? "border-power-orange text-power-orange"
+              : "border-transparent text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          All Bookings
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs">
+            {bookingCounts.all}
+          </span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("VENUE");
+            setCurrentPage(1);
+          }}
+          className={`px-4 py-3 font-semibold text-sm transition-colors border-b-2 ${
+            activeTab === "VENUE"
+              ? "border-power-orange text-power-orange"
+              : "border-transparent text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Venue Bookings
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs">
+            {bookingCounts.venue}
+          </span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("COACH");
+            setCurrentPage(1);
+          }}
+          className={`px-4 py-3 font-semibold text-sm transition-colors border-b-2 ${
+            activeTab === "COACH"
+              ? "border-power-orange text-power-orange"
+              : "border-transparent text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Coach Bookings
+          <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs">
+            {bookingCounts.coach}
+          </span>
+        </button>
+      </div>
+
+      {filteredBookings.length === 0 ? (
         <Card className="bg-white">
           <div className="flex flex-col items-center gap-4 py-10 text-center">
             <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
-              No bookings yet
+              {activeTab === "ALL"
+                ? "No bookings yet"
+                : activeTab === "VENUE"
+                  ? "No venue bookings"
+                  : "No coach bookings"}
             </div>
             <p className="max-w-md text-slate-600">
-              Bookings will appear here once players start booking venues.
+              {activeTab === "ALL"
+                ? "Bookings will appear here once players start booking."
+                : activeTab === "VENUE"
+                  ? "Venue bookings will appear here once players book venues."
+                  : "Coach bookings will appear here once players book coaches."}
             </p>
           </div>
         </Card>
@@ -200,18 +277,23 @@ export default function AdminBookingsPage() {
           )}
 
           <div className="space-y-4">
-            {bookings.map((booking) => (
+            {filteredBookings.map((booking) => (
               <Card
                 key={getBookingId(booking) || booking.id}
                 className="bg-white hover:shadow-lg transition-shadow"
               >
                 {(() => {
+                  const isCoachBooking = !!booking.coachId;
                   const venueName =
                     booking.venueName ||
                     (typeof booking.venueId === "object"
                       ? booking.venueId?.name
                       : undefined) ||
                     "Unknown venue";
+                  const coachName =
+                    typeof booking.coachId === "object"
+                      ? (booking.coachId as any)?.name
+                      : booking.coach?.name || "Unknown coach";
                   const playerName = booking.playerName || "Unknown player";
 
                   return (
@@ -225,10 +307,21 @@ export default function AdminBookingsPage() {
                             className={`px-3 py-1 rounded text-sm font-semibold ${
                               booking.status === "CONFIRMED"
                                 ? "bg-green-100 text-green-700 border border-green-300"
-                                : "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                                : booking.status === "CANCELLED"
+                                  ? "bg-red-100 text-red-700 border border-red-300"
+                                  : "bg-yellow-100 text-yellow-700 border border-yellow-300"
                             }`}
                           >
                             {booking.status}
+                          </span>
+                          <span
+                            className={`px-3 py-1 rounded text-xs font-semibold ${
+                              isCoachBooking
+                                ? "bg-blue-100 text-blue-700 border border-blue-300"
+                                : "bg-purple-100 text-purple-700 border border-purple-300"
+                            }`}
+                          >
+                            {isCoachBooking ? "COACH" : "VENUE"}
                           </span>
                         </div>
 
@@ -246,10 +339,17 @@ export default function AdminBookingsPage() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-slate-600">Venue</p>
-                            <p className="font-semibold text-slate-900">
-                              {venueName}
+                            <p className="text-sm text-slate-600">
+                              {isCoachBooking ? "Coach" : "Venue"}
                             </p>
+                            <p className="font-semibold text-slate-900">
+                              {isCoachBooking ? coachName : venueName}
+                            </p>
+                            {booking.sport && (
+                              <p className="text-sm text-slate-600">
+                                {booking.sport}
+                              </p>
+                            )}
                           </div>
                           <div>
                             <p className="text-sm text-slate-600">Player</p>

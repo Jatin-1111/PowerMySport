@@ -13,6 +13,7 @@ import {
   updateVenue,
 } from "../services/VenueService";
 import { getPaginationParams } from "../utils/pagination";
+import { transformDocument } from "../middleware/responseTransform";
 
 type DiscoveryInclude = "venues" | "coaches" | "both";
 
@@ -154,10 +155,12 @@ export const createNewVenue = async (
       approvalStatus: "PENDING", // Require admin approval for quality control
     });
 
+    const venueData = transformDocument(venue.toObject());
+
     res.status(201).json({
       success: true,
       message: "Venue created successfully and pending admin approval",
-      data: venue,
+      data: venueData,
     });
   } catch (error) {
     console.error("Venue creation error:", error);
@@ -183,10 +186,12 @@ export const getVenue = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const venueData = transformDocument(venue.toObject());
+
     res.status(200).json({
       success: true,
       message: "Venue retrieved successfully",
-      data: venue,
+      data: venueData,
     });
   } catch (error) {
     res.status(500).json({
@@ -352,10 +357,12 @@ export const updateVenueDetails = async (
       return;
     }
 
+    const venueData = transformDocument(venue.toObject());
+
     res.status(200).json({
       success: true,
       message: "Venue updated successfully",
-      data: venue,
+      data: venueData,
     });
   } catch (error) {
     res.status(400).json({

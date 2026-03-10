@@ -29,10 +29,6 @@ const PERMISSION_LABELS: Record<string, string> = {
   "coaches:manage": "Manage Coaches",
   "coaches:verify": "Verify Coaches",
   "coaches:delete": "Delete Coaches",
-  // Inquiries
-  "inquiries:view": "View Inquiries",
-  "inquiries:manage": "Manage Inquiries",
-  "inquiries:delete": "Delete Inquiries",
   // Disputes
   "disputes:view": "View Disputes",
   "disputes:manage": "Manage Disputes",

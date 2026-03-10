@@ -11,6 +11,7 @@ import {
   updateCoach,
 } from "../services/CoachService";
 import { doTimesOverlap } from "../utils/booking";
+import { transformDocument } from "../middleware/responseTransform";
 
 /**
  * Create a new coach profile
@@ -68,18 +69,18 @@ export const createNewCoach = async (
       serviceMode: coach.serviceMode,
     });
 
-    // Convert to JSON to ensure all fields are serialized correctly
-    const coachJson = coach.toJSON();
+    // Convert to JSON and transform _id to id
+    const coachData = transformDocument(coach.toJSON());
 
     console.log("Coach JSON response:", {
-      id: coachJson.id,
-      serviceMode: coachJson.serviceMode,
+      id: coachData.id,
+      serviceMode: coachData.serviceMode,
     });
 
     res.status(201).json({
       success: true,
       message: "Coach profile created successfully",
-      data: coachJson,
+      data: coachData,
     });
   } catch (error) {
     res.status(400).json({
@@ -121,13 +122,13 @@ export const getCoach = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Convert to JSON to ensure all fields are serialized correctly
-    const coachJson = coach.toJSON();
+    // Convert to JSON and transform _id to id
+    const coachData = transformDocument(coach.toJSON());
 
     res.status(200).json({
       success: true,
       message: "Coach retrieved successfully",
-      data: coachJson,
+      data: coachData,
     });
   } catch (error) {
     res.status(500).json({
@@ -164,18 +165,18 @@ export const getMyCoachProfile = async (
       return;
     }
 
-    // Convert to JSON to ensure all fields are serialized correctly
-    const coachJson = coach.toJSON();
+    // Convert to JSON and transform _id to id
+    const coachData = transformDocument(coach.toJSON());
 
     console.log("getMyCoachProfile returning:", {
-      id: coachJson.id,
-      serviceMode: coachJson.serviceMode,
+      id: coachData.id,
+      serviceMode: coachData.serviceMode,
     });
 
     res.status(200).json({
       success: true,
       message: "Coach profile retrieved successfully",
-      data: coachJson,
+      data: coachData,
     });
   } catch (error) {
     res.status(500).json({
@@ -256,13 +257,13 @@ export const updateCoachProfile = async (
 
     const coach = await updateCoach(coachId, updates);
 
-    // Convert to JSON to ensure all fields are serialized correctly
-    const coachJson = coach?.toJSON();
+    // Convert to JSON and transform _id to id
+    const coachData = transformDocument(coach?.toJSON());
 
     res.status(200).json({
       success: true,
       message: "Coach profile updated successfully",
-      data: coachJson,
+      data: coachData,
     });
   } catch (error) {
     res.status(400).json({
@@ -442,8 +443,32 @@ export const getCoachAvailability = async (
       endTime: booking.endTime,
     }));
 
+    const now = new Date();
+    const isToday =
+      targetDate.getFullYear() === now.getFullYear() &&
+      targetDate.getMonth() === now.getMonth() &&
+      targetDate.getDate() === now.getDate();
+
     const availableSlots = candidateSlots.filter((slot) => {
       const [slotStart = "00:00", slotEnd = "00:00"] = slot.split("-");
+
+      // Filter out past time slots for today
+      if (isToday) {
+        const [startHour = "0", startMinute = "0"] = slotStart.split(":");
+        const slotStartDateTime = new Date(targetDate);
+        slotStartDateTime.setHours(
+          parseInt(startHour, 10),
+          parseInt(startMinute, 10),
+          0,
+          0,
+        );
+
+        // If the slot has already started, don't show it
+        if (slotStartDateTime <= now) {
+          return false;
+        }
+      }
+
       return !bookedSlots.some((booked) =>
         doTimesOverlap(slotStart, slotEnd, booked.startTime, booked.endTime),
       );
@@ -547,10 +572,12 @@ export const saveCoachVerificationStep1Handler = async (
       existingCoach._id?.toString()) as string;
     const coach = await updateCoach(coachId, { bio });
 
+    const coachData = transformDocument(coach?.toJSON());
+
     res.status(200).json({
       success: true,
       message: "Step 1 saved successfully",
-      data: coach,
+      data: coachData,
     });
   } catch (error) {
     res.status(400).json({
@@ -697,10 +724,12 @@ export const saveCoachVerificationStep2Handler = async (
 
       const coach = await updateCoach(coachId, updatePayload);
 
+      const coachData = transformDocument(coach?.toJSON());
+
       res.status(200).json({
         success: true,
         message: "Step 2 saved successfully",
-        data: coach,
+        data: coachData,
       });
       return;
     }
@@ -736,10 +765,12 @@ export const saveCoachVerificationStep2Handler = async (
 
     const coach = await createCoach(createPayload);
 
+    const coachData = transformDocument(coach.toJSON());
+
     res.status(201).json({
       success: true,
       message: "Step 2 saved successfully",
-      data: coach,
+      data: coachData,
     });
   } catch (error) {
     res.status(400).json({
@@ -793,10 +824,12 @@ export const submitCoachVerificationStep3Handler = async (
       documents: normalizedDocs,
     });
 
+    const coachData = transformDocument(coach?.toJSON());
+
     res.status(200).json({
       success: true,
       message: "Verification submitted successfully",
-      data: coach,
+      data: coachData,
     });
   } catch (error) {
     res.status(400).json({

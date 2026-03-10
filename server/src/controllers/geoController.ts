@@ -83,6 +83,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
     return res.status(400).json({
       success: false,
       message: "Query is required",
+      data: [],
     });
   }
 
@@ -104,6 +105,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
       return res.status(500).json({
         success: false,
         message: "Google Maps API key not configured",
+        data: [],
       });
     }
 
@@ -125,6 +127,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         message: googleData?.error_message || "No results found",
+        data: [],
       });
     }
 
@@ -174,6 +177,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch location suggestions",
+      data: [],
     });
   }
 };
@@ -184,6 +188,7 @@ export const geocodeAddress = async (req: Request, res: Response) => {
     return res.status(400).json({
       success: false,
       message: "Address is required",
+      data: null,
     });
   }
 
@@ -206,6 +211,7 @@ export const geocodeAddress = async (req: Request, res: Response) => {
       return res.status(500).json({
         success: false,
         message: "Google Maps API key not configured",
+        data: null,
       });
     }
 
@@ -255,6 +261,7 @@ export const geocodeAddress = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Failed to geocode address",
+      data: null,
     });
   }
 };
@@ -267,6 +274,7 @@ export const reverseGeocode = async (req: Request, res: Response) => {
     return res.status(400).json({
       success: false,
       message: "Latitude and longitude are required",
+      data: null,
     });
   }
 
@@ -289,6 +297,7 @@ export const reverseGeocode = async (req: Request, res: Response) => {
       return res.status(500).json({
         success: false,
         message: "Google Maps API key not configured",
+        data: null,
       });
     }
 
@@ -340,6 +349,7 @@ export const reverseGeocode = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Failed to reverse geocode",
+      data: null,
     });
   }
 };

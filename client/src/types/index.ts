@@ -5,9 +5,10 @@ export interface IPlayerProfile {
   sports?: string[];
 }
 
-export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH";
+export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
+  | "PENDING_INVITES"
   | "CONFIRMED"
   | "IN_PROGRESS"
   | "COMPLETED"
@@ -25,16 +26,17 @@ export interface IPayment {
   paidAt?: string;
 }
 
+// Aligned with backend IVenueListerProfile type
 export interface VenueListerProfile {
-  businessDetails?: {
-    name?: string;
+  businessDetails: {
+    name: string;
     gstNumber?: string;
-    address?: string;
+    address: string;
   };
-  payoutInfo?: {
-    accountNumber?: string;
-    ifsc?: string;
-    bankName?: string;
+  payoutInfo: {
+    accountNumber: string;
+    ifsc: string;
+    bankName: string;
   };
   canAddMoreVenues?: boolean;
 }
@@ -116,7 +118,7 @@ export interface CoachVerificationDocument {
   url: string;
   s3Key?: string;
   fileName: string;
-  uploadedAt?: string;
+  uploadedAt: string;
 }
 
 export interface CoachUserRef {
@@ -220,7 +222,7 @@ export interface Booking {
   venue?: Venue; // Populated venue data
   coachId?: string | Coach; // Can be populated
   coach?: Coach; // Populated coach data
-  sport?: string;
+  sport: string; // Required in backend
   date: string;
   startTime: string;
   endTime: string;
@@ -235,16 +237,16 @@ export interface Booking {
     paidAt?: string;
   }>;
   status: BookingStatus;
-  expiresAt: string;
+  expiresAt?: string; // Optional - only set for PENDING_PAYMENT bookings
   checkInCode?: string;
   participantName?: string;
   participantId?: string;
   participantAge?: number;
-  // Group booking fields
-  bookingType?: BookingType;
-  organizerId?: string;
+  // Group booking fields - all have defaults so always present
+  bookingType: BookingType; // Default: "INDIVIDUAL"
+  organizerId: string; // Required (userId for single bookings)
   participants?: BookingParticipant[];
-  paymentType?: PaymentType;
+  paymentType: PaymentType; // Default: "SINGLE"
   splitMethod?: SplitMethod;
   createdAt: string;
   updatedAt: string;
@@ -312,6 +314,7 @@ export interface ReviewListData {
   summary: ReviewSummary;
 }
 
+// Matches backend BookingService.ts InitiateBookingResponse
 export interface InitiateBookingResponse {
   booking: Booking;
 }
