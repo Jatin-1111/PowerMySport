@@ -65,14 +65,6 @@ const QUICK_SPORT_FILTERS = [
 ];
 
 const SERVICE_MODE_OPTIONS = ["ALL", "OWN_VENUE", "FREELANCE", "HYBRID"];
-const VERIFICATION_OPTIONS = [
-  "ALL",
-  "VERIFIED",
-  "PENDING",
-  "REVIEW",
-  "UNVERIFIED",
-  "REJECTED",
-];
 const MIN_RATING_OPTIONS = ["0", "3", "4", "4.5"];
 const SORT_OPTIONS = ["relevance", "priceAsc", "priceDesc", "ratingDesc"];
 
@@ -131,7 +123,6 @@ export default function CoachesPage() {
   const [sportInput, setSportInput] = useState("");
   const [appliedSportFilter, setAppliedSportFilter] = useState("");
   const [serviceModeFilter, setServiceModeFilter] = useState("ALL");
-  const [verificationFilter, setVerificationFilter] = useState("ALL");
   const [maxRate, setMaxRate] = useState("");
   const [minRating, setMinRating] = useState("0");
   const [sortBy, setSortBy] = useState("relevance");
@@ -154,7 +145,6 @@ export default function CoachesPage() {
     const normalizedSportParam = normalizeSearchTerm(sportParam);
 
     const serviceModeParam = searchParams.get("mode") || "ALL";
-    const verificationParam = searchParams.get("verification") || "ALL";
     const maxRateParam = searchParams.get("maxRate") || "";
     const minRatingParam = searchParams.get("minRating") || "0";
     const sortParam = searchParams.get("sort") || "relevance";
@@ -171,11 +161,6 @@ export default function CoachesPage() {
     setServiceModeFilter(
       SERVICE_MODE_OPTIONS.includes(serviceModeParam)
         ? serviceModeParam
-        : "ALL",
-    );
-    setVerificationFilter(
-      VERIFICATION_OPTIONS.includes(verificationParam)
-        ? verificationParam
         : "ALL",
     );
     setMaxRate(sanitizedMaxRate);
@@ -268,7 +253,7 @@ export default function CoachesPage() {
         };
       case "REJECTED":
         return {
-          label: "Unverified",
+          label: "Rejected",
           className: "bg-red-100 text-red-700 border border-red-200",
         };
       default:
@@ -406,6 +391,15 @@ export default function CoachesPage() {
     return coach.sports.length - 1;
   };
 
+  const getComparableRate = (coach: Coach) => {
+    const rate = Number(getStartingRate(coach));
+    if (!Number.isFinite(rate) || rate <= 0) {
+      return null;
+    }
+
+    return rate;
+  };
+
   const getRelevanceScore = (coach: Coach, normalizedSearchTerm: string) => {
     const ratingScore = clamp01((coach.rating || 0) / 5);
     const reviewScore = clamp01((coach.reviewCount || 0) / 50);
@@ -467,9 +461,6 @@ export default function CoachesPage() {
     const normalizedSearchTerm = normalizeSearchTerm(appliedSportFilter);
 
     let next = baseCoaches.filter((coach) => {
-      const status =
-        coach.verificationStatus ||
-        (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
       const coachName = normalizeSearchTerm(getCoachDisplayName(coach));
       const coachBio = normalizeSearchTerm(coach.bio || "");
       const matchesSearchTerm =
@@ -483,30 +474,53 @@ export default function CoachesPage() {
       const matchesServiceMode =
         serviceModeFilter === "ALL" || coach.serviceMode === serviceModeFilter;
 
-      const matchesVerification =
-        verificationFilter === "ALL" || status === verificationFilter;
-
-      const startingRate = getStartingRate(coach);
+      const startingRate = getComparableRate(coach);
       const matchesRate =
         parsedMaxRate === undefined ||
         Number.isNaN(parsedMaxRate) ||
-        startingRate <= parsedMaxRate;
+        (startingRate !== null && startingRate <= parsedMaxRate);
 
       const matchesRating = (coach.rating || 0) >= parsedMinRating;
 
       return (
-        matchesSearchTerm &&
-        matchesServiceMode &&
-        matchesVerification &&
-        matchesRate &&
-        matchesRating
+        matchesSearchTerm && matchesServiceMode && matchesRate && matchesRating
       );
     });
 
     if (sortBy === "priceAsc") {
-      next = [...next].sort((a, b) => getStartingRate(a) - getStartingRate(b));
+      next = [...next].sort((a, b) => {
+        const rateA = getComparableRate(a);
+        const rateB = getComparableRate(b);
+
+        if (rateA === null && rateB === null) {
+          return 0;
+        }
+        if (rateA === null) {
+          return 1;
+        }
+        if (rateB === null) {
+          return -1;
+        }
+
+        return rateA - rateB;
+      });
     } else if (sortBy === "priceDesc") {
-      next = [...next].sort((a, b) => getStartingRate(b) - getStartingRate(a));
+      next = [...next].sort((a, b) => {
+        const rateA = getComparableRate(a);
+        const rateB = getComparableRate(b);
+
+        if (rateA === null && rateB === null) {
+          return 0;
+        }
+        if (rateA === null) {
+          return 1;
+        }
+        if (rateB === null) {
+          return -1;
+        }
+
+        return rateB - rateA;
+      });
     } else if (sortBy === "ratingDesc") {
       next = [...next].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === "relevance") {
@@ -526,7 +540,6 @@ export default function CoachesPage() {
     coaches,
     appliedSportFilter,
     serviceModeFilter,
-    verificationFilter,
     maxRate,
     minRating,
     sortBy,
@@ -544,9 +557,6 @@ export default function CoachesPage() {
     }
     if (serviceModeFilter !== "ALL") {
       params.set("mode", serviceModeFilter);
-    }
-    if (verificationFilter !== "ALL") {
-      params.set("verification", verificationFilter);
     }
     if (maxRate) {
       params.set("maxRate", maxRate);
@@ -579,7 +589,6 @@ export default function CoachesPage() {
     serviceModeFilter,
     showAdvancedFilters,
     sortBy,
-    verificationFilter,
   ]);
 
   useEffect(() => {
@@ -623,7 +632,6 @@ export default function CoachesPage() {
     setSportInput("");
     setAppliedSportFilter("");
     setServiceModeFilter("ALL");
-    setVerificationFilter("ALL");
     setMaxRate("");
     setMinRating("0");
     setSortBy("relevance");
@@ -635,13 +643,7 @@ export default function CoachesPage() {
   };
 
   const handleRemoveFilter = (
-    key:
-      | "sport"
-      | "serviceMode"
-      | "verification"
-      | "maxRate"
-      | "minRating"
-      | "sortBy",
+    key: "sport" | "serviceMode" | "maxRate" | "minRating" | "sortBy",
   ) => {
     if (key === "sport") {
       handleClearSearch();
@@ -650,11 +652,6 @@ export default function CoachesPage() {
 
     if (key === "serviceMode") {
       setServiceModeFilter("ALL");
-      return;
-    }
-
-    if (key === "verification") {
-      setVerificationFilter("ALL");
       return;
     }
 
@@ -675,13 +672,7 @@ export default function CoachesPage() {
   const hasPendingSearchChange = normalizedSportInput !== appliedSportFilter;
 
   const activeCoachFilters: Array<{
-    key:
-      | "sport"
-      | "serviceMode"
-      | "verification"
-      | "maxRate"
-      | "minRating"
-      | "sortBy";
+    key: "sport" | "serviceMode" | "maxRate" | "minRating" | "sortBy";
     label: string;
   }> = [
     appliedSportFilter
@@ -691,12 +682,6 @@ export default function CoachesPage() {
       ? {
           key: "serviceMode",
           label: `Mode: ${serviceModeFilter.replace("_", " ")}`,
-        }
-      : null,
-    verificationFilter !== "ALL"
-      ? {
-          key: "verification",
-          label: `Verification: ${verificationFilter.replace("_", " ")}`,
         }
       : null,
     maxRate ? { key: "maxRate", label: `Max ₹${maxRate}` } : null,
@@ -718,13 +703,7 @@ export default function CoachesPage() {
     (
       filter,
     ): filter is {
-      key:
-        | "sport"
-        | "serviceMode"
-        | "verification"
-        | "maxRate"
-        | "minRating"
-        | "sortBy";
+      key: "sport" | "serviceMode" | "maxRate" | "minRating" | "sortBy";
       label: string;
     } => Boolean(filter),
   );
@@ -802,8 +781,9 @@ export default function CoachesPage() {
                     value={sportInput}
                     onChange={(e) => setSportInput(e.target.value)}
                     placeholder="Search by sport (e.g. Cricket, Tennis, Basketball)..."
+                    placeholder="Search by sport, coach name, or keyword..."
                     className="w-full rounded-lg border-2 border-slate-200 bg-white py-3 pl-10 pr-10 font-medium text-slate-900 focus:border-turf-green focus:outline-none focus:ring-2 focus:ring-turf-green/50"
-                    aria-label="Search coaches by sport"
+                    aria-label="Search coaches by sport, coach name, or keyword"
                   />
                   {sportInput && (
                     <button
@@ -901,7 +881,7 @@ export default function CoachesPage() {
                 </div>
 
                 {showAdvancedFilters && (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <label className="space-y-1.5">
                       <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
                         Service Mode
@@ -915,24 +895,6 @@ export default function CoachesPage() {
                         <option value="OWN_VENUE">Own Venue</option>
                         <option value="FREELANCE">Freelance</option>
                         <option value="HYBRID">Hybrid</option>
-                      </select>
-                    </label>
-
-                    <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
-                        Verification
-                      </span>
-                      <select
-                        value={verificationFilter}
-                        onChange={(e) => setVerificationFilter(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
-                      >
-                        <option value="ALL">All Verification</option>
-                        <option value="VERIFIED">Verified</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="REVIEW">In Review</option>
-                        <option value="UNVERIFIED">Unverified</option>
-                        <option value="REJECTED">Rejected</option>
                       </select>
                     </label>
 
