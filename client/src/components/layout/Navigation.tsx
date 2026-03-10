@@ -6,7 +6,6 @@ import { cn } from "@/utils/cn";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import { LayoutDashboard, LogOut, Menu, Settings, User, X } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -90,14 +89,18 @@ export const Navigation: React.FC<NavProps> = ({
           {/* Logo */}
           <div className="shrink-0 relative z-50 h-full">
             <Link href="/" className="inline-flex items-center h-full">
-              <Image
+              {/* <Image
                 src="/header_logo_1.png"
                 alt="PowerMySport"
                 width={180}
                 height={40}
                 className="h-36 w-auto"
                 priority
-              />
+              /> */}
+              <span className="text-2xl font-extrabold tracking-tight leading-none">
+                <span className="text-power-orange">Power</span>
+                <span className="text-white">MySport</span>
+              </span>
             </Link>
           </div>
 

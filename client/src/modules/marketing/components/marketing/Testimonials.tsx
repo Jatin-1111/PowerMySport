@@ -70,31 +70,22 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
                 )}
 
                 {/* Quote */}
-                <blockquote className="text-muted-foreground mb-6 text-base leading-relaxed">
+                <blockquote className="text-slate-300 mb-6 text-base leading-relaxed">
                   &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
 
                 {/* Author */}
                 <div className="flex items-center">
-                  {testimonial.avatar && (
-                    <Image
-                      src={testimonial.avatar}
-                      alt={testimonial.author}
-                      width={48}
-                      height={48}
-                      className="h-12 w-12 rounded-full object-cover mr-4"
-                    />
-                  )}
                   {!testimonial.avatar && (
                     <div className="h-12 w-12 rounded-full bg-power-orange text-white flex items-center justify-center mr-4 font-semibold">
                       {testimonial.author.charAt(0)}
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold text-slate-900">
+                    <div className="font-semibold text-slate-100">
                       {testimonial.author}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-slate-300">
                       {testimonial.role}
                     </div>
                   </div>
