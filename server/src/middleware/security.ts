@@ -6,16 +6,38 @@ type RateLimitStoreEntry = {
 };
 
 const ONE_MINUTE_MS = 60 * 1000;
+const MAX_RATE_LIMIT_ENTRIES = parseInt(
+  process.env.API_RATE_LIMIT_MAX_ENTRIES || "50000",
+  10,
+);
 
 const defaultRateLimitStore = new Map<string, RateLimitStoreEntry>();
 
-setInterval(() => {
-  const now = Date.now();
+const pruneRateLimitStore = (now: number) => {
   for (const [key, value] of defaultRateLimitStore.entries()) {
     if (value.resetAt <= now) {
       defaultRateLimitStore.delete(key);
     }
   }
+
+  if (defaultRateLimitStore.size <= MAX_RATE_LIMIT_ENTRIES) {
+    return;
+  }
+
+  // Map iteration order is insertion order; evict oldest entries to stay bounded.
+  const overflowCount = defaultRateLimitStore.size - MAX_RATE_LIMIT_ENTRIES;
+  let deleted = 0;
+  for (const key of defaultRateLimitStore.keys()) {
+    defaultRateLimitStore.delete(key);
+    deleted += 1;
+    if (deleted >= overflowCount) {
+      break;
+    }
+  }
+};
+
+setInterval(() => {
+  pruneRateLimitStore(Date.now());
 }, ONE_MINUTE_MS).unref();
 
 export const securityHeadersMiddleware = (
@@ -68,6 +90,7 @@ export const apiRateLimitMiddleware = (
   const existing = defaultRateLimitStore.get(key);
 
   if (!existing) {
+    pruneRateLimitStore(now);
     defaultRateLimitStore.set(key, {
       count: 1,
       resetAt: now + windowMs,

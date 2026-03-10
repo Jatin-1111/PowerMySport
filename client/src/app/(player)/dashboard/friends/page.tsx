@@ -422,8 +422,8 @@ export default function FriendsPage() {
           <TabsContent value="search" className="space-y-4">
             <Card className="bg-white">
               <CardHeader>
-                <CardTitle>Find Friends</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-slate-700">Find Friends</CardTitle>
+                <CardDescription className="text-slate-600">
                   Search for players by name or email to add as friends
                 </CardDescription>
               </CardHeader>

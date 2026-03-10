@@ -54,39 +54,44 @@ export default function DashboardPage() {
     try {
       setLoading(true);
 
-      // Load upcoming bookings
-      const bookingsData = await bookingApi.getMyBookings({
-        page: 1,
-        limit: 3,
-      });
-      const bookings = Array.isArray(bookingsData)
-        ? bookingsData
-        : (bookingsData as { bookings?: Booking[] }).bookings || [];
-      const upcoming = bookings
-        .filter((b: Booking) => new Date(b.date) >= new Date())
-        .slice(0, 3)
-        .map((b: Booking) => ({
-          id: (b as { _id?: string })._id || "",
-          venueName: (b.venueId as { name?: string })?.name,
-          coachName: (b.coachId as { name?: string })?.name,
-          sport: b.sport,
-          date: b.date,
-          startTime: b.startTime,
-          endTime: b.endTime,
-          status: b.status,
-        }));
-      setUpcomingBookings(upcoming);
+      const [bookingsResult, friendCountResult, invitationCountResult] =
+        await Promise.allSettled([
+          bookingApi.getMyBookings({ page: 1, limit: 3 }),
+          friendService.getPendingRequestsCount(),
+          bookingApi.getPendingInvitationsCount(),
+        ]);
 
-      // Load pending friend requests
-      const friendRequests = await friendService.getPendingRequests("RECEIVED");
-      setPendingFriendRequests(friendRequests.length);
+      if (bookingsResult.status === "fulfilled") {
+        const payload = bookingsResult.value;
+        const bookings = Array.isArray(payload.data)
+          ? payload.data
+          : ((payload.data as { bookings?: Booking[] } | undefined)?.bookings ??
+            []);
 
-      // Load pending invitations
-      const invitations = await bookingApi.getMyInvitations();
-      const pending = invitations.filter(
-        (inv: { status: string }) => inv.status === "PENDING",
-      );
-      setPendingInvitations(pending.length);
+        const upcoming = bookings
+          .filter((b: Booking) => new Date(b.date) >= new Date())
+          .slice(0, 3)
+          .map((b: Booking) => ({
+            id: b.id || (b as { _id?: string })._id || "",
+            venueName: (b.venueId as { name?: string })?.name,
+            coachName: (b.coachId as { name?: string })?.name,
+            sport: b.sport,
+            date: b.date,
+            startTime: b.startTime,
+            endTime: b.endTime,
+            status: b.status,
+          }));
+
+        setUpcomingBookings(upcoming);
+      }
+
+      if (friendCountResult.status === "fulfilled") {
+        setPendingFriendRequests(friendCountResult.value.count || 0);
+      }
+
+      if (invitationCountResult.status === "fulfilled") {
+        setPendingInvitations(invitationCountResult.value.count || 0);
+      }
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
     } finally {

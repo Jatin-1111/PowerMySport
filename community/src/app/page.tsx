@@ -27,7 +27,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const privacyOptions: Array<{ value: MessagePrivacy; label: string }> = [
   { value: "EVERYONE", label: "Everyone" },
@@ -46,6 +46,198 @@ const COMMUNITY_WORKSPACE_VIEW_KEY = "community:workspaceView";
 const COMMUNITY_DIRECTORY_VIEW_KEY = "community:directoryView";
 const COMMUNITY_SELECTED_CONVERSATION_KEY = "community:selectedConversationId";
 const CONVERSATION_PAGE_SIZE = 25;
+const DISCONNECTED_POLL_BASE_MS = 2500;
+const DISCONNECTED_POLL_MAX_MS = 30000;
+
+const messageTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const getRelativeTime = (value?: string | null) => {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.max(1, Math.floor(diffMs / 60000));
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m`;
+  }
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h`;
+  }
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d`;
+};
+
+const getMessageTimestamp = (value?: string | null) => {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return messageTimeFormatter.format(date);
+};
+
+type ConversationListItemProps = {
+  conversation: ConversationItem;
+  isSelected: boolean;
+  onOpenConversation: (conversationId: string) => void;
+};
+
+const ConversationListItem = memo(function ConversationListItem({
+  conversation,
+  isSelected,
+  onOpenConversation,
+}: ConversationListItemProps) {
+  const conversationName =
+    conversation.conversationType === "GROUP"
+      ? conversation.group?.name || conversation.otherParticipant.displayName
+      : conversation.otherParticipant.displayName;
+
+  return (
+    <button
+      onClick={() => onOpenConversation(conversation.id)}
+      className={`w-full rounded-lg border p-3 text-left transition-all ${
+        isSelected
+          ? "border-power-orange/60 bg-power-orange/5 shadow-xs"
+          : "border-border bg-background hover:bg-slate-50"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-2">
+          <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-slate-100 text-[11px] font-semibold uppercase text-slate-600">
+            {conversationName.slice(0, 2).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-900">
+              <span className="truncate">{conversationName}</span>
+              <span className="text-[10px] uppercase text-slate-500">
+                {conversation.conversationType === "GROUP" ? "Group" : "DM"}
+              </span>
+              {conversation.status === "PENDING" && (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
+                  Request
+                </span>
+              )}
+            </div>
+            <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+              {conversation.status === "PENDING"
+                ? "Message request"
+                : conversation.latestMessage?.content || "No messages yet"}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          {conversation.latestMessage?.createdAt && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-400">
+              <Clock3 size={11} />
+              {getRelativeTime(conversation.latestMessage.createdAt)}
+            </span>
+          )}
+          {conversation.unreadCount > 0 && (
+            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-power-orange px-2 py-0.5 text-xs font-semibold text-white">
+              {conversation.unreadCount}
+            </span>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+type MessageBubbleProps = {
+  message: ConversationMessage;
+  isOwnMessage: boolean;
+  isGroupConversation: boolean;
+  profileUserId?: string;
+  onRetry: (message: ConversationMessage) => void;
+};
+
+const MessageBubble = memo(function MessageBubble({
+  message,
+  isOwnMessage,
+  isGroupConversation,
+  profileUserId,
+  onRetry,
+}: MessageBubbleProps) {
+  const participantIds = Array.isArray(message.participantIds)
+    ? message.participantIds
+    : [];
+
+  let otherParticipantId: string | undefined;
+  for (const participantId of participantIds) {
+    if (participantId !== profileUserId) {
+      otherParticipantId = participantId;
+      break;
+    }
+  }
+
+  const hasBeenSeenByOther = Boolean(
+    isOwnMessage &&
+    otherParticipantId &&
+    message.readBy?.includes(otherParticipantId),
+  );
+  const messageStateLabel = isOwnMessage
+    ? message.messageStatus === "FAILED"
+      ? "Not sent"
+      : message.messageStatus === "SENDING"
+        ? "Sending"
+        : hasBeenSeenByOther
+          ? "Seen"
+          : "Sent"
+    : null;
+
+  return (
+    <div className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-xs ${
+          isOwnMessage
+            ? "bg-power-orange text-white"
+            : "border border-border bg-white text-slate-800"
+        }`}
+      >
+        {isGroupConversation && (
+          <div
+            className={`text-[11px] ${
+              isOwnMessage ? "text-orange-100" : "text-slate-500"
+            }`}
+          >
+            {message.senderDisplayName}
+          </div>
+        )}
+        <div className="mt-0.5 wrap-break-word">{message.content}</div>
+        <div
+          className={`mt-1 flex items-center justify-end gap-2 text-[10px] ${
+            isOwnMessage ? "text-orange-100" : "text-slate-500"
+          }`}
+        >
+          <span>{getMessageTimestamp(message.createdAt)}</span>
+          {messageStateLabel && <span>{messageStateLabel}</span>}
+          {isOwnMessage && message.messageStatus === "FAILED" && (
+            <button
+              onClick={() => onRetry(message)}
+              className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
 const isValidSidebarTab = (
   value: string | null,
@@ -87,11 +279,11 @@ export default function CommunityPage() {
   });
   const [directoryView, setDirectoryView] = useState<"CONTACTS" | "GROUPS">(
     () => {
-    if (typeof window === "undefined") {
-      return "CONTACTS";
-    }
+      if (typeof window === "undefined") {
+        return "CONTACTS";
+      }
 
-    const stored = window.localStorage.getItem(COMMUNITY_DIRECTORY_VIEW_KEY);
+      const stored = window.localStorage.getItem(COMMUNITY_DIRECTORY_VIEW_KEY);
       if (!isValidDirectoryView(stored)) {
         return "CONTACTS";
       }
@@ -158,6 +350,7 @@ export default function CommunityPage() {
   const selectedConversationIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disconnectedPollDelayRef = useRef(DISCONNECTED_POLL_BASE_MS);
   const isRefreshingConversationsRef = useRef(false);
   const shouldRefreshConversationsRef = useRef(false);
   const safeConversations = useMemo(
@@ -233,7 +426,8 @@ export default function CommunityPage() {
   };
 
   const totalUnread = useMemo(
-    () => safeConversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
+    () =>
+      safeConversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
     [safeConversations],
   );
   const pendingRequestsCount = useMemo(
@@ -338,8 +532,7 @@ export default function CommunityPage() {
     });
   }, [visibleConversations, conversationMode]);
   const hasConversationFilters =
-    conversationMode !== "ALL" ||
-    !!conversationFilterQuery.trim();
+    conversationMode !== "ALL" || !!conversationFilterQuery.trim();
   const isGroupsDirectory = directoryView === "GROUPS";
   const conversationModeOptions: Array<{
     value: "ALL" | "UNREAD" | "REQUESTS";
@@ -468,45 +661,6 @@ export default function CommunityPage() {
       })
       .slice(0, 6);
   }, [safeGroupResults]);
-
-  const getRelativeTime = (value?: string | null) => {
-    if (!value) {
-      return "";
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return "";
-    }
-
-    const diffMs = Date.now() - date.getTime();
-    const diffMinutes = Math.max(1, Math.floor(diffMs / 60000));
-    if (diffMinutes < 60) {
-      return `${diffMinutes}m`;
-    }
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) {
-      return `${diffHours}h`;
-    }
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d`;
-  };
-
-  const getMessageTimestamp = (value?: string | null) => {
-    if (!value) {
-      return "";
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return "";
-    }
-
-    return new Intl.DateTimeFormat(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  };
 
   const scrollToSection = (sectionId: string) => {
     if (
@@ -860,33 +1014,57 @@ export default function CommunityPage() {
 
   useEffect(() => {
     if (isSocketConnected || !selectedConversationId) {
+      disconnectedPollDelayRef.current = DISCONNECTED_POLL_BASE_MS;
       return;
     }
 
-    const interval = setInterval(async () => {
-      try {
-        const [messageResponse, conversationResponse] = await Promise.all([
-          communityService.getMessages(selectedConversationId),
-          communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
-        ]);
-        setMessages(
-          Array.isArray(messageResponse.messages)
-            ? messageResponse.messages
-            : [],
-        );
-        applyConversationPage(conversationResponse, { preserveSelection: true });
-      } catch {
-        // no-op: keep retrying while disconnected
-      }
-    }, 2500);
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    let isStopped = false;
 
-    return () => clearInterval(interval);
-  }, [
-    applyConversationPage,
-    isSocketConnected,
-    refreshConversationsNow,
-    selectedConversationId,
-  ]);
+    const scheduleNext = (delayMs: number) => {
+      if (isStopped) {
+        return;
+      }
+
+      timeoutHandle = setTimeout(async () => {
+        try {
+          const [messageResponse, conversationResponse] = await Promise.all([
+            communityService.getMessages(selectedConversationId),
+            communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
+          ]);
+          setMessages(
+            Array.isArray(messageResponse.messages)
+              ? messageResponse.messages
+              : [],
+          );
+          applyConversationPage(conversationResponse, {
+            preserveSelection: true,
+          });
+
+          // Successful fallback sync can return to baseline polling cadence.
+          disconnectedPollDelayRef.current = DISCONNECTED_POLL_BASE_MS;
+        } catch {
+          // Back off progressively while disconnected to avoid hammering the API.
+          disconnectedPollDelayRef.current = Math.min(
+            DISCONNECTED_POLL_MAX_MS,
+            Math.ceil(disconnectedPollDelayRef.current * 1.8),
+          );
+        } finally {
+          const jitter = Math.floor(Math.random() * 500);
+          scheduleNext(disconnectedPollDelayRef.current + jitter);
+        }
+      }, delayMs);
+    };
+
+    scheduleNext(disconnectedPollDelayRef.current);
+
+    return () => {
+      isStopped = true;
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    };
+  }, [applyConversationPage, isSocketConnected, selectedConversationId]);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -973,6 +1151,29 @@ export default function CommunityPage() {
     }
   };
 
+  const refreshGroupDirectoryState = useCallback(
+    async (options?: { refreshConversations?: boolean }) => {
+      const shouldRefreshConversations = options?.refreshConversations ?? true;
+      const groupQuery = groupSearchQuery.trim();
+
+      if (shouldRefreshConversations) {
+        const [updatedConversations, updatedGroups] = await Promise.all([
+          communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
+          communityService.listGroups(groupQuery),
+        ]);
+        applyConversationPage(updatedConversations, {
+          preserveSelection: true,
+        });
+        setGroupResults(updatedGroups);
+        return;
+      }
+
+      const updatedGroups = await communityService.listGroups(groupQuery);
+      setGroupResults(updatedGroups);
+    },
+    [applyConversationPage, groupSearchQuery],
+  );
+
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
       return;
@@ -983,12 +1184,7 @@ export default function CommunityPage() {
         name: newGroupName.trim(),
       });
       setNewGroupName("");
-      const [updatedConversations, updatedGroups] = await Promise.all([
-        communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
-        communityService.listGroups(groupSearchQuery.trim()),
-      ]);
-      applyConversationPage(updatedConversations, { preserveSelection: true });
-      setGroupResults(updatedGroups);
+      await refreshGroupDirectoryState();
       setDirectoryToolsView("NONE");
       setSelectedConversationId(created.conversationId);
       setIsCreateGroupOpen(false);
@@ -1005,12 +1201,7 @@ export default function CommunityPage() {
   const handleJoinGroup = async (groupId: string) => {
     try {
       const joined = await communityService.joinGroup(groupId);
-      const [updatedConversations, updatedGroups] = await Promise.all([
-        communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
-        communityService.listGroups(groupSearchQuery.trim()),
-      ]);
-      applyConversationPage(updatedConversations, { preserveSelection: true });
-      setGroupResults(updatedGroups);
+      await refreshGroupDirectoryState();
       if (joined.conversationId) {
         setDirectoryToolsView("NONE");
         setSelectedConversationId(joined.conversationId);
@@ -1025,17 +1216,18 @@ export default function CommunityPage() {
     }
   };
 
-  const handleAddMemberToGroup = async (groupId: string, targetUserId: string) => {
+  const handleAddMemberToGroup = async (
+    groupId: string,
+    targetUserId: string,
+  ) => {
     try {
       setIsAddingMemberUserId(targetUserId);
-      const response = await communityService.addGroupMember(groupId, targetUserId);
+      const response = await communityService.addGroupMember(
+        groupId,
+        targetUserId,
+      );
 
-      const [updatedConversations, updatedGroups] = await Promise.all([
-        communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
-        communityService.listGroups(groupSearchQuery.trim()),
-      ]);
-      applyConversationPage(updatedConversations, { preserveSelection: true });
-      setGroupResults(updatedGroups);
+      await refreshGroupDirectoryState({ refreshConversations: false });
       setInviteSearchQuery("");
       setInviteSearchResults([]);
 
@@ -1045,8 +1237,7 @@ export default function CommunityPage() {
           : "Member added to group",
       );
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to add member";
+      const message = e instanceof Error ? e.message : "Failed to add member";
       setError(message);
       toast.error(message);
     } finally {
@@ -1064,10 +1255,7 @@ export default function CommunityPage() {
         memberAddPolicy,
       });
 
-      const updatedGroups = await communityService.listGroups(
-        groupSearchQuery.trim(),
-      );
-      setGroupResults(updatedGroups);
+      await refreshGroupDirectoryState({ refreshConversations: false });
       toast.success("Group settings updated");
     } catch (e) {
       const message =
@@ -1143,7 +1331,9 @@ export default function CommunityPage() {
         CONVERSATION_PAGE_SIZE,
       );
       applyConversationPage(updated, { preserveSelection: true });
-      setSelectedConversationId(updated.items.length ? updated.items[0].id : null);
+      setSelectedConversationId(
+        updated.items.length ? updated.items[0].id : null,
+      );
       toast.success("Message request rejected");
     } catch (e) {
       const message =
@@ -1153,12 +1343,12 @@ export default function CommunityPage() {
     }
   };
 
-  const handleOpenConversation = (conversationId: string) => {
+  const handleOpenConversation = useCallback((conversationId: string) => {
     setDirectoryToolsView("NONE");
     setSelectedConversationId(conversationId);
     setActiveSidebarTab("conversations");
     setWorkspaceView("CHAT");
-  };
+  }, []);
 
   const handleLoadMoreConversations = async () => {
     if (isLoadingMoreConversations || !hasMoreConversations) {
@@ -1185,101 +1375,109 @@ export default function CommunityPage() {
     }
   };
 
-  const sendMessageWithTransport = async (
-    conversationId: string,
-    content: string,
-  ): Promise<ConversationMessage> => {
-    const socket = getCommunitySocket();
+  const sendMessageWithTransport = useCallback(
+    async (
+      conversationId: string,
+      content: string,
+    ): Promise<ConversationMessage> => {
+      const socket = getCommunitySocket();
 
-    if (socket.connected) {
-      const payload = {
-        conversationId,
-        content,
-      };
+      if (socket.connected) {
+        const payload = {
+          conversationId,
+          content,
+        };
 
-      const ack = await new Promise<
-        | { success: true; data: ConversationMessage }
-        | { success: false; message?: string }
-      >((resolve) => {
-        const timeoutId = setTimeout(() => {
-          resolve({ success: false, message: "Message send timed out" });
-        }, 8000);
+        const ack = await new Promise<
+          | { success: true; data: ConversationMessage }
+          | { success: false; message?: string }
+        >((resolve) => {
+          const timeoutId = setTimeout(() => {
+            resolve({ success: false, message: "Message send timed out" });
+          }, 8000);
 
-        socket.emit("community:sendMessage", payload, (result: unknown) => {
-          clearTimeout(timeoutId);
-          resolve(
-            (result as
-              | { success: true; data: ConversationMessage }
-              | { success: false; message?: string }) || {
-              success: false,
-              message: "Invalid server response",
-            },
-          );
+          socket.emit("community:sendMessage", payload, (result: unknown) => {
+            clearTimeout(timeoutId);
+            resolve(
+              (result as
+                | { success: true; data: ConversationMessage }
+                | { success: false; message?: string }) || {
+                success: false,
+                message: "Invalid server response",
+              },
+            );
+          });
         });
-      });
 
-      if (!ack.success) {
-        throw new Error(ack.message || "Failed to send message");
+        if (!ack.success) {
+          throw new Error(ack.message || "Failed to send message");
+        }
+
+        return {
+          ...ack.data,
+          messageStatus: "SENT",
+        };
       }
 
+      const fallbackMessage = await communityService.sendMessage(
+        conversationId,
+        content,
+      );
+
       return {
-        ...ack.data,
+        ...fallbackMessage,
         messageStatus: "SENT",
       };
-    }
+    },
+    [],
+  );
 
-    const fallbackMessage = await communityService.sendMessage(
-      conversationId,
-      content,
-    );
-
-    return {
-      ...fallbackMessage,
-      messageStatus: "SENT",
-    };
-  };
-
-  const retryFailedMessage = async (message: ConversationMessage) => {
-    if (!message.content?.trim()) {
-      return;
-    }
-
-    updateMessageById(message.id, (current) => ({
-      ...current,
-      messageStatus: "SENDING",
-    }));
-
-    setIsSending(true);
-    setError(null);
-    try {
-      const confirmedMessage = await sendMessageWithTransport(
-        message.conversationId,
-        message.content,
-      );
+  const retryFailedMessage = useCallback(
+    async (message: ConversationMessage) => {
+      if (!message.content?.trim()) {
+        return;
+      }
 
       updateMessageById(message.id, (current) => ({
         ...current,
-        ...confirmedMessage,
+        messageStatus: "SENDING",
       }));
 
-      const updatedConversations = await communityService.listConversations(
-        1,
-        CONVERSATION_PAGE_SIZE,
-      );
-      applyConversationPage(updatedConversations, { preserveSelection: true });
-    } catch (e) {
-      updateMessageById(message.id, (current) => ({
-        ...current,
-        messageStatus: "FAILED",
-      }));
-      const errorMessage =
-        e instanceof Error ? e.message : "Failed to resend message";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsSending(false);
-    }
-  };
+      setIsSending(true);
+      setError(null);
+      try {
+        const confirmedMessage = await sendMessageWithTransport(
+          message.conversationId,
+          message.content,
+        );
+
+        updateMessageById(message.id, (current) => ({
+          ...current,
+          ...confirmedMessage,
+        }));
+
+        const updatedConversations = await communityService.listConversations(
+          1,
+          CONVERSATION_PAGE_SIZE,
+        );
+        applyConversationPage(updatedConversations, {
+          preserveSelection: true,
+        });
+      } catch (e) {
+        updateMessageById(message.id, (current) => ({
+          ...current,
+          messageStatus: "FAILED",
+        }));
+        const errorMessage =
+          e instanceof Error ? e.message : "Failed to resend message";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [applyConversationPage, sendMessageWithTransport],
+  );
 
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim()) {
@@ -1741,7 +1939,7 @@ export default function CommunityPage() {
                     </span>
                     {!!conversationFilterQuery.trim() && (
                       <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                        “{conversationFilterQuery.trim()}”
+                        "{conversationFilterQuery.trim()}"
                       </span>
                     )}
                   </div>
@@ -1858,70 +2056,12 @@ export default function CommunityPage() {
 
                   <div className="mt-4 max-h-90 space-y-2 overflow-y-auto pr-1">
                     {managedConversations.map((conversation) => (
-                      <button
+                      <ConversationListItem
                         key={conversation.id}
-                        onClick={() => handleOpenConversation(conversation.id)}
-                        className={`w-full rounded-lg border p-3 text-left transition-all ${
-                          conversation.id === selectedConversationId
-                            ? "border-power-orange/60 bg-power-orange/5 shadow-xs"
-                            : "border-border bg-background hover:bg-slate-50"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex min-w-0 items-start gap-2">
-                            <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-slate-100 text-[11px] font-semibold uppercase text-slate-600">
-                              {(conversation.conversationType === "GROUP"
-                                ? conversation.group?.name ||
-                                  conversation.otherParticipant.displayName
-                                : conversation.otherParticipant.displayName
-                              )
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-900">
-                                <span className="truncate">
-                                  {conversation.conversationType === "GROUP"
-                                    ? conversation.group?.name ||
-                                      conversation.otherParticipant.displayName
-                                    : conversation.otherParticipant.displayName}
-                                </span>
-                                <span className="text-[10px] uppercase text-slate-500">
-                                  {conversation.conversationType === "GROUP"
-                                    ? "Group"
-                                    : "DM"}
-                                </span>
-                                {conversation.status === "PENDING" && (
-                                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
-                                    Request
-                                  </span>
-                                )}
-                              </div>
-                              <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">
-                                {conversation.status === "PENDING"
-                                  ? "Message request"
-                                  : conversation.latestMessage?.content ||
-                                    "No messages yet"}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            {conversation.latestMessage?.createdAt && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                                <Clock3 size={11} />
-                                {getRelativeTime(
-                                  conversation.latestMessage.createdAt,
-                                )}
-                              </span>
-                            )}
-                            {conversation.unreadCount > 0 && (
-                              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-power-orange px-2 py-0.5 text-xs font-semibold text-white">
-                                {conversation.unreadCount}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
+                        conversation={conversation}
+                        isSelected={conversation.id === selectedConversationId}
+                        onOpenConversation={handleOpenConversation}
+                      />
                     ))}
                     {!managedConversations.length && (
                       <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
@@ -1982,355 +2122,358 @@ export default function CommunityPage() {
                       />
 
                       <div className="fixed inset-x-3 bottom-3 top-20 z-40 overflow-y-auto rounded-2xl border border-border bg-slate-50 p-3 shadow-lg xl:static xl:inset-auto xl:mt-3 xl:rounded-xl xl:shadow-none">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold tracking-tight text-slate-800">
-                          {directoryToolsView === "GROUPS"
-                            ? "Group tools"
-                            : "New direct chat"}
-                        </p>
-                        <button
-                          onClick={() => setDirectoryToolsView("NONE")}
-                          className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 transition hover:bg-slate-100"
-                          aria-label="Close tools"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold tracking-tight text-slate-800">
+                            {directoryToolsView === "GROUPS"
+                              ? "Group tools"
+                              : "New direct chat"}
+                          </p>
+                          <button
+                            onClick={() => setDirectoryToolsView("NONE")}
+                            className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 transition hover:bg-slate-100"
+                            aria-label="Close tools"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
 
-                      {directoryToolsView === "CONTACTS" ? (
-                        <>
-                          <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
-                            <Search size={14} className="text-slate-400" />
-                            <input
-                              value={playerSearchQuery}
-                              onChange={(event) =>
-                                setPlayerSearchQuery(event.target.value)
-                              }
-                              placeholder="Search by name or alias"
-                              className="w-full bg-transparent py-2 text-sm outline-none"
-                            />
-                          </div>
-                          {playerSearchQuery.trim().length >= 2 && (
-                            <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-2">
-                              {isSearchingPlayers ? (
-                                <p className="text-sm text-slate-500">
-                                  Searching...
-                                </p>
-                              ) : playerSearchResults.length ? (
-                                playerSearchResults.map((player) => (
-                                  <button
-                                    key={player.id}
-                                    onClick={() =>
-                                      void handleStartConversation(player.id)
-                                    }
-                                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
-                                  >
-                                    <span>{player.displayName}</span>
-                                    <span className="text-xs text-slate-500">
-                                      {player.isIdentityPublic
-                                        ? "Public"
-                                        : "Anonymous"}
-                                    </span>
-                                  </button>
-                                ))
-                              ) : (
-                                <p className="text-sm text-slate-500">
-                                  No players found
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <div className="grid grow grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
-                              {[
-                                { value: "ALL", label: "All" },
-                                { value: "JOINED", label: "Joined" },
-                                { value: "DISCOVER", label: "Discover" },
-                              ].map((item) => (
-                                <button
-                                  key={item.value}
-                                  onClick={() =>
-                                    setGroupMode(
-                                      item.value as
-                                        | "ALL"
-                                        | "JOINED"
-                                        | "DISCOVER",
-                                    )
-                                  }
-                                  className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
-                                    groupMode === item.value
-                                      ? "bg-slate-900 text-white"
-                                      : "text-slate-500 hover:bg-slate-100"
-                                  }`}
-                                >
-                                  {item.label}
-                                </button>
-                              ))}
-                            </div>
-                            <button
-                              onClick={() =>
-                                setIsCreateGroupOpen((current) => !current)
-                              }
-                              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
-                            >
-                              {isCreateGroupOpen ? "Close" : "New group"}
-                            </button>
-                          </div>
-
-                          {isCreateGroupOpen && (
-                            <div className="mt-2 flex gap-2">
+                        {directoryToolsView === "CONTACTS" ? (
+                          <>
+                            <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
+                              <Search size={14} className="text-slate-400" />
                               <input
-                                value={newGroupName}
+                                value={playerSearchQuery}
                                 onChange={(event) =>
-                                  setNewGroupName(event.target.value)
+                                  setPlayerSearchQuery(event.target.value)
                                 }
-                                placeholder="Create group name"
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                                placeholder="Search by name or alias"
+                                className="w-full bg-transparent py-2 text-sm outline-none"
                               />
+                            </div>
+                            {playerSearchQuery.trim().length >= 2 && (
+                              <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-2">
+                                {isSearchingPlayers ? (
+                                  <p className="text-sm text-slate-500">
+                                    Searching...
+                                  </p>
+                                ) : playerSearchResults.length ? (
+                                  playerSearchResults.map((player) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() =>
+                                        void handleStartConversation(player.id)
+                                      }
+                                      className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
+                                    >
+                                      <span>{player.displayName}</span>
+                                      <span className="text-xs text-slate-500">
+                                        {player.isIdentityPublic
+                                          ? "Public"
+                                          : "Anonymous"}
+                                      </span>
+                                    </button>
+                                  ))
+                                ) : (
+                                  <p className="text-sm text-slate-500">
+                                    No players found
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <div className="grid grow grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
+                                {[
+                                  { value: "ALL", label: "All" },
+                                  { value: "JOINED", label: "Joined" },
+                                  { value: "DISCOVER", label: "Discover" },
+                                ].map((item) => (
+                                  <button
+                                    key={item.value}
+                                    onClick={() =>
+                                      setGroupMode(
+                                        item.value as
+                                          | "ALL"
+                                          | "JOINED"
+                                          | "DISCOVER",
+                                      )
+                                    }
+                                    className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                                      groupMode === item.value
+                                        ? "bg-slate-900 text-white"
+                                        : "text-slate-500 hover:bg-slate-100"
+                                    }`}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
                               <button
-                                onClick={() => void handleCreateGroup()}
-                                className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                                onClick={() =>
+                                  setIsCreateGroupOpen((current) => !current)
+                                }
+                                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
                               >
-                                Create
+                                {isCreateGroupOpen ? "Close" : "New group"}
                               </button>
                             </div>
-                          )}
 
-                          <input
-                            value={groupSearchQuery}
-                            onChange={(event) =>
-                              setGroupSearchQuery(event.target.value)
-                            }
-                            placeholder="Search groups by name, sport, city"
-                            className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                          />
+                            {isCreateGroupOpen && (
+                              <div className="mt-2 flex gap-2">
+                                <input
+                                  value={newGroupName}
+                                  onChange={(event) =>
+                                    setNewGroupName(event.target.value)
+                                  }
+                                  placeholder="Create group name"
+                                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                                />
+                                <button
+                                  onClick={() => void handleCreateGroup()}
+                                  className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                                >
+                                  Create
+                                </button>
+                              </div>
+                            )}
 
-                          <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
-                            {isSearchingGroups ? (
-                              <p className="text-sm text-slate-500">
-                                Loading groups...
-                              </p>
-                            ) : visibleGroups.length ? (
-                              visibleGroups.map((group) => {
-                                const memberAddPolicy =
-                                  group.memberAddPolicy || "ADMIN_ONLY";
-                                const canCurrentUserAddMembers =
-                                  memberAddPolicy === "ANY_MEMBER" ||
-                                  !!group.isAdmin;
-                                const groupConversation =
-                                  getGroupConversationByGroupId(group.id);
+                            <input
+                              value={groupSearchQuery}
+                              onChange={(event) =>
+                                setGroupSearchQuery(event.target.value)
+                              }
+                              placeholder="Search groups by name, sport, city"
+                              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                            />
 
-                                return (
-                                  <div
-                                    key={group.id}
-                                    className="space-y-2 rounded-lg border border-border bg-white px-2 py-2"
-                                  >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <div>
-                                        <p className="text-sm font-medium">
-                                          {group.name}
-                                        </p>
-                                        <p className="text-xs text-slate-500">
-                                          {group.memberCount} members
-                                        </p>
-                                      </div>
-                                      {group.isMember ? (
-                                        <button
-                                          onClick={() => {
-                                            if (groupConversation) {
-                                              handleOpenConversation(
-                                                groupConversation.id,
-                                              );
-                                              return;
-                                            }
+                            <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
+                              {isSearchingGroups ? (
+                                <p className="text-sm text-slate-500">
+                                  Loading groups...
+                                </p>
+                              ) : visibleGroups.length ? (
+                                visibleGroups.map((group) => {
+                                  const memberAddPolicy =
+                                    group.memberAddPolicy || "ADMIN_ONLY";
+                                  const canCurrentUserAddMembers =
+                                    memberAddPolicy === "ANY_MEMBER" ||
+                                    !!group.isAdmin;
+                                  const groupConversation =
+                                    getGroupConversationByGroupId(group.id);
 
-                                            setDirectoryView("GROUPS");
-                                            setGroupSearchQuery(group.name);
-                                          }}
-                                          className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
-                                        >
-                                          {groupConversation
-                                            ? "Open"
-                                            : "View"}
-                                        </button>
-                                      ) : (
-                                        <button
-                                          onClick={() =>
-                                            void handleJoinGroup(group.id)
-                                          }
-                                          className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
-                                        >
-                                          Join
-                                        </button>
-                                      )}
-                                    </div>
-
-                                    {group.isMember && (
-                                      <div className="space-y-2 border-t border-border pt-2">
-                                        <div className="rounded-md border border-border bg-slate-50 p-2">
-                                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                            Group settings
+                                  return (
+                                    <div
+                                      key={group.id}
+                                      className="space-y-2 rounded-lg border border-border bg-white px-2 py-2"
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div>
+                                          <p className="text-sm font-medium">
+                                            {group.name}
                                           </p>
-                                          <div className="mt-1 flex items-center justify-between gap-2">
-                                            <span className="text-xs text-slate-600">
-                                              Who can add members
-                                            </span>
-                                            {group.isAdmin ? (
-                                              <select
-                                                value={memberAddPolicy}
-                                                onChange={(event) =>
-                                                  void handleUpdateGroupMemberAddPolicy(
-                                                    group.id,
-                                                    event.target
-                                                      .value as
-                                                      | "ADMIN_ONLY"
-                                                      | "ANY_MEMBER",
-                                                  )
-                                                }
-                                                disabled={
-                                                  isUpdatingGroupPolicyId ===
-                                                  group.id
-                                                }
-                                                className="rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-power-orange focus:outline-none disabled:opacity-50"
+                                          <p className="text-xs text-slate-500">
+                                            {group.memberCount} members
+                                          </p>
+                                        </div>
+                                        {group.isMember ? (
+                                          <button
+                                            onClick={() => {
+                                              if (groupConversation) {
+                                                handleOpenConversation(
+                                                  groupConversation.id,
+                                                );
+                                                return;
+                                              }
+
+                                              setDirectoryView("GROUPS");
+                                              setGroupSearchQuery(group.name);
+                                            }}
+                                            className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
+                                          >
+                                            {groupConversation
+                                              ? "Open"
+                                              : "View"}
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={() =>
+                                              void handleJoinGroup(group.id)
+                                            }
+                                            className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
+                                          >
+                                            Join
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {group.isMember && (
+                                        <div className="space-y-2 border-t border-border pt-2">
+                                          <div className="rounded-md border border-border bg-slate-50 p-2">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                              Group settings
+                                            </p>
+                                            <div className="mt-1 flex items-center justify-between gap-2">
+                                              <span className="text-xs text-slate-600">
+                                                Who can add members
+                                              </span>
+                                              {group.isAdmin ? (
+                                                <select
+                                                  value={memberAddPolicy}
+                                                  onChange={(event) =>
+                                                    void handleUpdateGroupMemberAddPolicy(
+                                                      group.id,
+                                                      event.target.value as
+                                                        | "ADMIN_ONLY"
+                                                        | "ANY_MEMBER",
+                                                    )
+                                                  }
+                                                  disabled={
+                                                    isUpdatingGroupPolicyId ===
+                                                    group.id
+                                                  }
+                                                  className="rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-power-orange focus:outline-none disabled:opacity-50"
+                                                >
+                                                  <option value="ADMIN_ONLY">
+                                                    Admins only
+                                                  </option>
+                                                  <option value="ANY_MEMBER">
+                                                    Any member
+                                                  </option>
+                                                </select>
+                                              ) : (
+                                                <span className="text-xs font-medium text-slate-600">
+                                                  {memberAddPolicy ===
+                                                  "ANY_MEMBER"
+                                                    ? "Any member"
+                                                    : "Admins only"}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center justify-between">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                              Add member
+                                            </p>
+                                            {canCurrentUserAddMembers ? (
+                                              <button
+                                                onClick={() => {
+                                                  if (
+                                                    inviteGroupId === group.id
+                                                  ) {
+                                                    setInviteGroupId(null);
+                                                    setInviteSearchQuery("");
+                                                    setInviteSearchResults([]);
+                                                    return;
+                                                  }
+
+                                                  setInviteGroupId(group.id);
+                                                  setInviteSearchQuery("");
+                                                  setInviteSearchResults([]);
+                                                }}
+                                                className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
                                               >
-                                                <option value="ADMIN_ONLY">
-                                                  Admins only
-                                                </option>
-                                                <option value="ANY_MEMBER">
-                                                  Any member
-                                                </option>
-                                              </select>
+                                                {inviteGroupId === group.id
+                                                  ? "Close"
+                                                  : "Add"}
+                                              </button>
                                             ) : (
-                                              <span className="text-xs font-medium text-slate-600">
-                                                {memberAddPolicy ===
-                                                "ANY_MEMBER"
-                                                  ? "Any member"
-                                                  : "Admins only"}
+                                              <span className="text-[11px] text-slate-500">
+                                                Admin-only action
                                               </span>
                                             )}
                                           </div>
-                                        </div>
 
-                                        <div className="flex items-center justify-between">
-                                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                            Add member
-                                          </p>
-                                          {canCurrentUserAddMembers ? (
-                                            <button
-                                              onClick={() => {
-                                                if (inviteGroupId === group.id) {
-                                                  setInviteGroupId(null);
-                                                  setInviteSearchQuery("");
-                                                  setInviteSearchResults([]);
-                                                  return;
-                                                }
-
-                                                setInviteGroupId(group.id);
-                                                setInviteSearchQuery("");
-                                                setInviteSearchResults([]);
-                                              }}
-                                              className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
-                                            >
-                                              {inviteGroupId === group.id
-                                                ? "Close"
-                                                : "Add"}
-                                            </button>
-                                          ) : (
-                                            <span className="text-[11px] text-slate-500">
-                                              Admin-only action
-                                            </span>
+                                          {!canCurrentUserAddMembers && (
+                                            <p className="text-xs text-slate-500">
+                                              Only admins can add members in
+                                              this group.
+                                            </p>
                                           )}
-                                        </div>
 
-                                        {!canCurrentUserAddMembers && (
-                                          <p className="text-xs text-slate-500">
-                                            Only admins can add members in this
-                                            group.
-                                          </p>
-                                        )}
-
-                                        {canCurrentUserAddMembers &&
-                                          inviteGroupId === group.id && (
-                                            <>
-                                              <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
-                                                <Search
-                                                  size={13}
-                                                  className="text-slate-400"
-                                                />
-                                                <input
-                                                  value={inviteSearchQuery}
-                                                  onChange={(event) =>
-                                                    setInviteSearchQuery(
-                                                      event.target.value,
-                                                    )
-                                                  }
-                                                  placeholder="Search player to add"
-                                                  className="w-full bg-transparent py-1.5 text-xs outline-none"
-                                                />
-                                              </div>
-                                              {inviteSearchQuery.trim().length >=
-                                                2 && (
-                                                <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
-                                                  {isSearchingInvitePlayers ? (
-                                                    <p className="text-xs text-slate-500">
-                                                      Searching players...
-                                                    </p>
-                                                  ) : inviteSearchResults.length ? (
-                                                    inviteSearchResults.map(
-                                                      (player) => (
-                                                        <div
-                                                          key={player.id}
-                                                          className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
-                                                        >
-                                                          <span className="truncate text-xs text-slate-700">
-                                                            {player.displayName}
-                                                          </span>
-                                                          <button
-                                                            disabled={
-                                                              isAddingMemberUserId ===
-                                                              player.id
-                                                            }
-                                                            onClick={() =>
-                                                              void handleAddMemberToGroup(
-                                                                group.id,
-                                                                player.id,
-                                                              )
-                                                            }
-                                                            className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                                                          >
-                                                            {isAddingMemberUserId ===
-                                                            player.id
-                                                              ? "Adding"
-                                                              : "Add"}
-                                                          </button>
-                                                        </div>
-                                                      ),
-                                                    )
-                                                  ) : (
-                                                    <p className="text-xs text-slate-500">
-                                                      No players found
-                                                    </p>
-                                                  )}
+                                          {canCurrentUserAddMembers &&
+                                            inviteGroupId === group.id && (
+                                              <>
+                                                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
+                                                  <Search
+                                                    size={13}
+                                                    className="text-slate-400"
+                                                  />
+                                                  <input
+                                                    value={inviteSearchQuery}
+                                                    onChange={(event) =>
+                                                      setInviteSearchQuery(
+                                                        event.target.value,
+                                                      )
+                                                    }
+                                                    placeholder="Search player to add"
+                                                    className="w-full bg-transparent py-1.5 text-xs outline-none"
+                                                  />
                                                 </div>
-                                              )}
-                                            </>
-                                          )}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })
-                            ) : (
-                              <p className="text-sm text-slate-500">
-                                No groups found in this filter
-                              </p>
-                            )}
-                          </div>
-                        </>
-                      )}
+                                                {inviteSearchQuery.trim()
+                                                  .length >= 2 && (
+                                                  <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
+                                                    {isSearchingInvitePlayers ? (
+                                                      <p className="text-xs text-slate-500">
+                                                        Searching players...
+                                                      </p>
+                                                    ) : inviteSearchResults.length ? (
+                                                      inviteSearchResults.map(
+                                                        (player) => (
+                                                          <div
+                                                            key={player.id}
+                                                            className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
+                                                          >
+                                                            <span className="truncate text-xs text-slate-700">
+                                                              {
+                                                                player.displayName
+                                                              }
+                                                            </span>
+                                                            <button
+                                                              disabled={
+                                                                isAddingMemberUserId ===
+                                                                player.id
+                                                              }
+                                                              onClick={() =>
+                                                                void handleAddMemberToGroup(
+                                                                  group.id,
+                                                                  player.id,
+                                                                )
+                                                              }
+                                                              className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                            >
+                                                              {isAddingMemberUserId ===
+                                                              player.id
+                                                                ? "Adding"
+                                                                : "Add"}
+                                                            </button>
+                                                          </div>
+                                                        ),
+                                                      )
+                                                    ) : (
+                                                      <p className="text-xs text-slate-500">
+                                                        No players found
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </>
+                                            )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <p className="text-sm text-slate-500">
+                                  No groups found in this filter
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </>
                   )}
@@ -2386,76 +2529,15 @@ export default function CommunityPage() {
                       const isOwnMessage = message.senderId === profile?.userId;
                       const isGroupConversation =
                         selectedConversation?.conversationType === "GROUP";
-                      const participantIds = Array.isArray(message.participantIds)
-                        ? message.participantIds
-                        : [];
-                      let otherParticipantId: string | undefined;
-                      for (const participantId of participantIds) {
-                        if (participantId !== profile?.userId) {
-                          otherParticipantId = participantId;
-                          break;
-                        }
-                      }
-                      const hasBeenSeenByOther = Boolean(
-                        isOwnMessage &&
-                          otherParticipantId &&
-                          message.readBy?.includes(otherParticipantId),
-                      );
-                      const messageStateLabel = isOwnMessage
-                        ? message.messageStatus === "FAILED"
-                          ? "Not sent"
-                          : message.messageStatus === "SENDING"
-                            ? "Sending"
-                            : hasBeenSeenByOther
-                              ? "Seen"
-                              : "Sent"
-                        : null;
                       return (
-                        <div
+                        <MessageBubble
                           key={message.id}
-                          className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-xs ${
-                              isOwnMessage
-                                ? "bg-power-orange text-white"
-                                : "border border-border bg-white text-slate-800"
-                            }`}
-                          >
-                            {isGroupConversation && (
-                              <div
-                                className={`text-[11px] ${
-                                  isOwnMessage
-                                    ? "text-orange-100"
-                                    : "text-slate-500"
-                                }`}
-                              >
-                                {message.senderDisplayName}
-                              </div>
-                            )}
-                            <div className="mt-0.5 wrap-break-word">
-                              {message.content}
-                            </div>
-                            <div
-                              className={`mt-1 flex items-center justify-end gap-2 text-[10px] ${
-                                isOwnMessage
-                                  ? "text-orange-100"
-                                  : "text-slate-500"
-                              }`}
-                            >
-                              <span>{getMessageTimestamp(message.createdAt)}</span>
-                              {messageStateLabel && <span>{messageStateLabel}</span>}
-                              {isOwnMessage && message.messageStatus === "FAILED" && (
-                                <button
-                                  onClick={() => retryFailedMessage(message)}
-                                  className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30"
-                                >
-                                  Retry
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+                          message={message}
+                          isOwnMessage={isOwnMessage}
+                          isGroupConversation={!!isGroupConversation}
+                          profileUserId={profile?.userId}
+                          onRetry={retryFailedMessage}
+                        />
                       );
                     })}
 

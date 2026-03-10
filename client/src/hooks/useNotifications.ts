@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { friendService } from "@/modules/shared/services/friend";
 import { bookingApi } from "@/modules/booking/services/booking";
 
@@ -16,26 +16,51 @@ export function useNotifications(pollingInterval: number = 0) {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const inFlightRef = useRef<Promise<void> | null>(null);
 
   const fetchCounts = useCallback(async () => {
+    if (inFlightRef.current) {
+      return inFlightRef.current;
+    }
+
+    const request = (async () => {
+      try {
+        setError(null);
+
+        // Fetch both counts in parallel
+        const [friendRequestsData, invitationsData] = await Promise.all([
+          friendService.getPendingRequestsCount().catch(() => ({ count: 0 })),
+          bookingApi.getPendingInvitationsCount().catch(() => ({ count: 0 })),
+        ]);
+
+        const nextCounts = {
+          friendRequests: friendRequestsData.count || 0,
+          bookingInvitations: invitationsData.count || 0,
+        };
+
+        setCounts((current) => {
+          if (
+            current.friendRequests === nextCounts.friendRequests &&
+            current.bookingInvitations === nextCounts.bookingInvitations
+          ) {
+            return current;
+          }
+
+          return nextCounts;
+        });
+      } catch (err) {
+        console.error("Failed to fetch notification counts:", err);
+        setError("Failed to fetch notifications");
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    inFlightRef.current = request;
     try {
-      setError(null);
-
-      // Fetch both counts in parallel
-      const [friendRequestsData, invitationsData] = await Promise.all([
-        friendService.getPendingRequestsCount().catch(() => ({ count: 0 })),
-        bookingApi.getPendingInvitationsCount().catch(() => ({ count: 0 })),
-      ]);
-
-      setCounts({
-        friendRequests: friendRequestsData.count || 0,
-        bookingInvitations: invitationsData.count || 0,
-      });
-    } catch (err) {
-      console.error("Failed to fetch notification counts:", err);
-      setError("Failed to fetch notifications");
+      await request;
     } finally {
-      setLoading(false);
+      inFlightRef.current = null;
     }
   }, []);
 

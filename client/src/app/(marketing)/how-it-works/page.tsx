@@ -52,21 +52,21 @@ export default function HowItWorksPage() {
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Simple registration with email or Google</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Complete your profile with basic information</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Verify your account via email</span>
                   </li>
@@ -112,28 +112,28 @@ export default function HowItWorksPage() {
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Filter by sport, city, and neighborhood</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Check real-time availability</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>View venue details, photos, and amenities</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>See optional coach availability at venues</span>
                   </li>
@@ -159,28 +159,28 @@ export default function HowItWorksPage() {
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Choose date, time, and duration</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Optionally add coach booking</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>See transparent pricing breakdown</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Secure payment with instant confirmation</span>
                   </li>
@@ -228,28 +228,28 @@ export default function HowItWorksPage() {
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Receive instant booking confirmation email</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Get QR code for check-in</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Show QR code at venue entrance</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
-                      className="text-turf-green mr-2 flex-shrink-0 mt-0.5"
+                      className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
                     <span>Enjoy your game!</span>
                   </li>

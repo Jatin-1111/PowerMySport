@@ -9,6 +9,11 @@ import {
 import { s3Service } from "./S3Service";
 import { ICoach, IOwnVenueDetails, ServiceMode } from "../types";
 
+const COACH_LISTING_SELECT =
+  "_id userId photoUrl profileImage bio sports hourlyRate sportPricing serviceMode ownVenueDetails rating reviewCount verificationStatus isVerified verifiedAt baseLocation serviceRadiusKm";
+
+const COACH_LISTING_USER_SELECT = "_id name photoUrl photoS3Key";
+
 const toRadians = (value: number): number => (value * Math.PI) / 180;
 
 const calculateDistanceKm = (
@@ -131,12 +136,16 @@ const buildCoachRelevanceScore = (params: {
 
 const refreshCoachMediaUrls = async <T extends Record<string, any>>(
   coach: T,
+  options?: {
+    includeVenueImages?: boolean;
+  },
 ): Promise<T> => {
   if (!coach) {
     return coach;
   }
 
   const mutableCoach = coach as any;
+  const includeVenueImages = options?.includeVenueImages ?? true;
 
   const user = mutableCoach.userId;
   if (user && typeof user === "object" && user.photoS3Key) {
@@ -151,13 +160,13 @@ const refreshCoachMediaUrls = async <T extends Record<string, any>>(
     }
   }
 
-  const venueKeys: string[] = Array.isArray(
-    mutableCoach.ownVenueDetails?.imageS3Keys,
-  )
-    ? mutableCoach.ownVenueDetails.imageS3Keys
-    : [];
+  const venueKeys: string[] =
+    includeVenueImages &&
+    Array.isArray(mutableCoach.ownVenueDetails?.imageS3Keys)
+      ? mutableCoach.ownVenueDetails.imageS3Keys
+      : [];
 
-  if (venueKeys.length > 0) {
+  if (includeVenueImages && venueKeys.length > 0) {
     const refreshedVenueImages = await Promise.all(
       venueKeys.map(async (key) => {
         try {
@@ -246,6 +255,7 @@ export const findCoachesNearby = async (
   lng: number,
   radiusKm: number,
   sport?: string,
+  limit: number = 50,
 ): Promise<CoachDocument[]> => {
   try {
     const radiusMeters = radiusKm * 1000;
@@ -298,20 +308,26 @@ export const findCoachesNearby = async (
           },
         },
       },
-      // Populate userId
-      {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          as: "userInfo",
-        },
-      },
       // Clean up: remove temporary fields and reshape
       {
         $project: {
-          effectiveLocation: 0,
-          venueData: 0,
+          _id: 1,
+          userId: 1,
+          photoUrl: 1,
+          profileImage: 1,
+          bio: 1,
+          sports: 1,
+          hourlyRate: 1,
+          sportPricing: 1,
+          serviceMode: 1,
+          ownVenueDetails: 1,
+          rating: 1,
+          reviewCount: 1,
+          verificationStatus: 1,
+          isVerified: 1,
+          verifiedAt: 1,
+          baseLocation: 1,
+          serviceRadiusKm: 1,
         },
       },
     ];
@@ -380,14 +396,21 @@ export const findCoachesNearby = async (
       )
       .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
-    const filteredCoaches = rankedCoaches.map((entry) => entry.coach);
+    const filteredCoaches = rankedCoaches
+      .slice(0, Math.max(1, limit))
+      .map((entry) => entry.coach);
 
     // Populate the final documents (aggregate doesn't return full mongoose documents)
     const populatedCoaches = (await Coach.populate(filteredCoaches, {
       path: "userId",
+      select: COACH_LISTING_USER_SELECT,
     })) as CoachDocument[];
 
-    return Promise.all(populatedCoaches.map(refreshCoachMediaUrls));
+    return Promise.all(
+      populatedCoaches.map((coach) =>
+        refreshCoachMediaUrls(coach, { includeVenueImages: false }),
+      ),
+    );
   } catch (error) {
     throw new Error(
       `Failed to find coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -400,6 +423,7 @@ export const findCoachesNearby = async (
  */
 export const getAllCoaches = async (
   sport?: string,
+  limit: number = 50,
 ): Promise<CoachDocument[]> => {
   try {
     const query: any = {
@@ -411,13 +435,23 @@ export const getAllCoaches = async (
       query.sports = sport;
     }
 
-    const coaches = await Coach.find(query).populate("userId");
+    const coaches = await Coach.find(query)
+      .select(COACH_LISTING_SELECT)
+      .populate({
+        path: "userId",
+        select: COACH_LISTING_USER_SELECT,
+      });
     coaches.sort((a, b) => {
       const scoreA = buildCoachRelevanceScore({ coach: a, sportFilter: sport });
       const scoreB = buildCoachRelevanceScore({ coach: b, sportFilter: sport });
       return scoreB - scoreA;
     });
-    return Promise.all(coaches.map(refreshCoachMediaUrls));
+    const rankedCoaches = coaches.slice(0, Math.max(1, limit));
+    return Promise.all(
+      rankedCoaches.map((coach) =>
+        refreshCoachMediaUrls(coach, { includeVenueImages: false }),
+      ),
+    );
   } catch (error) {
     throw new Error(
       `Failed to fetch coaches: ${error instanceof Error ? error.message : "Unknown error"}`,

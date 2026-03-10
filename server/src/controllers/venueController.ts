@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
-import { findCoachesNearby, getAllCoaches } from "../services/CoachService";
 import { s3Service } from "../services/S3Service";
 import {
   createVenue,
@@ -15,8 +14,6 @@ import {
 import { getPaginationParams } from "../utils/pagination";
 import { transformDocument } from "../middleware/responseTransform";
 
-type DiscoveryInclude = "venues" | "coaches" | "both";
-
 interface DiscoveryContext {
   page: number;
   limit: number;
@@ -25,15 +22,7 @@ interface DiscoveryContext {
   longitude: number | undefined;
   radiusMeters: number;
   hasLocation: boolean;
-  include: DiscoveryInclude;
 }
-
-const parseDiscoveryInclude = (value: unknown): DiscoveryInclude => {
-  const normalized = String(value || "both").toLowerCase();
-  if (normalized === "venues") return "venues";
-  if (normalized === "coaches") return "coaches";
-  return "both";
-};
 
 const buildDiscoveryContext = (req: Request): DiscoveryContext => {
   const lat = (req.query.lat || req.query.latitude) as string | undefined;
@@ -63,7 +52,6 @@ const buildDiscoveryContext = (req: Request): DiscoveryContext => {
     longitude,
     radiusMeters: radius ? parseInt(radius as string, 10) : 5000,
     hasLocation,
-    include: parseDiscoveryInclude(req.query.include),
   };
 };
 
@@ -84,23 +72,6 @@ const fetchDiscoveryVenues = async (ctx: DiscoveryContext) => {
     ctx.sportFilter,
     ctx.page,
     ctx.limit,
-  );
-};
-
-const fetchDiscoveryCoaches = async (ctx: DiscoveryContext) => {
-  if (
-    !ctx.hasLocation ||
-    ctx.latitude === undefined ||
-    ctx.longitude === undefined
-  ) {
-    return getAllCoaches(ctx.sportFilter);
-  }
-
-  return findCoachesNearby(
-    ctx.latitude,
-    ctx.longitude,
-    ctx.radiusMeters / 1000,
-    ctx.sportFilter,
   );
 };
 
@@ -244,7 +215,7 @@ export const getMyVenues = async (
 };
 
 /**
- * Discovery endpoint: Search for venues AND coaches near a location
+ * Discovery endpoint: Search for venues near a location
  * GET /api/search?lat=28.6139&lng=77.2090&radius=5000&sport=cricket
  */
 export const discoverNearby = async (
@@ -252,46 +223,43 @@ export const discoverNearby = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const requestStartedAt = Date.now();
     const context = buildDiscoveryContext(req);
 
-    const venuesPromise =
-      context.include === "coaches"
-        ? Promise.resolve(null)
-        : fetchDiscoveryVenues(context);
+    const startedAt = Date.now();
+    const venuesResult = await fetchDiscoveryVenues(context);
+    const venuesFetchMs = Date.now() - startedAt;
 
-    const coachesPromise =
-      context.include === "venues"
-        ? Promise.resolve(null)
-        : fetchDiscoveryCoaches(context);
+    const totalDurationMs = Date.now() - requestStartedAt;
+    const venueCount = venuesResult?.venues?.length ?? 0;
 
-    const [venuesResult, coaches] = await Promise.all([
-      venuesPromise,
-      coachesPromise,
-    ]);
-
-    const responseData: Record<string, unknown> = {};
-    if (venuesResult) {
-      responseData.venues = venuesResult.venues;
-    }
-    if (coaches) {
-      responseData.coaches = coaches;
-    }
+    console.info(
+      "[discoverNearby]",
+      JSON.stringify({
+        hasLocation: context.hasLocation,
+        radiusMeters: context.radiusMeters,
+        sportFilter: context.sportFilter || null,
+        page: context.page,
+        limit: context.limit,
+        venueCount,
+        venuesFetchMs,
+        totalDurationMs,
+      }),
+    );
 
     res.status(200).json({
       success: true,
       message: "Discovery results retrieved successfully",
-      data: responseData,
-      ...(venuesResult
-        ? {
-            pagination: {
-              venues: {
-                total: venuesResult.total,
-                page: venuesResult.page,
-                totalPages: venuesResult.totalPages,
-              },
-            },
-          }
-        : {}),
+      data: {
+        venues: venuesResult.venues,
+      },
+      pagination: {
+        venues: {
+          total: venuesResult.total,
+          page: venuesResult.page,
+          totalPages: venuesResult.totalPages,
+        },
+      },
     });
   } catch (error) {
     res.status(500).json({

@@ -1,10 +1,13 @@
 ﻿import axiosInstance from "@/lib/api/axios";
+import { clearRequestCache, withRequestCache } from "@/lib/api/requestCache";
 import {
   ApiResponse,
   Availability,
   Booking,
   InitiateBookingResponse,
 } from "@/types";
+
+const INVITATIONS_TTL_MS = 5000;
 
 export const bookingApi = {
   // Initiate booking with split payments
@@ -128,11 +131,18 @@ export const bookingApi = {
   getMyInvitations: async (
     status?: "PENDING" | "ACCEPTED" | "DECLINED",
   ): Promise<any[]> => {
-    const params = status ? { status } : {};
-    const response = await axiosInstance.get("/bookings/invitations", {
-      params,
-    });
-    return response.data.data;
+    const cacheKey = `bookings:invitations:${status || "ALL"}`;
+    return withRequestCache(
+      cacheKey,
+      async () => {
+        const params = status ? { status } : {};
+        const response = await axiosInstance.get("/bookings/invitations", {
+          params,
+        });
+        return response.data.data;
+      },
+      INVITATIONS_TTL_MS,
+    );
   },
 
   // Respond to booking invitation
@@ -144,6 +154,10 @@ export const bookingApi = {
       `/bookings/invitations/${invitationId}/respond`,
       { accept },
     );
+    clearRequestCache([
+      "bookings:pending-invitations-count",
+      "bookings:invitations:",
+    ]);
     return response.data;
   },
 
@@ -159,9 +173,15 @@ export const bookingApi = {
 
   // Get count of pending booking invitations
   getPendingInvitationsCount: async (): Promise<{ count: number }> => {
-    const response = await axiosInstance.get(
-      "/bookings/invitations/pending-count",
+    return withRequestCache(
+      "bookings:pending-invitations-count",
+      async () => {
+        const response = await axiosInstance.get(
+          "/bookings/invitations/pending-count",
+        );
+        return response.data.data;
+      },
+      INVITATIONS_TTL_MS,
     );
-    return response.data.data;
   },
 };

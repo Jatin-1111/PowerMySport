@@ -16,6 +16,7 @@ export const requestLogger = (
 
   const startTime = Date.now();
   const { method, url, body, query, params } = req;
+  const verboseLogs = process.env.VERBOSE_HTTP_LOGS === "true";
 
   // Log incoming request
   console.log("\n" + "=".repeat(80));
@@ -27,20 +28,20 @@ export const requestLogger = (
   console.log(`🔹 User: ${(req as any).user?.email || "Not authenticated"}`);
 
   // Log query params if present
-  if (Object.keys(query).length > 0) {
-    console.log(`🔹 Query Params:`, JSON.stringify(query, null, 2));
+  if (verboseLogs && Object.keys(query).length > 0) {
+    console.log(`🔹 Query Params:`, JSON.stringify(query));
   }
 
   // Log URL params if present
-  if (Object.keys(params).length > 0) {
-    console.log(`🔹 URL Params:`, JSON.stringify(params, null, 2));
+  if (verboseLogs && Object.keys(params).length > 0) {
+    console.log(`🔹 URL Params:`, JSON.stringify(params));
   }
 
   // Log request body (excluding sensitive fields)
-  if (body && Object.keys(body).length > 0) {
+  if (verboseLogs && body && Object.keys(body).length > 0) {
     const sanitizedBody = { ...body };
     if (sanitizedBody.password) sanitizedBody.password = "***HIDDEN***";
-    console.log(`🔹 Body:`, JSON.stringify(sanitizedBody, null, 2));
+    console.log(`🔹 Body:`, JSON.stringify(sanitizedBody));
   }
 
   // Capture the original res.json to log response
@@ -57,14 +58,16 @@ export const requestLogger = (
       `🔹 Status: ${statusCode} ${statusCode >= 200 && statusCode < 300 ? "✅" : statusCode >= 400 ? "❌" : "⚠️"}`,
     );
 
-    // Log response data (truncate if too large)
-    const responseStr = JSON.stringify(data, null, 2);
-    if (responseStr.length > 1000) {
-      console.log(
-        `🔹 Response: ${responseStr.substring(0, 1000)}... (truncated)`,
-      );
-    } else {
-      console.log(`🔹 Response:`, responseStr);
+    // Avoid expensive response serialization unless explicitly enabled or on errors.
+    if (verboseLogs || statusCode >= 400) {
+      const responseStr = JSON.stringify(data);
+      if (responseStr.length > 1000) {
+        console.log(
+          `🔹 Response: ${responseStr.substring(0, 1000)}... (truncated)`,
+        );
+      } else {
+        console.log(`🔹 Response:`, responseStr);
+      }
     }
     console.log("=".repeat(80) + "\n");
 

@@ -75,7 +75,7 @@ export default function VenuesPage() {
         params.sport = sportFilter;
       }
 
-      const response = await discoveryApi.searchNearby(params);
+      const response = await discoveryApi.searchNearbyVenues(params);
       if (response.success && response.data) {
         setVenues(response.data.venues || []);
         if (response.pagination?.venues) {

@@ -43,25 +43,34 @@ export const runScheduledCleanup = async (): Promise<void> => {
 export const initializeScheduledJobs = (): void => {
   console.log("⏰ Initializing scheduled cleanup jobs...");
 
-  // Run cleanup every 15 minutes
-  const CLEANUP_INTERVAL = 15 * 60 * 1000; // 15 minutes
+  const defaultCleanupIntervalMinutes =
+    process.env.NODE_ENV === "production" ? 60 : 15;
+  const configuredCleanupIntervalMinutes = parseInt(
+    process.env.SCHEDULED_CLEANUP_INTERVAL_MINUTES ||
+      String(defaultCleanupIntervalMinutes),
+    10,
+  );
+  const CLEANUP_INTERVAL =
+    Math.max(5, configuredCleanupIntervalMinutes) * 60 * 1000;
 
-  setInterval(async () => {
+  const cleanupIntervalHandle = setInterval(async () => {
     try {
       await runScheduledCleanup();
     } catch (error) {
       console.error("❌ Scheduled cleanup failed:", error);
     }
   }, CLEANUP_INTERVAL);
+  cleanupIntervalHandle.unref();
 
   // Run initial cleanup on startup
-  setTimeout(async () => {
+  const initialCleanupTimeoutHandle = setTimeout(async () => {
     try {
       await runScheduledCleanup();
     } catch (error) {
       console.error("❌ Initial cleanup failed:", error);
     }
   }, 5000); // 5 seconds after startup
+  initialCleanupTimeoutHandle.unref();
 
   console.log(
     `⏰ Cleanup jobs scheduled to run every ${CLEANUP_INTERVAL / 60000} minutes`,

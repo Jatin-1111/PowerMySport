@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const normalizeImageUrl = (value?: string) => {
   if (!value || typeof value !== "string") {
@@ -107,6 +107,7 @@ export default function CoachesPage() {
   const [minRating, setMinRating] = useState("0");
   const [sortBy, setSortBy] = useState("relevance");
   const [locationError, setLocationError] = useState("");
+  const hasRequestedInitialLoadRef = useRef(false);
   const router = useRouter();
 
   const requestCurrentLocation = () => {
@@ -381,16 +382,21 @@ export default function CoachesPage() {
   ]);
 
   useEffect(() => {
+    if (hasRequestedInitialLoadRef.current) {
+      return;
+    }
+
+    hasRequestedInitialLoadRef.current = true;
     requestLocationAndLoadCoaches();
   }, []);
 
   const loadCoaches = async (latitude: number, longitude: number) => {
     setLoading(true);
     try {
-      const response = await discoveryApi.searchNearby({
+      const response = await discoveryApi.searchNearbyCoaches({
         latitude,
         longitude,
-        include: "coaches",
+        maxDistance: 30000,
       });
       if (response.success && response.data) {
         setCoaches(response.data.coaches || []);

@@ -26,9 +26,22 @@ import {
   Filter,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState, useRef } from "react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
+
+const NotificationStatusChart = dynamic(
+  () =>
+    import("@/modules/admin/components/NotificationStatusChart").then(
+      (module) => module.NotificationStatusChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-75 animate-pulse rounded-lg bg-slate-100" />
+    ),
+  },
+);
 
 // Filter interface
 interface Filters {
@@ -38,13 +51,6 @@ interface Filters {
   dateFrom: string;
   dateTo: string;
 }
-
-const COLORS = {
-  sent: "#10b981",
-  failed: "#ef4444",
-  pending: "#f59e0b",
-  cancelled: "#6b7280",
-};
 
 export default function NotificationsPage() {
   const [stats, setStats] = useState<MonitoringStats | null>(null);
@@ -69,6 +75,34 @@ export default function NotificationsPage() {
     dateTo: "",
   });
   const socketRef = useRef<Socket | null>(null);
+  const updateFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const pendingStatsRef = useRef<MonitoringStats | null>(null);
+  const pendingHealthRef = useRef<SchedulerHealth | null>(null);
+
+  const flushRealtimeUpdates = useCallback(() => {
+    if (pendingStatsRef.current) {
+      setStats(pendingStatsRef.current);
+      pendingStatsRef.current = null;
+    }
+
+    if (pendingHealthRef.current) {
+      setHealth(pendingHealthRef.current);
+      pendingHealthRef.current = null;
+    }
+
+    updateFlushTimeoutRef.current = null;
+  }, []);
+
+  const scheduleRealtimeFlush = useCallback(() => {
+    if (updateFlushTimeoutRef.current) {
+      return;
+    }
+
+    // Batch frequent socket events so heavy UI (charts/cards) rerenders less often.
+    updateFlushTimeoutRef.current = setTimeout(flushRealtimeUpdates, 500);
+  }, [flushRealtimeUpdates]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -156,13 +190,15 @@ export default function NotificationsPage() {
 
     socket.on("REMINDER_STATS_UPDATE", (data) => {
       if (data.stats) {
-        setStats(data.stats);
+        pendingStatsRef.current = data.stats;
+        scheduleRealtimeFlush();
       }
     });
 
     socket.on("HEALTH_UPDATE", (data) => {
       if (data.health) {
-        setHealth(data.health);
+        pendingHealthRef.current = data.health;
+        scheduleRealtimeFlush();
       }
     });
 
@@ -175,9 +211,13 @@ export default function NotificationsPage() {
     });
 
     return () => {
+      if (updateFlushTimeoutRef.current) {
+        clearTimeout(updateFlushTimeoutRef.current);
+        updateFlushTimeoutRef.current = null;
+      }
       socket.disconnect();
     };
-  }, []);
+  }, [scheduleRealtimeFlush]);
 
   useEffect(() => {
     fetchData();
@@ -354,19 +394,6 @@ export default function NotificationsPage() {
 
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
-  // Prepare chart data
-  const pieChartData = stats
-    ? [
-        { name: "Sent", value: stats.totalSent || 0, color: COLORS.sent },
-        { name: "Failed", value: stats.totalFailed || 0, color: COLORS.failed },
-        {
-          name: "Cancelled",
-          value: stats.totalCancelled || 0,
-          color: COLORS.cancelled,
-        },
-      ]
-    : [];
-
   if (loading) {
     return <div className="text-center py-12">Loading notifications...</div>;
   }
@@ -525,29 +552,12 @@ export default function NotificationsPage() {
             <h3 className="text-lg font-bold text-slate-900 mb-4">
               Status Distribution (24h)
             </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry) => {
-                    const total = stats?.totalProcessed || 1;
-                    const percentage = ((entry.value / total) * 100).toFixed(1);
-                    return `${entry.name}: ${entry.value} (${percentage}%)`;
-                  }}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <NotificationStatusChart
+              totalProcessed={stats.totalProcessed || 0}
+              totalSent={stats.totalSent || 0}
+              totalFailed={stats.totalFailed || 0}
+              totalCancelled={stats.totalCancelled || 0}
+            />
           </Card>
 
           <Card className="bg-white p-6">

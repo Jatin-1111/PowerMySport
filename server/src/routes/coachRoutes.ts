@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createNewCoach,
+  discoverCoachesNearby,
   deleteCoachProfile,
   getCoach,
   getCoachAvailability,
@@ -21,6 +22,9 @@ import {
 import { validateRequest } from "../middleware/validation";
 
 const router = Router();
+
+// Discovery endpoint (public) - returns coaches only
+router.get("/discover", discoverCoachesNearby);
 
 // Create coach profile (requires authentication and COACH role)
 router.post("/", authMiddleware, createNewCoach);
