@@ -3,6 +3,7 @@ import { clearRequestCache, withRequestCache } from "@/lib/api/requestCache";
 
 const FRIEND_COUNTS_TTL_MS = 5000;
 const FRIEND_LIST_TTL_MS = 10000;
+const FRIEND_USER_SEARCH_TTL_MS = 10000;
 
 export interface Friend {
   id: string;
@@ -52,7 +53,11 @@ export const friendService = {
    */
   async sendFriendRequest(recipientId: string): Promise<any> {
     const response = await api.post("/friends/request", { recipientId });
-    clearRequestCache(["friends:pending-count", "friends:pending:"]);
+    clearRequestCache([
+      "friends:pending-count",
+      "friends:pending:",
+      "friends:search-users:",
+    ]);
     return response.data;
   },
 
@@ -65,6 +70,7 @@ export const friendService = {
       "friends:pending-count",
       "friends:pending:",
       "friends:list:",
+      "friends:search-users:",
     ]);
     return response.data;
   },
@@ -74,7 +80,11 @@ export const friendService = {
    */
   async declineFriendRequest(requestId: string): Promise<any> {
     const response = await api.post(`/friends/decline/${requestId}`);
-    clearRequestCache(["friends:pending-count", "friends:pending:"]);
+    clearRequestCache([
+      "friends:pending-count",
+      "friends:pending:",
+      "friends:search-users:",
+    ]);
     return response.data;
   },
 
@@ -83,7 +93,7 @@ export const friendService = {
    */
   async removeFriend(friendId: string): Promise<void> {
     await api.delete(`/friends/${friendId}`);
-    clearRequestCache(["friends:list:"]);
+    clearRequestCache(["friends:list:", "friends:search-users:"]);
   },
 
   /**
@@ -91,6 +101,7 @@ export const friendService = {
    */
   async blockUser(userId: string): Promise<any> {
     const response = await api.post("/friends/block", { userId });
+    clearRequestCache(["friends:list:", "friends:search-users:"]);
     return response.data;
   },
 
@@ -151,11 +162,26 @@ export const friendService = {
   /**
    * Search for users to add as friends
    */
-  async searchUsers(query: string): Promise<SearchUserResult[]> {
-    const response = await api.get("/friends/search-users", {
-      params: { q: query },
-    });
-    return response.data.data;
+  async searchUsers(
+    query: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<SearchUserResult[]> {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.length < 2) {
+      return [];
+    }
+
+    return withRequestCache(
+      `friends:search-users:${encodeURIComponent(normalizedQuery)}`,
+      async () => {
+        const response = await api.get("/friends/search-users", {
+          params: { q: normalizedQuery },
+          signal: options?.signal,
+        });
+        return response.data.data;
+      },
+      FRIEND_USER_SEARCH_TTL_MS,
+    );
   },
 
   /**

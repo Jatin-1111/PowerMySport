@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   friendService,
   Friend,
@@ -41,6 +41,9 @@ import {
   Ban,
 } from "lucide-react";
 
+const MIN_SEARCH_LENGTH = 2;
+const SEARCH_DEBOUNCE_MS = 350;
+
 export default function FriendsPage() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
@@ -51,7 +54,11 @@ export default function FriendsPage() {
   const [searching, setSearching] = useState(false);
   const [activeTab, setActiveTab] = useState("friends");
 
-  const { connected, refreshFriends: socketRefreshFriends } = useFriendSocket();
+  const { connected } = useFriendSocket();
+  const latestSearchRequestIdRef = useRef(0);
+  const searchDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   useEffect(() => {
     loadFriends();
@@ -71,7 +78,7 @@ export default function FriendsPage() {
       setLoading(true);
       const response = await friendService.getFriends();
       setFriends(response.friends);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load friends");
     } finally {
       setLoading(false);
@@ -102,7 +109,7 @@ export default function FriendsPage() {
       toast.success("Friend request accepted!");
       loadFriends();
       loadPendingRequests();
-    } catch (error) {
+    } catch {
       toast.error("Failed to accept request");
     }
   };
@@ -112,7 +119,7 @@ export default function FriendsPage() {
       await friendService.declineFriendRequest(requestId);
       toast.success("Friend request declined");
       loadPendingRequests();
-    } catch (error) {
+    } catch {
       toast.error("Failed to decline request");
     }
   };
@@ -122,7 +129,7 @@ export default function FriendsPage() {
       await friendService.removeFriend(friendId);
       toast.success("Friend removed");
       loadFriends();
-    } catch (error) {
+    } catch {
       toast.error("Failed to remove friend");
     }
   };
@@ -140,28 +147,94 @@ export default function FriendsPage() {
       await friendService.blockUser(userId);
       toast.success(`${userName} has been blocked`);
       loadFriends();
-    } catch (error) {
+    } catch {
       toast.error("Failed to block user");
     }
   };
 
-  const handleSearch = async () => {
-    if (searchQuery.trim().length < 2) {
-      toast.error("Please enter at least 2 characters to search");
+  const executeSearch = useCallback(
+    async (
+      query: string,
+      options?: {
+        showValidationToast?: boolean;
+        showEmptyToast?: boolean;
+      },
+    ) => {
+      const normalizedQuery = query.trim();
+      if (normalizedQuery.length < MIN_SEARCH_LENGTH) {
+        setSearchResults([]);
+        setSearching(false);
+        if (options?.showValidationToast) {
+          toast.error(
+            `Please enter at least ${MIN_SEARCH_LENGTH} characters to search`,
+          );
+        }
+        return;
+      }
+
+      const requestId = latestSearchRequestIdRef.current + 1;
+      latestSearchRequestIdRef.current = requestId;
+
+      try {
+        setSearching(true);
+        const results = await friendService.searchUsers(normalizedQuery);
+
+        // Ignore out-of-order responses so the UI reflects the latest query only.
+        if (requestId !== latestSearchRequestIdRef.current) {
+          return;
+        }
+
+        setSearchResults(results);
+        if (options?.showEmptyToast && results.length === 0) {
+          toast.info("No users found matching your search");
+        }
+      } catch {
+        if (requestId === latestSearchRequestIdRef.current) {
+          toast.error("Search failed");
+        }
+      } finally {
+        if (requestId === latestSearchRequestIdRef.current) {
+          setSearching(false);
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (activeTab !== "search") {
       return;
     }
-    try {
-      setSearching(true);
-      const results = await friendService.searchUsers(searchQuery);
-      setSearchResults(results);
-      if (results.length === 0) {
-        toast.info("No users found matching your search");
-      }
-    } catch (error) {
-      toast.error("Search failed");
-    } finally {
-      setSearching(false);
+
+    if (searchDebounceTimeoutRef.current) {
+      clearTimeout(searchDebounceTimeoutRef.current);
+      searchDebounceTimeoutRef.current = null;
     }
+
+    const normalizedQuery = searchQuery.trim();
+    if (normalizedQuery.length < MIN_SEARCH_LENGTH) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    searchDebounceTimeoutRef.current = setTimeout(() => {
+      executeSearch(normalizedQuery);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (searchDebounceTimeoutRef.current) {
+        clearTimeout(searchDebounceTimeoutRef.current);
+        searchDebounceTimeoutRef.current = null;
+      }
+    };
+  }, [activeTab, executeSearch, searchQuery]);
+
+  const handleSearch = () => {
+    executeSearch(searchQuery, {
+      showValidationToast: true,
+      showEmptyToast: true,
+    });
   };
 
   const handleSendFriendRequest = async (userId: string) => {
@@ -171,10 +244,18 @@ export default function FriendsPage() {
       // Refresh search results to update status
       handleSearch();
       loadSentRequests();
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Failed to send friend request",
-      );
+    } catch (error: unknown) {
+      const errorMessage =
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as { response?: { data?: { message?: string } } })
+          .response?.data?.message === "string"
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
+          : null;
+
+      toast.error(errorMessage || "Failed to send friend request");
     }
   };
 
@@ -315,8 +396,10 @@ export default function FriendsPage() {
           <TabsContent value="requests" className="space-y-6">
             <Card className="bg-white">
               <CardHeader>
-                <CardTitle>Received Requests</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-slate-800">
+                  Received Requests
+                </CardTitle>
+                <CardDescription className="text-slate-600">
                   Friend requests waiting for your response
                 </CardDescription>
               </CardHeader>
@@ -377,8 +460,10 @@ export default function FriendsPage() {
 
             <Card className="bg-white">
               <CardHeader>
-                <CardTitle>Sent Requests</CardTitle>
-                <CardDescription>Friend requests you've sent</CardDescription>
+                <CardTitle className="text-slate-800">Sent Requests</CardTitle>
+                <CardDescription className="text-slate-600">
+                  Friend requests you&apos;ve sent
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {sentRequests.length === 0 ? (
@@ -438,7 +523,9 @@ export default function FriendsPage() {
                   <Button
                     variant="primary"
                     onClick={handleSearch}
-                    disabled={searching}
+                    disabled={
+                      searching || searchQuery.trim().length < MIN_SEARCH_LENGTH
+                    }
                   >
                     {searching ? (
                       <>
@@ -510,7 +597,6 @@ export default function FriendsPage() {
                 {searchQuery && searchResults.length === 0 && !searching && (
                   <div className="text-center py-8">
                     <Search className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                    ",
                     <h3 className="font-semibold text-lg mb-2 text-slate-900">
                       No users found
                     </h3>

@@ -230,7 +230,7 @@ export default function DashboardPage() {
               </div>
             ))}
             <Link href="/dashboard/my-bookings">
-              <Button variant="outline" className="w-full mt-2">
+              <Button variant="outline" className="w-full mt-2 text-slate-800">
                 View All Bookings
               </Button>
             </Link>

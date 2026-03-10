@@ -197,6 +197,12 @@ export default function CoachDetailsPage() {
     }
   };
 
+  const getCertificationCount = (coachData: Coach) => {
+    return (coachData.certifications || []).filter(
+      (value) => typeof value === "string" && value.trim().length > 0,
+    ).length;
+  };
+
   const loadCoachDetails = useCallback(async () => {
     try {
       const response = await discoveryApi.getCoachById(coachId);
@@ -573,26 +579,51 @@ export default function CoachDetailsPage() {
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                   <Award size={24} className="text-turf-green" />
-                  Certifications
+                  Certification & Verification
                 </h2>
               </div>
               <div className="p-6">
-                <div className="flex flex-wrap gap-2">
-                  {coach.certifications?.length > 0 ? (
-                    coach.certifications.map((cert, index) => (
-                      <span
-                        key={index}
-                        className="px-4 py-2 bg-turf-green/10 border border-turf-green/30 text-turf-green rounded-lg text-sm font-medium"
-                      >
-                        {cert}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-slate-500 italic">
-                      No certifications listed.
-                    </p>
-                  )}
-                </div>
+                {(() => {
+                  const badge = getVerificationBadge(coach);
+                  const certificationCount = getCertificationCount(coach);
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                        <span className="text-sm text-slate-700">
+                          {certificationCount > 0
+                            ? `${certificationCount} credential${certificationCount !== 1 ? "s" : ""} on file`
+                            : "No public credential details"}
+                        </span>
+                      </div>
+
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-sm text-slate-700">
+                          For privacy and security, individual certificate files
+                          are not displayed on public profiles.
+                        </p>
+                        <p className="mt-2 text-sm text-slate-600">
+                          This section shows verification trust signals only.
+                        </p>
+                      </div>
+
+                      <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
+                        <li>
+                          Verification status reflects platform review state.
+                        </li>
+                        <li>
+                          Credential documents are retained for internal checks.
+                        </li>
+                        <li>Sensitive documents are never exposed publicly.</li>
+                      </ul>
+                    </div>
+                  );
+                })()}
               </div>
             </Card>
 

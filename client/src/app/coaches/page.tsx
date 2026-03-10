@@ -8,13 +8,16 @@ import { Coach } from "@/types";
 import {
   ArrowRight,
   Award,
+  FilterX,
   ImageIcon,
   IndianRupee,
   Search,
+  SlidersHorizontal,
   Star,
   Users,
+  X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const normalizeImageUrl = (value?: string) => {
@@ -52,14 +55,37 @@ const normalizeSearchTerm = (value: string) =>
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
+const QUICK_SPORT_FILTERS = [
+  "Cricket",
+  "Football",
+  "Badminton",
+  "Tennis",
+  "Basketball",
+  "Swimming",
+];
+
+const SERVICE_MODE_OPTIONS = ["ALL", "OWN_VENUE", "FREELANCE", "HYBRID"];
+const VERIFICATION_OPTIONS = [
+  "ALL",
+  "VERIFIED",
+  "PENDING",
+  "REVIEW",
+  "UNVERIFIED",
+  "REJECTED",
+];
+const MIN_RATING_OPTIONS = ["0", "3", "4", "4.5"];
+const SORT_OPTIONS = ["relevance", "priceAsc", "priceDesc", "ratingDesc"];
+
 const CoachImageWithFallback = ({
   sources,
   alt,
   className,
+  fallbackLabel,
 }: {
   sources: string[];
   alt: string;
   className: string;
+  fallbackLabel: string;
 }) => {
   const cleanedSources = Array.from(
     new Set(
@@ -79,8 +105,11 @@ const CoachImageWithFallback = ({
 
   if (!currentSource) {
     return (
-      <div className="flex h-full w-full items-center justify-center text-slate-400">
-        <ImageIcon size={28} />
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-200 text-slate-500">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/80 text-lg font-bold text-slate-700">
+          {fallbackLabel}
+        </div>
+        <ImageIcon size={24} />
       </div>
     );
   }
@@ -107,8 +136,55 @@ export default function CoachesPage() {
   const [minRating, setMinRating] = useState("0");
   const [sortBy, setSortBy] = useState("relevance");
   const [locationError, setLocationError] = useState("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const hasRequestedInitialLoadRef = useRef(false);
+  const hasHydratedFromUrlRef = useRef(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (hasHydratedFromUrlRef.current) {
+      return;
+    }
+
+    hasHydratedFromUrlRef.current = true;
+
+    const sportParam = searchParams.get("sport") || "";
+    const normalizedSportParam = normalizeSearchTerm(sportParam);
+
+    const serviceModeParam = searchParams.get("mode") || "ALL";
+    const verificationParam = searchParams.get("verification") || "ALL";
+    const maxRateParam = searchParams.get("maxRate") || "";
+    const minRatingParam = searchParams.get("minRating") || "0";
+    const sortParam = searchParams.get("sort") || "relevance";
+    const showFiltersParam = searchParams.get("filters") === "1";
+
+    const parsedMaxRate = Number(maxRateParam);
+    const sanitizedMaxRate =
+      maxRateParam && Number.isFinite(parsedMaxRate) && parsedMaxRate >= 0
+        ? maxRateParam
+        : "";
+
+    setSportInput(sportParam);
+    setAppliedSportFilter(normalizedSportParam);
+    setServiceModeFilter(
+      SERVICE_MODE_OPTIONS.includes(serviceModeParam)
+        ? serviceModeParam
+        : "ALL",
+    );
+    setVerificationFilter(
+      VERIFICATION_OPTIONS.includes(verificationParam)
+        ? verificationParam
+        : "ALL",
+    );
+    setMaxRate(sanitizedMaxRate);
+    setMinRating(
+      MIN_RATING_OPTIONS.includes(minRatingParam) ? minRatingParam : "0",
+    );
+    setSortBy(SORT_OPTIONS.includes(sortParam) ? sortParam : "relevance");
+    setShowAdvancedFilters(showFiltersParam);
+  }, [searchParams]);
 
   const requestCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -257,12 +333,87 @@ export default function CoachesPage() {
     return `${coach.sports[0] || "Professional"} Coach`;
   };
 
+  const getCoachInitials = (coach: Coach) => {
+    const name = getCoachDisplayName(coach);
+    const parts = name
+      .split(" ")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .slice(0, 2);
+
+    if (parts.length === 0) {
+      return "CO";
+    }
+
+    return parts.map((part) => part.charAt(0).toUpperCase()).join("");
+  };
+
+  const getCoachSportsSummary = (coach: Coach) => {
+    if (!Array.isArray(coach.sports) || coach.sports.length === 0) {
+      return "Multi-sport coaching";
+    }
+
+    return coach.sports.join(", ");
+  };
+
+  const getCoachBioSummary = (coach: Coach) => {
+    if (typeof coach.bio === "string" && coach.bio.trim().length > 0) {
+      return coach.bio.trim();
+    }
+
+    return "Professional coach available for focused skill development and guided training sessions.";
+  };
+
+  const getDisplayRating = (coach: Coach) => {
+    const numericRating = Number(coach.rating);
+    if (!Number.isFinite(numericRating) || numericRating <= 0) {
+      return "New";
+    }
+
+    return numericRating.toFixed(1);
+  };
+
+  const getDisplayReviewCount = (coach: Coach) => {
+    const reviews = Number(coach.reviewCount);
+    if (!Number.isFinite(reviews) || reviews <= 0) {
+      return "No reviews yet";
+    }
+
+    return `${reviews} review${reviews !== 1 ? "s" : ""}`;
+  };
+
+  const getServiceModeLabel = (coach: Coach) => {
+    if (typeof coach.serviceMode !== "string" || !coach.serviceMode.trim()) {
+      return "Flexible";
+    }
+
+    return coach.serviceMode.replace(/_/g, " ");
+  };
+
+  const getPrimarySport = (coach: Coach) => {
+    if (!Array.isArray(coach.sports) || coach.sports.length === 0) {
+      return "General";
+    }
+
+    return coach.sports[0];
+  };
+
+  const getAdditionalSportsCount = (coach: Coach) => {
+    if (!Array.isArray(coach.sports) || coach.sports.length <= 1) {
+      return 0;
+    }
+
+    return coach.sports.length - 1;
+  };
+
   const getRelevanceScore = (coach: Coach, normalizedSearchTerm: string) => {
     const ratingScore = clamp01((coach.rating || 0) / 5);
     const reviewScore = clamp01((coach.reviewCount || 0) / 50);
 
-    const startingRate = getStartingRate(coach);
-    const priceScore = clamp01(1 - Math.min(startingRate, 5000) / 5000);
+    const startingRate = Number(getStartingRate(coach));
+    const normalizedRate =
+      Number.isFinite(startingRate) && startingRate > 0 ? startingRate : 5000;
+    const priceScore = clamp01(1 - Math.min(normalizedRate, 5000) / 5000);
 
     let verificationRecencyScore = 0;
     if (coach.verifiedAt) {
@@ -382,6 +533,56 @@ export default function CoachesPage() {
   ]);
 
   useEffect(() => {
+    if (!hasHydratedFromUrlRef.current) {
+      return;
+    }
+
+    const params = new URLSearchParams();
+
+    if (appliedSportFilter) {
+      params.set("sport", appliedSportFilter);
+    }
+    if (serviceModeFilter !== "ALL") {
+      params.set("mode", serviceModeFilter);
+    }
+    if (verificationFilter !== "ALL") {
+      params.set("verification", verificationFilter);
+    }
+    if (maxRate) {
+      params.set("maxRate", maxRate);
+    }
+    if (minRating !== "0") {
+      params.set("minRating", minRating);
+    }
+    if (sortBy !== "relevance") {
+      params.set("sort", sortBy);
+    }
+    if (showAdvancedFilters) {
+      params.set("filters", "1");
+    }
+
+    const nextQuery = params.toString();
+    const currentQuery = searchParams.toString();
+    if (nextQuery === currentQuery) {
+      return;
+    }
+
+    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+    router.replace(nextUrl, { scroll: false });
+  }, [
+    appliedSportFilter,
+    maxRate,
+    minRating,
+    pathname,
+    router,
+    searchParams,
+    serviceModeFilter,
+    showAdvancedFilters,
+    sortBy,
+    verificationFilter,
+  ]);
+
+  useEffect(() => {
     if (hasRequestedInitialLoadRef.current) {
       return;
     }
@@ -413,6 +614,11 @@ export default function CoachesPage() {
     setAppliedSportFilter(normalizeSearchTerm(sportInput));
   };
 
+  const handleQuickSportFilter = (sport: string) => {
+    setSportInput(sport);
+    setAppliedSportFilter(normalizeSearchTerm(sport));
+  };
+
   const handleClearFilters = () => {
     setSportInput("");
     setAppliedSportFilter("");
@@ -423,24 +629,105 @@ export default function CoachesPage() {
     setSortBy("relevance");
   };
 
-  const activeCoachFilters = [
-    appliedSportFilter ? `Sport: ${appliedSportFilter}` : null,
+  const handleClearSearch = () => {
+    setSportInput("");
+    setAppliedSportFilter("");
+  };
+
+  const handleRemoveFilter = (
+    key:
+      | "sport"
+      | "serviceMode"
+      | "verification"
+      | "maxRate"
+      | "minRating"
+      | "sortBy",
+  ) => {
+    if (key === "sport") {
+      handleClearSearch();
+      return;
+    }
+
+    if (key === "serviceMode") {
+      setServiceModeFilter("ALL");
+      return;
+    }
+
+    if (key === "verification") {
+      setVerificationFilter("ALL");
+      return;
+    }
+
+    if (key === "maxRate") {
+      setMaxRate("");
+      return;
+    }
+
+    if (key === "minRating") {
+      setMinRating("0");
+      return;
+    }
+
+    setSortBy("relevance");
+  };
+
+  const normalizedSportInput = normalizeSearchTerm(sportInput);
+  const hasPendingSearchChange = normalizedSportInput !== appliedSportFilter;
+
+  const activeCoachFilters: Array<{
+    key:
+      | "sport"
+      | "serviceMode"
+      | "verification"
+      | "maxRate"
+      | "minRating"
+      | "sortBy";
+    label: string;
+  }> = [
+    appliedSportFilter
+      ? { key: "sport", label: `Sport: ${appliedSportFilter}` }
+      : null,
     serviceModeFilter !== "ALL"
-      ? `Mode: ${serviceModeFilter.replace("_", " ")}`
+      ? {
+          key: "serviceMode",
+          label: `Mode: ${serviceModeFilter.replace("_", " ")}`,
+        }
       : null,
     verificationFilter !== "ALL"
-      ? `Verification: ${verificationFilter.replace("_", " ")}`
+      ? {
+          key: "verification",
+          label: `Verification: ${verificationFilter.replace("_", " ")}`,
+        }
       : null,
-    maxRate ? `Max ₹${maxRate}` : null,
-    Number(minRating) > 0 ? `Rating ${minRating}+` : null,
+    maxRate ? { key: "maxRate", label: `Max ₹${maxRate}` } : null,
+    Number(minRating) > 0
+      ? { key: "minRating", label: `Rating ${minRating}+` }
+      : null,
     sortBy !== "relevance"
-      ? sortBy === "priceAsc"
-        ? "Sort: Price Low-High"
-        : sortBy === "priceDesc"
-          ? "Sort: Price High-Low"
-          : "Sort: Top Rated"
+      ? {
+          key: "sortBy",
+          label:
+            sortBy === "priceAsc"
+              ? "Sort: Price Low-High"
+              : sortBy === "priceDesc"
+                ? "Sort: Price High-Low"
+                : "Sort: Top Rated",
+        }
       : null,
-  ].filter(Boolean) as string[];
+  ].filter(
+    (
+      filter,
+    ): filter is {
+      key:
+        | "sport"
+        | "serviceMode"
+        | "verification"
+        | "maxRate"
+        | "minRating"
+        | "sortBy";
+      label: string;
+    } => Boolean(filter),
+  );
 
   const hasActiveCoachFilters = activeCoachFilters.length > 0;
 
@@ -515,128 +802,201 @@ export default function CoachesPage() {
                     value={sportInput}
                     onChange={(e) => setSportInput(e.target.value)}
                     placeholder="Search by sport (e.g. Cricket, Tennis, Basketball)..."
-                    className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green bg-white text-slate-900 font-medium"
+                    className="w-full rounded-lg border-2 border-slate-200 bg-white py-3 pl-10 pr-10 font-medium text-slate-900 focus:border-turf-green focus:outline-none focus:ring-2 focus:ring-turf-green/50"
                     aria-label="Search coaches by sport"
                   />
+                  {sportInput && (
+                    <button
+                      type="button"
+                      onClick={() => setSportInput("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
+                      aria-label="Clear sport search input"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
                 </div>
                 <Button
                   type="submit"
                   variant="primary"
                   className="w-full px-8 shadow-lg sm:w-auto sm:whitespace-nowrap"
+                  disabled={!sportInput.trim() && !appliedSportFilter}
                 >
                   <Search size={18} className="mr-2" />
-                  Apply Sport
+                  Search
                 </Button>
+                {appliedSportFilter && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleClearSearch}
+                    className="w-full sm:w-auto"
+                  >
+                    <FilterX size={16} className="mr-2" />
+                    Clear
+                  </Button>
+                )}
               </form>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-white/70">
+                  Quick filters
+                </span>
+                {QUICK_SPORT_FILTERS.map((sport) => {
+                  const isActive =
+                    appliedSportFilter === normalizeSearchTerm(sport);
+                  return (
+                    <button
+                      key={sport}
+                      type="button"
+                      onClick={() => handleQuickSportFilter(sport)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                        isActive
+                          ? "border-turf-green bg-turf-green text-white"
+                          : "border-white/30 bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      {sport}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {hasPendingSearchChange && (
+                <p className="mt-2 text-xs text-white/80">
+                  Search text changed. Press Search to apply new sport filter.
+                </p>
+              )}
 
               <div className="mt-5 max-w-6xl rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-xs">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
                     Refine Results
                   </p>
-                  {hasActiveCoachFilters && (
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white">
+                      {filteredCoaches.length} result
+                      {filteredCoaches.length !== 1 ? "s" : ""}
+                    </span>
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={handleClearFilters}
-                      className="text-xs px-3 py-1.5"
+                      onClick={() => setShowAdvancedFilters((prev) => !prev)}
+                      className="px-3 py-1.5 text-xs"
                     >
-                      Clear All
+                      <SlidersHorizontal size={14} className="mr-1.5" />
+                      {showAdvancedFilters ? "Hide Filters" : "Show Filters"}
                     </Button>
-                  )}
+                    {hasActiveCoachFilters && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleClearFilters}
+                        className="text-xs px-3 py-1.5"
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                  <label className="space-y-1.5">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
-                      Service Mode
-                    </span>
-                    <select
-                      value={serviceModeFilter}
-                      onChange={(e) => setServiceModeFilter(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
-                    >
-                      <option value="ALL">All Service Modes</option>
-                      <option value="OWN_VENUE">Own Venue</option>
-                      <option value="FREELANCE">Freelance</option>
-                      <option value="HYBRID">Hybrid</option>
-                    </select>
-                  </label>
+                {showAdvancedFilters && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Service Mode
+                      </span>
+                      <select
+                        value={serviceModeFilter}
+                        onChange={(e) => setServiceModeFilter(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                      >
+                        <option value="ALL">All Service Modes</option>
+                        <option value="OWN_VENUE">Own Venue</option>
+                        <option value="FREELANCE">Freelance</option>
+                        <option value="HYBRID">Hybrid</option>
+                      </select>
+                    </label>
 
-                  <label className="space-y-1.5">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
-                      Verification
-                    </span>
-                    <select
-                      value={verificationFilter}
-                      onChange={(e) => setVerificationFilter(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
-                    >
-                      <option value="ALL">All Verification</option>
-                      <option value="VERIFIED">Verified</option>
-                      <option value="PENDING">Pending</option>
-                      <option value="REVIEW">In Review</option>
-                      <option value="UNVERIFIED">Unverified</option>
-                      <option value="REJECTED">Rejected</option>
-                    </select>
-                  </label>
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Verification
+                      </span>
+                      <select
+                        value={verificationFilter}
+                        onChange={(e) => setVerificationFilter(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                      >
+                        <option value="ALL">All Verification</option>
+                        <option value="VERIFIED">Verified</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="REVIEW">In Review</option>
+                        <option value="UNVERIFIED">Unverified</option>
+                        <option value="REJECTED">Rejected</option>
+                      </select>
+                    </label>
 
-                  <label className="space-y-1.5">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
-                      Max Rate
-                    </span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={maxRate}
-                      onChange={(e) => setMaxRate(e.target.value)}
-                      placeholder="e.g. 1500"
-                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
-                    />
-                  </label>
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Max Rate
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={maxRate}
+                        onChange={(e) => setMaxRate(e.target.value)}
+                        placeholder="e.g. 1500"
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                      />
+                    </label>
 
-                  <label className="space-y-1.5">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
-                      Minimum Rating
-                    </span>
-                    <select
-                      value={minRating}
-                      onChange={(e) => setMinRating(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
-                    >
-                      <option value="0">Any Rating</option>
-                      <option value="3">3+ and above</option>
-                      <option value="4">4+ and above</option>
-                      <option value="4.5">4.5+ and above</option>
-                    </select>
-                  </label>
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Minimum Rating
+                      </span>
+                      <select
+                        value={minRating}
+                        onChange={(e) => setMinRating(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                      >
+                        <option value="0">Any Rating</option>
+                        <option value="3">3+ and above</option>
+                        <option value="4">4+ and above</option>
+                        <option value="4.5">4.5+ and above</option>
+                      </select>
+                    </label>
 
-                  <label className="space-y-1.5">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
-                      Sort By
-                    </span>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
-                    >
-                      <option value="relevance">Relevance</option>
-                      <option value="priceAsc">Price: Low to High</option>
-                      <option value="priceDesc">Price: High to Low</option>
-                      <option value="ratingDesc">Rating: High to Low</option>
-                    </select>
-                  </label>
-                </div>
+                    <label className="space-y-1.5">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                        Sort By
+                      </span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                      >
+                        <option value="relevance">Relevance</option>
+                        <option value="priceAsc">Price: Low to High</option>
+                        <option value="priceDesc">Price: High to Low</option>
+                        <option value="ratingDesc">Rating: High to Low</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
 
                 {hasActiveCoachFilters && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {activeCoachFilters.map((filter) => (
-                      <span
-                        key={filter}
-                        className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white"
+                      <button
+                        type="button"
+                        key={filter.label}
+                        onClick={() => handleRemoveFilter(filter.key)}
+                        className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-white/30"
+                        aria-label={`Remove ${filter.label} filter`}
                       >
-                        {filter}
-                      </span>
+                        {filter.label}
+                        <X size={12} className="ml-1.5" />
+                      </button>
                     ))}
                   </div>
                 )}
@@ -700,28 +1060,49 @@ export default function CoachesPage() {
                   coach.id ||
                   coach._id ||
                   `${String(coach.userId)}-${coachIndex}`;
+                const startingRate = Number(getStartingRate(coach));
+                const hasStartingRate =
+                  Number.isFinite(startingRate) && startingRate > 0;
+                const primarySport = getPrimarySport(coach);
+                const additionalSportsCount = getAdditionalSportsCount(coach);
+                const coachRoute = `/coaches/${coach.id || coach._id}`;
+                const onOpenCoach = () => router.push(coachRoute);
 
                 return (
                   <Card
                     key={coachCardKey}
-                    className="bg-white border-2 border-slate-100 hover:border-turf-green hover:shadow-xl transition-all overflow-hidden group cursor-pointer"
-                    onClick={() =>
-                      router.push(`/coaches/${coach.id || coach._id}`)
-                    }
+                    className="group flex h-full cursor-pointer flex-col overflow-hidden border-2 border-slate-100 bg-white transition-all hover:-translate-y-0.5 hover:border-turf-green hover:shadow-xl focus-within:border-turf-green focus-within:shadow-xl"
+                    onClick={onOpenCoach}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onOpenCoach();
+                      }
+                    }}
+                    aria-label={`View coach profile for ${getCoachDisplayName(coach)}`}
                   >
                     {(() => {
                       const coachImageCandidates =
                         getCoachImageCandidates(coach);
                       const venueImage = getCoachVenueImage(coach);
                       const coachName = getCoachDisplayName(coach);
+                      const coachInitials = getCoachInitials(coach);
 
                       return (
-                        <div className="relative w-full overflow-hidden bg-slate-100">
+                        <div className="relative aspect-4/3 w-full overflow-hidden bg-slate-100">
                           <CoachImageWithFallback
                             sources={coachImageCandidates}
                             alt={coachName}
+                            fallbackLabel={coachInitials}
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                           />
+
+                          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-black/50 to-transparent" />
+                          <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-800">
+                            {primarySport}
+                          </span>
 
                           {venueImage && (
                             <span className="absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
@@ -732,77 +1113,110 @@ export default function CoachesPage() {
                       );
                     })()}
 
-                    <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-5 border-b border-slate-100">
+                    <div className="border-b border-slate-100 bg-linear-to-br from-turf-green/5 to-slate-50 p-5">
                       <div className="mb-3">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <Award size={20} className="text-turf-green" />
-                          <h3 className="text-base font-bold text-slate-900 line-clamp-1">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <Award
+                            size={18}
+                            className="shrink-0 text-turf-green"
+                          />
+                          <h3 className="line-clamp-1 min-h-6 flex-1 text-base font-bold text-slate-900">
                             {getCoachDisplayName(coach)}
                           </h3>
                           {(() => {
                             const badge = getVerificationBadge(coach);
                             return (
                               <span
-                                className={`px-2 py-0.5 text-[11px] font-semibold rounded-full ${badge.className}`}
+                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}
                               >
                                 {badge.label}
                               </span>
                             );
                           })()}
                         </div>
-                        <p className="text-xs text-slate-600 line-clamp-1">
-                          {coach.sports.join(", ")}
+                        <p className="line-clamp-1 min-h-5 text-xs text-slate-600">
+                          {getCoachSportsSummary(coach)}
+                        </p>
+                        {additionalSportsCount > 0 && (
+                          <p className="mt-1 text-[11px] font-medium text-slate-500">
+                            +{additionalSportsCount} more sport
+                            {additionalSportsCount !== 1 ? "s" : ""}
+                          </p>
+                        )}
+                        <p className="mt-1 line-clamp-2 min-h-10 text-xs text-slate-500">
+                          {getCoachBioSummary(coach)}
                         </p>
                       </div>
 
                       {/* Rating */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1">
+                      <div className="grid grid-cols-3 gap-2 rounded-xl bg-white/80 p-2">
+                        <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
+                          <div className="flex items-center justify-center gap-1">
                             <Star
-                              size={18}
-                              className="text-yellow-500 fill-yellow-500"
+                              size={14}
+                              className="fill-yellow-500 text-yellow-500"
                             />
-                            <span className="font-bold text-slate-900">
-                              {coach.rating.toFixed(1)}
+                            <span className="text-sm font-bold text-slate-900">
+                              {getDisplayRating(coach)}
                             </span>
                           </div>
-                          <span className="text-xs text-slate-500">
-                            ({coach.reviewCount} reviews)
-                          </span>
+                          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+                            Rating
+                          </p>
                         </div>
-                        <span className="px-2.5 py-1 bg-turf-green/10 border border-turf-green/30 rounded-lg text-turf-green font-semibold text-xs">
-                          {coach.serviceMode}
-                        </span>
+
+                        <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
+                          <p className="line-clamp-1 text-[11px] font-semibold text-slate-800">
+                            {getDisplayReviewCount(coach)}
+                          </p>
+                          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+                            Reviews
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-turf-green/10 px-2 py-1.5 text-center">
+                          <p className="line-clamp-1 text-[11px] font-semibold uppercase tracking-wide text-turf-green">
+                            {getServiceModeLabel(coach)}
+                          </p>
+                          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+                            Mode
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-5">
+                    <div className="mt-auto p-5">
                       {/* Price */}
-                      <div className="pt-2 border-t border-slate-100">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                              Starting from
-                            </p>
-                            <p className="text-xl font-bold text-turf-green flex items-center gap-1 mt-0.5">
-                              <IndianRupee size={18} />
-                              {getStartingRate(coach)}
-                            </p>
-                          </div>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            className="bg-turf-green hover:bg-green-700 group-hover:shadow-lg transition-shadow"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/coaches/${coach.id || coach._id}`);
-                            }}
-                          >
-                            Book
-                            <ArrowRight size={16} className="ml-1" />
-                          </Button>
-                        </div>
+                      <div className="border-t border-slate-100 pt-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Starting from
+                        </p>
+                        {hasStartingRate ? (
+                          <p className="mt-0.5 flex items-center gap-1 text-xl font-bold text-turf-green">
+                            <IndianRupee size={18} />
+                            {startingRate}
+                            <span className="text-xs font-medium text-slate-500">
+                              / hour
+                            </span>
+                          </p>
+                        ) : (
+                          <p className="mt-0.5 text-sm font-semibold text-slate-600">
+                            Contact for pricing
+                          </p>
+                        )}
+
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="mt-3 w-full bg-turf-green hover:bg-green-700 group-hover:shadow-lg transition-shadow"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenCoach();
+                          }}
+                        >
+                          View Profile & Book
+                          <ArrowRight size={16} className="ml-1" />
+                        </Button>
                       </div>
                     </div>
                   </Card>
