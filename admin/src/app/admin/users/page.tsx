@@ -190,7 +190,7 @@ export default function AdminUsersPage() {
     }
 
     const socket = io(SOCKET_URL, {
-      transports: ["websocket", "polling"],
+      transports: ["websocket"],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
@@ -201,10 +201,16 @@ export default function AdminUsersPage() {
     });
 
     socket.on("connect_error", (err) => {
-      console.error("[AdminUsers] Presence socket connection error:", err.message, "| URL:", SOCKET_URL);
+      console.error(
+        "[AdminUsers] Presence socket connection error:",
+        err.message,
+        "| URL:",
+        SOCKET_URL,
+      );
     });
 
     const onPresenceUpdate = (event: PresenceUpdateEvent): void => {
+      console.log("[AdminUsers] PRESENCE_UPDATE received:", event);
       if (!event?.userId) return;
 
       setUsers((previous) =>
