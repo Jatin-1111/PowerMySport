@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Smartphone,
   TicketPercent,
+  Trophy,
   Wallet,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";

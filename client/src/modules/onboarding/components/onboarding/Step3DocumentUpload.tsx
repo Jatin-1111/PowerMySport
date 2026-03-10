@@ -237,7 +237,7 @@ export default function Step3DocumentUpload({
                     </div>
                   </div>
                   {isUploaded && (
-                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <CheckCircle className="w-6 h-6 text-green-600 shrink-0" />
                   )}
                 </div>
 
@@ -280,7 +280,7 @@ export default function Step3DocumentUpload({
                             e.preventDefault();
                             handleRemoveDocument(docTypeKey);
                           }}
-                          className="flex-shrink-0 p-1 hover:bg-red-100 rounded-full transition"
+                          className="shrink-0 p-1 hover:bg-red-100 rounded-full transition"
                         >
                           <X className="w-5 h-5 text-red-600" />
                         </button>
@@ -319,21 +319,21 @@ export default function Step3DocumentUpload({
           </h4>
           <ul className="space-y-2">
             <li className="flex items-start gap-3 text-sm text-blue-800">
-              <ClipboardCheck className="w-5 h-5 flex-shrink-0 text-blue-600 mt-0.5" />
+              <ClipboardCheck className="w-5 h-5 shrink-0 text-blue-600 mt-0.5" />
               <span>
                 Our review team will review your venue and documents within
                 24-48 hours
               </span>
             </li>
             <li className="flex items-start gap-3 text-sm text-blue-800">
-              <Mail className="w-5 h-5 flex-shrink-0 text-blue-600 mt-0.5" />
+              <Mail className="w-5 h-5 shrink-0 text-blue-600 mt-0.5" />
               <span>
                 You'll receive an email notification once approved or if we need
                 additional information
               </span>
             </li>
             <li className="flex items-start gap-3 text-sm text-blue-800">
-              <CheckCircle className="w-5 h-5 flex-shrink-0 text-blue-600 mt-0.5" />
+              <CheckCircle className="w-5 h-5 shrink-0 text-blue-600 mt-0.5" />
               <span>
                 Once approved, your venue will be live and ready to accept
                 bookings immediately

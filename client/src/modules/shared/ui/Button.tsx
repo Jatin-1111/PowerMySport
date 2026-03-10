@@ -79,7 +79,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           </>
         ) : (
           <>
-            {icon && <span className="flex-shrink-0">{icon}</span>}
+            {icon && <span className="shrink-0">{icon}</span>}
             {children}
           </>
         )}
@@ -89,4 +89,3 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
-

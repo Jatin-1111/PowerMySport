@@ -216,19 +216,19 @@ export default function ServicesPage() {
                 </h4>
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-center gap-3">
-                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       1
                     </span>
                     <span>Search venues by sport</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       2
                     </span>
                     <span>Check availability</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-power-orange text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       3
                     </span>
                     <span>Book & play</span>
@@ -245,19 +245,19 @@ export default function ServicesPage() {
                 </h4>
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-center gap-3">
-                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       1
                     </span>
                     <span>Find coaches near you</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       2
                     </span>
                     <span>Check their availability</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-turf-green text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       3
                     </span>
                     <span>Book training session</span>
@@ -274,19 +274,19 @@ export default function ServicesPage() {
                 </h4>
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-center gap-3">
-                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       1
                     </span>
                     <span>Search venue + coach</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       2
                     </span>
                     <span>One unified checkout</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       3
                     </span>
                     <span>Complete experience</span>

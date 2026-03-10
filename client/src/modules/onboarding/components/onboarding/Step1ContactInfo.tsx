@@ -225,10 +225,7 @@ export default function Step1ContactInfo({
 
       <Card className="bg-power-orange/5 border-power-orange/20">
         <p className="text-sm text-slate-700 flex items-start gap-2">
-          <Lightbulb
-            size={18}
-            className="text-power-orange flex-shrink-0 mt-0.5"
-          />
+          <Lightbulb size={18} className="text-power-orange shrink-0 mt-0.5" />
           <span>
             <span className="font-semibold">Tip:</span> Make sure to provide
             accurate contact information. After your venue is approved, we'll

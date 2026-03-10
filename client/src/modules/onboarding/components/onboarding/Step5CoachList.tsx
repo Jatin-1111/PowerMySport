@@ -218,10 +218,10 @@ export default function Step5CoachList({
                       <img
                         src={coach.profilePhoto}
                         alt={coach.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-300 flex-shrink-0"
+                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-300 shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-gray-400 flex-shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-gray-400 shrink-0">
                         <User className="w-6 h-6 text-gray-600" />
                       </div>
                     )}
