@@ -93,7 +93,7 @@ export function FriendSocketProvider({
     }
 
     console.log(
-      "🔌 Attempting to connect to friend socket at:",
+      "Attempting to connect to friend socket at:",
       `${SOCKET_URL}/friends`,
     );
 
@@ -107,7 +107,7 @@ export function FriendSocketProvider({
     });
 
     socketInstance.on("connect", () => {
-      console.log("✅ Friend socket connected successfully");
+      console.log("Friend socket connected successfully");
       setConnected(true);
     });
 
@@ -379,12 +379,12 @@ export function FriendSocketProvider({
     });
 
     socketInstance.on("disconnect", () => {
-      console.log("❌ Friend socket disconnected");
+      console.log("Friend socket disconnected");
       setConnected(false);
     });
 
     socketInstance.on("connect_error", (error) => {
-      console.error("❌ Friend socket connection error:", error.message);
+      console.error("Friend socket connection error:", error.message);
       console.error("Error details:", error);
       setConnected(false);
     });

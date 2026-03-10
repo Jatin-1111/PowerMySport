@@ -1,10 +1,36 @@
 import { Request, Response } from "express";
 import { Booking } from "../models/Booking";
+import { Coach } from "../models/Coach";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import VenueInquiry from "../models/VenueInquiry";
+import { isUserOnline } from "../services/UserPresenceService";
 import { getAllVenues as getAllVenuesService } from "../services/VenueService";
 import { getPaginationParams } from "../utils/pagination";
+
+type AdminUserRole = "PLAYER" | "COACH" | "VENUE_LISTER";
+
+const USER_ROLE_SET: ReadonlySet<AdminUserRole> = new Set([
+  "PLAYER",
+  "COACH",
+  "VENUE_LISTER",
+]);
+
+const getRoleFromQuery = (value: unknown): AdminUserRole | null => {
+  if (typeof value !== "string") return null;
+  return USER_ROLE_SET.has(value as AdminUserRole)
+    ? (value as AdminUserRole)
+    : null;
+};
+
+const getStartOfCurrentMonth = (): Date => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+};
+
+const getTwentyFourHoursAgo = (): Date => {
+  return new Date(Date.now() - 24 * 60 * 60 * 1000);
+};
 
 // Get platform statistics
 export const getPlatformStats = async (
@@ -61,6 +87,7 @@ export const getAllUsers = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const role = getRoleFromQuery(req.query.role);
     const { page, limit, skip } = getPaginationParams(
       req.query.page,
       req.query.limit,
@@ -68,9 +95,12 @@ export const getAllUsers = async (
       100,
     );
 
-    const total = await User.countDocuments();
-    const users = await User.find()
-      .select("-password")
+    const query = role ? { role } : {};
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .select(
+        "name email phone role createdAt lastActiveAt playerProfile.sports dependents venueListerProfile.businessDetails.name venueListerProfile.canAddMoreVenues",
+      )
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -96,6 +126,477 @@ export const getAllUsers = async (
     res.status(500).json({
       success: false,
       message: error instanceof Error ? error.message : "Failed to get users",
+    });
+  }
+};
+
+export const getUserRoleSummary = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const roleCounts = await User.aggregate<{ _id: string; count: number }>([
+      {
+        $match: {
+          role: { $in: ["PLAYER", "COACH", "VENUE_LISTER"] },
+        },
+      },
+      {
+        $group: {
+          _id: "$role",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const summary = {
+      PLAYER: 0,
+      COACH: 0,
+      VENUE_LISTER: 0,
+    };
+
+    for (const item of roleCounts) {
+      if (item._id in summary) {
+        summary[item._id as keyof typeof summary] = item.count;
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User role summary retrieved successfully",
+      data: summary,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve user role summary",
+    });
+  }
+};
+
+export const getPlayersUsers = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { page, limit, skip } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      15,
+      100,
+    );
+
+    const query = { role: "PLAYER" };
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .select(
+        "name email phone createdAt lastActiveAt playerProfile.sports dependents",
+      )
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const data = users.map((user) => {
+      const sports = user.playerProfile?.sports || [];
+      const dependents = Array.isArray(user.dependents) ? user.dependents : [];
+
+      return {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: "PLAYER",
+        createdAt: user.createdAt,
+        lastActiveAt: user.lastActiveAt || user.createdAt,
+        isOnlineNow: isUserOnline(user._id.toString()),
+        sports,
+        sportsCount: sports.length,
+        hasSportsProfile: sports.length > 0,
+        dependentsCount: dependents.length,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Players retrieved successfully",
+      data,
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to retrieve players",
+    });
+  }
+};
+
+export const getCoachUsers = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { page, limit, skip } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      15,
+      100,
+    );
+
+    const query = { role: "COACH" };
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .select("name email phone createdAt lastActiveAt")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const userIds = users.map((user) => user._id);
+    const coachProfiles = await Coach.find({ userId: { $in: userIds } })
+      .select(
+        "userId sports hourlyRate serviceMode verificationStatus isVerified rating reviewCount",
+      )
+      .lean();
+
+    const coachByUserId = new Map(
+      coachProfiles.map((profile) => [profile.userId.toString(), profile]),
+    );
+
+    const data = users.map((user) => {
+      const profile = coachByUserId.get(user._id.toString());
+
+      return {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: "COACH",
+        createdAt: user.createdAt,
+        lastActiveAt: user.lastActiveAt || user.createdAt,
+        isOnlineNow: isUserOnline(user._id.toString()),
+        sports: profile?.sports || [],
+        hourlyRate: profile?.hourlyRate ?? null,
+        serviceMode: profile?.serviceMode ?? null,
+        verificationStatus: profile?.verificationStatus ?? "UNVERIFIED",
+        isVerified: profile?.isVerified ?? false,
+        rating: profile?.rating ?? 0,
+        reviewCount: profile?.reviewCount ?? 0,
+        profileIncomplete: !profile,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Coaches retrieved successfully",
+      data,
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to retrieve coaches",
+    });
+  }
+};
+
+export const getVenueListerUsers = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { page, limit, skip } = getPaginationParams(
+      req.query.page,
+      req.query.limit,
+      15,
+      100,
+    );
+
+    const query = { role: "VENUE_LISTER" };
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+      .select(
+        "name email phone createdAt lastActiveAt venueListerProfile.businessDetails.name venueListerProfile.canAddMoreVenues",
+      )
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const ownerIds = users.map((user) => user._id);
+    const venueCounts = await Venue.aggregate<{
+      _id: unknown;
+      venueCount: number;
+      approvedVenueCount: number;
+      pendingVenueCount: number;
+    }>([
+      {
+        $match: {
+          ownerId: { $in: ownerIds },
+        },
+      },
+      {
+        $group: {
+          _id: "$ownerId",
+          venueCount: { $sum: 1 },
+          approvedVenueCount: {
+            $sum: {
+              $cond: [{ $eq: ["$approvalStatus", "APPROVED"] }, 1, 0],
+            },
+          },
+          pendingVenueCount: {
+            $sum: {
+              $cond: [
+                { $in: ["$approvalStatus", ["PENDING", "REVIEW"]] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]);
+
+    const venueCountByOwnerId = new Map(
+      venueCounts.map((item) => [String(item._id), item]),
+    );
+
+    const data = users.map((user) => {
+      const counts = venueCountByOwnerId.get(user._id.toString());
+
+      return {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: "VENUE_LISTER",
+        createdAt: user.createdAt,
+        lastActiveAt: user.lastActiveAt || user.createdAt,
+        isOnlineNow: isUserOnline(user._id.toString()),
+        businessName: user.venueListerProfile?.businessDetails?.name ?? "",
+        canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues ?? false,
+        venueCount: counts?.venueCount ?? 0,
+        approvedVenueCount: counts?.approvedVenueCount ?? 0,
+        pendingVenueCount: counts?.pendingVenueCount ?? 0,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Venue listers retrieved successfully",
+      data,
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve venue listers",
+    });
+  }
+};
+
+export const getPlayersAnalytics = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const monthStart = getStartOfCurrentMonth();
+    const twentyFourHoursAgo = getTwentyFourHoursAgo();
+
+    const [
+      totalPlayers,
+      newThisMonth,
+      withSportsProfile,
+      withDependents,
+      newAccountsLast24Hours,
+    ] = await Promise.all([
+      User.countDocuments({ role: "PLAYER" }),
+      User.countDocuments({
+        role: "PLAYER",
+        createdAt: { $gte: monthStart },
+      }),
+      User.countDocuments({
+        role: "PLAYER",
+        "playerProfile.sports.0": { $exists: true },
+      }),
+      User.countDocuments({
+        role: "PLAYER",
+        "dependents.0": { $exists: true },
+      }),
+      User.countDocuments({
+        role: "PLAYER",
+        createdAt: { $gte: twentyFourHoursAgo },
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Players analytics retrieved successfully",
+      data: {
+        totalPlayers,
+        newThisMonth,
+        withSportsProfile,
+        withDependents,
+        newAccountsLast24Hours,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve players analytics",
+    });
+  }
+};
+
+export const getCoachesAnalytics = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const twentyFourHoursAgo = getTwentyFourHoursAgo();
+
+    const [
+      totalCoaches,
+      verifiedCount,
+      pendingOrReviewCount,
+      ratingAggregate,
+      newAccountsLast24Hours,
+    ] = await Promise.all([
+      User.countDocuments({ role: "COACH" }),
+      Coach.countDocuments({ isVerified: true }),
+      Coach.countDocuments({
+        verificationStatus: { $in: ["PENDING", "REVIEW"] },
+      }),
+      Coach.aggregate<{ _id: null; avgRating: number }>([
+        {
+          $group: {
+            _id: null,
+            avgRating: { $avg: "$rating" },
+          },
+        },
+      ]),
+      User.countDocuments({
+        role: "COACH",
+        createdAt: { $gte: twentyFourHoursAgo },
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Coaches analytics retrieved successfully",
+      data: {
+        totalCoaches,
+        verifiedCount,
+        pendingOrReviewCount,
+        avgRating: Number((ratingAggregate[0]?.avgRating ?? 0).toFixed(2)),
+        newAccountsLast24Hours,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve coaches analytics",
+    });
+  }
+};
+
+export const getVenueListersAnalytics = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const twentyFourHoursAgo = getTwentyFourHoursAgo();
+
+    const [totalVenueListers, newAccountsLast24Hours, venueCountAggregates] =
+      await Promise.all([
+        User.countDocuments({ role: "VENUE_LISTER" }),
+        User.countDocuments({
+          role: "VENUE_LISTER",
+          createdAt: { $gte: twentyFourHoursAgo },
+        }),
+        Venue.aggregate<{
+          _id: null;
+          withAtLeastOneVenue: number;
+          approvedVenuesCount: number;
+          pendingVenuesCount: number;
+        }>([
+          {
+            $group: {
+              _id: "$ownerId",
+              venueCount: { $sum: 1 },
+              approvedVenuesCount: {
+                $sum: {
+                  $cond: [{ $eq: ["$approvalStatus", "APPROVED"] }, 1, 0],
+                },
+              },
+              pendingVenuesCount: {
+                $sum: {
+                  $cond: [
+                    { $in: ["$approvalStatus", ["PENDING", "REVIEW"]] },
+                    1,
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              withAtLeastOneVenue: { $sum: 1 },
+              approvedVenuesCount: { $sum: "$approvedVenuesCount" },
+              pendingVenuesCount: { $sum: "$pendingVenuesCount" },
+            },
+          },
+        ]),
+      ]);
+
+    const aggregates = venueCountAggregates[0];
+
+    res.status(200).json({
+      success: true,
+      message: "Venue listers analytics retrieved successfully",
+      data: {
+        totalVenueListers,
+        newAccountsLast24Hours,
+        withAtLeastOneVenue: aggregates?.withAtLeastOneVenue ?? 0,
+        approvedVenuesCount: aggregates?.approvedVenuesCount ?? 0,
+        pendingVenuesCount: aggregates?.pendingVenuesCount ?? 0,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve venue listers analytics",
     });
   }
 };

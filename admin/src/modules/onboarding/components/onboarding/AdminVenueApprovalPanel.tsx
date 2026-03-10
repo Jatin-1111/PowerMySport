@@ -9,7 +9,14 @@ import {
 } from "@/modules/onboarding/types/onboarding";
 import { formatOpeningHours } from "@/modules/onboarding/utils/formatOpeningHours";
 import { Card } from "@/modules/shared/ui/Card";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
@@ -554,23 +561,26 @@ export default function AdminVenueApprovalPanel({
               <button
                 onClick={handleApprove}
                 disabled={actionLoading}
-                className="flex-1 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="flex items-center justify-center gap-2 flex-1 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
               >
-                ✓ Approve
+                <Check size={16} />
+                Approve
               </button>
               <button
                 onClick={handleMarkForReview}
                 disabled={actionLoading || !reviewNotes.trim()}
-                className="flex-1 py-3 bg-yellow-600 text-white font-semibold rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="flex items-center justify-center gap-2 flex-1 py-3 bg-yellow-600 text-white font-semibold rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
               >
-                ⚠ Mark for Review
+                <TriangleAlert size={16} />
+                Mark for Review
               </button>
               <button
                 onClick={handleReject}
                 disabled={actionLoading || !rejectionReason.trim()}
-                className="flex-1 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="flex items-center justify-center gap-2 flex-1 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
               >
-                ✕ Reject
+                <X size={16} />
+                Reject
               </button>
             </div>
           </div>

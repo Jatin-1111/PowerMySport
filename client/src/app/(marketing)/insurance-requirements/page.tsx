@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { TriangleAlert } from "lucide-react";
 
 export default function InsuranceRequirements() {
   useEffect(() => {
@@ -30,9 +31,14 @@ export default function InsuranceRequirements() {
               service providers and users.
             </p>
             <p className="mt-4 font-semibold text-red-700">
-              ⚠️ Insurance requirements are mandatory. Failure to maintain
-              required insurance may result in account suspension or
-              termination.
+              <span className="inline-flex items-start gap-2">
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  Insurance requirements are mandatory. Failure to maintain
+                  required insurance may result in account suspension or
+                  termination.
+                </span>
+              </span>
             </p>
           </section>
 

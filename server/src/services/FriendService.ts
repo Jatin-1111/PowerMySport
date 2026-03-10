@@ -4,8 +4,35 @@ import FriendConnection, {
 import { User } from "../models/User";
 import { CommunityProfile } from "../models/CommunityProfile";
 import mongoose from "mongoose";
+import { S3Service } from "./S3Service";
+
+type UserWithPhoto = {
+  photoUrl?: string;
+  photoS3Key?: string;
+};
 
 export class FriendService {
+  private readonly s3Service = new S3Service();
+
+  private async resolvePhotoUrl(
+    user: UserWithPhoto,
+  ): Promise<string | undefined> {
+    if (!user.photoS3Key) {
+      return user.photoUrl;
+    }
+
+    try {
+      return await this.s3Service.generateDownloadUrl(
+        user.photoS3Key,
+        "images",
+        3600,
+      );
+    } catch (error) {
+      console.error("Failed to regenerate friend photo URL:", error);
+      return user.photoUrl;
+    }
+  }
+
   /**
    * Send a friend request
    */
@@ -237,8 +264,8 @@ export class FriendService {
     })
       .skip(skip)
       .limit(limit)
-      .populate("requesterId", "name email photoUrl")
-      .populate("recipientId", "name email photoUrl")
+      .populate("requesterId", "name email photoUrl photoS3Key")
+      .populate("recipientId", "name email photoUrl photoS3Key")
       .sort({ updatedAt: -1 });
 
     const total = await FriendConnection.countDocuments({
@@ -247,20 +274,23 @@ export class FriendService {
     });
 
     // Extract the friend user object (the one that's not the current user)
-    const friends = connections.map((conn: any) => {
-      const friend =
-        conn.requesterId._id.toString() === userId
-          ? conn.recipientId
-          : conn.requesterId;
-      return {
-        id: friend._id,
-        name: friend.name,
-        email: friend.email,
-        photoUrl: friend.photoUrl,
-        friendsSince: conn.updatedAt,
-        connectionId: conn._id,
-      };
-    });
+    const friends = await Promise.all(
+      connections.map(async (conn: any) => {
+        const friend =
+          conn.requesterId._id.toString() === userId
+            ? conn.recipientId
+            : conn.requesterId;
+
+        return {
+          id: friend._id,
+          name: friend.name,
+          email: friend.email,
+          photoUrl: await this.resolvePhotoUrl(friend),
+          friendsSince: conn.updatedAt,
+          connectionId: conn._id,
+        };
+      }),
+    );
 
     return {
       friends,
@@ -283,27 +313,29 @@ export class FriendService {
         : { requesterId: userId, status: "PENDING" };
 
     const requests = await FriendConnection.find(query)
-      .populate("requesterId", "name email photoUrl")
-      .populate("recipientId", "name email photoUrl")
+      .populate("requesterId", "name email photoUrl photoS3Key")
+      .populate("recipientId", "name email photoUrl photoS3Key")
       .sort({ createdAt: -1 });
 
-    return requests.map((req: any) => ({
-      id: req._id,
-      requester: {
-        id: req.requesterId._id,
-        name: req.requesterId.name,
-        email: req.requesterId.email,
-        photoUrl: req.requesterId.photoUrl,
-      },
-      recipient: {
-        id: req.recipientId._id,
-        name: req.recipientId.name,
-        email: req.recipientId.email,
-        photoUrl: req.recipientId.photoUrl,
-      },
-      status: req.status,
-      createdAt: req.createdAt,
-    }));
+    return await Promise.all(
+      requests.map(async (req: any) => ({
+        id: req._id,
+        requester: {
+          id: req.requesterId._id,
+          name: req.requesterId.name,
+          email: req.requesterId.email,
+          photoUrl: await this.resolvePhotoUrl(req.requesterId),
+        },
+        recipient: {
+          id: req.recipientId._id,
+          name: req.recipientId.name,
+          email: req.recipientId.email,
+          photoUrl: await this.resolvePhotoUrl(req.recipientId),
+        },
+        status: req.status,
+        createdAt: req.createdAt,
+      })),
+    );
   }
 
   /**
@@ -318,22 +350,25 @@ export class FriendService {
       $or: [{ requesterId: userId }, { recipientId: userId }],
       status: "ACCEPTED",
     })
-      .populate("requesterId", "name email photoUrl")
-      .populate("recipientId", "name email photoUrl");
+      .populate("requesterId", "name email photoUrl photoS3Key")
+      .populate("recipientId", "name email photoUrl photoS3Key");
 
     // Extract friend user objects
-    let friends = connections.map((conn: any) => {
-      const friend =
-        conn.requesterId._id.toString() === userId
-          ? conn.recipientId
-          : conn.requesterId;
-      return {
-        id: friend._id,
-        name: friend.name,
-        email: friend.email,
-        photoUrl: friend.photoUrl,
-      };
-    });
+    let friends = await Promise.all(
+      connections.map(async (conn: any) => {
+        const friend =
+          conn.requesterId._id.toString() === userId
+            ? conn.recipientId
+            : conn.requesterId;
+
+        return {
+          id: friend._id,
+          name: friend.name,
+          email: friend.email,
+          photoUrl: await this.resolvePhotoUrl(friend),
+        };
+      }),
+    );
 
     // Filter by query if provided
     if (query) {
@@ -384,17 +419,19 @@ export class FriendService {
       ],
     })
       .limit(20)
-      .select("_id name email photoUrl");
+      .select("_id name email photoUrl photoS3Key");
 
     // Get friend status for each user
     const usersWithStatus = await Promise.all(
       users.map(async (user) => {
         const status = await this.getFriendStatus(userId, user._id.toString());
+        const photoUrl = await this.resolvePhotoUrl(user);
+
         return {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          ...(user.photoUrl && { photoUrl: user.photoUrl }),
+          ...(photoUrl && { photoUrl }),
           friendStatus: status,
         };
       }),

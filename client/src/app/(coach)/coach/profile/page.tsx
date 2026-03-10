@@ -1502,8 +1502,9 @@ export default function CoachProfilePage() {
                 </div>
                 {status === "VERIFIED" && (
                   <div className="rounded-lg border border-green-200 bg-green-50 p-2">
-                    <p className="text-xs font-medium text-green-700">
-                      ✓ Profile verified and visible to players
+                    <p className="text-xs font-medium text-green-700 inline-flex items-center gap-1.5">
+                      <CheckCircle size={13} />
+                      Profile verified and visible to players
                     </p>
                   </div>
                 )}

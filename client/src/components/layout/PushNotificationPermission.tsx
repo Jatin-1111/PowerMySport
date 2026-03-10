@@ -10,6 +10,7 @@ import {
   Smartphone,
   AlertCircle,
   CheckCircle,
+  Lightbulb,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -254,8 +255,11 @@ export function PushNotificationPermission() {
         {isSubscribed && (
           <div className="mt-4 border-t border-slate-100 pt-4">
             <p className="text-xs text-slate-500">
-              💡 <strong>Tip:</strong> You can manage which notifications you
-              receive via push in the notification preferences table below.
+              <span className="inline-flex items-center gap-1">
+                <Lightbulb className="h-3.5 w-3.5" /> <strong>Tip:</strong>
+              </span>{" "}
+              You can manage which notifications you receive via push in the
+              notification preferences table below.
             </p>
           </div>
         )}

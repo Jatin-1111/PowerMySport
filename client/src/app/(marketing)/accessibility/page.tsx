@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Accessibility as AccessibilityIcon } from "lucide-react";
 
 export default function Accessibility() {
   useEffect(() => {
@@ -554,10 +555,14 @@ export default function Accessibility() {
           </section>
 
           <section className="mt-12 pt-8 border-t border-gray-300 bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-900 font-bold">
-              ♿ Accessibility is important to us. Our goal is to ensure that
-              everyone, regardless of ability, can use PowerMySport. If you face
-              any barriers, please let us know and we'll work to resolve them.
+            <p className="text-sm text-blue-900 font-bold inline-flex items-start gap-2">
+              <AccessibilityIcon className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Accessibility is important to us. Our goal is to ensure that
+                everyone, regardless of ability, can use PowerMySport. If you
+                face any barriers, please let us know and we'll work to resolve
+                them.
+              </span>
             </p>
           </section>
         </article>

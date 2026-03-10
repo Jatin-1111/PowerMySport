@@ -1,4 +1,9 @@
 import { Server, Socket } from "socket.io";
+import {
+  markUserOffline,
+  markUserOnline,
+  touchUserLastActive,
+} from "../services/UserPresenceService";
 import { verifyToken } from "../utils/jwt";
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
@@ -70,9 +75,21 @@ export const setupFriendSocket = (io: Server): void => {
     // Join user's personal room for receiving friend notifications
     socket.join(`user:${userId}`);
 
+    await markUserOnline(userId);
+
+    const heartbeat = setInterval(() => {
+      touchUserLastActive(userId).catch((error: unknown) => {
+        console.error("Failed to persist friend socket heartbeat:", error);
+      });
+    }, 60_000);
+
     console.log(`👥 Friend socket connected: User ${userId}`);
 
     socket.on("disconnect", () => {
+      clearInterval(heartbeat);
+      markUserOffline(userId).catch((error: unknown) => {
+        console.error("Failed to persist friend socket disconnect:", error);
+      });
       console.log(`👥 Friend socket disconnected: User ${userId}`);
     });
   });

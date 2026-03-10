@@ -444,6 +444,12 @@ export default function CommunityPage() {
   const selectedConversationIsPending =
     selectedConversation?.status === "PENDING" &&
     selectedConversation?.conversationType !== "GROUP";
+  const selectedConversationRequestedByMe =
+    selectedConversation?.requestedBy === profile?.userId;
+  const selectedConversationNeedsMyApproval =
+    selectedConversationIsPending && !selectedConversationRequestedByMe;
+  const canSendSelectedConversationMessage =
+    Boolean(selectedConversation) && !selectedConversationNeedsMyApproval;
   const isCommunityView = activeSidebarTab === "community-overview";
   const isConversationsView = activeSidebarTab === "conversations";
   const isPrivacyView = activeSidebarTab === "privacy-settings";
@@ -1484,6 +1490,14 @@ export default function CommunityPage() {
       return;
     }
 
+    if (selectedConversationNeedsMyApproval) {
+      const pendingError =
+        "Accept this message request before sending a reply.";
+      setError(pendingError);
+      toast.error(pendingError);
+      return;
+    }
+
     const content = newMessage.trim();
     const optimisticMessageId = `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const optimisticMessage: ConversationMessage = {
@@ -2480,23 +2494,32 @@ export default function CommunityPage() {
 
                   {selectedConversationIsPending && (
                     <div className="mt-3 rounded-xl border border-power-orange/40 bg-power-orange/10 p-3 text-sm text-card-foreground">
-                      <p className="font-medium">
-                        This conversation is pending approval.
-                      </p>
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          onClick={handleAcceptRequest}
-                          className="rounded-md bg-power-orange px-3 py-1 text-white transition hover:opacity-90"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={handleRejectRequest}
-                          className="rounded-md border border-border bg-background px-3 py-1 transition hover:bg-slate-50"
-                        >
-                          Reject
-                        </button>
-                      </div>
+                      {selectedConversationNeedsMyApproval ? (
+                        <>
+                          <p className="font-medium">
+                            This conversation is pending your approval.
+                          </p>
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              onClick={handleAcceptRequest}
+                              className="rounded-md bg-power-orange px-3 py-1 text-white transition hover:opacity-90"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={handleRejectRequest}
+                              className="rounded-md border border-border bg-background px-3 py-1 transition hover:bg-slate-50"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="font-medium">
+                          Request sent. You can send more messages while waiting
+                          for acceptance.
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -2563,21 +2586,29 @@ export default function CommunityPage() {
                       onKeyDown={(event) => {
                         if (event.key === "Enter" && !event.shiftKey) {
                           event.preventDefault();
-                          handleSendMessage();
+                          if (canSendSelectedConversationMessage) {
+                            handleSendMessage();
+                          }
                         }
                       }}
                       placeholder={
-                        selectedConversation
-                          ? "Type your message"
-                          : "Select a conversation to reply"
+                        !selectedConversation
+                          ? "Select a conversation to reply"
+                          : selectedConversationNeedsMyApproval
+                            ? "Accept this request to reply"
+                            : "Type your message"
                       }
-                      disabled={!selectedConversation || isSending}
+                      disabled={
+                        !canSendSelectedConversationMessage || isSending
+                      }
                       rows={1}
                       className="max-h-28 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
                     />
                     <button
                       disabled={
-                        isSending || !selectedConversation || !newMessage.trim()
+                        isSending ||
+                        !canSendSelectedConversationMessage ||
+                        !newMessage.trim()
                       }
                       onClick={handleSendMessage}
                       className="rounded-lg bg-power-orange px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"

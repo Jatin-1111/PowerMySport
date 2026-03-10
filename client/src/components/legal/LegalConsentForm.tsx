@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
+import { AlertTriangle, Users } from "lucide-react";
 
 interface LegalConsentProps {
   onConsentChange: (accepted: boolean) => void;
@@ -204,9 +205,11 @@ export const BookingHealthWaiverModal: React.FC<{
         <div className="p-6 space-y-4">
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
             <p className="text-sm text-gray-700 mb-3">
-              <strong>⚠️ WARNING:</strong> Sports activities carry inherent
-              risks of physical injury, serious injury, permanent disability,
-              and even death. By proceeding, you:
+              <strong className="inline-flex items-center gap-1">
+                <AlertTriangle className="h-4 w-4" /> WARNING:
+              </strong>{" "}
+              Sports activities carry inherent risks of physical injury, serious
+              injury, permanent disability, and even death. By proceeding, you:
             </p>
             <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
               <li>Acknowledge these risks</li>
@@ -294,7 +297,9 @@ export const ParentalConsentForm: React.FC<{
   return (
     <div className="space-y-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
       <div className="flex items-start space-x-3">
-        <div className="text-blue-600 text-2xl">👨‍👧</div>
+        <div className="text-blue-600">
+          <Users className="h-7 w-7" />
+        </div>
         <div>
           <h3 className="font-semibold text-gray-900">
             Parental Consent Required

@@ -2,7 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import { notificationApi, type Notification } from "@/lib/api/notification";
-import { Bell, Check, CheckCheck, Filter, Trash2 } from "lucide-react";
+import {
+  Bell,
+  Calendar,
+  Check,
+  CheckCheck,
+  CreditCard,
+  Filter,
+  MessageCircle,
+  Settings,
+  Star,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { cn } from "@/utils/cn";
 import { formatDistanceToNow } from "@/utils/date";
 import { Container } from "@/components/layout/Container";
@@ -106,15 +118,18 @@ export default function NotificationsPage() {
   };
 
   const getNotificationIcon = (category: string) => {
-    const iconMap: Record<string, string> = {
-      SOCIAL: "👥",
-      BOOKING: "📅",
-      PAYMENT: "💳",
-      REVIEW: "⭐",
-      ADMIN: "🔧",
-      COMMUNITY: "💬",
+    const iconMap: Record<
+      string,
+      React.ComponentType<{ className?: string }>
+    > = {
+      SOCIAL: Users,
+      BOOKING: Calendar,
+      PAYMENT: CreditCard,
+      REVIEW: Star,
+      ADMIN: Settings,
+      COMMUNITY: MessageCircle,
     };
-    return iconMap[category] || "🔔";
+    return iconMap[category] || Bell;
   };
 
   const filterOptions: { value: FilterType; label: string }[] = [
@@ -211,8 +226,13 @@ export default function NotificationsPage() {
                 >
                   <div className="flex items-start gap-4">
                     {/* Icon */}
-                    <div className="shrink-0 text-3xl mt-1">
-                      {getNotificationIcon(notification.category)}
+                    <div className="shrink-0 mt-1 rounded-full bg-slate-100 p-2 text-slate-600">
+                      {React.createElement(
+                        getNotificationIcon(notification.category),
+                        {
+                          className: "h-5 w-5",
+                        },
+                      )}
                     </div>
 
                     {/* Content */}

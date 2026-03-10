@@ -152,25 +152,25 @@ export default function ServicesPage() {
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3">
                     <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Find venues with available coaches</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Book both in one transaction</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Get specialized training + premium facility</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Perfect for beginners & serious athletes</span>
                   </li>

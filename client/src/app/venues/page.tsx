@@ -157,7 +157,7 @@ export default function VenuesPage() {
     appliedSportFilter ? `Sport: ${appliedSportFilter}` : null,
     minPrice ? `Min ₹${minPrice}` : null,
     maxPrice ? `Max ₹${maxPrice}` : null,
-    Number(minRating) > 0 ? `Rating ${minRating}★+` : null,
+    Number(minRating) > 0 ? `Rating ${minRating}+` : null,
     sortBy !== "relevance"
       ? sortBy === "priceAsc"
         ? "Sort: Price Low-High"
@@ -296,9 +296,9 @@ export default function VenuesPage() {
                         className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
                       >
                         <option value="0">Any Rating</option>
-                        <option value="3">3★ and above</option>
-                        <option value="4">4★ and above</option>
-                        <option value="4.5">4.5★ and above</option>
+                        <option value="3">3+ and above</option>
+                        <option value="4">4+ and above</option>
+                        <option value="4.5">4.5+ and above</option>
                       </select>
                     </label>
 

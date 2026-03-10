@@ -66,6 +66,7 @@ export interface IUser {
   photoS3Key?: string; // S3 key for profile picture
   playerProfile?: IPlayerProfile;
   venueListerProfile?: IVenueListerProfile;
+  lastActiveAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }

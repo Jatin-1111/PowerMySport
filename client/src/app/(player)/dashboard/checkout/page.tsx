@@ -689,7 +689,7 @@ function CheckoutPageContent() {
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-40 flex items-center justify-center">
-                    <span className="text-2xl text-slate-400">🏆</span>
+                    <Trophy size={26} className="text-slate-400" />
                   </div>
                   <div className="flex-1">
                     <p className="text-lg font-bold text-slate-900">

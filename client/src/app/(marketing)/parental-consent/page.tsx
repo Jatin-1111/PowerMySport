@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { ShieldAlert } from "lucide-react";
 
 export default function ParentalConsent() {
   useEffect(() => {
@@ -611,10 +612,13 @@ export default function ParentalConsent() {
           </section>
 
           <section className="mt-12 pt-8 border-t border-gray-300 bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-900 font-bold">
-              🛡️ If you suspect abuse, exploitation, or harm to a minor, please
-              contact us immediately at safeguarding@powermysport.com or your
-              local law enforcement.
+            <p className="text-sm text-blue-900 font-bold inline-flex items-start gap-2">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                If you suspect abuse, exploitation, or harm to a minor, please
+                contact us immediately at safeguarding@powermysport.com or your
+                local law enforcement.
+              </span>
             </p>
           </section>
         </article>

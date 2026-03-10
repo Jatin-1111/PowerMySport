@@ -11,6 +11,7 @@ export interface UserDocument extends Document {
   googleId?: string;
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
+  lastActiveAt?: Date;
   dob?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -158,6 +159,11 @@ const userSchema = new Schema<UserDocument>(
     },
     photoS3Key: {
       type: String,
+    },
+    lastActiveAt: {
+      type: Date,
+      default: Date.now,
+      index: true,
     },
     dob: {
       type: Date,

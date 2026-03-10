@@ -205,7 +205,7 @@ export default function Step3DocumentUpload({
             const docInfo = DOCUMENT_INFO[docTypeKey] || {
               label: docTypeKey,
               description: "Required document",
-              icon: "📄",
+              IconComponent: FileText,
             };
             const uploadedDoc = uploadedDocs.find(
               (doc) => doc.type === docTypeKey,

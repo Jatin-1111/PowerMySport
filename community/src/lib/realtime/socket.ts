@@ -29,13 +29,22 @@ const resolveSocketUrl = (): string => {
   return "http://localhost:5000";
 };
 
+const resolveCommunityNamespaceUrl = (): string => {
+  const baseUrl = resolveSocketUrl().replace(/\/+$/, "");
+  if (/\/community$/i.test(baseUrl)) {
+    return baseUrl;
+  }
+
+  return `${baseUrl}/community`;
+};
+
 export const getCommunitySocket = (): Socket => {
   if (socket) {
     socket.auth = buildSocketAuth();
     return socket;
   }
 
-  const socketUrl = resolveSocketUrl();
+  const socketUrl = resolveCommunityNamespaceUrl();
 
   socket = io(socketUrl, {
     transports: ["websocket", "polling"],

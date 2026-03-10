@@ -2,19 +2,31 @@
 
 import React, { useState } from "react";
 import { RoleTemplate } from "@/types";
-import { Info } from "lucide-react";
+import {
+  BarChart3,
+  Briefcase,
+  Calendar,
+  Gauge,
+  Info,
+  Settings,
+  ShieldAlert,
+  Star,
+  UserCog,
+  Users,
+  Warehouse,
+} from "lucide-react";
 
 // Permission module structure for display
 const PERMISSION_MODULES = {
-  users: { name: "User Management", icon: "👥" },
-  venues: { name: "Venue Management", icon: "🏟️" },
-  bookings: { name: "Booking Management", icon: "📅" },
-  coaches: { name: "Coach Management", icon: "🏋️" },
-  disputes: { name: "Dispute & Refund Management", icon: "⚖️" },
-  analytics: { name: "Analytics & Reports", icon: "📊" },
-  admins: { name: "Admin Management", icon: "👔" },
-  settings: { name: "System Settings", icon: "⚙️" },
-  reviews: { name: "Review Management", icon: "⭐" },
+  users: { name: "User Management", Icon: Users },
+  venues: { name: "Venue Management", Icon: Warehouse },
+  bookings: { name: "Booking Management", Icon: Calendar },
+  coaches: { name: "Coach Management", Icon: Briefcase },
+  disputes: { name: "Dispute & Refund Management", Icon: ShieldAlert },
+  analytics: { name: "Analytics & Reports", Icon: BarChart3 },
+  admins: { name: "Admin Management", Icon: UserCog },
+  settings: { name: "System Settings", Icon: Settings },
+  reviews: { name: "Review Management", Icon: Star },
 };
 
 // Permission labels for display
@@ -181,7 +193,7 @@ export default function PermissionSelector({
                             key={perm}
                             className="text-xs text-gray-600 flex items-start gap-1"
                           >
-                            <span className="text-green-600 mt-0.5">✓</span>
+                            <Gauge className="mt-0.5 h-3.5 w-3.5 text-green-600" />
                             <span>{PERMISSION_LABELS[perm] || perm}</span>
                           </div>
                         ))}
@@ -212,7 +224,7 @@ export default function PermissionSelector({
         )}
         {customMode && (
           <p className="mt-2 text-sm text-amber-600 font-medium">
-            ⚠️ Custom permissions (modified from template)
+            Custom permissions (modified from template)
           </p>
         )}
       </div>
@@ -266,7 +278,10 @@ export default function PermissionSelector({
                       className="flex-1 flex items-center justify-between ml-3 text-left"
                     >
                       <span className="font-medium text-gray-900">
-                        {module.icon} {module.name}
+                        <span className="inline-flex items-center gap-2">
+                          <module.Icon className="h-4 w-4" />
+                          {module.name}
+                        </span>
                       </span>
                       <svg
                         className={`h-5 w-5 text-gray-500 transition-transform ${

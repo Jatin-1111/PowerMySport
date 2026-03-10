@@ -1,5 +1,10 @@
 import { Server, Socket } from "socket.io";
 import { CommunityService } from "../services/CommunityService";
+import {
+  markUserOffline,
+  markUserOnline,
+  touchUserLastActive,
+} from "../services/UserPresenceService";
 import { verifyToken } from "../utils/jwt";
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
@@ -98,6 +103,13 @@ export const setupCommunitySocket = (io: Server): void => {
     const userId = socket.data.userId as string;
     const socketRateLimit = new Map<string, RateLimitState>();
     await CommunityService.touchLastSeen(userId);
+    await markUserOnline(userId);
+
+    const heartbeat = setInterval(() => {
+      touchUserLastActive(userId).catch((error: unknown) => {
+        console.error("Failed to persist community socket heartbeat:", error);
+      });
+    }, 60_000);
 
     socket.join(`user:${userId}`);
 
@@ -276,6 +288,8 @@ export const setupCommunitySocket = (io: Server): void => {
     });
 
     socket.on("disconnect", async () => {
+      clearInterval(heartbeat);
+      await markUserOffline(userId);
       await CommunityService.touchLastSeen(userId);
     });
   });

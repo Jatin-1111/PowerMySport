@@ -7,6 +7,25 @@ import {
   sendFriendRequestAcceptedEmail,
 } from "../utils/email";
 import { User } from "../models/User";
+import { S3Service } from "../services/S3Service";
+
+const s3Service = new S3Service();
+
+const resolveUserPhotoUrl = async (user: {
+  photoUrl?: string;
+  photoS3Key?: string;
+}): Promise<string | undefined> => {
+  if (!user.photoS3Key) {
+    return user.photoUrl;
+  }
+
+  try {
+    return await s3Service.generateDownloadUrl(user.photoS3Key, "images", 3600);
+  } catch (error) {
+    console.error("Failed to regenerate notification photo URL:", error);
+    return user.photoUrl;
+  }
+};
 
 // Validation schemas
 const sendRequestSchema = z.object({
@@ -51,11 +70,13 @@ export const sendFriendRequest = async (
 
     // Get user details for notifications
     const [requester, recipient] = await Promise.all([
-      User.findById(userId).select("name email photoUrl"),
-      User.findById(recipientId).select("name email photoUrl"),
+      User.findById(userId).select("name email photoUrl photoS3Key"),
+      User.findById(recipientId).select("name email photoUrl photoS3Key"),
     ]);
 
     if (requester && recipient) {
+      const requesterPhotoUrl = await resolveUserPhotoUrl(requester);
+
       // Send notification via NotificationService (socket + email + persist to DB)
       await NotificationService.send(
         {
@@ -68,7 +89,7 @@ export const sendFriendRequest = async (
             requesterId: requester._id.toString(),
             requesterName: requester.name,
             requesterEmail: requester.email,
-            requesterPhotoUrl: requester.photoUrl,
+            requesterPhotoUrl,
           },
         },
         {
@@ -83,7 +104,7 @@ export const sendFriendRequest = async (
         recipientName: recipient.name,
         recipientEmail: recipient.email,
         requesterName: requester.name,
-        ...(requester.photoUrl && { requesterPhotoUrl: requester.photoUrl }),
+        ...(requesterPhotoUrl && { requesterPhotoUrl }),
       }).catch((err) =>
         console.error("Failed to send friend request email:", err),
       );
@@ -125,12 +146,18 @@ export const acceptFriendRequest = async (
     );
 
     // Get user details for notification
-    const acceptedBy = await User.findById(userId);
-    const requester = await User.findById(connection.requesterId);
+    const acceptedBy = await User.findById(userId).select(
+      "name email photoUrl photoS3Key",
+    );
+    const requester = await User.findById(connection.requesterId).select(
+      "name email photoUrl photoS3Key",
+    );
 
     if (!acceptedBy || !requester) {
       throw new Error("User not found");
     }
+
+    const acceptedByPhotoUrl = await resolveUserPhotoUrl(acceptedBy);
 
     // Send notification via NotificationService (socket + email + persist to DB)
     await NotificationService.send(
@@ -144,7 +171,7 @@ export const acceptFriendRequest = async (
           acceptedById: acceptedBy._id.toString(),
           acceptedByName: acceptedBy.name,
           acceptedByEmail: acceptedBy.email,
-          acceptedByPhotoUrl: acceptedBy.photoUrl,
+          acceptedByPhotoUrl,
         },
       },
       {
@@ -159,7 +186,7 @@ export const acceptFriendRequest = async (
       requesterName: requester.name,
       requesterEmail: requester.email,
       acceptedByName: acceptedBy.name,
-      ...(acceptedBy.photoUrl && { acceptedByPhotoUrl: acceptedBy.photoUrl }),
+      ...(acceptedByPhotoUrl && { acceptedByPhotoUrl }),
     }).catch((err) =>
       console.error("Failed to send friend accepted email:", err),
     );

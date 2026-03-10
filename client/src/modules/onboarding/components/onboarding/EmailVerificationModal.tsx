@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "@/lib/toast";
-import { X } from "lucide-react";
+import { Mail, X } from "lucide-react";
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 
 interface EmailVerificationModalProps {
@@ -210,7 +210,7 @@ export default function EmailVerificationModal({
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-power-orange/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">📧</span>
+            <Mail size={30} className="text-power-orange" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Verify Your Email

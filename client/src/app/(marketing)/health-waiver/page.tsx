@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { TriangleAlert } from "lucide-react";
 
 export default function HealthWaiver() {
   useEffect(() => {
@@ -454,11 +455,15 @@ export default function HealthWaiver() {
           </section>
 
           <section className="mt-12 pt-8 border-t border-gray-300 bg-yellow-50 p-4 rounded-lg">
-            <p className="text-sm text-red-700 font-bold">
-              ⚠️ WARNING: This is a legally binding document. By using
-              PowerMySport to book sports activities, you are agreeing to assume
-              all risks of injury or death. Do not participate if you have any
-              doubt about your ability to safely engage in the chosen activity.
+            <p className="text-sm text-red-700 font-bold inline-flex items-start gap-2">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                WARNING: This is a legally binding document. By using
+                PowerMySport to book sports activities, you are agreeing to
+                assume all risks of injury or death. Do not participate if you
+                have any doubt about your ability to safely engage in the chosen
+                activity.
+              </span>
             </p>
           </section>
         </article>

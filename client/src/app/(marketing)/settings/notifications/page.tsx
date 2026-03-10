@@ -17,6 +17,7 @@ import {
   Smartphone,
   MonitorSmartphone,
   Save,
+  Lightbulb,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -389,7 +390,9 @@ export default function NotificationPreferencesPage() {
       <Card className="mt-6 border-l-4 border-l-power-orange bg-white">
         <div className="p-6">
           <h3 className="text-sm font-semibold text-slate-900">
-            💡 About Notification Preferences
+            <span className="inline-flex items-center gap-2">
+              <Lightbulb size={15} /> About Notification Preferences
+            </span>
           </h3>
           <ul className="mt-2 space-y-1 text-sm text-slate-600">
             <li>

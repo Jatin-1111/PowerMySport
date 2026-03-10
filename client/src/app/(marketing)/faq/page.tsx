@@ -2,7 +2,7 @@
 
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { ChevronDown, HelpCircle, MessageCircle } from "lucide-react";
+import { ChevronDown, FileText, HelpCircle, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -405,7 +405,9 @@ export default function FAQPage() {
         {/* Quick Links to Legal Pages */}
         <div className="mb-12 p-6 bg-orange-50 rounded-lg border-2 border-orange-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            📋 For Detailed Legal Information
+            <span className="inline-flex items-center gap-2">
+              <FileText size={18} /> For Detailed Legal Information
+            </span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <Link

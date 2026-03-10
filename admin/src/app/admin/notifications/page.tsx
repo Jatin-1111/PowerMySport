@@ -185,7 +185,7 @@ export default function NotificationsPage() {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("✅ Socket.IO connected for real-time notifications");
+      console.log("Socket.IO connected for real-time notifications");
     });
 
     socket.on("REMINDER_STATS_UPDATE", (data) => {
@@ -649,7 +649,15 @@ export default function NotificationsPage() {
                   : "bg-red-100 text-red-700"
               }`}
             >
-              {health?.isHealthy ? "✓ Healthy" : "✗ Unhealthy"}
+              {health?.isHealthy ? (
+                <span className="inline-flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" /> Healthy
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  <XCircle className="h-4 w-4" /> Unhealthy
+                </span>
+              )}
             </div>
           </div>
 

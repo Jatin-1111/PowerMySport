@@ -602,8 +602,9 @@ export default function CoachDetailsPage() {
                 <h2 className="text-xl font-bold text-slate-900">
                   Coach Reviews
                 </h2>
-                <p className="text-sm text-slate-600 mt-1">
-                  {reviewSummary.averageRating.toFixed(1)}★ average ·{" "}
+                <p className="text-sm text-slate-600 mt-1 inline-flex items-center gap-1">
+                  <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                  {reviewSummary.averageRating.toFixed(1)} average ·{" "}
                   {reviewSummary.reviewCount} reviews
                 </p>
               </div>

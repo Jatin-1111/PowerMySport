@@ -12,6 +12,7 @@ import { Stats } from "@/modules/marketing/components/marketing/Stats";
 import { Testimonials } from "@/modules/marketing/components/marketing/Testimonials";
 import {
   Building2,
+  Check,
   Trophy,
   User as UserIcon,
   Users,
@@ -342,25 +343,25 @@ export default function HomePage() {
                 <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Book premium venues instantly</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Find & book professional coaches</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Manage kids' sports activities</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Digital QR check-in</span>
                   </li>
@@ -387,25 +388,25 @@ export default function HomePage() {
                 <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Reach thousands of players</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Automated booking management</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Real-time availability tracking</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Instant payouts & analytics</span>
                   </li>
@@ -429,25 +430,25 @@ export default function HomePage() {
                 <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
                   <li className="flex items-start gap-3">
                     <span className="text-turf-green font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Build your coaching profile</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-turf-green font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Connect with serious athletes</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-turf-green font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Set your own rates & schedule</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-turf-green font-bold shrink-0 mt-0.5">
-                      ✓
+                      <Check size={14} />
                     </span>
                     <span>Grow your coaching business</span>
                   </li>

@@ -1,7 +1,18 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Bell, Check, Trash2, X } from "lucide-react";
+import {
+  Bell,
+  Calendar,
+  Check,
+  CreditCard,
+  MessageCircle,
+  Settings,
+  Star,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import { cn } from "@/utils/cn";
 import { notificationApi, type Notification } from "@/lib/api/notification";
 import { AnimatePresence, motion } from "framer-motion";
@@ -116,15 +127,18 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   };
 
   const getNotificationIcon = (category: string) => {
-    const iconMap: Record<string, string> = {
-      SOCIAL: "👥",
-      BOOKING: "📅",
-      PAYMENT: "💳",
-      REVIEW: "⭐",
-      ADMIN: "🔧",
-      COMMUNITY: "💬",
+    const iconMap: Record<
+      string,
+      React.ComponentType<{ className?: string }>
+    > = {
+      SOCIAL: Users,
+      BOOKING: Calendar,
+      PAYMENT: CreditCard,
+      REVIEW: Star,
+      ADMIN: Settings,
+      COMMUNITY: MessageCircle,
     };
-    return iconMap[category] || "🔔";
+    return iconMap[category] || Bell;
   };
 
   return (
@@ -199,8 +213,13 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                   >
                     <div className="flex items-start gap-3">
                       {/* Icon */}
-                      <div className="shrink-0 text-2xl mt-1">
-                        {getNotificationIcon(notification.category)}
+                      <div className="shrink-0 mt-1 rounded-full bg-slate-100 p-2 text-slate-600">
+                        {React.createElement(
+                          getNotificationIcon(notification.category),
+                          {
+                            className: "h-4 w-4",
+                          },
+                        )}
                       </div>
 
                       {/* Content */}
