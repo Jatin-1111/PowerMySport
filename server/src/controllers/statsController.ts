@@ -32,6 +32,19 @@ const getTwentyFourHoursAgo = (): Date => {
   return new Date(Date.now() - 24 * 60 * 60 * 1000);
 };
 
+const ONLINE_ACTIVE_WINDOW_MS = 3 * 60 * 1000;
+
+const isRecentlyActive = (lastActiveAt?: Date | string): boolean => {
+  if (!lastActiveAt) return false;
+
+  const activeTime = new Date(lastActiveAt).getTime();
+  if (Number.isNaN(activeTime)) {
+    return false;
+  }
+
+  return Date.now() - activeTime <= ONLINE_ACTIVE_WINDOW_MS;
+};
+
 // Get platform statistics
 export const getPlatformStats = async (
   req: Request,
@@ -212,7 +225,9 @@ export const getPlayersUsers = async (
         role: "PLAYER",
         createdAt: user.createdAt,
         lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: isUserOnline(user._id.toString()),
+        isOnlineNow:
+          isUserOnline(user._id.toString()) ||
+          isRecentlyActive(user.lastActiveAt || user.createdAt),
         sports,
         sportsCount: sports.length,
         hasSportsProfile: sports.length > 0,
@@ -282,7 +297,9 @@ export const getCoachUsers = async (
         role: "COACH",
         createdAt: user.createdAt,
         lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: isUserOnline(user._id.toString()),
+        isOnlineNow:
+          isUserOnline(user._id.toString()) ||
+          isRecentlyActive(user.lastActiveAt || user.createdAt),
         sports: profile?.sports || [],
         hourlyRate: profile?.hourlyRate ?? null,
         serviceMode: profile?.serviceMode ?? null,
@@ -385,7 +402,9 @@ export const getVenueListerUsers = async (
         role: "VENUE_LISTER",
         createdAt: user.createdAt,
         lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: isUserOnline(user._id.toString()),
+        isOnlineNow:
+          isUserOnline(user._id.toString()) ||
+          isRecentlyActive(user.lastActiveAt || user.createdAt),
         businessName: user.venueListerProfile?.businessDetails?.name ?? "",
         canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues ?? false,
         venueCount: counts?.venueCount ?? 0,

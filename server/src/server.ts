@@ -8,7 +8,10 @@ import {
   setupFriendSocket,
   setFriendSocketInstance,
 } from "./sockets/friendSocket";
-import { setupNotificationSocket } from "./sockets/notificationSocket";
+import {
+  setupNotificationSocket,
+  setupPresenceSocket,
+} from "./sockets/notificationSocket";
 import { setNotificationSocketInstance } from "./services/NotificationService";
 import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
@@ -77,12 +80,14 @@ const startServer = async () => {
     setupCommunitySocket(io);
     setupFriendSocket(io);
     setupNotificationSocket(io);
+    setupPresenceSocket(io);
     setFriendSocketInstance(io);
     setNotificationSocketInstance(io);
 
     console.log("🔧 Socket.IO namespaces configured:");
     console.log("   - /community (requires community profile)");
     console.log("   - /friends (basic auth)");
+    console.log("   - /presence (user presence tracking)");
     console.log("   - /notifications (real-time monitoring)");
 
     const server = httpServer.listen(PORT, () => {

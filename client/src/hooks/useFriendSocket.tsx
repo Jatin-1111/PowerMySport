@@ -391,9 +391,22 @@ export function FriendSocketProvider({
 
     setSocket(socketInstance);
 
+    // Dedicated presence socket — connects a lightweight channel so the
+    // server can track this user as online/offline for every device and
+    // page, not just when the /friends namespace is active.
+    const presenceSocket = io(`${SOCKET_URL}/presence`, {
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      reconnectionAttempts: 10,
+    });
+
     return () => {
       console.log("Disconnecting friend socket");
       socketInstance.disconnect();
+      presenceSocket.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);

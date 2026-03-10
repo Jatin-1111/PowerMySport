@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { Coach } from "../models/Coach";
+import { User } from "../models/User";
 import { verifyToken } from "../utils/jwt";
 import { IUserPayload } from "../types/index";
 import {
@@ -17,6 +18,26 @@ declare global {
     }
   }
 }
+
+const AUTH_ACTIVITY_WRITE_THROTTLE_MS = 60 * 1000;
+const lastAuthActivityWriteAt = new Map<string, number>();
+
+const touchAuthActivity = (userId: string): void => {
+  const now = Date.now();
+  const previous = lastAuthActivityWriteAt.get(userId) || 0;
+
+  if (now - previous < AUTH_ACTIVITY_WRITE_THROTTLE_MS) {
+    return;
+  }
+
+  lastAuthActivityWriteAt.set(userId, now);
+
+  User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date() } }).catch(
+    (error: unknown) => {
+      console.error("Failed to persist auth activity:", error);
+    },
+  );
+};
 
 export const authMiddleware = (
   req: Request,
@@ -36,6 +57,9 @@ export const authMiddleware = (
 
     const decoded = verifyToken(token);
     req.user = decoded;
+    if (decoded.id) {
+      touchAuthActivity(decoded.id);
+    }
     next();
   } catch (error) {
     res.status(401).json({
