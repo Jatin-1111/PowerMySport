@@ -8,6 +8,7 @@ export const discoveryApi = {
     longitude?: number;
     maxDistance?: number;
     sport?: string;
+    include?: "venues" | "coaches" | "both";
     page?: number;
     limit?: number;
   }): Promise<ApiResponse<DiscoveryResponse>> => {
@@ -23,6 +24,10 @@ export const discoveryApi = {
 
     if (params.sport) {
       queryParams.sport = params.sport;
+    }
+
+    if (params.include) {
+      queryParams.include = params.include;
     }
 
     if (params.page) {

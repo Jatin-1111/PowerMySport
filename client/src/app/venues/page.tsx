@@ -68,6 +68,7 @@ export default function VenuesPage() {
       const params: any = {
         page,
         limit: 20,
+        include: "venues",
       };
 
       if (sportFilter) {
@@ -76,7 +77,7 @@ export default function VenuesPage() {
 
       const response = await discoveryApi.searchNearby(params);
       if (response.success && response.data) {
-        setVenues(response.data.venues);
+        setVenues(response.data.venues || []);
         if (response.pagination?.venues) {
           setTotalPages(response.pagination.venues.totalPages);
           setTotalVenues(response.pagination.venues.total);

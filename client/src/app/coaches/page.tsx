@@ -390,9 +390,10 @@ export default function CoachesPage() {
       const response = await discoveryApi.searchNearby({
         latitude,
         longitude,
+        include: "coaches",
       });
       if (response.success && response.data) {
-        setCoaches(response.data.coaches);
+        setCoaches(response.data.coaches || []);
       }
     } catch (error) {
       console.error("Failed to load coaches:", error);

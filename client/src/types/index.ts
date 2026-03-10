@@ -280,8 +280,8 @@ export interface Availability {
 }
 
 export interface DiscoveryResponse {
-  venues: Venue[];
-  coaches: Coach[];
+  venues?: Venue[];
+  coaches?: Coach[];
 }
 
 export interface ReviewUser {
