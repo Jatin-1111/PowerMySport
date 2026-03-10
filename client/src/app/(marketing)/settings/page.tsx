@@ -54,6 +54,18 @@ const roleSettingsLinks: Record<
       description: "Track and complete coach verification requirements.",
     },
   ],
+  ADMIN: [
+    {
+      href: "/admin/users",
+      label: "User Management",
+      description: "Manage user access, roles, and account status.",
+    },
+    {
+      href: "/admin/bookings",
+      label: "Bookings Oversight",
+      description: "Review booking activity and handle escalations.",
+    },
+  ],
 };
 
 export default function SettingsPage() {

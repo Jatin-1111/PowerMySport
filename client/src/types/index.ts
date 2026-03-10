@@ -118,7 +118,7 @@ export interface CoachVerificationDocument {
   url: string;
   s3Key?: string;
   fileName: string;
-  uploadedAt: string;
+  uploadedAt?: string;
 }
 
 export interface CoachUserRef {

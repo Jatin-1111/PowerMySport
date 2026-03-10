@@ -71,14 +71,19 @@ function RegisterContent() {
         }
 
         // Route based on role
-        const roleRoutes = {
-          PLAYER: "/dashboard/my-bookings",
-          VENUE_LISTER: "/venue-lister/inventory",
-          COACH: "/coach/verification",
-        };
-        router.push(
-          roleRoutes[response.data.user.role] || "/dashboard/my-bookings",
-        );
+        const roleRoutes: Record<"PLAYER" | "VENUE_LISTER" | "COACH", string> =
+          {
+            PLAYER: "/dashboard/my-bookings",
+            VENUE_LISTER: "/venue-lister/inventory",
+            COACH: "/coach/verification",
+          };
+        const role = response.data.user.role;
+        const destination =
+          role === "PLAYER" || role === "VENUE_LISTER" || role === "COACH"
+            ? roleRoutes[role]
+            : "/dashboard/my-bookings";
+
+        router.push(destination);
       } else {
         toast.error(response.message || "Registration failed");
       }

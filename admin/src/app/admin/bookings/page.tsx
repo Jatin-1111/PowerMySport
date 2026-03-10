@@ -290,10 +290,15 @@ export default function AdminBookingsPage() {
                       ? booking.venueId?.name
                       : undefined) ||
                     "Unknown venue";
+                  const populatedCoach = booking.coach as
+                    | { userId?: string | { name?: string } }
+                    | undefined;
                   const coachName =
                     typeof booking.coachId === "object"
-                      ? (booking.coachId as any)?.name
-                      : booking.coach?.name || "Unknown coach";
+                      ? (booking.coachId as any)?.name || "Unknown coach"
+                      : typeof populatedCoach?.userId === "object"
+                        ? populatedCoach.userId?.name || "Unknown coach"
+                        : "Unknown coach";
                   const playerName = booking.playerName || "Unknown player";
 
                   return (
