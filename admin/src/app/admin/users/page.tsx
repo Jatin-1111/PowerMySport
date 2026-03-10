@@ -181,11 +181,27 @@ export default function AdminUsersPage() {
   }, [fetchUsersByRole]);
 
   useEffect(() => {
+    if (!SOCKET_URL || SOCKET_URL.includes("localhost")) {
+      if (process.env.NODE_ENV === "production") {
+        console.error(
+          "[AdminUsers] NEXT_PUBLIC_API_URL is not set — presence socket will not connect in production.",
+        );
+      }
+    }
+
     const socket = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
+    });
+
+    socket.on("connect", () => {
+      console.log("[AdminUsers] Presence socket connected →", SOCKET_URL);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("[AdminUsers] Presence socket connection error:", err.message, "| URL:", SOCKET_URL);
     });
 
     const onPresenceUpdate = (event: PresenceUpdateEvent): void => {
