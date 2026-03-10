@@ -75,7 +75,7 @@ export const setupFriendSocket = (io: Server): void => {
     // Join user's personal room for receiving friend notifications
     socket.join(`user:${userId}`);
 
-    await markUserOnline(userId);
+    await markUserOnline(userId, socket.id);
 
     const heartbeat = setInterval(() => {
       touchUserLastActive(userId).catch((error: unknown) => {
@@ -83,11 +83,13 @@ export const setupFriendSocket = (io: Server): void => {
       });
     }, 60_000);
 
-    console.log(`👥 Friend socket connected: User ${userId}`);
+    console.log(
+      `👥 Friend socket connected: User ${userId} socket ${socket.id}`,
+    );
 
     socket.on("disconnect", () => {
       clearInterval(heartbeat);
-      markUserOffline(userId).catch((error: unknown) => {
+      markUserOffline(userId, socket.id).catch((error: unknown) => {
         console.error("Failed to persist friend socket disconnect:", error);
       });
       console.log(`👥 Friend socket disconnected: User ${userId}`);

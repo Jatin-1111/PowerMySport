@@ -103,7 +103,7 @@ export const setupCommunitySocket = (io: Server): void => {
     const userId = socket.data.userId as string;
     const socketRateLimit = new Map<string, RateLimitState>();
     await CommunityService.touchLastSeen(userId);
-    await markUserOnline(userId);
+    await markUserOnline(userId, socket.id);
 
     const heartbeat = setInterval(() => {
       touchUserLastActive(userId).catch((error: unknown) => {
@@ -289,7 +289,7 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("disconnect", async () => {
       clearInterval(heartbeat);
-      await markUserOffline(userId);
+      await markUserOffline(userId, socket.id);
       await CommunityService.touchLastSeen(userId);
     });
   });

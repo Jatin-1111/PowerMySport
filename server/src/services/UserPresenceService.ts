@@ -3,7 +3,10 @@ import { getNotificationSocket } from "../sockets/notificationSocket";
 
 const WRITE_THROTTLE_MS = 60 * 1000;
 
-const activeSocketCounts = new Map<string, number>();
+// Map<userId, Set<socketId>> — each connected socket registers its own ID.
+// A user is online as long as their set is non-empty. This eliminates the
+// double-count problem when multiple namespaces (friends + presence) connect.
+const activeSockets = new Map<string, Set<string>>();
 const lastWriteAt = new Map<string, number>();
 
 const shouldWriteNow = (userId: string): boolean => {
@@ -38,25 +41,35 @@ const emitPresenceUpdate = (userId: string, isOnlineNow: boolean): void => {
   });
 };
 
-export const markUserOnline = async (userId: string): Promise<void> => {
-  const count = activeSocketCounts.get(userId) || 0;
-  activeSocketCounts.set(userId, count + 1);
+export const markUserOnline = async (
+  userId: string,
+  socketId: string,
+): Promise<void> => {
+  let sockets = activeSockets.get(userId);
+  if (!sockets) {
+    sockets = new Set();
+    activeSockets.set(userId, sockets);
+  }
+  sockets.add(socketId);
   await persistLastActive(userId);
   emitPresenceUpdate(userId, true);
 };
 
-export const markUserOffline = async (userId: string): Promise<void> => {
-  const count = activeSocketCounts.get(userId) || 0;
-  const next = Math.max(0, count - 1);
-
-  if (next === 0) {
-    activeSocketCounts.delete(userId);
-  } else {
-    activeSocketCounts.set(userId, next);
+export const markUserOffline = async (
+  userId: string,
+  socketId: string,
+): Promise<void> => {
+  const sockets = activeSockets.get(userId);
+  if (sockets) {
+    sockets.delete(socketId);
+    if (sockets.size === 0) {
+      activeSockets.delete(userId);
+    }
   }
 
+  const isStillOnline = (activeSockets.get(userId)?.size ?? 0) > 0;
   await persistLastActive(userId, true);
-  emitPresenceUpdate(userId, next > 0);
+  emitPresenceUpdate(userId, isStillOnline);
 };
 
 export const touchUserLastActive = async (userId: string): Promise<void> => {
@@ -64,5 +77,5 @@ export const touchUserLastActive = async (userId: string): Promise<void> => {
 };
 
 export const isUserOnline = (userId: string): boolean => {
-  return (activeSocketCounts.get(userId) || 0) > 0;
+  return (activeSockets.get(userId)?.size ?? 0) > 0;
 };

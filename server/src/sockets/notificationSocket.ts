@@ -152,7 +152,7 @@ export const setupPresenceSocket = (io: SocketIOServer): void => {
   presenceNs.on("connection", async (socket) => {
     const userId = socket.data.userId as string;
 
-    await markUserOnline(userId);
+    await markUserOnline(userId, socket.id);
 
     // Keep lastActiveAt fresh while the tab is open
     const heartbeat = setInterval(() => {
@@ -161,7 +161,7 @@ export const setupPresenceSocket = (io: SocketIOServer): void => {
 
     socket.on("disconnect", () => {
       clearInterval(heartbeat);
-      markUserOffline(userId).catch(() => {});
+      markUserOffline(userId, socket.id).catch(() => {});
     });
   });
 };
