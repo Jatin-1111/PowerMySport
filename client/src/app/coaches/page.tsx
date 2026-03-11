@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 const normalizeImageUrl = (value?: string) => {
   if (!value || typeof value !== "string") {
@@ -116,7 +116,7 @@ const CoachImageWithFallback = ({
   );
 };
 
-export default function CoachesPage() {
+function CoachesPageContent() {
   const [loading, setLoading] = useState(true);
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [filteredCoaches, setFilteredCoaches] = useState<Coach[]>([]);
@@ -780,7 +780,6 @@ export default function CoachesPage() {
                     type="text"
                     value={sportInput}
                     onChange={(e) => setSportInput(e.target.value)}
-                    placeholder="Search by sport (e.g. Cricket, Tennis, Basketball)..."
                     placeholder="Search by sport, coach name, or keyword..."
                     className="w-full rounded-lg border-2 border-slate-200 bg-white py-3 pl-10 pr-10 font-medium text-slate-900 focus:border-turf-green focus:outline-none focus:ring-2 focus:ring-turf-green/50"
                     aria-label="Search coaches by sport, coach name, or keyword"
@@ -1189,5 +1188,24 @@ export default function CoachesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CoachesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50">
+          <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="text-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turf-green mx-auto mb-4"></div>
+              <p className="text-slate-600 font-medium">Loading coaches...</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <CoachesPageContent />
+    </Suspense>
   );
 }
