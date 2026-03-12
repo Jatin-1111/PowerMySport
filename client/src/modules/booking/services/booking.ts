@@ -23,6 +23,7 @@ export const bookingApi = {
     startTime: string;
     endTime: string;
     dependentId?: string;
+    promoCode?: string;
   }): Promise<InitiateBookingResponse> => {
     const response = await axiosInstance.post("/bookings/initiate", data);
     return response.data.data;
@@ -52,6 +53,21 @@ export const bookingApi = {
       `/bookings/availability/${venueId}`,
       {
         params: { date },
+      },
+    );
+    return response.data;
+  },
+
+  getVenueAvailabilityWithAlternates: async (
+    venueId: string,
+    date: string,
+    preferredStartTime: string,
+    preferredEndTime: string,
+  ): Promise<ApiResponse<Availability & { alternateSlots?: string[] }>> => {
+    const response = await axiosInstance.get(
+      `/bookings/availability/${venueId}`,
+      {
+        params: { date, preferredStartTime, preferredEndTime },
       },
     );
     return response.data;
@@ -104,6 +120,35 @@ export const bookingApi = {
     return response.data;
   },
 
+  validatePromoCode: async (payload: {
+    code: string;
+    subtotal: number;
+    hasCoach?: boolean;
+  }): Promise<{
+    isValid: boolean;
+    discountAmount: number;
+    message?: string;
+  }> => {
+    const response = await axiosInstance.post(
+      "/bookings/promo/validate",
+      payload,
+    );
+    return response.data.data;
+  },
+
+  joinWaitlist: async (payload: {
+    venueId?: string;
+    coachId?: string;
+    sport: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    alternateSlots?: string[];
+  }): Promise<ApiResponse<{ id: string; status: string }>> => {
+    const response = await axiosInstance.post("/bookings/waitlist", payload);
+    return response.data;
+  },
+
   // ============================================
   // GROUP BOOKING METHODS
   // ============================================
@@ -122,6 +167,7 @@ export const bookingApi = {
     endTime: string;
     invitedFriendIds: string[];
     paymentType: "SINGLE" | "SPLIT";
+    promoCode?: string;
   }): Promise<InitiateBookingResponse> => {
     const response = await axiosInstance.post("/bookings/initiate-group", data);
     return response.data.data;

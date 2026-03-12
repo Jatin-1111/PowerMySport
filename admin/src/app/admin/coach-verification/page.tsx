@@ -26,7 +26,7 @@ export default function AdminCoachVerificationPage() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("PENDING");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [pagination, setPagination] = useState<PaginationData>({
     total: 0,
     page: 1,
@@ -140,6 +140,25 @@ export default function AdminCoachVerificationPage() {
     setActionCoachId(coachId);
     setActionMode(mode);
     setActionText("");
+  };
+
+  const handleNotify = async (coach: Coach) => {
+    const coachId = getCoachId(coach);
+    if (!coachId) return;
+
+    try {
+      setActionLoading(true);
+      const response = await adminApi.notifyCoachVerification(coachId);
+      toast.success(response.message || "Verification reminder email sent.");
+    } catch (error) {
+      console.error("Failed to send verification reminder:", error);
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || "Failed to send verification reminder.";
+      toast.error(message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const cancelAction = () => {
@@ -310,6 +329,15 @@ export default function AdminCoachVerificationPage() {
                     >
                       View Details
                     </Link>
+                    {coach.verificationStatus !== "VERIFIED" && (
+                      <button
+                        onClick={() => handleNotify(coach)}
+                        disabled={actionLoading}
+                        className="rounded-lg border border-orange-300 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Notify
+                      </button>
+                    )}
                     <button
                       onClick={() => handleApprove(coach)}
                       disabled={actionLoading}

@@ -146,6 +146,7 @@ export const getProfile = async (
         dob: user.dob,
         photoUrl: user.photoUrl,
         photoS3Key: user.photoS3Key,
+        playerProfile: user.playerProfile,
         venueListerProfile: user.venueListerProfile,
         dependents: user.dependents,
       },

@@ -14,6 +14,22 @@ const COACH_LISTING_SELECT =
 
 const COACH_LISTING_USER_SELECT = "_id name photoUrl photoS3Key";
 
+const resolveCoachVenueImageUrl = async (key: string): Promise<string> => {
+  try {
+    return await s3Service.generateDownloadUrl(key, "images", 604800);
+  } catch (imageError) {
+    try {
+      return await s3Service.generateDownloadUrl(key, "verification", 604800);
+    } catch (verificationError) {
+      console.error(`Failed to refresh coach venue image URL for ${key}:`, {
+        imageError,
+        verificationError,
+      });
+      return "";
+    }
+  }
+};
+
 const toRadians = (value: number): number => (value * Math.PI) / 180;
 
 const calculateDistanceKm = (
@@ -168,17 +184,7 @@ const refreshCoachMediaUrls = async <T extends Record<string, any>>(
 
   if (includeVenueImages && venueKeys.length > 0) {
     const refreshedVenueImages = await Promise.all(
-      venueKeys.map(async (key) => {
-        try {
-          return await s3Service.generateDownloadUrl(key, "images", 604800);
-        } catch (error) {
-          console.error(
-            `Failed to refresh coach venue image URL for ${key}:`,
-            error,
-          );
-          return "";
-        }
-      }),
+      venueKeys.map(async (key) => await resolveCoachVenueImageUrl(key)),
     );
 
     if (!mutableCoach.ownVenueDetails) {
@@ -494,6 +500,7 @@ export const submitCoachVerification = async (
   coach.verificationStatus = "PENDING";
   coach.isVerified = false;
   coach.verificationNotes = "";
+  coach.onboardingProgressStep = 3;
   coach.verificationSubmittedAt = new Date();
   coach.verifiedAt = null;
   coach.verifiedBy = null;
@@ -545,6 +552,10 @@ export const updateCoachVerificationStatus = async (
 
   coach.verificationStatus = status;
   coach.verificationNotes = notes || "";
+  coach.onboardingProgressStep = Math.max(
+    Number(coach.onboardingProgressStep || 1),
+    3,
+  ) as 1 | 2 | 3;
 
   if (status === "VERIFIED") {
     coach.isVerified = true;

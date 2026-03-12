@@ -7,6 +7,7 @@ import Notification, {
 import { User } from "../models/User";
 import { Server } from "socket.io";
 import { sendEmail } from "../utils/email";
+import * as pushNotificationService from "./pushNotificationService";
 
 export interface NotificationData {
   userId: string;
@@ -35,6 +36,7 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   BOOKING_INVITATION: "BOOKING",
   BOOKING_CONFIRMED: "BOOKING",
   BOOKING_CANCELLED: "BOOKING",
+  BOOKING_STATUS_UPDATED: "BOOKING",
   BOOKING_REMINDER: "BOOKING",
   INVITATION_EXPIRY: "BOOKING",
   PAYMENT_FAILED: "PAYMENT",
@@ -77,6 +79,7 @@ const TYPE_TO_PREFERENCE_KEY: Record<
   BOOKING_INVITATION: "bookingInvitations",
   BOOKING_CONFIRMED: "bookingConfirmations",
   BOOKING_CANCELLED: "bookingCancellations",
+  BOOKING_STATUS_UPDATED: "bookingConfirmations",
   BOOKING_REMINDER: "bookingReminders",
   INVITATION_EXPIRY: "bookingInvitations",
   PAYMENT_FAILED: "payments",
@@ -137,14 +140,14 @@ export class NotificationService {
       persistToDb = true,
       sendSocket: shouldSendSocket = true,
       sendEmail: shouldSendEmail = false,
-      sendPush: shouldSendPush = false,
+      sendPush: shouldSendPush = true,
       emailTemplate,
       emailData = {},
     } = options;
 
     // Get user preferences
     const user = await User.findById(data.userId).select(
-      "email name notificationPreferences",
+      "email name notificationPreferences pushSubscriptions",
     );
     if (!user) {
       console.error(`User ${data.userId} not found for notification`);
@@ -281,11 +284,51 @@ export class NotificationService {
     message: string,
     data?: Record<string, unknown>,
   ): Promise<void> {
-    // TODO: Implement web-push integration in Phase 6
-    console.log(
-      `[Push Notification] To user ${userId}: ${title} - ${message}`,
-      data,
-    );
+    try {
+      const pushService = pushNotificationService;
+
+      if (!pushService.isVapidConfigured()) {
+        return;
+      }
+
+      const user = await User.findById(userId).select("pushSubscriptions");
+      const subscriptions = user?.pushSubscriptions || [];
+
+      if (!subscriptions.length) {
+        return;
+      }
+
+      const payload = {
+        title,
+        body: message,
+        icon: "/icon-192x192.png",
+        badge: "/badge-72x72.png",
+        data: {
+          ...(data || {}),
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      const result = await pushService.sendPushNotificationToMultiple(
+        subscriptions as Array<{
+          endpoint: string;
+          keys: { p256dh: string; auth: string };
+        }>,
+        payload,
+      );
+
+      if (result.expiredEndpoints.length > 0) {
+        await User.findByIdAndUpdate(userId, {
+          $pull: {
+            pushSubscriptions: {
+              endpoint: { $in: result.expiredEndpoints },
+            },
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Failed to send push notification:", error);
+    }
   }
 
   /**

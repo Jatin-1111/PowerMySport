@@ -750,6 +750,54 @@ export const sendCoachVerificationStatusEmail = async (
   });
 };
 
+interface CoachVerificationReminderEmailOptions {
+  name: string;
+  email: string;
+}
+
+export const sendCoachVerificationReminderEmail = async (
+  options: CoachVerificationReminderEmailOptions,
+): Promise<void> => {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; padding: 24px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: #f9f9f9; padding: 24px; border-radius: 0 0 10px 10px; }
+    .tip { background: #fff; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Complete Your Coach Verification</h1>
+  </div>
+  <div class="content">
+    <p>Hi ${options.name},</p>
+    <p>This is a reminder to complete and submit your coach verification profile and documents for admin review.</p>
+    <div class="tip">
+      <strong>What to do next:</strong>
+      <ul>
+        <li>Complete your profile details</li>
+        <li>Upload required verification documents</li>
+        <li>Submit verification for review</li>
+      </ul>
+    </div>
+    <p>Once submitted, our team will review and update your status.</p>
+    <p style="margin-top: 20px;">Thanks,<br/>PowerMySport Team</p>
+  </div>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.email,
+    subject: "Reminder: complete your coach verification",
+    html,
+  });
+};
+
 interface CredentialsEmailOptions {
   name: string;
   email: string;

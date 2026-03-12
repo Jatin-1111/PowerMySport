@@ -428,4 +428,72 @@ export const communityService = {
     clearCacheByPrefixes(["groups"]);
     return response.data.data;
   },
+
+  async reportContent(payload: {
+    targetType: "MESSAGE" | "GROUP";
+    targetId: string;
+    reason: string;
+    details?: string;
+  }): Promise<{
+    id: string;
+    status: string;
+    targetType: "MESSAGE" | "GROUP";
+    createdAt: string;
+  }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{
+        id: string;
+        status: string;
+        targetType: "MESSAGE" | "GROUP";
+        createdAt: string;
+      }>
+    >("/community/reports", payload);
+    return response.data.data;
+  },
+
+  async listMyReports(
+    page = 1,
+    limit = 20,
+  ): Promise<{
+    items: Array<{
+      id: string;
+      targetType: "MESSAGE" | "GROUP";
+      targetId: string;
+      reason: string;
+      details?: string;
+      status: string;
+      resolutionNote?: string;
+      createdAt: string;
+      reviewedAt?: string | null;
+    }>;
+    pagination?: {
+      total: number;
+      page: number;
+      totalPages: number;
+    };
+  }> {
+    const response = await axiosInstance.get<
+      ApiResponse<
+        Array<{
+          id: string;
+          targetType: "MESSAGE" | "GROUP";
+          targetId: string;
+          reason: string;
+          details?: string;
+          status: string;
+          resolutionNote?: string;
+          createdAt: string;
+          reviewedAt?: string | null;
+        }>
+      >
+    >("/community/reports/my", { params: { page, limit } });
+    return {
+      items: response.data.data,
+      pagination: (
+        response.data as unknown as {
+          pagination?: { total: number; page: number; totalPages: number };
+        }
+      ).pagination,
+    };
+  },
 };

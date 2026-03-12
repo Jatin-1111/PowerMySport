@@ -18,6 +18,99 @@ export interface Admin {
   lastLogin?: string;
 }
 
+export interface ModerationReview {
+  _id: string;
+  bookingId: string;
+  targetType: "VENUE" | "COACH";
+  rating: number;
+  review?: string;
+  moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
+  reportCount: number;
+  moderationNotes?: string;
+  createdAt: string;
+}
+
+export interface UserSafetyRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "PLAYER" | "COACH" | "VENUE_LISTER";
+  isActive: boolean;
+  suspensionReason?: string;
+  suspendedAt?: string;
+  deactivatedAt?: string;
+  createdAt: string;
+  lastActiveAt?: string;
+}
+
+export interface CommunityReportRecord {
+  id: string;
+  reporterUserId: string;
+  targetType: "MESSAGE" | "GROUP";
+  targetId: string;
+  reason: string;
+  details?: string;
+  status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+  resolutionNote?: string;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+}
+
+export interface PromoCodeRecord {
+  _id: string;
+  code: string;
+  description: string;
+  discountType: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountValue: number;
+  applicableTo: "ALL" | "VENUE_ONLY" | "COACH_ONLY";
+  minBookingAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom: string;
+  validUntil: string;
+  isActive: boolean;
+  maxUsageTotal?: number;
+  maxUsagePerUser?: number;
+  currentUsageCount: number;
+  createdAt: string;
+}
+
+export interface PromoCodeStats {
+  code: string;
+  totalUsage: number;
+  totalDiscountGiven: number;
+  uniqueUsers: number;
+  recentUsages: Array<{
+    userId: string;
+    discountApplied: number;
+    usedAt: string;
+  }>;
+}
+
+export interface SupportTicketRecord {
+  _id: string;
+  subject: string;
+  description: string;
+  category: "BOOKING" | "PAYMENT" | "ACCOUNT" | "TECHNICAL" | "OTHER";
+  status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  assignedAdminId?: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const normalizeAdmin = (admin: Partial<Admin> | null | undefined): Admin => {
   const normalizedId = admin?.id || admin?._id || "";
 
@@ -191,6 +284,15 @@ export const adminApi = {
     return response.data;
   },
 
+  notifyCoachVerification: async (
+    coachId: string,
+  ): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.post(
+      `/admin/coaches/${coachId}/notify`,
+    );
+    return response.data;
+  },
+
   processRefund: async (
     bookingId: string,
     data: {
@@ -216,6 +318,171 @@ export const adminApi = {
     const response = await axiosInstance.post(
       `/admin/disputes/${bookingId}`,
       data,
+    );
+    return response.data;
+  },
+
+  getReviewModerationQueue: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<ModerationReview[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(
+      `/reviews/moderation/queue?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  moderateReview: async (
+    reviewId: string,
+    data: {
+      action: "APPROVE" | "REMOVE" | "HIDE";
+      moderationNotes?: string;
+    },
+  ): Promise<ApiResponse<ModerationReview>> => {
+    const response = await axiosInstance.patch(
+      `/reviews/${reviewId}/moderate`,
+      data,
+    );
+    return response.data;
+  },
+
+  getUserSafetyList: async (params?: {
+    role?: "PLAYER" | "COACH" | "VENUE_LISTER";
+    status?: "ACTIVE" | "SUSPENDED";
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<UserSafetyRecord[]>> => {
+    const query = new URLSearchParams();
+    if (params?.role) query.append("role", params.role);
+    if (params?.status) query.append("status", params.status);
+    if (params?.page) query.append("page", params.page.toString());
+    if (params?.limit) query.append("limit", params.limit.toString());
+
+    const response = await axiosInstance.get(
+      `/admin/users/safety?${query.toString()}`,
+    );
+    return response.data;
+  },
+
+  updateUserSafety: async (
+    userId: string,
+    data: {
+      action: "SUSPEND" | "REACTIVATE" | "DEACTIVATE";
+      reason?: string;
+    },
+  ): Promise<ApiResponse<UserSafetyRecord>> => {
+    const response = await axiosInstance.patch(
+      `/admin/users/${userId}/safety`,
+      data,
+    );
+    return response.data;
+  },
+
+  getCommunityReports: async (params?: {
+    status?: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<CommunityReportRecord[]>> => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page) query.append("page", params.page.toString());
+    if (params?.limit) query.append("limit", params.limit.toString());
+    const response = await axiosInstance.get(
+      `/admin/community/reports?${query.toString()}`,
+    );
+    return response.data;
+  },
+
+  reviewCommunityReport: async (
+    reportId: string,
+    payload: {
+      status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+      resolutionNote?: string;
+    },
+  ): Promise<
+    ApiResponse<{ id: string; status: string; reviewedAt: string }>
+  > => {
+    const response = await axiosInstance.patch(
+      `/admin/community/reports/${reportId}`,
+      payload,
+    );
+    return response.data;
+  },
+
+  getSupportTickets: async (params?: {
+    status?: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+    priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<SupportTicketRecord[]>> => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.priority) query.append("priority", params.priority);
+    if (params?.page) query.append("page", params.page.toString());
+    if (params?.limit) query.append("limit", params.limit.toString());
+
+    const response = await axiosInstance.get(
+      `/support-tickets/admin?${query.toString()}`,
+    );
+    return response.data;
+  },
+
+  updateSupportTicket: async (
+    ticketId: string,
+    data: {
+      status?: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+      priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+      assignedAdminId?: string | null;
+      note?: string;
+    },
+  ): Promise<ApiResponse<SupportTicketRecord>> => {
+    const response = await axiosInstance.patch(
+      `/support-tickets/admin/${ticketId}`,
+      data,
+    );
+    return response.data;
+  },
+
+  listPromoCodes: async (): Promise<ApiResponse<PromoCodeRecord[]>> => {
+    const response = await axiosInstance.get("/admin/promo-codes");
+    return response.data;
+  },
+
+  createPromoCode: async (data: {
+    code: string;
+    description: string;
+    discountType: "PERCENTAGE" | "FIXED_AMOUNT";
+    discountValue: number;
+    applicableTo?: "ALL" | "VENUE_ONLY" | "COACH_ONLY";
+    minBookingAmount?: number;
+    maxDiscountAmount?: number;
+    validFrom: string;
+    validUntil: string;
+    maxUsageTotal?: number;
+    maxUsagePerUser?: number;
+  }): Promise<ApiResponse<PromoCodeRecord>> => {
+    const response = await axiosInstance.post("/admin/promo-codes", data);
+    return response.data;
+  },
+
+  deactivatePromoCode: async (
+    codeId: string,
+  ): Promise<ApiResponse<PromoCodeRecord>> => {
+    const response = await axiosInstance.patch(
+      `/admin/promo-codes/${codeId}/deactivate`,
+    );
+    return response.data;
+  },
+
+  getPromoCodeStats: async (
+    codeId: string,
+  ): Promise<ApiResponse<PromoCodeStats>> => {
+    const response = await axiosInstance.get(
+      `/admin/promo-codes/${codeId}/stats`,
     );
     return response.data;
   },

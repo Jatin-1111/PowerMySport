@@ -14,7 +14,12 @@ import { validatePromoCode, applyPromoCode } from "./PromoCodeService";
 import { isWithinOpeningHours } from "../utils/openingHours";
 import friendService from "./FriendService";
 import BookingInvitation from "../models/BookingInvitation";
+import {
+  BookingWaitlist,
+  BookingWaitlistDocument,
+} from "../models/BookingWaitlist";
 import { calculateGroupPaymentSplits } from "../utils/payment";
+import { generateHourlySlots } from "../utils/booking";
 import { NotificationService } from "./NotificationService";
 import { ScheduledNotificationService } from "./ScheduledNotificationService";
 
@@ -39,6 +44,17 @@ export interface InitiateBookingPayload {
   endTime: string;
   dependentId?: string;
   promoCode?: string;
+}
+
+export interface CreateBookingWaitlistPayload {
+  userId: string;
+  venueId?: string;
+  coachId?: string;
+  sport: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  alternateSlots?: string[];
 }
 
 export interface InitiateBookingResponse {
@@ -389,6 +405,103 @@ export const isSlotAvailable = async (
     endTime,
   );
   return !hasConflict;
+};
+
+export const validatePromoCodeForUser = async (
+  code: string,
+  userId: string,
+  subtotal: number,
+  hasCoach: boolean,
+): Promise<{ isValid: boolean; discountAmount: number; message?: string }> => {
+  return validatePromoCode(code, userId, subtotal, hasCoach);
+};
+
+export const getAlternateVenueSlots = async (
+  venueId: string,
+  date: Date,
+  preferredStartTime: string,
+  preferredEndTime: string,
+  limit: number = 4,
+): Promise<string[]> => {
+  const available = await getVenueBookingsForDate(venueId, date);
+  const requestedDurationMinutes = Math.max(
+    30,
+    ((): number => {
+      const [startHour = 0, startMinute = 0] = preferredStartTime
+        .split(":")
+        .map(Number);
+      const [endHour = 0, endMinute = 0] = preferredEndTime
+        .split(":")
+        .map(Number);
+      return endHour * 60 + endMinute - (startHour * 60 + startMinute);
+    })(),
+  );
+
+  const booked = available.map((entry) => ({
+    startTime: entry.startTime,
+    endTime: entry.endTime,
+  }));
+  const allSlots = generateHourlySlots(6, 23);
+
+  const canFit = (start: string): boolean => {
+    const [h = 0, m = 0] = start.split(":").map(Number);
+    const endMinutes = h * 60 + m + requestedDurationMinutes;
+    const endHour = Math.floor(endMinutes / 60);
+    const endMin = endMinutes % 60;
+    const candidateEnd = `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")}`;
+
+    return !booked.some((slot) => {
+      return (
+        (start >= slot.startTime && start < slot.endTime) ||
+        (candidateEnd > slot.startTime && candidateEnd <= slot.endTime) ||
+        (start <= slot.startTime && candidateEnd >= slot.endTime)
+      );
+    });
+  };
+
+  const preferredIndex = allSlots.findIndex(
+    (slot) => slot === preferredStartTime,
+  );
+  const sorted = allSlots
+    .map((slot, index) => ({
+      slot,
+      distance: preferredIndex >= 0 ? Math.abs(index - preferredIndex) : index,
+    }))
+    .sort((a, b) => a.distance - b.distance)
+    .map((item) => item.slot);
+
+  return sorted.filter((slot) => canFit(slot)).slice(0, Math.max(1, limit));
+};
+
+export const createBookingWaitlistEntry = async (
+  payload: CreateBookingWaitlistPayload,
+): Promise<BookingWaitlistDocument> => {
+  const waitlist = await BookingWaitlist.findOneAndUpdate(
+    {
+      userId: payload.userId,
+      ...(payload.venueId ? { venueId: payload.venueId } : {}),
+      ...(payload.coachId ? { coachId: payload.coachId } : {}),
+      date: payload.date,
+      startTime: payload.startTime,
+      status: "ACTIVE",
+    },
+    {
+      $set: {
+        userId: payload.userId,
+        ...(payload.venueId ? { venueId: payload.venueId } : {}),
+        ...(payload.coachId ? { coachId: payload.coachId } : {}),
+        sport: payload.sport,
+        date: payload.date,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        alternateSlots: payload.alternateSlots || [],
+        status: "ACTIVE",
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  );
+
+  return waitlist;
 };
 
 /**
@@ -944,6 +1057,20 @@ export const cancelBooking = async (
           ),
         );
 
+        NotificationService.send({
+          userId: participantId,
+          type: "BOOKING_STATUS_UPDATED",
+          title: "Booking status changed",
+          message: `Your booking is now CANCELLED for ${updatedBooking.sport}.`,
+          data: {
+            bookingId: updatedBooking._id.toString(),
+            status: "CANCELLED",
+            date: updatedBooking.date.toISOString(),
+            startTime: updatedBooking.startTime,
+            endTime: updatedBooking.endTime,
+          },
+        }).catch(() => {});
+
         // Send refund notification if refund is available
         if (refundAmount > 0) {
           NotificationService.send({
@@ -1069,6 +1196,20 @@ export const checkInBookingByCode = async (
   if (!updatedBooking) {
     throw new Error("Cannot check-in. Booking status changed, please retry");
   }
+
+  NotificationService.send({
+    userId: updatedBooking.userId.toString(),
+    type: "BOOKING_STATUS_UPDATED",
+    title: "Booking checked in",
+    message: `Your booking is now IN_PROGRESS for ${updatedBooking.sport}.`,
+    data: {
+      bookingId: updatedBooking._id.toString(),
+      status: "IN_PROGRESS",
+      date: updatedBooking.date.toISOString(),
+      startTime: updatedBooking.startTime,
+      endTime: updatedBooking.endTime,
+    },
+  }).catch(() => {});
 
   return updatedBooking;
 };
@@ -1208,6 +1349,20 @@ export const confirmMockPaymentSuccess = async (
       err,
     ),
   );
+
+  NotificationService.send({
+    userId: userId,
+    type: "BOOKING_CONFIRMED",
+    title: "Booking confirmed",
+    message: `Your booking for ${updatedBooking.sport} is confirmed.`,
+    data: {
+      bookingId: updatedBooking._id.toString(),
+      status: updatedBooking.status,
+      date: updatedBooking.date.toISOString(),
+      startTime: updatedBooking.startTime,
+      endTime: updatedBooking.endTime,
+    },
+  }).catch(() => {});
 
   // Create booking reminders
   const user = await User.findById(userId).select(

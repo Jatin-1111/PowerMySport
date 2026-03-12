@@ -16,11 +16,8 @@ export interface PushSubscriptionResponse {
   message?: string;
 }
 
-// Public VAPID key - this should be provided by the backend
-// For now, using a placeholder. In production, this should come from environment variables
-export const VAPID_PUBLIC_KEY =
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-  "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U";
+let cachedVapidPublicKey: string | null =
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null;
 
 /**
  * Convert VAPID key from base64 to Uint8Array
@@ -39,6 +36,31 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export const pushNotificationService = {
+  /**
+   * Resolve VAPID public key from backend/runtime config
+   */
+  getVapidPublicKey: async (): Promise<string> => {
+    if (cachedVapidPublicKey) {
+      return cachedVapidPublicKey;
+    }
+
+    const response = await axios.get<{
+      success: boolean;
+      data?: {
+        configured?: boolean;
+        publicKey?: string | null;
+      };
+    }>("/notifications/push/vapid-status");
+
+    const publicKey = response.data?.data?.publicKey;
+    if (!publicKey) {
+      throw new Error("Push is not configured on the server");
+    }
+
+    cachedVapidPublicKey = publicKey;
+    return publicKey;
+  },
+
   /**
    * Check if push notifications are supported
    */
@@ -111,11 +133,13 @@ export const pushNotificationService = {
       const registration =
         await pushNotificationService.registerServiceWorker();
 
+      const vapidPublicKey = await pushNotificationService.getVapidPublicKey();
+
       // Subscribe to push
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
-          VAPID_PUBLIC_KEY,
+          vapidPublicKey,
         ) as BufferSource,
       });
 

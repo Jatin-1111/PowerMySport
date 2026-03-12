@@ -79,6 +79,11 @@ export interface UserDocument extends Document {
     userAgent?: string;
     createdAt?: Date;
   }>;
+  isActive: boolean;
+  suspensionReason?: string;
+  suspendedAt?: Date;
+  suspendedBy?: mongoose.Types.ObjectId;
+  deactivatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -265,6 +270,29 @@ const userSchema = new Schema<UserDocument>(
         },
       },
     ],
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    suspensionReason: {
+      type: String,
+      default: "",
+      maxlength: 500,
+    },
+    suspendedAt: {
+      type: Date,
+      default: null,
+    },
+    suspendedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null,
+    },
+    deactivatedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );

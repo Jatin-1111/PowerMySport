@@ -5,6 +5,8 @@ import {
   cancelBooking,
   checkInBookingByCode,
   confirmMockPaymentSuccess,
+  createBookingWaitlistEntry,
+  getAlternateVenueSlots,
   getUserBookings,
   getVenueBookingsForDate,
   getVenueListerBookings,
@@ -13,6 +15,7 @@ import {
   respondToBookingInvitation,
   coverUnpaidShares,
   getUserBookingInvitations,
+  validatePromoCodeForUser,
 } from "../services/BookingService";
 import { generateHourlySlots } from "../utils/booking";
 import { getPaginationParams } from "../utils/pagination";
@@ -262,12 +265,32 @@ export const getVenueAvailability = async (
       });
     });
 
+    const preferredStart =
+      typeof req.query.preferredStartTime === "string"
+        ? req.query.preferredStartTime
+        : "";
+    const preferredEnd =
+      typeof req.query.preferredEndTime === "string"
+        ? req.query.preferredEndTime
+        : "";
+    const alternateSlots =
+      preferredStart && preferredEnd
+        ? await getAlternateVenueSlots(
+            venueId,
+            targetDate,
+            preferredStart,
+            preferredEnd,
+            4,
+          )
+        : [];
+
     res.status(200).json({
       success: true,
       message: "Availability retrieved successfully",
       data: {
         availableSlots,
         bookedSlots,
+        alternateSlots,
       },
     });
   } catch (error) {
@@ -275,6 +298,99 @@ export const getVenueAvailability = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch availability",
+    });
+  }
+};
+
+export const validateBookingPromoCode = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { code, subtotal, hasCoach } = req.body as {
+      code: string;
+      subtotal: number;
+      hasCoach?: boolean;
+    };
+
+    const result = await validatePromoCodeForUser(
+      code,
+      req.user.id,
+      subtotal,
+      Boolean(hasCoach),
+    );
+
+    res.status(200).json({
+      success: true,
+      message: result.message || "Promo validated",
+      data: result,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to validate promo",
+    });
+  }
+};
+
+export const joinBookingWaitlist = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const {
+      venueId,
+      coachId,
+      sport,
+      date,
+      startTime,
+      endTime,
+      alternateSlots,
+    } = req.body as {
+      venueId?: string;
+      coachId?: string;
+      sport: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      alternateSlots?: string[];
+    };
+
+    const entry = await createBookingWaitlistEntry({
+      userId: req.user.id,
+      ...(venueId ? { venueId } : {}),
+      ...(coachId ? { coachId } : {}),
+      sport,
+      date: new Date(date),
+      startTime,
+      endTime,
+      ...(Array.isArray(alternateSlots) ? { alternateSlots } : {}),
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Added to waitlist successfully",
+      data: {
+        id: entry._id.toString(),
+        status: entry.status,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to join waitlist",
     });
   }
 };

@@ -121,6 +121,24 @@ export default function AdminCoachVerificationDetailPage() {
     }
   };
 
+  const handleNotify = async () => {
+    if (!coachId) return;
+
+    setActionLoading(true);
+    try {
+      const response = await adminApi.notifyCoachVerification(coachId);
+      toast.success(response.message || "Verification reminder email sent.");
+    } catch (err) {
+      console.error("Failed to send verification reminder:", err);
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Failed to send verification reminder.";
+      toast.error(message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return <div className="py-12 text-center">Loading coach details...</div>;
   }
@@ -353,6 +371,15 @@ export default function AdminCoachVerificationDetailPage() {
           Verification Actions
         </h3>
         <div className="flex flex-wrap gap-2">
+          {coach.verificationStatus !== "VERIFIED" && (
+            <button
+              onClick={handleNotify}
+              disabled={actionLoading}
+              className="rounded-lg border border-orange-300 px-4 py-2 text-sm font-semibold text-orange-700 transition-colors hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Notify
+            </button>
+          )}
           <button
             onClick={handleApprove}
             disabled={actionLoading}

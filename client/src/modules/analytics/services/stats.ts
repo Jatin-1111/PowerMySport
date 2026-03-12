@@ -19,6 +19,17 @@ export interface UserData {
 }
 
 export const statsApi = {
+  trackFunnelEvent: async (payload: {
+    eventName: string;
+    entityType?: string;
+    entityId?: string;
+    metadata?: Record<string, unknown>;
+    source?: "WEB" | "MOBILE" | "SERVER";
+  }): Promise<{ success: boolean; message: string }> => {
+    const response = await axiosInstance.post("/stats/funnel/event", payload);
+    return response.data;
+  },
+
   getPlatformStats: async (): Promise<ApiResponse<PlatformStats>> => {
     const response = await axiosInstance.get("/stats/platform");
     return response.data;

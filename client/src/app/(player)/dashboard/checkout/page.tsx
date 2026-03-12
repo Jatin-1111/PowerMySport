@@ -35,6 +35,7 @@ import {
 import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBookingInviteSection";
 import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
 import { bookingApi } from "@/modules/booking/services/booking";
+import { statsApi } from "@/modules/analytics/services/stats";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
@@ -92,8 +93,12 @@ function CheckoutPageContent() {
   const [promoCode, setPromoCode] = useState("");
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [alternateSlots, setAlternateSlots] = useState<string[]>([]);
+  const [showWaitlistPrompt, setShowWaitlistPrompt] = useState(false);
+  const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
 
   // Group booking state
   const [isGroupBooking, setIsGroupBooking] = useState(false);
@@ -103,6 +108,18 @@ function CheckoutPageContent() {
   useEffect(() => {
     setSelectedDependentId(dependentId);
   }, [dependentId]);
+
+  useEffect(() => {
+    statsApi
+      .trackFunnelEvent({
+        eventName: "checkout_viewed",
+        entityType: type.toUpperCase(),
+        entityId: type === "coach" ? coachId : venueId,
+        metadata: { sport, date, startTime, endTime },
+        source: "WEB",
+      })
+      .catch(() => {});
+  }, [type, coachId, venueId, sport, date, startTime, endTime]);
 
   // Load coach or venue details
   useEffect(() => {
@@ -315,7 +332,7 @@ function CheckoutPageContent() {
     setCurrentStep((prev) => Math.max(1, prev - 1));
   };
 
-  const handleApplyPromo = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleApplyPromo = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPromoMessage(null);
 
@@ -325,15 +342,76 @@ function CheckoutPageContent() {
       return;
     }
 
-    if (promoCode.trim().toUpperCase() === "PLAY10") {
-      const promoDiscount = Math.round(subtotal * 0.1);
-      setDiscount(promoDiscount);
-      setPromoMessage("Promo applied: 10% off.");
-      return;
-    }
+    try {
+      setIsApplyingPromo(true);
+      const result = await bookingApi.validatePromoCode({
+        code: promoCode.trim(),
+        subtotal,
+        hasCoach: type === "coach",
+      });
 
-    setDiscount(0);
-    setPromoMessage("This promo code is not valid.");
+      if (!result.isValid) {
+        setDiscount(0);
+        setPromoMessage(result.message || "This promo code is not valid.");
+        statsApi
+          .trackFunnelEvent({
+            eventName: "promo_validation_failed",
+            entityType: "BOOKING",
+            metadata: { promoCode: promoCode.trim().toUpperCase(), subtotal },
+          })
+          .catch(() => {});
+        return;
+      }
+
+      setDiscount(result.discountAmount);
+      setPromoMessage(result.message || "Promo applied successfully.");
+      statsApi
+        .trackFunnelEvent({
+          eventName: "promo_applied",
+          entityType: "BOOKING",
+          metadata: {
+            promoCode: promoCode.trim().toUpperCase(),
+            discountAmount: result.discountAmount,
+            subtotal,
+          },
+        })
+        .catch(() => {});
+    } catch (error) {
+      setDiscount(0);
+      setPromoMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to validate promo code right now.",
+      );
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
+
+  const handleJoinWaitlist = async () => {
+    try {
+      setIsJoiningWaitlist(true);
+      await bookingApi.joinWaitlist({
+        ...(type === "coach" ? { coachId } : { venueId }),
+        sport,
+        date: new Date(date).toISOString(),
+        startTime,
+        endTime,
+        alternateSlots,
+      });
+      toast.success(
+        "You were added to waitlist. We will notify you on changes.",
+      );
+      setShowWaitlistPrompt(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to join waitlist. Please try again.",
+      );
+    } finally {
+      setIsJoiningWaitlist(false);
+    }
   };
 
   const handleCheckout = async () => {
@@ -413,6 +491,7 @@ function CheckoutPageContent() {
             startTime,
             endTime,
             playerLocation,
+            promoCode: promoCode.trim() || undefined,
             invitedFriendIds: selectedFriendIds,
             paymentType,
           });
@@ -424,6 +503,7 @@ function CheckoutPageContent() {
             startTime,
             endTime,
             playerLocation,
+            promoCode: promoCode.trim() || undefined,
             dependentId: selectedDependentId || undefined,
           });
         }
@@ -436,6 +516,7 @@ function CheckoutPageContent() {
             date: bookingDate,
             startTime,
             endTime,
+            promoCode: promoCode.trim() || undefined,
             invitedFriendIds: selectedFriendIds,
             paymentType,
           });
@@ -446,6 +527,7 @@ function CheckoutPageContent() {
             date: bookingDate,
             startTime,
             endTime,
+            promoCode: promoCode.trim() || undefined,
             dependentId: selectedDependentId || undefined,
           });
         }
@@ -458,6 +540,15 @@ function CheckoutPageContent() {
 
       await bookingApi.confirmMockPaymentSuccess(bookingId);
 
+      statsApi
+        .trackFunnelEvent({
+          eventName: "checkout_payment_success",
+          entityType: "BOOKING",
+          entityId: bookingId,
+          metadata: { total, paymentMethod, isGroupBooking, paymentType },
+        })
+        .catch(() => {});
+
       router.push(
         `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&type=${type}&mock=true`,
       );
@@ -467,6 +558,36 @@ function CheckoutPageContent() {
         submitError instanceof Error
           ? submitError.message
           : "Unable to complete checkout. Please try again.";
+
+      if (
+        type === "venue" &&
+        typeof errorMessage === "string" &&
+        errorMessage.toLowerCase().includes("already booked")
+      ) {
+        try {
+          const availability =
+            await bookingApi.getVenueAvailabilityWithAlternates(
+              venueId,
+              new Date(date).toISOString(),
+              startTime,
+              endTime,
+            );
+          setAlternateSlots(availability.data?.alternateSlots || []);
+          setShowWaitlistPrompt(true);
+        } catch {
+          setAlternateSlots([]);
+          setShowWaitlistPrompt(true);
+        }
+      }
+
+      statsApi
+        .trackFunnelEvent({
+          eventName: "checkout_payment_failed",
+          entityType: "BOOKING",
+          metadata: { errorMessage, total, paymentMethod },
+        })
+        .catch(() => {});
+
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -820,7 +941,7 @@ function CheckoutPageContent() {
                   />
                 </div>
                 <Button type="submit" variant="outline" className="sm:w-40">
-                  Apply
+                  {isApplyingPromo ? "Applying..." : "Apply"}
                 </Button>
               </form>
               {promoMessage && (
@@ -856,6 +977,38 @@ function CheckoutPageContent() {
         {hasRequiredDetails && !hasValidDuration && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             End time must be after start time.
+          </div>
+        )}
+
+        {showWaitlistPrompt && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-800">
+            <p className="font-semibold">Selected slot was just taken.</p>
+            {alternateSlots.length > 0 ? (
+              <p className="mt-1 text-xs">
+                Alternate slots: {alternateSlots.join(", ")}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs">
+                No nearby alternate slot found right now.
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleJoinWaitlist}
+                disabled={isJoiningWaitlist}
+              >
+                {isJoiningWaitlist ? "Joining..." : "Join waitlist"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowWaitlistPrompt(false)}
+              >
+                Dismiss
+              </Button>
+            </div>
           </div>
         )}
       </CheckoutShell>

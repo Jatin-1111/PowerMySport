@@ -23,7 +23,9 @@ export interface CoachDocument extends Document {
   verificationDocuments?: CoachDocumentFile[]; // Certification proofs, ID verification
   verificationStatus?: CoachVerificationStatus;
   verificationNotes?: string;
+  onboardingProgressStep?: 1 | 2 | 3;
   verificationSubmittedAt?: Date;
+  lastVerificationReminderAt?: Date | null;
   verifiedAt?: Date | null;
   verifiedBy?: mongoose.Types.ObjectId | null;
   isVerified: boolean;
@@ -266,8 +268,17 @@ const coachSchema = new Schema<CoachDocument>(
       type: String,
       default: "",
     },
+    onboardingProgressStep: {
+      type: Number,
+      enum: [1, 2, 3],
+      default: 1,
+    },
     verificationSubmittedAt: {
       type: Date,
+    },
+    lastVerificationReminderAt: {
+      type: Date,
+      default: null,
     },
     verifiedAt: {
       type: Date,

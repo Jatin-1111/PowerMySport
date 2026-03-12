@@ -162,6 +162,7 @@ export const bookingSchema = z
     dependentId: z.string().min(1, "Dependent ID is required").optional(),
     playerLocation: geoLocationSchema.optional(),
     sport: z.string().min(1, "Sport is required"),
+    promoCode: z.string().trim().min(1).max(40).optional(),
     date: z.string().datetime(),
     startTime: z
       .string()
@@ -193,6 +194,76 @@ export const bookingSchema = z
 
 export const bookingCheckInCodeSchema = z.object({
   checkInCode: z.string().min(1, "Check-in code is required"),
+});
+
+export const promoValidateSchema = z.object({
+  code: z.string().trim().min(1, "Promo code is required"),
+  subtotal: z.number().min(0, "Subtotal must be non-negative"),
+  hasCoach: z.boolean().optional().default(false),
+});
+
+export const promoCreateSchema = z
+  .object({
+    code: z.string().trim().min(3).max(40),
+    description: z.string().trim().min(3).max(200),
+    discountType: z.enum(["PERCENTAGE", "FIXED_AMOUNT"]),
+    discountValue: z.number().min(0),
+    applicableTo: z.enum(["ALL", "VENUE_ONLY", "COACH_ONLY"]).optional(),
+    minBookingAmount: z.number().min(0).optional(),
+    maxDiscountAmount: z.number().min(0).optional(),
+    validFrom: z.string().datetime(),
+    validUntil: z.string().datetime(),
+    maxUsageTotal: z.number().int().min(1).optional(),
+    maxUsagePerUser: z.number().int().min(1).optional(),
+  })
+  .refine((data) => new Date(data.validUntil) > new Date(data.validFrom), {
+    message: "validUntil must be after validFrom",
+    path: ["validUntil"],
+  });
+
+export const bookingWaitlistSchema = z
+  .object({
+    venueId: z.string().min(1, "Venue ID is required").optional(),
+    coachId: z.string().min(1, "Coach ID is required").optional(),
+    sport: z.string().trim().min(1, "Sport is required"),
+    date: z.string().datetime(),
+    startTime: z
+      .string()
+      .regex(
+        /^([01]?\d|2[0-3]):([0-5]\d)$/,
+        "Start time must be in HH:mm format",
+      ),
+    endTime: z
+      .string()
+      .regex(
+        /^([01]?\d|2[0-3]):([0-5]\d)$/,
+        "End time must be in HH:mm format",
+      ),
+    alternateSlots: z.array(z.string()).optional().default([]),
+  })
+  .refine((data) => data.venueId || data.coachId, {
+    message: "Either venueId or coachId is required",
+    path: ["venueId"],
+  });
+
+export const communityReportSchema = z.object({
+  targetType: z.enum(["MESSAGE", "GROUP"]),
+  targetId: z.string().min(1, "Target ID is required"),
+  reason: z.string().trim().min(3, "Reason is required").max(120),
+  details: z.string().trim().max(1000).optional(),
+});
+
+export const communityModerationActionSchema = z.object({
+  status: z.enum(["UNDER_REVIEW", "RESOLVED", "REJECTED"]),
+  resolutionNote: z.string().trim().max(1000).optional(),
+});
+
+export const funnelEventSchema = z.object({
+  eventName: z.string().trim().min(1, "eventName is required").max(80),
+  entityType: z.string().trim().max(80).optional(),
+  entityId: z.string().trim().max(80).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  source: z.enum(["WEB", "MOBILE", "SERVER"]).optional().default("WEB"),
 });
 
 export const createReviewSchema = z.object({

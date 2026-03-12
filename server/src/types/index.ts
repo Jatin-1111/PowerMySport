@@ -126,6 +126,7 @@ export interface ICoach {
   travelBufferTime?: number; // Minutes, required if FREELANCE/HYBRID
   availability: IAvailability[];
   availabilityBySport?: Record<string, IAvailability[]>;
+  onboardingProgressStep?: 1 | 2 | 3;
   verificationDocuments?: Array<{
     type:
       | "CERTIFICATION"

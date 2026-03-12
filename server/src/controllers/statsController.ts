@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { Booking } from "../models/Booking";
 import { Coach } from "../models/Coach";
+import { AnalyticsEvent } from "../models/AnalyticsEvent";
 import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import VenueInquiry from "../models/VenueInquiry";
+import { getObservabilitySnapshot } from "../middleware/observability";
 import { isUserOnline } from "../services/UserPresenceService";
 import { getAllVenues as getAllVenuesService } from "../services/VenueService";
 import { getPaginationParams } from "../utils/pagination";
@@ -733,6 +735,181 @@ export const getAllBookings = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch bookings",
+    });
+  }
+};
+
+export const trackFunnelEvent = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { eventName, entityType, entityId, metadata, source } = req.body as {
+      eventName: string;
+      entityType?: string;
+      entityId?: string;
+      metadata?: Record<string, unknown>;
+      source?: "WEB" | "MOBILE" | "SERVER";
+    };
+
+    await AnalyticsEvent.create({
+      ...(req.user?.id ? { userId: req.user.id } : {}),
+      eventName,
+      ...(entityType ? { entityType } : {}),
+      ...(entityId ? { entityId } : {}),
+      ...(metadata ? { metadata } : {}),
+      source: source || "WEB",
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Funnel event tracked",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to track event",
+    });
+  }
+};
+
+export const getFunnelSummary = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const days = Math.min(90, Math.max(1, Number(req.query.days) || 30));
+    const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const grouped = await AnalyticsEvent.aggregate<{
+      _id: string;
+      count: number;
+      uniqueUsers: number;
+    }>([
+      { $match: { createdAt: { $gte: start } } },
+      {
+        $group: {
+          _id: "$eventName",
+          count: { $sum: 1 },
+          users: { $addToSet: "$userId" },
+        },
+      },
+      {
+        $project: {
+          count: 1,
+          uniqueUsers: { $size: "$users" },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Funnel summary retrieved",
+      data: {
+        days,
+        events: grouped.map((entry) => ({
+          eventName: entry._id,
+          count: entry.count,
+          uniqueUsers: entry.uniqueUsers,
+        })),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch funnel summary",
+    });
+  }
+};
+
+export const getFinanceReconciliation = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const bookings = await Booking.find({
+      status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
+    })
+      .select("totalAmount payments status")
+      .lean();
+
+    let matched = 0;
+    let mismatched = 0;
+    const sampleMismatches: Array<{
+      bookingId: string;
+      expected: number;
+      paid: number;
+      status: string;
+    }> = [];
+
+    for (const booking of bookings) {
+      const expected = Number(booking.totalAmount || 0);
+      const paid = (booking.payments || [])
+        .filter((payment) => payment.status === "PAID")
+        .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      const delta = Math.abs(expected - paid);
+
+      if (delta <= 1) {
+        matched += 1;
+      } else {
+        mismatched += 1;
+        if (sampleMismatches.length < 25) {
+          sampleMismatches.push({
+            bookingId: String(booking._id),
+            expected,
+            paid,
+            status: booking.status,
+          });
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Finance reconciliation generated",
+      data: {
+        totalBookingsChecked: bookings.length,
+        matched,
+        mismatched,
+        mismatchRate:
+          bookings.length > 0
+            ? Number((mismatched / bookings.length).toFixed(4))
+            : 0,
+        sampleMismatches,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to generate reconciliation",
+    });
+  }
+};
+
+export const getObservabilityStats = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    res.status(200).json({
+      success: true,
+      message: "Observability snapshot retrieved",
+      data: getObservabilitySnapshot(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve observability stats",
     });
   }
 };

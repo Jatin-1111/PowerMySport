@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { NotificationService } from "../services/NotificationService";
 import { NotificationCategory } from "../models/Notification";
 import { z } from "zod";
+import * as pushNotificationService from "../services/pushNotificationService";
+import { User as UserModel } from "../models/User";
 
 /**
  * Get notifications for the authenticated user
@@ -489,8 +491,8 @@ export const sendTestPushNotification = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const pushService = await import("../services/pushNotificationService.js");
-    const { User } = await import("../models/User.js");
+    const pushService = pushNotificationService;
+    const User = UserModel;
     const userId = req.user!.id;
 
     // Check if VAPID is configured
@@ -572,7 +574,7 @@ export const getVapidStatus = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const pushService = await import("../services/pushNotificationService.js");
+    const pushService = pushNotificationService;
 
     const isConfigured = pushService.isVapidConfigured();
 

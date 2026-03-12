@@ -25,7 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type VerificationStep = 1 | 2 | 3;
 
@@ -37,6 +37,7 @@ const ALLOWED_FILE_TYPES = [
   "application/pdf",
 ];
 const ALLOWED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const COACH_VERIFICATION_DRAFT_STORAGE_KEY = "coachVerificationDraft:v1";
 
 const getInitialServiceMode = (): ServiceMode => {
   if (typeof window === "undefined") {
@@ -114,6 +115,71 @@ const formatOpeningHoursToString = (hours: OpeningHours): string => {
   return openDays
     .map(([day, hours]) => `${day}: ${hours.openTime}-${hours.closeTime}`)
     .join("; ");
+};
+
+interface CoachVerificationDraft {
+  step: VerificationStep;
+  bio: string;
+  mobileNumber: string;
+  hourlyRateInput: string;
+  pricingMode: "SAME" | "PER_SPORT";
+  selectedSports: string[];
+  sportPricing: Record<string, string>;
+  serviceMode: ServiceMode;
+  serviceRadiusKmInput: string;
+  travelBufferTimeInput: string;
+  venueDetails: {
+    name: string;
+    address: string;
+    description: string;
+    openingHours: OpeningHours;
+    images: string[];
+    imageS3Keys: string[];
+  };
+  venueCoordinates: [number, number] | null;
+  verificationDocs: CoachVerificationDocument[];
+  updatedAt: string;
+}
+
+const getCoachVerificationDraftStorageKey = (userId?: string) =>
+  userId ? `${COACH_VERIFICATION_DRAFT_STORAGE_KEY}:${userId}` : null;
+
+const readCoachVerificationDraft = (
+  storageKey: string,
+): CoachVerificationDraft | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) {
+      return null;
+    }
+
+    return JSON.parse(raw) as CoachVerificationDraft;
+  } catch {
+    return null;
+  }
+};
+
+const writeCoachVerificationDraft = (
+  storageKey: string,
+  draft: CoachVerificationDraft,
+) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(storageKey, JSON.stringify(draft));
+};
+
+const clearCoachVerificationDraft = (storageKey: string | null) => {
+  if (typeof window === "undefined" || !storageKey) {
+    return;
+  }
+
+  localStorage.removeItem(storageKey);
 };
 
 const getVerificationBadge = (coachData: Coach | null) => {
@@ -231,6 +297,12 @@ export default function CoachVerificationPage() {
     null,
   );
   const [isEditModeFromProfile, setIsEditModeFromProfile] = useState(false);
+  const [resumeStepHint, setResumeStepHint] = useState<VerificationStep | null>(
+    null,
+  );
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const hasHydratedDraftRef = useRef(false);
+  const hasResolvedInitialStepRef = useRef(false);
 
   const status = useMemo(() => {
     if (!coachProfile) {
@@ -244,6 +316,111 @@ export default function CoachVerificationPage() {
   }, [coachProfile]);
 
   const isLockedByReview = status === "PENDING" || status === "REVIEW";
+  const draftStorageKey = useMemo(
+    () => getCoachVerificationDraftStorageKey(user?.id),
+    [user?.id],
+  );
+
+  const isStep1Complete = useMemo(() => {
+    return (
+      Boolean(user?.photoUrl?.trim()) &&
+      Boolean(bio.trim()) &&
+      Boolean(mobileNumber.trim()) &&
+      isValidMobileNumber(mobileNumber)
+    );
+  }, [user?.photoUrl, bio, mobileNumber]);
+
+  const isStep2Complete = useMemo(() => {
+    if (!isStep1Complete || selectedSports.length === 0) {
+      return false;
+    }
+
+    if (pricingMode === "SAME") {
+      const hourlyRate = Number(hourlyRateInput);
+      if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+        return false;
+      }
+    } else {
+      for (const sport of selectedSports) {
+        const value = Number(sportPricing[sport]);
+        if (!Number.isFinite(value) || value <= 0) {
+          return false;
+        }
+      }
+    }
+
+    if (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID") {
+      if (
+        !venueDetails.name.trim() ||
+        !venueDetails.address.trim() ||
+        !venueCoordinates
+      ) {
+        return false;
+      }
+    }
+
+    if (serviceMode !== "OWN_VENUE") {
+      const serviceRadiusKm = Number(serviceRadiusKmInput || "10");
+      const travelBufferTime = Number(travelBufferTimeInput || "30");
+
+      if (
+        !venueCoordinates ||
+        !Number.isFinite(serviceRadiusKm) ||
+        serviceRadiusKm <= 0 ||
+        !Number.isFinite(travelBufferTime) ||
+        travelBufferTime < 0
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  }, [
+    isStep1Complete,
+    selectedSports,
+    pricingMode,
+    hourlyRateInput,
+    sportPricing,
+    serviceMode,
+    venueDetails.name,
+    venueDetails.address,
+    venueCoordinates,
+    serviceRadiusKmInput,
+    travelBufferTimeInput,
+  ]);
+
+  const serverProgressStep = useMemo<VerificationStep>(() => {
+    const raw = Number(coachProfile?.onboardingProgressStep || 1);
+    return raw === 2 || raw === 3 ? raw : 1;
+  }, [coachProfile?.onboardingProgressStep]);
+
+  const maxAccessibleStep: VerificationStep = useMemo(() => {
+    let computed: VerificationStep;
+    if (!isStep1Complete) {
+      computed = 1;
+    } else if (!isStep2Complete) {
+      computed = 2;
+    } else {
+      computed = 3;
+    }
+
+    return Math.max(computed, serverProgressStep) as VerificationStep;
+  }, [isStep1Complete, isStep2Complete, serverProgressStep]);
+
+  const navigateToStep = useCallback(
+    (nextStep: VerificationStep, showError = true) => {
+      if (nextStep <= maxAccessibleStep) {
+        setStep(nextStep);
+        return;
+      }
+
+      setStep(maxAccessibleStep);
+      if (showError) {
+        toast.error("Complete required fields in previous steps first.");
+      }
+    },
+    [maxAccessibleStep],
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -381,26 +558,35 @@ export default function CoachVerificationPage() {
   ]);
 
   useEffect(() => {
-    if (requestedStep) {
-      setStep(requestedStep);
+    if (step > maxAccessibleStep) {
+      setStep(maxAccessibleStep);
     }
-  }, [requestedStep]);
+  }, [step, maxAccessibleStep]);
 
   const loadProfile = async () => {
     try {
-      const [coachResponse, userResponse] = await Promise.all([
+      const [coachResult, userResult] = await Promise.allSettled([
         coachApi.getMyProfile(),
         authApi.getProfile(),
       ]);
 
-      if (userResponse.success && userResponse.data) {
-        setUser(userResponse.data);
-        if (userResponse.data.phone) {
-          setMobileNumber(userResponse.data.phone);
+      if (userResult.status === "fulfilled") {
+        const userResponse = userResult.value;
+        if (userResponse.success && userResponse.data) {
+          setUser(userResponse.data);
+          if (userResponse.data.phone) {
+            setMobileNumber(userResponse.data.phone);
+          }
         }
       }
 
-      if (coachResponse.success && coachResponse.data) {
+      if (coachResult.status === "fulfilled") {
+        const coachResponse = coachResult.value;
+        if (!coachResponse.success || !coachResponse.data) {
+          setCoachProfile(null);
+          return;
+        }
+
         const coach = coachResponse.data;
         setCoachProfile(coach);
         setBio(coach.bio || "");
@@ -437,6 +623,7 @@ export default function CoachVerificationPage() {
             images: venue.images || [],
             imageS3Keys: venue.imageS3Keys || [],
           });
+          setAddressQuery(venue.address || "");
           // Load coordinates from location object
           if (venue.location?.coordinates) {
             setVenueCoordinates(venue.location.coordinates);
@@ -482,6 +669,8 @@ export default function CoachVerificationPage() {
             })),
           );
         }
+      } else {
+        setCoachProfile(null);
       }
     } catch {
       setCoachProfile(null);
@@ -493,6 +682,135 @@ export default function CoachVerificationPage() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  useEffect(() => {
+    if (loading || hasHydratedDraftRef.current || isLockedByReview) {
+      return;
+    }
+
+    if (!draftStorageKey) {
+      hasHydratedDraftRef.current = true;
+      return;
+    }
+
+    const draft = readCoachVerificationDraft(draftStorageKey);
+    const serverResumeStep =
+      serverProgressStep > 1 ? (serverProgressStep as VerificationStep) : null;
+
+    if (draft) {
+      const draftStep: VerificationStep =
+        draft.step === 1 || draft.step === 2 || draft.step === 3
+          ? draft.step
+          : 1;
+      const resumeStep = Math.max(
+        draftStep,
+        serverProgressStep,
+      ) as VerificationStep;
+
+      setBio(draft.bio || "");
+      setMobileNumber(draft.mobileNumber || "");
+      setHourlyRateInput(draft.hourlyRateInput || "");
+      setPricingMode(draft.pricingMode || "PER_SPORT");
+      setSelectedSports(draft.selectedSports || []);
+      setSportPricing(draft.sportPricing || {});
+      setServiceMode(draft.serviceMode || getInitialServiceMode());
+      setServiceRadiusKmInput(draft.serviceRadiusKmInput || "10");
+      setTravelBufferTimeInput(draft.travelBufferTimeInput || "30");
+      setVenueDetails(
+        draft.venueDetails || {
+          name: "",
+          address: "",
+          description: "",
+          openingHours: getDefaultOpeningHours(),
+          images: [],
+          imageS3Keys: [],
+        },
+      );
+      setAddressQuery(draft.venueDetails?.address || "");
+      setVenueCoordinates(draft.venueCoordinates || null);
+      setVerificationDocs(draft.verificationDocs || []);
+      setResumeStepHint(resumeStep > 1 ? resumeStep : null);
+      setShowResumeBanner(resumeStep > 1);
+    } else {
+      setResumeStepHint(serverResumeStep);
+      setShowResumeBanner(Boolean(serverResumeStep));
+    }
+
+    hasHydratedDraftRef.current = true;
+  }, [loading, draftStorageKey, isLockedByReview, serverProgressStep]);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !hasHydratedDraftRef.current ||
+      hasResolvedInitialStepRef.current
+    ) {
+      return;
+    }
+
+    const requested = requestedStep ?? resumeStepHint ?? maxAccessibleStep;
+    const resolvedStep: VerificationStep =
+      requested <= maxAccessibleStep ? requested : maxAccessibleStep;
+
+    setStep(resolvedStep);
+
+    if (requestedStep && requestedStep > maxAccessibleStep) {
+      toast.error("Please complete previous required steps first.");
+    }
+
+    hasResolvedInitialStepRef.current = true;
+  }, [loading, requestedStep, resumeStepHint, maxAccessibleStep]);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !hasHydratedDraftRef.current ||
+      isLockedByReview ||
+      !draftStorageKey
+    ) {
+      return;
+    }
+
+    writeCoachVerificationDraft(draftStorageKey, {
+      step,
+      bio,
+      mobileNumber,
+      hourlyRateInput,
+      pricingMode,
+      selectedSports,
+      sportPricing,
+      serviceMode,
+      serviceRadiusKmInput,
+      travelBufferTimeInput,
+      venueDetails,
+      venueCoordinates,
+      verificationDocs,
+      updatedAt: new Date().toISOString(),
+    });
+  }, [
+    loading,
+    draftStorageKey,
+    isLockedByReview,
+    step,
+    bio,
+    mobileNumber,
+    hourlyRateInput,
+    pricingMode,
+    selectedSports,
+    sportPricing,
+    serviceMode,
+    serviceRadiusKmInput,
+    travelBufferTimeInput,
+    venueDetails,
+    venueCoordinates,
+    verificationDocs,
+  ]);
+
+  useEffect(() => {
+    if (status === "PENDING" || status === "REVIEW" || status === "VERIFIED") {
+      clearCoachVerificationDraft(draftStorageKey);
+    }
+  }, [status, draftStorageKey]);
 
   const validateFile = (file: File): { valid: boolean; error?: string } => {
     if (file.size > MAX_FILE_SIZE) {
@@ -591,6 +909,7 @@ export default function CoachVerificationPage() {
         fileName: file.name,
         contentType: file.type || "application/octet-stream",
         documentType: "OTHER",
+        purpose: "VENUE_IMAGE",
       });
 
       if (!uploadResponse.success || !uploadResponse.data) {
@@ -691,7 +1010,7 @@ export default function CoachVerificationPage() {
           setCoachProfile(response.data as Coach);
         }
 
-        setStep(2);
+        navigateToStep(2, false);
       } catch (saveError) {
         toast.error(
           saveError instanceof Error
@@ -838,7 +1157,7 @@ export default function CoachVerificationPage() {
 
       setCoachProfile(step2Response.data);
       localStorage.removeItem("coachServiceMode");
-      setStep(3);
+      navigateToStep(3, false);
       toast.success("Step 2 completed. Proceed to final submission.");
     } catch (saveError) {
       toast.error(
@@ -968,6 +1287,7 @@ export default function CoachVerificationPage() {
       toast.success(
         "Verification submitted successfully. Your profile is now in review.",
       );
+      clearCoachVerificationDraft(draftStorageKey);
       await loadProfile();
 
       // Redirect to coach profile
@@ -1025,6 +1345,31 @@ export default function CoachVerificationPage() {
         {coachProfile?.verificationNotes && (
           <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {coachProfile.verificationNotes}
+          </div>
+        )}
+
+        {showResumeBanner && resumeStepHint && !isLockedByReview && (
+          <div className="mt-4 flex flex-col gap-3 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-orange-800">
+              You can continue where you left off. Resume from Step{" "}
+              {resumeStepHint}.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="rounded-md bg-power-orange px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600"
+                onClick={() => navigateToStep(resumeStepHint, false)}
+              >
+                Resume Step {resumeStepHint}
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-orange-300 px-3 py-1.5 text-xs font-semibold text-orange-700 hover:bg-orange-100"
+                onClick={() => setShowResumeBanner(false)}
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
       </Card>
@@ -1157,8 +1502,8 @@ export default function CoachVerificationPage() {
               <Button
                 type="button"
                 variant="primary"
-                disabled={isLockedByReview || saving}
                 onClick={handleStepOneContinue}
+                disabled={isLockedByReview || saving || !isStep1Complete}
               >
                 Continue to Sports
               </Button>
@@ -1538,7 +1883,7 @@ export default function CoachVerificationPage() {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setStep(1)}
+                onClick={() => navigateToStep(1, false)}
               >
                 Back
               </Button>
@@ -1546,7 +1891,7 @@ export default function CoachVerificationPage() {
                 type="button"
                 variant="primary"
                 onClick={handleStepTwoContinue}
-                disabled={saving || isLockedByReview}
+                disabled={saving || isLockedByReview || !isStep2Complete}
               >
                 {saving ? "Saving..." : "Continue to Final Step"}
               </Button>
@@ -1774,7 +2119,7 @@ export default function CoachVerificationPage() {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setStep(2)}
+                onClick={() => navigateToStep(2, false)}
               >
                 Back
               </Button>

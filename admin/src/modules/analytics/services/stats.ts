@@ -105,6 +105,25 @@ export interface VenueListersAnalytics {
   newAccountsLast24Hours: number;
 }
 
+export interface FunnelSummaryRow {
+  eventName: string;
+  count: number;
+  uniqueUsers: number;
+}
+
+export interface FinanceReconciliation {
+  totalBookingsChecked: number;
+  matched: number;
+  mismatched: number;
+  mismatchRate: number;
+  sampleMismatches: Array<{
+    bookingId: string;
+    expected: number;
+    paid: number;
+    status: string;
+  }>;
+}
+
 export const statsApi = {
   getPlatformStats: async (): Promise<ApiResponse<PlatformStats>> => {
     const response = await axiosInstance.get("/stats/platform");
@@ -216,6 +235,27 @@ export const statsApi = {
     const response = await axiosInstance.get(
       `/stats/bookings?${params.toString()}`,
     );
+    return response.data;
+  },
+
+  getFunnelSummary: async (
+    days = 30,
+  ): Promise<ApiResponse<{ days: number; events: FunnelSummaryRow[] }>> => {
+    const response = await axiosInstance.get(`/stats/funnel/summary`, {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  getFinanceReconciliation: async (): Promise<
+    ApiResponse<FinanceReconciliation>
+  > => {
+    const response = await axiosInstance.get("/stats/finance/reconciliation");
+    return response.data;
+  },
+
+  getObservabilitySnapshot: async (): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.get("/stats/observability");
     return response.data;
   },
 };

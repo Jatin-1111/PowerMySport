@@ -131,6 +131,17 @@ export const coachApi = {
     return response.data;
   },
 
+  // Update current coach availability by sport
+  updateMyAvailability: async (data: {
+    availabilityBySport: Record<string, IAvailability[]>;
+  }): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.put(
+      "/coaches/my-profile/availability",
+      data,
+    );
+    return response.data;
+  },
+
   // Submit verification documents
   submitVerification: async (payload: {
     documents: CoachVerificationDocument[];
@@ -144,6 +155,7 @@ export const coachApi = {
     fileName: string;
     contentType: string;
     documentType: CoachVerificationDocument["type"];
+    purpose?: "DOCUMENT" | "VENUE_IMAGE";
   }): Promise<ApiResponse<CoachVerificationUploadResponse>> => {
     const response = await axiosInstance.post(
       "/coaches/verification/upload-url",

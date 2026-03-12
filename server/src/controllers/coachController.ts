@@ -292,6 +292,94 @@ export const getMyCoachProfile = async (
 };
 
 /**
+ * Update coach availability by sport
+ * PUT /api/coaches/my-profile/availability
+ */
+export const updateMyCoachAvailability = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id || req.user.role !== "COACH") {
+      res.status(403).json({
+        success: false,
+        message: "Coach role required",
+      });
+      return;
+    }
+
+    const { availabilityBySport } = req.body as {
+      availabilityBySport?: Record<
+        string,
+        Array<{ dayOfWeek: number; startTime: string; endTime: string }>
+      >;
+    };
+
+    if (!availabilityBySport || typeof availabilityBySport !== "object") {
+      res.status(400).json({
+        success: false,
+        message: "availabilityBySport is required",
+      });
+      return;
+    }
+
+    const coach = await getCoachByUserId(req.user.id);
+    if (!coach) {
+      res.status(404).json({
+        success: false,
+        message: "Coach profile not found",
+      });
+      return;
+    }
+
+    const normalizedBySport: Record<
+      string,
+      Array<{ dayOfWeek: number; startTime: string; endTime: string }>
+    > = {};
+
+    for (const [sport, slots] of Object.entries(availabilityBySport)) {
+      normalizedBySport[sport] = (slots || [])
+        .map((slot) => ({
+          dayOfWeek: Number(slot.dayOfWeek),
+          startTime: String(slot.startTime),
+          endTime: String(slot.endTime),
+        }))
+        .filter(
+          (slot) =>
+            Number.isInteger(slot.dayOfWeek) &&
+            slot.dayOfWeek >= 0 &&
+            slot.dayOfWeek <= 6 &&
+            /^([01]\d|2[0-3]):([0-5]\d)$/.test(slot.startTime) &&
+            /^([01]\d|2[0-3]):([0-5]\d)$/.test(slot.endTime) &&
+            slot.startTime < slot.endTime,
+        );
+    }
+
+    const flattened = Object.values(normalizedBySport).flat();
+
+    const coachId = (coach.id || coach._id.toString()) as string;
+    const updated = await updateCoach(coachId, {
+      availabilityBySport: normalizedBySport,
+      availability: flattened,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Availability updated successfully",
+      data: transformDocument(updated?.toJSON()),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to update coach availability",
+    });
+  }
+};
+
+/**
  * Update coach profile
  * PUT /api/coaches/:coachId
  */
@@ -633,6 +721,44 @@ const normalizeVerificationDocuments = (
   return normalizedDocs;
 };
 
+const hasValidBio = (bio?: string) => Boolean(bio && bio.trim().length > 0);
+
+const hasValidMobileNumber = (mobileNumber?: string) => {
+  if (!mobileNumber || !mobileNumber.trim()) {
+    return false;
+  }
+
+  return /^[+]?[0-9\s().\-]+$/.test(mobileNumber.trim());
+};
+
+const hasCoordinates = (
+  coordinates?: unknown,
+): coordinates is [number, number] => {
+  return (
+    Array.isArray(coordinates) &&
+    coordinates.length === 2 &&
+    Number.isFinite(Number(coordinates[0])) &&
+    Number.isFinite(Number(coordinates[1]))
+  );
+};
+
+const hasStep1Completed = async (userId: string, bioCandidate?: string) => {
+  const [existingUser, existingCoach] = await Promise.all([
+    User.findById(userId).select("phone photoUrl"),
+    getCoachByUserId(userId),
+  ]);
+
+  const phoneFromUser = existingUser?.phone;
+  const photoFromUser = existingUser?.photoUrl;
+  const bioFromCoach = existingCoach?.bio;
+
+  return (
+    Boolean(photoFromUser?.trim()) &&
+    hasValidMobileNumber(phoneFromUser) &&
+    hasValidBio(bioCandidate || bioFromCoach)
+  );
+};
+
 /**
  * Save coach verification step 1 (Bio)
  * POST /api/coaches/verification/step1
@@ -657,6 +783,31 @@ export const saveCoachVerificationStep1Handler = async (
       mobileNumber: string;
     };
 
+    if (!hasValidBio(bio)) {
+      res.status(400).json({
+        success: false,
+        message: "Bio is required to complete step 1",
+      });
+      return;
+    }
+
+    if (!hasValidMobileNumber(mobileNumber)) {
+      res.status(400).json({
+        success: false,
+        message: "A valid mobile number is required to complete step 1",
+      });
+      return;
+    }
+
+    const user = await User.findById(req.user.id).select("photoUrl");
+    if (!user?.photoUrl?.trim()) {
+      res.status(400).json({
+        success: false,
+        message: "Profile picture is required before continuing",
+      });
+      return;
+    }
+
     await User.findByIdAndUpdate(req.user.id, { phone: mobileNumber });
 
     const existingCoach = await getCoachByUserId(req.user.id);
@@ -672,7 +823,13 @@ export const saveCoachVerificationStep1Handler = async (
 
     const coachId = (existingCoach.id ||
       existingCoach._id?.toString()) as string;
-    const coach = await updateCoach(coachId, { bio });
+    const coach = await updateCoach(coachId, {
+      bio,
+      onboardingProgressStep: Math.max(
+        Number(existingCoach.onboardingProgressStep || 1),
+        1,
+      ) as 1 | 2 | 3,
+    });
 
     const coachData = transformDocument(coach?.toJSON());
 
@@ -750,6 +907,104 @@ export const saveCoachVerificationStep2Handler = async (
       };
     };
 
+    const step1Completed = await hasStep1Completed(req.user.id, bio);
+    if (!step1Completed) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Complete step 1 first: profile picture, bio, and valid mobile number are required",
+      });
+      return;
+    }
+
+    if (!Array.isArray(sports) || sports.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "At least one sport is required to complete step 2",
+      });
+      return;
+    }
+
+    if (!Number.isFinite(Number(hourlyRate)) || Number(hourlyRate) <= 0) {
+      res.status(400).json({
+        success: false,
+        message: "A valid hourly rate greater than 0 is required",
+      });
+      return;
+    }
+
+    if (
+      serviceMode !== "OWN_VENUE" &&
+      serviceMode !== "FREELANCE" &&
+      serviceMode !== "HYBRID"
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "A valid service mode is required for step 2",
+      });
+      return;
+    }
+
+    const effectiveServiceMode = serviceMode;
+
+    if (
+      effectiveServiceMode === "OWN_VENUE" ||
+      effectiveServiceMode === "HYBRID"
+    ) {
+      if (!ownVenueDetails?.name?.trim() || !ownVenueDetails?.address?.trim()) {
+        res.status(400).json({
+          success: false,
+          message:
+            "Venue name and address are required for OWN_VENUE or HYBRID mode",
+        });
+        return;
+      }
+
+      const ownVenueCoordinates =
+        ownVenueDetails.location?.coordinates || ownVenueDetails.coordinates;
+      if (!hasCoordinates(ownVenueCoordinates)) {
+        res.status(400).json({
+          success: false,
+          message:
+            "Venue coordinates are required for OWN_VENUE or HYBRID mode",
+        });
+        return;
+      }
+    }
+
+    if (effectiveServiceMode !== "OWN_VENUE") {
+      if (!hasCoordinates(baseLocation?.coordinates)) {
+        res.status(400).json({
+          success: false,
+          message:
+            "Base location coordinates are required for FREELANCE or HYBRID mode",
+        });
+        return;
+      }
+
+      if (
+        !Number.isFinite(Number(serviceRadiusKm)) ||
+        Number(serviceRadiusKm) <= 0
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Service radius must be a valid number greater than 0",
+        });
+        return;
+      }
+
+      if (
+        !Number.isFinite(Number(travelBufferTime)) ||
+        Number(travelBufferTime) < 0
+      ) {
+        res.status(400).json({
+          success: false,
+          message: "Travel buffer time must be a valid non-negative number",
+        });
+        return;
+      }
+    }
+
     // Build venue details for coach if provided
     let venueDetailsPayload;
     if (
@@ -803,6 +1058,10 @@ export const saveCoachVerificationStep2Handler = async (
         hourlyRate,
         sportPricing: sportPricing || {},
         serviceMode: serviceMode || existingCoach.serviceMode || "FREELANCE",
+        onboardingProgressStep: Math.max(
+          Number(existingCoach.onboardingProgressStep || 1),
+          2,
+        ) as 1 | 2 | 3,
       };
 
       if (baseLocation) {
@@ -844,6 +1103,7 @@ export const saveCoachVerificationStep2Handler = async (
       hourlyRate,
       sportPricing: sportPricing || {},
       serviceMode: serviceMode || "FREELANCE",
+      onboardingProgressStep: 2,
       availability: [],
       ...(serviceMode !== "OWN_VENUE" && {
         serviceRadiusKm: serviceRadiusKm || 10,
@@ -920,6 +1180,52 @@ export const submitCoachVerificationStep3Handler = async (
       }>;
     };
 
+    const existingCoach = await getCoachByUserId(req.user.id);
+    if (!existingCoach) {
+      res.status(400).json({
+        success: false,
+        message: "Complete step 2 before submitting verification",
+      });
+      return;
+    }
+
+    const step1Completed = await hasStep1Completed(
+      req.user.id,
+      existingCoach.bio,
+    );
+    if (!step1Completed) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Step 1 is incomplete. Add profile picture, bio, and mobile number first",
+      });
+      return;
+    }
+
+    if (
+      !Array.isArray(existingCoach.sports) ||
+      existingCoach.sports.length === 0
+    ) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Step 2 is incomplete. Add at least one sport and pricing before submitting",
+      });
+      return;
+    }
+
+    if (
+      !Number.isFinite(Number(existingCoach.hourlyRate)) ||
+      Number(existingCoach.hourlyRate) <= 0
+    ) {
+      res.status(400).json({
+        success: false,
+        message:
+          "Step 2 is incomplete. Add a valid hourly rate before submitting",
+      });
+      return;
+    }
+
     const normalizedDocs = normalizeVerificationDocuments(documents);
 
     const coach = await submitCoachVerification(req.user.id, {
@@ -979,7 +1285,7 @@ export const getCoachVerificationUploadUrlHandler = async (
       return;
     }
 
-    const { fileName, contentType, documentType } = req.body as {
+    const { fileName, contentType, documentType, purpose } = req.body as {
       fileName?: string;
       contentType?: string;
       documentType?:
@@ -989,6 +1295,7 @@ export const getCoachVerificationUploadUrlHandler = async (
         | "BACKGROUND_CHECK"
         | "INSURANCE"
         | "OTHER";
+      purpose?: "DOCUMENT" | "VENUE_IMAGE";
     };
 
     if (!fileName || !contentType || !documentType) {
@@ -1010,16 +1317,26 @@ export const getCoachVerificationUploadUrlHandler = async (
 
     const { S3Service } = require("../services/S3Service");
     const s3Service = new S3Service();
-    const uploadData = await s3Service.generateCoachVerificationUploadUrl(
-      fileName,
-      contentType,
-      coach._id.toString(),
-      documentType,
-    );
+    const uploadData =
+      purpose === "VENUE_IMAGE"
+        ? await s3Service.generateCoachVenueImageUploadUrl(
+            fileName,
+            contentType,
+            coach._id.toString(),
+          )
+        : await s3Service.generateCoachVerificationUploadUrl(
+            fileName,
+            contentType,
+            coach._id.toString(),
+            documentType,
+          );
 
     res.status(200).json({
       success: true,
-      message: "Verification document upload URL generated",
+      message:
+        purpose === "VENUE_IMAGE"
+          ? "Venue image upload URL generated"
+          : "Verification document upload URL generated",
       data: uploadData,
     });
   } catch (error) {

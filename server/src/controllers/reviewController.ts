@@ -6,6 +6,10 @@ import { Review } from "../models/Review";
 import { Venue } from "../models/Venue";
 import { User } from "../models/User";
 import { NotificationService } from "../services/NotificationService";
+import {
+  getFlaggedReviews,
+  moderateReview as moderateReviewByAction,
+} from "../services/ReviewService";
 
 type ReviewTargetType = "VENUE" | "COACH";
 
@@ -439,6 +443,86 @@ export const getReviewEligibility = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to check eligibility",
+    });
+  }
+};
+
+export const getModerationQueue = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+
+    const result = await getFlaggedReviews(page, limit);
+
+    res.status(200).json({
+      success: true,
+      message: "Moderation queue retrieved successfully",
+      data: result.reviews,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve moderation queue",
+    });
+  }
+};
+
+export const moderateReview = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const reviewId = (req.params as Record<string, unknown>).reviewId as string;
+    const { action, moderationNotes } = req.body as {
+      action?: "APPROVE" | "REMOVE" | "HIDE";
+      moderationNotes?: string;
+    };
+
+    if (!reviewId || !mongoose.Types.ObjectId.isValid(reviewId)) {
+      res.status(400).json({ success: false, message: "Invalid review id" });
+      return;
+    }
+
+    if (!action || !["APPROVE", "REMOVE", "HIDE"].includes(action)) {
+      res.status(400).json({
+        success: false,
+        message: "action must be APPROVE, REMOVE, or HIDE",
+      });
+      return;
+    }
+
+    const review = await moderateReviewByAction(
+      reviewId,
+      action,
+      moderationNotes,
+    );
+
+    if (!review) {
+      res.status(404).json({ success: false, message: "Review not found" });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Review moderated successfully",
+      data: review,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to moderate review",
     });
   }
 };

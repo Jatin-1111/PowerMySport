@@ -5,6 +5,7 @@ import {
   confirmMockPaymentSuccessById,
   getBookingById,
   getMyBookings,
+  joinBookingWaitlist,
   getVenueAvailability,
   initiateNewBooking,
   initiateNewGroupBooking,
@@ -12,18 +13,40 @@ import {
   getMyInvitations,
   coverUnpaidPayments,
   getPendingInvitationsCount,
+  validateBookingPromoCode,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
   coachVerificationCompletedMiddleware,
   playerOnlyMiddleware,
 } from "../middleware/auth";
-import { bookingCheckInCodeSchema, bookingSchema } from "../middleware/schemas";
+import {
+  bookingCheckInCodeSchema,
+  bookingSchema,
+  bookingWaitlistSchema,
+  promoValidateSchema,
+} from "../middleware/schemas";
 import { validateRequest } from "../middleware/validation";
 
 const router = Router();
 
 // Initiate booking with split payments
+router.post(
+  "/promo/validate",
+  authMiddleware,
+  playerOnlyMiddleware,
+  validateRequest(promoValidateSchema),
+  validateBookingPromoCode,
+);
+
+router.post(
+  "/waitlist",
+  authMiddleware,
+  playerOnlyMiddleware,
+  validateRequest(bookingWaitlistSchema),
+  joinBookingWaitlist,
+);
+
 router.post(
   "/initiate",
   authMiddleware,

@@ -148,6 +148,7 @@ export interface Coach {
   availability: IAvailability[];
   availabilityBySport?: Record<string, IAvailability[]>;
   verificationDocuments?: CoachVerificationDocument[];
+  onboardingProgressStep?: 1 | 2 | 3;
   verificationStatus?: CoachVerificationStatus;
   verificationNotes?: string;
   verificationSubmittedAt?: string;
@@ -277,6 +278,7 @@ export interface Availability {
     startTime: string;
     endTime: string;
   }>;
+  alternateSlots?: string[];
 }
 
 export interface DiscoveryResponse {

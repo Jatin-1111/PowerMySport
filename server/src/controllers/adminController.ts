@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { User } from "../models/User";
+import { CommunityReport } from "../models/CommunityReport";
 import {
   changeAdminPassword,
   createAdmin,
@@ -15,7 +17,10 @@ import {
   listCoachVerificationRequests,
   updateCoachVerificationStatus,
 } from "../services/CoachService";
-import { sendCoachVerificationStatusEmail } from "../utils/email";
+import {
+  sendCoachVerificationReminderEmail,
+  sendCoachVerificationStatusEmail,
+} from "../utils/email";
 import { NotificationService } from "../services/NotificationService";
 
 const normalizeAdminResponse = (admin: unknown) => {
@@ -342,6 +347,291 @@ export const adminLogout = async (
     success: true,
     message: "Logout successful",
   });
+};
+
+/**
+ * List users for safety operations
+ * GET /api/admin/users/safety?role=PLAYER&status=ACTIVE
+ */
+export const listUsersForSafety = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const role =
+      typeof req.query.role === "string" ? req.query.role : undefined;
+    const status =
+      typeof req.query.status === "string" ? req.query.status : undefined;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const query: Record<string, unknown> = {
+      role: { $in: ["PLAYER", "COACH", "VENUE_LISTER"] },
+    };
+
+    if (role && ["PLAYER", "COACH", "VENUE_LISTER"].includes(role)) {
+      query.role = role;
+    }
+
+    if (status === "ACTIVE") {
+      // Legacy users created before safety rollout may not have isActive persisted.
+      // Treat anything except explicit false as active.
+      query.isActive = { $ne: false };
+    } else if (status === "SUSPENDED") {
+      query.isActive = false;
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(query)
+        .select(
+          "name email phone role isActive suspensionReason suspendedAt deactivatedAt createdAt lastActiveAt",
+        )
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "User safety list retrieved",
+      data: users.map((user) => ({
+        id: user._id.toString(),
+        ...user,
+        isActive: user.isActive !== false,
+      })),
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to retrieve users",
+    });
+  }
+};
+
+/**
+ * Update user safety status
+ * PATCH /api/admin/users/:userId/safety
+ */
+export const updateUserSafetyStatus = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = (req.params as Record<string, unknown>).userId as string;
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      res.status(400).json({ success: false, message: "Invalid user id" });
+      return;
+    }
+
+    const { action, reason } = req.body as {
+      action?: "SUSPEND" | "REACTIVATE" | "DEACTIVATE";
+      reason?: string;
+    };
+
+    if (!action || !["SUSPEND", "REACTIVATE", "DEACTIVATE"].includes(action)) {
+      res.status(400).json({
+        success: false,
+        message: "action must be SUSPEND, REACTIVATE, or DEACTIVATE",
+      });
+      return;
+    }
+
+    const update: Record<string, unknown> = {};
+
+    if (action === "SUSPEND") {
+      if (!reason?.trim()) {
+        res.status(400).json({
+          success: false,
+          message: "reason is required for SUSPEND",
+        });
+        return;
+      }
+
+      update.isActive = false;
+      update.suspensionReason = reason.trim();
+      update.suspendedAt = new Date();
+      update.deactivatedAt = null;
+      update.suspendedBy = req.user?.id
+        ? new mongoose.Types.ObjectId(req.user.id)
+        : null;
+    }
+
+    if (action === "REACTIVATE") {
+      update.isActive = true;
+      update.suspensionReason = "";
+      update.suspendedAt = null;
+      update.deactivatedAt = null;
+      update.suspendedBy = null;
+    }
+
+    if (action === "DEACTIVATE") {
+      update.isActive = false;
+      update.suspensionReason =
+        reason?.trim() || "Account deactivated by admin";
+      update.deactivatedAt = new Date();
+      update.suspendedAt = new Date();
+      update.suspendedBy = req.user?.id
+        ? new mongoose.Types.ObjectId(req.user.id)
+        : null;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: update },
+      { new: true },
+    )
+      .select(
+        "name email phone role isActive suspensionReason suspendedAt deactivatedAt createdAt lastActiveAt",
+      )
+      .lean();
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `User ${action.toLowerCase()} successful`,
+      data: {
+        id: user._id.toString(),
+        ...user,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to update user safety status",
+    });
+  }
+};
+
+export const listCommunityReports = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const status =
+      typeof req.query.status === "string" ? req.query.status : undefined;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const query = status
+      ? { status }
+      : { status: { $in: ["OPEN", "UNDER_REVIEW", "RESOLVED", "REJECTED"] } };
+
+    const [reports, total] = await Promise.all([
+      CommunityReport.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      CommunityReport.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Community reports fetched",
+      data: reports.map((report) => ({
+        id: String(report._id),
+        reporterUserId: String(report.reporterUserId),
+        targetType: report.targetType,
+        targetId: String(report.targetId),
+        reason: report.reason,
+        details: report.details || "",
+        status: report.status,
+        resolutionNote: report.resolutionNote || "",
+        reviewedBy: report.reviewedBy ? String(report.reviewedBy) : null,
+        reviewedAt: report.reviewedAt || null,
+        createdAt: report.createdAt,
+      })),
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch community reports",
+    });
+  }
+};
+
+export const reviewCommunityReport = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const reportId = String(req.params.reportId || "");
+    if (!reportId || !mongoose.Types.ObjectId.isValid(reportId)) {
+      res.status(400).json({ success: false, message: "Invalid report id" });
+      return;
+    }
+
+    const { status, resolutionNote } = req.body as {
+      status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+      resolutionNote?: string;
+    };
+
+    const updated = await CommunityReport.findByIdAndUpdate(
+      reportId,
+      {
+        $set: {
+          status,
+          resolutionNote: resolutionNote?.trim() || "",
+          reviewedBy: req.user.id,
+          reviewedAt: new Date(),
+        },
+      },
+      { new: true },
+    ).lean();
+
+    if (!updated) {
+      res.status(404).json({ success: false, message: "Report not found" });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Report updated",
+      data: {
+        id: String(updated._id),
+        status: updated.status,
+        reviewedAt: updated.reviewedAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to update community report",
+    });
+  }
 };
 
 /**
@@ -726,6 +1016,114 @@ export const markCoachVerificationForReview = async (
         error instanceof Error
           ? error.message
           : "Failed to mark coach for review",
+    });
+  }
+};
+
+/**
+ * Notify coach to complete/submit verification
+ * POST /api/admin/coaches/:coachId/notify
+ */
+export const notifyCoachVerificationPending = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    // const REMINDER_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+    const REMINDER_COOLDOWN_MS =1000;
+
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const coachId = (req.params as Record<string, unknown>).coachId as string;
+    const coach = await getCoachById(coachId);
+
+    if (!coach) {
+      res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+      return;
+    }
+
+    if (coach.verificationStatus === "VERIFIED") {
+      res.status(400).json({
+        success: false,
+        message: "Coach is already verified",
+      });
+      return;
+    }
+
+    if (coach.lastVerificationReminderAt) {
+      const elapsedMs =
+        Date.now() - new Date(coach.lastVerificationReminderAt).getTime();
+      if (elapsedMs < REMINDER_COOLDOWN_MS) {
+        const remainingMs = REMINDER_COOLDOWN_MS - elapsedMs;
+        const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+        res.status(429).json({
+          success: false,
+          message: `Reminder cooldown active. Try again in ${remainingMinutes} minute(s).`,
+        });
+        return;
+      }
+    }
+
+    const user = await User.findById(coach.userId).select("_id name email");
+    if (!user?._id) {
+      res.status(404).json({
+        success: false,
+        message: "Coach user not found",
+      });
+      return;
+    }
+
+    if (!user.email) {
+      res.status(400).json({
+        success: false,
+        message: "Coach does not have an email address",
+      });
+      return;
+    }
+
+    await sendCoachVerificationReminderEmail({
+      name: user.name || "Coach",
+      email: user.email,
+    });
+
+    coach.lastVerificationReminderAt = new Date();
+    await coach.save();
+
+    NotificationService.send({
+      userId: user._id.toString(),
+      type: "COACH_VERIFICATION_PENDING",
+      title: "Complete Your Coach Verification",
+      message:
+        "Please complete and submit your coach verification profile and documents for admin review.",
+      data: {
+        coachId,
+        currentStatus: coach.verificationStatus || "UNVERIFIED",
+        remindedAt: new Date().toISOString(),
+      },
+    }).catch((err: Error) =>
+      console.error("Failed to send in-app verification reminder:", err),
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Verification reminder email sent",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to send verification reminder",
     });
   }
 };

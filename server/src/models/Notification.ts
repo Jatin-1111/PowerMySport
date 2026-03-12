@@ -8,6 +8,7 @@ export type NotificationType =
   | "BOOKING_INVITATION"
   | "BOOKING_CONFIRMED"
   | "BOOKING_CANCELLED"
+  | "BOOKING_STATUS_UPDATED"
   | "BOOKING_REMINDER"
   | "INVITATION_EXPIRY"
   | "PAYMENT_FAILED"
@@ -81,6 +82,7 @@ const notificationSchema = new Schema<
         "BOOKING_INVITATION",
         "BOOKING_CONFIRMED",
         "BOOKING_CANCELLED",
+        "BOOKING_STATUS_UPDATED",
         "BOOKING_REMINDER",
         "INVITATION_EXPIRY",
         "PAYMENT_FAILED",

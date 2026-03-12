@@ -9,9 +9,11 @@ import {
   getConversationMessages,
   joinGroup,
   leaveGroup,
+  listMyCommunityReports,
   listGroups,
   listConversations,
   rejectConversationRequest,
+  reportCommunityContent,
   searchPlayers,
   sendMessage,
   startConversation,
@@ -24,6 +26,7 @@ import {
   communityBlockSchema,
   communityAddGroupMemberSchema,
   communityCreateGroupSchema,
+  communityReportSchema,
   communityUpdateGroupSettingsSchema,
   communitySendMessageSchema,
   communityStartConversationSchema,
@@ -80,5 +83,11 @@ router.patch(
 );
 router.post("/groups/:groupId/join", joinGroup);
 router.post("/groups/:groupId/leave", leaveGroup);
+router.post(
+  "/reports",
+  validateRequest(communityReportSchema),
+  reportCommunityContent,
+);
+router.get("/reports/my", listMyCommunityReports);
 
 export default router;

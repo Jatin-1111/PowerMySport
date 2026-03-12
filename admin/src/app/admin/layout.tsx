@@ -6,8 +6,13 @@ import {
   Building2,
   Calendar,
   CheckCircle,
+  LifeBuoy,
   LayoutDashboard,
+  MessageSquareWarning,
+  ShieldAlert,
   ShieldCheck,
+  Star,
+  Tag,
   UserCircle2,
   UserCheck,
   Users,
@@ -121,6 +126,11 @@ export default function AdminLayout({
       icon: Users,
     },
     {
+      href: "/admin/user-safety",
+      label: "User Safety",
+      icon: ShieldAlert,
+    },
+    {
       href: "/admin/venues",
       label: "All Venues",
       icon: Building2,
@@ -139,6 +149,26 @@ export default function AdminLayout({
       href: "/admin/bookings",
       label: "All Bookings",
       icon: Calendar,
+    },
+    {
+      href: "/admin/reviews",
+      label: "Reviews",
+      icon: Star,
+    },
+    {
+      href: "/admin/support-tickets",
+      label: "Support Tickets",
+      icon: LifeBuoy,
+    },
+    {
+      href: "/admin/promo-codes",
+      label: "Promo Codes",
+      icon: Tag,
+    },
+    {
+      href: "/admin/community-reports",
+      label: "Community Reports",
+      icon: MessageSquareWarning,
     },
     {
       href: "/admin/notifications",

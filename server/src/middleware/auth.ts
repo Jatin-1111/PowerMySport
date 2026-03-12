@@ -39,11 +39,11 @@ const touchAuthActivity = (userId: string): void => {
   );
 };
 
-export const authMiddleware = (
+export const authMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
+): Promise<void> => {
   try {
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
@@ -56,6 +56,36 @@ export const authMiddleware = (
     }
 
     const decoded = verifyToken(token);
+
+    const userRolesNeedingStatusCheck: Array<IUserPayload["role"]> = [
+      "PLAYER",
+      "COACH",
+      "VENUE_LISTER",
+      "ADMIN",
+    ];
+
+    if (userRolesNeedingStatusCheck.includes(decoded.role)) {
+      const userRecord = await User.findById(decoded.id)
+        .select("isActive suspensionReason")
+        .lean();
+
+      if (!userRecord) {
+        res.status(401).json({
+          success: false,
+          message: "User not found",
+        });
+        return;
+      }
+
+      if (userRecord.isActive === false) {
+        res.status(403).json({
+          success: false,
+          message: userRecord.suspensionReason || "Account is suspended",
+        });
+        return;
+      }
+    }
+
     req.user = decoded;
     if (decoded.id) {
       touchAuthActivity(decoded.id);

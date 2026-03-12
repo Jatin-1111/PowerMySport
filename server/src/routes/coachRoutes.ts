@@ -11,6 +11,7 @@ import {
   getMyCoachProfile,
   submitCoachVerificationStep3Handler,
   submitCoachVerificationHandler,
+  updateMyCoachAvailability,
   updateCoachProfile,
 } from "../controllers/coachController";
 import { authMiddleware } from "../middleware/auth";
@@ -31,6 +32,13 @@ router.post("/", authMiddleware, createNewCoach);
 
 // Get current user's coach profile
 router.get("/my-profile", authMiddleware, getMyCoachProfile);
+
+// Update current coach's availability calendar
+router.put(
+  "/my-profile/availability",
+  authMiddleware,
+  updateMyCoachAvailability,
+);
 
 // Get upload URL for verification documents
 router.post(

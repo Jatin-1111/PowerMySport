@@ -2,10 +2,16 @@ import { Router } from "express";
 import {
   createReview,
   getCoachReviews,
+  getModerationQueue,
   getReviewEligibility,
   getVenueReviews,
+  moderateReview,
 } from "../controllers/reviewController";
-import { authMiddleware } from "../middleware/auth";
+import {
+  adminMiddleware,
+  authMiddleware,
+  requirePermission,
+} from "../middleware/auth";
 import { createReviewSchema } from "../middleware/schemas";
 import { validateRequest } from "../middleware/validation";
 
@@ -19,6 +25,22 @@ router.post(
   authMiddleware,
   validateRequest(createReviewSchema),
   createReview,
+);
+
+router.get(
+  "/moderation/queue",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("reviews:view"),
+  getModerationQueue,
+);
+
+router.patch(
+  "/:reviewId/moderate",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("reviews:manage"),
+  moderateReview,
 );
 
 export default router;

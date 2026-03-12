@@ -297,6 +297,42 @@ export class S3Service {
     };
   }
 
+  async generateCoachVenueImageUploadUrl(
+    fileName: string,
+    contentType: string,
+    coachId: string,
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = fileName.split(".").pop();
+    const sanitizedFileName = `venue_${Date.now()}.${fileExtension}`;
+    const key = `coaches/${coachId}/images/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600,
+    });
+
+    const getCommand = new GetObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800,
+    });
+
+    return {
+      uploadUrl,
+      downloadUrl,
+      fileName: sanitizedFileName,
+      key,
+    };
+  }
+
   /**
    * Generate presigned download URL for existing file
    * @param key - S3 object key

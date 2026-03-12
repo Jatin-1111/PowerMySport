@@ -10,6 +10,7 @@ import {
   CommunityProfile,
 } from "../models/CommunityProfile";
 import { User } from "../models/User";
+import { CommunityReport } from "../models/CommunityReport";
 
 const buildParticipantKey = (a: string, b: string): string =>
   [a, b].sort().join(":");
@@ -1179,6 +1180,86 @@ export const CommunityService = {
       participantIds: conversation.participants.map((participantId) =>
         String(participantId),
       ),
+    };
+  },
+
+  async createReport(
+    userId: string,
+    payload: {
+      targetType: "MESSAGE" | "GROUP";
+      targetId: string;
+      reason: string;
+      details?: string;
+    },
+  ) {
+    await ensureProfile(userId);
+
+    if (payload.targetType === "MESSAGE") {
+      const message = await CommunityMessage.findById(payload.targetId)
+        .select("_id")
+        .lean();
+      if (!message) {
+        throw new Error("message not found");
+      }
+    } else {
+      const group = await CommunityGroup.findById(payload.targetId)
+        .select("_id")
+        .lean();
+      if (!group) {
+        throw new Error("group not found");
+      }
+    }
+
+    const report = await CommunityReport.create({
+      reporterUserId: userId,
+      targetType: payload.targetType,
+      targetId: payload.targetId,
+      reason: payload.reason.trim(),
+      details: payload.details?.trim() || "",
+      status: "OPEN",
+    });
+
+    return {
+      id: String(report._id),
+      status: report.status,
+      targetType: report.targetType,
+      createdAt: report.createdAt,
+    };
+  },
+
+  async listMyReports(userId: string, page = 1, limit = 20) {
+    await ensureProfile(userId);
+
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
+
+    const [items, total] = await Promise.all([
+      CommunityReport.find({ reporterUserId: userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      CommunityReport.countDocuments({ reporterUserId: userId }),
+    ]);
+
+    return {
+      items: items.map((item) => ({
+        id: String(item._id),
+        targetType: item.targetType,
+        targetId: String(item.targetId),
+        reason: item.reason,
+        details: item.details || "",
+        status: item.status,
+        resolutionNote: item.resolutionNote || "",
+        createdAt: item.createdAt,
+        reviewedAt: item.reviewedAt || null,
+      })),
+      pagination: {
+        total,
+        page: safePage,
+        totalPages: Math.ceil(total / safeLimit),
+      },
     };
   },
 

@@ -10,9 +10,14 @@ import {
   handleDispute,
   listAdmins,
   listCoachVerifications,
+  listUsersForSafety,
   markCoachVerificationForReview,
+  notifyCoachVerificationPending,
   processRefund,
   rejectCoachVerification,
+  reviewCommunityReport,
+  listCommunityReports,
+  updateUserSafetyStatus,
   getRoleTemplates,
   updateAdminPermissionsHandler,
   updateAdminRoleHandler,
@@ -27,7 +32,15 @@ import {
   adminChangePasswordSchema,
   adminCreateSchema,
   adminLoginSchema,
+  communityModerationActionSchema,
+  promoCreateSchema,
 } from "../middleware/schemas";
+import {
+  createPromoCodeHandler,
+  deactivatePromoCodeHandler,
+  listPromoCodesHandler,
+  promoCodeStatsHandler,
+} from "../controllers/promoCodeController";
 import { validateRequest } from "../middleware/validation";
 
 const router = Router();
@@ -82,6 +95,13 @@ router.post(
   requirePermission("coaches:verify"),
   markCoachVerificationForReview,
 );
+router.post(
+  "/coaches/:coachId/notify",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("coaches:verify"),
+  notifyCoachVerificationPending,
+);
 
 // Refund & dispute handling
 router.post(
@@ -97,6 +117,68 @@ router.post(
   adminMiddleware,
   requirePermission("disputes:resolve"),
   handleDispute,
+);
+
+router.get(
+  "/users/safety",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:view"),
+  listUsersForSafety,
+);
+router.patch(
+  "/users/:userId/safety",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:manage"),
+  updateUserSafetyStatus,
+);
+
+router.get(
+  "/community/reports",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:view"),
+  listCommunityReports,
+);
+router.patch(
+  "/community/reports/:reportId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:manage"),
+  validateRequest(communityModerationActionSchema),
+  reviewCommunityReport,
+);
+
+// Promo code management
+router.get(
+  "/promo-codes",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:view"),
+  listPromoCodesHandler,
+);
+router.post(
+  "/promo-codes",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:manage"),
+  validateRequest(promoCreateSchema),
+  createPromoCodeHandler,
+);
+router.patch(
+  "/promo-codes/:codeId/deactivate",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:manage"),
+  deactivatePromoCodeHandler,
+);
+router.get(
+  "/promo-codes/:codeId/stats",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:view"),
+  promoCodeStatsHandler,
 );
 
 // Admin management routes (System Admin only)

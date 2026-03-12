@@ -185,6 +185,20 @@ export function FriendSocketProvider({
           });
           break;
 
+        case "BOOKING_STATUS_UPDATED":
+          toast.info(notification.message, {
+            duration: 7000,
+            action: {
+              label: "View",
+              onClick: () => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/dashboard/my-bookings";
+                }
+              },
+            },
+          });
+          break;
+
         case "REVIEW_POSTED":
           toast.info(notification.message, {
             duration: 6000,

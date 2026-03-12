@@ -20,7 +20,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const DAYS: Array<{ value: number; label: string }> = [
   { value: 0, label: "Sunday" },
@@ -97,6 +100,17 @@ export default function CoachProfilePage() {
   const [selectedVenueImage, setSelectedVenueImage] = useState<string | null>(
     null,
   );
+  const [isEditingVenueImages, setIsEditingVenueImages] = useState(false);
+  const [isUploadingVenueImages, setIsUploadingVenueImages] = useState(false);
+  const [isSavingVenueImages, setIsSavingVenueImages] = useState(false);
+  const [venueImageDraft, setVenueImageDraft] = useState<{
+    images: string[];
+    imageS3Keys: string[];
+  }>({
+    images: [],
+    imageS3Keys: [],
+  });
+  const venueImageInputRef = useRef<HTMLInputElement | null>(null);
   const [coachingForm, setCoachingForm] = useState({
     selectedSports: [] as string[],
     pricingMode: "PER_SPORT" as "SAME" | "PER_SPORT",
@@ -340,6 +354,180 @@ export default function CoachProfilePage() {
       travelBufferTimeInput: String(coachProfile.travelBufferTime || 30),
     });
     setIsEditingCoaching(true);
+  };
+
+  const handleEditVenueImagesClick = () => {
+    if (!coachProfile?.ownVenueDetails) {
+      toast.error("Venue details not found.");
+      return;
+    }
+
+    setVenueImageDraft({
+      images: coachProfile.ownVenueDetails.images || [],
+      imageS3Keys: coachProfile.ownVenueDetails.imageS3Keys || [],
+    });
+    setIsEditingVenueImages(true);
+  };
+
+  const handleCancelVenueImagesEdit = () => {
+    setIsEditingVenueImages(false);
+    setVenueImageDraft({
+      images: coachProfile?.ownVenueDetails?.images || [],
+      imageS3Keys: coachProfile?.ownVenueDetails?.imageS3Keys || [],
+    });
+  };
+
+  const handleRemoveVenueImage = (index: number) => {
+    setVenueImageDraft((prev) => ({
+      images: prev.images.filter((_, currentIndex) => currentIndex !== index),
+      imageS3Keys: prev.imageS3Keys.filter(
+        (_, currentIndex) => currentIndex !== index,
+      ),
+    }));
+  };
+
+  const handleVenueImagesSelected = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+
+    if (files.length === 0) {
+      return;
+    }
+
+    if (!coachProfile) {
+      toast.error("Coach profile not found.");
+      return;
+    }
+
+    setIsUploadingVenueImages(true);
+    try {
+      const uploadedImages: Array<{ imageUrl: string; key: string }> = [];
+
+      for (const file of files) {
+        if (file.size > MAX_FILE_SIZE) {
+          throw new Error(
+            `${file.name} exceeds 5MB. Please upload a smaller image.`,
+          );
+        }
+
+        if (!ALLOWED_IMAGE_FILE_TYPES.includes(file.type)) {
+          throw new Error(
+            `${file.name} is not supported. Upload JPG, PNG, or WebP only.`,
+          );
+        }
+
+        const uploadResponse = await coachApi.getVerificationUploadUrl({
+          fileName: file.name,
+          contentType: file.type || "application/octet-stream",
+          documentType: "OTHER",
+          purpose: "VENUE_IMAGE",
+        });
+
+        if (!uploadResponse.success || !uploadResponse.data) {
+          throw new Error(uploadResponse.message || "Failed to get upload URL");
+        }
+
+        const { uploadUrl, downloadUrl, key } = uploadResponse.data;
+        const uploadResult = await fetch(uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+          },
+        });
+
+        if (!uploadResult.ok) {
+          throw new Error(`Failed to upload ${file.name}. Please try again.`);
+        }
+
+        uploadedImages.push({ imageUrl: downloadUrl, key });
+      }
+
+      setVenueImageDraft((prev) => ({
+        images: [
+          ...prev.images,
+          ...uploadedImages.map((item) => item.imageUrl),
+        ],
+        imageS3Keys: [
+          ...prev.imageS3Keys,
+          ...uploadedImages.map((item) => item.key),
+        ],
+      }));
+
+      toast.success("Venue image(s) uploaded successfully.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to upload venue images",
+      );
+    } finally {
+      setIsUploadingVenueImages(false);
+    }
+  };
+
+  const handleSaveVenueImages = async () => {
+    if (!coachProfile) {
+      toast.error("Coach profile not found.");
+      return;
+    }
+
+    const coachId = coachProfile.id || coachProfile._id;
+    if (!coachId) {
+      toast.error("Coach profile id is missing.");
+      return;
+    }
+
+    const existingImages = coachProfile.ownVenueDetails?.images || [];
+    const existingKeys = coachProfile.ownVenueDetails?.imageS3Keys || [];
+    if (
+      JSON.stringify(existingImages) ===
+        JSON.stringify(venueImageDraft.images) &&
+      JSON.stringify(existingKeys) ===
+        JSON.stringify(venueImageDraft.imageS3Keys)
+    ) {
+      toast.info("No venue image changes to save.");
+      setIsEditingVenueImages(false);
+      return;
+    }
+
+    if (!coachProfile.ownVenueDetails) {
+      toast.error("Venue details not found.");
+      return;
+    }
+
+    try {
+      setIsSavingVenueImages(true);
+      const response = await coachApi.updateProfile(coachId, {
+        ownVenueDetails: {
+          ...coachProfile.ownVenueDetails,
+          images: venueImageDraft.images,
+          imageS3Keys: venueImageDraft.imageS3Keys,
+        },
+      });
+
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Failed to update venue images");
+      }
+
+      setCoachProfile(response.data);
+      setVenueImageDraft({
+        images: response.data.ownVenueDetails?.images || [],
+        imageS3Keys: response.data.ownVenueDetails?.imageS3Keys || [],
+      });
+      setIsEditingVenueImages(false);
+      toast.success("Venue images updated.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update venue images",
+      );
+    } finally {
+      setIsSavingVenueImages(false);
+    }
   };
 
   const handleSaveCoachingDetails = async () => {
@@ -603,23 +791,6 @@ export default function CoachProfilePage() {
     return "";
   };
 
-  const flattenAvailability = (bySport: Record<string, IAvailability[]>) => {
-    const dedupe = new Set<string>();
-    const merged: IAvailability[] = [];
-
-    Object.values(bySport).forEach((slots) => {
-      slots.forEach((slot) => {
-        const key = `${slot.dayOfWeek}-${slot.startTime}-${slot.endTime}`;
-        if (!dedupe.has(key)) {
-          dedupe.add(key);
-          merged.push(slot);
-        }
-      });
-    });
-
-    return sortAvailabilitySlots(merged);
-  };
-
   const handleSaveAvailability = async () => {
     if (!coachProfile) {
       toast.error("Coach profile not found.");
@@ -629,12 +800,6 @@ export default function CoachProfilePage() {
     const validationError = validateAvailabilityBySport(availabilityBySport);
     if (validationError) {
       toast.error(validationError);
-      return;
-    }
-
-    const coachId = coachProfile.id || coachProfile._id;
-    if (!coachId) {
-      toast.error("Coach profile id is missing.");
       return;
     }
 
@@ -660,12 +825,7 @@ export default function CoachProfilePage() {
         return;
       }
 
-      const flattenedAvailability = flattenAvailability(
-        sortedAvailabilityBySport,
-      );
-
-      const response = await coachApi.updateProfile(coachId, {
-        availability: flattenedAvailability,
+      const response = await coachApi.updateMyAvailability({
         availabilityBySport: sortedAvailabilityBySport,
       });
       if (!response.success || !response.data) {
@@ -1251,21 +1411,94 @@ export default function CoachProfilePage() {
                           )}
 
                           <div>
-                            <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">
-                              Venue Images
-                            </p>
-                            {coachProfile.ownVenueDetails.images &&
-                            coachProfile.ownVenueDetails.images.length > 0 ? (
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                              <p className="text-xs uppercase tracking-wide text-slate-500">
+                                Venue Images
+                              </p>
+                              {!isEditingVenueImages ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleEditVenueImagesClick}
+                                >
+                                  Update Images
+                                </Button>
+                              ) : (
+                                <div className="flex gap-2">
+                                  <input
+                                    ref={venueImageInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    className="hidden"
+                                    onChange={handleVenueImagesSelected}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      venueImageInputRef.current?.click()
+                                    }
+                                    disabled={
+                                      isUploadingVenueImages ||
+                                      isSavingVenueImages
+                                    }
+                                  >
+                                    {isUploadingVenueImages
+                                      ? "Uploading..."
+                                      : "Add Images"}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleCancelVenueImagesEdit}
+                                    disabled={
+                                      isUploadingVenueImages ||
+                                      isSavingVenueImages
+                                    }
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={handleSaveVenueImages}
+                                    disabled={
+                                      isUploadingVenueImages ||
+                                      isSavingVenueImages
+                                    }
+                                  >
+                                    {isSavingVenueImages ? "Saving..." : "Save"}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            {(isEditingVenueImages
+                              ? venueImageDraft.images
+                              : coachProfile.ownVenueDetails.images) &&
+                            (isEditingVenueImages
+                              ? venueImageDraft.images
+                              : coachProfile.ownVenueDetails.images
+                            ).length > 0 ? (
                               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                {coachProfile.ownVenueDetails.images.map(
-                                  (imageUrl, index) => (
+                                {(isEditingVenueImages
+                                  ? venueImageDraft.images
+                                  : coachProfile.ownVenueDetails.images
+                                )?.map((imageUrl, index) => (
+                                  <div
+                                    key={`${imageUrl}-${index}`}
+                                    className="group relative overflow-hidden rounded-lg border border-slate-200"
+                                  >
                                     <button
                                       type="button"
-                                      key={`${imageUrl}-${index}`}
                                       onClick={() =>
                                         setSelectedVenueImage(imageUrl)
                                       }
-                                      className="group relative overflow-hidden rounded-lg border border-slate-200"
+                                      className="block w-full"
                                     >
                                       <img
                                         src={imageUrl}
@@ -1277,12 +1510,26 @@ export default function CoachProfilePage() {
                                         View
                                       </span>
                                     </button>
-                                  ),
-                                )}
+                                    {isEditingVenueImages && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleRemoveVenueImage(index)
+                                        }
+                                        className="absolute left-2 top-2 rounded-md bg-white/90 p-1 text-red-600 shadow hover:bg-white"
+                                        aria-label={`Remove venue image ${index + 1}`}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
                             ) : (
                               <p className="text-sm text-slate-500">
-                                No venue images uploaded yet.
+                                {isEditingVenueImages
+                                  ? "No venue images in this draft yet. Add images to update your venue gallery."
+                                  : "No venue images uploaded yet."}
                               </p>
                             )}
                           </div>
