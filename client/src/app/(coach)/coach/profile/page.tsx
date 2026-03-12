@@ -1477,18 +1477,17 @@ export default function CoachProfilePage() {
                                 </div>
                               )}
                             </div>
-                            {(isEditingVenueImages
-                              ? venueImageDraft.images
-                              : coachProfile.ownVenueDetails.images) &&
-                            (isEditingVenueImages
-                              ? venueImageDraft.images
-                              : coachProfile.ownVenueDetails.images
-                            ).length > 0 ? (
+                            {(() => {
+                              const imgs = isEditingVenueImages
+                                ? venueImageDraft.images
+                                : coachProfile.ownVenueDetails?.images;
+                              return imgs && imgs.length > 0;
+                            })() ? (
                               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 {(isEditingVenueImages
                                   ? venueImageDraft.images
-                                  : coachProfile.ownVenueDetails.images
-                                )?.map((imageUrl, index) => (
+                                  : (coachProfile.ownVenueDetails?.images ?? [])
+                                ).map((imageUrl, index) => (
                                   <div
                                     key={`${imageUrl}-${index}`}
                                     className="group relative overflow-hidden rounded-lg border border-slate-200"
