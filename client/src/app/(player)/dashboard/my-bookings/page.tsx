@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { bookingApi } from "@/modules/booking/services/booking";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
@@ -19,6 +20,7 @@ import {
   MapPin,
   Award,
   CalendarX,
+  CreditCard,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -33,6 +35,7 @@ interface PaginationInfo {
 type TabType = "venues" | "coaches";
 
 export default function BookingsPage() {
+  const { user } = useAuthStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,6 +49,9 @@ export default function BookingsPage() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isCoveringPaymentId, setIsCoveringPaymentId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -91,6 +97,27 @@ export default function BookingsPage() {
       toast.error("Failed to cancel booking. Please try again.");
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleCoverPayments = async (bookingId: string) => {
+    try {
+      setIsCoveringPaymentId(bookingId);
+      const response = await bookingApi.coverUnpaidShares(bookingId);
+      if (response.success) {
+        toast.success("Unpaid shares covered successfully");
+        if (response.data) {
+          setBookings((prev) =>
+            prev.map((b) =>
+              b.id === bookingId ? { ...b, ...response.data } : b,
+            ),
+          );
+        }
+      }
+    } catch {
+      toast.error("Failed to cover unpaid payments. Please try again.");
+    } finally {
+      setIsCoveringPaymentId(null);
     }
   };
 
@@ -340,14 +367,31 @@ export default function BookingsPage() {
                             .replace(/_/g, " ")}
                       </span>
                     </div>
-                    {booking.status === "CONFIRMED" && (
-                      <Button
-                        onClick={() => handleCancelClick(booking.id)}
-                        variant="danger"
-                      >
-                        Cancel
-                      </Button>
-                    )}
+                    <div className="flex flex-col gap-2">
+                      {booking.status === "CONFIRMED" &&
+                        booking.paymentType === "SPLIT" &&
+                        booking.organizerId === user?.id && (
+                          <Button
+                            onClick={() => handleCoverPayments(booking.id)}
+                            variant="secondary"
+                            disabled={isCoveringPaymentId === booking.id}
+                            className="flex items-center gap-2"
+                          >
+                            <CreditCard className="h-4 w-4" />
+                            {isCoveringPaymentId === booking.id
+                              ? "Processing..."
+                              : "Cover Unpaid"}
+                          </Button>
+                        )}
+                      {booking.status === "CONFIRMED" && (
+                        <Button
+                          onClick={() => handleCancelClick(booking.id)}
+                          variant="danger"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </Card>
               ))}

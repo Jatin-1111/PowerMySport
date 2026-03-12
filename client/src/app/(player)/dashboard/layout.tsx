@@ -9,8 +9,10 @@ import {
 import { BottomNavItem } from "@/components/layout/BottomNav";
 import { useRouter } from "next/navigation";
 import {
+  Bell,
   Calendar,
   Home,
+  LifeBuoy,
   Mail,
   MapPin,
   Settings,
@@ -60,6 +62,16 @@ export default function DashboardLayout({
       href: "/dashboard/my-bookings",
       label: "My Bookings",
       icon: Calendar,
+    },
+    {
+      href: "/dashboard/support",
+      label: "Support Tickets",
+      icon: LifeBuoy,
+    },
+    {
+      href: "/dashboard/reminder-preferences",
+      label: "Reminders",
+      icon: Bell,
     },
     {
       href: "/dashboard/friends",

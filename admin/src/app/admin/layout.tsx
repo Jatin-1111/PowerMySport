@@ -2,6 +2,7 @@
 
 import { adminApi } from "@/modules/admin/services/admin";
 import {
+  BarChart2,
   Bell,
   Building2,
   Calendar,
@@ -154,6 +155,11 @@ export default function AdminLayout({
       href: "/admin/reviews",
       label: "Reviews",
       icon: Star,
+    },
+    {
+      href: "/admin/analytics",
+      label: "Analytics",
+      icon: BarChart2,
     },
     {
       href: "/admin/support-tickets",
