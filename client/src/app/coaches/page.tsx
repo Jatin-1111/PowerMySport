@@ -1052,7 +1052,7 @@ function CoachesPageContent() {
                       const coachInitials = getCoachInitials(coach);
 
                       return (
-                        <div className="relative aspect-4/3 w-full overflow-hidden bg-slate-100">
+                        <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
                           <CoachImageWithFallback
                             sources={coachImageCandidates}
                             alt={coachName}
