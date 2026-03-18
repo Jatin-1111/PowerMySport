@@ -3,7 +3,7 @@ import { NotificationService } from "../services/NotificationService";
 import { NotificationCategory } from "../models/Notification";
 import { z } from "zod";
 import * as pushNotificationService from "../services/pushNotificationService";
-import { User as UserModel } from "../models/User";
+import { User } from "../models/User";
 
 /**
  * Get notifications for the authenticated user
@@ -195,7 +195,6 @@ export const getNotificationPreferences = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { User } = await import("../models/User.js");
     const userId = req.user!.id;
 
     const user = await User.findById(userId).select("notificationPreferences");
@@ -269,7 +268,6 @@ export const updateNotificationPreferences = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { User } = await import("../models/User.js");
     const userId = req.user!.id;
     const preferences = notificationPreferencesSchema.parse(req.body);
 
@@ -321,7 +319,6 @@ export const subscribeToPush = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { User } = await import("../models/User.js");
     const userId = req.user!.id;
 
     const subscriptionSchema = z.object({
@@ -404,7 +401,6 @@ export const unsubscribeFromPush = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { User } = await import("../models/User.js");
     const userId = req.user!.id;
 
     const endpointSchema = z.object({
@@ -459,7 +455,6 @@ export const getPushSubscriptions = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { User } = await import("../models/User.js");
     const userId = req.user!.id;
 
     const user = await User.findById(userId).select("pushSubscriptions");
@@ -492,7 +487,6 @@ export const sendTestPushNotification = async (
 ): Promise<void> => {
   try {
     const pushService = pushNotificationService;
-    const User = UserModel;
     const userId = req.user!.id;
 
     // Check if VAPID is configured

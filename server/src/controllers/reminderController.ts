@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ScheduledNotificationService } from "../services/ScheduledNotificationService";
 import { ReminderMonitoringService } from "../services/ReminderMonitoringService";
 import { z } from "zod";
+import { User } from "../models/User";
 
 /**
  * Get user's reminder preferences
@@ -13,7 +14,6 @@ export const getReminderPreferences = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { User } = await import("../models/User.js");
     const userId = req.user!.id;
 
     const user = await User.findById(userId).select("reminderPreferences");
@@ -57,7 +57,6 @@ export const updateReminderPreferences = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { User } = await import("../models/User.js");
     const userId = req.user!.id;
 
     // Validate request body
