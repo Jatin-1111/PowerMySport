@@ -3,7 +3,6 @@
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Modal } from "@/modules/shared/ui/Modal";
 import { Coach } from "@/types";
 import {
   ArrowRight,
@@ -11,6 +10,7 @@ import {
   FilterX,
   ImageIcon,
   IndianRupee,
+  MapPin,
   Search,
   SlidersHorizontal,
   Star,
@@ -55,6 +55,74 @@ const normalizeSearchTerm = (value: string) =>
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
+const toRadians = (value: number) => (value * Math.PI) / 180;
+
+const calculateDistanceKm = (
+  from: { latitude: number; longitude: number },
+  to: { latitude: number; longitude: number },
+) => {
+  const earthRadiusKm = 6371;
+  const deltaLatitude = toRadians(to.latitude - from.latitude);
+  const deltaLongitude = toRadians(to.longitude - from.longitude);
+  const fromLatitude = toRadians(from.latitude);
+  const toLatitude = toRadians(to.latitude);
+
+  const a =
+    Math.sin(deltaLatitude / 2) * Math.sin(deltaLatitude / 2) +
+    Math.cos(fromLatitude) *
+      Math.cos(toLatitude) *
+      Math.sin(deltaLongitude / 2) *
+      Math.sin(deltaLongitude / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadiusKm * c;
+};
+
+const formatDistanceKm = (distanceKm: number) => {
+  if (!Number.isFinite(distanceKm) || distanceKm < 0) {
+    return "";
+  }
+
+  if (distanceKm < 1) {
+    return `${Math.round(distanceKm * 1000)} m away`;
+  }
+
+  return `${distanceKm.toFixed(1)} km away`;
+};
+
+const parseCoordinates = (value: unknown) => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as {
+    coordinates?: unknown;
+    lat?: unknown;
+    lng?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+  };
+
+  if (
+    Array.isArray(candidate.coordinates) &&
+    candidate.coordinates.length === 2
+  ) {
+    const longitude = Number(candidate.coordinates[0]);
+    const latitude = Number(candidate.coordinates[1]);
+    if (Number.isFinite(longitude) && Number.isFinite(latitude)) {
+      return { latitude, longitude };
+    }
+  }
+
+  const latitude = Number(candidate.latitude ?? candidate.lat);
+  const longitude = Number(candidate.longitude ?? candidate.lng);
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    return { latitude, longitude };
+  }
+
+  return null;
+};
+
 const QUICK_SPORT_FILTERS = [
   "Cricket",
   "Football",
@@ -66,7 +134,13 @@ const QUICK_SPORT_FILTERS = [
 
 const SERVICE_MODE_OPTIONS = ["ALL", "OWN_VENUE", "FREELANCE", "HYBRID"];
 const MIN_RATING_OPTIONS = ["0", "3", "4", "4.5"];
-const SORT_OPTIONS = ["relevance", "priceAsc", "priceDesc", "ratingDesc"];
+const SORT_OPTIONS = [
+  "relevance",
+  "nearest",
+  "priceAsc",
+  "priceDesc",
+  "ratingDesc",
+];
 
 const CoachImageWithFallback = ({
   sources,
@@ -126,7 +200,11 @@ function CoachesPageContent() {
   const [maxRate, setMaxRate] = useState("");
   const [minRating, setMinRating] = useState("0");
   const [sortBy, setSortBy] = useState("relevance");
-  const [locationError, setLocationError] = useState("");
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [hasLocationAccessDenied, setHasLocationAccessDenied] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const hasRequestedInitialLoadRef = useRef(false);
   const hasHydratedFromUrlRef = useRef(false);
@@ -170,65 +248,6 @@ function CoachesPageContent() {
     setSortBy(SORT_OPTIONS.includes(sortParam) ? sortParam : "relevance");
     setShowAdvancedFilters(showFiltersParam);
   }, [searchParams]);
-
-  const requestCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError(
-        "Location access is required to discover nearby coaches.",
-      );
-      setCoaches([]);
-      setFilteredCoaches([]);
-      setLoading(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        setLocationError("");
-        await loadCoaches(position.coords.latitude, position.coords.longitude);
-      },
-      (error) => {
-        const permissionMessage =
-          error.code === error.PERMISSION_DENIED
-            ? "Location permission is blocked. Please enable location access in your browser site settings and try again."
-            : "Location access is required to discover nearby coaches. Please enable location and try again.";
-
-        setLocationError(permissionMessage);
-        setCoaches([]);
-        setFilteredCoaches([]);
-        setLoading(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000,
-      },
-    );
-  };
-
-  const requestLocationAndLoadCoaches = () => {
-    setLoading(true);
-    requestCurrentLocation();
-  };
-
-  const handleTryLocationAgain = () => {
-    setLoading(true);
-    requestCurrentLocation();
-  };
-
-  const handleOpenLocationSettings = () => {
-    const userAgent = navigator.userAgent.toLowerCase();
-
-    const settingsHelpUrl = userAgent.includes("edg/")
-      ? "https://support.microsoft.com/microsoft-edge/website-permissions-3f2e58fa-0b99-4f9a-9f3f-7a90f0cc01bb"
-      : userAgent.includes("chrome")
-        ? "https://support.google.com/chrome/answer/142065"
-        : userAgent.includes("firefox")
-          ? "https://support.mozilla.org/en-US/kb/permission-manager-give-or-revoke-site-permissions"
-          : "https://support.apple.com/guide/safari/customize-website-settings-sfri40734/mac";
-
-    window.open(settingsHelpUrl, "_blank", "noopener,noreferrer");
-  };
 
   const getVerificationBadge = (coach: Coach) => {
     const status =
@@ -400,6 +419,68 @@ function CoachesPageContent() {
     return rate;
   };
 
+  const getCoachCoordinates = (coach: Coach) => {
+    const coachWithLegacyLocation = coach as Coach & {
+      location?: unknown;
+      effectiveLocation?: unknown;
+    };
+
+    const coordinateCandidates: unknown[] = [
+      coach.ownVenueDetails?.location,
+      coach.baseLocation,
+      coachWithLegacyLocation.location,
+      coachWithLegacyLocation.effectiveLocation,
+    ];
+
+    for (const locationCandidate of coordinateCandidates) {
+      const parsed = parseCoordinates(locationCandidate);
+      if (parsed) {
+        return parsed;
+      }
+    }
+
+    return null;
+  };
+
+  const getDistanceFromUserKm = (coach: Coach) => {
+    if (!userLocation) {
+      return null;
+    }
+
+    const coachCoordinates = getCoachCoordinates(coach);
+    if (!coachCoordinates) {
+      return null;
+    }
+
+    return calculateDistanceKm(userLocation, coachCoordinates);
+  };
+
+  const getCoachServingCity = (coach: Coach) => {
+    const fullAddress = coach.ownVenueDetails?.address;
+    if (typeof fullAddress !== "string") {
+      return "";
+    }
+
+    const parts = fullAddress
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return "";
+    }
+
+    if (parts.length === 1) {
+      return parts[0];
+    }
+
+    if (parts.length === 2) {
+      return parts[0];
+    }
+
+    return parts[parts.length - 3] || "";
+  };
+
   const getRelevanceScore = (coach: Coach, normalizedSearchTerm: string) => {
     const ratingScore = clamp01((coach.rating || 0) / 5);
     const reviewScore = clamp01((coach.reviewCount || 0) / 50);
@@ -523,6 +604,28 @@ function CoachesPageContent() {
       });
     } else if (sortBy === "ratingDesc") {
       next = [...next].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortBy === "nearest") {
+      next = [...next].sort((a, b) => {
+        const distanceA = getDistanceFromUserKm(a);
+        const distanceB = getDistanceFromUserKm(b);
+
+        if (distanceA === null && distanceB === null) {
+          return (
+            getRelevanceScore(b, normalizedSearchTerm) -
+            getRelevanceScore(a, normalizedSearchTerm)
+          );
+        }
+
+        if (distanceA === null) {
+          return 1;
+        }
+
+        if (distanceB === null) {
+          return -1;
+        }
+
+        return distanceA - distanceB;
+      });
     } else if (sortBy === "relevance") {
       next = [...next].sort(
         (a, b) =>
@@ -543,7 +646,41 @@ function CoachesPageContent() {
     maxRate,
     minRating,
     sortBy,
+    userLocation,
   ]);
+
+  useEffect(() => {
+    if (sortBy !== "nearest") {
+      return;
+    }
+
+    if (userLocation) {
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setHasLocationAccessDenied(true);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+        setHasLocationAccessDenied(false);
+      },
+      () => {
+        setHasLocationAccessDenied(true);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000,
+      },
+    );
+  }, [sortBy, userLocation]);
 
   useEffect(() => {
     if (!hasHydratedFromUrlRef.current) {
@@ -597,17 +734,13 @@ function CoachesPageContent() {
     }
 
     hasRequestedInitialLoadRef.current = true;
-    requestLocationAndLoadCoaches();
+    loadCoaches();
   }, []);
 
-  const loadCoaches = async (latitude: number, longitude: number) => {
+  const loadCoaches = async () => {
     setLoading(true);
     try {
-      const response = await discoveryApi.searchNearbyCoaches({
-        latitude,
-        longitude,
-        maxDistance: 30000,
-      });
+      const response = await discoveryApi.searchNearbyCoaches({});
       if (response.success && response.data) {
         setCoaches(response.data.coaches || []);
       }
@@ -692,11 +825,13 @@ function CoachesPageContent() {
       ? {
           key: "sortBy",
           label:
-            sortBy === "priceAsc"
-              ? "Sort: Price Low-High"
-              : sortBy === "priceDesc"
-                ? "Sort: Price High-Low"
-                : "Sort: Top Rated",
+            sortBy === "nearest"
+              ? "Sort: Nearest"
+              : sortBy === "priceAsc"
+                ? "Sort: Price Low-High"
+                : sortBy === "priceDesc"
+                  ? "Sort: Price High-Low"
+                  : "Sort: Top Rated",
         }
       : null,
   ].filter(
@@ -709,44 +844,14 @@ function CoachesPageContent() {
   );
 
   const hasActiveCoachFilters = activeCoachFilters.length > 0;
+  const nearestSortableCoachCount =
+    sortBy === "nearest"
+      ? filteredCoaches.filter((coach) => getDistanceFromUserKm(coach) !== null)
+          .length
+      : 0;
 
   return (
     <div className="bg-slate-50">
-      <Modal
-        isOpen={Boolean(locationError)}
-        onClose={() => {}}
-        title="Location Access Required"
-        closeButton={false}
-        footer={
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleOpenLocationSettings}
-            >
-              Open Location Settings
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleTryLocationAgain}
-            >
-              Try Again
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-sm text-slate-700">
-          Location is necessary to find nearby coaches. Please enable location
-          permission in your browser and try again.
-        </p>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-slate-600">
-          <li>Open your browser site permissions for this page.</li>
-          <li>Allow location access for this site.</li>
-          <li>Come back and click Try Again.</li>
-        </ul>
-      </Modal>
-
       {/* Header Section */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -937,6 +1042,7 @@ function CoachesPageContent() {
                         className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
                       >
                         <option value="relevance">Relevance</option>
+                        <option value="nearest">Nearest</option>
                         <option value="priceAsc">Price: Low to High</option>
                         <option value="priceDesc">Price: High to Low</option>
                         <option value="ratingDesc">Rating: High to Low</option>
@@ -944,6 +1050,23 @@ function CoachesPageContent() {
                     </label>
                   </div>
                 )}
+
+                {sortBy === "nearest" && hasLocationAccessDenied && (
+                  <p className="mt-3 text-xs text-white/80">
+                    Location access is off. Showing all coaches with available
+                    data.
+                  </p>
+                )}
+
+                {sortBy === "nearest" &&
+                  userLocation &&
+                  !hasLocationAccessDenied &&
+                  nearestSortableCoachCount === 0 && (
+                    <p className="mt-3 text-xs text-white/80">
+                      Nearest sort is active, but no coach location coordinates
+                      are available yet. Showing all coaches in fallback order.
+                    </p>
+                  )}
 
                 {hasActiveCoachFilters && (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -988,7 +1111,7 @@ function CoachesPageContent() {
               <p className="text-slate-500 mb-6">
                 {appliedSportFilter
                   ? `We couldn't find any coaches for "${appliedSportFilter}". Try a different sport.`
-                  : locationError || "Check back soon for new coaches."}
+                  : "Check back soon for new coaches."}
               </p>
               {appliedSportFilter && (
                 <Button variant="secondary" onClick={handleClearFilters}>
@@ -1026,6 +1149,11 @@ function CoachesPageContent() {
                   Number.isFinite(startingRate) && startingRate > 0;
                 const primarySport = getPrimarySport(coach);
                 const additionalSportsCount = getAdditionalSportsCount(coach);
+                const distanceFromUserKm = getDistanceFromUserKm(coach);
+                const showNearestDistance =
+                  sortBy === "nearest" &&
+                  userLocation !== null &&
+                  distanceFromUserKm !== null;
                 const coachRoute = `/coaches/${coach.id || coach._id}`;
                 const onOpenCoach = () => router.push(coachRoute);
 
@@ -1050,9 +1178,10 @@ function CoachesPageContent() {
                       const venueImage = getCoachVenueImage(coach);
                       const coachName = getCoachDisplayName(coach);
                       const coachInitials = getCoachInitials(coach);
+                      const servingCity = getCoachServingCity(coach);
 
                       return (
-                        <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100">
+                        <div className="relative aspect-3/4 w-full overflow-hidden bg-slate-100">
                           <CoachImageWithFallback
                             sources={coachImageCandidates}
                             alt={coachName}
@@ -1065,8 +1194,15 @@ function CoachesPageContent() {
                             {primarySport}
                           </span>
 
+                          {servingCity && (
+                            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white">
+                              <MapPin size={10} />
+                              {servingCity}
+                            </span>
+                          )}
+
                           {venueImage && (
-                            <span className="absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                            <span className="absolute left-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
                               Venue image
                             </span>
                           )}
@@ -1107,6 +1243,11 @@ function CoachesPageContent() {
                         <p className="mt-1 line-clamp-2 min-h-10 text-xs text-slate-500">
                           {getCoachBioSummary(coach)}
                         </p>
+                        {showNearestDistance && (
+                          <p className="mt-1 text-[11px] font-semibold text-turf-green">
+                            {formatDistanceKm(distanceFromUserKm)}
+                          </p>
+                        )}
                       </div>
 
                       {/* Rating */}
