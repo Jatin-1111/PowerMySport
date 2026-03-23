@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
@@ -10,6 +10,12 @@ import { formatCurrency } from "@/utils/format";
 import { ArrowRight, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
 
 export default function VenueListerDashboard() {
   const [stats, setStats] = useState({
@@ -110,40 +116,49 @@ export default function VenueListerDashboard() {
       />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-white">
-          <p className="text-sm text-slate-600 mb-1">Total Venues</p>
-          <p className="text-3xl font-bold text-slate-900">
+      <StaggerContainer className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <StaggerItem className="h-full">
+        <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Venues</p>
+          <p className="text-3xl font-bold text-slate-900 dark:text-white">
             {stats.totalVenues}
           </p>
         </Card>
+        </StaggerItem>
 
-        <Card className="bg-white">
-          <p className="text-sm text-slate-600 mb-1">Total Bookings</p>
-          <p className="text-3xl font-bold text-slate-900">
+        <StaggerItem className="h-full">
+        <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Bookings</p>
+          <p className="text-3xl font-bold text-slate-900 dark:text-white">
             {stats.totalBookings}
           </p>
         </Card>
+        </StaggerItem>
 
-        <Card className="bg-white">
-          <p className="text-sm text-slate-600 mb-1">Total Earnings</p>
+        <StaggerItem className="h-full">
+        <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Earnings</p>
           <p className="text-xl font-bold text-power-orange sm:text-2xl">
             {formatCurrency(stats.totalEarnings)}
           </p>
         </Card>
+        </StaggerItem>
 
-        <Card className="bg-white">
-          <p className="text-sm text-slate-600 mb-1">Pending Bookings</p>
+        <StaggerItem className="h-full">
+        <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Pending Bookings</p>
           <p className="text-xl font-bold text-yellow-600 sm:text-2xl">
             {stats.pendingBookings}
           </p>
         </Card>
-      </div>
+        </StaggerItem>
+      </StaggerContainer>
 
+      <SlideUp delay={0.2} yOffset={20}>
       {primaryVenue && (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900">Your First Venue</h2>
-          <Card className="bg-white border border-slate-200 p-0 overflow-hidden">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Your First Venue</h2>
+          <Card className="glass-panel premium-shadow p-0 overflow-hidden border-0">
             {primaryVenue.coverPhotoUrl ||
             (primaryVenue.images && primaryVenue.images.length > 0) ? (
               <img
@@ -195,13 +210,16 @@ export default function VenueListerDashboard() {
           </Card>
         </div>
       )}
+      </SlideUp>
 
       {/* Quick Actions */}
-      <h2 className="text-xl font-bold text-slate-900">Quick Actions</h2>
+      {/* Quick Actions */}
+      <SlideUp delay={0.3} yOffset={20}>
+      <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h2>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Link
           href="/venue-lister/inventory"
-          className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors group"
+          className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-lg hover:bg-slate-800 hover:shadow-lg transition-all group"
         >
           <div>
             <h3 className="text-lg font-bold mb-1">Manage Inventory</h3>
@@ -214,7 +232,7 @@ export default function VenueListerDashboard() {
         </Link>
         <Link
           href="/venue-lister/vendor-bookings"
-          className="flex items-center justify-between p-6 bg-power-orange text-white rounded-lg hover:bg-orange-600 transition-colors group"
+          className="flex items-center justify-between p-6 bg-power-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-lg transition-all group"
         >
           <div>
             <h3 className="text-lg font-bold mb-1">View Bookings</h3>
@@ -226,6 +244,7 @@ export default function VenueListerDashboard() {
           />
         </Link>
       </div>
+      </SlideUp>
     </div>
   );
 }

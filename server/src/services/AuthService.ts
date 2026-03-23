@@ -127,6 +127,7 @@ export interface GoogleLoginPayload {
   name: string;
   photoUrl?: string;
   role?: "PLAYER" | "VENUE_LISTER" | "COACH";
+  action?: "login" | "register";
 }
 
 export const googleLogin = async (
@@ -146,6 +147,9 @@ export const googleLogin = async (
       }
       await user.save();
     } else {
+      if (payload.action === "login") {
+        throw new Error("Account not found. Please sign up on the Register page.");
+      }
       // Create new user
       // Generate unique phone from Google ID to avoid phone field collision
       const uniquePhoneId = `goog_${payload.googleId.slice(0, 15)}_${Date.now()}`;

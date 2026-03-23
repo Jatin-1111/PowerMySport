@@ -1,4 +1,9 @@
-﻿import { Button } from "@/modules/shared/ui/Button";
+import { Button } from "@/modules/shared/ui/Button";
+import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
 import { cn } from "@/utils/cn";
 import Image from "next/image";
 import Link from "next/link";
@@ -42,42 +47,51 @@ export const Hero: React.FC<HeroProps> = ({
     return (
       <section
         className={cn(
-          "relative py-20 sm:py-24 lg:py-32",
+          "relative py-20 sm:py-24 lg:py-32 overflow-hidden",
           gradient && "bg-linear-to-br from-power-orange to-turf-green",
         )}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
+        <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl mix-blend-overlay"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <StaggerContainer className="text-center">
             {subtitle && (
-              <p className="text-sm sm:text-base font-semibold text-white/90 uppercase tracking-wide mb-4">
-                {subtitle}
-              </p>
+              <StaggerItem>
+                <p className="inline-block px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm sm:text-base font-semibold text-white uppercase tracking-wide mb-6 premium-shadow">
+                  {subtitle}
+                </p>
+              </StaggerItem>
             )}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              {title}
-            </h1>
+            <StaggerItem>
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white mb-6 leading-tight drop-shadow-md">
+                {title}
+              </h1>
+            </StaggerItem>
             {description && (
-              <p className="text-lg sm:text-xl text-white/95 max-w-3xl mx-auto mb-10">
-                {description}
-              </p>
+              <StaggerItem>
+                <p className="text-lg sm:text-2xl text-white/95 max-w-3xl mx-auto mb-10 drop-shadow-sm font-light">
+                  {description}
+                </p>
+              </StaggerItem>
             )}
-            <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
-              {primaryCTA && (
-                <Link href={primaryCTA.href} className="w-full sm:w-auto">
-                  <Button variant="secondary" size="lg">
-                    {primaryCTA.label}
-                  </Button>
-                </Link>
-              )}
-              {secondaryCTA && (
-                <Link href={secondaryCTA.href} className="w-full sm:w-auto">
-                  <Button variant="outline" size="lg">
-                    {secondaryCTA.label}
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
+            <StaggerItem>
+              <div className="flex w-full flex-col items-stretch justify-center gap-4 sm:w-auto sm:flex-row sm:items-center">
+                {primaryCTA && (
+                  <Link href={primaryCTA.href} className="w-full sm:w-auto">
+                    <Button variant="secondary" size="lg" className="premium-shadow text-lg px-8 py-6 h-auto">
+                      {primaryCTA.label}
+                    </Button>
+                  </Link>
+                )}
+                {secondaryCTA && (
+                  <Link href={secondaryCTA.href} className="w-full sm:w-auto">
+                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10 hover:text-white premium-shadow text-lg px-8 py-6 h-auto">
+                      {secondaryCTA.label}
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </StaggerItem>
+          </StaggerContainer>
         </div>
       </section>
     );
@@ -86,23 +100,30 @@ export const Hero: React.FC<HeroProps> = ({
   // Page variant - Compact hero for internal pages
   if (variant === "page") {
     return (
-      <section className="bg-deep-slate py-16 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
+      <section className="bg-deep-slate py-16 sm:py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-linear-to-tr from-power-orange/10 to-turf-green/5"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <StaggerContainer className="text-center">
             {subtitle && (
-              <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
-                {subtitle}
-              </p>
+              <StaggerItem>
+                <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
+                  {subtitle}
+                </p>
+              </StaggerItem>
             )}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-              {title}
-            </h1>
+            <StaggerItem>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+                {title}
+              </h1>
+            </StaggerItem>
             {description && (
-              <p className="text-lg text-white/90 max-w-2xl mx-auto">
-                {description}
-              </p>
+              <StaggerItem>
+                <p className="text-lg text-white/90 max-w-2xl mx-auto">
+                  {description}
+                </p>
+              </StaggerItem>
             )}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
     );
@@ -111,52 +132,63 @@ export const Hero: React.FC<HeroProps> = ({
   // Split variant - Text on left, image on right
   if (variant === "split") {
     return (
-      <section className="py-16 sm:py-20 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 sm:py-20 lg:py-24 bg-ghost-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Text Content */}
-            <div>
+            <StaggerContainer>
               {subtitle && (
-                <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
-                  {subtitle}
-                </p>
+                <StaggerItem>
+                  <p className="text-sm font-bold text-power-orange uppercase tracking-wide mb-3">
+                    {subtitle}
+                  </p>
+                </StaggerItem>
               )}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-deep-slate mb-6 leading-tight">
-                {title}
-              </h1>
+              <StaggerItem>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-deep-slate mb-6 leading-tight">
+                  {title}
+                </h1>
+              </StaggerItem>
               {description && (
-                <p className="text-lg text-muted-foreground mb-8">
-                  {description}
-                </p>
+                <StaggerItem>
+                  <p className="text-lg sm:text-xl text-muted-foreground mb-8 leading-relaxed">
+                    {description}
+                  </p>
+                </StaggerItem>
               )}
-              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
-                {primaryCTA && (
-                  <Link href={primaryCTA.href} className="w-full sm:w-auto">
-                    <Button variant="primary" size="lg">
-                      {primaryCTA.label}
-                    </Button>
-                  </Link>
-                )}
-                {secondaryCTA && (
-                  <Link href={secondaryCTA.href} className="w-full sm:w-auto">
-                    <Button variant="outline" size="lg">
-                      {secondaryCTA.label}
-                    </Button>
-                  </Link>
-                )}
-              </div>
-            </div>
+              <StaggerItem>
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
+                  {primaryCTA && (
+                    <Link href={primaryCTA.href} className="w-full sm:w-auto">
+                      <Button variant="primary" size="lg" className="premium-shadow">
+                        {primaryCTA.label}
+                      </Button>
+                    </Link>
+                  )}
+                  {secondaryCTA && (
+                    <Link href={secondaryCTA.href} className="w-full sm:w-auto">
+                      <Button variant="outline" size="lg" className="premium-shadow">
+                        {secondaryCTA.label}
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </StaggerItem>
+            </StaggerContainer>
 
             {/* Image */}
             {imageSrc && (
-              <div className="relative h-96 overflow-hidden rounded-lg shadow-2xl lg:h-125">
-                <Image
-                  src={imageSrc}
-                  alt={imageAlt || title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
+              <FadeIn delay={0.2} duration={0.8}>
+                <div className="relative h-96 overflow-hidden rounded-2xl premium-shadow lg:h-[32rem]">
+                  <Image
+                    src={imageSrc}
+                    alt={imageAlt || title}
+                    fill
+                    className="object-cover hover:scale-105 transition-transform duration-700 ease-out"
+                  />
+                  <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-2xl"></div>
+                </div>
+              </FadeIn>
             )}
           </div>
         </div>

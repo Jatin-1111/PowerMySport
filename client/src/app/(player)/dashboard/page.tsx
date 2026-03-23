@@ -24,6 +24,12 @@ import { Badge } from "@/components/ui/badge";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { friendService } from "@/modules/shared/services/friend";
+import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
 import type { Booking } from "@/types";
 
 interface UpcomingBooking {
@@ -115,10 +121,11 @@ export default function DashboardPage() {
       />
 
       {/* Notifications Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Pending Friend Requests */}
+        <StaggerItem className="h-full">
         <Card
-          className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+          className="glass-panel premium-shadow hover:shadow-xl transition-all cursor-pointer h-full"
           onClick={() => router.push("/dashboard/friends")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -143,10 +150,12 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+        </StaggerItem>
 
         {/* Pending Invitations */}
+        <StaggerItem className="h-full">
         <Card
-          className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+          className="glass-panel premium-shadow hover:shadow-xl transition-all cursor-pointer h-full"
           onClick={() => router.push("/dashboard/invitations")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -171,10 +180,12 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+        </StaggerItem>
 
         {/* Upcoming Bookings */}
+        <StaggerItem className="h-full">
         <Card
-          className="bg-white hover:shadow-md transition-shadow cursor-pointer"
+          className="glass-panel premium-shadow hover:shadow-xl transition-all cursor-pointer h-full"
           onClick={() => router.push("/dashboard/my-bookings")}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -194,11 +205,13 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+        </StaggerItem>
+      </StaggerContainer>
 
       {/* Upcoming Bookings List */}
+      <SlideUp delay={0.2} yOffset={20}>
       {upcomingBookings.length > 0 && (
-        <Card className="bg-white">
+        <Card className="glass-panel premium-shadow">
           <CardHeader>
             <CardTitle className="text-slate-900">Next Sessions</CardTitle>
             <CardDescription className="text-slate-500">
@@ -230,16 +243,18 @@ export default function DashboardPage() {
               </div>
             ))}
             <Link href="/dashboard/my-bookings">
-              <Button variant="outline" className="w-full mt-2 text-slate-800">
+              <Button variant="outline" className="w-full mt-2 text-slate-800 hover:bg-slate-100 transition-colors">
                 View All Bookings
               </Button>
             </Link>
           </CardContent>
         </Card>
       )}
+      </SlideUp>
 
       {/* Quick Actions */}
-      <Card className="bg-white">
+      <SlideUp delay={0.3} yOffset={20}>
+      <Card className="glass-panel premium-shadow">
         <CardHeader>
           <CardTitle className="text-slate-900">Quick Actions</CardTitle>
           <CardDescription className="text-slate-500">
@@ -285,6 +300,7 @@ export default function DashboardPage() {
           </Link>
         </CardContent>
       </Card>
+      </SlideUp>
     </div>
   );
 }

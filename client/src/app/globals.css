@@ -158,3 +158,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl dark:bg-slate-900/70 dark:border-white/10;
+  }
+  
+  .glass-panel-heavy {
+    @apply bg-white/90 backdrop-blur-xl border border-white/30 shadow-2xl dark:bg-slate-900/90 dark:border-white/20;
+  }
+  
+  .premium-shadow {
+    @apply shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.20)] transition-shadow duration-300;
+  }
+  
+  .dark .premium-shadow {
+    @apply shadow-[0_8px_30px_rgb(255,255,255,0.05)] hover:shadow-[0_8px_30px_rgb(255,255,255,0.1)];
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-linear-to-r from-power-orange to-turf-green;
+  }
+}

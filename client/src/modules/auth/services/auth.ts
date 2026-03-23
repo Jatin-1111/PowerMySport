@@ -1,4 +1,4 @@
-﻿import axiosInstance from "@/lib/api/axios";
+import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, AuthResponse, User } from "@/types";
 
 export const authApi = {
@@ -71,6 +71,7 @@ export const authApi = {
     name: string;
     photoUrl?: string;
     role?: "PLAYER" | "VENUE_LISTER" | "COACH";
+    action?: "login" | "register";
   }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/google", data);
     return response.data;

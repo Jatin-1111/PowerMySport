@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
@@ -91,6 +92,7 @@ export default function LoginPage() {
         email: decoded.email,
         name: decoded.name,
         photoUrl: decoded.picture,
+        action: "login",
       });
 
       if (response.success && response.data) {
@@ -121,12 +123,13 @@ export default function LoginPage() {
     <GoogleOAuthProvider
       clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
     >
-      <Card className="w-full">
+      <SlideUp duration={0.6} yOffset={20}>
+      <Card className="w-full glass-panel-heavy premium-shadow border-0">
         <CardHeader>
-          <h1 className="text-2xl font-bold text-center text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold text-center text-slate-900 dark:text-white sm:text-3xl">
             Welcome Back
           </h1>
-          <p className="text-center mt-2 text-sm text-slate-300 sm:text-base">
+          <p className="text-center mt-2 text-sm text-slate-600 dark:text-slate-300 sm:text-base">
             Sign in to continue to PowerMySport
           </p>
         </CardHeader>
@@ -134,7 +137,7 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium mb-2 text-white">
+              <label className="block text-sm font-medium mb-2 text-slate-900 dark:text-white">
                 Email
               </label>
               <input
@@ -142,8 +145,8 @@ export default function LoginPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all ${
-                  errors.email ? "border-red-500" : "border-slate-300"
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
+                  errors.email ? "border-red-500" : "border-slate-300 dark:border-slate-600"
                 }`}
                 placeholder="your@email.com"
               />
@@ -153,7 +156,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-white">
+              <label className="block text-sm font-medium mb-2 text-slate-900 dark:text-white">
                 Password
               </label>
               <div className="relative">
@@ -162,8 +165,8 @@ export default function LoginPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all ${
-                    errors.password ? "border-red-500" : "border-slate-300"
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
+                    errors.password ? "border-red-500" : "border-slate-300 dark:border-slate-600"
                   }`}
                   placeholder="••••••••"
                 />
@@ -185,7 +188,7 @@ export default function LoginPage() {
             <div className="flex justify-end">
               <Link
                 href="/forgot-password"
-                className="text-sm text-power-orange hover:text-orange-600 transition-colors"
+                className="text-sm font-medium text-power-orange hover:text-orange-600 transition-colors"
               >
                 Forgot Password?
               </Link>
@@ -195,7 +198,7 @@ export default function LoginPage() {
               type="submit"
               disabled={isSubmitting}
               variant="primary"
-              className="w-full"
+              className="w-full premium-shadow"
             >
               {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
@@ -203,10 +206,10 @@ export default function LoginPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-600"></div>
+              <div className="w-full border-t border-slate-300 dark:border-slate-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-card text-slate-300">
+              <span className="px-3 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
                 Or continue with
               </span>
             </div>
@@ -219,7 +222,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <p className="text-center mt-6 text-white">
+          <p className="text-center mt-6 text-slate-600 dark:text-slate-300">
             Don&apos;t have an account?{" "}
             <Link
               href="/register"
@@ -230,6 +233,7 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
+      </SlideUp>
     </GoogleOAuthProvider>
   );
 }

@@ -3,6 +3,10 @@
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
 import { Coach } from "@/types";
 import {
   ArrowRight,
@@ -1137,7 +1141,7 @@ function CoachesPageContent() {
             </div>
 
             {/* Coaches Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredCoaches.map((coach, coachIndex) => {
                 const coachCardKey =
                   coach.id ||
@@ -1156,9 +1160,10 @@ function CoachesPageContent() {
                 const coachRoute = `/coaches/${coach.id || coach._id}`;
                 const onOpenCoach = () => router.push(coachRoute);
 
-                return (                  <Card
-                    key={coachCardKey}
-                    className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-turf-green/40 dark:hover:border-turf-green/30 hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.3)] focus-within:-translate-y-1.5 focus-within:border-turf-green/40 focus-within:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)]"
+                return (                  
+                  <StaggerItem key={coachCardKey} className="h-full">
+                  <Card
+                    className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-turf-green/40 dark:hover:border-turf-green/30 hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.3)] focus-within:-translate-y-1.5 focus-within:border-turf-green/40 focus-within:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] glass-panel"
                     onClick={onOpenCoach}
                     role="button"
                     tabIndex={0}
@@ -1325,9 +1330,10 @@ function CoachesPageContent() {
                       </div>
                     </div>
                   </Card>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </StaggerContainer>
           </>
         )}
       </div>

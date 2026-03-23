@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
@@ -16,6 +16,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 
 const PAGE_SIZE = 10;
 
@@ -128,36 +133,44 @@ export default function CoachBookingsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card className="bg-white">
-              <p className="mb-1 text-sm text-slate-600">Total Bookings</p>
-              <p className="text-3xl font-bold text-slate-900">{stats.total}</p>
+          <StaggerContainer className="grid gap-4 md:grid-cols-4">
+            <StaggerItem className="h-full">
+            <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+              <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Total Bookings</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
             </Card>
-            <Card className="bg-white">
-              <p className="mb-1 text-sm text-slate-600">Confirmed</p>
+            </StaggerItem>
+            <StaggerItem className="h-full">
+            <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+              <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Confirmed</p>
               <p className="text-3xl font-bold text-green-600">
                 {stats.confirmed}
               </p>
             </Card>
-            <Card className="bg-white">
-              <p className="mb-1 text-sm text-slate-600">Completed</p>
+            </StaggerItem>
+            <StaggerItem className="h-full">
+            <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+              <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Completed</p>
               <p className="text-3xl font-bold text-emerald-600">
                 {stats.completed}
               </p>
             </Card>
-            <Card className="bg-white">
-              <p className="mb-1 text-sm text-slate-600">Tracked Earnings</p>
+            </StaggerItem>
+            <StaggerItem className="h-full">
+            <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+              <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Tracked Earnings</p>
               <p className="text-3xl font-bold text-power-orange">
                 ₹{stats.totalEarnings}
               </p>
             </Card>
-          </div>
+            </StaggerItem>
+          </StaggerContainer>
 
-          <div className="space-y-4">
+          <StaggerContainer className="space-y-4">
             {paginatedBookings.map((booking) => (
+              <StaggerItem key={booking.id}>
               <Card
-                key={booking.id}
-                className="bg-white transition-shadow hover:shadow-lg"
+                className="glass-panel hover:shadow-lg transition-all"
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex-1">
@@ -242,11 +255,13 @@ export default function CoachBookingsPage() {
                   </div>
                 </div>
               </Card>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
 
           {totalPages > 1 && (
-            <Card className="bg-white">
+            <SlideUp delay={0.2} yOffset={10}>
+            <Card className="glass-panel">
               <div className="flex items-center justify-between gap-4">
                 <div className="text-sm text-slate-600">
                   Page {currentPage} of {totalPages} • {allCoachBookings.length}{" "}
@@ -278,6 +293,7 @@ export default function CoachBookingsPage() {
                 </div>
               </div>
             </Card>
+            </SlideUp>
           )}
         </div>
       )}

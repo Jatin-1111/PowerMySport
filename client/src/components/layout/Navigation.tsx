@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -79,8 +79,8 @@ export const Navigation: React.FC<NavProps> = ({
   return (
     <nav
       className={cn(
-        "border-b border-border bg-deep-slate text-white",
-        sticky && "sticky top-0 z-50 backdrop-blur-sm bg-deep-slate text-white",
+        "border-b border-white/10 bg-deep-slate/95 backdrop-blur-md text-white transition-all duration-300",
+        sticky && "sticky top-0 z-50 shadow-sm",
         variant === "dark" && "bg-deep-slate text-white",
       )}
     >
@@ -222,9 +222,15 @@ export const Navigation: React.FC<NavProps> = ({
       </div>
 
       {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border">
-          <div className="px-2 pt-2 pb-3 space-y-1">
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden border-t border-white/10 overflow-hidden"
+          >
+            <div className="px-2 pt-2 pb-3 space-y-1">
             {navigationLinks.map((link) => (
               <Link
                 key={link.href}
@@ -315,8 +321,9 @@ export const Navigation: React.FC<NavProps> = ({
               )}
             </div>
           </div>
-        </div>
-      )}
+        </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };
