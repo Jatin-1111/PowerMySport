@@ -337,4 +337,10 @@ userSchema.methods.refreshPhotoUrl = async function (
   }
 };
 
+// Compound index: admin user listing (most frequent admin query pattern)
+userSchema.index({ role: 1, createdAt: -1 });
+
+// Compound index: admin safety listing (role + active status filter)
+userSchema.index({ role: 1, isActive: 1 });
+
 export const User = mongoose.model<UserDocument>("User", userSchema);

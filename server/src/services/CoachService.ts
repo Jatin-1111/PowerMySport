@@ -266,55 +266,25 @@ export const findCoachesNearby = async (
   try {
     const radiusMeters = radiusKm * 1000;
 
-    // Build aggregation pipeline for efficient geo-filtering
     const pipeline: any[] = [
-      // Match by service mode and sport
       {
-        $match: {
-          isVerified: true,
-          verificationStatus: "VERIFIED",
-          serviceMode: { $in: ["FREELANCE", "HYBRID"] },
-          ...(sport ? { sports: sport } : {}),
-        },
-      },
-      // Lookup venue data for HYBRID coaches
-      {
-        $lookup: {
-          from: "venues",
-          localField: "venueId",
-          foreignField: "_id",
-          as: "venueData",
-        },
-      },
-      // Add computed location field (baseLocation for FREELANCE, venue location for HYBRID)
-      {
-        $addFields: {
-          effectiveLocation: {
-            $cond: {
-              if: { $eq: ["$serviceMode", "HYBRID"] },
-              then: { $arrayElemAt: ["$venueData.location", 0] },
-              else: "$baseLocation",
-            },
+        $geoNear: {
+          near: { type: "Point", coordinates: [lng, lat] },
+          distanceField: "distanceMeters",
+          maxDistance: radiusMeters,
+          spherical: true,
+          query: {
+            isVerified: true,
+            verificationStatus: "VERIFIED",
+            serviceMode: { $in: ["FREELANCE", "HYBRID"] },
+            ...(sport ? { sports: sport } : {}),
           },
         },
       },
-      // Filter out coaches without a location
       {
-        $match: {
-          effectiveLocation: { $exists: true, $ne: null },
-        },
+        $sort: { rating: -1, reviewCount: -1, distanceMeters: 1, _id: 1 },
       },
-      // Geo-spatial filter: coaches within service radius of the search location
-      {
-        $match: {
-          effectiveLocation: {
-            $geoWithin: {
-              $centerSphere: [[lng, lat], radiusMeters / 6378100], // Earth radius in meters
-            },
-          },
-        },
-      },
-      // Clean up: remove temporary fields and reshape
+      { $limit: limit },
       {
         $project: {
           _id: 1,
@@ -340,74 +310,8 @@ export const findCoachesNearby = async (
 
     const coaches = await Coach.aggregate(pipeline);
 
-    const rankedCoaches = coaches
-      .map((coach: any) => {
-        const coachCoordinates = coach.baseLocation?.coordinates;
-        const serviceRadius =
-          typeof coach.serviceRadiusKm === "number" && coach.serviceRadiusKm > 0
-            ? coach.serviceRadiusKm
-            : 10;
-
-        if (coach.serviceMode === "FREELANCE") {
-          if (
-            !Array.isArray(coachCoordinates) ||
-            coachCoordinates.length !== 2 ||
-            !Number.isFinite(Number(coachCoordinates[0])) ||
-            !Number.isFinite(Number(coachCoordinates[1]))
-          ) {
-            return null;
-          }
-
-          const normalizedCoachCoordinates: [number, number] = [
-            Number(coachCoordinates[0]),
-            Number(coachCoordinates[1]),
-          ];
-
-          const distanceKm = calculateDistanceKm(normalizedCoachCoordinates, [
-            lng,
-            lat,
-          ]);
-
-          if (distanceKm > serviceRadius) {
-            return null;
-          }
-
-          const relevanceScore = buildCoachRelevanceScore({
-            coach,
-            sportFilter: sport,
-            distanceKm,
-            maxDistanceKm: Math.max(radiusKm, serviceRadius),
-          });
-
-          return {
-            coach,
-            relevanceScore,
-          };
-        }
-
-        const relevanceScore = buildCoachRelevanceScore({
-          coach,
-          sportFilter: sport,
-          maxDistanceKm: radiusKm,
-        });
-
-        return {
-          coach,
-          relevanceScore,
-        };
-      })
-      .filter(
-        (entry): entry is { coach: any; relevanceScore: number } =>
-          entry !== null,
-      )
-      .sort((a, b) => b.relevanceScore - a.relevanceScore);
-
-    const filteredCoaches = rankedCoaches
-      .slice(0, Math.max(1, limit))
-      .map((entry) => entry.coach);
-
     // Populate the final documents (aggregate doesn't return full mongoose documents)
-    const populatedCoaches = (await Coach.populate(filteredCoaches, {
+    const populatedCoaches = (await Coach.populate(coaches, {
       path: "userId",
       select: COACH_LISTING_USER_SELECT,
     })) as CoachDocument[];
@@ -424,9 +328,6 @@ export const findCoachesNearby = async (
   }
 };
 
-/**
- * Get all coaches with optional sport filter
- */
 export const getAllCoaches = async (
   sport?: string,
   limit: number = 50,
@@ -443,18 +344,15 @@ export const getAllCoaches = async (
 
     const coaches = await Coach.find(query)
       .select(COACH_LISTING_SELECT)
+      .sort({ rating: -1, reviewCount: -1, _id: 1 })
+      .limit(limit)
       .populate({
         path: "userId",
         select: COACH_LISTING_USER_SELECT,
       });
-    coaches.sort((a, b) => {
-      const scoreA = buildCoachRelevanceScore({ coach: a, sportFilter: sport });
-      const scoreB = buildCoachRelevanceScore({ coach: b, sportFilter: sport });
-      return scoreB - scoreA;
-    });
-    const rankedCoaches = coaches.slice(0, Math.max(1, limit));
+
     return Promise.all(
-      rankedCoaches.map((coach) =>
+      coaches.map((coach) =>
         refreshCoachMediaUrls(coach, { includeVenueImages: false }),
       ),
     );

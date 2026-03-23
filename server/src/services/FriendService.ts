@@ -354,21 +354,11 @@ export class FriendService {
       .populate("recipientId", "name email photoUrl photoS3Key");
 
     // Extract friend user objects
-    let friends = await Promise.all(
-      connections.map(async (conn: any) => {
-        const friend =
-          conn.requesterId._id.toString() === userId
-            ? conn.recipientId
-            : conn.requesterId;
-
-        return {
-          id: friend._id,
-          name: friend.name,
-          email: friend.email,
-          photoUrl: await this.resolvePhotoUrl(friend),
-        };
-      }),
-    );
+    let friends = connections.map((conn: any) => {
+      return conn.requesterId._id.toString() === userId
+        ? conn.recipientId
+        : conn.requesterId;
+    });
 
     // Filter by query if provided
     if (query) {
@@ -380,7 +370,15 @@ export class FriendService {
       );
     }
 
-    return friends;
+    // Map to final format and resolve S3 URLs ONLY for the filtered subset
+    return Promise.all(
+      friends.map(async (friend) => ({
+        id: friend._id,
+        name: friend.name,
+        email: friend.email,
+        photoUrl: await this.resolvePhotoUrl(friend),
+      })),
+    );
   }
 
   /**

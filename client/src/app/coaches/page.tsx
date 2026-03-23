@@ -729,18 +729,17 @@ function CoachesPageContent() {
   ]);
 
   useEffect(() => {
-    if (hasRequestedInitialLoadRef.current) {
-      return;
-    }
+    loadCoaches(appliedSportFilter);
+  }, [appliedSportFilter]);
 
-    hasRequestedInitialLoadRef.current = true;
-    loadCoaches();
-  }, []);
-
-  const loadCoaches = async () => {
+  const loadCoaches = async (sportFilter: string = "") => {
     setLoading(true);
     try {
-      const response = await discoveryApi.searchNearbyCoaches({});
+      const params: any = { limit: 100 };
+      if (sportFilter) {
+        params.sport = sportFilter;
+      }
+      const response = await discoveryApi.searchNearbyCoaches(params);
       if (response.success && response.data) {
         setCoaches(response.data.coaches || []);
       }
@@ -851,9 +850,9 @@ function CoachesPageContent() {
       : 0;
 
   return (
-    <div className="bg-slate-50">
+    <div className="bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       {/* Header Section */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
             <div className="relative z-10">
@@ -886,7 +885,7 @@ function CoachesPageContent() {
                     value={sportInput}
                     onChange={(e) => setSportInput(e.target.value)}
                     placeholder="Search by sport, coach name, or keyword..."
-                    className="w-full rounded-lg border-2 border-slate-200 bg-white py-3 pl-10 pr-10 font-medium text-slate-900 focus:border-turf-green focus:outline-none focus:ring-2 focus:ring-turf-green/50"
+                    className="w-full rounded-lg border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-3 pl-10 pr-10 font-medium text-slate-900 dark:text-slate-100 focus:border-turf-green focus:outline-none focus:ring-2 focus:ring-turf-green/50 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
                     aria-label="Search coaches by sport, coach name, or keyword"
                   />
                   {sportInput && (
@@ -993,7 +992,7 @@ function CoachesPageContent() {
                       <select
                         value={serviceModeFilter}
                         onChange={(e) => setServiceModeFilter(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                        className="w-full px-3 py-2.5 border border-white/20 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
                       >
                         <option value="ALL">All Service Modes</option>
                         <option value="OWN_VENUE">Own Venue</option>
@@ -1012,7 +1011,7 @@ function CoachesPageContent() {
                         value={maxRate}
                         onChange={(e) => setMaxRate(e.target.value)}
                         placeholder="e.g. 1500"
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                        className="w-full px-3 py-2.5 border border-white/20 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
                       />
                     </label>
 
@@ -1023,7 +1022,7 @@ function CoachesPageContent() {
                       <select
                         value={minRating}
                         onChange={(e) => setMinRating(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                        className="w-full px-3 py-2.5 border border-white/20 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
                       >
                         <option value="0">Any Rating</option>
                         <option value="3">3+ and above</option>
@@ -1039,7 +1038,7 @@ function CoachesPageContent() {
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                        className="w-full px-3 py-2.5 border border-white/20 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
                       >
                         <option value="relevance">Relevance</option>
                         <option value="nearest">Nearest</option>
@@ -1097,18 +1096,18 @@ function CoachesPageContent() {
         {loading ? (
           <div className="text-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turf-green mx-auto mb-4"></div>
-            <p className="text-slate-600 font-medium">Loading coaches...</p>
+            <p className="text-slate-600 dark:text-slate-400 font-medium">Loading coaches...</p>
           </div>
         ) : filteredCoaches.length === 0 ? (
-          <Card className="bg-white">
-            <div className="text-center py-16 bg-slate-50 rounded-lg">
-              <Users size={56} className="mx-auto mb-4 text-slate-300" />
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
+          <Card className="bg-white dark:bg-slate-900 border-none">
+            <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <Users size={56} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
                 {appliedSportFilter
                   ? "No coaches found"
                   : "No coaches available"}
               </h3>
-              <p className="text-slate-500 mb-6">
+              <p className="text-slate-500 dark:text-slate-400 mb-6">
                 {appliedSportFilter
                   ? `We couldn't find any coaches for "${appliedSportFilter}". Try a different sport.`
                   : "Check back soon for new coaches."}
@@ -1125,12 +1124,12 @@ function CoachesPageContent() {
             {/* Results Header */}
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">
                   {appliedSportFilter
                     ? `${appliedSportFilter} Coaches`
                     : "All Coaches"}
                 </h2>
-                <p className="text-slate-600 mt-1">
+                <p className="text-slate-600 dark:text-slate-400 mt-1">
                   {filteredCoaches.length} coach
                   {filteredCoaches.length !== 1 ? "es" : ""} available
                 </p>
@@ -1157,10 +1156,9 @@ function CoachesPageContent() {
                 const coachRoute = `/coaches/${coach.id || coach._id}`;
                 const onOpenCoach = () => router.push(coachRoute);
 
-                return (
-                  <Card
+                return (                  <Card
                     key={coachCardKey}
-                    className="group flex h-full cursor-pointer flex-col overflow-hidden border-2 border-slate-100 bg-white transition-all hover:-translate-y-0.5 hover:border-turf-green hover:shadow-xl focus-within:border-turf-green focus-within:shadow-xl"
+                    className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-turf-green/40 dark:hover:border-turf-green/30 hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.3)] focus-within:-translate-y-1.5 focus-within:border-turf-green/40 focus-within:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)]"
                     onClick={onOpenCoach}
                     role="button"
                     tabIndex={0}
@@ -1179,146 +1177,151 @@ function CoachesPageContent() {
                       const coachName = getCoachDisplayName(coach);
                       const coachInitials = getCoachInitials(coach);
                       const servingCity = getCoachServingCity(coach);
+                      const badge = getVerificationBadge(coach);
 
                       return (
-                        <div className="relative aspect-3/4 w-full overflow-hidden bg-slate-100">
+                        <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                           <CoachImageWithFallback
                             sources={coachImageCandidates}
                             alt={coachName}
                             fallbackLabel={coachInitials}
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                           />
 
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-black/50 to-transparent" />
-                          <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-800">
-                            {primarySport}
-                          </span>
+                          {/* Elegant gradient overlay for perfect legibility */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-95" />
 
-                          {servingCity && (
-                            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white">
-                              <MapPin size={10} />
-                              {servingCity}
-                            </span>
-                          )}
+                          {/* Top Badges */}
+                          <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-2">
+                            <div className="flex flex-col items-start gap-2">
+                              {venueImage && (
+                                <span className="inline-flex items-center rounded-lg border border-white/20 bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
+                                  Venue Photo
+                                </span>
+                              )}
+                              <span className="inline-flex items-center rounded-lg bg-turf-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                {primarySport}
+                              </span>
+                            </div>
+                            {badge.label === "Verified" && (
+                              <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/30 bg-blue-500/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
+                                <Award size={12} className="text-white" />
+                                Verified
+                              </span>
+                            )}
+                          </div>
 
-                          {venueImage && (
-                            <span className="absolute left-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
-                              Venue image
-                            </span>
-                          )}
+                          {/* Coach Intro - Bottom anchored inside image */}
+                          <div className="absolute bottom-0 left-0 right-0 p-5">
+                            <h3 className="line-clamp-1 text-2xl font-extrabold tracking-tight text-white drop-shadow-md">
+                              {coachName}
+                            </h3>
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-white/90">
+                              {servingCity && (
+                                <span className="flex items-center gap-1.5 drop-shadow-sm">
+                                  <MapPin size={14} className="text-white/70" />
+                                  {servingCity}
+                                </span>
+                              )}
+                              {showNearestDistance && (
+                                <span className="flex items-center gap-1.5 font-semibold text-turf-green drop-shadow-sm">
+                                  <span className="h-1 w-1 rounded-full bg-turf-green" />
+                                  {formatDistanceKm(distanceFromUserKm)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       );
                     })()}
 
-                    <div className="border-b border-slate-100 bg-linear-to-br from-turf-green/5 to-slate-50 p-5">
-                      <div className="mb-3">
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <Award
-                            size={18}
-                            className="shrink-0 text-turf-green"
-                          />
-                          <h3 className="line-clamp-1 min-h-6 flex-1 text-base font-bold text-slate-900">
-                            {getCoachDisplayName(coach)}
-                          </h3>
-                          {(() => {
-                            const badge = getVerificationBadge(coach);
-                            return (
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}
-                              >
-                                {badge.label}
-                              </span>
-                            );
-                          })()}
-                        </div>
-                        <p className="line-clamp-1 min-h-5 text-xs text-slate-600">
-                          {getCoachSportsSummary(coach)}
-                        </p>
-                        {additionalSportsCount > 0 && (
-                          <p className="mt-1 text-[11px] font-medium text-slate-500">
-                            +{additionalSportsCount} more sport
-                            {additionalSportsCount !== 1 ? "s" : ""}
-                          </p>
-                        )}
-                        <p className="mt-1 line-clamp-2 min-h-10 text-xs text-slate-500">
+                    <div className="flex flex-1 flex-col p-5">
+                      {/* Bio & Extra Sports */}
+                      <div className="mb-5">
+                        <p className="line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                           {getCoachBioSummary(coach)}
                         </p>
-                        {showNearestDistance && (
-                          <p className="mt-1 text-[11px] font-semibold text-turf-green">
-                            {formatDistanceKm(distanceFromUserKm)}
-                          </p>
+                        {additionalSportsCount > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {coach.sports
+                              .filter((s) => s !== primarySport)
+                              .map((s) => (
+                                <span
+                                  key={s}
+                                  className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                                >
+                                  {s}
+                                </span>
+                              ))}
+                          </div>
                         )}
                       </div>
 
-                      {/* Rating */}
-                      <div className="grid grid-cols-3 gap-2 rounded-xl bg-white/80 p-2">
-                        <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
-                          <div className="flex items-center justify-center gap-1">
+                      {/* Stat Pills */}
+                      <div className="mt-auto grid grid-cols-3 gap-2">
+                        <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-amber-100 group-hover:bg-amber-50/50 dark:group-hover:bg-amber-900/10 dark:group-hover:border-amber-900/30">
+                          <div className="flex items-center gap-1.5">
                             <Star
                               size={14}
-                              className="fill-yellow-500 text-yellow-500"
+                              className="fill-amber-400 text-amber-400"
                             />
-                            <span className="text-sm font-bold text-slate-900">
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                               {getDisplayRating(coach)}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+                          <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             Rating
-                          </p>
+                          </span>
                         </div>
 
-                        <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
-                          <p className="line-clamp-1 text-[11px] font-semibold text-slate-800">
-                            {getDisplayReviewCount(coach)}
-                          </p>
-                          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+                        <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-blue-100 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/10 dark:group-hover:border-blue-900/30">
+                          <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                            {(() => {
+                              const r = parseInt(getDisplayReviewCount(coach));
+                              return isNaN(r) ? "New" : r;
+                            })()}
+                          </span>
+                          <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             Reviews
-                          </p>
+                          </span>
                         </div>
 
-                        <div className="rounded-lg bg-turf-green/10 px-2 py-1.5 text-center">
-                          <p className="line-clamp-1 text-[11px] font-semibold uppercase tracking-wide text-turf-green">
+                        <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-turf-green/10 group-hover:bg-turf-green/5 dark:group-hover:bg-turf-green/10 dark:group-hover:border-turf-green/20">
+                          <span className="line-clamp-1 text-[11px] font-bold text-slate-900 dark:text-slate-100">
                             {getServiceModeLabel(coach)}
-                          </p>
-                          <p className="mt-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+                          </span>
+                          <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             Mode
-                          </p>
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-auto p-5">
-                      {/* Price */}
-                      <div className="border-t border-slate-100 pt-3">
-                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                          Starting from
-                        </p>
-                        {hasStartingRate ? (
-                          <p className="mt-0.5 flex items-center gap-1 text-xl font-bold text-turf-green">
-                            <IndianRupee size={18} />
-                            {startingRate}
-                            <span className="text-xs font-medium text-slate-500">
-                              / hour
-                            </span>
+                    {/* Minimal Footer */}
+                    <div className="border-t border-slate-100/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/50 p-4 px-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Session Price
                           </p>
-                        ) : (
-                          <p className="mt-0.5 text-sm font-semibold text-slate-600">
-                            Contact for pricing
-                          </p>
-                        )}
-
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="mt-3 w-full bg-turf-green hover:bg-green-700 group-hover:shadow-lg transition-shadow"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenCoach();
-                          }}
-                        >
-                          View Profile & Book
-                          <ArrowRight size={16} className="ml-1" />
-                        </Button>
+                          {hasStartingRate ? (
+                            <div className="flex items-baseline gap-1 mt-0.5">
+                              <span className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                                ₹{startingRate}
+                              </span>
+                              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                /hr
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="mt-0.5 text-sm font-bold text-slate-700 dark:text-slate-300">
+                              Contact Us
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-sm transition-all duration-300 group-hover:-rotate-45 group-hover:bg-turf-green dark:group-hover:bg-turf-green group-hover:text-white dark:group-hover:text-white group-hover:shadow-md">
+                          <ArrowRight size={18} strokeWidth={2.5} />
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -1336,11 +1339,11 @@ export default function CoachesPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
           <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="text-center py-20">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turf-green mx-auto mb-4"></div>
-              <p className="text-slate-600 font-medium">Loading coaches...</p>
+              <p className="text-slate-600 dark:text-slate-400 font-medium">Loading coaches...</p>
             </div>
           </div>
         </div>

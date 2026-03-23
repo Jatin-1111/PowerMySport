@@ -98,15 +98,17 @@ export const getAllUsers = async (
     );
 
     const query = role ? { role } : {};
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
-      .select(
-        "name email phone role createdAt lastActiveAt playerProfile.sports dependents venueListerProfile.businessDetails.name venueListerProfile.canAddMoreVenues",
-      )
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const [total, users] = await Promise.all([
+      User.countDocuments(query),
+      User.find(query)
+        .select(
+          "name email phone role createdAt lastActiveAt playerProfile.sports dependents venueListerProfile.businessDetails.name venueListerProfile.canAddMoreVenues",
+        )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
 
     // Transform _id to id for frontend
     const transformedUsers = users.map((user) => ({
@@ -192,15 +194,17 @@ export const getPlayersUsers = async (
     );
 
     const query = { role: "PLAYER" };
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
-      .select(
-        "name email phone createdAt lastActiveAt playerProfile.sports dependents",
-      )
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    const [total, users] = await Promise.all([
+      User.countDocuments(query),
+      User.find(query)
+        .select(
+          "name email phone createdAt lastActiveAt playerProfile.sports dependents",
+        )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
 
     const data = users.map((user) => {
       const sports = user.playerProfile?.sports || [];
@@ -651,7 +655,8 @@ export const getAllBookings = async (
       .populate("userId venueId coachId")
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const toId = (value: unknown): string => {
       if (!value) return "";
@@ -676,14 +681,7 @@ export const getAllBookings = async (
       }
 
       if (typeof value === "object") {
-        const objectValue = value as {
-          toObject?: () => Record<string, unknown>;
-        };
-        const plain =
-          typeof objectValue.toObject === "function"
-            ? objectValue.toObject()
-            : (value as Record<string, unknown>);
-
+        const plain = value as Record<string, unknown>;
         return {
           ...plain,
           id: toId(value),
@@ -694,11 +692,7 @@ export const getAllBookings = async (
     };
 
     const transformedBookings = bookings.map((booking) => {
-      const plain =
-        typeof (booking as { toObject?: () => Record<string, unknown> })
-          .toObject === "function"
-          ? (booking as { toObject: () => Record<string, unknown> }).toObject()
-          : (booking as unknown as Record<string, unknown>);
+      const plain = booking as unknown as Record<string, unknown>;
 
       const playerRecord =
         plain.userId && typeof plain.userId === "object"
@@ -831,55 +825,108 @@ export const getFinanceReconciliation = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const bookings = await Booking.find({
-      status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
-    })
-      .select("totalAmount payments status")
-      .lean();
+    // Run entirely in MongoDB – no data pulled into Node memory
+    const [summary, mismatches] = await Promise.all([
+      Booking.aggregate<{
+        total: number;
+        matched: number;
+        mismatched: number;
+      }>([
+        {
+          $match: {
+            status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
+          },
+        },
+        {
+          $addFields: {
+            paidAmount: {
+              $reduce: {
+                input: {
+                  $filter: {
+                    input: { $ifNull: ["$payments", []] },
+                    cond: { $eq: ["$$this.status", "PAID"] },
+                  },
+                },
+                initialValue: 0,
+                in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            delta: { $abs: { $subtract: ["$totalAmount", "$paidAmount"] } },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            matched: { $sum: { $cond: [{ $lte: ["$delta", 1] }, 1, 0] } },
+            mismatched: { $sum: { $cond: [{ $gt: ["$delta", 1] }, 1, 0] } },
+          },
+        },
+      ]),
+      Booking.aggregate<{
+        bookingId: string;
+        expected: number;
+        paid: number;
+        status: string;
+      }>([
+        {
+          $match: {
+            status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
+          },
+        },
+        {
+          $addFields: {
+            paidAmount: {
+              $reduce: {
+                input: {
+                  $filter: {
+                    input: { $ifNull: ["$payments", []] },
+                    cond: { $eq: ["$$this.status", "PAID"] },
+                  },
+                },
+                initialValue: 0,
+                in: { $add: ["$$value", { $ifNull: ["$$this.amount", 0] }] },
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            delta: { $abs: { $subtract: ["$totalAmount", "$paidAmount"] } },
+          },
+        },
+        { $match: { delta: { $gt: 1 } } },
+        { $sort: { createdAt: -1 } },
+        { $limit: 25 },
+        {
+          $project: {
+            bookingId: { $toString: "$_id" },
+            expected: "$totalAmount",
+            paid: "$paidAmount",
+            status: 1,
+          },
+        },
+      ]),
+    ]);
 
-    let matched = 0;
-    let mismatched = 0;
-    const sampleMismatches: Array<{
-      bookingId: string;
-      expected: number;
-      paid: number;
-      status: string;
-    }> = [];
-
-    for (const booking of bookings) {
-      const expected = Number(booking.totalAmount || 0);
-      const paid = (booking.payments || [])
-        .filter((payment) => payment.status === "PAID")
-        .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-      const delta = Math.abs(expected - paid);
-
-      if (delta <= 1) {
-        matched += 1;
-      } else {
-        mismatched += 1;
-        if (sampleMismatches.length < 25) {
-          sampleMismatches.push({
-            bookingId: String(booking._id),
-            expected,
-            paid,
-            status: booking.status,
-          });
-        }
-      }
-    }
+    const totals = summary[0] ?? { total: 0, matched: 0, mismatched: 0 };
 
     res.status(200).json({
       success: true,
       message: "Finance reconciliation generated",
       data: {
-        totalBookingsChecked: bookings.length,
-        matched,
-        mismatched,
+        totalBookingsChecked: totals.total,
+        matched: totals.matched,
+        mismatched: totals.mismatched,
         mismatchRate:
-          bookings.length > 0
-            ? Number((mismatched / bookings.length).toFixed(4))
+          totals.total > 0
+            ? Number((totals.mismatched / totals.total).toFixed(4))
             : 0,
-        sampleMismatches,
+        sampleMismatches: mismatches,
       },
     });
   } catch (error) {

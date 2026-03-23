@@ -20,8 +20,11 @@ export default function AdminAnalyticsPage() {
   const [finance, setFinance] = useState<FinanceReconciliation | null>(null);
   const [observability, setObservability] = useState<unknown>(null);
   const [loadingFunnel, setLoadingFunnel] = useState(true);
-  const [loadingFinance, setLoadingFinance] = useState(true);
-  const [loadingObservability, setLoadingObservability] = useState(true);
+  const [loadingFinance, setLoadingFinance] = useState(false);
+  const [loadingObservability, setLoadingObservability] = useState(false);
+  // Track which tabs have already loaded their data to avoid repeat fetches
+  const [financeLoaded, setFinanceLoaded] = useState(false);
+  const [observabilityLoaded, setObservabilityLoaded] = useState(false);
 
   const loadFunnel = useCallback(async () => {
     setLoadingFunnel(true);
@@ -36,37 +39,43 @@ export default function AdminAnalyticsPage() {
   }, [funnelDays]);
 
   const loadFinance = useCallback(async () => {
+    if (financeLoaded) return;
     setLoadingFinance(true);
     try {
       const response = await statsApi.getFinanceReconciliation();
       if (response.success && response.data) {
         setFinance(response.data);
+        setFinanceLoaded(true);
       }
     } finally {
       setLoadingFinance(false);
     }
-  }, []);
+  }, [financeLoaded]);
 
   const loadObservability = useCallback(async () => {
+    if (observabilityLoaded) return;
     setLoadingObservability(true);
     try {
       const response = await statsApi.getObservabilitySnapshot();
       if (response.success) {
         setObservability(response.data ?? null);
+        setObservabilityLoaded(true);
       }
     } finally {
       setLoadingObservability(false);
     }
-  }, []);
+  }, [observabilityLoaded]);
 
+  // Load funnel on mount and whenever funnelDays changes
   useEffect(() => {
     void loadFunnel();
   }, [loadFunnel]);
 
+  // Lazy-load Finance / Observability only when that tab is first activated
   useEffect(() => {
-    void loadFinance();
-    void loadObservability();
-  }, [loadFinance, loadObservability]);
+    if (activeTab === "FINANCE") void loadFinance();
+    if (activeTab === "OBSERVABILITY") void loadObservability();
+  }, [activeTab, loadFinance, loadObservability]);
 
   const mismatchRateLabel = useMemo(() => {
     if (!finance) return "0%";

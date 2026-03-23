@@ -1,9 +1,9 @@
-﻿import axiosInstance from "@/lib/api/axios";
+import axiosInstance from "@/lib/api/axios";
 import { withRequestCache } from "@/lib/api/requestCache";
 import { ApiResponse, DiscoveryResponse } from "@/types";
 
-const DISCOVERY_LIST_TTL_MS = 15000;
-const DISCOVERY_DETAIL_TTL_MS = 60000;
+const DISCOVERY_LIST_TTL_MS = 60000;
+const DISCOVERY_DETAIL_TTL_MS = 120000;
 
 const buildDiscoveryListKey = (
   type: "venues" | "coaches",

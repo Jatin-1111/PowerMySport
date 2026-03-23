@@ -195,10 +195,6 @@ export const getVenuesByOwner = async (
   return { venues, total, page, totalPages: Math.ceil(total / limit) };
 };
 
-/**
- * Find venues near a location using geo-spatial query with aggregation pipeline
- * Fixes pagination issues with $near by using aggregation instead of find()
- */
 export const findVenuesNearby = async (
   lat: number,
   lng: number,
@@ -215,94 +211,46 @@ export const findVenuesNearby = async (
   try {
     const skip = (page - 1) * limit;
 
-    // Build match stage
-    const matchStage: any = {
-      location: {
-        $geoWithin: {
-          $centerSphere: [[lng, lat], radiusMeters / 6378100], // Earth radius in meters
+    const pipeline: any[] = [
+      {
+        $geoNear: {
+          near: { type: "Point", coordinates: [lng, lat] },
+          distanceField: "distanceMeters",
+          maxDistance: radiusMeters,
+          spherical: true,
+          query: sport ? { sports: sport } : {},
         },
       },
-    };
-
-    // Filter by sport if provided
-    if (sport) {
-      matchStage.sports = sport;
-    }
-
-    // Use aggregation pipeline for geo-filtering, then rank in-memory before pagination.
-    const pipeline = [
-      { $match: matchStage },
       {
-        $lookup: {
-          from: "users" as const,
-          localField: "ownerId" as const,
-          foreignField: "_id" as const,
-          as: "ownerInfo" as const,
+        $sort: { rating: -1, reviewCount: -1, distanceMeters: 1, _id: 1 },
+      },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: "users",
+                localField: "ownerId",
+                foreignField: "_id",
+                as: "ownerInfo",
+              },
+            },
+          ],
         },
       },
     ];
 
-    const venues = await Venue.aggregate(pipeline);
-
-    const rankedVenues = venues
-      .map((venue: any) => {
-        const coordinates = venue?.location?.coordinates;
-
-        if (
-          !Array.isArray(coordinates) ||
-          coordinates.length !== 2 ||
-          !Number.isFinite(Number(coordinates[0])) ||
-          !Number.isFinite(Number(coordinates[1]))
-        ) {
-          return {
-            venue,
-            relevanceScore: buildVenueRelevanceScore({
-              venue,
-              sportFilter: sport,
-              maxDistanceKm: radiusMeters / 1000,
-            }),
-          };
-        }
-
-        const normalizedCoordinates: [number, number] = [
-          Number(coordinates[0]),
-          Number(coordinates[1]),
-        ];
-        const distanceKm = calculateDistanceKm(normalizedCoordinates, [
-          lng,
-          lat,
-        ]);
-        const relevanceScore = buildVenueRelevanceScore({
-          venue,
-          sportFilter: sport,
-          distanceKm,
-          maxDistanceKm: radiusMeters / 1000,
-        });
-
-        return {
-          venue,
-          relevanceScore,
-        };
-      })
-      .sort((a, b) => {
-        if (b.relevanceScore !== a.relevanceScore) {
-          return b.relevanceScore - a.relevanceScore;
-        }
-
-        return String(a.venue?._id || "").localeCompare(
-          String(b.venue?._id || ""),
-        );
-      });
-
-    const total = rankedVenues.length;
-    const paginatedVenues = rankedVenues
-      .slice(skip, skip + limit)
-      .map((entry) => entry.venue);
+    const [result] = await Venue.aggregate(pipeline);
+    
+    const total = result.metadata[0]?.total || 0;
+    const paginatedVenues = result.data || [];
 
     // Convert aggregation results to hydrated Mongoose documents and refresh URLs
-    // This avoids an additional findById per venue (N+1 query pattern)
     const venueDocuments = await Promise.all(
-      paginatedVenues.map(async (v) => {
+      paginatedVenues.map(async (v: any) => {
         const doc = Venue.hydrate(v);
         await doc.refreshAllUrls();
         return doc;
@@ -322,9 +270,6 @@ export const findVenuesNearby = async (
   }
 };
 
-/**
- * Get all venues with optional filters (legacy method)
- */
 export const getAllVenues = async (
   filters?: { sports?: string[] },
   page: number = 1,
@@ -341,45 +286,17 @@ export const getAllVenues = async (
     query.sports = { $in: filters.sports };
   }
 
-  console.log("[getAllVenues] Query:", JSON.stringify(query));
-  console.log("[getAllVenues] Page:", page, "Limit:", limit);
-
   const skip = (page - 1) * limit;
-  const allVenues = await Venue.find(query).populate("ownerId");
-
-  const primarySportFilter =
-    filters?.sports && filters.sports.length > 0
-      ? filters.sports[0]
-      : undefined;
-
-  const rankedVenues = [...allVenues].sort((a, b) => {
-    const scoreA = buildVenueRelevanceScore({
-      venue: a,
-      sportFilter: primarySportFilter,
-    });
-    const scoreB = buildVenueRelevanceScore({
-      venue: b,
-      sportFilter: primarySportFilter,
-    });
-
-    if (scoreB !== scoreA) {
-      return scoreB - scoreA;
-    }
-
-    return String(a._id).localeCompare(String(b._id));
-  });
-
-  const total = rankedVenues.length;
-  const venues = rankedVenues.slice(skip, skip + limit);
-
-  console.log(`[getAllVenues] Found ${venues.length} venues (total: ${total})`);
-  console.log(
-    "[getAllVenues] Venue IDs:",
-    venues.map((v) => v._id.toString()),
-  );
+  const total = await Venue.countDocuments(query);
+  const venues = await Venue.find(query)
+    .sort({ rating: -1, reviewCount: -1, _id: 1 })
+    .skip(skip)
+    .limit(limit)
+    .populate("ownerId");
 
   // Refresh URLs for all venues
   await Promise.all(venues.map((v) => v.refreshAllUrls()));
+  
   return {
     venues,
     total,

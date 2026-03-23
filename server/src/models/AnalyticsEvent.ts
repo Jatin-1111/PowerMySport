@@ -30,6 +30,8 @@ const analyticsEventSchema = new Schema<AnalyticsEventDocument>(
 
 analyticsEventSchema.index({ eventName: 1, createdAt: -1 });
 analyticsEventSchema.index({ userId: 1, createdAt: -1 });
+// Allows the funnel $match { createdAt: { $gte: ... } } to use an index scan
+analyticsEventSchema.index({ createdAt: -1 });
 
 export const AnalyticsEvent = mongoose.model<AnalyticsEventDocument>(
   "AnalyticsEvent",
