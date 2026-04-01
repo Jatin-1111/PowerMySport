@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const shellNavItems = [
@@ -296,7 +296,13 @@ export default function CommunityPage() {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    return window.location.search.replace(/^\?/, "");
+  });
   const [activeSidebarTab, setActiveSidebarTab] = useState<
     "community-overview" | "conversations"
   >(() => {
@@ -891,10 +897,28 @@ export default function CommunityPage() {
   }, [sidebarMode]);
 
   useEffect(() => {
-    const urlSidebarMode = searchParams.get("sidebar")?.toUpperCase() || null;
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const syncQueryFromUrl = () => {
+      setSearchQuery(window.location.search.replace(/^\?/, ""));
+    };
+
+    syncQueryFromUrl();
+    window.addEventListener("popstate", syncQueryFromUrl);
+
+    return () => {
+      window.removeEventListener("popstate", syncQueryFromUrl);
+    };
+  }, []);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(searchQuery);
+    const urlSidebarMode = queryParams.get("sidebar")?.toUpperCase() || null;
     const urlDirectoryView =
-      searchParams.get("directory")?.toUpperCase() || null;
-    const urlGroupToolsMode = searchParams.get("panel")?.toUpperCase() || null;
+      queryParams.get("directory")?.toUpperCase() || null;
+    const urlGroupToolsMode = queryParams.get("panel")?.toUpperCase() || null;
 
     if (isValidSidebarMode(urlSidebarMode) && urlSidebarMode !== sidebarMode) {
       setSidebarMode(urlSidebarMode);
@@ -914,10 +938,10 @@ export default function CommunityPage() {
     ) {
       setGroupToolsMode(urlGroupToolsMode);
     }
-  }, [searchParams, sidebarMode, directoryView, groupToolsMode]);
+  }, [searchQuery, sidebarMode, directoryView, groupToolsMode]);
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchQuery);
     params.set("sidebar", sidebarMode.toLowerCase());
     params.set("directory", directoryView.toLowerCase());
 
@@ -928,14 +952,15 @@ export default function CommunityPage() {
     }
 
     const nextQuery = params.toString();
-    const currentQuery = searchParams.toString();
+    const currentQuery = searchQuery;
     if (nextQuery !== currentQuery) {
       router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
         scroll: false,
       });
+      setSearchQuery(nextQuery);
     }
   }, [
-    searchParams,
+    searchQuery,
     sidebarMode,
     directoryView,
     groupToolsMode,

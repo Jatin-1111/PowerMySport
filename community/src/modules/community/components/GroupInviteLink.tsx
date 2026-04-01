@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { communityService } from "../services/community";
 import { Copy, Check, Share2 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -22,6 +22,10 @@ const isValidInviteCode = (value: unknown): value is string => {
 
 export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
   const prefersReducedMotion = useReducedMotion();
+  const canUseNativeShare = useMemo(
+    () => typeof window !== "undefined" && "share" in navigator,
+    [],
+  );
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +92,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
     const title = `Join ${groupName} on PowerMySport Community`;
     const text = `Join the "${groupName}" community group!`;
 
-    if (navigator.share) {
+    if (canUseNativeShare) {
       try {
         await navigator.share({
           title,
@@ -101,7 +105,14 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
     } else {
       await copyInviteLink(inviteCode);
     }
-  }, [buildInviteLink, copyInviteLink, groupName, inviteCode, loadInviteCode]);
+  }, [
+    buildInviteLink,
+    canUseNativeShare,
+    copyInviteLink,
+    groupName,
+    inviteCode,
+    loadInviteCode,
+  ]);
 
   return (
     <motion.div
@@ -163,7 +174,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
               <Copy size={14} className="mr-2 inline" />
               Copy Link
             </button>
-            {navigator.share && (
+            {canUseNativeShare && (
               <button
                 onClick={() => void openShareDialog()}
                 className="flex-1 rounded-xl bg-power-orange px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
