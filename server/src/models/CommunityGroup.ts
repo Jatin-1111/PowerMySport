@@ -13,6 +13,7 @@ export interface CommunityGroupDocument extends Document {
   createdBy: mongoose.Types.ObjectId;
   members: mongoose.Types.ObjectId[];
   admins: mongoose.Types.ObjectId[];
+  inviteCode: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,12 +76,22 @@ const communityGroupSchema = new Schema<CommunityGroupDocument>(
         required: true,
       },
     ],
+    inviteCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      required: true,
+      trim: true,
+      minlength: 8,
+      maxlength: 20,
+    },
   },
   { timestamps: true },
 );
 
 communityGroupSchema.index({ visibility: 1, updatedAt: -1 });
 communityGroupSchema.index({ members: 1, updatedAt: -1 });
+communityGroupSchema.index({ inviteCode: 1 });
 
 export const CommunityGroup = mongoose.model<CommunityGroupDocument>(
   "CommunityGroup",

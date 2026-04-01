@@ -496,4 +496,58 @@ export const communityService = {
       ).pagination,
     };
   },
+
+  async getGroupMembers(groupId: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      displayName: string;
+      photoUrl?: string | null;
+      isIdentityPublic: boolean;
+      alias: string;
+    }>
+  > {
+    const response = await axiosInstance.get<
+      ApiResponse<
+        Array<{
+          id: string;
+          name: string;
+          displayName: string;
+          photoUrl?: string | null;
+          isIdentityPublic: boolean;
+          alias: string;
+        }>
+      >
+    >(`/community/groups/${groupId}/members`);
+    return response.data.data;
+  },
+
+  async joinGroupByCode(inviteCode: string): Promise<{
+    groupId: string;
+    conversationId: string;
+    memberCount: number;
+  }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{
+        groupId: string;
+        conversationId: string;
+        memberCount: number;
+      }>
+    >(`/community/groups/join-by-code/${inviteCode}`);
+    clearCacheByPrefixes(["groups", "conversations"]);
+    return response.data.data;
+  },
+
+  async getGroupInviteCode(groupId: string): Promise<{
+    groupId: string;
+    inviteCode: string;
+  }> {
+    const response = await axiosInstance.get<
+      ApiResponse<{
+        groupId: string;
+        inviteCode: string;
+      }>
+    >(`/community/groups/${groupId}/invite-code`);
+    return response.data.data;
+  },
 };

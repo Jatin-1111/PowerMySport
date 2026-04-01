@@ -2,18 +2,18 @@
 
 :root {
     --power-orange: #E97316;
-    --deep-slate: #0F172A;
+    --deep-slate: #0B1220;
     --ghost-white: #F8FAFC;
     --turf-green: #22C55E;
     --error-red: #EF4444;
-    --background: #ffffff;
-    --foreground: #171717;
-    --card: #ffffff;
-    --card-foreground: #171717;
-    --muted: #f1f5f9;
+    --background: #f5f7fb;
+    --foreground: #111827;
+    --card: rgba(255, 255, 255, 0.92);
+    --card-foreground: #111827;
+    --muted: #eef2f7;
     --muted-foreground: #64748b;
-    --border: #e2e8f0;
-    --ring: #94a3b8;
+    --border: rgba(148, 163, 184, 0.28);
+    --ring: #f59e0b;
     color-scheme: light;
 }
 
@@ -31,19 +31,52 @@
     --color-muted-foreground: var(--muted-foreground);
     --color-border: var(--border);
     --color-ring: var(--ring);
-    --font-sans: var(--font-geist-sans);
-    --font-mono: var(--font-geist-mono);
+    --font-sans: var(--font-community-sans);
+    --font-mono: var(--font-community-mono);
 }
 
 @layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
     * {
         @apply border-border outline-ring/50;
     }
 
     body {
+        position: relative;
+        isolation: isolate;
         @apply bg-background text-foreground antialiased;
         min-height: 100vh;
         text-rendering: optimizeLegibility;
+        background:
+            radial-gradient(circle at top left, rgba(233, 115, 22, 0.14), transparent 26%),
+            radial-gradient(circle at top right, rgba(34, 197, 94, 0.11), transparent 28%),
+            linear-gradient(180deg, #f9fbfe 0%, #eef2f8 100%);
+    }
+
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+        background-size: 36px 36px;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent 85%);
+        opacity: 0.5;
+    }
+
+    body::after {
+        content: "";
+        position: fixed;
+        inset: auto 0 0 0;
+        height: 24vh;
+        pointer-events: none;
+        background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.7));
     }
 
     ::selection {
@@ -53,11 +86,34 @@
 
     input,
     select,
-    button {
+    button,
+    textarea {
         font: inherit;
     }
 
     button {
         @apply cursor-pointer;
+    }
+
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.35);
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(233, 115, 22, 0.45);
+        border: 2px solid transparent;
+        background-clip: content-box;
     }
 }

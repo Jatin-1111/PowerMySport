@@ -7,7 +7,10 @@ import {
   getBlockedUsers,
   getCommunityProfile,
   getConversationMessages,
+  getGroupInviteCode,
+  getGroupMembers,
   joinGroup,
+  joinGroupByCode,
   leaveGroup,
   listMyCommunityReports,
   listGroups,
@@ -82,6 +85,9 @@ router.patch(
   updateGroupSettings,
 );
 router.post("/groups/:groupId/join", joinGroup);
+router.post("/groups/join-by-code/:inviteCode", joinGroupByCode);
+router.get("/groups/:groupId/members", getGroupMembers);
+router.get("/groups/:groupId/invite-code", getGroupInviteCode);
 router.post("/groups/:groupId/leave", leaveGroup);
 router.post(
   "/reports",

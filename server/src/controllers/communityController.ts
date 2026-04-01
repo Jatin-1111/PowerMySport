@@ -509,3 +509,63 @@ export const listMyCommunityReports = async (
     handleError(res, error, "Failed to fetch reports");
   }
 };
+
+export const getGroupMembers = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const groupId = req.params.groupId as string;
+    const data = await CommunityService.getGroupMembers(
+      getUserId(req),
+      groupId,
+    );
+    res.status(200).json({
+      success: true,
+      message: "Group members fetched",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch group members");
+  }
+};
+
+export const joinGroupByCode = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const inviteCode = req.params.inviteCode as string;
+    const data = await CommunityService.joinGroupByCode(
+      getUserId(req),
+      inviteCode,
+    );
+    res.status(200).json({
+      success: true,
+      message: "Joined group successfully",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to join group");
+  }
+};
+
+export const getGroupInviteCode = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const groupId = req.params.groupId as string;
+    const data = await CommunityService.getGroupInviteCode(
+      getUserId(req),
+      groupId,
+    );
+    res.status(200).json({
+      success: true,
+      message: "Invite code fetched",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch invite code");
+  }
+};

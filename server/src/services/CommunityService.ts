@@ -26,6 +26,16 @@ const makeDefaultAlias = (name?: string): string => {
   return `${safeName}-${seed}`;
 };
 
+const generateInviteCode = (): string => {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let code = "";
+  for (let i = 0; i < 12; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
+
 const ensurePlayerUser = async (userId: string) => {
   const user = await User.findById(userId).select("_id role name").lean();
   if (!user) {
@@ -332,6 +342,7 @@ export const CommunityService = {
       createdBy: userId,
       members: [userId],
       admins: [userId],
+      inviteCode: generateInviteCode(),
     });
 
     const conversation = await CommunityConversation.create({
@@ -1308,5 +1319,138 @@ export const CommunityService = {
     return conversation.participants.map((participantId) =>
       String(participantId),
     );
+  },
+
+  async getGroupMembers(userId: string, groupId: string) {
+    await ensureProfile(userId);
+
+    const group = await CommunityGroup.findById(groupId)
+      .populate("members", "_id name photoUrl")
+      .lean();
+
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const isMember = group.members.some((member: any) => {
+      const memberId = member?._id ? String(member._id) : String(member);
+      return memberId === userId;
+    });
+    if (!isMember) {
+      throw new Error("Access denied");
+    }
+
+    const memberProfiles = await CommunityProfile.find({
+      userId: { $in: group.members.map((m) => m._id) },
+    })
+      .select("userId anonymousAlias isIdentityPublic photoUrl lastSeenAt")
+      .lean();
+
+    const profileMap = new Map(
+      memberProfiles.map((p) => [String(p.userId), p]),
+    );
+
+    return group.members.map((member: any) => {
+      const memberId = String(member._id);
+      const profile = profileMap.get(memberId);
+      const isIdentityPublic = profile?.isIdentityPublic || false;
+
+      return {
+        id: memberId,
+        name: member.name || "Unknown",
+        displayName: isIdentityPublic
+          ? member.name
+          : profile?.anonymousAlias || "Anonymous",
+        photoUrl: isIdentityPublic ? member.photoUrl || null : null,
+        isIdentityPublic,
+        alias: profile?.anonymousAlias || "Anonymous",
+      };
+    });
+  },
+
+  async joinGroupByCode(userId: string, inviteCode: string) {
+    await ensureProfile(userId);
+
+    const group = await CommunityGroup.findOne({
+      inviteCode: inviteCode.trim(),
+    });
+
+    if (!group) {
+      throw new Error("Invalid invite code");
+    }
+
+    const alreadyMember = group.members.some(
+      (memberId) => String(memberId) === userId,
+    );
+    if (alreadyMember) {
+      // Already a member, just return the group info
+      const conversation = await CommunityConversation.findOne({
+        conversationType: "GROUP",
+        groupId: group._id,
+      });
+
+      return {
+        groupId: String(group._id),
+        conversationId: String(conversation?._id || ""),
+        memberCount: group.members.length,
+      };
+    }
+
+    group.members.push(new mongoose.Types.ObjectId(userId));
+    await group.save();
+
+    const conversation = await CommunityConversation.findOneAndUpdate(
+      { conversationType: "GROUP", groupId: group._id },
+      {
+        $setOnInsert: {
+          conversationType: "GROUP",
+          groupId: group._id,
+          status: "ACTIVE",
+          requestedBy: group.createdBy,
+          lastMessageAt: new Date(),
+        },
+        $addToSet: {
+          participants: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    return {
+      groupId: String(group._id),
+      conversationId: String(conversation?._id || ""),
+      memberCount: group.members.length,
+    };
+  },
+
+  async getGroupInviteCode(userId: string, groupId: string) {
+    await ensureProfile(userId);
+
+    const group = await CommunityGroup.findById(groupId);
+
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const isAdmin = group.admins.some((adminId) => String(adminId) === userId);
+    if (!isAdmin) {
+      throw new Error("Only group admins can get invite code");
+    }
+
+    let inviteCode =
+      typeof group.inviteCode === "string" ? group.inviteCode.trim() : "";
+    if (!inviteCode) {
+      do {
+        inviteCode = generateInviteCode();
+      } while (await CommunityGroup.exists({ inviteCode }));
+
+      group.inviteCode = inviteCode;
+      await group.save();
+    }
+
+    return {
+      groupId: String(group._id),
+      inviteCode,
+    };
   },
 };

@@ -5,6 +5,11 @@ import { getMainAppUrl, redirectToMainLogin } from "@/lib/auth/redirect";
 import { toast } from "@/lib/toast";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
 import { FeaturedCommunitiesStrip } from "@/modules/community/components/FeaturedCommunitiesStrip";
+import {
+  GroupMembersList,
+  GroupMember,
+} from "@/modules/community/components/GroupMembersList";
+import { GroupInviteLink } from "@/modules/community/components/GroupInviteLink";
 import { communityService } from "@/modules/community/services/community";
 import {
   CommunityGroupSummary,
@@ -12,7 +17,6 @@ import {
   ConversationListResponse,
   ConversationItem,
   ConversationMessage,
-  MessagePrivacy,
   PlayerSearchResult,
 } from "@/modules/community/types";
 import {
@@ -20,34 +24,32 @@ import {
   ChevronLeft,
   Clock3,
   ExternalLink,
-  FileText,
   Flag,
   MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Search,
-  Shield,
   UserCircle2,
   Users,
   X,
 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-const privacyOptions: Array<{ value: MessagePrivacy; label: string }> = [
-  { value: "EVERYONE", label: "Everyone" },
-  { value: "REQUEST_ONLY", label: "Request only" },
-  { value: "NONE", label: "Nobody" },
-];
 
 const shellNavItems = [
   { id: "community-overview", label: "Community", icon: Users },
   { id: "conversations", label: "Conversations", icon: MessageSquare },
-  { id: "privacy-settings", label: "Privacy", icon: Shield },
-  { id: "my-reports", label: "My Reports", icon: Flag },
 ];
 
 const COMMUNITY_ACTIVE_TAB_KEY = "community:activeSidebarTab";
 const COMMUNITY_WORKSPACE_VIEW_KEY = "community:workspaceView";
 const COMMUNITY_DIRECTORY_VIEW_KEY = "community:directoryView";
 const COMMUNITY_SELECTED_CONVERSATION_KEY = "community:selectedConversationId";
+const COMMUNITY_SIDEBAR_MODE_KEY = "community:sidebarMode";
 const CONVERSATION_PAGE_SIZE = 25;
 const DISCONNECTED_POLL_BASE_MS = 2500;
 const DISCONNECTED_POLL_MAX_MS = 30000;
@@ -56,6 +58,23 @@ const messageTimeFormatter = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",
   minute: "2-digit",
 });
+
+const shellVariants = {
+  hidden: { opacity: 0, y: 14 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.04,
+    },
+  },
+};
+
+const panelVariants = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0 },
+};
 
 const getRelativeTime = (value?: string | null) => {
   if (!value) {
@@ -110,12 +129,14 @@ const ConversationListItem = memo(function ConversationListItem({
       : conversation.otherParticipant.displayName;
 
   return (
-    <button
+    <motion.button
       onClick={() => onOpenConversation(conversation.id)}
-      className={`w-full rounded-lg border p-3 text-left transition-all ${
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.99 }}
+      className={`w-full rounded-2xl border p-3 text-left transition-all ${
         isSelected
-          ? "border-power-orange/60 bg-power-orange/5 shadow-xs"
-          : "border-border bg-background hover:bg-slate-50"
+          ? "border-power-orange/50 bg-[linear-gradient(180deg,rgba(233,115,22,0.08),rgba(255,255,255,0.95))] shadow-[0_14px_30px_-24px_rgba(233,115,22,0.55)]"
+          : "border-border bg-white/80 hover:bg-white"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -156,7 +177,7 @@ const ConversationListItem = memo(function ConversationListItem({
           )}
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 });
 
@@ -203,12 +224,18 @@ const MessageBubble = memo(function MessageBubble({
     : null;
 
   return (
-    <div className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
+      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
+    >
       <div
-        className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm shadow-xs ${
+        className={`max-w-[80%] rounded-[1.35rem] px-3 py-2 text-sm shadow-[0_12px_30px_-22px_rgba(15,23,42,0.55)] ${
           isOwnMessage
-            ? "bg-power-orange text-white"
-            : "border border-border bg-white text-slate-800"
+            ? "bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-white"
+            : "border border-border bg-white/95 text-slate-800 backdrop-blur"
         }`}
       >
         {isGroupConversation && (
@@ -238,21 +265,14 @@ const MessageBubble = memo(function MessageBubble({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 });
 
 const isValidSidebarTab = (
   value: string | null,
-): value is
-  | "community-overview"
-  | "conversations"
-  | "privacy-settings"
-  | "my-reports" =>
-  value === "community-overview" ||
-  value === "conversations" ||
-  value === "privacy-settings" ||
-  value === "my-reports";
+): value is "community-overview" | "conversations" =>
+  value === "community-overview" || value === "conversations";
 
 const isValidWorkspaceView = (
   value: string | null,
@@ -264,9 +284,21 @@ const isValidDirectoryView = (
 ): value is "ALL" | "CONTACTS" | "GROUPS" =>
   value === "ALL" || value === "CONTACTS" || value === "GROUPS";
 
+const isValidSidebarMode = (value: string | null): value is "INBOX" | "TOOLS" =>
+  value === "INBOX" || value === "TOOLS";
+
+const isValidGroupToolsMode = (
+  value: string | null,
+): value is "DISCOVER" | "MANAGE" | "INVITE" =>
+  value === "DISCOVER" || value === "MANAGE" || value === "INVITE";
+
 export default function CommunityPage() {
+  const prefersReducedMotion = useReducedMotion();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [activeSidebarTab, setActiveSidebarTab] = useState<
-    "community-overview" | "conversations" | "privacy-settings" | "my-reports"
+    "community-overview" | "conversations"
   >(() => {
     if (typeof window === "undefined") {
       return "community-overview";
@@ -305,7 +337,19 @@ export default function CommunityPage() {
   const [groupMode, setGroupMode] = useState<"ALL" | "JOINED" | "DISCOVER">(
     "ALL",
   );
+  const [groupToolsMode, setGroupToolsMode] = useState<
+    "DISCOVER" | "MANAGE" | "INVITE"
+  >("DISCOVER");
   const [conversationFilterQuery, setConversationFilterQuery] = useState("");
+  const [sidebarMode, setSidebarMode] = useState<"INBOX" | "TOOLS">(() => {
+    if (typeof window === "undefined") {
+      return "INBOX";
+    }
+
+    return window.localStorage.getItem(COMMUNITY_SIDEBAR_MODE_KEY) === "TOOLS"
+      ? "TOOLS"
+      : "INBOX";
+  });
   const [profile, setProfile] = useState<CommunityProfile | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [conversationPage, setConversationPage] = useState(1);
@@ -322,7 +366,6 @@ export default function CommunityPage() {
     return window.localStorage.getItem(COMMUNITY_SELECTED_CONVERSATION_KEY);
   });
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [aliasDraft, setAliasDraft] = useState("");
   const [playerSearchQuery, setPlayerSearchQuery] = useState("");
   const [playerSearchResults, setPlayerSearchResults] = useState<
     PlayerSearchResult[]
@@ -331,9 +374,6 @@ export default function CommunityPage() {
   const [groupSearchQuery, setGroupSearchQuery] = useState("");
   const [groupResults, setGroupResults] = useState<CommunityGroupSummary[]>([]);
   const [isSearchingGroups, setIsSearchingGroups] = useState(false);
-  const [directoryToolsView, setDirectoryToolsView] = useState<
-    "NONE" | "CONTACTS" | "GROUPS"
-  >("NONE");
   const [newGroupName, setNewGroupName] = useState("");
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [inviteGroupId, setInviteGroupId] = useState<string | null>(null);
@@ -357,24 +397,14 @@ export default function CommunityPage() {
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [myReports, setMyReports] = useState<Array<{
-    id: string;
-    targetType: "MESSAGE" | "GROUP";
-    targetId: string;
-    reason: string;
-    details?: string;
-    status: string;
-    resolutionNote?: string;
-    createdAt: string;
-    reviewedAt?: string | null;
-  }> | null>(null);
-  const [isLoadingMyReports, setIsLoadingMyReports] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
-  const [isSavingAlias, setIsSavingAlias] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isConversationSidebarOpen, setIsConversationSidebarOpen] =
+    useState(true);
+  const [showGroupMembersPanel, setShowGroupMembersPanel] = useState(false);
   const selectedConversationIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -480,22 +510,16 @@ export default function CommunityPage() {
     Boolean(selectedConversation) && !selectedConversationNeedsMyApproval;
   const isCommunityView = activeSidebarTab === "community-overview";
   const isConversationsView = activeSidebarTab === "conversations";
-  const isPrivacyView = activeSidebarTab === "privacy-settings";
-  const isMyReportsView = activeSidebarTab === "my-reports";
-  const workspaceHeading = isPrivacyView
-    ? "Privacy Settings"
-    : isConversationsView
-      ? "Conversations"
-      : isMyReportsView
-        ? "My Reports"
-        : "Community Dashboard";
-  const workspaceSubtitle = isPrivacyView
-    ? "Manage your identity visibility and messaging permissions."
-    : isConversationsView
-      ? "Manage contacts, groups, and active chats."
-      : isMyReportsView
-        ? "Content reports you have submitted for admin review."
-        : "Anonymous-first player networking and realtime chat.";
+  const showGroupInsightsSidebar =
+    isConversationsView &&
+    showGroupMembersPanel &&
+    selectedConversation?.conversationType === "GROUP";
+  const workspaceHeading = isConversationsView
+    ? "Conversations"
+    : "Community Dashboard";
+  const workspaceSubtitle = isConversationsView
+    ? "Manage contacts, groups, and active chats."
+    : "Anonymous-first player networking and realtime chat.";
   const groupsJoinedCount = useMemo(
     () => safeGroupResults.filter((group) => group.isMember).length,
     [safeGroupResults],
@@ -595,6 +619,54 @@ export default function CommunityPage() {
     }
     return safeGroupResults;
   }, [safeGroupResults, groupMode]);
+  const toolVisibleGroups = useMemo(
+    () =>
+      visibleGroups.filter((group) => {
+        if (groupToolsMode === "DISCOVER") {
+          return !group.isMember;
+        }
+
+        return !!group.isMember;
+      }),
+    [visibleGroups, groupToolsMode],
+  );
+  const toolsSteps = useMemo(() => {
+    if (directoryView === "CONTACTS") {
+      return [
+        { id: "search", label: "Search players", done: true },
+        {
+          id: "start",
+          label: "Start conversation",
+          done: Boolean(selectedConversation),
+        },
+      ];
+    }
+
+    return [
+      {
+        id: "discover",
+        label: "Discover",
+        done: groupToolsMode !== "DISCOVER",
+      },
+      {
+        id: "manage",
+        label: "Manage",
+        done: groupToolsMode === "INVITE",
+      },
+      {
+        id: "invite",
+        label: "Invite",
+        done:
+          Boolean(inviteGroupId) ||
+          (selectedConversation?.conversationType === "GROUP" &&
+            Boolean(selectedConversation.group?.isAdmin)),
+      },
+    ];
+  }, [directoryView, selectedConversation, groupToolsMode, inviteGroupId]);
+  const guidedEmptyState = useMemo(
+    () => safeConversations.length === 0 && groupsJoinedCount === 0,
+    [safeConversations.length, groupsJoinedCount],
+  );
 
   const applyConversationPage = useCallback(
     (
@@ -702,15 +774,9 @@ export default function CommunityPage() {
   }, [safeGroupResults]);
 
   const scrollToSection = (sectionId: string) => {
-    if (
-      sectionId === "community-overview" ||
-      sectionId === "conversations" ||
-      sectionId === "privacy-settings"
-    ) {
+    if (sectionId === "community-overview" || sectionId === "conversations") {
       setActiveSidebarTab(sectionId);
-      if (sectionId === "privacy-settings") {
-        setWorkspaceView("PRIVACY");
-      } else if (sectionId === "conversations") {
+      if (sectionId === "conversations") {
         setWorkspaceView("DIRECTORY");
       } else {
         setWorkspaceView("CHAT");
@@ -817,8 +883,73 @@ export default function CommunityPage() {
   }, [directoryView]);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem(COMMUNITY_SIDEBAR_MODE_KEY, sidebarMode);
+  }, [sidebarMode]);
+
+  useEffect(() => {
+    const urlSidebarMode = searchParams.get("sidebar")?.toUpperCase() || null;
+    const urlDirectoryView =
+      searchParams.get("directory")?.toUpperCase() || null;
+    const urlGroupToolsMode = searchParams.get("panel")?.toUpperCase() || null;
+
+    if (isValidSidebarMode(urlSidebarMode) && urlSidebarMode !== sidebarMode) {
+      setSidebarMode(urlSidebarMode);
+    }
+
+    if (
+      isValidDirectoryView(urlDirectoryView) &&
+      (urlDirectoryView === "CONTACTS" || urlDirectoryView === "GROUPS") &&
+      urlDirectoryView !== directoryView
+    ) {
+      setDirectoryView(urlDirectoryView);
+    }
+
+    if (
+      isValidGroupToolsMode(urlGroupToolsMode) &&
+      urlGroupToolsMode !== groupToolsMode
+    ) {
+      setGroupToolsMode(urlGroupToolsMode);
+    }
+  }, [searchParams, sidebarMode, directoryView, groupToolsMode]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("sidebar", sidebarMode.toLowerCase());
+    params.set("directory", directoryView.toLowerCase());
+
+    if (sidebarMode === "TOOLS" && directoryView === "GROUPS") {
+      params.set("panel", groupToolsMode.toLowerCase());
+    } else {
+      params.delete("panel");
+    }
+
+    const nextQuery = params.toString();
+    const currentQuery = searchParams.toString();
+    if (nextQuery !== currentQuery) {
+      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
+        scroll: false,
+      });
+    }
+  }, [
+    searchParams,
+    sidebarMode,
+    directoryView,
+    groupToolsMode,
+    router,
+    pathname,
+  ]);
+
+  useEffect(() => {
     if (directoryView === "GROUPS" && conversationMode === "REQUESTS") {
       setConversationMode("ALL");
+    }
+
+    if (directoryView !== "GROUPS") {
+      setGroupToolsMode("DISCOVER");
     }
 
     if (directoryView !== "GROUPS") {
@@ -826,6 +957,22 @@ export default function CommunityPage() {
       setInviteGroupId(null);
     }
   }, [conversationMode, directoryView]);
+
+  useEffect(() => {
+    if (sidebarMode !== "TOOLS") {
+      return;
+    }
+
+    if (activeSidebarTab !== "conversations") {
+      setActiveSidebarTab("conversations");
+    }
+    if (workspaceView !== "DIRECTORY") {
+      setWorkspaceView("DIRECTORY");
+    }
+    if (!isConversationSidebarOpen) {
+      setIsConversationSidebarOpen(true);
+    }
+  }, [sidebarMode, activeSidebarTab, workspaceView, isConversationSidebarOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -844,8 +991,10 @@ export default function CommunityPage() {
   }, [selectedConversationId]);
 
   useEffect(() => {
-    setAliasDraft(profile?.anonymousAlias || "");
-  }, [profile?.anonymousAlias]);
+    if (selectedConversation?.conversationType !== "GROUP") {
+      setShowGroupMembersPanel(false);
+    }
+  }, [selectedConversation?.conversationType]);
 
   useEffect(() => {
     const query = playerSearchQuery.trim();
@@ -1115,47 +1264,6 @@ export default function CommunityPage() {
     });
   }, [messages, selectedConversationId]);
 
-  const handleProfileUpdate = async (payload: {
-    isIdentityPublic?: boolean;
-    messagePrivacy?: MessagePrivacy;
-    readReceiptsEnabled?: boolean;
-    lastSeenVisible?: boolean;
-    anonymousAlias?: string;
-  }) => {
-    if (!profile) {
-      return;
-    }
-
-    const previous = profile;
-    const optimistic = { ...previous, ...payload };
-    setProfile(optimistic);
-    try {
-      const updated = await communityService.updateProfile(payload);
-      setProfile(updated);
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to update settings";
-      setError(message);
-      toast.error(message);
-      setProfile(previous);
-    }
-  };
-
-  const handleSaveAlias = async () => {
-    const trimmed = aliasDraft.trim();
-    if (!trimmed || trimmed === profile?.anonymousAlias) {
-      return;
-    }
-
-    setIsSavingAlias(true);
-    try {
-      await handleProfileUpdate({ anonymousAlias: trimmed });
-      toast.success("Alias updated");
-    } finally {
-      setIsSavingAlias(false);
-    }
-  };
-
   const handleStartConversation = async (targetUserId: string) => {
     if (!targetUserId.trim()) {
       return;
@@ -1173,7 +1281,6 @@ export default function CommunityPage() {
         CONVERSATION_PAGE_SIZE,
       );
       applyConversationPage(updated, { preserveSelection: true });
-      setDirectoryToolsView("NONE");
       setSelectedConversationId(conversation.id);
       setActiveSidebarTab("conversations");
       setWorkspaceView("CHAT");
@@ -1224,7 +1331,6 @@ export default function CommunityPage() {
       });
       setNewGroupName("");
       await refreshGroupDirectoryState();
-      setDirectoryToolsView("NONE");
       setSelectedConversationId(created.conversationId);
       setIsCreateGroupOpen(false);
       setActiveSidebarTab("conversations");
@@ -1242,7 +1348,6 @@ export default function CommunityPage() {
       const joined = await communityService.joinGroup(groupId);
       await refreshGroupDirectoryState();
       if (joined.conversationId) {
-        setDirectoryToolsView("NONE");
         setSelectedConversationId(joined.conversationId);
         setActiveSidebarTab("conversations");
         setWorkspaceView("CHAT");
@@ -1300,21 +1405,6 @@ export default function CommunityPage() {
       toast.error(message);
     } finally {
       setIsSubmittingReport(false);
-    }
-  };
-
-  const handleLoadMyReports = async () => {
-    try {
-      setIsLoadingMyReports(true);
-      const data = await communityService.listMyReports(1, 50);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const list = (data as any)?.reports ?? data ?? [];
-      setMyReports(Array.isArray(list) ? list : []);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to load reports";
-      toast.error(message);
-    } finally {
-      setIsLoadingMyReports(false);
     }
   };
 
@@ -1446,11 +1536,16 @@ export default function CommunityPage() {
   };
 
   const handleOpenConversation = useCallback((conversationId: string) => {
-    setDirectoryToolsView("NONE");
     setSelectedConversationId(conversationId);
     setActiveSidebarTab("conversations");
     setWorkspaceView("CHAT");
+    setSidebarMode("INBOX");
   }, []);
+
+  const handleMemberClick = (member: GroupMember) => {
+    // Optional: auto-start conversation with the member
+    void handleStartConversation(member.id);
+  };
 
   const handleLoadMoreConversations = async () => {
     if (isLoadingMoreConversations || !hasMoreConversations) {
@@ -1649,7 +1744,12 @@ export default function CommunityPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] px-4 py-8 sm:px-6 lg:px-10">
+      <motion.div
+        initial={prefersReducedMotion ? false : { opacity: 0 }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1 }}
+        transition={{ duration: 0.25 }}
+        className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] px-4 py-8 sm:px-6 lg:px-10"
+      >
         <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
           <div className="hidden rounded-3xl border border-border/70 bg-white/85 p-6 shadow-sm backdrop-blur lg:block">
             <div className="h-6 w-28 animate-pulse rounded bg-slate-200" />
@@ -1679,15 +1779,28 @@ export default function CommunityPage() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
     <>
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]">
-        <div className="mx-auto grid min-h-screen w-full max-w-480 gap-6 px-3 py-4 sm:px-6 sm:py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8">
-          <aside className="hidden h-[calc(100vh-3rem)] rounded-3xl border border-border/70 bg-white/85 p-6 shadow-sm backdrop-blur lg:sticky lg:top-6 lg:block">
+      <motion.div
+        initial={prefersReducedMotion ? false : { opacity: 0 }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1 }}
+        transition={{ duration: 0.28 }}
+        className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
+      >
+        <motion.div
+          variants={shellVariants}
+          initial="hidden"
+          animate="show"
+          className="mx-auto grid min-h-screen w-full max-w-480 gap-6 px-3 py-4 sm:px-6 sm:py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8"
+        >
+          <motion.aside
+            variants={panelVariants}
+            className="hidden h-[calc(100vh-3rem)] rounded-3xl border border-border/70 bg-white/85 p-6 shadow-sm backdrop-blur lg:sticky lg:top-6 lg:block"
+          >
             <div className="rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-5 text-white shadow-sm">
               <p className="text-[11px] uppercase tracking-[0.2em] text-slate-300">
                 Community Hub
@@ -1723,6 +1836,21 @@ export default function CommunityPage() {
               })}
             </nav>
 
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Link
+                href="/privacy"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/reports"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Reports
+              </Link>
+            </div>
+
             <div className="mt-6 rounded-2xl border border-border bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Live status
@@ -1740,9 +1868,12 @@ export default function CommunityPage() {
                 Keep this page open for instant updates.
               </p>
             </div>
-          </aside>
+          </motion.aside>
 
-          <main className="flex min-w-0 flex-col rounded-3xl border border-border/70 bg-white/80 shadow-sm backdrop-blur">
+          <motion.main
+            variants={panelVariants}
+            className="flex min-w-0 flex-col rounded-3xl border border-border/70 bg-white/80 shadow-sm backdrop-blur"
+          >
             <div className="sticky top-0 z-20 rounded-t-3xl border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -1753,20 +1884,28 @@ export default function CommunityPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {!isPrivacyView && (
-                    <>
-                      <div className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                        {safeConversations.length} conversation
-                        {safeConversations.length === 1 ? "" : "s"}
-                      </div>
-                      <div className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
-                        {totalUnread} unread
-                      </div>
-                      <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
-                        {pendingRequestsCount} requests
-                      </div>
-                    </>
-                  )}
+                  <div className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                    {safeConversations.length} conversation
+                    {safeConversations.length === 1 ? "" : "s"}
+                  </div>
+                  <div className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
+                    {totalUnread} unread
+                  </div>
+                  <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                    {pendingRequestsCount} requests
+                  </div>
+                  <Link
+                    href="/privacy"
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                  >
+                    Privacy
+                  </Link>
+                  <Link
+                    href="/reports"
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                  >
+                    Reports
+                  </Link>
                   <div
                     className={`rounded-full px-3 py-1 text-xs font-medium ${
                       isSocketConnected
@@ -1836,8 +1975,17 @@ export default function CommunityPage() {
                     }}
                   />
 
-                  <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs">
+                  <motion.section
+                    variants={shellVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                  >
+                    <motion.div
+                      variants={panelVariants}
+                      whileHover={{ y: -3 }}
+                      className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+                    >
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Conversations
                       </p>
@@ -1847,8 +1995,12 @@ export default function CommunityPage() {
                       <p className="mt-1 text-sm text-slate-500">
                         Active threads
                       </p>
-                    </div>
-                    <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs">
+                    </motion.div>
+                    <motion.div
+                      variants={panelVariants}
+                      whileHover={{ y: -3 }}
+                      className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+                    >
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Unread
                       </p>
@@ -1858,8 +2010,12 @@ export default function CommunityPage() {
                       <p className="mt-1 text-sm text-slate-500">
                         Messages waiting
                       </p>
-                    </div>
-                    <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs">
+                    </motion.div>
+                    <motion.div
+                      variants={panelVariants}
+                      whileHover={{ y: -3 }}
+                      className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+                    >
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Groups joined
                       </p>
@@ -1869,8 +2025,12 @@ export default function CommunityPage() {
                       <p className="mt-1 text-sm text-slate-500">
                         Community circles
                       </p>
-                    </div>
-                    <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs">
+                    </motion.div>
+                    <motion.div
+                      variants={panelVariants}
+                      whileHover={{ y: -3 }}
+                      className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+                    >
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Connection
                       </p>
@@ -1882,8 +2042,8 @@ export default function CommunityPage() {
                           ? "Instant updates"
                           : "Auto-refreshing"}
                       </p>
-                    </div>
-                  </section>
+                    </motion.div>
+                  </motion.section>
                 </>
               )}
 
@@ -1912,299 +2072,921 @@ export default function CommunityPage() {
                 </section>
               )}
 
-              {(isConversationsView || isPrivacyView) && (
+              {isConversationsView && guidedEmptyState && (
+                <section className="rounded-2xl border border-dashed border-power-orange/35 bg-power-orange/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-power-orange">
+                    Getting started
+                  </p>
+                  <h3 className="mt-1 text-base font-semibold text-slate-900">
+                    Start your community in 3 steps
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Use Tools first to join or create a group, then return to
+                    Inbox to chat.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => {
+                        setSidebarMode("TOOLS");
+                        setDirectoryView("GROUPS");
+                        setWorkspaceView("DIRECTORY");
+                      }}
+                      className="rounded-lg bg-power-orange px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+                    >
+                      Open Group Tools
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSidebarMode("TOOLS");
+                        setDirectoryView("CONTACTS");
+                        setWorkspaceView("DIRECTORY");
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      Start a DM
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              {isConversationsView && (
                 <div
                   className={`grid grid-cols-1 gap-4 ${
-                    isPrivacyView
-                      ? "xl:grid-cols-1"
-                      : "xl:grid-cols-[340px_minmax(0,1fr)]"
+                    showGroupInsightsSidebar
+                      ? isConversationSidebarOpen
+                        ? "xl:grid-cols-[320px_minmax(0,1fr)_340px]"
+                        : "xl:grid-cols-[minmax(0,1fr)_340px]"
+                      : isConversationSidebarOpen
+                        ? "xl:grid-cols-[340px_minmax(0,1fr)]"
+                        : "xl:grid-cols-[minmax(0,1fr)]"
                   }`}
                 >
-                  <section
-                    id="privacy-settings"
-                    className={`scroll-mt-28 rounded-2xl border border-border/80 bg-white p-5 text-card-foreground shadow-xs ${
-                      isPrivacyView ? "block" : "hidden"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Shield size={16} className="text-slate-600" />
-                      <h2 className="text-base font-semibold tracking-tight">
-                        Privacy Settings
-                      </h2>
-                    </div>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Control your identity visibility and message preferences.
-                    </p>
+                  <AnimatePresence initial={false}>
+                    {workspaceView === "DIRECTORY" ||
+                    isConversationSidebarOpen ? (
+                      <motion.section
+                        key="conversations-sidebar"
+                        id="conversations"
+                        initial={{ opacity: 0, x: -18 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -18 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className={`scroll-mt-28 rounded-2xl border border-border/80 bg-white p-5 text-card-foreground shadow-xs xl:sticky xl:top-28 xl:h-[calc(100vh-8rem)] xl:overflow-y-auto ${
+                          !isConversationsView
+                            ? "hidden"
+                            : workspaceView === "DIRECTORY"
+                              ? "block"
+                              : "hidden xl:block"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Users size={16} className="text-slate-600" />
+                          <h2 className="text-base font-semibold tracking-tight">
+                            Conversations
+                          </h2>
+                        </div>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Search players, discover groups, and select a
+                          conversation.
+                        </p>
 
-                    <div className="mt-4 space-y-4">
-                      <label className="block text-sm">
-                        <span className="mb-1 block text-slate-500">
-                          Anonymous alias
-                        </span>
-                        <div className="flex gap-2">
-                          <input
-                            value={aliasDraft}
-                            onChange={(event) =>
-                              setAliasDraft(event.target.value)
-                            }
-                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                          />
+                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-border bg-slate-50 p-1">
+                          {["INBOX", "TOOLS"].map((mode) => (
+                            <button
+                              key={mode}
+                              onClick={() =>
+                                setSidebarMode(mode as "INBOX" | "TOOLS")
+                              }
+                              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                                sidebarMode === mode
+                                  ? "bg-white text-slate-900 shadow-xs"
+                                  : "text-slate-500 hover:text-slate-800"
+                              }`}
+                            >
+                              {mode === "INBOX" ? "Inbox" : "Tools"}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-1">
                           <button
-                            onClick={handleSaveAlias}
-                            disabled={isSavingAlias || !aliasDraft.trim()}
-                            className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                            onClick={() => setDirectoryView("CONTACTS")}
+                            title="DM chats"
+                            aria-label="DM chats"
+                            className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
+                              directoryView === "CONTACTS"
+                                ? "bg-white text-slate-900 shadow-xs"
+                                : "text-slate-500 hover:text-slate-800"
+                            }`}
                           >
-                            {isSavingAlias ? "Saving" : "Save"}
+                            <MessageSquare size={14} />
+                            DM
+                          </button>
+                          <button
+                            onClick={() => setDirectoryView("GROUPS")}
+                            title="Group chats"
+                            aria-label="Group chats"
+                            className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
+                              directoryView === "GROUPS"
+                                ? "bg-white text-slate-900 shadow-xs"
+                                : "text-slate-500 hover:text-slate-800"
+                            }`}
+                          >
+                            <Users size={14} />
+                            Groups
                           </button>
                         </div>
-                      </label>
 
-                      <label className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">
-                          Show my real identity
-                        </span>
-                        <input
-                          type="checkbox"
-                          checked={profile?.isIdentityPublic || false}
-                          onChange={(event) =>
-                            handleProfileUpdate({
-                              isIdentityPublic: event.target.checked,
-                            })
-                          }
-                        />
-                      </label>
+                        {sidebarMode === "TOOLS" ? (
+                          <div className="mt-3 space-y-3 rounded-xl border border-border bg-slate-50 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {directoryView === "GROUPS"
+                                ? "Group tools"
+                                : "Direct chat tools"}
+                            </p>
 
-                      <label className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">Read receipts</span>
-                        <input
-                          type="checkbox"
-                          checked={profile?.readReceiptsEnabled || false}
-                          onChange={(event) =>
-                            handleProfileUpdate({
-                              readReceiptsEnabled: event.target.checked,
-                            })
-                          }
-                        />
-                      </label>
+                            <div className="rounded-lg border border-border bg-white p-2">
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                Workflow
+                              </p>
+                              <div className="mt-2 grid gap-1">
+                                {toolsSteps.map((step, index) => (
+                                  <div
+                                    key={step.id}
+                                    className="flex items-center gap-2 text-xs"
+                                  >
+                                    <span
+                                      className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${
+                                        step.done
+                                          ? "bg-turf-green/15 text-turf-green"
+                                          : "bg-slate-100 text-slate-500"
+                                      }`}
+                                    >
+                                      {index + 1}
+                                    </span>
+                                    <span
+                                      className={
+                                        step.done
+                                          ? "font-medium text-slate-800"
+                                          : "text-slate-500"
+                                      }
+                                    >
+                                      {step.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
 
-                      <label className="flex items-center justify-between text-sm">
-                        <span className="text-slate-500">Show last seen</span>
-                        <input
-                          type="checkbox"
-                          checked={profile?.lastSeenVisible || false}
-                          onChange={(event) =>
-                            handleProfileUpdate({
-                              lastSeenVisible: event.target.checked,
-                            })
-                          }
-                        />
-                      </label>
+                            {directoryView === "CONTACTS" ? (
+                              <>
+                                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                                  Search a player and tap their card to
+                                  instantly create or open a DM thread.
+                                </div>
+                                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3">
+                                  <Search
+                                    size={14}
+                                    className="text-slate-400"
+                                  />
+                                  <input
+                                    value={playerSearchQuery}
+                                    onChange={(event) =>
+                                      setPlayerSearchQuery(event.target.value)
+                                    }
+                                    placeholder="Search by name or alias"
+                                    className="w-full bg-transparent py-2 text-sm outline-none"
+                                  />
+                                </div>
+                                {playerSearchQuery.trim().length >= 2 && (
+                                  <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-2">
+                                    {isSearchingPlayers ? (
+                                      <p className="text-sm text-slate-500">
+                                        Searching...
+                                      </p>
+                                    ) : playerSearchResults.length ? (
+                                      playerSearchResults.map((player) => (
+                                        <button
+                                          key={player.id}
+                                          onClick={() =>
+                                            void handleStartConversation(
+                                              player.id,
+                                            )
+                                          }
+                                          className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
+                                        >
+                                          <span>{player.displayName}</span>
+                                          <span className="text-xs text-slate-500">
+                                            {player.isIdentityPublic
+                                              ? "Public"
+                                              : "Anonymous"}
+                                          </span>
+                                        </button>
+                                      ))
+                                    ) : (
+                                      <div className="rounded-lg border border-dashed border-border bg-white p-3 text-sm text-slate-500">
+                                        No players found for this search. Try a
+                                        different name or alias.
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {playerSearchQuery.trim().length < 2 && (
+                                  <div className="rounded-lg border border-dashed border-border bg-white p-3 text-xs text-slate-500">
+                                    Start typing at least 2 characters to find
+                                    players.
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                                  Use Discover to join groups, Manage for policy
+                                  and controls, and Invite to share group
+                                  access.
+                                </div>
+                                <div className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
+                                  {[
+                                    { value: "DISCOVER", label: "Discover" },
+                                    { value: "MANAGE", label: "Manage" },
+                                    { value: "INVITE", label: "Invite" },
+                                  ].map((item) => (
+                                    <button
+                                      key={item.value}
+                                      onClick={() =>
+                                        setGroupToolsMode(
+                                          item.value as
+                                            | "DISCOVER"
+                                            | "MANAGE"
+                                            | "INVITE",
+                                        )
+                                      }
+                                      className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                                        groupToolsMode === item.value
+                                          ? "bg-slate-900 text-white"
+                                          : "text-slate-500 hover:bg-slate-100"
+                                      }`}
+                                    >
+                                      {item.label}
+                                    </button>
+                                  ))}
+                                </div>
 
-                      <label className="block text-sm">
-                        <span className="mb-1 block text-slate-500">
-                          Who can message me
-                        </span>
-                        <select
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                          value={profile?.messagePrivacy || "EVERYONE"}
-                          onChange={(event) =>
-                            handleProfileUpdate({
-                              messagePrivacy: event.target
-                                .value as MessagePrivacy,
-                            })
-                          }
-                        >
-                          {privacyOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  </section>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <div className="grid grow grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
+                                    {[
+                                      { value: "ALL", label: "All" },
+                                      { value: "JOINED", label: "Joined" },
+                                      { value: "DISCOVER", label: "Discover" },
+                                    ].map((item) => (
+                                      <button
+                                        key={item.value}
+                                        onClick={() =>
+                                          setGroupMode(
+                                            item.value as
+                                              | "ALL"
+                                              | "JOINED"
+                                              | "DISCOVER",
+                                          )
+                                        }
+                                        className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                                          groupMode === item.value
+                                            ? "bg-slate-900 text-white"
+                                            : "text-slate-500 hover:bg-slate-100"
+                                        }`}
+                                      >
+                                        {item.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <button
+                                    onClick={() =>
+                                      setIsCreateGroupOpen(
+                                        (current) => !current,
+                                      )
+                                    }
+                                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
+                                  >
+                                    {isCreateGroupOpen ? "Close" : "New group"}
+                                  </button>
+                                </div>
 
-                  <section
-                    id="conversations"
-                    className={`scroll-mt-28 rounded-2xl border border-border/80 bg-white p-5 text-card-foreground shadow-xs xl:sticky xl:top-28 xl:h-[calc(100vh-8rem)] xl:overflow-y-auto ${
-                      !isConversationsView
-                        ? "hidden"
-                        : workspaceView === "DIRECTORY"
-                          ? "block"
-                          : "hidden xl:block"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Users size={16} className="text-slate-600" />
-                      <h2 className="text-base font-semibold tracking-tight">
-                        Conversations
-                      </h2>
-                    </div>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Search players, discover groups, and select a
-                      conversation.
-                    </p>
+                                {isCreateGroupOpen && (
+                                  <div className="flex gap-2">
+                                    <input
+                                      value={newGroupName}
+                                      onChange={(event) =>
+                                        setNewGroupName(event.target.value)
+                                      }
+                                      placeholder="Create group name"
+                                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                                    />
+                                    <button
+                                      onClick={() => void handleCreateGroup()}
+                                      className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                                    >
+                                      Create
+                                    </button>
+                                  </div>
+                                )}
 
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                        {managedConversations.length} result
-                        {managedConversations.length === 1 ? "" : "s"}
-                      </span>
-                      <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
-                        {pendingRequestsCount} request
-                        {pendingRequestsCount === 1 ? "" : "s"}
-                      </span>
-                      {!!conversationFilterQuery.trim() && (
-                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                          "{conversationFilterQuery.trim()}"
-                        </span>
-                      )}
-                    </div>
+                                <input
+                                  value={groupSearchQuery}
+                                  onChange={(event) =>
+                                    setGroupSearchQuery(event.target.value)
+                                  }
+                                  placeholder="Search groups by name, sport, city"
+                                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                                />
 
-                    <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-border bg-slate-50 p-1">
-                      {conversationModeOptions.map((item) => (
-                        <button
-                          key={item.value}
-                          onClick={() =>
-                            setConversationMode(
-                              item.value as "ALL" | "UNREAD" | "REQUESTS",
-                            )
-                          }
-                          className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
-                            conversationMode === item.value
-                              ? "bg-white text-slate-900 shadow-xs"
-                              : "text-slate-500 hover:text-slate-800"
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
+                                {selectedConversation?.conversationType ===
+                                  "GROUP" &&
+                                  selectedConversation.group && (
+                                    <div className="rounded-xl border border-border bg-white p-2">
+                                      <GroupInviteLink
+                                        groupId={selectedConversation.group.id}
+                                        groupName={
+                                          selectedConversation.group.name
+                                        }
+                                      />
+                                    </div>
+                                  )}
 
-                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-1">
-                      <button
-                        onClick={() => setDirectoryView("CONTACTS")}
-                        title="DM chats"
-                        aria-label="DM chats"
-                        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
-                          directoryView === "CONTACTS"
-                            ? "bg-white text-slate-900 shadow-xs"
-                            : "text-slate-500 hover:text-slate-800"
-                        }`}
-                      >
-                        <MessageSquare size={14} />
-                        DM
-                      </button>
-                      <button
-                        onClick={() => setDirectoryView("GROUPS")}
-                        title="Group chats"
-                        aria-label="Group chats"
-                        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
-                          directoryView === "GROUPS"
-                            ? "bg-white text-slate-900 shadow-xs"
-                            : "text-slate-500 hover:text-slate-800"
-                        }`}
-                      >
-                        <Users size={14} />
-                        Groups
-                      </button>
-                    </div>
+                                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                                  {isSearchingGroups ? (
+                                    <p className="text-sm text-slate-500">
+                                      Loading groups...
+                                    </p>
+                                  ) : toolVisibleGroups.length ? (
+                                    toolVisibleGroups.map((group) => {
+                                      const memberAddPolicy =
+                                        group.memberAddPolicy || "ADMIN_ONLY";
+                                      const canCurrentUserAddMembers =
+                                        memberAddPolicy === "ANY_MEMBER" ||
+                                        !!group.isAdmin;
+                                      const groupConversation =
+                                        getGroupConversationByGroupId(group.id);
 
-                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
-                      <Search size={14} className="text-slate-400" />
-                      <input
-                        value={conversationFilterQuery}
-                        onChange={(event) =>
-                          setConversationFilterQuery(event.target.value)
-                        }
-                        placeholder={
-                          directoryView === "GROUPS"
-                            ? "Filter group chats"
-                            : "Filter DM chats"
-                        }
-                        className="w-full bg-transparent py-2 text-sm outline-none"
-                      />
-                      {!!conversationFilterQuery.trim() && (
-                        <button
-                          onClick={() => setConversationFilterQuery("")}
-                          className="text-slate-400 transition hover:text-slate-600"
-                          aria-label="Clear conversation filter"
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
-                    {hasConversationFilters && (
-                      <div className="mt-2 flex justify-end">
-                        <button
-                          onClick={() => {
-                            setConversationMode("ALL");
-                            setConversationFilterQuery("");
-                          }}
-                          className="text-xs font-medium text-slate-500 transition hover:text-slate-700"
-                        >
-                          Reset conversation filters
-                        </button>
-                      </div>
-                    )}
+                                      return (
+                                        <div
+                                          key={group.id}
+                                          className="space-y-2 rounded-lg border border-border bg-white px-2 py-2"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div>
+                                              <p className="text-sm font-medium">
+                                                {group.name}
+                                              </p>
+                                              <p className="text-xs text-slate-500">
+                                                {group.memberCount} members
+                                              </p>
+                                            </div>
+                                            {group.isMember ? (
+                                              <button
+                                                onClick={() => {
+                                                  if (groupConversation) {
+                                                    handleOpenConversation(
+                                                      groupConversation.id,
+                                                    );
+                                                    return;
+                                                  }
 
-                    <div className="mt-3 rounded-xl border border-border bg-slate-50 p-2">
-                      <button
-                        onClick={() => {
-                          const targetView =
-                            directoryView === "GROUPS" ? "GROUPS" : "CONTACTS";
-                          setDirectoryToolsView((current) =>
-                            current === targetView ? "NONE" : targetView,
-                          );
-                          setWorkspaceView("CHAT");
-                        }}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                      >
-                        {directoryView === "GROUPS" ? (
-                          <Users size={14} />
+                                                  setDirectoryView("GROUPS");
+                                                  setGroupSearchQuery(
+                                                    group.name,
+                                                  );
+                                                }}
+                                                className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
+                                              >
+                                                {groupConversation
+                                                  ? "Open"
+                                                  : "View"}
+                                              </button>
+                                            ) : (
+                                              <div className="flex items-center gap-1">
+                                                <button
+                                                  onClick={() =>
+                                                    void handleJoinGroup(
+                                                      group.id,
+                                                    )
+                                                  }
+                                                  className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
+                                                >
+                                                  Join
+                                                </button>
+                                                <button
+                                                  onClick={() =>
+                                                    handleOpenReportModal(
+                                                      "GROUP",
+                                                      group.id,
+                                                    )
+                                                  }
+                                                  title="Report group"
+                                                  className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-100"
+                                                >
+                                                  <Flag
+                                                    size={11}
+                                                    className="inline-block"
+                                                  />
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {group.isMember &&
+                                            groupToolsMode === "MANAGE" && (
+                                              <div className="space-y-2 border-t border-border pt-2">
+                                                <div className="rounded-md border border-border bg-slate-50 p-2">
+                                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                    Group settings
+                                                  </p>
+                                                  <div className="mt-1 flex items-center justify-between gap-2">
+                                                    <span className="text-xs text-slate-600">
+                                                      Who can add members
+                                                    </span>
+                                                    {group.isAdmin ? (
+                                                      <select
+                                                        value={memberAddPolicy}
+                                                        onChange={(event) =>
+                                                          void handleUpdateGroupMemberAddPolicy(
+                                                            group.id,
+                                                            event.target
+                                                              .value as
+                                                              | "ADMIN_ONLY"
+                                                              | "ANY_MEMBER",
+                                                          )
+                                                        }
+                                                        disabled={
+                                                          isUpdatingGroupPolicyId ===
+                                                          group.id
+                                                        }
+                                                        className="rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-power-orange focus:outline-none disabled:opacity-50"
+                                                      >
+                                                        <option value="ADMIN_ONLY">
+                                                          Admins only
+                                                        </option>
+                                                        <option value="ANY_MEMBER">
+                                                          Any member
+                                                        </option>
+                                                      </select>
+                                                    ) : (
+                                                      <span className="text-xs font-medium text-slate-600">
+                                                        {memberAddPolicy ===
+                                                        "ANY_MEMBER"
+                                                          ? "Any member"
+                                                          : "Admins only"}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                  <button
+                                                    onClick={() =>
+                                                      void handleLeaveGroup(
+                                                        group.id,
+                                                      )
+                                                    }
+                                                    disabled={
+                                                      isLeavingGroupId ===
+                                                      group.id
+                                                    }
+                                                    className="flex-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100 disabled:opacity-60"
+                                                  >
+                                                    {isLeavingGroupId ===
+                                                    group.id
+                                                      ? "Leaving..."
+                                                      : "Leave group"}
+                                                  </button>
+                                                  <button
+                                                    onClick={() =>
+                                                      handleOpenReportModal(
+                                                        "GROUP",
+                                                        group.id,
+                                                      )
+                                                    }
+                                                    title="Report group"
+                                                    className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+                                                  >
+                                                    <Flag
+                                                      size={12}
+                                                      className="inline-block"
+                                                    />
+                                                  </button>
+                                                </div>
+
+                                                <div className="flex items-center justify-between">
+                                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                    Add member
+                                                  </p>
+                                                  {canCurrentUserAddMembers ? (
+                                                    <button
+                                                      onClick={() => {
+                                                        if (
+                                                          inviteGroupId ===
+                                                          group.id
+                                                        ) {
+                                                          setInviteGroupId(
+                                                            null,
+                                                          );
+                                                          setInviteSearchQuery(
+                                                            "",
+                                                          );
+                                                          setInviteSearchResults(
+                                                            [],
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        setInviteGroupId(
+                                                          group.id,
+                                                        );
+                                                        setInviteSearchQuery(
+                                                          "",
+                                                        );
+                                                        setInviteSearchResults(
+                                                          [],
+                                                        );
+                                                      }}
+                                                      className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
+                                                    >
+                                                      {inviteGroupId ===
+                                                      group.id
+                                                        ? "Close"
+                                                        : "Add"}
+                                                    </button>
+                                                  ) : (
+                                                    <span className="text-[11px] text-slate-500">
+                                                      Admin-only action
+                                                    </span>
+                                                  )}
+                                                </div>
+
+                                                {!canCurrentUserAddMembers && (
+                                                  <p className="text-xs text-slate-500">
+                                                    Only admins can add members
+                                                    in this group.
+                                                  </p>
+                                                )}
+
+                                                {canCurrentUserAddMembers &&
+                                                  inviteGroupId ===
+                                                    group.id && (
+                                                    <>
+                                                      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
+                                                        <Search
+                                                          size={13}
+                                                          className="text-slate-400"
+                                                        />
+                                                        <input
+                                                          value={
+                                                            inviteSearchQuery
+                                                          }
+                                                          onChange={(event) =>
+                                                            setInviteSearchQuery(
+                                                              event.target
+                                                                .value,
+                                                            )
+                                                          }
+                                                          placeholder="Search player to add"
+                                                          className="w-full bg-transparent py-1.5 text-xs outline-none"
+                                                        />
+                                                      </div>
+                                                      {inviteSearchQuery.trim()
+                                                        .length >= 2 && (
+                                                        <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
+                                                          {isSearchingInvitePlayers ? (
+                                                            <p className="text-xs text-slate-500">
+                                                              Searching
+                                                              players...
+                                                            </p>
+                                                          ) : inviteSearchResults.length ? (
+                                                            inviteSearchResults.map(
+                                                              (player) => (
+                                                                <div
+                                                                  key={
+                                                                    player.id
+                                                                  }
+                                                                  className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
+                                                                >
+                                                                  <span className="truncate text-xs text-slate-700">
+                                                                    {
+                                                                      player.displayName
+                                                                    }
+                                                                  </span>
+                                                                  <button
+                                                                    disabled={
+                                                                      isAddingMemberUserId ===
+                                                                      player.id
+                                                                    }
+                                                                    onClick={() =>
+                                                                      void handleAddMemberToGroup(
+                                                                        group.id,
+                                                                        player.id,
+                                                                      )
+                                                                    }
+                                                                    className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                                  >
+                                                                    {isAddingMemberUserId ===
+                                                                    player.id
+                                                                      ? "Adding"
+                                                                      : "Add"}
+                                                                  </button>
+                                                                </div>
+                                                              ),
+                                                            )
+                                                          ) : (
+                                                            <p className="text-xs text-slate-500">
+                                                              No players found
+                                                            </p>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                    </>
+                                                  )}
+                                              </div>
+                                            )}
+
+                                          {group.isMember &&
+                                            groupToolsMode === "INVITE" && (
+                                              <div className="space-y-2 border-t border-border pt-2">
+                                                {group.isAdmin && (
+                                                  <div className="rounded-xl border border-border bg-slate-50 p-2">
+                                                    <GroupInviteLink
+                                                      groupId={group.id}
+                                                      groupName={group.name}
+                                                    />
+                                                  </div>
+                                                )}
+
+                                                <div className="flex items-center justify-between">
+                                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                    Add member
+                                                  </p>
+                                                  {canCurrentUserAddMembers ? (
+                                                    <button
+                                                      onClick={() => {
+                                                        if (
+                                                          inviteGroupId ===
+                                                          group.id
+                                                        ) {
+                                                          setInviteGroupId(
+                                                            null,
+                                                          );
+                                                          setInviteSearchQuery(
+                                                            "",
+                                                          );
+                                                          setInviteSearchResults(
+                                                            [],
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        setInviteGroupId(
+                                                          group.id,
+                                                        );
+                                                        setInviteSearchQuery(
+                                                          "",
+                                                        );
+                                                        setInviteSearchResults(
+                                                          [],
+                                                        );
+                                                      }}
+                                                      className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
+                                                    >
+                                                      {inviteGroupId ===
+                                                      group.id
+                                                        ? "Close"
+                                                        : "Add"}
+                                                    </button>
+                                                  ) : (
+                                                    <span className="text-[11px] text-slate-500">
+                                                      Admin-only action
+                                                    </span>
+                                                  )}
+                                                </div>
+
+                                                {!canCurrentUserAddMembers && (
+                                                  <p className="text-xs text-slate-500">
+                                                    Only admins can add members
+                                                    in this group.
+                                                  </p>
+                                                )}
+
+                                                {canCurrentUserAddMembers &&
+                                                  inviteGroupId ===
+                                                    group.id && (
+                                                    <>
+                                                      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
+                                                        <Search
+                                                          size={13}
+                                                          className="text-slate-400"
+                                                        />
+                                                        <input
+                                                          value={
+                                                            inviteSearchQuery
+                                                          }
+                                                          onChange={(event) =>
+                                                            setInviteSearchQuery(
+                                                              event.target
+                                                                .value,
+                                                            )
+                                                          }
+                                                          placeholder="Search player to add"
+                                                          className="w-full bg-transparent py-1.5 text-xs outline-none"
+                                                        />
+                                                      </div>
+                                                      {inviteSearchQuery.trim()
+                                                        .length >= 2 && (
+                                                        <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
+                                                          {isSearchingInvitePlayers ? (
+                                                            <p className="text-xs text-slate-500">
+                                                              Searching
+                                                              players...
+                                                            </p>
+                                                          ) : inviteSearchResults.length ? (
+                                                            inviteSearchResults.map(
+                                                              (player) => (
+                                                                <div
+                                                                  key={
+                                                                    player.id
+                                                                  }
+                                                                  className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
+                                                                >
+                                                                  <span className="truncate text-xs text-slate-700">
+                                                                    {
+                                                                      player.displayName
+                                                                    }
+                                                                  </span>
+                                                                  <button
+                                                                    disabled={
+                                                                      isAddingMemberUserId ===
+                                                                      player.id
+                                                                    }
+                                                                    onClick={() =>
+                                                                      void handleAddMemberToGroup(
+                                                                        group.id,
+                                                                        player.id,
+                                                                      )
+                                                                    }
+                                                                    className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                                  >
+                                                                    {isAddingMemberUserId ===
+                                                                    player.id
+                                                                      ? "Adding"
+                                                                      : "Add"}
+                                                                  </button>
+                                                                </div>
+                                                              ),
+                                                            )
+                                                          ) : (
+                                                            <p className="text-xs text-slate-500">
+                                                              No players found
+                                                            </p>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                    </>
+                                                  )}
+                                              </div>
+                                            )}
+                                        </div>
+                                      );
+                                    })
+                                  ) : (
+                                    <div className="rounded-lg border border-dashed border-border bg-white p-3 text-sm text-slate-500">
+                                      {groupToolsMode === "DISCOVER"
+                                        ? "No discoverable groups right now. Try changing search or switch to All mode."
+                                        : groupToolsMode === "MANAGE"
+                                          ? "No joined groups to manage yet. Join a group from Discover first."
+                                          : "No group available for invites. Join or open a group first."}
+                                    </div>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
                         ) : (
-                          <MessageSquare size={14} />
+                          <>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                                {managedConversations.length} result
+                                {managedConversations.length === 1 ? "" : "s"}
+                              </span>
+                              <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
+                                {pendingRequestsCount} request
+                                {pendingRequestsCount === 1 ? "" : "s"}
+                              </span>
+                              {!!conversationFilterQuery.trim() && (
+                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                                  &ldquo;{conversationFilterQuery.trim()}&rdquo;
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-border bg-slate-50 p-1">
+                              {conversationModeOptions.map((item) => (
+                                <button
+                                  key={item.value}
+                                  onClick={() =>
+                                    setConversationMode(
+                                      item.value as
+                                        | "ALL"
+                                        | "UNREAD"
+                                        | "REQUESTS",
+                                    )
+                                  }
+                                  className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
+                                    conversationMode === item.value
+                                      ? "bg-white text-slate-900 shadow-xs"
+                                      : "text-slate-500 hover:text-slate-800"
+                                  }`}
+                                >
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
+                              <Search size={14} className="text-slate-400" />
+                              <input
+                                value={conversationFilterQuery}
+                                onChange={(event) =>
+                                  setConversationFilterQuery(event.target.value)
+                                }
+                                placeholder={
+                                  directoryView === "GROUPS"
+                                    ? "Filter group chats"
+                                    : "Filter DM chats"
+                                }
+                                className="w-full bg-transparent py-2 text-sm outline-none"
+                              />
+                              {!!conversationFilterQuery.trim() && (
+                                <button
+                                  onClick={() => setConversationFilterQuery("")}
+                                  className="text-slate-400 transition hover:text-slate-600"
+                                  aria-label="Clear conversation filter"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+
+                            {hasConversationFilters && (
+                              <div className="mt-2 flex justify-end">
+                                <button
+                                  onClick={() => {
+                                    setConversationMode("ALL");
+                                    setConversationFilterQuery("");
+                                  }}
+                                  className="text-xs font-medium text-slate-500 transition hover:text-slate-700"
+                                >
+                                  Reset conversation filters
+                                </button>
+                              </div>
+                            )}
+
+                            <div className="mt-4 max-h-90 space-y-2 overflow-y-auto pr-1">
+                              {managedConversations.map((conversation) => (
+                                <ConversationListItem
+                                  key={conversation.id}
+                                  conversation={conversation}
+                                  isSelected={
+                                    conversation.id === selectedConversationId
+                                  }
+                                  onOpenConversation={handleOpenConversation}
+                                />
+                              ))}
+                              {!managedConversations.length && (
+                                <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
+                                  {hasConversationFilters
+                                    ? "No matches for current filters. Reset filters to see all conversations."
+                                    : "No conversations yet. Start a new contact chat or join a group."}
+                                </div>
+                              )}
+
+                              {!hasConversationFilters &&
+                                hasMoreConversations && (
+                                  <button
+                                    onClick={() =>
+                                      void handleLoadMoreConversations()
+                                    }
+                                    disabled={isLoadingMoreConversations}
+                                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                                  >
+                                    {isLoadingMoreConversations
+                                      ? "Loading more..."
+                                      : "Load more conversations"}
+                                  </button>
+                                )}
+                            </div>
+                          </>
                         )}
-                        {directoryView === "GROUPS"
-                          ? "Open group tools"
-                          : "Start new chat"}
-                      </button>
-                    </div>
+                      </motion.section>
+                    ) : null}
+                  </AnimatePresence>
 
-                    <div className="mt-4 max-h-90 space-y-2 overflow-y-auto pr-1">
-                      {managedConversations.map((conversation) => (
-                        <ConversationListItem
-                          key={conversation.id}
-                          conversation={conversation}
-                          isSelected={
-                            conversation.id === selectedConversationId
-                          }
-                          onOpenConversation={handleOpenConversation}
-                        />
-                      ))}
-                      {!managedConversations.length && (
-                        <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
-                          {hasConversationFilters
-                            ? "No matches for current filters. Reset filters to see all conversations."
-                            : "No conversations yet. Start a new contact chat or join a group."}
-                        </div>
-                      )}
-
-                      {!hasConversationFilters && hasMoreConversations && (
-                        <button
-                          onClick={() => void handleLoadMoreConversations()}
-                          disabled={isLoadingMoreConversations}
-                          className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-                        >
-                          {isLoadingMoreConversations
-                            ? "Loading more..."
-                            : "Load more conversations"}
-                        </button>
-                      )}
-                    </div>
-                  </section>
-
-                  <section
+                  <motion.section
                     className={`rounded-2xl border border-border/80 bg-white p-5 text-card-foreground shadow-xs xl:sticky xl:top-28 xl:flex xl:h-[calc(100vh-8rem)] xl:flex-col ${
                       !isConversationsView
                         ? "hidden xl:hidden"
@@ -2220,436 +3002,50 @@ export default function CommunityPage() {
                           Chat
                         </h2>
                       </div>
-                      <button
-                        onClick={() => setWorkspaceView("DIRECTORY")}
-                        className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 xl:hidden"
-                      >
-                        <ChevronLeft size={14} />
-                        Back to list
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setIsConversationSidebarOpen(true);
+                            setSidebarMode("TOOLS");
+                            if (window.innerWidth < 1280) {
+                              setWorkspaceView("DIRECTORY");
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                        >
+                          <Users size={14} />
+                          Tools
+                        </button>
+                        <button
+                          onClick={() =>
+                            setIsConversationSidebarOpen((current) => !current)
+                          }
+                          className="hidden items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 xl:inline-flex"
+                        >
+                          {isConversationSidebarOpen ? (
+                            <>
+                              <PanelLeftClose size={14} />
+                              Close list
+                            </>
+                          ) : (
+                            <>
+                              <PanelLeftOpen size={14} />
+                              Open list
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setWorkspaceView("DIRECTORY")}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 xl:hidden"
+                        >
+                          <ChevronLeft size={14} />
+                          Back to list
+                        </button>
+                      </div>
                     </div>
                     <p className="mt-1 text-sm text-slate-500">
                       Messages stay anonymous unless identity is public.
                     </p>
-
-                    {directoryToolsView !== "NONE" && (
-                      <>
-                        <button
-                          onClick={() => setDirectoryToolsView("NONE")}
-                          aria-label="Close tools overlay"
-                          className="fixed inset-0 z-30 bg-slate-900/30 xl:hidden"
-                        />
-
-                        <div className="fixed inset-x-3 bottom-3 top-20 z-40 overflow-y-auto rounded-2xl border border-border bg-slate-50 p-3 shadow-lg xl:static xl:inset-auto xl:mt-3 xl:rounded-xl xl:shadow-none">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-semibold tracking-tight text-slate-800">
-                              {directoryToolsView === "GROUPS"
-                                ? "Group tools"
-                                : "New direct chat"}
-                            </p>
-                            <button
-                              onClick={() => setDirectoryToolsView("NONE")}
-                              className="rounded-md border border-slate-200 bg-white p-1 text-slate-500 transition hover:bg-slate-100"
-                              aria-label="Close tools"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-
-                          {directoryToolsView === "CONTACTS" ? (
-                            <>
-                              <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
-                                <Search size={14} className="text-slate-400" />
-                                <input
-                                  value={playerSearchQuery}
-                                  onChange={(event) =>
-                                    setPlayerSearchQuery(event.target.value)
-                                  }
-                                  placeholder="Search by name or alias"
-                                  className="w-full bg-transparent py-2 text-sm outline-none"
-                                />
-                              </div>
-                              {playerSearchQuery.trim().length >= 2 && (
-                                <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-2">
-                                  {isSearchingPlayers ? (
-                                    <p className="text-sm text-slate-500">
-                                      Searching...
-                                    </p>
-                                  ) : playerSearchResults.length ? (
-                                    playerSearchResults.map((player) => (
-                                      <button
-                                        key={player.id}
-                                        onClick={() =>
-                                          void handleStartConversation(
-                                            player.id,
-                                          )
-                                        }
-                                        className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
-                                      >
-                                        <span>{player.displayName}</span>
-                                        <span className="text-xs text-slate-500">
-                                          {player.isIdentityPublic
-                                            ? "Public"
-                                            : "Anonymous"}
-                                        </span>
-                                      </button>
-                                    ))
-                                  ) : (
-                                    <p className="text-sm text-slate-500">
-                                      No players found
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <div className="grid grow grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
-                                  {[
-                                    { value: "ALL", label: "All" },
-                                    { value: "JOINED", label: "Joined" },
-                                    { value: "DISCOVER", label: "Discover" },
-                                  ].map((item) => (
-                                    <button
-                                      key={item.value}
-                                      onClick={() =>
-                                        setGroupMode(
-                                          item.value as
-                                            | "ALL"
-                                            | "JOINED"
-                                            | "DISCOVER",
-                                        )
-                                      }
-                                      className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
-                                        groupMode === item.value
-                                          ? "bg-slate-900 text-white"
-                                          : "text-slate-500 hover:bg-slate-100"
-                                      }`}
-                                    >
-                                      {item.label}
-                                    </button>
-                                  ))}
-                                </div>
-                                <button
-                                  onClick={() =>
-                                    setIsCreateGroupOpen((current) => !current)
-                                  }
-                                  className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
-                                >
-                                  {isCreateGroupOpen ? "Close" : "New group"}
-                                </button>
-                              </div>
-
-                              {isCreateGroupOpen && (
-                                <div className="mt-2 flex gap-2">
-                                  <input
-                                    value={newGroupName}
-                                    onChange={(event) =>
-                                      setNewGroupName(event.target.value)
-                                    }
-                                    placeholder="Create group name"
-                                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                                  />
-                                  <button
-                                    onClick={() => void handleCreateGroup()}
-                                    className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
-                                  >
-                                    Create
-                                  </button>
-                                </div>
-                              )}
-
-                              <input
-                                value={groupSearchQuery}
-                                onChange={(event) =>
-                                  setGroupSearchQuery(event.target.value)
-                                }
-                                placeholder="Search groups by name, sport, city"
-                                className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                              />
-
-                              <div className="mt-2 max-h-72 space-y-2 overflow-y-auto pr-1">
-                                {isSearchingGroups ? (
-                                  <p className="text-sm text-slate-500">
-                                    Loading groups...
-                                  </p>
-                                ) : visibleGroups.length ? (
-                                  visibleGroups.map((group) => {
-                                    const memberAddPolicy =
-                                      group.memberAddPolicy || "ADMIN_ONLY";
-                                    const canCurrentUserAddMembers =
-                                      memberAddPolicy === "ANY_MEMBER" ||
-                                      !!group.isAdmin;
-                                    const groupConversation =
-                                      getGroupConversationByGroupId(group.id);
-
-                                    return (
-                                      <div
-                                        key={group.id}
-                                        className="space-y-2 rounded-lg border border-border bg-white px-2 py-2"
-                                      >
-                                        <div className="flex items-center justify-between gap-2">
-                                          <div>
-                                            <p className="text-sm font-medium">
-                                              {group.name}
-                                            </p>
-                                            <p className="text-xs text-slate-500">
-                                              {group.memberCount} members
-                                            </p>
-                                          </div>
-                                          {group.isMember ? (
-                                            <button
-                                              onClick={() => {
-                                                if (groupConversation) {
-                                                  handleOpenConversation(
-                                                    groupConversation.id,
-                                                  );
-                                                  return;
-                                                }
-
-                                                setDirectoryView("GROUPS");
-                                                setGroupSearchQuery(group.name);
-                                              }}
-                                              className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
-                                            >
-                                              {groupConversation
-                                                ? "Open"
-                                                : "View"}
-                                            </button>
-                                          ) : (
-                                            <div className="flex items-center gap-1">
-                                              <button
-                                                onClick={() =>
-                                                  void handleJoinGroup(group.id)
-                                                }
-                                                className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
-                                              >
-                                                Join
-                                              </button>
-                                              <button
-                                                onClick={() =>
-                                                  handleOpenReportModal(
-                                                    "GROUP",
-                                                    group.id,
-                                                  )
-                                                }
-                                                title="Report group"
-                                                className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-100"
-                                              >
-                                                <Flag
-                                                  size={11}
-                                                  className="inline-block"
-                                                />
-                                              </button>
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {group.isMember && (
-                                          <div className="space-y-2 border-t border-border pt-2">
-                                            <div className="rounded-md border border-border bg-slate-50 p-2">
-                                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                                Group settings
-                                              </p>
-                                              <div className="mt-1 flex items-center justify-between gap-2">
-                                                <span className="text-xs text-slate-600">
-                                                  Who can add members
-                                                </span>
-                                                {group.isAdmin ? (
-                                                  <select
-                                                    value={memberAddPolicy}
-                                                    onChange={(event) =>
-                                                      void handleUpdateGroupMemberAddPolicy(
-                                                        group.id,
-                                                        event.target.value as
-                                                          | "ADMIN_ONLY"
-                                                          | "ANY_MEMBER",
-                                                      )
-                                                    }
-                                                    disabled={
-                                                      isUpdatingGroupPolicyId ===
-                                                      group.id
-                                                    }
-                                                    className="rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-power-orange focus:outline-none disabled:opacity-50"
-                                                  >
-                                                    <option value="ADMIN_ONLY">
-                                                      Admins only
-                                                    </option>
-                                                    <option value="ANY_MEMBER">
-                                                      Any member
-                                                    </option>
-                                                  </select>
-                                                ) : (
-                                                  <span className="text-xs font-medium text-slate-600">
-                                                    {memberAddPolicy ===
-                                                    "ANY_MEMBER"
-                                                      ? "Any member"
-                                                      : "Admins only"}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-2">
-                                              <button
-                                                onClick={() =>
-                                                  void handleLeaveGroup(
-                                                    group.id,
-                                                  )
-                                                }
-                                                disabled={
-                                                  isLeavingGroupId === group.id
-                                                }
-                                                className="flex-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100 disabled:opacity-60"
-                                              >
-                                                {isLeavingGroupId === group.id
-                                                  ? "Leaving..."
-                                                  : "Leave group"}
-                                              </button>
-                                              <button
-                                                onClick={() =>
-                                                  handleOpenReportModal(
-                                                    "GROUP",
-                                                    group.id,
-                                                  )
-                                                }
-                                                title="Report group"
-                                                className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
-                                              >
-                                                <Flag
-                                                  size={12}
-                                                  className="inline-block"
-                                                />
-                                              </button>
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                                Add member
-                                              </p>
-                                              {canCurrentUserAddMembers ? (
-                                                <button
-                                                  onClick={() => {
-                                                    if (
-                                                      inviteGroupId === group.id
-                                                    ) {
-                                                      setInviteGroupId(null);
-                                                      setInviteSearchQuery("");
-                                                      setInviteSearchResults(
-                                                        [],
-                                                      );
-                                                      return;
-                                                    }
-
-                                                    setInviteGroupId(group.id);
-                                                    setInviteSearchQuery("");
-                                                    setInviteSearchResults([]);
-                                                  }}
-                                                  className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
-                                                >
-                                                  {inviteGroupId === group.id
-                                                    ? "Close"
-                                                    : "Add"}
-                                                </button>
-                                              ) : (
-                                                <span className="text-[11px] text-slate-500">
-                                                  Admin-only action
-                                                </span>
-                                              )}
-                                            </div>
-
-                                            {!canCurrentUserAddMembers && (
-                                              <p className="text-xs text-slate-500">
-                                                Only admins can add members in
-                                                this group.
-                                              </p>
-                                            )}
-
-                                            {canCurrentUserAddMembers &&
-                                              inviteGroupId === group.id && (
-                                                <>
-                                                  <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
-                                                    <Search
-                                                      size={13}
-                                                      className="text-slate-400"
-                                                    />
-                                                    <input
-                                                      value={inviteSearchQuery}
-                                                      onChange={(event) =>
-                                                        setInviteSearchQuery(
-                                                          event.target.value,
-                                                        )
-                                                      }
-                                                      placeholder="Search player to add"
-                                                      className="w-full bg-transparent py-1.5 text-xs outline-none"
-                                                    />
-                                                  </div>
-                                                  {inviteSearchQuery.trim()
-                                                    .length >= 2 && (
-                                                    <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
-                                                      {isSearchingInvitePlayers ? (
-                                                        <p className="text-xs text-slate-500">
-                                                          Searching players...
-                                                        </p>
-                                                      ) : inviteSearchResults.length ? (
-                                                        inviteSearchResults.map(
-                                                          (player) => (
-                                                            <div
-                                                              key={player.id}
-                                                              className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
-                                                            >
-                                                              <span className="truncate text-xs text-slate-700">
-                                                                {
-                                                                  player.displayName
-                                                                }
-                                                              </span>
-                                                              <button
-                                                                disabled={
-                                                                  isAddingMemberUserId ===
-                                                                  player.id
-                                                                }
-                                                                onClick={() =>
-                                                                  void handleAddMemberToGroup(
-                                                                    group.id,
-                                                                    player.id,
-                                                                  )
-                                                                }
-                                                                className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                                                              >
-                                                                {isAddingMemberUserId ===
-                                                                player.id
-                                                                  ? "Adding"
-                                                                  : "Add"}
-                                                              </button>
-                                                            </div>
-                                                          ),
-                                                        )
-                                                      ) : (
-                                                        <p className="text-xs text-slate-500">
-                                                          No players found
-                                                        </p>
-                                                      )}
-                                                    </div>
-                                                  )}
-                                                </>
-                                              )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })
-                                ) : (
-                                  <p className="text-sm text-slate-500">
-                                    No groups found in this filter
-                                  </p>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </>
-                    )}
 
                     {selectedConversationIsPending && (
                       <div className="mt-3 rounded-xl border border-power-orange/40 bg-power-orange/10 p-3 text-sm text-card-foreground">
@@ -2702,10 +3098,27 @@ export default function CommunityPage() {
                           </p>
                         )}
                       </div>
-                      <p className="inline-flex items-center gap-1 text-xs text-slate-500">
-                        <Activity size={13} />
-                        {isSocketConnected ? "Live" : "Syncing"}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-500">
+                          <Activity size={13} />
+                          {isSocketConnected ? "Live" : "Syncing"}
+                        </p>
+                        {selectedConversation?.conversationType === "GROUP" && (
+                          <button
+                            onClick={() =>
+                              setShowGroupMembersPanel((current) => !current)
+                            }
+                            className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                          >
+                            {showGroupMembersPanel ? (
+                              <PanelRightClose size={14} />
+                            ) : (
+                              <PanelRightOpen size={14} />
+                            )}
+                            {showGroupMembersPanel ? "Close" : "Open"} Sidebar
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-3 min-h-80 flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-background p-3">
@@ -2785,124 +3198,85 @@ export default function CommunityPage() {
                     {error && (
                       <p className="mt-2 text-sm text-error-red">{error}</p>
                     )}
-                  </section>
-                </div>
-              )}
-            </div>
+                  </motion.section>
 
-            {isMyReportsView && (
-              <section id="my-reports" className="p-4 lg:p-6">
-                <div className="rounded-2xl border border-border/80 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <FileText size={16} className="text-slate-600" />
-                      <h2 className="text-base font-semibold tracking-tight">
-                        My Reports
-                      </h2>
-                    </div>
-                    <button
-                      onClick={() => void handleLoadMyReports()}
-                      disabled={isLoadingMyReports}
-                      className="rounded-lg border border-border bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
-                    >
-                      {isLoadingMyReports ? "Loading..." : "Refresh"}
-                    </button>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Content reports you have submitted for admin review.
-                  </p>
-
-                  {myReports === null ? (
-                    <div className="mt-6 rounded-xl border border-dashed border-border bg-slate-50 p-8 text-center">
-                      <Flag size={32} className="mx-auto text-slate-300" />
-                      <p className="mt-3 text-sm font-medium text-slate-600">
-                        Load your reports
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Click Refresh to see the reports you have submitted.
-                      </p>
-                      <button
-                        onClick={() => void handleLoadMyReports()}
-                        disabled={isLoadingMyReports}
-                        className="mt-4 rounded-lg bg-power-orange px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
-                      >
-                        {isLoadingMyReports ? "Loading..." : "Load Reports"}
-                      </button>
-                    </div>
-                  ) : myReports.length === 0 ? (
-                    <div className="mt-6 rounded-xl border border-dashed border-border bg-slate-50 p-8 text-center">
-                      <Flag size={32} className="mx-auto text-slate-300" />
-                      <p className="mt-3 text-sm font-medium text-slate-600">
-                        No reports yet
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {
-                          "You haven't reported any content. Use the Report button on groups."
-                        }
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-4 space-y-3">
-                      {myReports.map((report) => (
-                        <div
-                          key={report.id}
-                          className="rounded-xl border border-border bg-slate-50 p-4"
+                  <AnimatePresence initial={false}>
+                    {showGroupInsightsSidebar && selectedConversation?.group ? (
+                      <>
+                        <motion.button
+                          key="group-sidebar-backdrop"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          onClick={() => setShowGroupMembersPanel(false)}
+                          className="fixed inset-0 z-40 bg-slate-900/40 xl:hidden"
+                          aria-label="Close member sidebar"
+                        />
+                        <motion.section
+                          key="group-sidebar-panel"
+                          initial={{ opacity: 0, x: 28 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 24 }}
+                          transition={{ duration: 0.24, ease: "easeOut" }}
+                          className="fixed inset-y-0 right-0 z-50 w-[92vw] max-w-sm overflow-y-auto border-l border-border bg-white p-4 shadow-xl xl:static xl:z-auto xl:block xl:h-[calc(100vh-8rem)] xl:w-auto xl:max-w-none xl:rounded-2xl xl:border xl:border-border/80 xl:p-5 xl:shadow-xs"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${report.targetType === "GROUP" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}
-                              >
-                                {report.targetType}
-                              </span>
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${report.status === "RESOLVED" ? "bg-green-100 text-green-700" : report.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
-                              >
-                                {report.status}
-                              </span>
+                              <UserCircle2
+                                size={16}
+                                className="text-slate-600"
+                              />
+                              <h3 className="text-base font-semibold tracking-tight">
+                                Group Sidebar
+                              </h3>
                             </div>
-                            <span className="text-[11px] text-slate-400">
-                              {new Date(report.createdAt).toLocaleDateString()}
-                            </span>
+                            <button
+                              onClick={() => setShowGroupMembersPanel(false)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                            >
+                              <PanelRightClose size={14} />
+                              Close
+                            </button>
                           </div>
-                          <p className="mt-2 text-sm font-medium text-slate-800">
-                            {report.reason}
+                          <p className="mt-1 text-sm text-slate-500">
+                            Members, quick profile access, and invite tools.
                           </p>
-                          {report.details && (
-                            <p className="mt-1 text-xs text-slate-500">
-                              {report.details}
-                            </p>
-                          )}
-                          {report.resolutionNote && (
-                            <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-green-700">
-                                Admin note
-                              </p>
-                              <p className="mt-0.5 text-xs text-green-900">
-                                {report.resolutionNote}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+
+                          <div className="mt-4 space-y-3">
+                            <GroupMembersList
+                              groupId={selectedConversation.group.id}
+                              onMemberClick={handleMemberClick}
+                            />
+                          </div>
+                        </motion.section>
+                      </>
+                    ) : null}
+                  </AnimatePresence>
                 </div>
-              </section>
-            )}
-          </main>
-        </div>
-      </div>
+              )}
+            </div>
+          </motion.main>
+        </motion.div>
+      </motion.div>
 
       {/* Report Content Modal */}
       {reportModal && (
-        <div
-          className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/50 p-4"
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) setReportModal(null);
           }}
         >
-          <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+            className="w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-xl"
+          >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Flag size={18} className="text-red-500" />
@@ -2967,8 +3341,8 @@ export default function CommunityPage() {
                 {isSubmittingReport ? "Submitting..." : "Submit Report"}
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </>
   );
