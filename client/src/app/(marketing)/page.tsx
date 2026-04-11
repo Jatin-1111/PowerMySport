@@ -69,13 +69,13 @@ export default function HomePage() {
     {
       title: "Secure Payment System",
       description:
-        "Pay securely with transparent pricing and no hidden charges. Receive instant confirmations and digital QR access every time.",
+        "Pay securely with transparent pricing and no hidden charges. Get instant confirmations, booking summaries, and payment status updates.",
       icon: FeatureIcons.Shield,
     },
     {
-      title: "Instant Digital Check-in",
+      title: "Smart Alerts & Reminders",
       description:
-        "Skip paperwork and long queues. Use your digital pass to check in quickly and start your session on time.",
+        "Stay on schedule with booking notifications, reminder preferences, and real-time updates when sessions change.",
       icon: FeatureIcons.Lightning,
     },
     {
@@ -240,11 +240,11 @@ export default function HomePage() {
                 <Zap size={28} />
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3">
-                Track Progress
+                Track Sessions
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Monitor your children's attendance, coaching sessions, and
-                sports progress all in one place.
+                Monitor upcoming sessions, booking history, and review-ready
+                completed bookings from one dashboard.
               </p>
             </div>
           </div>
@@ -301,8 +301,8 @@ export default function HomePage() {
                 Book & Start Playing
               </h3>
               <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Complete payment, get instant confirmation, and check in with a
-                QR code.
+                Complete payment, get instant confirmation, and manage changes
+                from your booking dashboard.
               </p>
             </div>
           </div>
@@ -363,7 +363,7 @@ export default function HomePage() {
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       <Check size={14} />
                     </span>
-                    <span>Digital QR check-in</span>
+                    <span>Booking reminders & notifications</span>
                   </li>
                 </ul>
                 <a

@@ -107,16 +107,6 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --card: #1e293b;
-    --card-foreground: var(--ghost-white);
-    --muted: #334155;
-    --muted-foreground: #94a3b8;
-    --border: #334155;
-  }
-}
-
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

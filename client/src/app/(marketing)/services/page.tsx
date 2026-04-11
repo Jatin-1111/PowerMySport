@@ -46,7 +46,7 @@ export default function ServicesPage() {
     {
       title: "Secure Integrated Payments",
       description:
-        "Pay securely with automatic split payments to venues and coaches. Transparent pricing breakdown, no hidden fees, and instant booking confirmations via email and SMS.",
+        "Pay securely with transparent totals, promo support, and group booking payment options (single payer or split). Get instant booking confirmations and status updates.",
       icon: FeatureIcons.CreditCard,
     },
   ];
@@ -305,7 +305,7 @@ export default function ServicesPage() {
                     <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
                       2
                     </span>
-                    <span>One unified checkout</span>
+                    <span>Unified checkout flow</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <span className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
@@ -420,10 +420,11 @@ export default function ServicesPage() {
                 <QrCode size={32} />
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
-                Mobile QR Codes
+                Group Booking Invites
               </h3>
               <p className="text-sm text-muted-foreground text-center">
-                Digital check-in with QR codes. No paperwork, no hassle.
+                Invite friends, track acceptance, and confirm shared sessions
+                from one flow.
               </p>
             </div>
 
@@ -435,7 +436,8 @@ export default function ServicesPage() {
                 Smart Notifications
               </h3>
               <p className="text-sm text-muted-foreground text-center">
-                Booking reminders, availability alerts, and session updates.
+                Booking reminders, payment updates, social invites, and
+                community activity alerts.
               </p>
             </div>
 
@@ -444,10 +446,11 @@ export default function ServicesPage() {
                 <BarChart3 size={32} />
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
-                Analytics Dashboard
+                Community & Reviews
               </h3>
               <p className="text-sm text-muted-foreground text-center">
-                Track your bookings, spending, and sports activity over time.
+                Learn from player discussions and leave verified reviews after
+                completed sessions.
               </p>
             </div>
           </div>

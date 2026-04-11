@@ -38,7 +38,7 @@ const faqs = [
       {
         question: "What payment methods are accepted?",
         answer:
-          "We accept all major credit/debit cards, UPI, net banking, and digital wallets. All payments are processed securely through our payment gateway.",
+          "We support card, UPI, and wallet checkout options in our booking flow. All payments are processed securely through our payment gateway.",
       },
       {
         question: "Can I cancel or reschedule my booking?",
@@ -63,7 +63,7 @@ const faqs = [
       {
         question: "How do I find venues near me?",
         answer:
-          "Use the search feature on the venues page to search by sport. The platform shows venues based on their location and availability. You can filter by sport, price, and amenities.",
+          "Use the venues page search and filters (sport, price, rating, amenities) to shortlist the right options quickly. Open any venue to check details, slots, and booking flow.",
       },
       {
         question: "What if I arrive and the venue is closed?",
@@ -333,7 +333,7 @@ const faqs = [
       {
         question: "What payment methods do you accept?",
         answer:
-          "We accept: credit/debit cards (Visa, Mastercard, American Express), UPI, net banking, and digital wallets. All payments are encrypted and secure. You can save payment methods for faster checkout.",
+          "You can pay using card, UPI, and wallet options available in checkout. All payment processing is encrypted and secure.",
       },
       {
         question: "Why was my transaction declined?",

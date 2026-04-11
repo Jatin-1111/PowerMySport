@@ -261,8 +261,9 @@ export default function HowItWorksPage() {
                   Check In & Play
                 </h3>
                 <p className="mb-4 text-base leading-7 text-muted-foreground sm:text-lg">
-                  Receive booking confirmation with QR code. Arrive at the venue
-                  at your scheduled time, show the QR code, and start playing!
+                  Receive booking confirmation and reminder updates. Arrive at
+                  your venue or coach session on time and manage changes from
+                  your dashboard.
                 </p>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start">
@@ -277,14 +278,16 @@ export default function HowItWorksPage() {
                       size={20}
                       className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
-                    <span>Get QR code for check-in</span>
+                    <span>Get reminder and status notifications</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
                       size={20}
                       className="text-turf-green mr-2 shrink-0 mt-0.5"
                     />
-                    <span>Show QR code at venue entrance</span>
+                    <span>
+                      Manage bookings, reviews, and follow-up sessions
+                    </span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle
