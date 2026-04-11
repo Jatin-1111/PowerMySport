@@ -651,7 +651,7 @@ function CheckoutPageContent() {
         }
       />
 
-      <Card className="bg-white">
+      <Card className="shop-surface premium-shadow">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -739,7 +739,7 @@ function CheckoutPageContent() {
               }
             />
 
-            <Card className="bg-white">
+            <Card className="shop-surface premium-shadow">
               <div className="flex items-start gap-3">
                 <span className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-green-100 shrink-0 text-green-600">
                   <ShieldCheck size={18} />

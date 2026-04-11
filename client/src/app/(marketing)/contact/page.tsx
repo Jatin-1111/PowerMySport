@@ -3,6 +3,7 @@
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
+import { motion } from "framer-motion";
 import {
   Facebook,
   Instagram,
@@ -13,6 +14,13 @@ import {
   Twitter,
 } from "lucide-react";
 import React, { useState } from "react";
+
+const iconMotion = {
+  initial: { opacity: 0, y: 10, scale: 0.92 },
+  whileInView: { opacity: 1, y: 0, scale: 1 },
+  whileHover: { scale: 1.08, y: -2, rotate: 2 },
+  whileTap: { scale: 0.98 },
+};
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -76,12 +84,12 @@ export default function ContactPage() {
       />
 
       {/* Contact Form & Info Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-white">
+      <section className="py-16 sm:py-20 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <div>
-              <h2 className="text-3xl font-bold text-deep-slate mb-6">
+            <div className="shop-surface rounded-2xl p-8 premium-shadow">
+              <h2 className="font-title text-3xl font-bold text-deep-slate mb-6">
                 Send Us a Message
               </h2>
               <p className="text-lg text-muted-foreground mb-8">
@@ -90,17 +98,17 @@ export default function ContactPage() {
               </p>
 
               {submitStatus === "success" && (
-                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4">
                   <p className="text-green-800 font-medium">
-                    ? Message sent successfully! We&apos;ll be in touch soon.
+                    Message sent successfully. We&apos;ll be in touch soon.
                   </p>
                 </div>
               )}
 
               {submitStatus === "error" && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
                   <p className="text-red-800 font-medium">
-                    ? Something went wrong. Please try again.
+                    Something went wrong. Please try again.
                   </p>
                 </div>
               )}
@@ -121,7 +129,7 @@ export default function ContactPage() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange"
+                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
                     placeholder="Enter your name"
                   />
                 </div>
@@ -141,7 +149,7 @@ export default function ContactPage() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange"
+                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
                     placeholder="your.email@example.com"
                   />
                 </div>
@@ -160,7 +168,7 @@ export default function ContactPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange"
+                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
                     placeholder="+91 9876543210"
                   />
                 </div>
@@ -179,7 +187,7 @@ export default function ContactPage() {
                     value={formData.userType}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange"
+                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
                   >
                     <option value="player">Player</option>
                     <option value="venue_owner">Venue Owner</option>
@@ -203,7 +211,7 @@ export default function ContactPage() {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange"
+                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
                     placeholder="What is this regarding?"
                   />
                 </div>
@@ -223,7 +231,7 @@ export default function ContactPage() {
                     onChange={handleChange}
                     required
                     rows={6}
-                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange resize-none"
+                    className="w-full resize-none rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
                     placeholder="Tell us more about your inquiry..."
                   />
                 </div>
@@ -243,20 +251,36 @@ export default function ContactPage() {
 
             {/* Contact Info */}
             <div>
-              <h2 className="text-3xl font-bold text-deep-slate mb-6">
+              <h2 className="font-title text-3xl font-bold text-deep-slate mb-6">
                 Other Ways to Reach Us
               </h2>
 
               <div className="space-y-6">
                 {/* Email */}
-                <Card variant="elevated">
+                <Card
+                  variant="elevated"
+                  className="shop-surface premium-shadow"
+                >
                   <CardContent className="pt-6">
                     <div className="flex items-start">
-                      <div className="shrink-0">
+                      <motion.div
+                        className="shrink-0 origin-center will-change-transform"
+                        initial={iconMotion.initial}
+                        whileInView={iconMotion.whileInView}
+                        whileHover={iconMotion.whileHover}
+                        whileTap={iconMotion.whileTap}
+                        viewport={{ once: true, amount: 0.4 }}
+                        transition={{
+                          duration: 0.45,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                      >
                         <Mail className="h-6 w-6 text-power-orange" />
-                      </div>
+                      </motion.div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-semibold mb-1 text-white">Email</h3>
+                        <h3 className="mb-1 text-lg font-semibold text-slate-900">
+                          Email
+                        </h3>
                         <p className="text-muted-foreground">
                           General Inquiries:{" "}
                           <a
@@ -281,14 +305,30 @@ export default function ContactPage() {
                 </Card>
 
                 {/* Phone */}
-                <Card variant="elevated">
+                <Card
+                  variant="elevated"
+                  className="shop-surface premium-shadow"
+                >
                   <CardContent className="pt-6">
                     <div className="flex items-start">
-                      <div className="shrink-0">
+                      <motion.div
+                        className="shrink-0 origin-center will-change-transform"
+                        initial={iconMotion.initial}
+                        whileInView={iconMotion.whileInView}
+                        whileHover={iconMotion.whileHover}
+                        whileTap={iconMotion.whileTap}
+                        viewport={{ once: true, amount: 0.4 }}
+                        transition={{
+                          duration: 0.45,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                      >
                         <Phone className="h-6 w-6 text-power-orange" />
-                      </div>
+                      </motion.div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-semibold mb-1 text-white">Phone</h3>
+                        <h3 className="mb-1 text-lg font-semibold text-slate-900">
+                          Phone
+                        </h3>
                         <p className="text-muted-foreground">
                           Customer Support:{" "}
                           <a
@@ -307,14 +347,28 @@ export default function ContactPage() {
                 </Card>
 
                 {/* Address */}
-                <Card variant="elevated">
+                <Card
+                  variant="elevated"
+                  className="shop-surface premium-shadow"
+                >
                   <CardContent className="pt-6">
                     <div className="flex items-start">
-                      <div className="shrink-0">
+                      <motion.div
+                        className="shrink-0 origin-center will-change-transform"
+                        initial={iconMotion.initial}
+                        whileInView={iconMotion.whileInView}
+                        whileHover={iconMotion.whileHover}
+                        whileTap={iconMotion.whileTap}
+                        viewport={{ once: true, amount: 0.4 }}
+                        transition={{
+                          duration: 0.45,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                      >
                         <MapPin className="h-6 w-6 text-power-orange" />
-                      </div>
+                      </motion.div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-semibold mb-1 text-white">
+                        <h3 className="mb-1 text-lg font-semibold text-slate-900">
                           Office Address
                         </h3>
                         <p className="text-muted-foreground">
@@ -332,38 +386,55 @@ export default function ContactPage() {
                 </Card>
 
                 {/* Social Media */}
-                <Card variant="elevated">
+                <Card
+                  variant="elevated"
+                  className="shop-surface premium-shadow"
+                >
                   <CardContent className="pt-6">
-                    <h3 className="text-lg font-semibold mb-4 text-white">Follow Us</h3>
+                    <h3 className="mb-4 text-lg font-semibold text-slate-900">
+                      Follow Us
+                    </h3>
                     <div className="flex space-x-4">
-                      <a
+                      <motion.a
                         href="#"
-                        className="text-power-orange hover:text-orange-600 transition-colors"
+                        className="text-power-orange transition-colors"
                         aria-label="Facebook"
+                        whileHover={{ y: -2, scale: 1.08 }}
+                        whileTap={{ scale: 0.96 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <Facebook className="h-8 w-8" />
-                      </a>
-                      <a
+                      </motion.a>
+                      <motion.a
                         href="#"
-                        className="text-power-orange hover:text-orange-600 transition-colors"
+                        className="text-power-orange transition-colors"
                         aria-label="Instagram"
+                        whileHover={{ y: -2, scale: 1.08 }}
+                        whileTap={{ scale: 0.96 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <Instagram className="h-8 w-8" />
-                      </a>
-                      <a
+                      </motion.a>
+                      <motion.a
                         href="#"
-                        className="text-power-orange hover:text-orange-600 transition-colors"
+                        className="text-power-orange transition-colors"
                         aria-label="Twitter"
+                        whileHover={{ y: -2, scale: 1.08 }}
+                        whileTap={{ scale: 0.96 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <Twitter className="h-8 w-8" />
-                      </a>
-                      <a
+                      </motion.a>
+                      <motion.a
                         href="#"
-                        className="text-power-orange hover:text-orange-600 transition-colors"
+                        className="text-power-orange transition-colors"
                         aria-label="LinkedIn"
+                        whileHover={{ y: -2, scale: 1.08 }}
+                        whileTap={{ scale: 0.96 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <Linkedin className="h-8 w-8" />
-                      </a>
+                      </motion.a>
                     </div>
                   </CardContent>
                 </Card>
@@ -374,10 +445,10 @@ export default function ContactPage() {
       </section>
 
       {/* Map or Additional Info Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-gray-50">
+      <section className="py-16 sm:py-20 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-deep-slate mb-4">
+            <h2 className="font-title text-3xl font-bold text-deep-slate mb-4">
               We&apos;re Here to Help
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
@@ -389,13 +460,13 @@ export default function ContactPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="/register"
-                className="inline-block bg-power-orange text-white px-8 py-4 rounded-lg font-semibold hover:bg-orange-600 transition-colors text-lg"
+                className="inline-block rounded-xl bg-power-orange px-8 py-4 text-lg font-semibold text-white premium-shadow transition-colors hover:bg-orange-600"
               >
                 Get Started
               </a>
               <a
                 href="/help"
-                className="inline-block bg-white border-2 border-deep-slate text-deep-slate px-8 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-lg"
+                className="inline-block rounded-xl border-2 border-deep-slate bg-white px-8 py-4 text-lg font-semibold text-deep-slate premium-shadow transition-colors hover:bg-gray-50"
               >
                 Visit Help Center
               </a>
@@ -406,4 +477,3 @@ export default function ContactPage() {
     </main>
   );
 }
-

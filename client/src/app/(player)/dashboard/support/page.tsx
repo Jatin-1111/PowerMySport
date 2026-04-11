@@ -148,7 +148,7 @@ export default function SupportTicketsPage() {
       />
 
       {tickets.length === 0 ? (
-        <Card className="bg-white">
+        <Card className="shop-surface premium-shadow">
           <EmptyState
             icon={LifeBuoy}
             title="No support tickets"
@@ -160,7 +160,7 @@ export default function SupportTicketsPage() {
       ) : (
         <div className="space-y-4">
           {tickets.map((ticket) => (
-            <Card key={ticket._id} className="bg-white">
+            <Card key={ticket._id} className="shop-surface premium-shadow">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">

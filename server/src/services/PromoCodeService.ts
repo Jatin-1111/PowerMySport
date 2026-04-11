@@ -5,7 +5,7 @@ export interface CreatePromoCodePayload {
   description: string;
   discountType: "PERCENTAGE" | "FIXED_AMOUNT";
   discountValue: number;
-  applicableTo?: "ALL" | "VENUE_ONLY" | "COACH_ONLY";
+  applicableTo?: "ALL" | "VENUE_ONLY" | "COACH_ONLY" | "MERCHANDISE_ONLY";
   minBookingAmount?: number;
   maxDiscountAmount?: number;
   validFrom: Date;
@@ -53,13 +53,19 @@ export const createPromoCode = async (
 export const validatePromoCode = async (
   code: string,
   userId: string,
-  bookingAmount: number,
-  hasCoach: boolean,
+  amount: number,
+  options?: {
+    hasCoach?: boolean;
+    context?: "BOOKING" | "MERCHANDISE";
+  },
 ): Promise<{
   isValid: boolean;
   discountAmount: number;
   message?: string;
 }> => {
+  const hasCoach = options?.hasCoach ?? false;
+  const context = options?.context ?? "BOOKING";
+
   const promoCode = await PromoCode.findOne({ code: code.toUpperCase() });
 
   if (!promoCode) {
@@ -93,10 +99,7 @@ export const validatePromoCode = async (
   }
 
   // Check minimum booking amount
-  if (
-    promoCode.minBookingAmount &&
-    bookingAmount < promoCode.minBookingAmount
-  ) {
+  if (promoCode.minBookingAmount && amount < promoCode.minBookingAmount) {
     return {
       isValid: false,
       discountAmount: 0,
@@ -141,10 +144,33 @@ export const validatePromoCode = async (
     };
   }
 
+  if (
+    promoCode.applicableTo === "MERCHANDISE_ONLY" &&
+    context !== "MERCHANDISE"
+  ) {
+    return {
+      isValid: false,
+      discountAmount: 0,
+      message: "This promo code only applies to merchandise orders",
+    };
+  }
+
+  if (
+    context === "MERCHANDISE" &&
+    (promoCode.applicableTo === "COACH_ONLY" ||
+      promoCode.applicableTo === "VENUE_ONLY")
+  ) {
+    return {
+      isValid: false,
+      discountAmount: 0,
+      message: "This promo code is valid only for booking flows",
+    };
+  }
+
   // Calculate discount
   let discountAmount = 0;
   if (promoCode.discountType === "PERCENTAGE") {
-    discountAmount = (bookingAmount * promoCode.discountValue) / 100;
+    discountAmount = (amount * promoCode.discountValue) / 100;
 
     // Apply max discount cap if set
     if (
@@ -154,7 +180,7 @@ export const validatePromoCode = async (
       discountAmount = promoCode.maxDiscountAmount;
     }
   } else {
-    discountAmount = Math.min(promoCode.discountValue, bookingAmount);
+    discountAmount = Math.min(promoCode.discountValue, amount);
   }
 
   return {
@@ -171,20 +197,35 @@ export const validatePromoCode = async (
 export const applyPromoCode = async (
   code: string,
   userId: string,
-  bookingId: string,
+  bookingId: string | null,
+  orderId: string | null,
   discountApplied: number,
 ): Promise<void> => {
+  const usagePayload: {
+    userId: string;
+    discountApplied: number;
+    usedAt: Date;
+    bookingId?: string;
+    orderId?: string;
+  } = {
+    userId,
+    discountApplied,
+    usedAt: new Date(),
+  };
+
+  if (bookingId) {
+    usagePayload.bookingId = bookingId;
+  }
+  if (orderId) {
+    usagePayload.orderId = orderId;
+  }
+
   await PromoCode.findOneAndUpdate(
     { code: code.toUpperCase() },
     {
       $inc: { currentUsageCount: 1 },
       $push: {
-        usedBy: {
-          userId,
-          bookingId,
-          discountApplied,
-          usedAt: new Date(),
-        },
+        usedBy: usagePayload,
       },
     },
   );

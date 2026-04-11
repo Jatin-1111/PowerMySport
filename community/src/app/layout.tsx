@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Space_Mono } from "next/font/google";
+import { Geist_Mono, Space_Grotesk, Syne } from "next/font/google";
 import { Toaster } from "sonner";
+import CommunityTopNav from "@/modules/community/components/layout/CommunityTopNav";
 import "./globals.css";
 
-const communitySans = Plus_Jakarta_Sans({
-  variable: "--font-community-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
-const communityMono = Space_Mono({
-  variable: "--font-community-mono",
+const syne = Syne({
+  variable: "--font-syne",
   subsets: ["latin"],
-  weight: ["400", "700"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -25,11 +30,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${communitySans.variable} ${communityMono.variable} antialiased`}
-      >
-        {children}
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full bg-app text-slate-900">
+        <div className="min-h-full">
+          <CommunityTopNav />
+          <main>{children}</main>
+        </div>
         <Toaster richColors closeButton position="top-right" />
       </body>
     </html>

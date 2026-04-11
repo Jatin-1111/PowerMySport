@@ -9,6 +9,8 @@ export const authApi = {
     password: string;
     role: "PLAYER" | "VENUE_LISTER" | "COACH";
     serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
+    acceptedTerms: boolean;
+    acceptedPrivacy: boolean;
   }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/register", data);
     return response.data;
@@ -72,6 +74,8 @@ export const authApi = {
     photoUrl?: string;
     role?: "PLAYER" | "VENUE_LISTER" | "COACH";
     action?: "login" | "register";
+    acceptedTerms?: boolean;
+    acceptedPrivacy?: boolean;
   }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/google", data);
     return response.data;

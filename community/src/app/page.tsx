@@ -53,6 +53,7 @@ const COMMUNITY_SIDEBAR_MODE_KEY = "community:sidebarMode";
 const CONVERSATION_PAGE_SIZE = 25;
 const DISCONNECTED_POLL_BASE_MS = 2500;
 const DISCONNECTED_POLL_MAX_MS = 30000;
+const MESSAGE_EDIT_DELETE_WINDOW_MS = 30 * 60 * 1000;
 
 const messageTimeFormatter = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",
@@ -110,6 +111,19 @@ const getMessageTimestamp = (value?: string | null) => {
   }
 
   return messageTimeFormatter.format(date);
+};
+
+const isWithinMessageEditWindow = (createdAt?: string | null): boolean => {
+  if (!createdAt) {
+    return false;
+  }
+
+  const created = new Date(createdAt).getTime();
+  if (Number.isNaN(created)) {
+    return false;
+  }
+
+  return Date.now() - created <= MESSAGE_EDIT_DELETE_WINDOW_MS;
 };
 
 type ConversationListItemProps = {
@@ -187,6 +201,10 @@ type MessageBubbleProps = {
   isGroupConversation: boolean;
   profileUserId?: string;
   onRetry: (message: ConversationMessage) => void;
+  onEdit: (message: ConversationMessage) => void;
+  onDelete: (message: ConversationMessage) => void;
+  isEditing: boolean;
+  isMutating: boolean;
 };
 
 const MessageBubble = memo(function MessageBubble({
@@ -195,6 +213,10 @@ const MessageBubble = memo(function MessageBubble({
   isGroupConversation,
   profileUserId,
   onRetry,
+  onEdit,
+  onDelete,
+  isEditing,
+  isMutating,
 }: MessageBubbleProps) {
   const participantIds = Array.isArray(message.participantIds)
     ? message.participantIds
@@ -222,6 +244,14 @@ const MessageBubble = memo(function MessageBubble({
           ? "Seen"
           : "Sent"
     : null;
+  const canMutateMessage =
+    isOwnMessage &&
+    !message.isDeleted &&
+    message.messageStatus !== "FAILED" &&
+    isWithinMessageEditWindow(message.createdAt);
+  const mutationDisabledReason = isWithinMessageEditWindow(message.createdAt)
+    ? ""
+    : "Edit/delete window expired";
 
   return (
     <motion.div
@@ -253,6 +283,8 @@ const MessageBubble = memo(function MessageBubble({
             isOwnMessage ? "text-orange-100" : "text-slate-500"
           }`}
         >
+          {message.isDeleted && <span>Deleted</span>}
+          {message.isEdited && !message.isDeleted && <span>Edited</span>}
           <span>{getMessageTimestamp(message.createdAt)}</span>
           {messageStateLabel && <span>{messageStateLabel}</span>}
           {isOwnMessage && message.messageStatus === "FAILED" && (
@@ -262,6 +294,31 @@ const MessageBubble = memo(function MessageBubble({
             >
               Retry
             </button>
+          )}
+          {isOwnMessage &&
+            !message.isDeleted &&
+            message.messageStatus !== "FAILED" && (
+              <>
+                <button
+                  onClick={() => onEdit(message)}
+                  disabled={isMutating || !canMutateMessage}
+                  title={mutationDisabledReason || "Edit message"}
+                  className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isEditing ? "Editing" : "Edit"}
+                </button>
+                <button
+                  onClick={() => onDelete(message)}
+                  disabled={isMutating || !canMutateMessage}
+                  title={mutationDisabledReason || "Delete message"}
+                  className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          {isOwnMessage && !canMutateMessage && !message.isDeleted && (
+            <span className="opacity-90">Edit window expired</span>
           )}
         </div>
       </div>
@@ -303,6 +360,8 @@ export default function CommunityPage() {
 
     return window.location.search.replace(/^\?/, "");
   });
+  const lastAppliedQueryRef = useRef(searchQuery);
+  const hasHydratedUrlRef = useRef(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<
     "community-overview" | "conversations"
   >(() => {
@@ -406,6 +465,12 @@ export default function CommunityPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageDraft, setEditingMessageDraft] = useState("");
+  const [isMutatingMessageId, setIsMutatingMessageId] = useState<string | null>(
+    null,
+  );
+  const [isTogglingBlockUser, setIsTogglingBlockUser] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] =
@@ -508,12 +573,20 @@ export default function CommunityPage() {
   const selectedConversationIsPending =
     selectedConversation?.status === "PENDING" &&
     selectedConversation?.conversationType !== "GROUP";
+  const selectedConversationIsBlocked =
+    selectedConversation?.conversationType !== "GROUP" &&
+    !!selectedConversation?.otherParticipant?.id &&
+    (profile?.blockedUsers || []).includes(
+      selectedConversation.otherParticipant.id,
+    );
   const selectedConversationRequestedByMe =
     selectedConversation?.requestedBy === profile?.userId;
   const selectedConversationNeedsMyApproval =
     selectedConversationIsPending && !selectedConversationRequestedByMe;
   const canSendSelectedConversationMessage =
-    Boolean(selectedConversation) && !selectedConversationNeedsMyApproval;
+    Boolean(selectedConversation) &&
+    !selectedConversationNeedsMyApproval &&
+    !selectedConversationIsBlocked;
   const isCommunityView = activeSidebarTab === "community-overview";
   const isConversationsView = activeSidebarTab === "conversations";
   const showGroupInsightsSidebar =
@@ -901,24 +974,29 @@ export default function CommunityPage() {
       return;
     }
 
-    const syncQueryFromUrl = () => {
+    const syncSearch = () => {
       setSearchQuery(window.location.search.replace(/^\?/, ""));
     };
 
-    syncQueryFromUrl();
-    window.addEventListener("popstate", syncQueryFromUrl);
-
-    return () => {
-      window.removeEventListener("popstate", syncQueryFromUrl);
-    };
+    syncSearch();
+    window.addEventListener("popstate", syncSearch);
+    return () => window.removeEventListener("popstate", syncSearch);
   }, []);
 
   useEffect(() => {
+    if (
+      hasHydratedUrlRef.current &&
+      searchQuery === lastAppliedQueryRef.current
+    ) {
+      return;
+    }
+
     const queryParams = new URLSearchParams(searchQuery);
     const urlSidebarMode = queryParams.get("sidebar")?.toUpperCase() || null;
     const urlDirectoryView =
       queryParams.get("directory")?.toUpperCase() || null;
     const urlGroupToolsMode = queryParams.get("panel")?.toUpperCase() || null;
+    const urlConversationId = queryParams.get("conversation") || null;
 
     if (isValidSidebarMode(urlSidebarMode) && urlSidebarMode !== sidebarMode) {
       setSidebarMode(urlSidebarMode);
@@ -938,7 +1016,24 @@ export default function CommunityPage() {
     ) {
       setGroupToolsMode(urlGroupToolsMode);
     }
-  }, [searchQuery, sidebarMode, directoryView, groupToolsMode]);
+
+    if (
+      typeof urlConversationId === "string" &&
+      urlConversationId.trim() &&
+      urlConversationId !== selectedConversationId
+    ) {
+      setSelectedConversationId(urlConversationId);
+    }
+
+    hasHydratedUrlRef.current = true;
+    lastAppliedQueryRef.current = searchQuery;
+  }, [
+    searchQuery,
+    sidebarMode,
+    directoryView,
+    groupToolsMode,
+    selectedConversationId,
+  ]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchQuery);
@@ -951,19 +1046,25 @@ export default function CommunityPage() {
       params.delete("panel");
     }
 
+    if (selectedConversationId) {
+      params.set("conversation", selectedConversationId);
+    } else {
+      params.delete("conversation");
+    }
+
     const nextQuery = params.toString();
-    const currentQuery = searchQuery;
-    if (nextQuery !== currentQuery) {
+    if (nextQuery !== lastAppliedQueryRef.current) {
+      lastAppliedQueryRef.current = nextQuery;
       router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
         scroll: false,
       });
-      setSearchQuery(nextQuery);
     }
   }, [
     searchQuery,
     sidebarMode,
     directoryView,
     groupToolsMode,
+    selectedConversationId,
     router,
     pathname,
   ]);
@@ -1111,7 +1212,11 @@ export default function CommunityPage() {
         socket.emit("community:joinConversation", {
           conversationId: currentConversationId,
         });
+
+        void loadMessages(currentConversationId);
       }
+
+      void refreshConversationsNow();
     };
 
     const handleDisconnect = () => {
@@ -1171,6 +1276,32 @@ export default function CommunityPage() {
       queueConversationRefresh(100);
     };
 
+    const handleMessageEdited = (message: ConversationMessage) => {
+      if (message.conversationId !== selectedConversationIdRef.current) {
+        queueConversationRefresh();
+        return;
+      }
+
+      updateMessageById(message.id, (current) => ({
+        ...current,
+        ...message,
+      }));
+      queueConversationRefresh(120);
+    };
+
+    const handleMessageDeleted = (message: ConversationMessage) => {
+      if (message.conversationId !== selectedConversationIdRef.current) {
+        queueConversationRefresh();
+        return;
+      }
+
+      updateMessageById(message.id, (current) => ({
+        ...current,
+        ...message,
+      }));
+      queueConversationRefresh(120);
+    };
+
     const handleCommunityError = (payload: { message: string }) => {
       setError(payload.message);
     };
@@ -1187,6 +1318,8 @@ export default function CommunityPage() {
     socket.on("community:newMessage", handleNewMessage);
     socket.on("community:messagesRead", handleMessagesRead);
     socket.on("community:conversationUpdated", handleConversationUpdated);
+    socket.on("community:messageEdited", handleMessageEdited);
+    socket.on("community:messageDeleted", handleMessageDeleted);
     socket.on("community:error", handleCommunityError);
     socket.on("connect_error", handleConnectError);
 
@@ -1202,6 +1335,8 @@ export default function CommunityPage() {
       socket.off("community:newMessage", handleNewMessage);
       socket.off("community:messagesRead", handleMessagesRead);
       socket.off("community:conversationUpdated", handleConversationUpdated);
+      socket.off("community:messageEdited", handleMessageEdited);
+      socket.off("community:messageDeleted", handleMessageDeleted);
       socket.off("community:error", handleCommunityError);
       socket.off("connect_error", handleConnectError);
 
@@ -1210,7 +1345,7 @@ export default function CommunityPage() {
         refreshTimeoutRef.current = null;
       }
     };
-  }, [queueConversationRefresh]);
+  }, [queueConversationRefresh, loadMessages, refreshConversationsNow]);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -1560,6 +1695,79 @@ export default function CommunityPage() {
     }
   };
 
+  const handleToggleConversationBlock = async () => {
+    const targetUserId = selectedConversation?.otherParticipant?.id;
+    if (!targetUserId) {
+      return;
+    }
+
+    const currentlyBlocked = (profile?.blockedUsers || []).includes(
+      targetUserId,
+    );
+    const actionLabel = currentlyBlocked ? "unblock" : "block";
+
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Are you sure you want to ${actionLabel} this player for direct messages?`,
+      )
+    ) {
+      return;
+    }
+
+    setIsTogglingBlockUser(true);
+    setError(null);
+    try {
+      if (currentlyBlocked) {
+        await communityService.unblockUser(targetUserId);
+        setProfile((current) => {
+          if (!current) {
+            return current;
+          }
+
+          return {
+            ...current,
+            blockedUsers: (current.blockedUsers || []).filter(
+              (id) => id !== targetUserId,
+            ),
+          };
+        });
+        toast.success("Player unblocked");
+      } else {
+        await communityService.blockUser(targetUserId);
+        setProfile((current) => {
+          if (!current) {
+            return current;
+          }
+
+          const blockedUsers = current.blockedUsers || [];
+          if (blockedUsers.includes(targetUserId)) {
+            return current;
+          }
+
+          return {
+            ...current,
+            blockedUsers: [...blockedUsers, targetUserId],
+          };
+        });
+        toast.success("Player blocked");
+      }
+
+      const updatedConversations = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updatedConversations, { preserveSelection: true });
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : `Failed to ${actionLabel} player`;
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsTogglingBlockUser(false);
+    }
+  };
+
   const handleOpenConversation = useCallback((conversationId: string) => {
     setSelectedConversationId(conversationId);
     setActiveSidebarTab("conversations");
@@ -1654,6 +1862,93 @@ export default function CommunityPage() {
     [],
   );
 
+  const editMessageWithTransport = useCallback(
+    async (
+      messageId: string,
+      content: string,
+    ): Promise<ConversationMessage> => {
+      const socket = getCommunitySocket();
+
+      if (socket.connected) {
+        const ack = await new Promise<
+          | { success: true; data: ConversationMessage }
+          | { success: false; message?: string }
+        >((resolve) => {
+          const timeoutId = setTimeout(() => {
+            resolve({ success: false, message: "Message edit timed out" });
+          }, 8000);
+
+          socket.emit(
+            "community:editMessage",
+            { messageId, content },
+            (result: unknown) => {
+              clearTimeout(timeoutId);
+              resolve(
+                (result as
+                  | { success: true; data: ConversationMessage }
+                  | { success: false; message?: string }) || {
+                  success: false,
+                  message: "Invalid server response",
+                },
+              );
+            },
+          );
+        });
+
+        if (!ack.success) {
+          throw new Error(ack.message || "Failed to edit message");
+        }
+
+        return ack.data;
+      }
+
+      return communityService.editMessage(messageId, content);
+    },
+    [],
+  );
+
+  const deleteMessageWithTransport = useCallback(
+    async (messageId: string): Promise<ConversationMessage> => {
+      const socket = getCommunitySocket();
+
+      if (socket.connected) {
+        const ack = await new Promise<
+          | { success: true; data: ConversationMessage }
+          | { success: false; message?: string }
+        >((resolve) => {
+          const timeoutId = setTimeout(() => {
+            resolve({ success: false, message: "Message delete timed out" });
+          }, 8000);
+
+          socket.emit(
+            "community:deleteMessage",
+            { messageId },
+            (result: unknown) => {
+              clearTimeout(timeoutId);
+              resolve(
+                (result as
+                  | { success: true; data: ConversationMessage }
+                  | { success: false; message?: string }) || {
+                  success: false,
+                  message: "Invalid server response",
+                },
+              );
+            },
+          );
+        });
+
+        if (!ack.success) {
+          throw new Error(ack.message || "Failed to delete message");
+        }
+
+        return ack.data;
+      }
+
+      return communityService.deleteMessage(messageId);
+    },
+    [],
+  );
+
   const retryFailedMessage = useCallback(
     async (message: ConversationMessage) => {
       if (!message.content?.trim()) {
@@ -1700,6 +1995,113 @@ export default function CommunityPage() {
     },
     [applyConversationPage, sendMessageWithTransport],
   );
+
+  const handleBeginEditMessage = (message: ConversationMessage) => {
+    if (
+      message.senderId !== profile?.userId ||
+      message.isDeleted ||
+      !isWithinMessageEditWindow(message.createdAt)
+    ) {
+      return;
+    }
+
+    setEditingMessageId(message.id);
+    setEditingMessageDraft(message.content);
+  };
+
+  const handleCancelEditMessage = () => {
+    setEditingMessageId(null);
+    setEditingMessageDraft("");
+  };
+
+  const handleSaveEditedMessage = async () => {
+    if (!editingMessageId) {
+      return;
+    }
+
+    const nextContent = editingMessageDraft.trim();
+    if (!nextContent) {
+      toast.error("Message content cannot be empty");
+      return;
+    }
+
+    setIsMutatingMessageId(editingMessageId);
+    setError(null);
+    try {
+      const updated = await editMessageWithTransport(
+        editingMessageId,
+        nextContent,
+      );
+
+      updateMessageById(editingMessageId, (current) => ({
+        ...current,
+        ...updated,
+      }));
+
+      setEditingMessageId(null);
+      setEditingMessageDraft("");
+
+      const updatedConversations = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updatedConversations, { preserveSelection: true });
+      toast.success("Message updated");
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "Failed to update message";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsMutatingMessageId(null);
+    }
+  };
+
+  const handleDeleteMessage = async (message: ConversationMessage) => {
+    if (
+      message.senderId !== profile?.userId ||
+      message.isDeleted ||
+      !isWithinMessageEditWindow(message.createdAt)
+    ) {
+      return;
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("Delete this message for everyone?")
+    ) {
+      return;
+    }
+
+    setIsMutatingMessageId(message.id);
+    setError(null);
+    try {
+      const deleted = await deleteMessageWithTransport(message.id);
+      updateMessageById(message.id, (current) => ({
+        ...current,
+        ...deleted,
+      }));
+
+      if (editingMessageId === message.id) {
+        setEditingMessageId(null);
+        setEditingMessageDraft("");
+      }
+
+      const updatedConversations = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updatedConversations, { preserveSelection: true });
+      toast.success("Message deleted");
+    } catch (e) {
+      const errorMessage =
+        e instanceof Error ? e.message : "Failed to delete message";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsMutatingMessageId(null);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim()) {
@@ -1826,14 +2228,14 @@ export default function CommunityPage() {
             variants={panelVariants}
             className="hidden h-[calc(100vh-3rem)] rounded-3xl border border-border/70 bg-white/85 p-6 shadow-sm backdrop-blur lg:sticky lg:top-6 lg:block"
           >
-            <div className="rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-5 text-white shadow-sm">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-300">
+            <div className="rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-5 text-slate-900 shadow-sm">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
                 Community Hub
               </p>
-              <h1 className="mt-2 text-2xl font-bold text-white">
+              <h1 className="font-title mt-2 text-2xl font-bold text-slate-900">
                 PowerMySport
               </h1>
-              <p className="mt-1 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm text-slate-100">
+              <p className="mt-1 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-sm text-slate-700">
                 <UserCircle2 size={14} />
                 {profile?.anonymousAlias}
               </p>
@@ -1976,13 +2378,21 @@ export default function CommunityPage() {
                       subtitle="Anonymous-first player chat with your privacy controls."
                       badge="Player Network"
                       action={
-                        <a
-                          href={mainAppUrl}
-                          className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/20"
-                        >
-                          Switch to Player
-                          <ExternalLink size={16} />
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href="/q"
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                          >
+                            Explore Q&A
+                          </Link>
+                          <a
+                            href={mainAppUrl}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                          >
+                            Switch to Player
+                            <ExternalLink size={16} />
+                          </a>
+                        </div>
                       }
                     />
                   </section>
@@ -2024,7 +2434,7 @@ export default function CommunityPage() {
                     <motion.div
                       variants={panelVariants}
                       whileHover={{ y: -3 }}
-                      className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+                      className="rounded-2xl border border-white/70 bg-white p-4 shadow-sm"
                     >
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Unread
@@ -3128,6 +3538,26 @@ export default function CommunityPage() {
                           <Activity size={13} />
                           {isSocketConnected ? "Live" : "Syncing"}
                         </p>
+                        {selectedConversation?.conversationType !== "GROUP" &&
+                          selectedConversation && (
+                            <button
+                              onClick={handleToggleConversationBlock}
+                              disabled={isTogglingBlockUser}
+                              className={`inline-flex items-center rounded-md border px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                                selectedConversationIsBlocked
+                                  ? "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                                  : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                              }`}
+                            >
+                              {isTogglingBlockUser
+                                ? selectedConversationIsBlocked
+                                  ? "Unblocking"
+                                  : "Blocking"
+                                : selectedConversationIsBlocked
+                                  ? "Unblock"
+                                  : "Block"}
+                            </button>
+                          )}
                         {selectedConversation?.conversationType === "GROUP" && (
                           <button
                             onClick={() =>
@@ -3146,6 +3576,13 @@ export default function CommunityPage() {
                       </div>
                     </div>
 
+                    {selectedConversationIsBlocked && (
+                      <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        This player is blocked. Unblock to send or receive
+                        direct messages in this chat.
+                      </div>
+                    )}
+
                     <div className="mt-3 min-h-80 flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-background p-3">
                       {messages.map((message) => {
                         const isOwnMessage =
@@ -3160,6 +3597,10 @@ export default function CommunityPage() {
                             isGroupConversation={!!isGroupConversation}
                             profileUserId={profile?.userId}
                             onRetry={retryFailedMessage}
+                            onEdit={handleBeginEditMessage}
+                            onDelete={handleDeleteMessage}
+                            isEditing={editingMessageId === message.id}
+                            isMutating={isMutatingMessageId === message.id}
                           />
                         );
                       })}
@@ -3179,6 +3620,43 @@ export default function CommunityPage() {
                       <div ref={messagesEndRef} />
                     </div>
 
+                    {editingMessageId && (
+                      <div className="mt-3 rounded-xl border border-power-orange/40 bg-power-orange/10 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-power-orange">
+                          Editing message
+                        </p>
+                        <textarea
+                          value={editingMessageDraft}
+                          onChange={(event) =>
+                            setEditingMessageDraft(event.target.value)
+                          }
+                          rows={2}
+                          className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                        />
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            onClick={handleSaveEditedMessage}
+                            disabled={
+                              isMutatingMessageId === editingMessageId ||
+                              !editingMessageDraft.trim()
+                            }
+                            className="rounded-md bg-power-orange px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isMutatingMessageId === editingMessageId
+                              ? "Saving"
+                              : "Save"}
+                          </button>
+                          <button
+                            onClick={handleCancelEditMessage}
+                            disabled={isMutatingMessageId === editingMessageId}
+                            className="rounded-md border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mt-3 flex gap-2 rounded-xl border border-border bg-white p-2 xl:sticky xl:bottom-0">
                       <textarea
                         value={newMessage}
@@ -3194,9 +3672,11 @@ export default function CommunityPage() {
                         placeholder={
                           !selectedConversation
                             ? "Select a conversation to reply"
-                            : selectedConversationNeedsMyApproval
-                              ? "Accept this request to reply"
-                              : "Type your message"
+                            : selectedConversationIsBlocked
+                              ? "Unblock this player to continue messaging"
+                              : selectedConversationNeedsMyApproval
+                                ? "Accept this request to reply"
+                                : "Type your message"
                         }
                         disabled={
                           !canSendSelectedConversationMessage || isSending

@@ -47,7 +47,7 @@ export default function JoinCommunityPage() {
         setStatus("redirecting");
 
         // Navigate to the community page with the new conversation selected
-        router.push(`/community?conversation=${result.conversationId}`);
+        router.push(`/?conversation=${result.conversationId}`);
       } catch {
         const message = "Failed to join community";
         setError(message);
@@ -104,7 +104,7 @@ export default function JoinCommunityPage() {
             <p className="mt-2 text-sm text-slate-600">{error}</p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
               <button
-                onClick={() => router.push("/community")}
+                onClick={() => router.push("/")}
                 className="flex-1 rounded-lg border border-border bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
               >
                 Go to Community

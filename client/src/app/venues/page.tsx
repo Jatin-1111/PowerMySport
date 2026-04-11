@@ -170,25 +170,25 @@ export default function VenuesPage() {
   const hasActiveVenueFilters = activeVenueFilters.length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Navigation */}
       <Navigation variant="dark" sticky />
       <main className="flex-1">
         {/* Header Section */}
-        <div className="bg-white border-b border-slate-200">
+        <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
           <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+            <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-2">
                   <Building2 size={32} className="text-power-orange" />
-                  <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+                  <span className="inline-flex items-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
                     Sports Venues
                   </span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+                <h1 className="font-title text-3xl sm:text-4xl font-bold mb-3">
                   Discover Premium Venues
                 </h1>
-                <p className="text-slate-200 text-base sm:text-lg mb-6 max-w-2xl">
+                <p className="text-slate-700 text-base sm:text-lg mb-6 max-w-2xl">
                   Browse and book from our collection of top-rated sports
                   venues. Find the perfect space for your next game.
                 </p>
@@ -208,23 +208,23 @@ export default function VenuesPage() {
                       value={sportInput}
                       onChange={(e) => setSportInput(e.target.value)}
                       placeholder="Search by sport (e.g. Cricket, Tennis, Basketball)..."
-                      className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 font-medium"
+                      className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 font-medium"
                       aria-label="Search venues by sport"
                     />
                   </div>
                   <Button
                     type="submit"
                     variant="primary"
-                    className="w-full px-8 shadow-lg sm:w-auto sm:whitespace-nowrap"
+                    className="w-full rounded-xl px-8 premium-shadow sm:w-auto sm:whitespace-nowrap"
                   >
                     <Search size={18} className="mr-2" />
                     Apply Sport
                   </Button>
                 </form>
 
-                <div className="mt-5 max-w-6xl rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-xs">
+                <div className="mt-5 max-w-6xl rounded-2xl border border-white/70 bg-white/80 p-4 backdrop-blur-md">
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
                       Refine Results
                     </p>
                     {hasActiveVenueFilters && (
@@ -239,15 +239,15 @@ export default function VenuesPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Sport
                       </span>
                       <select
                         value={sportInput}
                         onChange={(e) => setSportInput(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/50"
                       >
                         <option value="">All Sports</option>
                         {sportOptions.map((sport) => (
@@ -259,7 +259,7 @@ export default function VenuesPage() {
                     </label>
 
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Min Price
                       </span>
                       <input
@@ -268,12 +268,12 @@ export default function VenuesPage() {
                         value={minPrice}
                         onChange={(e) => setMinPrice(e.target.value)}
                         placeholder="e.g. 500"
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/50"
                       />
                     </label>
 
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Max Price
                       </span>
                       <input
@@ -282,18 +282,18 @@ export default function VenuesPage() {
                         value={maxPrice}
                         onChange={(e) => setMaxPrice(e.target.value)}
                         placeholder="e.g. 2500"
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/50"
                       />
                     </label>
 
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Minimum Rating
                       </span>
                       <select
                         value={minRating}
                         onChange={(e) => setMinRating(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/50"
                       >
                         <option value="0">Any Rating</option>
                         <option value="3">3+ and above</option>
@@ -303,13 +303,13 @@ export default function VenuesPage() {
                     </label>
 
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Sort By
                       </span>
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/50"
                       >
                         <option value="relevance">Relevance</option>
                         <option value="priceAsc">Price: Low to High</option>
@@ -324,7 +324,7 @@ export default function VenuesPage() {
                       {activeVenueFilters.map((filter) => (
                         <span
                           key={filter}
-                          className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white"
+                          className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
                         >
                           {filter}
                         </span>
@@ -347,8 +347,8 @@ export default function VenuesPage() {
               <p className="text-slate-600 font-medium">Loading venues...</p>
             </div>
           ) : filteredVenues.length === 0 ? (
-            <Card className="bg-white">
-              <div className="text-center py-16 bg-slate-50 rounded-lg">
+            <Card className="shop-surface premium-shadow">
+              <div className="text-center py-16 bg-white/70 rounded-xl">
                 <Building2 size={56} className="mx-auto mb-4 text-slate-300" />
                 <h3 className="text-xl font-bold text-slate-900 mb-2">
                   {appliedSportFilter
@@ -372,7 +372,7 @@ export default function VenuesPage() {
               {/* Results Header */}
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">
+                  <h2 className="font-title text-2xl font-bold text-slate-900">
                     {appliedSportFilter
                       ? `${appliedSportFilter} Venues`
                       : "All Venues"}
@@ -389,7 +389,7 @@ export default function VenuesPage() {
                 {filteredVenues.map((venue) => (
                   <Card
                     key={venue.id}
-                    className="bg-white border-2 border-slate-100 hover:border-power-orange hover:shadow-xl transition-all overflow-hidden group cursor-pointer"
+                    className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200 overflow-hidden group cursor-pointer"
                     onClick={() =>
                       router.push(`/venues/${venue.id || venue._id}`)
                     }

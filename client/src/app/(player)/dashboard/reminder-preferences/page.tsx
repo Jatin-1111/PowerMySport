@@ -7,6 +7,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import axiosInstance from "@/lib/api/axios";
+import { motion } from "framer-motion";
 import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -132,11 +133,15 @@ export default function ReminderPreferencesPage() {
         subtitle="Control when and how you receive booking reminders."
       />
 
-      <Card className="bg-white space-y-6">
+      <Card className="shop-surface premium-shadow space-y-6">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-power-orange/10 p-2">
+          <motion.div
+            className="rounded-xl bg-power-orange/10 p-2"
+            whileHover={{ scale: 1.06, rotate: 3 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
             <Bell className="h-5 w-5 text-power-orange" />
-          </div>
+          </motion.div>
           <div>
             <h2 className="text-base font-semibold text-slate-900">
               Booking Reminders
@@ -173,7 +178,7 @@ export default function ReminderPreferencesPage() {
         </div>
 
         {bookingReminders.enabled && (
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="space-y-3 rounded-xl border border-white/70 bg-white/80 p-4">
             <p className="text-sm font-semibold text-slate-700">
               Remind me before a booking:
             </p>

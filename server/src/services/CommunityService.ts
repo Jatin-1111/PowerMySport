@@ -11,6 +11,12 @@ import {
 } from "../models/CommunityProfile";
 import { User } from "../models/User";
 import { CommunityReport } from "../models/CommunityReport";
+import { CommunityPost } from "../models/CommunityPost";
+import { CommunityAnswer } from "../models/CommunityAnswer";
+import { CommunityVote } from "../models/CommunityVote";
+import { CommunityReputation } from "../models/CommunityReputation";
+import { NotificationService } from "./NotificationService";
+import { getVoteTransitionDeltas, normalizeTags } from "./communityQnaUtils";
 
 const buildParticipantKey = (a: string, b: string): string =>
   [a, b].sort().join(":");
@@ -19,6 +25,13 @@ const normalizeOptionalText = (value?: string): string => value?.trim() || "";
 
 const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const MESSAGE_EDIT_DELETE_WINDOW_MS = 30 * 60 * 1000;
+const COMMUNITY_POINTS = {
+  CREATE_POST: 5,
+  CREATE_ANSWER: 8,
+  RECEIVE_UPVOTE: 2,
+} as const;
 
 const makeDefaultAlias = (name?: string): string => {
   const seed = Math.floor(1000 + Math.random() * 9000);
@@ -113,6 +126,742 @@ const formatParticipant = (
 };
 
 export const CommunityService = {
+  async getMyReputation(userId: string) {
+    await ensureProfile(userId);
+
+    const reputation = await CommunityReputation.findOneAndUpdate(
+      { userId },
+      {
+        $setOnInsert: {
+          totalPoints: 0,
+          questionCount: 0,
+          answerCount: 0,
+          receivedUpvotes: 0,
+        },
+      },
+      { upsert: true, new: true },
+    ).lean();
+
+    return {
+      userId,
+      totalPoints: reputation?.totalPoints || 0,
+      questionCount: reputation?.questionCount || 0,
+      answerCount: reputation?.answerCount || 0,
+      receivedUpvotes: reputation?.receivedUpvotes || 0,
+    };
+  },
+
+  async listPosts(
+    userId: string,
+    page = 1,
+    limit = 20,
+    filters?: {
+      sort?: "NEW" | "TOP" | "UNANSWERED";
+      q?: string;
+      tag?: string;
+      sport?: string;
+      city?: string;
+      mine?: boolean;
+    },
+  ) {
+    await ensureProfile(userId);
+
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(50, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
+    const sort = (filters?.sort || "NEW").toUpperCase() as
+      | "NEW"
+      | "TOP"
+      | "UNANSWERED";
+
+    const query: Record<string, unknown> = {
+      isDeleted: false,
+      status: { $in: ["OPEN", "CLOSED"] },
+    };
+
+    if (filters?.mine) {
+      query.authorId = userId;
+    }
+
+    const search = (filters?.q || "").trim();
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    const tag = (filters?.tag || "").trim().toLowerCase();
+    if (tag) {
+      query.tags = tag;
+    }
+
+    const sport = normalizeOptionalText(filters?.sport);
+    if (sport) {
+      query.sport = sport;
+    }
+
+    const city = normalizeOptionalText(filters?.city);
+    if (city) {
+      query.city = city;
+    }
+
+    if (sort === "UNANSWERED") {
+      query.answerCount = 0;
+    }
+
+    const sortClause =
+      sort === "TOP"
+        ? ({ voteScore: -1 as const, createdAt: -1 as const } as const)
+        : { createdAt: -1 as const };
+
+    const [posts, total] = await Promise.all([
+      CommunityPost.find(query)
+        .sort(sortClause)
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      CommunityPost.countDocuments(query),
+    ]);
+
+    if (!posts.length) {
+      return {
+        items: [],
+        pagination: {
+          total,
+          page: safePage,
+          totalPages: Math.ceil(total / safeLimit),
+        },
+      };
+    }
+
+    const authorIds = posts.map((post) => String(post.authorId));
+
+    const [users, profiles, votes] = await Promise.all([
+      User.find({ _id: { $in: authorIds } })
+        .select("_id name photoUrl")
+        .lean(),
+      CommunityProfile.find({ userId: { $in: authorIds } })
+        .select("userId anonymousAlias isIdentityPublic")
+        .lean(),
+      CommunityVote.find({
+        userId,
+        targetType: "POST",
+        targetId: { $in: posts.map((post) => post._id) },
+      })
+        .select("targetId value")
+        .lean(),
+    ]);
+
+    const userMap = new Map(users.map((user) => [String(user._id), user]));
+    const profileMap = new Map(
+      profiles.map((profile) => [String(profile.userId), profile]),
+    );
+    const voteMap = new Map(votes.map((vote) => [String(vote.targetId), vote]));
+
+    return {
+      items: posts.map((post) => {
+        const authorId = String(post.authorId);
+        const author = userMap.get(authorId);
+        const profile = profileMap.get(authorId);
+
+        return {
+          id: String(post._id),
+          title: post.title,
+          body: post.body,
+          tags: post.tags,
+          sport: post.sport || "",
+          city: post.city || "",
+          status: post.status,
+          voteScore: post.voteScore || 0,
+          upvoteCount: post.upvoteCount || 0,
+          downvoteCount: post.downvoteCount || 0,
+          answerCount: post.answerCount || 0,
+          viewCount: post.viewCount || 0,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+          myVote: voteMap.get(String(post._id))?.value || 0,
+          author: {
+            id: authorId,
+            displayName:
+              authorId === userId
+                ? author?.name || "Me"
+                : profile?.isIdentityPublic
+                  ? author?.name || "Player"
+                  : profile?.anonymousAlias || "Anonymous Player",
+            isIdentityPublic: profile?.isIdentityPublic || false,
+            photoUrl: profile?.isIdentityPublic
+              ? author?.photoUrl || null
+              : null,
+          },
+        };
+      }),
+      pagination: {
+        total,
+        page: safePage,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
+  },
+
+  async getPostDetails(userId: string, postId: string, page = 1, limit = 30) {
+    await ensureProfile(userId);
+
+    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    if (!post) {
+      throw new Error("post not found");
+    }
+
+    await CommunityPost.updateOne(
+      { _id: post._id },
+      { $inc: { viewCount: 1 } },
+    );
+
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
+
+    const [answers, answerTotal, postAuthor, postAuthorProfile, myPostVote] =
+      await Promise.all([
+        CommunityAnswer.find({ postId: post._id, isDeleted: false })
+          .sort({ voteScore: -1, createdAt: 1 })
+          .skip(skip)
+          .limit(safeLimit)
+          .lean(),
+        CommunityAnswer.countDocuments({ postId: post._id, isDeleted: false }),
+        User.findById(post.authorId).select("_id name photoUrl").lean(),
+        CommunityProfile.findOne({ userId: post.authorId })
+          .select("userId anonymousAlias isIdentityPublic")
+          .lean(),
+        CommunityVote.findOne({
+          userId,
+          targetType: "POST",
+          targetId: post._id,
+        })
+          .select("value")
+          .lean(),
+      ]);
+
+    const answerAuthorIds = answers.map((item) => String(item.authorId));
+    const [answerUsers, answerProfiles, answerVotes] = await Promise.all([
+      User.find({ _id: { $in: answerAuthorIds } })
+        .select("_id name photoUrl")
+        .lean(),
+      CommunityProfile.find({ userId: { $in: answerAuthorIds } })
+        .select("userId anonymousAlias isIdentityPublic")
+        .lean(),
+      CommunityVote.find({
+        userId,
+        targetType: "ANSWER",
+        targetId: { $in: answers.map((item) => item._id) },
+      })
+        .select("targetId value")
+        .lean(),
+    ]);
+
+    const answerUserMap = new Map(
+      answerUsers.map((answerUser) => [String(answerUser._id), answerUser]),
+    );
+    const answerProfileMap = new Map(
+      answerProfiles.map((answerProfile) => [
+        String(answerProfile.userId),
+        answerProfile,
+      ]),
+    );
+    const answerVoteMap = new Map(
+      answerVotes.map((answerVote) => [
+        String(answerVote.targetId),
+        answerVote,
+      ]),
+    );
+
+    const postAuthorId = String(post.authorId);
+    return {
+      post: {
+        id: String(post._id),
+        title: post.title,
+        body: post.body,
+        tags: post.tags,
+        sport: post.sport || "",
+        city: post.city || "",
+        status: post.status,
+        voteScore: post.voteScore || 0,
+        upvoteCount: post.upvoteCount || 0,
+        downvoteCount: post.downvoteCount || 0,
+        answerCount: post.answerCount || 0,
+        viewCount: (post.viewCount || 0) + 1,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+        myVote: myPostVote?.value || 0,
+        author: {
+          id: postAuthorId,
+          displayName:
+            postAuthorId === userId
+              ? postAuthor?.name || "Me"
+              : postAuthorProfile?.isIdentityPublic
+                ? postAuthor?.name || "Player"
+                : postAuthorProfile?.anonymousAlias || "Anonymous Player",
+          isIdentityPublic: postAuthorProfile?.isIdentityPublic || false,
+          photoUrl: postAuthorProfile?.isIdentityPublic
+            ? postAuthor?.photoUrl || null
+            : null,
+        },
+      },
+      answers: answers.map((answer) => {
+        const answerAuthorId = String(answer.authorId);
+        const answerUser = answerUserMap.get(answerAuthorId);
+        const answerProfile = answerProfileMap.get(answerAuthorId);
+
+        return {
+          id: String(answer._id),
+          postId: String(answer.postId),
+          content: answer.content,
+          voteScore: answer.voteScore || 0,
+          upvoteCount: answer.upvoteCount || 0,
+          downvoteCount: answer.downvoteCount || 0,
+          createdAt: answer.createdAt,
+          updatedAt: answer.updatedAt,
+          myVote: answerVoteMap.get(String(answer._id))?.value || 0,
+          author: {
+            id: answerAuthorId,
+            displayName:
+              answerAuthorId === userId
+                ? answerUser?.name || "Me"
+                : answerProfile?.isIdentityPublic
+                  ? answerUser?.name || "Player"
+                  : answerProfile?.anonymousAlias || "Anonymous Player",
+            isIdentityPublic: answerProfile?.isIdentityPublic || false,
+            photoUrl: answerProfile?.isIdentityPublic
+              ? answerUser?.photoUrl || null
+              : null,
+          },
+        };
+      }),
+      pagination: {
+        total: answerTotal,
+        page: safePage,
+        totalPages: Math.ceil(answerTotal / safeLimit),
+      },
+    };
+  },
+
+  async createPost(
+    userId: string,
+    payload: {
+      title: string;
+      body: string;
+      tags?: string[];
+      sport?: string;
+      city?: string;
+    },
+  ) {
+    await ensureProfile(userId);
+
+    const post = await CommunityPost.create({
+      authorId: userId,
+      title: payload.title.trim(),
+      body: payload.body.trim(),
+      tags: normalizeTags(payload.tags),
+      sport: normalizeOptionalText(payload.sport),
+      city: normalizeOptionalText(payload.city),
+    });
+
+    await CommunityReputation.updateOne(
+      { userId },
+      {
+        $setOnInsert: {
+          totalPoints: 0,
+          questionCount: 0,
+          answerCount: 0,
+          receivedUpvotes: 0,
+        },
+        $inc: {
+          totalPoints: COMMUNITY_POINTS.CREATE_POST,
+          questionCount: 1,
+        },
+      },
+      { upsert: true },
+    );
+
+    return {
+      id: String(post._id),
+      title: post.title,
+      body: post.body,
+      tags: post.tags,
+      sport: post.sport || "",
+      city: post.city || "",
+      status: post.status,
+      voteScore: post.voteScore,
+      upvoteCount: post.upvoteCount,
+      downvoteCount: post.downvoteCount,
+      answerCount: post.answerCount,
+      viewCount: post.viewCount,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+    };
+  },
+
+  async updatePost(
+    userId: string,
+    postId: string,
+    payload: {
+      title?: string;
+      body?: string;
+      tags?: string[];
+      status?: "OPEN" | "CLOSED";
+      sport?: string;
+      city?: string;
+    },
+  ) {
+    await ensureProfile(userId);
+
+    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    if (!post) {
+      throw new Error("post not found");
+    }
+
+    if (String(post.authorId) !== userId) {
+      throw new Error("Only the author can update this post");
+    }
+
+    if (typeof payload.title === "string") {
+      post.title = payload.title.trim();
+    }
+    if (typeof payload.body === "string") {
+      post.body = payload.body.trim();
+    }
+    if (Array.isArray(payload.tags)) {
+      post.tags = normalizeTags(payload.tags);
+    }
+    if (payload.status === "OPEN" || payload.status === "CLOSED") {
+      post.status = payload.status;
+    }
+    if (typeof payload.sport === "string") {
+      post.sport = normalizeOptionalText(payload.sport);
+    }
+    if (typeof payload.city === "string") {
+      post.city = normalizeOptionalText(payload.city);
+    }
+
+    await post.save();
+
+    return {
+      id: String(post._id),
+      title: post.title,
+      body: post.body,
+      tags: post.tags,
+      sport: post.sport || "",
+      city: post.city || "",
+      status: post.status,
+      voteScore: post.voteScore,
+      upvoteCount: post.upvoteCount,
+      downvoteCount: post.downvoteCount,
+      answerCount: post.answerCount,
+      viewCount: post.viewCount,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+    };
+  },
+
+  async deletePost(userId: string, postId: string) {
+    await ensureProfile(userId);
+
+    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    if (!post) {
+      throw new Error("post not found");
+    }
+
+    if (String(post.authorId) !== userId) {
+      throw new Error("Only the author can delete this post");
+    }
+
+    post.isDeleted = true;
+    post.deletedAt = new Date();
+    await post.save();
+
+    return { id: String(post._id), deleted: true };
+  },
+
+  async createAnswer(userId: string, postId: string, content: string) {
+    await ensureProfile(userId);
+
+    const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
+    if (!post) {
+      throw new Error("post not found");
+    }
+
+    if (post.status !== "OPEN") {
+      throw new Error("Cannot answer a closed post");
+    }
+
+    const answer = await CommunityAnswer.create({
+      postId: post._id,
+      authorId: userId,
+      content: content.trim(),
+    });
+
+    if (String(post.authorId) !== userId) {
+      NotificationService.send({
+        userId: String(post.authorId),
+        type: "MESSAGE_RECEIVED",
+        title: "New answer on your question",
+        message: "Someone shared a new answer on your community question.",
+        data: {
+          postId: String(post._id),
+          answerId: String(answer._id),
+          actorUserId: userId,
+          event: "COMMUNITY_ANSWER_CREATED",
+        },
+      }).catch((error: unknown) => {
+        console.error("Failed to send community answer notification:", error);
+      });
+    }
+
+    await Promise.all([
+      CommunityPost.updateOne({ _id: post._id }, { $inc: { answerCount: 1 } }),
+      CommunityReputation.updateOne(
+        { userId },
+        {
+          $setOnInsert: {
+            totalPoints: 0,
+            questionCount: 0,
+            answerCount: 0,
+            receivedUpvotes: 0,
+          },
+          $inc: {
+            totalPoints: COMMUNITY_POINTS.CREATE_ANSWER,
+            answerCount: 1,
+          },
+        },
+        { upsert: true },
+      ),
+    ]);
+
+    return {
+      id: String(answer._id),
+      postId: String(answer.postId),
+      content: answer.content,
+      voteScore: answer.voteScore,
+      upvoteCount: answer.upvoteCount,
+      downvoteCount: answer.downvoteCount,
+      createdAt: answer.createdAt,
+      updatedAt: answer.updatedAt,
+    };
+  },
+
+  async updateAnswer(userId: string, answerId: string, content: string) {
+    await ensureProfile(userId);
+
+    const answer = await CommunityAnswer.findOne({
+      _id: answerId,
+      isDeleted: false,
+    });
+    if (!answer) {
+      throw new Error("answer not found");
+    }
+
+    if (String(answer.authorId) !== userId) {
+      throw new Error("Only the author can update this answer");
+    }
+
+    answer.content = content.trim();
+    await answer.save();
+
+    return {
+      id: String(answer._id),
+      postId: String(answer.postId),
+      content: answer.content,
+      voteScore: answer.voteScore,
+      upvoteCount: answer.upvoteCount,
+      downvoteCount: answer.downvoteCount,
+      createdAt: answer.createdAt,
+      updatedAt: answer.updatedAt,
+    };
+  },
+
+  async deleteAnswer(userId: string, answerId: string) {
+    await ensureProfile(userId);
+
+    const answer = await CommunityAnswer.findOne({
+      _id: answerId,
+      isDeleted: false,
+    });
+    if (!answer) {
+      throw new Error("answer not found");
+    }
+
+    if (String(answer.authorId) !== userId) {
+      throw new Error("Only the author can delete this answer");
+    }
+
+    answer.isDeleted = true;
+    answer.deletedAt = new Date();
+    await answer.save();
+
+    await CommunityPost.updateOne(
+      { _id: answer.postId, answerCount: { $gt: 0 } },
+      { $inc: { answerCount: -1 } },
+    );
+
+    return {
+      id: String(answer._id),
+      postId: String(answer.postId),
+      deleted: true,
+    };
+  },
+
+  async vote(
+    userId: string,
+    payload: {
+      targetType: "POST" | "ANSWER";
+      targetId: string;
+      value: 1 | -1;
+    },
+  ) {
+    await ensureProfile(userId);
+
+    let targetAuthorId = "";
+
+    if (payload.targetType === "POST") {
+      const post = await CommunityPost.findOne({
+        _id: payload.targetId,
+        isDeleted: false,
+      }).select("_id authorId");
+      if (!post) {
+        throw new Error("post not found");
+      }
+      targetAuthorId = String(post.authorId);
+    } else {
+      const answer = await CommunityAnswer.findOne({
+        _id: payload.targetId,
+        isDeleted: false,
+      }).select("_id authorId");
+      if (!answer) {
+        throw new Error("answer not found");
+      }
+      targetAuthorId = String(answer.authorId);
+    }
+
+    if (targetAuthorId === userId) {
+      throw new Error("You cannot vote on your own content");
+    }
+
+    const existingVote = await CommunityVote.findOne({
+      userId,
+      targetType: payload.targetType,
+      targetId: payload.targetId,
+    });
+
+    const previousValue = (existingVote?.value as 1 | -1 | undefined) || null;
+    const nextValue = previousValue === payload.value ? null : payload.value;
+    const deltas = getVoteTransitionDeltas(previousValue, nextValue);
+
+    if (nextValue === null) {
+      if (existingVote?._id) {
+        await CommunityVote.deleteOne({ _id: existingVote._id });
+      }
+    } else if (!existingVote) {
+      await CommunityVote.create({
+        userId,
+        targetType: payload.targetType,
+        targetId: payload.targetId,
+        value: nextValue,
+      });
+    } else {
+      existingVote.value = nextValue;
+      await existingVote.save();
+    }
+
+    if (payload.targetType === "POST") {
+      await CommunityPost.updateOne(
+        { _id: payload.targetId },
+        {
+          $inc: {
+            voteScore: deltas.voteScore,
+            upvoteCount: deltas.upvoteCount,
+            downvoteCount: deltas.downvoteCount,
+          },
+        },
+      );
+    } else {
+      await CommunityAnswer.updateOne(
+        { _id: payload.targetId },
+        {
+          $inc: {
+            voteScore: deltas.voteScore,
+            upvoteCount: deltas.upvoteCount,
+            downvoteCount: deltas.downvoteCount,
+          },
+        },
+      );
+    }
+
+    if (deltas.upvoteCount !== 0) {
+      await CommunityReputation.updateOne(
+        { userId: targetAuthorId },
+        {
+          $setOnInsert: {
+            totalPoints: 0,
+            questionCount: 0,
+            answerCount: 0,
+            receivedUpvotes: 0,
+          },
+          $inc: {
+            totalPoints: deltas.upvoteCount * COMMUNITY_POINTS.RECEIVE_UPVOTE,
+            receivedUpvotes: deltas.upvoteCount,
+          },
+        },
+        { upsert: true },
+      );
+    }
+
+    const updatedTarget =
+      payload.targetType === "POST"
+        ? await CommunityPost.findById(payload.targetId)
+            .select("voteScore upvoteCount downvoteCount")
+            .lean()
+        : await CommunityAnswer.findById(payload.targetId)
+            .select("voteScore upvoteCount downvoteCount postId")
+            .lean();
+
+    if (nextValue === 1 && previousValue !== 1) {
+      NotificationService.send({
+        userId: targetAuthorId,
+        type: "MESSAGE_RECEIVED",
+        title: "Your answer helped someone",
+        message: "You received a new upvote on your community content.",
+        data: {
+          targetType: payload.targetType,
+          targetId: payload.targetId,
+          actorUserId: userId,
+          event: "COMMUNITY_UPVOTE_RECEIVED",
+          postId:
+            payload.targetType === "ANSWER"
+              ? String(
+                  (updatedTarget as { postId?: mongoose.Types.ObjectId })
+                    ?.postId || "",
+                )
+              : payload.targetId,
+        },
+      }).catch((error: unknown) => {
+        console.error("Failed to send community upvote notification:", error);
+      });
+    }
+
+    return {
+      targetType: payload.targetType,
+      targetId: payload.targetId,
+      myVote: nextValue || 0,
+      voteScore: updatedTarget?.voteScore || 0,
+      upvoteCount: updatedTarget?.upvoteCount || 0,
+      downvoteCount: updatedTarget?.downvoteCount || 0,
+      postId:
+        payload.targetType === "ANSWER"
+          ? String(
+              (updatedTarget as { postId?: mongoose.Types.ObjectId })?.postId ||
+                "",
+            )
+          : payload.targetId,
+    };
+  },
+
   async searchPlayers(userId: string, query: string, limit = 10) {
     const normalizedQuery = query.trim();
     if (!normalizedQuery) {
@@ -869,7 +1618,7 @@ export const CommunityService = {
             : null,
         latestMessage: latest
           ? {
-              content: latest.content,
+              content: latest.isDeleted ? "Message deleted" : latest.content,
               createdAt: latest.createdAt,
               senderId: String(latest.senderId),
             }
@@ -1065,8 +1814,12 @@ export const CommunityService = {
           : senderProfile?.isIdentityPublic
             ? sender?.name || "Player"
             : senderProfile?.anonymousAlias || "Anonymous Player",
-        content: message.content,
+        content: message.isDeleted ? "Message deleted" : message.content,
         createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+        editedAt: message.editedAt || null,
+        isEdited: Boolean(message.editedAt),
+        isDeleted: Boolean(message.isDeleted),
         readBy,
         participantIds: allParticipantIds,
       };
@@ -1187,6 +1940,10 @@ export const CommunityService = {
         : senderProfile?.anonymousAlias || "Anonymous Player",
       content: message.content,
       createdAt: message.createdAt,
+      updatedAt: message.updatedAt,
+      editedAt: null,
+      isEdited: false,
+      isDeleted: false,
       readBy: [String(message.senderId)],
       participantIds: conversation.participants.map((participantId) =>
         String(participantId),
@@ -1194,10 +1951,129 @@ export const CommunityService = {
     };
   },
 
+  async editMessage(userId: string, messageId: string, content: string) {
+    const message = await CommunityMessage.findById(messageId);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    const senderId = String(message.senderId);
+    if (senderId !== userId) {
+      throw new Error("Only the sender can edit this message");
+    }
+
+    if (message.isDeleted) {
+      throw new Error("Deleted messages cannot be edited");
+    }
+
+    if (
+      Date.now() - message.createdAt.getTime() >
+      MESSAGE_EDIT_DELETE_WINDOW_MS
+    ) {
+      throw new Error("Message edit window has expired");
+    }
+
+    const trimmedContent = content.trim();
+    if (!trimmedContent) {
+      throw new Error("Message content is required");
+    }
+
+    message.content = trimmedContent;
+    message.editedAt = new Date();
+    await message.save();
+
+    const conversation = await CommunityConversation.findById(
+      message.conversationId,
+    )
+      .select("participants conversationType")
+      .lean();
+
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    const participants = conversation.participants.map((participantId) =>
+      String(participantId),
+    );
+
+    return {
+      id: String(message._id),
+      conversationId: String(message.conversationId),
+      conversationType: conversation.conversationType || "DM",
+      senderId,
+      content: message.content,
+      createdAt: message.createdAt,
+      updatedAt: message.updatedAt,
+      editedAt: message.editedAt,
+      isEdited: true,
+      isDeleted: false,
+      readBy: (message.readBy || []).map((readerId) => String(readerId)),
+      participantIds: participants,
+    };
+  },
+
+  async deleteMessage(userId: string, messageId: string) {
+    const message = await CommunityMessage.findById(messageId);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    const senderId = String(message.senderId);
+    if (senderId !== userId) {
+      throw new Error("Only the sender can delete this message");
+    }
+
+    if (message.isDeleted) {
+      throw new Error("Message already deleted");
+    }
+
+    if (
+      Date.now() - message.createdAt.getTime() >
+      MESSAGE_EDIT_DELETE_WINDOW_MS
+    ) {
+      throw new Error("Message delete window has expired");
+    }
+
+    message.isDeleted = true;
+    message.deletedAt = new Date();
+    message.deletedBy = new mongoose.Types.ObjectId(userId);
+    message.content = "Message deleted";
+    await message.save();
+
+    const conversation = await CommunityConversation.findById(
+      message.conversationId,
+    )
+      .select("participants conversationType")
+      .lean();
+
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    const participants = conversation.participants.map((participantId) =>
+      String(participantId),
+    );
+
+    return {
+      id: String(message._id),
+      conversationId: String(message.conversationId),
+      conversationType: conversation.conversationType || "DM",
+      senderId,
+      content: "Message deleted",
+      createdAt: message.createdAt,
+      updatedAt: message.updatedAt,
+      editedAt: message.editedAt || null,
+      isEdited: Boolean(message.editedAt),
+      isDeleted: true,
+      readBy: (message.readBy || []).map((readerId) => String(readerId)),
+      participantIds: participants,
+    };
+  },
+
   async createReport(
     userId: string,
     payload: {
-      targetType: "MESSAGE" | "GROUP";
+      targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
       targetId: string;
       reason: string;
       details?: string;
@@ -1205,19 +2081,55 @@ export const CommunityService = {
   ) {
     await ensureProfile(userId);
 
+    let messageAudit:
+      | {
+          senderId?: string;
+          createdAt?: Date;
+          updatedAt?: Date;
+          editedAt?: Date | null;
+          deletedAt?: Date | null;
+          wasEdited: boolean;
+          wasDeleted: boolean;
+        }
+      | undefined;
+
     if (payload.targetType === "MESSAGE") {
       const message = await CommunityMessage.findById(payload.targetId)
-        .select("_id")
+        .select("_id senderId createdAt updatedAt editedAt deletedAt isDeleted")
         .lean();
       if (!message) {
         throw new Error("message not found");
       }
-    } else {
+
+      messageAudit = {
+        senderId: String(message.senderId),
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+        editedAt: message.editedAt || null,
+        deletedAt: message.deletedAt || null,
+        wasEdited: Boolean(message.editedAt),
+        wasDeleted: Boolean(message.isDeleted),
+      };
+    } else if (payload.targetType === "GROUP") {
       const group = await CommunityGroup.findById(payload.targetId)
         .select("_id")
         .lean();
       if (!group) {
         throw new Error("group not found");
+      }
+    } else if (payload.targetType === "POST") {
+      const post = await CommunityPost.findById(payload.targetId)
+        .select("_id")
+        .lean();
+      if (!post) {
+        throw new Error("post not found");
+      }
+    } else {
+      const answer = await CommunityAnswer.findById(payload.targetId)
+        .select("_id")
+        .lean();
+      if (!answer) {
+        throw new Error("answer not found");
       }
     }
 
@@ -1227,6 +2139,7 @@ export const CommunityService = {
       targetId: payload.targetId,
       reason: payload.reason.trim(),
       details: payload.details?.trim() || "",
+      ...(messageAudit ? { messageAudit } : {}),
       status: "OPEN",
     });
 
@@ -1265,6 +2178,19 @@ export const CommunityService = {
         resolutionNote: item.resolutionNote || "",
         createdAt: item.createdAt,
         reviewedAt: item.reviewedAt || null,
+        messageAudit: item.messageAudit
+          ? {
+              senderId: item.messageAudit.senderId
+                ? String(item.messageAudit.senderId)
+                : undefined,
+              createdAt: item.messageAudit.createdAt || null,
+              updatedAt: item.messageAudit.updatedAt || null,
+              editedAt: item.messageAudit.editedAt || null,
+              deletedAt: item.messageAudit.deletedAt || null,
+              wasEdited: Boolean(item.messageAudit.wasEdited),
+              wasDeleted: Boolean(item.messageAudit.wasDeleted),
+            }
+          : undefined,
       })),
       pagination: {
         total,

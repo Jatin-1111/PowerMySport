@@ -1,7 +1,7 @@
 import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { FriendSocketProvider } from "@/hooks/useFriendSocket";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Space_Grotesk, Syne } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -10,8 +10,13 @@ const siteTitle = "PowerMySport";
 const siteDescription =
   "Book sports venues, discover certified coaches, and manage your complete sports journey on PowerMySport.";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+});
+
+const syne = Syne({
+  variable: "--font-syne",
   subsets: ["latin"],
 });
 
@@ -94,7 +99,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} antialiased`}
       >
         <HydrationBoundary>
           <FriendSocketProvider>{children}</FriendSocketProvider>

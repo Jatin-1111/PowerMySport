@@ -30,6 +30,7 @@ import {
   StaggerContainer,
   StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
+import { motion } from "framer-motion";
 import type { Booking } from "@/types";
 
 interface UpcomingBooking {
@@ -124,182 +125,191 @@ export default function DashboardPage() {
       <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Pending Friend Requests */}
         <StaggerItem className="h-full">
-        <Card
-          className="glass-panel premium-shadow hover:shadow-xl transition-all cursor-pointer h-full"
-          onClick={() => router.push("/dashboard/friends")}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-900">
-              Friend Requests
-            </CardTitle>
-            <UserPlus className="h-4 w-4 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
-              {pendingFriendRequests}
-            </div>
-            <p className="text-xs text-slate-500">
-              {pendingFriendRequests === 0
-                ? "No pending requests"
-                : "Pending requests"}
-            </p>
-            {pendingFriendRequests > 0 && (
-              <Badge variant="destructive" className="mt-2">
-                Action needed
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
+          <Card
+            className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200 cursor-pointer h-full"
+            onClick={() => router.push("/dashboard/friends")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-900">
+                Friend Requests
+              </CardTitle>
+              <UserPlus className="h-4 w-4 text-slate-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">
+                {pendingFriendRequests}
+              </div>
+              <p className="text-xs text-slate-500">
+                {pendingFriendRequests === 0
+                  ? "No pending requests"
+                  : "Pending requests"}
+              </p>
+              {pendingFriendRequests > 0 && (
+                <Badge variant="destructive" className="mt-2">
+                  Action needed
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
         </StaggerItem>
 
         {/* Pending Invitations */}
         <StaggerItem className="h-full">
-        <Card
-          className="glass-panel premium-shadow hover:shadow-xl transition-all cursor-pointer h-full"
-          onClick={() => router.push("/dashboard/invitations")}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-900">
-              Booking Invitations
-            </CardTitle>
-            <Mail className="h-4 w-4 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
-              {pendingInvitations}
-            </div>
-            <p className="text-xs text-slate-500">
-              {pendingInvitations === 0
-                ? "No pending invitations"
-                : "Pending invitations"}
-            </p>
-            {pendingInvitations > 0 && (
-              <Badge variant="destructive" className="mt-2">
-                Action needed
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
+          <Card
+            className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200 cursor-pointer h-full"
+            onClick={() => router.push("/dashboard/invitations")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-900">
+                Booking Invitations
+              </CardTitle>
+              <Mail className="h-4 w-4 text-slate-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">
+                {pendingInvitations}
+              </div>
+              <p className="text-xs text-slate-500">
+                {pendingInvitations === 0
+                  ? "No pending invitations"
+                  : "Pending invitations"}
+              </p>
+              {pendingInvitations > 0 && (
+                <Badge variant="destructive" className="mt-2">
+                  Action needed
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
         </StaggerItem>
 
         {/* Upcoming Bookings */}
         <StaggerItem className="h-full">
-        <Card
-          className="glass-panel premium-shadow hover:shadow-xl transition-all cursor-pointer h-full"
-          onClick={() => router.push("/dashboard/my-bookings")}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-900">
-              Upcoming Bookings
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-slate-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">
-              {upcomingBookings.length}
-            </div>
-            <p className="text-xs text-slate-500">
-              {upcomingBookings.length === 0
-                ? "No upcoming bookings"
-                : "Sessions scheduled"}
-            </p>
-          </CardContent>
-        </Card>
+          <Card
+            className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200 cursor-pointer h-full"
+            onClick={() => router.push("/dashboard/my-bookings")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-900">
+                Upcoming Bookings
+              </CardTitle>
+              <Calendar className="h-4 w-4 text-slate-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">
+                {upcomingBookings.length}
+              </div>
+              <p className="text-xs text-slate-500">
+                {upcomingBookings.length === 0
+                  ? "No upcoming bookings"
+                  : "Sessions scheduled"}
+              </p>
+            </CardContent>
+          </Card>
         </StaggerItem>
       </StaggerContainer>
 
       {/* Upcoming Bookings List */}
       <SlideUp delay={0.2} yOffset={20}>
-      {upcomingBookings.length > 0 && (
-        <Card className="glass-panel premium-shadow">
-          <CardHeader>
-            <CardTitle className="text-slate-900">Next Sessions</CardTitle>
-            <CardDescription className="text-slate-500">
-              Your upcoming bookings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {upcomingBookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
-                    <Calendar className="h-6 w-6 text-orange-600" />
+        {upcomingBookings.length > 0 && (
+          <Card className="shop-surface premium-shadow">
+            <CardHeader>
+              <CardTitle className="text-slate-900">Next Sessions</CardTitle>
+              <CardDescription className="text-slate-500">
+                Your upcoming bookings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {upcomingBookings.map((booking) => (
+                <motion.div
+                  key={booking.id}
+                  className="flex items-center justify-between rounded-xl border border-white/70 bg-white/80 p-4 hover:bg-white transition-colors"
+                  whileHover={{ y: -2 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
+                  <div className="flex items-center gap-4">
+                    <motion.div
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100"
+                      whileHover={{ scale: 1.05, rotate: 3 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                    >
+                      <Calendar className="h-6 w-6 text-orange-600" />
+                    </motion.div>
+                    <div>
+                      <p className="font-semibold text-slate-900">
+                        {booking.venueName || booking.coachName}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {booking.sport} •{" "}
+                        {new Date(booking.date).toLocaleDateString()} at{" "}
+                        {booking.startTime}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      {booking.venueName || booking.coachName}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {booking.sport} •{" "}
-                      {new Date(booking.date).toLocaleDateString()} at{" "}
-                      {booking.startTime}
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="outline">{booking.status}</Badge>
-              </div>
-            ))}
-            <Link href="/dashboard/my-bookings">
-              <Button variant="outline" className="w-full mt-2 text-slate-800 hover:bg-slate-100 transition-colors">
-                View All Bookings
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
+                  <Badge variant="outline">{booking.status}</Badge>
+                </motion.div>
+              ))}
+              <Link href="/dashboard/my-bookings">
+                <Button
+                  variant="outline"
+                  className="w-full mt-2 text-slate-800 hover:bg-slate-100 transition-colors"
+                >
+                  View All Bookings
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
       </SlideUp>
 
       {/* Quick Actions */}
       <SlideUp delay={0.3} yOffset={20}>
-      <Card className="glass-panel premium-shadow">
-        <CardHeader>
-          <CardTitle className="text-slate-900">Quick Actions</CardTitle>
-          <CardDescription className="text-slate-500">
-            Get started with common activities
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link href="/venues">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
-            >
-              <MapPin className="h-6 w-6 text-orange-600" />
-              <span className="text-slate-900">Book Venue</span>
-            </Button>
-          </Link>
-          <Link href="/coaches">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
-            >
-              <Users className="h-6 w-6 text-orange-600" />
-              <span className="text-slate-900">Find Coach</span>
-            </Button>
-          </Link>
-          <Link href="/dashboard/friends">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
-            >
-              <UserPlus className="h-6 w-6 text-orange-600" />
-              <span className="text-slate-900">Manage Friends</span>
-            </Button>
-          </Link>
-          <Link href="/dashboard/my-profile">
-            <Button
-              variant="outline"
-              className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
-            >
-              <TrendingUp className="h-6 w-6 text-orange-600" />
-              <span className="text-slate-900">View Profile</span>
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
+        <Card className="shop-surface premium-shadow">
+          <CardHeader>
+            <CardTitle className="text-slate-900">Quick Actions</CardTitle>
+            <CardDescription className="text-slate-500">
+              Get started with common activities
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Link href="/venues">
+              <Button
+                variant="outline"
+                className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
+              >
+                <MapPin className="h-6 w-6 text-orange-600" />
+                <span className="text-slate-900">Book Venue</span>
+              </Button>
+            </Link>
+            <Link href="/coaches">
+              <Button
+                variant="outline"
+                className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
+              >
+                <Users className="h-6 w-6 text-orange-600" />
+                <span className="text-slate-900">Find Coach</span>
+              </Button>
+            </Link>
+            <Link href="/dashboard/friends">
+              <Button
+                variant="outline"
+                className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
+              >
+                <UserPlus className="h-6 w-6 text-orange-600" />
+                <span className="text-slate-900">Manage Friends</span>
+              </Button>
+            </Link>
+            <Link href="/dashboard/my-profile">
+              <Button
+                variant="outline"
+                className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
+              >
+                <TrendingUp className="h-6 w-6 text-orange-600" />
+                <span className="text-slate-900">View Profile</span>
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </SlideUp>
     </div>
   );
