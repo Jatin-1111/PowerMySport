@@ -29,18 +29,18 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
   testimonials,
 }) => {
   return (
-    <section className="py-16 sm:py-20 lg:py-24">
+    <section className="py-16 sm:py-20 lg:py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         {(title || subtitle) && (
           <div className="text-center mb-12 sm:mb-16">
             {subtitle && (
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
+              <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
                 {subtitle}
               </p>
             )}
             {title && (
-              <h2 className="font-title text-3xl sm:text-4xl lg:text-5xl font-bold text-deep-slate">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-deep-slate">
                 {title}
               </h2>
             )}
@@ -50,11 +50,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
         {/* Testimonials Grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card
-              key={index}
-              variant="elevated"
-              className="group h-full rounded-2xl border border-white/60 bg-white/80 backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-            >
+            <Card key={index} variant="elevated" className="h-full">
               <CardContent className="pt-6">
                 {/* Rating */}
                 {testimonial.rating && (
@@ -74,22 +70,22 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
                 )}
 
                 {/* Quote */}
-                <blockquote className="mb-6 text-base leading-relaxed text-slate-700">
+                <blockquote className="text-slate-300 mb-6 text-base leading-relaxed">
                   &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
 
                 {/* Author */}
                 <div className="flex items-center">
                   {!testimonial.avatar && (
-                    <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full bg-power-orange text-white font-semibold transition-transform group-hover:scale-110">
+                    <div className="h-12 w-12 rounded-full bg-power-orange text-white flex items-center justify-center mr-4 font-semibold">
                       {testimonial.author.charAt(0)}
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold text-slate-900">
+                    <div className="font-semibold text-slate-100">
                       {testimonial.author}
                     </div>
-                    <div className="text-sm text-slate-600">
+                    <div className="text-sm text-slate-300">
                       {testimonial.role}
                     </div>
                   </div>
@@ -102,3 +98,5 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
     </section>
   );
 };
+
+

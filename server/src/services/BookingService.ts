@@ -413,10 +413,7 @@ export const validatePromoCodeForUser = async (
   subtotal: number,
   hasCoach: boolean,
 ): Promise<{ isValid: boolean; discountAmount: number; message?: string }> => {
-  return validatePromoCode(code, userId, subtotal, {
-    hasCoach,
-    context: "BOOKING",
-  });
+  return validatePromoCode(code, userId, subtotal, hasCoach);
 };
 
 export const getAlternateVenueSlots = async (
@@ -743,10 +740,7 @@ export const initiateBooking = async (
         payload.promoCode,
         payload.userId,
         subtotal,
-        {
-          hasCoach: Boolean(payload.coachId),
-          context: "BOOKING",
-        },
+        Boolean(payload.coachId),
       );
 
       if (!promoValidation.isValid) {
@@ -825,7 +819,6 @@ export const initiateBooking = async (
         validPromoCode,
         payload.userId,
         booking._id.toString(),
-        null,
         discountAmount,
       );
     }

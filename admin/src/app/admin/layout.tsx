@@ -10,10 +10,8 @@ import {
   LifeBuoy,
   LayoutDashboard,
   MessageSquareWarning,
-  Package,
   ShieldAlert,
   ShieldCheck,
-  ShoppingBag,
   Star,
   Tag,
   UserCircle2,
@@ -152,16 +150,6 @@ export default function AdminLayout({
       href: "/admin/bookings",
       label: "All Bookings",
       icon: Calendar,
-    },
-    {
-      href: "/admin/products",
-      label: "Products",
-      icon: Package,
-    },
-    {
-      href: "/admin/orders",
-      label: "Orders",
-      icon: ShoppingBag,
     },
     {
       href: "/admin/reviews",

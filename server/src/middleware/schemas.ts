@@ -5,12 +5,6 @@ export const registerSchema = z.object({
   email: z.string().email("Invalid email format"),
   phone: z.string().min(1, "Phone number is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  acceptedTerms: z
-    .boolean()
-    .refine((value) => value === true, "Terms of Service must be accepted"),
-  acceptedPrivacy: z
-    .boolean()
-    .refine((value) => value === true, "Privacy Policy must be accepted"),
   role: z
     .enum(["PLAYER", "VENUE_LISTER", "COACH"])
     .optional()
@@ -87,14 +81,6 @@ export const communityStartConversationSchema = z.object({
 
 export const communitySendMessageSchema = z.object({
   conversationId: z.string().min(1, "Conversation ID is required"),
-  content: z
-    .string()
-    .trim()
-    .min(1, "Message content is required")
-    .max(2000, "Message cannot exceed 2000 characters"),
-});
-
-export const communityUpdateMessageSchema = z.object({
   content: z
     .string()
     .trim()
@@ -261,93 +247,10 @@ export const bookingWaitlistSchema = z
   });
 
 export const communityReportSchema = z.object({
-  targetType: z.enum(["MESSAGE", "GROUP", "POST", "ANSWER"]),
+  targetType: z.enum(["MESSAGE", "GROUP"]),
   targetId: z.string().min(1, "Target ID is required"),
   reason: z.string().trim().min(3, "Reason is required").max(120),
   details: z.string().trim().max(1000).optional(),
-});
-
-export const communityCreatePostSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(10, "Title must be at least 10 characters")
-    .max(180, "Title cannot exceed 180 characters"),
-  body: z
-    .string()
-    .trim()
-    .min(20, "Post body must be at least 20 characters")
-    .max(5000, "Post body cannot exceed 5000 characters"),
-  tags: z
-    .array(
-      z
-        .string()
-        .trim()
-        .min(1, "Tag cannot be empty")
-        .max(40, "Tag cannot exceed 40 characters"),
-    )
-    .max(8, "A post can have at most 8 tags")
-    .optional(),
-  sport: z
-    .string()
-    .trim()
-    .max(60, "Sport cannot exceed 60 characters")
-    .optional(),
-  city: z
-    .string()
-    .trim()
-    .max(80, "City cannot exceed 80 characters")
-    .optional(),
-});
-
-export const communityUpdatePostSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(10, "Title must be at least 10 characters")
-    .max(180, "Title cannot exceed 180 characters")
-    .optional(),
-  body: z
-    .string()
-    .trim()
-    .min(20, "Post body must be at least 20 characters")
-    .max(5000, "Post body cannot exceed 5000 characters")
-    .optional(),
-  tags: z
-    .array(
-      z
-        .string()
-        .trim()
-        .min(1, "Tag cannot be empty")
-        .max(40, "Tag cannot exceed 40 characters"),
-    )
-    .max(8, "A post can have at most 8 tags")
-    .optional(),
-  status: z.enum(["OPEN", "CLOSED"]).optional(),
-  sport: z
-    .string()
-    .trim()
-    .max(60, "Sport cannot exceed 60 characters")
-    .optional(),
-  city: z
-    .string()
-    .trim()
-    .max(80, "City cannot exceed 80 characters")
-    .optional(),
-});
-
-export const communityCreateAnswerSchema = z.object({
-  content: z
-    .string()
-    .trim()
-    .min(10, "Answer must be at least 10 characters")
-    .max(5000, "Answer cannot exceed 5000 characters"),
-});
-
-export const communityVoteSchema = z.object({
-  targetType: z.enum(["POST", "ANSWER"]),
-  targetId: z.string().min(1, "Target ID is required"),
-  value: z.union([z.literal(1), z.literal(-1)]),
 });
 
 export const communityModerationActionSchema = z.object({

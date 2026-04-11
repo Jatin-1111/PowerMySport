@@ -65,12 +65,6 @@ export interface PlayerSearchResult {
   photoUrl?: string | null;
 }
 
-export interface BlockedUser {
-  id: string;
-  name: string;
-  photoUrl?: string | null;
-}
-
 export interface ConversationMessage {
   id: string;
   conversationId: string;
@@ -79,104 +73,7 @@ export interface ConversationMessage {
   senderDisplayName: string;
   content: string;
   createdAt: string;
-  updatedAt?: string;
-  editedAt?: string | null;
-  isEdited?: boolean;
-  isDeleted?: boolean;
   readBy?: string[];
   participantIds?: string[];
   messageStatus?: "SENDING" | "SENT" | "FAILED";
-}
-
-export type CommunityFeedSort = "NEW" | "TOP" | "UNANSWERED";
-
-export interface CommunityAuthorSummary {
-  id: string;
-  displayName: string;
-  isIdentityPublic: boolean;
-  photoUrl?: string | null;
-}
-
-export interface CommunityPost {
-  id: string;
-  title: string;
-  body: string;
-  tags: string[];
-  sport: string;
-  city: string;
-  status: "OPEN" | "CLOSED";
-  voteScore: number;
-  upvoteCount: number;
-  downvoteCount: number;
-  answerCount: number;
-  viewCount: number;
-  myVote: -1 | 0 | 1;
-  createdAt: string;
-  updatedAt: string;
-  author: CommunityAuthorSummary;
-}
-
-export interface CommunityAnswer {
-  id: string;
-  postId: string;
-  content: string;
-  voteScore: number;
-  upvoteCount: number;
-  downvoteCount: number;
-  myVote: -1 | 0 | 1;
-  createdAt: string;
-  updatedAt: string;
-  author: CommunityAuthorSummary;
-}
-
-export interface CommunityPostListResponse {
-  items: CommunityPost[];
-  pagination: {
-    total: number;
-    page: number;
-    totalPages: number;
-  };
-}
-
-export interface CommunityPostDetailResponse {
-  post: CommunityPost;
-  answers: CommunityAnswer[];
-  pagination: {
-    total: number;
-    page: number;
-    totalPages: number;
-  };
-}
-
-export interface CommunityReputationSummary {
-  userId: string;
-  totalPoints: number;
-  questionCount: number;
-  answerCount: number;
-  receivedUpvotes: number;
-}
-
-export interface CommunityVoteResult {
-  targetType: "POST" | "ANSWER";
-  targetId: string;
-  postId?: string;
-  myVote: -1 | 0 | 1;
-  voteScore: number;
-  upvoteCount: number;
-  downvoteCount: number;
-}
-
-export interface CommunityActivityItem {
-  id: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  data?: {
-    event?: string;
-    postId?: string;
-    targetId?: string;
-    targetType?: "POST" | "ANSWER";
-    actorUserId?: string;
-  };
 }

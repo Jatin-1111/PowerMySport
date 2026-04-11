@@ -5,10 +5,6 @@ export interface CommunityMessageDocument extends Document {
   senderId: mongoose.Types.ObjectId;
   content: string;
   readBy: mongoose.Types.ObjectId[];
-  isDeleted: boolean;
-  deletedAt?: Date | null;
-  deletedBy?: mongoose.Types.ObjectId | null;
-  editedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,24 +36,6 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
         ref: "User",
       },
     ],
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    deletedAt: {
-      type: Date,
-      default: null,
-    },
-    deletedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-    editedAt: {
-      type: Date,
-      default: null,
-    },
   },
   { timestamps: true },
 );

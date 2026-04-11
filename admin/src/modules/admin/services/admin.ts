@@ -47,7 +47,7 @@ export interface UserSafetyRecord {
 export interface CommunityReportRecord {
   id: string;
   reporterUserId: string;
-  targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+  targetType: "MESSAGE" | "GROUP";
   targetId: string;
   reason: string;
   details?: string;
@@ -64,7 +64,7 @@ export interface PromoCodeRecord {
   description: string;
   discountType: "PERCENTAGE" | "FIXED_AMOUNT";
   discountValue: number;
-  applicableTo: "ALL" | "VENUE_ONLY" | "COACH_ONLY" | "MERCHANDISE_ONLY";
+  applicableTo: "ALL" | "VENUE_ONLY" | "COACH_ONLY";
   minBookingAmount?: number;
   maxDiscountAmount?: number;
   validFrom: string;

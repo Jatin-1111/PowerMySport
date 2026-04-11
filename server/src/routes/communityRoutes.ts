@@ -3,15 +3,7 @@ import {
   acceptConversationRequest,
   addGroupMember,
   blockUser,
-  createCommunityAnswer,
-  createCommunityPost,
   createGroup,
-  deleteMessage,
-  deleteCommunityAnswer,
-  deleteCommunityPost,
-  getCommunityPostDetails,
-  getMyCommunityReputation,
-  editMessage,
   getBlockedUsers,
   getCommunityProfile,
   getConversationMessages,
@@ -22,35 +14,26 @@ import {
   leaveGroup,
   listMyCommunityReports,
   listGroups,
-  listCommunityPosts,
   listConversations,
   rejectConversationRequest,
   reportCommunityContent,
   searchPlayers,
   sendMessage,
   startConversation,
-  updateCommunityAnswer,
-  updateCommunityPost,
   unblockUser,
   updateGroupSettings,
   updateCommunityProfile,
-  voteCommunityTarget,
 } from "../controllers/communityController";
 import { authMiddleware } from "../middleware/auth";
 import {
   communityBlockSchema,
   communityAddGroupMemberSchema,
-  communityCreateAnswerSchema,
   communityCreateGroupSchema,
-  communityCreatePostSchema,
   communityReportSchema,
   communityUpdateGroupSettingsSchema,
-  communityUpdateMessageSchema,
-  communityUpdatePostSchema,
   communitySendMessageSchema,
   communityStartConversationSchema,
   communityUpdateProfileSchema,
-  communityVoteSchema,
 } from "../middleware/schemas";
 import { validateRequest } from "../middleware/validation";
 
@@ -84,12 +67,6 @@ router.post(
   validateRequest(communitySendMessageSchema),
   sendMessage,
 );
-router.patch(
-  "/messages/:messageId",
-  validateRequest(communityUpdateMessageSchema),
-  editMessage,
-);
-router.delete("/messages/:messageId", deleteMessage);
 
 router.get("/groups", listGroups);
 router.post(
@@ -118,36 +95,5 @@ router.post(
   reportCommunityContent,
 );
 router.get("/reports/my", listMyCommunityReports);
-
-router.get("/reputation", getMyCommunityReputation);
-router.get("/posts", listCommunityPosts);
-router.get("/posts/:postId", getCommunityPostDetails);
-router.post(
-  "/posts",
-  validateRequest(communityCreatePostSchema),
-  createCommunityPost,
-);
-router.patch(
-  "/posts/:postId",
-  validateRequest(communityUpdatePostSchema),
-  updateCommunityPost,
-);
-router.delete("/posts/:postId", deleteCommunityPost);
-router.post(
-  "/posts/:postId/answers",
-  validateRequest(communityCreateAnswerSchema),
-  createCommunityAnswer,
-);
-router.patch(
-  "/answers/:answerId",
-  validateRequest(communityCreateAnswerSchema),
-  updateCommunityAnswer,
-);
-router.delete("/answers/:answerId", deleteCommunityAnswer);
-router.post(
-  "/votes",
-  validateRequest(communityVoteSchema),
-  voteCommunityTarget,
-);
 
 export default router;

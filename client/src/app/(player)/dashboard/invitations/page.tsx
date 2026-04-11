@@ -104,7 +104,7 @@ export default function InvitationsPage() {
         <div className="space-y-8">
           {/* Pending Invitations */}
           <div>
-            <h2 className="font-title text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Pending Invitations
               {pendingInvitations.length > 0 && (
@@ -113,7 +113,7 @@ export default function InvitationsPage() {
             </h2>
 
             {pendingInvitations.length === 0 ? (
-              <Card className="shop-surface premium-shadow">
+              <Card className="bg-white">
                 <EmptyState
                   icon={Clock}
                   title="No pending invitations"
@@ -125,7 +125,7 @@ export default function InvitationsPage() {
                 {pendingInvitations.map((invitation) => (
                   <Card
                     key={invitation.id}
-                    className="shop-surface premium-shadow border-l-4 border-l-orange-600 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
+                    className="bg-white border-l-4 border-l-orange-600 hover:shadow-lg transition-shadow"
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between">
@@ -209,14 +209,14 @@ export default function InvitationsPage() {
           {/* Past Invitations */}
           {respondedInvitations.length > 0 && (
             <div>
-              <h2 className="font-title text-xl font-semibold text-slate-900 mb-4">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">
                 Past Invitations
               </h2>
               <div className="space-y-4">
                 {respondedInvitations.map((invitation) => (
                   <Card
                     key={invitation.id}
-                    className="shop-surface premium-shadow opacity-80 hover:opacity-100 transition-opacity"
+                    className="bg-white opacity-75 hover:opacity-90 transition-opacity"
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between">
@@ -241,7 +241,10 @@ export default function InvitationsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-sm text-slate-600">
-                        {new Date(invitation.date).toLocaleDateString("en-US")}{" "}
+                        ",
+                        {new Date(invitation.date).toLocaleDateString(
+                          "en-US",
+                        )}{" "}
                         • {invitation.startTime} - {invitation.endTime}
                       </div>
                     </CardContent>

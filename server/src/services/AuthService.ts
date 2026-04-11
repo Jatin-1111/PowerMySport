@@ -11,11 +11,7 @@ export interface RegisterPayload {
   phone: string;
   password: string;
   role: "PLAYER" | "VENUE_LISTER" | "COACH";
-  acceptedTerms: boolean;
-  acceptedPrivacy: boolean;
 }
-
-const LEGAL_POLICY_VERSION = "2026-04";
 
 export interface LoginPayload {
   email: string;
@@ -34,19 +30,6 @@ export const registerUser = async (
   }
 
   const user = new User(payload);
-  const now = new Date();
-  user.legalConsents = {
-    terms: {
-      accepted: payload.acceptedTerms,
-      acceptedAt: now,
-      version: LEGAL_POLICY_VERSION,
-    },
-    privacy: {
-      accepted: payload.acceptedPrivacy,
-      acceptedAt: now,
-      version: LEGAL_POLICY_VERSION,
-    },
-  };
   await user.save();
 
   // Send welcome email asynchronously (don't wait for it)
@@ -145,8 +128,6 @@ export interface GoogleLoginPayload {
   photoUrl?: string;
   role?: "PLAYER" | "VENUE_LISTER" | "COACH";
   action?: "login" | "register";
-  acceptedTerms?: boolean;
-  acceptedPrivacy?: boolean;
 }
 
 export const googleLogin = async (
@@ -167,19 +148,8 @@ export const googleLogin = async (
       await user.save();
     } else {
       if (payload.action === "login") {
-        throw new Error(
-          "Account not found. Please sign up on the Register page.",
-        );
+        throw new Error("Account not found. Please sign up on the Register page.");
       }
-
-      if (!payload.acceptedTerms || !payload.acceptedPrivacy) {
-        throw new Error(
-          "You must accept Terms of Service and Privacy Policy to register.",
-        );
-      }
-
-      const now = new Date();
-
       // Create new user
       // Generate unique phone from Google ID to avoid phone field collision
       const uniquePhoneId = `goog_${payload.googleId.slice(0, 15)}_${Date.now()}`;
@@ -191,18 +161,6 @@ export const googleLogin = async (
         photoUrl: payload.photoUrl,
         phone: uniquePhoneId, // Unique ID instead of fake phone number
         role: payload.role || "PLAYER",
-        legalConsents: {
-          terms: {
-            accepted: true,
-            acceptedAt: now,
-            version: LEGAL_POLICY_VERSION,
-          },
-          privacy: {
-            accepted: true,
-            acceptedAt: now,
-            version: LEGAL_POLICY_VERSION,
-          },
-        },
       });
       await user.save();
 

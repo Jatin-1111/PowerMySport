@@ -79,9 +79,9 @@ export const Navigation: React.FC<NavProps> = ({
   return (
     <nav
       className={cn(
-        "border-b border-white/60 bg-white/75 backdrop-blur-xl text-slate-900 transition-all duration-300",
+        "border-b border-white/10 bg-deep-slate/95 backdrop-blur-md text-white transition-all duration-300",
         sticky && "sticky top-0 z-50 shadow-sm",
-        variant === "dark" && "bg-white/80 text-slate-900",
+        variant === "dark" && "bg-deep-slate text-white",
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -97,9 +97,9 @@ export const Navigation: React.FC<NavProps> = ({
                 className="h-36 w-auto"
                 priority
               /> */}
-              <span className="font-title text-2xl font-extrabold tracking-tight leading-none">
+              <span className="text-2xl font-extrabold tracking-tight leading-none">
                 <span className="text-power-orange">Power</span>
-                <span className="text-slate-900">MySport</span>
+                <span className="text-white">MySport</span>
               </span>
             </Link>
           </div>
@@ -111,8 +111,9 @@ export const Navigation: React.FC<NavProps> = ({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "shop-nav-link font-medium",
-                  isActive(link.href) && "bg-indigo-50 text-power-orange",
+                  "text-white hover:text-power-orange transition-colors font-medium",
+                  isActive(link.href) &&
+                    "text-power-orange border-b-2 border-power-orange",
                 )}
               >
                 {link.label}
@@ -207,7 +208,7 @@ export const Navigation: React.FC<NavProps> = ({
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-slate-800 hover:text-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange p-2 rounded-md"
+              className="text-white hover:text-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange p-2 rounded-md"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -227,102 +228,100 @@ export const Navigation: React.FC<NavProps> = ({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden border-t border-slate-200 overflow-hidden bg-white/95"
+            className="md:hidden border-t border-white/10 overflow-hidden"
           >
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigationLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
-                    isActive(link.href)
-                      ? "text-power-orange bg-orange-50"
-                      : "text-slate-700",
-                  )}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
+            {navigationLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "block px-3 py-2 rounded-md text-base font-medium hover:bg-muted transition-colors",
+                  isActive(link.href)
+                    ? "text-power-orange bg-orange-50"
+                    : "text-slate-100",
+                )}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
 
-              {/* Mobile Auth Buttons */}
-              <div className="pt-4 pb-2 space-y-2">
-                {user ? (
-                  <>
-                    <div className="px-3 py-2 border-b border-border">
-                      <p className="text-sm font-medium text-slate-900">
-                        {user.name}
-                      </p>
-                      <p className="text-xs mt-1 text-slate-500">
-                        {user.email}
-                      </p>
-                    </div>
+            {/* Mobile Auth Buttons */}
+            <div className="pt-4 pb-2 space-y-2">
+              {user ? (
+                <>
+                  <div className="px-3 py-2 border-b border-border">
+                    <p className="text-sm font-medium text-slate-100">
+                      {user.name}
+                    </p>
+                    <p className="text-xs mt-1 text-slate-300">{user.email}</p>
+                  </div>
 
-                    <Link href={getDashboardLink() || "/"}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="justify-start"
-                      >
-                        <LayoutDashboard className="w-4 h-4 mr-2" />
-                        Dashboard
-                      </Button>
-                    </Link>
-
-                    <Link href="/settings">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="justify-start"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Settings
-                      </Button>
-                    </Link>
-
+                  <Link href={getDashboardLink() || "/"}>
                     <Button
                       variant="ghost"
                       size="sm"
                       fullWidth
-                      onClick={handleLogout}
-                      className="justify-start text-error-red"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="justify-start"
                     >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
                     </Button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Login
-                      </Button>
-                    </Link>
-                    <Link href="/register">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Get Started
-                      </Button>
-                    </Link>
-                  </>
-                )}
-              </div>
+                  </Link>
+
+                  <Link href="/settings">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="justify-start"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Button>
+                  </Link>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    fullWidth
+                    onClick={handleLogout}
+                    className="justify-start text-error-red"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
         )}
       </AnimatePresence>
     </nav>

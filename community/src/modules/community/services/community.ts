@@ -1,19 +1,10 @@
 import axiosInstance from "@/lib/api/axios";
 import {
-  BlockedUser,
-  CommunityAnswer,
   CommunityGroupSummary,
-  CommunityPost,
-  CommunityPostDetailResponse,
-  CommunityPostListResponse,
   CommunityProfile,
-  CommunityReputationSummary,
-  CommunityActivityItem,
-  CommunityVoteResult,
   ConversationListResponse,
   ConversationItem,
   ConversationMessage,
-  CommunityFeedSort,
   MessagePrivacy,
   PlayerSearchResult,
 } from "../types";
@@ -146,33 +137,6 @@ const buildMessagesKey = (conversationId: string) =>
 
 const buildGroupsKey = (query: string) =>
   `groups:${query.trim().toLowerCase()}`;
-const buildPostsKey = (
-  page: number,
-  limit: number,
-  params?: {
-    sort?: CommunityFeedSort;
-    q?: string;
-    tag?: string;
-    sport?: string;
-    city?: string;
-    mine?: boolean;
-  },
-) =>
-  [
-    "posts",
-    String(page),
-    String(limit),
-    params?.sort || "",
-    params?.q || "",
-    params?.tag || "",
-    params?.sport || "",
-    params?.city || "",
-    params?.mine ? "mine" : "all",
-  ].join(":");
-const buildPostDetailsKey = (postId: string, page: number, limit: number) =>
-  `post:${postId}:${page}:${limit}`;
-
-const BLOCKED_USERS_CACHE_KEY = "blocked-users";
 
 export const communityService = {
   async ensureSession(): Promise<AuthBridgeSession> {
@@ -220,49 +184,6 @@ export const communityService = {
       payload,
     );
     clearCacheByPrefixes(["profile"]);
-    return response.data.data;
-  },
-
-  async getBlockedUsers(): Promise<BlockedUser[]> {
-    return withRequestCache(
-      BLOCKED_USERS_CACHE_KEY,
-      async () => {
-        const response = await axiosInstance.get<ApiResponse<BlockedUser[]>>(
-          "/community/blocked-users",
-        );
-        return response.data.data;
-      },
-      3000,
-    );
-  },
-
-  async blockUser(targetUserId: string): Promise<{ blockedUserId: string }> {
-    const response = await axiosInstance.post<
-      ApiResponse<{ blockedUserId: string }>
-    >("/community/block", {
-      targetUserId,
-    });
-    clearCacheByPrefixes([
-      BLOCKED_USERS_CACHE_KEY,
-      "conversations",
-      "messages:",
-    ]);
-    return response.data.data;
-  },
-
-  async unblockUser(
-    targetUserId: string,
-  ): Promise<{ unblockedUserId: string }> {
-    const response = await axiosInstance.post<
-      ApiResponse<{ unblockedUserId: string }>
-    >("/community/unblock", {
-      targetUserId,
-    });
-    clearCacheByPrefixes([
-      BLOCKED_USERS_CACHE_KEY,
-      "conversations",
-      "messages:",
-    ]);
     return response.data.data;
   },
 
@@ -406,25 +327,6 @@ export const communityService = {
     return response.data.data;
   },
 
-  async editMessage(
-    messageId: string,
-    content: string,
-  ): Promise<ConversationMessage> {
-    const response = await axiosInstance.patch<
-      ApiResponse<ConversationMessage>
-    >(`/community/messages/${messageId}`, { content });
-    clearCacheByPrefixes(["conversations", "messages:"]);
-    return response.data.data;
-  },
-
-  async deleteMessage(messageId: string): Promise<ConversationMessage> {
-    const response = await axiosInstance.delete<
-      ApiResponse<ConversationMessage>
-    >(`/community/messages/${messageId}`);
-    clearCacheByPrefixes(["conversations", "messages:"]);
-    return response.data.data;
-  },
-
   async listGroups(query = ""): Promise<CommunityGroupSummary[]> {
     return withRequestCache(
       buildGroupsKey(query),
@@ -528,21 +430,21 @@ export const communityService = {
   },
 
   async reportContent(payload: {
-    targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+    targetType: "MESSAGE" | "GROUP";
     targetId: string;
     reason: string;
     details?: string;
   }): Promise<{
     id: string;
     status: string;
-    targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+    targetType: "MESSAGE" | "GROUP";
     createdAt: string;
   }> {
     const response = await axiosInstance.post<
       ApiResponse<{
         id: string;
         status: string;
-        targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+        targetType: "MESSAGE" | "GROUP";
         createdAt: string;
       }>
     >("/community/reports", payload);
@@ -555,7 +457,7 @@ export const communityService = {
   ): Promise<{
     items: Array<{
       id: string;
-      targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+      targetType: "MESSAGE" | "GROUP";
       targetId: string;
       reason: string;
       details?: string;
@@ -563,15 +465,6 @@ export const communityService = {
       resolutionNote?: string;
       createdAt: string;
       reviewedAt?: string | null;
-      messageAudit?: {
-        senderId?: string;
-        createdAt?: string | null;
-        updatedAt?: string | null;
-        editedAt?: string | null;
-        deletedAt?: string | null;
-        wasEdited: boolean;
-        wasDeleted: boolean;
-      };
     }>;
     pagination?: {
       total: number;
@@ -583,7 +476,7 @@ export const communityService = {
       ApiResponse<
         Array<{
           id: string;
-          targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+          targetType: "MESSAGE" | "GROUP";
           targetId: string;
           reason: string;
           details?: string;
@@ -591,15 +484,6 @@ export const communityService = {
           resolutionNote?: string;
           createdAt: string;
           reviewedAt?: string | null;
-          messageAudit?: {
-            senderId?: string;
-            createdAt?: string | null;
-            updatedAt?: string | null;
-            editedAt?: string | null;
-            deletedAt?: string | null;
-            wasEdited: boolean;
-            wasDeleted: boolean;
-          };
         }>
       >
     >("/community/reports/my", { params: { page, limit } });
@@ -664,204 +548,6 @@ export const communityService = {
         inviteCode: string;
       }>
     >(`/community/groups/${groupId}/invite-code`);
-    return response.data.data;
-  },
-
-  async getMyReputation(): Promise<CommunityReputationSummary> {
-    return withRequestCache(
-      "reputation:me",
-      async () => {
-        const response = await axiosInstance.get<
-          ApiResponse<CommunityReputationSummary>
-        >("/community/reputation");
-        return response.data.data;
-      },
-      5000,
-    );
-  },
-
-  async listPosts(
-    page = 1,
-    limit = 20,
-    params?: {
-      sort?: CommunityFeedSort;
-      q?: string;
-      tag?: string;
-      sport?: string;
-      city?: string;
-      mine?: boolean;
-    },
-  ): Promise<CommunityPostListResponse> {
-    const cacheKey = buildPostsKey(page, limit, params);
-    return withRequestCache(cacheKey, async () => {
-      const response = await axiosInstance.get<
-        ApiResponse<CommunityPostListResponse>
-      >("/community/posts", {
-        params: {
-          page,
-          limit,
-          ...(params?.sort ? { sort: params.sort } : {}),
-          ...(params?.q ? { q: params.q } : {}),
-          ...(params?.tag ? { tag: params.tag } : {}),
-          ...(params?.sport ? { sport: params.sport } : {}),
-          ...(params?.city ? { city: params.city } : {}),
-          ...(params?.mine ? { mine: true } : {}),
-        },
-      });
-      return response.data.data;
-    });
-  },
-
-  async listMyKnowledgeActivity(limit = 20): Promise<CommunityActivityItem[]> {
-    return withRequestCache(`qna-activity:${limit}`, async () => {
-      const response = await axiosInstance.get<{
-        success: boolean;
-        data: Array<{
-          _id: string;
-          title: string;
-          message: string;
-          isRead: boolean;
-          createdAt: string;
-          data?: {
-            event?: string;
-            postId?: string;
-            targetId?: string;
-            targetType?: "POST" | "ANSWER";
-            actorUserId?: string;
-          };
-        }>;
-      }>("/notifications", {
-        params: {
-          category: "COMMUNITY",
-          limit,
-        },
-      });
-
-      return (response.data.data || []).map((item) => ({
-        id: item._id,
-        title: item.title,
-        message: item.message,
-        isRead: item.isRead,
-        createdAt: item.createdAt,
-        data: item.data,
-      }));
-    });
-  },
-
-  async getPostDetails(
-    postId: string,
-    page = 1,
-    limit = 30,
-  ): Promise<CommunityPostDetailResponse> {
-    return withRequestCache(
-      buildPostDetailsKey(postId, page, limit),
-      async () => {
-        const response = await axiosInstance.get<
-          ApiResponse<CommunityPostDetailResponse>
-        >(`/community/posts/${postId}`, {
-          params: { page, limit },
-        });
-        return response.data.data;
-      },
-    );
-  },
-
-  async createPost(payload: {
-    title: string;
-    body: string;
-    tags?: string[];
-    sport?: string;
-    city?: string;
-  }): Promise<CommunityPost> {
-    const response = await axiosInstance.post<ApiResponse<CommunityPost>>(
-      "/community/posts",
-      payload,
-    );
-    clearCacheByPrefixes(["posts", "reputation:me", "qna-activity"]);
-    return response.data.data;
-  },
-
-  async updatePost(
-    postId: string,
-    payload: {
-      title?: string;
-      body?: string;
-      tags?: string[];
-      status?: "OPEN" | "CLOSED";
-      sport?: string;
-      city?: string;
-    },
-  ): Promise<CommunityPost> {
-    const response = await axiosInstance.patch<ApiResponse<CommunityPost>>(
-      `/community/posts/${postId}`,
-      payload,
-    );
-    clearCacheByPrefixes(["posts", `post:${postId}:`, "qna-activity"]);
-    return response.data.data;
-  },
-
-  async deletePost(postId: string): Promise<{ id: string; deleted: boolean }> {
-    const response = await axiosInstance.delete<
-      ApiResponse<{ id: string; deleted: boolean }>
-    >(`/community/posts/${postId}`);
-    clearCacheByPrefixes([
-      "posts",
-      `post:${postId}:`,
-      "reputation:me",
-      "qna-activity",
-    ]);
-    return response.data.data;
-  },
-
-  async createAnswer(
-    postId: string,
-    content: string,
-  ): Promise<CommunityAnswer> {
-    const response = await axiosInstance.post<ApiResponse<CommunityAnswer>>(
-      `/community/posts/${postId}/answers`,
-      { content },
-    );
-    clearCacheByPrefixes([
-      "posts",
-      `post:${postId}:`,
-      "reputation:me",
-      "qna-activity",
-    ]);
-    return response.data.data;
-  },
-
-  async updateAnswer(
-    answerId: string,
-    content: string,
-  ): Promise<CommunityAnswer> {
-    const response = await axiosInstance.patch<ApiResponse<CommunityAnswer>>(
-      `/community/answers/${answerId}`,
-      { content },
-    );
-    clearCacheByPrefixes(["posts", "post:", "qna-activity"]);
-    return response.data.data;
-  },
-
-  async deleteAnswer(
-    answerId: string,
-  ): Promise<{ id: string; postId: string; deleted: boolean }> {
-    const response = await axiosInstance.delete<
-      ApiResponse<{ id: string; postId: string; deleted: boolean }>
-    >(`/community/answers/${answerId}`);
-    clearCacheByPrefixes(["posts", "post:", "qna-activity"]);
-    return response.data.data;
-  },
-
-  async vote(payload: {
-    targetType: "POST" | "ANSWER";
-    targetId: string;
-    value: 1 | -1;
-  }): Promise<CommunityVoteResult> {
-    const response = await axiosInstance.post<ApiResponse<CommunityVoteResult>>(
-      "/community/votes",
-      payload,
-    );
-    clearCacheByPrefixes(["posts", "post:", "reputation:me", "qna-activity"]);
     return response.data.data;
   },
 };

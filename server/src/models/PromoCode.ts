@@ -7,7 +7,7 @@ export interface PromoCodeDocument extends Document {
   discountValue: number; // Percentage (1-100) or fixed amount
 
   // Applicability
-  applicableTo: "ALL" | "VENUE_ONLY" | "COACH_ONLY" | "MERCHANDISE_ONLY";
+  applicableTo: "ALL" | "VENUE_ONLY" | "COACH_ONLY";
   minBookingAmount?: number;
   maxDiscountAmount?: number; // Cap for percentage discounts
 
@@ -24,8 +24,7 @@ export interface PromoCodeDocument extends Document {
   // Tracking
   usedBy: Array<{
     userId: mongoose.Types.ObjectId;
-    bookingId?: mongoose.Types.ObjectId;
-    orderId?: mongoose.Types.ObjectId;
+    bookingId: mongoose.Types.ObjectId;
     discountApplied: number;
     usedAt: Date;
   }>;
@@ -60,7 +59,7 @@ const promoCodeSchema = new Schema<PromoCodeDocument>(
     },
     applicableTo: {
       type: String,
-      enum: ["ALL", "VENUE_ONLY", "COACH_ONLY", "MERCHANDISE_ONLY"],
+      enum: ["ALL", "VENUE_ONLY", "COACH_ONLY"],
       default: "ALL",
     },
     minBookingAmount: {
@@ -106,10 +105,7 @@ const promoCodeSchema = new Schema<PromoCodeDocument>(
         bookingId: {
           type: Schema.Types.ObjectId,
           ref: "Booking",
-        },
-        orderId: {
-          type: Schema.Types.ObjectId,
-          ref: "Order",
+          required: true,
         },
         discountApplied: {
           type: Number,

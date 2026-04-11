@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import {
   friendService,
   Friend,
@@ -283,7 +282,7 @@ export default function FriendsPage() {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-3 shop-surface border border-white/60 h-auto p-1 premium-shadow">
+          <TabsList className="grid w-full grid-cols-3 bg-white border border-slate-200 h-auto p-1">
             <TabsTrigger
               value="friends"
               className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-3"
@@ -337,7 +336,7 @@ export default function FriendsPage() {
                 {friends.map((friend) => (
                   <Card
                     key={friend.id}
-                    className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                    className="bg-white hover:shadow-lg transition-shadow"
                   >
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
@@ -417,11 +416,9 @@ export default function FriendsPage() {
                   </div>
                 ) : (
                   pendingRequests.map((request) => (
-                    <motion.div
+                    <div
                       key={request.id}
-                      className="flex items-center justify-between p-4 border border-white/70 rounded-xl bg-white/80 hover:bg-white transition-colors"
-                      whileHover={{ y: -2 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
                         <Avatar>
@@ -455,7 +452,7 @@ export default function FriendsPage() {
                           Decline
                         </Button>
                       </div>
-                    </motion.div>
+                    </div>
                   ))
                 )}
               </CardContent>
@@ -481,11 +478,9 @@ export default function FriendsPage() {
                   </div>
                 ) : (
                   sentRequests.map((request) => (
-                    <motion.div
+                    <div
                       key={request.id}
-                      className="flex items-center justify-between p-4 border border-white/70 rounded-xl bg-white/80 hover:bg-white transition-colors"
-                      whileHover={{ y: -2 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center gap-4">
                         <Avatar>
@@ -501,7 +496,7 @@ export default function FriendsPage() {
                           <p className="text-sm text-slate-600">Pending...</p>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   ))
                 )}
               </CardContent>
@@ -553,11 +548,9 @@ export default function FriendsPage() {
                       {searchResults.length !== 1 ? "s" : ""} found
                     </p>
                     {searchResults.map((user) => (
-                      <motion.div
+                      <div
                         key={user.id}
-                        className="flex items-center justify-between p-4 border border-white/70 rounded-xl bg-white/80 hover:bg-white transition-colors"
-                        whileHover={{ y: -2 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
                       >
                         <div className="flex items-center gap-4">
                           <Avatar>
@@ -596,7 +589,7 @@ export default function FriendsPage() {
                             </Button>
                           )}
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 )}

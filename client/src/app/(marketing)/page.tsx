@@ -51,37 +51,37 @@ export default function HomePage() {
     {
       title: "Book Premium Venues",
       description:
-        "Discover top-rated venues with live availability. From badminton courts to cricket grounds, book the right space near you in minutes.",
+        "Discover and book thousands of sports venues with real-time availability. From badminton courts to cricket grounds, find the perfect facility near you instantly.",
       icon: FeatureIcons.Location,
     },
     {
       title: "Professional Coach Booking",
       description:
-        "Connect with certified coaches for personalized training plans. Book coaching and venue sessions together for a seamless routine.",
+        "Connect with certified coaches for personalized training. Book coaching sessions alongside your venue bookings for complete sports experience.",
       icon: FeatureIcons.Users,
     },
     {
       title: "Manage Your Kids' Sports",
       description:
-        "Keep every child profile in one dashboard. Manage dependents, schedules, and sessions without juggling multiple apps.",
+        "Track and manage your children's sports activities in one place. Add dependents, manage their profiles, and coordinate their training and bookings effortlessly.",
       icon: FeatureIcons.Users,
     },
     {
       title: "Secure Payment System",
       description:
-        "Pay securely with transparent pricing and no hidden charges. Receive instant confirmations and digital QR access every time.",
+        "Pay safely with our integrated payment system. Transparent pricing with no hidden fees. Get instant booking confirmations with digital QR codes.",
       icon: FeatureIcons.Shield,
     },
     {
       title: "Instant Digital Check-in",
       description:
-        "Skip paperwork and long queues. Use your digital pass to check in quickly and start your session on time.",
+        "Receive booking confirmation with QR codes. Check-in seamlessly at venues with your digital pass. No paperwork, no delays.",
       icon: FeatureIcons.Lightning,
     },
     {
       title: "Flexible & Transparent Pricing",
       description:
-        "Compare pricing across venues and coaches before you book. Choose options that match your budget and schedule.",
+        "Compare prices across venues and coaches. Enjoy competitive rates with transparent fee structures. No hidden charges ever.",
       icon: FeatureIcons.CreditCard,
     },
   ];
@@ -114,21 +114,21 @@ export default function HomePage() {
   const testimonials = [
     {
       quote:
-        "PowerMySport made training logistics simple for our family. I manage both my son and daughter's schedules, and coach bookings happen in the same flow.",
+        "PowerMySport makes booking venues for my kids' training incredibly simple. I manage both my son and daughter's schedules, and I can even book their coach at the same venue. Game-changer for busy parents!",
       author: "Anjali Patel",
       role: "Parent & Player",
       rating: 5,
     },
     {
       quote:
-        "As a venue owner, this platform transformed our operations. Real-time visibility and smoother bookings helped us grow revenue significantly.",
+        "As a venue owner, this platform transformed our business. The analytics dashboard shows real-time bookings, and we've seen a 40% increase in revenue. Highly recommended!",
       author: "Priya Sharma",
       role: "Venue Owner",
       rating: 5,
     },
     {
       quote:
-        "I scaled from a few students to a full weekly roster through PowerMySport. Managing availability and connecting with committed athletes is now effortless.",
+        "I went from coaching 3 students to 15+ through PowerMySport. I can manage my availability, set my rates, and connect with serious athletes looking for professional training. Best platform out there!",
       author: "Vikram Singh",
       role: "Professional Coach",
       rating: 5,
@@ -158,9 +158,9 @@ export default function HomePage() {
       {/* Hero Section */}
       <Hero
         variant="home"
-        title="Every Match, Session, and Coach in One Place"
+        title="Power Your Sports Journey"
         subtitle="India's Premier Sports Booking Platform"
-        description="Discover venues, book trusted coaches, and manage your entire sports routine from one streamlined platform."
+        description="Book sports facilities, coaches, experts and tournaments. All on one platform!"
         primaryCTA={{
           label: user ? "Go to Dashboard" : "Start Booking Now",
           href: getDashboardLink(),
@@ -181,9 +181,9 @@ export default function HomePage() {
 
       {/* Features Section */}
       <Features
-        title="Everything You Need To Train, Play, and Improve"
+        title="Everything You Need to Power Your Game"
         subtitle="Why Choose PowerMySport"
-        description="Built for players, parents, coaches, and venue partners who want speed, clarity, and reliability in every booking."
+        description="We've built the ultimate platform for players, venue owners, and coaches. Here's what makes us different."
         features={features}
         columns={3}
         variant="centered"
@@ -193,24 +193,25 @@ export default function HomePage() {
       <Stats stats={stats} variant="gradient" columns={4} />
 
       {/* Parent-Child Management Highlight Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
+      <section className="py-16 sm:py-20 lg:py-24 bg-linear-to-br from-blue-50 to-indigo-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
+            <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wide mb-3">
               For Parents & Guardians
             </p>
-            <h2 className="font-title mb-4 text-3xl font-bold text-deep-slate sm:text-4xl lg:text-5xl">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-deep-slate mb-4">
               Manage Your Kids' Sports Journey
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Add multiple child profiles and handle bookings, training plans,
-              and progress tracking from one simple parent dashboard.
+              Add unlimited dependents (children) and manage all their sports
+              activities, bookings, and coaching sessions in one unified
+              dashboard.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 transition-transform group-hover:scale-110">
+            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200">
+              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6">
                 <Users2 size={28} />
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3">
@@ -222,8 +223,8 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 transition-transform group-hover:scale-110">
+            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200">
+              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6">
                 <Trophy size={28} />
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3">
@@ -235,8 +236,8 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 transition-transform group-hover:scale-110">
+            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200">
+              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6">
                 <Zap size={28} />
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3">
@@ -252,57 +253,57 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
+      <section className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
+            <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
               Simple Process
             </p>
-            <h2 className="font-title mb-4 text-3xl font-bold text-deep-slate sm:text-4xl lg:text-5xl">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-deep-slate mb-4">
               How It Works
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Start in minutes with a simple three-step flow
+              Get started with PowerMySport in just three simple steps
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6 transition-transform group-hover:scale-110">
+            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200">
+              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
                 1
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
                 Create Your Account
               </h3>
               <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Create your account as a player, coach, or venue partner in
-                under two minutes.
+                Sign up as a player, venue owner, or coach. Takes less than 2
+                minutes.
               </p>
             </div>
 
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6 transition-transform group-hover:scale-110">
+            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200">
+              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
                 2
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
                 Search Venues & Coaches
               </h3>
               <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Filter by sport, location, availability, and pricing to find the
-                best match.
+                Browse venues by sport, location, and availability. Filter by
+                coaches and compare prices.
               </p>
             </div>
 
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6 transition-transform group-hover:scale-110">
+            <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200">
+              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
                 3
               </div>
               <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
                 Book & Start Playing
               </h3>
               <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Complete payment, get instant confirmation, and check in with a
-                QR code.
+                Complete secure payment and receive instant confirmation. Show
+                QR code and play!
               </p>
             </div>
           </div>
@@ -318,23 +319,22 @@ export default function HomePage() {
 
       {/* Multi-Role CTA Section - Only show if user is NOT logged in */}
       {!user && (
-        <section className="py-16 sm:py-20 lg:py-24">
+        <section className="py-16 sm:py-20 lg:py-24 bg-linear-to-r from-slate-900 to-slate-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl">
-                Join PowerMySport
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                Join PowerMySport Today
               </h2>
-              <p className="text-lg text-slate-600">
-                Choose your role and unlock better training and booking
-                experiences
+              <p className="text-lg text-slate-300">
+                Choose your role and unlock unlimited sports opportunities
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* ... (Previous Player/Venue/Coach cards content kept same) ... */}
               {/* Player Card */}
-              <div className="group shop-surface rounded-2xl p-8 premium-shadow flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-                <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6 transition-transform group-hover:scale-110">
+              <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200 flex flex-col">
+                <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6">
                   <UserIcon size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
@@ -368,18 +368,18 @@ export default function HomePage() {
                 </ul>
                 <a
                   href="/register?role=PLAYER"
-                  className="inline-block w-full rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-slate-700"
+                  className="inline-block bg-power-orange text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors w-full text-center"
                 >
                   Start Booking Now
                 </a>
               </div>
 
               {/* Venue Owner Card - Highlighted */}
-              <div className="group shop-surface relative flex flex-col rounded-2xl border-2 border-power-orange p-8 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg md:scale-105">
+              <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow border-2 border-power-orange transform md:scale-105 flex flex-col relative">
                 <div className="absolute top-0 right-0 bg-power-orange text-white px-4 py-1 rounded-bl-lg rounded-tr-xl text-xs font-bold">
                   FEATURED
                 </div>
-                <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6 transition-transform group-hover:scale-110">
+                <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6">
                   <Building2 size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
@@ -413,15 +413,15 @@ export default function HomePage() {
                 </ul>
                 <a
                   href="/onboarding"
-                  className="inline-block w-full rounded-xl bg-power-orange px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-orange-600"
+                  className="inline-block bg-power-orange text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors w-full text-center"
                 >
                   List Your Venue
                 </a>
               </div>
 
               {/* Coach Card */}
-              <div className="group shop-surface rounded-2xl p-8 premium-shadow flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-                <div className="w-16 h-16 bg-turf-green text-white rounded-full flex items-center justify-center mx-auto mb-6 transition-transform group-hover:scale-110">
+              <div className="bg-white rounded-xl p-8 shadow-md hover:shadow-lg transition-shadow border border-slate-200 flex flex-col">
+                <div className="w-16 h-16 bg-turf-green text-white rounded-full flex items-center justify-center mx-auto mb-6">
                   <Trophy size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
@@ -455,7 +455,7 @@ export default function HomePage() {
                 </ul>
                 <a
                   href="/register?role=COACH"
-                  className="inline-block w-full rounded-xl bg-turf-green px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-green-700"
+                  className="inline-block bg-turf-green text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors w-full text-center"
                 >
                   Become a Coach
                 </a>
@@ -467,23 +467,20 @@ export default function HomePage() {
 
       {/* Final CTA */}
       {/* Explore Section */}
-      <section className="py-12 px-4">
+      <section className="py-12 px-4 bg-white">
         <div className="container mx-auto">
-          <h2 className="font-title text-3xl font-bold text-center mb-2 text-slate-900">
+          <h2 className="text-3xl font-bold text-center mb-2 text-slate-900">
             Start Exploring
           </h2>
           <p className="text-center text-slate-600 mb-8">
-            Browse venues and coaches to plan your next session with confidence
+            Browse our listings and find what you need to start playing today
           </p>
           <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
             <a
               href="/venues"
-              className="group rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#fff9ef_0%,#fff3db_100%)] p-6 text-center premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+              className="bg-linear-to-br from-orange-50 to-orange-100 border-2 border-power-orange rounded-lg p-6 text-center hover:shadow-lg transition-shadow"
             >
-              <Building2
-                size={40}
-                className="mx-auto mb-3 text-power-orange transition-transform group-hover:scale-110"
-              />
+              <Building2 size={40} className="mx-auto mb-3 text-power-orange" />
               <h3 className="text-xl font-bold text-slate-900 mb-2">
                 Browse Venues
               </h3>
@@ -496,12 +493,9 @@ export default function HomePage() {
             </a>
             <a
               href="/coaches"
-              className="group rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f2fff7_0%,#e5f8ef_100%)] p-6 text-center premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+              className="bg-linear-to-br from-green-50 to-green-100 border-2 border-turf-green rounded-lg p-6 text-center hover:shadow-lg transition-shadow"
             >
-              <Users
-                size={40}
-                className="mx-auto mb-3 text-turf-green transition-transform group-hover:scale-110"
-              />
+              <Users size={40} className="mx-auto mb-3 text-turf-green" />
               <h3 className="text-xl font-bold text-slate-900 mb-2">
                 Find Coaches
               </h3>
@@ -521,12 +515,12 @@ export default function HomePage() {
         title={
           user
             ? "Ready for Your Next Game?"
-            : "Ready to Start Your Sports Journey?"
+            : "Ready to Power Your Sports Experience?"
         }
         description={
           user
-            ? "Book your next venue or coach session and stay in rhythm."
-            : "Join thousands of players, coaches, and venue partners already building better sports experiences with PowerMySport."
+            ? "Book a venue or coach now and get back in the game!"
+            : "Join thousands of players, venues, and coaches already using PowerMySport. Get started today!"
         }
         primaryCTA={{
           label: user ? "Go to Dashboard" : "Get Started Free",

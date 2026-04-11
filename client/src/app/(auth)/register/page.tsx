@@ -24,8 +24,6 @@ function RegisterContent() {
     password: "",
     role: roleParam as "PLAYER" | "VENUE_LISTER" | "COACH",
     serviceMode: "OWN_VENUE" as "OWN_VENUE" | "FREELANCE" | "HYBRID",
-    acceptedTerms: false,
-    acceptedPrivacy: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,13 +32,10 @@ function RegisterContent() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
-    const { name, value, type } = e.target;
-    const nextValue =
-      type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
-
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: nextValue,
+      [name]: value,
     }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -54,10 +49,6 @@ function RegisterContent() {
     if (!formData.phone) newErrors.phone = "Phone is required";
     if (formData.password.length < 8)
       newErrors.password = "Password must be at least 8 characters";
-    if (!formData.acceptedTerms)
-      newErrors.acceptedTerms = "You must accept Terms of Service";
-    if (!formData.acceptedPrivacy)
-      newErrors.acceptedPrivacy = "You must accept Privacy Policy";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -110,20 +101,6 @@ function RegisterContent() {
     credential?: string;
   }) => {
     try {
-      if (!formData.acceptedTerms || !formData.acceptedPrivacy) {
-        setErrors((prev) => ({
-          ...prev,
-          acceptedTerms: formData.acceptedTerms
-            ? ""
-            : "You must accept Terms of Service",
-          acceptedPrivacy: formData.acceptedPrivacy
-            ? ""
-            : "You must accept Privacy Policy",
-        }));
-        toast.error("Please accept Terms and Privacy Policy first");
-        return;
-      }
-
       setLoading(true);
       if (!credentialResponse.credential) {
         toast.error("No credential received from Google");
@@ -141,8 +118,6 @@ function RegisterContent() {
         photoUrl: decoded.picture,
         role: formData.role,
         action: "register",
-        acceptedTerms: formData.acceptedTerms,
-        acceptedPrivacy: formData.acceptedPrivacy,
       });
 
       if (response.success && response.data) {
@@ -179,262 +154,200 @@ function RegisterContent() {
       clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
     >
       <SlideUp duration={0.6} yOffset={20}>
-        <Card className="w-full glass-panel-heavy premium-shadow border-0">
-          <CardHeader>
-            <h1 className="text-3xl font-bold text-center text-slate-900 dark:text-white">
-              Create Account
-            </h1>
-            <p className="text-center text-slate-600 dark:text-slate-300 mt-2">
-              Join PowerMySport and start your journey
-            </p>
-          </CardHeader>
+      <Card className="w-full glass-panel-heavy premium-shadow border-0">
+        <CardHeader>
+          <h1 className="text-3xl font-bold text-center text-slate-900 dark:text-white">
+            Create Account
+          </h1>
+          <p className="text-center text-slate-600 dark:text-slate-300 mt-2">
+            Join PowerMySport and start your journey
+          </p>
+        </CardHeader>
 
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
-                    errors.name
-                      ? "border-red-500"
-                      : "border-slate-300 dark:border-slate-600"
-                  }`}
-                  placeholder="John Doe"
-                />
-                {errors.name && (
-                  <p className="text-red-500 text-sm mt-1.5">{errors.name}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
-                    errors.email
-                      ? "border-red-500"
-                      : "border-slate-300 dark:border-slate-600"
-                  }`}
-                  placeholder="your@email.com"
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1.5">{errors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
-                    errors.phone
-                      ? "border-red-500"
-                      : "border-slate-300 dark:border-slate-600"
-                  }`}
-                  placeholder="9876543210"
-                />
-                {errors.phone && (
-                  <p className="text-red-500 text-sm mt-1.5">{errors.phone}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
-                      errors.password
-                        ? "border-red-500"
-                        : "border-slate-300 dark:border-slate-600"
-                    }`}
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    title="Toggle password visibility"
-                    aria-label="Toggle password visibility"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="text-red-500 text-sm mt-1.5">
-                    {errors.password}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                  Account Type
-                </label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all"
-                >
-                  <option value="PLAYER">Player (Book Venues & Coaches)</option>
-                  <option value="COACH">Coach (Offer Coaching Services)</option>
-                </select>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                  Want to list your venue?{" "}
-                  <Link
-                    href="/onboarding"
-                    className="text-power-orange hover:text-orange-600 transition-colors bg-transparent border-0 font-semibold"
-                  >
-                    Submit an inquiry
-                  </Link>
-                </p>
-              </div>
-
-              {formData.role === "COACH" && (
-                <SlideUp duration={0.4} yOffset={10}>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
-                      Coaching Service Mode
-                    </label>
-                    <select
-                      name="serviceMode"
-                      value={formData.serviceMode}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all"
-                    >
-                      <option value="OWN_VENUE">
-                        Own Venue (Coach at your own location)
-                      </option>
-                      <option value="FREELANCE">
-                        Freelance (Travel to player locations)
-                      </option>
-                      <option value="HYBRID">
-                        Hybrid (Own venue or travel)
-                      </option>
-                    </select>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                      {formData.serviceMode === "OWN_VENUE" &&
-                        "Your venue details will be stored for booking context. Want to rent out your space separately? Register as a Venue Lister instead."}
-                      {formData.serviceMode === "FREELANCE" &&
-                        "Travel to players for coaching sessions."}
-                      {formData.serviceMode === "HYBRID" &&
-                        "Coach at your venue or travel to players."}
-                    </p>
-                  </div>
-                </SlideUp>
-              )}
-
-              <div className="space-y-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/40 p-4">
-                <label className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="acceptedTerms"
-                    checked={formData.acceptedTerms}
-                    onChange={handleChange}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-power-orange focus:ring-power-orange/50"
-                  />
-                  <span>
-                    I agree to the{" "}
-                    <Link
-                      href="/terms"
-                      target="_blank"
-                      className="font-semibold text-power-orange hover:text-orange-600"
-                    >
-                      Terms of Service
-                    </Link>
-                  </span>
-                </label>
-                {errors.acceptedTerms && (
-                  <p className="text-red-500 text-sm">{errors.acceptedTerms}</p>
-                )}
-
-                <label className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="acceptedPrivacy"
-                    checked={formData.acceptedPrivacy}
-                    onChange={handleChange}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-power-orange focus:ring-power-orange/50"
-                  />
-                  <span>
-                    I agree to the{" "}
-                    <Link
-                      href="/privacy"
-                      target="_blank"
-                      className="font-semibold text-power-orange hover:text-orange-600"
-                    >
-                      Privacy Policy
-                    </Link>
-                  </span>
-                </label>
-                {errors.acceptedPrivacy && (
-                  <p className="text-red-500 text-sm">
-                    {errors.acceptedPrivacy}
-                  </p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                variant="primary"
-                className="w-full premium-shadow"
-              >
-                {isSubmitting ? "Creating account..." : "Register"}
-              </Button>
-            </form>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-300 dark:border-slate-700"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast.error("Google registration failed")}
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
+                  errors.name ? "border-red-500" : "border-slate-300 dark:border-slate-600"
+                }`}
+                placeholder="John Doe"
               />
+              {errors.name && (
+                <p className="text-red-500 text-sm mt-1.5">{errors.name}</p>
+              )}
             </div>
 
-            <p className="text-center mt-6 text-slate-600 dark:text-slate-300">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
+            <div>
+              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
+                  errors.email ? "border-red-500" : "border-slate-300 dark:border-slate-600"
+                }`}
+                placeholder="your@email.com"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1.5">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                Phone
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
+                  errors.phone ? "border-red-500" : "border-slate-300 dark:border-slate-600"
+                }`}
+                placeholder="9876543210"
+              />
+              {errors.phone && (
+                <p className="text-red-500 text-sm mt-1.5">{errors.phone}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all ${
+                    errors.password ? "border-red-500" : "border-slate-300 dark:border-slate-600"
+                  }`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  title="Toggle password visibility"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1.5">{errors.password}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                Account Type
+              </label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all"
               >
-                Login
-              </Link>
-            </p>
-          </CardContent>
-        </Card>
+                <option value="PLAYER">Player (Book Venues & Coaches)</option>
+                <option value="COACH">Coach (Offer Coaching Services)</option>
+              </select>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                Want to list your venue?{" "}
+                <Link
+                  href="/onboarding"
+                  className="text-power-orange hover:text-orange-600 transition-colors bg-transparent border-0 font-semibold"
+                >
+                  Submit an inquiry
+                </Link>
+              </p>
+            </div>
+
+            {formData.role === "COACH" && (
+              <SlideUp duration={0.4} yOffset={10}>
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">
+                    Coaching Service Mode
+                  </label>
+                  <select
+                    name="serviceMode"
+                    value={formData.serviceMode}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all"
+                  >
+                    <option value="OWN_VENUE">
+                      Own Venue (Coach at your own location)
+                    </option>
+                    <option value="FREELANCE">
+                      Freelance (Travel to player locations)
+                    </option>
+                    <option value="HYBRID">Hybrid (Own venue or travel)</option>
+                  </select>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                    {formData.serviceMode === "OWN_VENUE" &&
+                      "Your venue details will be stored for booking context. Want to rent out your space separately? Register as a Venue Lister instead."}
+                    {formData.serviceMode === "FREELANCE" &&
+                      "Travel to players for coaching sessions."}
+                    {formData.serviceMode === "HYBRID" &&
+                      "Coach at your venue or travel to players."}
+                  </p>
+                </div>
+              </SlideUp>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              variant="primary"
+              className="w-full premium-shadow"
+            >
+              {isSubmitting ? "Creating account..." : "Register"}
+            </Button>
+          </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-300 dark:border-slate-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error("Google registration failed")}
+            />
+          </div>
+
+          <p className="text-center mt-6 text-slate-600 dark:text-slate-300">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
+            >
+              Login
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
       </SlideUp>
     </GoogleOAuthProvider>
   );

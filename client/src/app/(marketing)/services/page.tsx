@@ -12,15 +12,7 @@ import {
   CardDescription,
   CardTitle,
 } from "@/modules/shared/ui/Card";
-import { motion } from "framer-motion";
 import { Check, QrCode, Bell, BarChart3 } from "lucide-react";
-
-const iconMotion = {
-  initial: { opacity: 0, y: 10, scale: 0.94 },
-  whileInView: { opacity: 1, y: 0, scale: 1 },
-  whileHover: { scale: 1.08, y: -2, rotate: 2 },
-  whileTap: { scale: 0.98 },
-};
 
 export default function ServicesPage() {
   // Main services for players
@@ -114,13 +106,13 @@ export default function ServicesPage() {
       />
 
       {/* For Players Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
+      <section className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
+            <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
               For Players
             </p>
-            <h2 className="font-title text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
               Book Venues & Coaches Instantly
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -131,23 +123,9 @@ export default function ServicesPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
             {playerServices.map((service, index) => (
-              <Card
-                key={index}
-                variant="elevated"
-                className="group shop-surface premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              >
+              <Card key={index} variant="elevated">
                 <CardContent className="pt-6">
-                  <motion.div
-                    className="mb-4 origin-center text-power-orange will-change-transform"
-                    initial={iconMotion.initial}
-                    whileInView={iconMotion.whileInView}
-                    whileHover={iconMotion.whileHover}
-                    whileTap={iconMotion.whileTap}
-                    viewport={{ once: true, amount: 0.4 }}
-                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    {service.icon}
-                  </motion.div>
+                  <div className="mb-4 text-power-orange">{service.icon}</div>
                   <CardTitle className="text-xl mb-3">
                     {service.title}
                   </CardTitle>
@@ -160,7 +138,7 @@ export default function ServicesPage() {
           </div>
 
           {/* Venue + Coach Combo Booking */}
-          <div className="bg-linear-to-r from-indigo-600 to-power-orange rounded-2xl p-8 md:p-12 mb-8 text-white">
+          <div className="bg-gradient-to-r from-indigo-600 to-power-orange rounded-2xl p-8 md:p-12 mb-8 text-white">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <h3 className="text-3xl font-bold mb-4">
@@ -224,12 +202,12 @@ export default function ServicesPage() {
           </div>
 
           {/* How it works for players */}
-          <div className="rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#fff9ef_0%,#fff3db_100%)] p-8 md:p-12">
+          <div className="bg-linear-to-br from-orange-50 to-orange-100 rounded-2xl p-8 md:p-12">
             <h3 className="text-2xl font-bold text-deep-slate mb-6 text-center">
               Three Ways to Book on PowerMySport
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="group shop-surface rounded-2xl p-8 border border-power-orange/30 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+              <div className="bg-white rounded-xl p-8 border-2 border-power-orange shadow-md hover:shadow-lg transition-shadow">
                 <div className="inline-block bg-power-orange text-white px-3 py-1 rounded-full text-xs font-bold mb-4">
                   OPTION 1
                 </div>
@@ -258,7 +236,7 @@ export default function ServicesPage() {
                 </ul>
               </div>
 
-              <div className="group shop-surface rounded-2xl p-8 border border-turf-green/30 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+              <div className="bg-white rounded-xl p-8 border-2 border-turf-green shadow-md hover:shadow-lg transition-shadow">
                 <div className="inline-block bg-turf-green text-white px-3 py-1 rounded-full text-xs font-bold mb-4">
                   OPTION 2
                 </div>
@@ -287,7 +265,7 @@ export default function ServicesPage() {
                 </ul>
               </div>
 
-              <div className="group shop-surface rounded-2xl p-8 border border-indigo-400/40 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+              <div className="bg-white rounded-xl p-8 border-2 border-indigo-600 shadow-md hover:shadow-lg transition-shadow">
                 <div className="inline-block bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold mb-4">
                   OPTION 3 ⭐
                 </div>
@@ -321,13 +299,13 @@ export default function ServicesPage() {
       </section>
 
       {/* For Venue Owners Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
+      <section className="py-16 sm:py-20 lg:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
+            <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
               For Venue Owners
             </p>
-            <h2 className="font-title text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
               Streamline Your Venue Operations
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -345,7 +323,7 @@ export default function ServicesPage() {
           <div className="mt-12 text-center">
             <a
               href="/onboarding"
-              className="inline-block rounded-xl bg-deep-slate px-8 py-4 text-lg font-semibold text-white premium-shadow transition-colors hover:bg-slate-800"
+              className="inline-block bg-deep-slate text-white px-8 py-4 rounded-lg font-semibold hover:bg-slate-800 transition-colors text-lg"
             >
               List Your Venue Today
             </a>
@@ -354,13 +332,13 @@ export default function ServicesPage() {
       </section>
 
       {/* For Coaches Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
+      <section className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
+            <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
               For Coaches
             </p>
-            <h2 className="font-title text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
               Grow Your Coaching Business
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -371,13 +349,9 @@ export default function ServicesPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {coachFeatures.map((feature, index) => (
-              <Card
-                key={index}
-                variant="elevated"
-                className="group shop-surface premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              >
+              <Card key={index} variant="elevated">
                 <CardContent className="pt-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-turf-green text-white transition-transform group-hover:scale-110">
+                  <div className="w-12 h-12 bg-turf-green text-white rounded-lg flex items-center justify-center mb-4">
                     <Check className="h-6 w-6" />
                   </div>
                   <CardTitle className="text-xl mb-3">
@@ -394,7 +368,7 @@ export default function ServicesPage() {
           <div className="mt-12 text-center">
             <a
               href="/register?role=COACH"
-              className="inline-block rounded-xl bg-turf-green px-8 py-4 text-lg font-semibold text-white premium-shadow transition-colors hover:bg-green-700"
+              className="inline-block bg-turf-green text-white px-8 py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors text-lg"
             >
               Become a Coach
             </a>
@@ -403,10 +377,10 @@ export default function ServicesPage() {
       </section>
 
       {/* Additional Services */}
-      <section className="py-16 sm:py-20 lg:py-24">
+      <section className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="font-title text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-deep-slate mb-4">
               Additional Features
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -415,7 +389,7 @@ export default function ServicesPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group shop-surface rounded-2xl p-8 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+            <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
               <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 mx-auto">
                 <QrCode size={32} />
               </div>
@@ -427,7 +401,7 @@ export default function ServicesPage() {
               </p>
             </div>
 
-            <div className="group shop-surface rounded-2xl p-8 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+            <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
               <div className="w-16 h-16 bg-power-orange/10 text-power-orange rounded-full flex items-center justify-center mb-6 mx-auto">
                 <Bell size={32} />
               </div>
@@ -439,7 +413,7 @@ export default function ServicesPage() {
               </p>
             </div>
 
-            <div className="group shop-surface rounded-2xl p-8 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
+            <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-md hover:shadow-lg transition-shadow">
               <div className="w-16 h-16 bg-turf-green/10 text-turf-green rounded-full flex items-center justify-center mb-6 mx-auto">
                 <BarChart3 size={32} />
               </div>
@@ -458,7 +432,7 @@ export default function ServicesPage() {
       <CTA
         variant="gradient"
         title="Ready to Experience These Services?"
-        description="Join PowerMySport today and see how seamless sports booking can feel."
+        description="Join PowerMySport today and discover how easy sports booking can be"
         primaryCTA={{
           label: "Get Started Free",
           href: "/register",

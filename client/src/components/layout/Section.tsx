@@ -32,7 +32,7 @@ export const Section: React.FC<SectionProps> = ({
   const backgrounds = {
     white: "bg-background",
     gray: "bg-muted/10",
-    gradient: "bg-linear-to-br from-power-orange/5 to-turf-green/5",
+    gradient: "bg-gradient-to-br from-power-orange/5 to-turf-green/5",
   };
 
   return (
@@ -44,3 +44,4 @@ export const Section: React.FC<SectionProps> = ({
     </section>
   );
 };
+

@@ -48,7 +48,7 @@ export function GroupMembersList({
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-sm">
+      <div className="rounded-[1.5rem] border border-border/80 bg-white/90 p-5 shadow-[0_14px_35px_-28px_rgba(15,23,42,0.4)]">
         <div className="flex items-center gap-2">
           <Users size={16} className="text-slate-600" />
           <h3 className="text-base font-semibold tracking-tight">
@@ -72,7 +72,7 @@ export function GroupMembersList({
       initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
       animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur"
+      className="rounded-[1.5rem] border border-border/80 bg-white/90 p-5 shadow-[0_14px_35px_-28px_rgba(15,23,42,0.4)] backdrop-blur"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">

@@ -27,7 +27,6 @@ import venueInquiryRoutes from "./routes/venueInquiryRoutes";
 import venueOnboardingRoutes from "./routes/venueOnboardingRoutes";
 import venueRoutes from "./routes/venueRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
-import ecommerceRoutes from "./routes/ecommerceRoutes";
 
 export const app: Express = express();
 
@@ -125,7 +124,6 @@ app.use("/api/sports", sportsRoutes);
 app.use("/api/venue-inquiries", venueInquiryRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
-app.use("/api/v1", ecommerceRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

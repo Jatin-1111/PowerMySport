@@ -13,7 +13,6 @@ import {
   setupPresenceSocket,
 } from "./sockets/notificationSocket";
 import { setNotificationSocketInstance } from "./services/NotificationService";
-import { setCommunityRealtimeSocketInstance } from "./services/CommunityRealtimeService";
 import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
 const PORT = process.env.PORT || 5000;
@@ -84,7 +83,6 @@ const startServer = async () => {
     setupPresenceSocket(io);
     setFriendSocketInstance(io);
     setNotificationSocketInstance(io);
-    setCommunityRealtimeSocketInstance(io);
 
     console.log("🔧 Socket.IO namespaces configured:");
     console.log("   - /community (requires community profile)");

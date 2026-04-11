@@ -201,7 +201,7 @@ export default function BookCoachPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Coach Details */}
-        <Card className="shop-surface premium-shadow">
+        <Card className="bg-white">
           <h2 className="text-xl font-bold mb-4 text-slate-900">
             Coach Details
           </h2>
@@ -262,7 +262,7 @@ export default function BookCoachPage() {
         </Card>
 
         {/* Booking Form */}
-        <Card className="shop-surface premium-shadow">
+        <Card className="bg-white">
           <h2 className="text-xl font-bold mb-4 text-slate-900">
             Select Date & Time
           </h2>
