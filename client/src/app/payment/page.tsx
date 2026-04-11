@@ -67,14 +67,16 @@ function PaymentPageContent() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navigation variant="dark" sticky />
+    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff8ee_100%)] flex flex-col">
+      <Navigation sticky />
       <main className="flex-1 py-10">
         <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="bg-white text-center space-y-4">
+          <Card className="space-y-4 rounded-3xl border border-slate-200/70 bg-white/95 p-6 text-center shadow-sm backdrop-blur-sm sm:p-8">
             <div className="flex justify-center">{icon}</div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+              <h2 className="font-title text-2xl font-semibold text-slate-900">
+                {title}
+              </h2>
               <p className="mt-2 text-sm text-slate-600">{description}</p>
             </div>
 

@@ -111,8 +111,9 @@ export const Navigation: React.FC<NavProps> = ({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "shop-nav-link font-medium",
-                  isActive(link.href) && "bg-indigo-50 text-power-orange",
+                  "shop-nav-link relative font-medium",
+                  isActive(link.href) &&
+                    "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
                 )}
               >
                 {link.label}

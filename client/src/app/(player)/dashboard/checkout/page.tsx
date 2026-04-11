@@ -9,6 +9,7 @@ import {
   Smartphone,
   TicketPercent,
   Trophy,
+  User as UserIcon,
   Wallet,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -68,6 +69,75 @@ const paymentOptions: PaymentMethodOption[] = [
 ];
 
 type BookingType = "coach" | "venue";
+
+const normalizeImageUrl = (value?: string) => {
+  if (!value || typeof value !== "string") {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("data:image")
+  ) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+
+  if (trimmed.includes("amazonaws.com")) {
+    return `https://${trimmed}`;
+  }
+
+  return trimmed;
+};
+
+const getCoachDisplayName = (coach: Coach) => {
+  const userName =
+    typeof coach.userId === "object" && coach.userId !== null
+      ? coach.userId.name
+      : "";
+
+  return userName?.trim() || `${coach.sports?.[0] || "Coach"} Coach`;
+};
+
+const getCoachImageCandidates = (coach: Coach) => {
+  const userPhoto =
+    typeof coach.userId === "object" && coach.userId !== null
+      ? coach.userId.photoUrl
+      : "";
+
+  return [
+    coach.photoUrl,
+    coach.profileImage,
+    userPhoto,
+    coach.ownVenueDetails?.images?.[0],
+  ]
+    .map((value) => normalizeImageUrl(value))
+    .filter((value): value is string => Boolean(value));
+};
+
+const getCoachLocationLabel = (coach: Coach) => {
+  if (coach.serviceMode === "FREELANCE") {
+    return "Freelance";
+  }
+  if (coach.serviceMode === "OWN_VENUE") {
+    return coach.ownVenueDetails?.name
+      ? `Own Venue • ${coach.ownVenueDetails.name}`
+      : coach.ownVenueDetails?.address
+        ? `Own Venue • ${coach.ownVenueDetails.address}`
+        : "Own Venue";
+  }
+  return "Hybrid";
+};
 
 function CheckoutPageContent() {
   const router = useRouter();
@@ -596,7 +666,7 @@ function CheckoutPageContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-2xl bg-white py-16">
+      <div className="flex items-center justify-center rounded-3xl border border-slate-200/70 bg-white/90 py-16 shadow-sm">
         <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-power-orange" />
       </div>
     );
@@ -604,7 +674,7 @@ function CheckoutPageContent() {
 
   if (!isDetailsReady) {
     return (
-      <div className="rounded-2xl bg-white p-8 text-center">
+      <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-8 text-center shadow-sm">
         <p className="text-slate-600">
           {type === "coach" ? "Coach" : "Venue"} not found.
         </p>
@@ -651,13 +721,13 @@ function CheckoutPageContent() {
         }
       />
 
-      <Card className="shop-surface premium-shadow">
+      <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-5 backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               Step {currentStep} of {steps.length}
             </p>
-            <p className="text-lg font-bold text-slate-900">
+            <p className="font-title text-lg font-semibold text-slate-900">
               {currentStepInfo?.title}
             </p>
             <p className="text-sm text-slate-500">
@@ -739,7 +809,7 @@ function CheckoutPageContent() {
               }
             />
 
-            <Card className="shop-surface premium-shadow">
+            <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-5 backdrop-blur-sm sm:p-6">
               <div className="flex items-start gap-3">
                 <span className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-green-100 shrink-0 text-green-600">
                   <ShieldCheck size={18} />
@@ -809,36 +879,55 @@ function CheckoutPageContent() {
                 title="Coach overview"
                 description="Confirm the coach and location before you pay."
               >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-40 flex items-center justify-center">
-                    <Trophy size={26} className="text-slate-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-lg font-bold text-slate-900">
-                      {coach.sports?.[0] || "Coach"} Coach
-                    </p>
-                    {coach.serviceMode && (
-                      <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-                        <MapPin size={16} />
-                        {coach.serviceMode === "FREELANCE"
-                          ? "Freelance"
-                          : coach.serviceMode === "OWN_VENUE"
-                            ? "Own Venue"
-                            : "Hybrid"}
-                      </p>
-                    )}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {coach.sports.map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange"
-                        >
-                          {item}
-                        </span>
-                      ))}
+                {(() => {
+                  const coachDisplayName = getCoachDisplayName(coach);
+                  const coachImage = getCoachImageCandidates(coach)[0];
+                  const locationLabel = getCoachLocationLabel(coach);
+
+                  return (
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-28 sm:w-40">
+                        {coachImage ? (
+                          <img
+                            src={coachImage}
+                            alt={coachDisplayName}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <UserIcon size={26} className="text-slate-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-lg font-bold text-slate-900">
+                          {coachDisplayName}
+                        </p>
+                        <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+                          <MapPin size={16} />
+                          {locationLabel}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          ★ {coach.rating.toFixed(1)} ({coach.reviewCount}{" "}
+                          reviews)
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {coach.sports.slice(0, 4).map((item) => (
+                            <span
+                              key={item}
+                              className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                          {coach.sports.length > 4 && (
+                            <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                              +{coach.sports.length - 4} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </CheckoutSection>
             )}
 

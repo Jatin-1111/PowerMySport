@@ -132,6 +132,59 @@ export default function NotificationsPage() {
     return iconMap[category] || Bell;
   };
 
+  const getNotificationTone = (category: string) => {
+    const toneMap: Record<
+      string,
+      { iconWrap: string; iconColor: string; chip: string; dot: string }
+    > = {
+      SOCIAL: {
+        iconWrap: "bg-sky-100",
+        iconColor: "text-sky-700",
+        chip: "bg-sky-50 text-sky-700 border-sky-200",
+        dot: "bg-sky-500",
+      },
+      BOOKING: {
+        iconWrap: "bg-indigo-100",
+        iconColor: "text-indigo-700",
+        chip: "bg-indigo-50 text-indigo-700 border-indigo-200",
+        dot: "bg-indigo-500",
+      },
+      PAYMENT: {
+        iconWrap: "bg-emerald-100",
+        iconColor: "text-emerald-700",
+        chip: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        dot: "bg-emerald-500",
+      },
+      REVIEW: {
+        iconWrap: "bg-amber-100",
+        iconColor: "text-amber-700",
+        chip: "bg-amber-50 text-amber-700 border-amber-200",
+        dot: "bg-amber-500",
+      },
+      ADMIN: {
+        iconWrap: "bg-slate-200",
+        iconColor: "text-slate-700",
+        chip: "bg-slate-100 text-slate-700 border-slate-200",
+        dot: "bg-slate-500",
+      },
+      COMMUNITY: {
+        iconWrap: "bg-orange-100",
+        iconColor: "text-orange-700",
+        chip: "bg-orange-50 text-orange-700 border-orange-200",
+        dot: "bg-orange-500",
+      },
+    };
+
+    return (
+      toneMap[category] || {
+        iconWrap: "bg-slate-100",
+        iconColor: "text-slate-700",
+        chip: "bg-slate-100 text-slate-700 border-slate-200",
+        dot: "bg-slate-500",
+      }
+    );
+  };
+
   const filterOptions: { value: FilterType; label: string }[] = [
     { value: "all", label: "All" },
     { value: "unread", label: "Unread" },
@@ -143,13 +196,13 @@ export default function NotificationsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_52%,#fff7ea_100%)] py-8">
       <Container>
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-3xl font-bold text-slate-900">
                 Notifications
               </h1>
               {unreadCount > 0 && (
@@ -162,7 +215,7 @@ export default function NotificationsPage() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-power-orange hover:bg-orange-600 rounded-lg transition-colors"
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
                 <CheckCheck className="w-4 h-4" />
                 Mark All Read
@@ -181,15 +234,15 @@ export default function NotificationsPage() {
                   setPage(1);
                 }}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "px-4 py-2 rounded-xl border text-sm font-medium transition-colors",
                   filter === option.value
-                    ? "bg-power-orange text-white"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80",
+                    ? "border-power-orange/40 bg-power-orange/10 text-power-orange"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
                 )}
               >
                 {option.label}
                 {option.value === "unread" && unreadCount > 0 && (
-                  <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                  <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
                     {unreadCount}
                   </span>
                 )}
@@ -199,10 +252,10 @@ export default function NotificationsPage() {
         </div>
 
         {/* Notifications List */}
-        <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-white/80 bg-white/90 shadow-sm backdrop-blur-sm">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <div className="w-12 h-12 border-4 border-power-orange border-t-transparent rounded-full animate-spin" />
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-power-orange border-t-transparent" />
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -216,79 +269,101 @@ export default function NotificationsPage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {notifications.map((notification) => (
-                <div
-                  key={notification._id}
-                  className={cn(
-                    "p-4 hover:bg-muted/50 transition-colors",
-                    !notification.isRead && "bg-blue-50/5",
-                  )}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Icon */}
-                    <div className="shrink-0 mt-1 rounded-full bg-slate-100 p-2 text-slate-600">
-                      {React.createElement(
-                        getNotificationIcon(notification.category),
-                        {
-                          className: "h-5 w-5",
-                        },
+              {notifications.map((notification) =>
+                (() => {
+                  const tone = getNotificationTone(notification.category);
+                  return (
+                    <div
+                      key={notification._id}
+                      className={cn(
+                        "p-4 transition-colors hover:bg-slate-50/70",
+                        !notification.isRead && "bg-[#eef6ff]/65",
                       )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Icon */}
+                        <div
                           className={cn(
-                            "text-base font-medium text-card-foreground",
-                            !notification.isRead && "font-semibold",
+                            "mt-1 shrink-0 rounded-full p-2",
+                            tone.iconWrap,
+                            tone.iconColor,
                           )}
                         >
-                          {notification.title}
-                        </h3>
-                        {!notification.isRead && (
-                          <span className="shrink-0 w-2.5 h-2.5 bg-blue-500 rounded-full mt-1.5" />
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {notification.message}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <span className="px-2 py-0.5 bg-muted rounded text-xs font-medium">
-                            {notification.category}
-                          </span>
-                        </span>
-                        <span>
-                          {formatDistanceToNow(
-                            new Date(notification.createdAt),
+                          {React.createElement(
+                            getNotificationIcon(notification.category),
+                            {
+                              className: "h-5 w-5",
+                            },
                           )}
-                        </span>
-                      </div>
-                    </div>
+                        </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {!notification.isRead && (
-                        <button
-                          onClick={() => handleMarkAsRead(notification._id)}
-                          className="p-2 text-muted-foreground hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                          title="Mark as read"
-                        >
-                          <Check className="w-5 h-5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(notification._id)}
-                        className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h3
+                              className={cn(
+                                "text-base font-medium text-slate-900",
+                                !notification.isRead &&
+                                  "font-semibold text-slate-950",
+                              )}
+                            >
+                              {notification.title}
+                            </h3>
+                            {!notification.isRead && (
+                              <span
+                                className={cn(
+                                  "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full",
+                                  tone.dot,
+                                )}
+                              />
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {notification.message}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <span
+                                className={cn(
+                                  "rounded-full border px-2 py-0.5 text-xs font-semibold",
+                                  tone.chip,
+                                )}
+                              >
+                                {notification.category}
+                              </span>
+                            </span>
+                            <span>
+                              {formatDistanceToNow(
+                                new Date(notification.createdAt),
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {!notification.isRead && (
+                            <button
+                              onClick={() => handleMarkAsRead(notification._id)}
+                              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+                              title="Mark as read"
+                            >
+                              <Check className="w-5 h-5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(notification._id)}
+                            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-700"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })(),
+              )}
             </div>
           )}
         </div>
@@ -311,10 +386,10 @@ export default function NotificationsPage() {
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
                     className={cn(
-                      "w-10 h-10 text-sm font-medium rounded-lg transition-colors",
+                      "h-10 w-10 rounded-lg border text-sm font-medium transition-colors",
                       page === pageNum
-                        ? "bg-power-orange text-white"
-                        : "bg-card border border-border hover:bg-muted",
+                        ? "border-power-orange/40 bg-power-orange/10 text-power-orange"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                     )}
                   >
                     {pageNum}

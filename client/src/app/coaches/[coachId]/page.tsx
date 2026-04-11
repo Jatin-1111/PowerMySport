@@ -414,9 +414,9 @@ export default function CoachDetailsPage() {
   const additionalSportsCount = Math.max(coach.sports.length - 6, 0);
 
   return (
-    <div className="bg-background">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff7ea_100%)]">
       {/* Header Section */}
-      <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
+      <div className="border-b border-white/60 bg-white/72 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Breadcrumbs */}
           <div className="mb-3">
@@ -531,7 +531,7 @@ export default function CoachDetailsPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* About the Coach */}
-            <Card className="shop-surface premium-shadow overflow-hidden border border-white/70">
+            <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                   <Info size={24} className="text-turf-green" />
@@ -548,7 +548,7 @@ export default function CoachDetailsPage() {
 
             {/* Venue Images */}
             {venueImages.length > 0 && (
-              <Card className="shop-surface premium-shadow overflow-hidden border border-white/70">
+              <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
                 <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                   <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                     <ImageIcon size={24} className="text-turf-green" />
@@ -575,7 +575,7 @@ export default function CoachDetailsPage() {
             )}
 
             {/* Certifications */}
-            <Card className="shop-surface premium-shadow overflow-hidden border border-white/70">
+            <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                   <Award size={24} className="text-turf-green" />
@@ -628,7 +628,7 @@ export default function CoachDetailsPage() {
             </Card>
 
             {/* Reviews */}
-            <Card className="shop-surface premium-shadow overflow-hidden border border-white/70">
+            <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900">
                   Coach Reviews
@@ -641,7 +641,7 @@ export default function CoachDetailsPage() {
               </div>
               <div className="p-6">
                 {user && eligibleBookingId && (
-                  <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50/90 p-4">
                     <p className="text-sm font-semibold text-slate-800 mb-3">
                       Share your experience
                     </p>
@@ -712,7 +712,7 @@ export default function CoachDetailsPage() {
                       return (
                         <div
                           key={String(review._id || review.id)}
-                          className="rounded-lg border border-slate-200 p-4"
+                          className="rounded-xl border border-slate-200 bg-white p-4"
                         >
                           <div className="flex items-center justify-between mb-2">
                             <p className="font-semibold text-slate-900 text-sm">
@@ -748,7 +748,7 @@ export default function CoachDetailsPage() {
 
           {/* Booking Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="shop-surface premium-shadow overflow-hidden sticky top-24 border border-white/70">
+            <Card className="premium-shadow sticky top-24 overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-0 backdrop-blur-sm">
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900">
                   Book a Session

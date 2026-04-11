@@ -33,9 +33,9 @@ export function PaymentMethodSelector({
             type="button"
             onClick={() => onChange(option.id)}
             className={cn(
-              "flex items-center justify-between gap-4 rounded-xl border-2 px-4 py-3 text-left transition-all",
+              "flex items-center justify-between gap-4 rounded-2xl border-2 px-4 py-3 text-left transition-all",
               isSelected
-                ? "border-power-orange bg-power-orange/5 shadow-sm"
+                ? "border-power-orange/50 bg-power-orange/8 shadow-sm"
                 : "border-slate-200 bg-white hover:border-power-orange/60",
             )}
           >

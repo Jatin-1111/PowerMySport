@@ -224,7 +224,7 @@ export default function VenueDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-power-orange"></div>
       </div>
     );
@@ -232,7 +232,7 @@ export default function VenueDetailsPage() {
 
   if (!venue) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold text-slate-900">Venue not found</h1>
           <p className="text-slate-600">
@@ -247,9 +247,9 @@ export default function VenueDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)] flex flex-col">
       {/* Navigation */}
-      <Navigation variant="dark" sticky />
+      <Navigation sticky />
       <main className="flex-1">
         {/* Breadcrumbs & Back Button */}
         <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
@@ -319,7 +319,7 @@ export default function VenueDetailsPage() {
             <div className="lg:col-span-2 space-y-6">
               {/* Images */}
               {venue.images && venue.images.length > 0 && (
-                <Card className="overflow-hidden shop-surface premium-shadow">
+                <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
                   <div className="h-80 sm:h-96 w-full overflow-hidden bg-slate-100">
                     <img
                       src={venue.images[0]}
@@ -331,7 +331,7 @@ export default function VenueDetailsPage() {
               )}
 
               {/* Description */}
-              <Card className="p-6 shop-surface premium-shadow">
+              <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
                 <h2 className="text-xl font-bold mb-4 text-slate-900">
                   About this Venue
                 </h2>
@@ -342,7 +342,7 @@ export default function VenueDetailsPage() {
               </Card>
 
               {/* Sports Available */}
-              <Card className="p-6 shop-surface premium-shadow">
+              <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
                 <h2 className="text-lg font-semibold mb-4 text-slate-900">
                   Sports Available
                 </h2>
@@ -360,7 +360,7 @@ export default function VenueDetailsPage() {
 
               {/* Amenities */}
               {venue.amenities && venue.amenities.length > 0 && (
-                <Card className="p-6 shop-surface premium-shadow">
+                <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
                   <h2 className="text-lg font-semibold mb-4 text-slate-900">
                     Amenities & Facilities
                   </h2>
@@ -379,7 +379,7 @@ export default function VenueDetailsPage() {
               )}
 
               {/* Reviews */}
-              <Card className="p-6 shop-surface premium-shadow">
+              <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                   <div>
                     <h2 className="text-xl font-bold text-slate-900">
@@ -502,7 +502,7 @@ export default function VenueDetailsPage() {
 
             {/* Right Column - Booking Widget */}
             <div className="lg:col-span-1">
-              <Card className="p-6 shop-surface premium-shadow sticky top-6 border border-white/70">
+              <Card className="premium-shadow sticky top-24 rounded-3xl border border-slate-200/70 bg-white/95 p-6 backdrop-blur-sm">
                 <h2 className="text-xl font-bold mb-6 text-slate-900">
                   Book Your Slot
                 </h2>

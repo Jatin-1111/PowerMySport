@@ -252,6 +252,12 @@ const MessageBubble = memo(function MessageBubble({
   const mutationDisabledReason = isWithinMessageEditWindow(message.createdAt)
     ? ""
     : "Edit/delete window expired";
+  const bubbleMetaTextClass = isOwnMessage
+    ? "text-orange-100/95"
+    : "text-slate-500";
+  const actionButtonClass = isOwnMessage
+    ? "border border-white/30 bg-white/16 text-white hover:bg-white/26"
+    : "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200";
 
   return (
     <motion.div
@@ -262,35 +268,49 @@ const MessageBubble = memo(function MessageBubble({
       className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`max-w-[80%] rounded-[1.35rem] px-3 py-2 text-sm shadow-[0_12px_30px_-22px_rgba(15,23,42,0.55)] ${
+        className={`max-w-[80%] rounded-[1.35rem] border px-3.5 py-2.5 text-sm shadow-[0_14px_32px_-24px_rgba(15,23,42,0.55)] ${
           isOwnMessage
-            ? "bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-white"
-            : "border border-border bg-white/95 text-slate-800 backdrop-blur"
+            ? "border-orange-300/40 bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-white"
+            : "border-border bg-white/95 text-slate-800 backdrop-blur"
         }`}
       >
         {isGroupConversation && (
-          <div
-            className={`text-[11px] ${
-              isOwnMessage ? "text-orange-100" : "text-slate-500"
-            }`}
-          >
+          <div className={`text-[11px] font-semibold ${bubbleMetaTextClass}`}>
             {message.senderDisplayName}
           </div>
         )}
-        <div className="mt-0.5 wrap-break-word">{message.content}</div>
+        <div className="mt-0.5 wrap-break-word leading-relaxed">
+          {message.content}
+        </div>
+
         <div
-          className={`mt-1 flex items-center justify-end gap-2 text-[10px] ${
-            isOwnMessage ? "text-orange-100" : "text-slate-500"
-          }`}
+          className={`mt-2 flex flex-wrap items-center justify-end gap-1.5 text-[10px] ${bubbleMetaTextClass}`}
         >
-          {message.isDeleted && <span>Deleted</span>}
-          {message.isEdited && !message.isDeleted && <span>Edited</span>}
-          <span>{getMessageTimestamp(message.createdAt)}</span>
-          {messageStateLabel && <span>{messageStateLabel}</span>}
+          {message.isDeleted && (
+            <span className="rounded-full border border-current/30 px-1.5 py-0.5 font-semibold">
+              Deleted
+            </span>
+          )}
+          {message.isEdited && !message.isDeleted && (
+            <span className="rounded-full border border-current/30 px-1.5 py-0.5 font-semibold">
+              Edited
+            </span>
+          )}
+          <span className="opacity-90">
+            {getMessageTimestamp(message.createdAt)}
+          </span>
+          {messageStateLabel && (
+            <span className="rounded-full border border-current/30 px-1.5 py-0.5 font-semibold">
+              {messageStateLabel}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-1.5 flex flex-wrap items-center justify-end gap-1.5 text-[10px]">
           {isOwnMessage && message.messageStatus === "FAILED" && (
             <button
               onClick={() => onRetry(message)}
-              className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30"
+              className={`rounded-md px-2 py-0.5 font-semibold transition ${actionButtonClass}`}
             >
               Retry
             </button>
@@ -303,7 +323,7 @@ const MessageBubble = memo(function MessageBubble({
                   onClick={() => onEdit(message)}
                   disabled={isMutating || !canMutateMessage}
                   title={mutationDisabledReason || "Edit message"}
-                  className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={`rounded-md px-2 py-0.5 font-semibold transition ${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   {isEditing ? "Editing" : "Edit"}
                 </button>
@@ -311,14 +331,18 @@ const MessageBubble = memo(function MessageBubble({
                   onClick={() => onDelete(message)}
                   disabled={isMutating || !canMutateMessage}
                   title={mutationDisabledReason || "Delete message"}
-                  className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={`rounded-md px-2 py-0.5 font-semibold transition ${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   Delete
                 </button>
               </>
             )}
           {isOwnMessage && !canMutateMessage && !message.isDeleted && (
-            <span className="opacity-90">Edit window expired</span>
+            <span
+              className={`rounded-full border px-1.5 py-0.5 font-semibold ${bubbleMetaTextClass}`}
+            >
+              Edit window expired
+            </span>
           )}
         </div>
       </div>

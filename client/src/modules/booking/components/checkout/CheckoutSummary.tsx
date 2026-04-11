@@ -29,8 +29,15 @@ export function CheckoutSummary({
   className,
 }: CheckoutSummaryProps) {
   return (
-    <Card className={cn("bg-white", className)}>
-      <h3 className="text-lg font-bold text-slate-900">{title}</h3>
+    <Card
+      className={cn(
+        "overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-5 shadow-sm backdrop-blur-sm sm:p-6",
+        className,
+      )}
+    >
+      <h3 className="font-title text-lg font-semibold text-slate-900">
+        {title}
+      </h3>
       <div className="mt-4 space-y-3">
         {items.map((item) => (
           <div

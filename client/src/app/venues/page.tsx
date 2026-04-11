@@ -170,9 +170,9 @@ export default function VenuesPage() {
   const hasActiveVenueFilters = activeVenueFilters.length > 0;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)] flex flex-col">
       {/* Navigation */}
-      <Navigation variant="dark" sticky />
+      <Navigation sticky />
       <main className="flex-1">
         {/* Header Section */}
         <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
@@ -347,7 +347,7 @@ export default function VenuesPage() {
               <p className="text-slate-600 font-medium">Loading venues...</p>
             </div>
           ) : filteredVenues.length === 0 ? (
-            <Card className="shop-surface premium-shadow">
+            <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
               <div className="text-center py-16 bg-white/70 rounded-xl">
                 <Building2 size={56} className="mx-auto mb-4 text-slate-300" />
                 <h3 className="text-xl font-bold text-slate-900 mb-2">
@@ -389,7 +389,7 @@ export default function VenuesPage() {
                 {filteredVenues.map((venue) => (
                   <Card
                     key={venue.id}
-                    className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200 overflow-hidden group cursor-pointer"
+                    className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg group cursor-pointer"
                     onClick={() =>
                       router.push(`/venues/${venue.id || venue._id}`)
                     }
