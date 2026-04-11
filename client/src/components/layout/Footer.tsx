@@ -68,7 +68,7 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-linear-to-b from-slate-900 to-slate-950 text-white">
+    <footer className="mt-12 border-t border-white/60 bg-white/70 text-slate-900 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
         <div className="py-16">
@@ -83,12 +83,12 @@ export const Footer: React.FC = () => {
                   height={56}
                   className="h-40 w-auto"
                 /> */}
-                <span className="text-3xl font-extrabold tracking-tight leading-none">
+                <span className="font-title text-3xl font-extrabold tracking-tight leading-none">
                   <span className="text-power-orange">Power</span>
-                  <span className="text-white">MySport</span>
+                  <span className="text-slate-900">MySport</span>
                 </span>
               </Link>
-              <p className="mt-4 text-sm text-slate-300 leading-relaxed">
+              <p className="mt-4 text-sm text-slate-600 leading-relaxed">
                 Connect with premium sports venues and professional coaches near
                 you.
               </p>
@@ -98,7 +98,7 @@ export const Footer: React.FC = () => {
                   <a
                     key={social.name}
                     href={social.href}
-                    className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:bg-power-orange hover:text-white transition-all duration-200"
+                    className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-power-orange hover:text-white transition-all duration-200"
                     aria-label={social.name}
                   >
                     {social.icon}
@@ -110,7 +110,7 @@ export const Footer: React.FC = () => {
             {/* Footer Links */}
             {Object.entries(footerSections).map(([key, section]) => (
               <div key={key}>
-                <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-4 opacity-90">
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4 opacity-90">
                   {section.title}
                 </h3>
                 <ul className="space-y-2">
@@ -118,7 +118,7 @@ export const Footer: React.FC = () => {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="text-sm text-slate-300 hover:text-power-orange transition-colors duration-200 inline-flex items-center group"
+                        className="text-sm text-slate-600 hover:text-power-orange transition-colors duration-200 inline-flex items-center group"
                       >
                         <span className="inline-block w-1.5 h-1.5 bg-power-orange rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                         {link.label}
@@ -131,14 +131,14 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Divider */}
-          <div className="border-t border-slate-700" />
+          <div className="border-t border-slate-200" />
 
           {/* Bottom Section */}
           <div className="py-8">
             {/* Legal Disclaimer - Compact */}
-            <div className="mb-6 p-4 bg-slate-800/50 rounded-lg border border-slate-700 backdrop-blur-sm">
-              <p className="text-xs text-slate-300 leading-relaxed">
-                <strong className="text-slate-100">Disclaimer:</strong>{" "}
+            <div className="mb-6 p-4 bg-white/80 rounded-lg border border-slate-200 backdrop-blur-sm">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                <strong className="text-slate-900">Disclaimer:</strong>{" "}
                 PowerMySport is a marketplace platform. We are not liable for
                 service quality, safety, or fitness. Users assume all risks.
                 Review our{" "}
@@ -167,34 +167,34 @@ export const Footer: React.FC = () => {
 
             {/* Copyright */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 © {currentYear} PowerMySport. All rights reserved.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-xs">
                 <Link
                   href="/privacy"
-                  className="text-slate-400 hover:text-power-orange transition-colors"
+                  className="text-slate-500 hover:text-power-orange transition-colors"
                 >
                   Privacy
                 </Link>
-                <span className="text-slate-700">•</span>
+                <span className="text-slate-300">•</span>
                 <Link
                   href="/terms"
-                  className="text-slate-400 hover:text-power-orange transition-colors"
+                  className="text-slate-500 hover:text-power-orange transition-colors"
                 >
                   Terms
                 </Link>
-                <span className="text-slate-700">•</span>
+                <span className="text-slate-300">•</span>
                 <Link
                   href="/cookies"
-                  className="text-slate-400 hover:text-power-orange transition-colors"
+                  className="text-slate-500 hover:text-power-orange transition-colors"
                 >
                   Cookies
                 </Link>
-                <span className="text-slate-700">•</span>
+                <span className="text-slate-300">•</span>
                 <Link
                   href="/contact"
-                  className="text-slate-400 hover:text-power-orange transition-colors"
+                  className="text-slate-500 hover:text-power-orange transition-colors"
                 >
                   Support
                 </Link>

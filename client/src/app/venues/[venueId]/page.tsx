@@ -247,12 +247,12 @@ export default function VenueDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Navigation */}
       <Navigation variant="dark" sticky />
       <main className="flex-1">
         {/* Breadcrumbs & Back Button */}
-        <div className="bg-white border-b border-slate-100">
+        <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-2">
             <Breadcrumbs
               items={[
@@ -264,17 +264,17 @@ export default function VenueDetailsPage() {
           </div>
         </div>
         {/* Header */}
-        <div className="bg-white border-b border-slate-200">
+        <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+            <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
               <div className="relative z-10">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="flex-1">
-                    <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+                    <h1 className="font-title text-3xl sm:text-4xl font-bold mb-2">
                       {venue.name}
                     </h1>
                     {venue.address && (
-                      <p className="text-slate-200 flex items-center gap-2 text-sm sm:text-base">
+                      <p className="text-slate-700 flex items-center gap-2 text-sm sm:text-base">
                         <MapPin size={18} />
                         {venue.address}
                       </p>
@@ -288,20 +288,20 @@ export default function VenueDetailsPage() {
                         <span className="font-semibold">
                           {venue.rating?.toFixed(1) || "5.0"}
                         </span>
-                        <span className="text-slate-300 text-sm">
+                        <span className="text-slate-600 text-sm">
                           ({venue.reviewCount || 0} reviews)
                         </span>
                       </div>
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="text-xs uppercase tracking-wide text-slate-300 mb-1">
+                    <p className="text-xs uppercase tracking-wide text-slate-600 mb-1">
                       Starting from
                     </p>
                     <div className="flex items-center justify-end gap-1 text-3xl font-bold text-power-orange">
                       <IndianRupee size={24} />
                       {venue.pricePerHour}
-                      <span className="text-sm text-slate-300">/hr</span>
+                      <span className="text-sm text-slate-600">/hr</span>
                     </div>
                   </div>
                 </div>
@@ -319,7 +319,7 @@ export default function VenueDetailsPage() {
             <div className="lg:col-span-2 space-y-6">
               {/* Images */}
               {venue.images && venue.images.length > 0 && (
-                <Card className="overflow-hidden bg-white">
+                <Card className="overflow-hidden shop-surface premium-shadow">
                   <div className="h-80 sm:h-96 w-full overflow-hidden bg-slate-100">
                     <img
                       src={venue.images[0]}
@@ -331,7 +331,7 @@ export default function VenueDetailsPage() {
               )}
 
               {/* Description */}
-              <Card className="p-6 bg-white">
+              <Card className="p-6 shop-surface premium-shadow">
                 <h2 className="text-xl font-bold mb-4 text-slate-900">
                   About this Venue
                 </h2>
@@ -342,7 +342,7 @@ export default function VenueDetailsPage() {
               </Card>
 
               {/* Sports Available */}
-              <Card className="p-6 bg-white">
+              <Card className="p-6 shop-surface premium-shadow">
                 <h2 className="text-lg font-semibold mb-4 text-slate-900">
                   Sports Available
                 </h2>
@@ -360,7 +360,7 @@ export default function VenueDetailsPage() {
 
               {/* Amenities */}
               {venue.amenities && venue.amenities.length > 0 && (
-                <Card className="p-6 bg-white">
+                <Card className="p-6 shop-surface premium-shadow">
                   <h2 className="text-lg font-semibold mb-4 text-slate-900">
                     Amenities & Facilities
                   </h2>
@@ -379,7 +379,7 @@ export default function VenueDetailsPage() {
               )}
 
               {/* Reviews */}
-              <Card className="p-6 bg-white">
+              <Card className="p-6 shop-surface premium-shadow">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                   <div>
                     <h2 className="text-xl font-bold text-slate-900">
@@ -502,7 +502,7 @@ export default function VenueDetailsPage() {
 
             {/* Right Column - Booking Widget */}
             <div className="lg:col-span-1">
-              <Card className="p-6 bg-white sticky top-6 border-2 border-slate-100 shadow-xl">
+              <Card className="p-6 shop-surface premium-shadow sticky top-6 border border-white/70">
                 <h2 className="text-xl font-bold mb-6 text-slate-900">
                   Book Your Slot
                 </h2>

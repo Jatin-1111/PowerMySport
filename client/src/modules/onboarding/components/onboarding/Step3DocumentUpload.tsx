@@ -180,7 +180,7 @@ export default function Step3DocumentUpload({
       </div>
 
       {/* Progress Bar */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+      <div className="mb-6 p-4 bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-700">
             Upload Progress
@@ -191,7 +191,7 @@ export default function Step3DocumentUpload({
         </div>
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out"
+            className="h-full bg-linear-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out"
             style={{ width: `${uploadProgress}%` }}
           ></div>
         </div>
@@ -312,7 +312,7 @@ export default function Step3DocumentUpload({
         </div>
 
         {/* Info Box */}
-        <div className="mt-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+        <div className="mt-6 p-5 bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
           <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
             <Zap className="w-5 h-5 text-blue-600" />
             What happens next?
@@ -349,7 +349,7 @@ export default function Step3DocumentUpload({
             disabled={loading || uploadedDocs.length < presignedUrls.length}
             className={`flex-1 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
               uploadedDocs.length >= presignedUrls.length && !loading
-                ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl"
+                ? "bg-linear-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >

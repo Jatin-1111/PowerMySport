@@ -414,9 +414,9 @@ export default function CoachDetailsPage() {
   const additionalSportsCount = Math.max(coach.sports.length - 6, 0);
 
   return (
-    <div className="bg-slate-50">
+    <div className="bg-background">
       {/* Header Section */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Breadcrumbs */}
           <div className="mb-3">
@@ -428,12 +428,12 @@ export default function CoachDetailsPage() {
             />
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+          <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
             <div className="relative z-10">
               {/* Back button */}
               <Link
                 href="/coaches"
-                className="inline-flex items-center gap-2 text-slate-200 hover:text-white mb-4 transition-colors"
+                className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
               >
                 <ArrowLeft size={20} />
                 <span className="text-sm font-medium">Back to All Coaches</span>
@@ -442,7 +442,7 @@ export default function CoachDetailsPage() {
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
                 <div className="min-w-0">
                   <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-white/80">
+                    <span className="inline-flex items-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-wide text-slate-600">
                       Coach Profile
                     </span>
                     <span className="inline-flex items-center rounded-full border border-turf-green/30 bg-turf-green/15 px-3 py-1 text-[11px] font-semibold tracking-wide text-turf-green">
@@ -459,13 +459,13 @@ export default function CoachDetailsPage() {
                       );
                     })()}
                     {additionalSportsCount > 0 && (
-                      <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-white/80">
+                      <span className="inline-flex items-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-wide text-slate-600">
                         +{additionalSportsCount} sports
                       </span>
                     )}
                   </div>
 
-                  <h1 className="mb-2 max-w-5xl wrap-break-word text-2xl font-bold leading-tight sm:text-4xl">
+                  <h1 className="font-title mb-2 max-w-5xl wrap-break-word text-2xl font-bold leading-tight sm:text-4xl">
                     {coachDisplayName}
                   </h1>
 
@@ -473,7 +473,7 @@ export default function CoachDetailsPage() {
                     {highlightedSports.map((sport, index) => (
                       <span
                         key={`${sport}-${index}`}
-                        className="inline-flex max-w-full items-center rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/90"
+                        className="inline-flex max-w-full items-center rounded-md border border-white/70 bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
                         title={sport}
                       >
                         <span className="line-clamp-1 wrap-break-word">
@@ -492,7 +492,7 @@ export default function CoachDetailsPage() {
                       <span className="font-bold text-lg">
                         {coach.rating.toFixed(1)}
                       </span>
-                      <span className="text-slate-300 text-sm">
+                      <span className="text-slate-600 text-sm">
                         ({coach.reviewCount} reviews)
                       </span>
                     </div>
@@ -502,13 +502,13 @@ export default function CoachDetailsPage() {
                       <span className="font-bold text-xl text-turf-green">
                         {selectedSportRate}
                       </span>
-                      <span className="text-slate-300 text-sm">/hour</span>
+                      <span className="text-slate-600 text-sm">/hour</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="w-fit rounded-2xl border border-white/15 bg-white/10 p-2 backdrop-blur-xs">
-                  <div className="h-24 w-24 overflow-hidden rounded-xl border border-white/20 bg-white/10">
+                <div className="w-fit rounded-2xl border border-white/70 bg-white/80 p-2 backdrop-blur-md">
+                  <div className="h-24 w-24 overflow-hidden rounded-xl border border-white/70 bg-white/80">
                     <CoachImageWithFallback
                       sources={coachImageCandidates}
                       alt={`${coach.sports[0]} coach`}
@@ -531,7 +531,7 @@ export default function CoachDetailsPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* About the Coach */}
-            <Card className="bg-white border-2 border-slate-100 overflow-hidden">
+            <Card className="shop-surface premium-shadow overflow-hidden border border-white/70">
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                   <Info size={24} className="text-turf-green" />
@@ -548,7 +548,7 @@ export default function CoachDetailsPage() {
 
             {/* Venue Images */}
             {venueImages.length > 0 && (
-              <Card className="bg-white border-2 border-slate-100 overflow-hidden">
+              <Card className="shop-surface premium-shadow overflow-hidden border border-white/70">
                 <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                   <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                     <ImageIcon size={24} className="text-turf-green" />
@@ -575,7 +575,7 @@ export default function CoachDetailsPage() {
             )}
 
             {/* Certifications */}
-            <Card className="bg-white border-2 border-slate-100 overflow-hidden">
+            <Card className="shop-surface premium-shadow overflow-hidden border border-white/70">
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                   <Award size={24} className="text-turf-green" />
@@ -628,7 +628,7 @@ export default function CoachDetailsPage() {
             </Card>
 
             {/* Reviews */}
-            <Card className="bg-white border-2 border-slate-100 overflow-hidden">
+            <Card className="shop-surface premium-shadow overflow-hidden border border-white/70">
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900">
                   Coach Reviews
@@ -748,7 +748,7 @@ export default function CoachDetailsPage() {
 
           {/* Booking Sidebar */}
           <div className="lg:col-span-1">
-            <Card className="bg-white border-2 border-turf-green/20 shadow-lg overflow-hidden sticky top-24">
+            <Card className="shop-surface premium-shadow overflow-hidden sticky top-24 border border-white/70">
               <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
                 <h2 className="text-xl font-bold text-slate-900">
                   Book a Session

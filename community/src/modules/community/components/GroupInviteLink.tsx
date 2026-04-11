@@ -119,7 +119,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
       initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
       animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="rounded-[1.5rem] border border-border/80 bg-white/90 p-5 shadow-[0_14px_35px_-28px_rgba(15,23,42,0.4)] backdrop-blur"
+      className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur"
     >
       <div className="flex items-center gap-2">
         <Share2 size={16} className="text-slate-600" />

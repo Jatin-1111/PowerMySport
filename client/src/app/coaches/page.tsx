@@ -854,22 +854,22 @@ function CoachesPageContent() {
       : 0;
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="bg-background transition-colors duration-300">
       {/* Header Section */}
-      <div className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+      <div className="bg-white/70 border-b border-white/60 backdrop-blur-md transition-colors duration-300">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+          <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-2">
                 <Users size={32} className="text-turf-green" />
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+                <span className="inline-flex items-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
                   Professional Coaches
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+              <h1 className="font-title text-3xl sm:text-4xl font-bold mb-3">
                 Find Expert Coaches
               </h1>
-              <p className="text-slate-200 text-base sm:text-lg mb-6 max-w-2xl">
+              <p className="text-slate-700 text-base sm:text-lg mb-6 max-w-2xl">
                 Learn from experienced coaches. Browse and book training
                 sessions with professionals in your favorite sports.
               </p>
@@ -906,7 +906,7 @@ function CoachesPageContent() {
                 <Button
                   type="submit"
                   variant="primary"
-                  className="w-full px-8 shadow-lg sm:w-auto sm:whitespace-nowrap"
+                  className="w-full rounded-xl px-8 premium-shadow sm:w-auto sm:whitespace-nowrap"
                   disabled={!sportInput.trim() && !appliedSportFilter}
                 >
                   <Search size={18} className="mr-2" />
@@ -926,7 +926,7 @@ function CoachesPageContent() {
               </form>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium uppercase tracking-wide text-white/70">
+                <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                   Quick filters
                 </span>
                 {QUICK_SPORT_FILTERS.map((sport) => {
@@ -940,7 +940,7 @@ function CoachesPageContent() {
                       className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                         isActive
                           ? "border-turf-green bg-turf-green text-white"
-                          : "border-white/30 bg-white/10 text-white hover:bg-white/20"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
                       }`}
                     >
                       {sport}
@@ -950,18 +950,18 @@ function CoachesPageContent() {
               </div>
 
               {hasPendingSearchChange && (
-                <p className="mt-2 text-xs text-white/80">
+                <p className="mt-2 text-xs text-slate-600">
                   Search text changed. Press Search to apply new sport filter.
                 </p>
               )}
 
-              <div className="mt-5 max-w-6xl rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-xs">
+              <div className="mt-5 max-w-6xl rounded-2xl border border-white/70 bg-white/80 p-4 backdrop-blur-md">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-white/80">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
                     Refine Results
                   </p>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white">
+                    <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700">
                       {filteredCoaches.length} result
                       {filteredCoaches.length !== 1 ? "s" : ""}
                     </span>
@@ -990,13 +990,13 @@ function CoachesPageContent() {
                 {showAdvancedFilters && (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Service Mode
                       </span>
                       <select
                         value={serviceModeFilter}
                         onChange={(e) => setServiceModeFilter(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
                       >
                         <option value="ALL">All Service Modes</option>
                         <option value="OWN_VENUE">Own Venue</option>
@@ -1006,7 +1006,7 @@ function CoachesPageContent() {
                     </label>
 
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Max Rate
                       </span>
                       <input
@@ -1015,18 +1015,18 @@ function CoachesPageContent() {
                         value={maxRate}
                         onChange={(e) => setMaxRate(e.target.value)}
                         placeholder="e.g. 1500"
-                        className="w-full px-3 py-2.5 border border-white/20 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green placeholder:text-slate-400 transition-colors"
                       />
                     </label>
 
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Minimum Rating
                       </span>
                       <select
                         value={minRating}
                         onChange={(e) => setMinRating(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
                       >
                         <option value="0">Any Rating</option>
                         <option value="3">3+ and above</option>
@@ -1036,13 +1036,13 @@ function CoachesPageContent() {
                     </label>
 
                     <label className="space-y-1.5">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/75">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                         Sort By
                       </span>
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="w-full px-3 py-2.5 border border-white/20 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green transition-colors"
                       >
                         <option value="relevance">Relevance</option>
                         <option value="nearest">Nearest</option>
@@ -1055,7 +1055,7 @@ function CoachesPageContent() {
                 )}
 
                 {sortBy === "nearest" && hasLocationAccessDenied && (
-                  <p className="mt-3 text-xs text-white/80">
+                  <p className="mt-3 text-xs text-slate-600">
                     Location access is off. Showing all coaches with available
                     data.
                   </p>
@@ -1065,7 +1065,7 @@ function CoachesPageContent() {
                   userLocation &&
                   !hasLocationAccessDenied &&
                   nearestSortableCoachCount === 0 && (
-                    <p className="mt-3 text-xs text-white/80">
+                    <p className="mt-3 text-xs text-slate-600">
                       Nearest sort is active, but no coach location coordinates
                       are available yet. Showing all coaches in fallback order.
                     </p>
@@ -1078,7 +1078,7 @@ function CoachesPageContent() {
                         type="button"
                         key={filter.label}
                         onClick={() => handleRemoveFilter(filter.key)}
-                        className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-white/30"
+                        className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
                         aria-label={`Remove ${filter.label} filter`}
                       >
                         {filter.label}
@@ -1100,18 +1100,20 @@ function CoachesPageContent() {
         {loading ? (
           <div className="text-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turf-green mx-auto mb-4"></div>
-            <p className="text-slate-600 dark:text-slate-400 font-medium">Loading coaches...</p>
+            <p className="text-slate-600 dark:text-slate-400 font-medium">
+              Loading coaches...
+            </p>
           </div>
         ) : filteredCoaches.length === 0 ? (
-          <Card className="bg-white dark:bg-slate-900 border-none">
-            <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-              <Users size={56} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+          <Card className="shop-surface premium-shadow border border-white/70">
+            <div className="text-center py-16 bg-white/70 rounded-xl">
+              <Users size={56} className="mx-auto mb-4 text-slate-300" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
                 {appliedSportFilter
                   ? "No coaches found"
                   : "No coaches available"}
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 mb-6">
+              <p className="text-slate-500 mb-6">
                 {appliedSportFilter
                   ? `We couldn't find any coaches for "${appliedSportFilter}". Try a different sport.`
                   : "Check back soon for new coaches."}
@@ -1128,12 +1130,12 @@ function CoachesPageContent() {
             {/* Results Header */}
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">
+                <h2 className="font-title text-xl font-bold text-slate-900 sm:text-2xl">
                   {appliedSportFilter
                     ? `${appliedSportFilter} Coaches`
                     : "All Coaches"}
                 </h2>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">
+                <p className="text-slate-600 mt-1">
                   {filteredCoaches.length} coach
                   {filteredCoaches.length !== 1 ? "es" : ""} available
                 </p>
@@ -1160,176 +1162,181 @@ function CoachesPageContent() {
                 const coachRoute = `/coaches/${coach.id || coach._id}`;
                 const onOpenCoach = () => router.push(coachRoute);
 
-                return (                  
+                return (
                   <StaggerItem key={coachCardKey} className="h-full">
-                  <Card
-                    className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-turf-green/40 dark:hover:border-turf-green/30 hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.3)] focus-within:-translate-y-1.5 focus-within:border-turf-green/40 focus-within:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] glass-panel"
-                    onClick={onOpenCoach}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onOpenCoach();
-                      }
-                    }}
-                    aria-label={`View coach profile for ${getCoachDisplayName(coach)}`}
-                  >
-                    {(() => {
-                      const coachImageCandidates =
-                        getCoachImageCandidates(coach);
-                      const venueImage = getCoachVenueImage(coach);
-                      const coachName = getCoachDisplayName(coach);
-                      const coachInitials = getCoachInitials(coach);
-                      const servingCity = getCoachServingCity(coach);
-                      const badge = getVerificationBadge(coach);
+                    <Card
+                      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-turf-green/40 dark:hover:border-turf-green/30 hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.3)] focus-within:-translate-y-1.5 focus-within:border-turf-green/40 focus-within:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] glass-panel"
+                      onClick={onOpenCoach}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onOpenCoach();
+                        }
+                      }}
+                      aria-label={`View coach profile for ${getCoachDisplayName(coach)}`}
+                    >
+                      {(() => {
+                        const coachImageCandidates =
+                          getCoachImageCandidates(coach);
+                        const venueImage = getCoachVenueImage(coach);
+                        const coachName = getCoachDisplayName(coach);
+                        const coachInitials = getCoachInitials(coach);
+                        const servingCity = getCoachServingCity(coach);
+                        const badge = getVerificationBadge(coach);
 
-                      return (
-                        <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                          <CoachImageWithFallback
-                            sources={coachImageCandidates}
-                            alt={coachName}
-                            fallbackLabel={coachInitials}
-                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                          />
-
-                          {/* Elegant gradient overlay for perfect legibility */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-95" />
-
-                          {/* Top Badges */}
-                          <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-2">
-                            <div className="flex flex-col items-start gap-2">
-                              {venueImage && (
-                                <span className="inline-flex items-center rounded-lg border border-white/20 bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
-                                  Venue Photo
-                                </span>
-                              )}
-                              <span className="inline-flex items-center rounded-lg bg-turf-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                                {primarySport}
-                              </span>
-                            </div>
-                            {badge.label === "Verified" && (
-                              <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/30 bg-blue-500/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
-                                <Award size={12} className="text-white" />
-                                Verified
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Coach Intro - Bottom anchored inside image */}
-                          <div className="absolute bottom-0 left-0 right-0 p-5">
-                            <h3 className="line-clamp-1 text-2xl font-extrabold tracking-tight text-white drop-shadow-md">
-                              {coachName}
-                            </h3>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-white/90">
-                              {servingCity && (
-                                <span className="flex items-center gap-1.5 drop-shadow-sm">
-                                  <MapPin size={14} className="text-white/70" />
-                                  {servingCity}
-                                </span>
-                              )}
-                              {showNearestDistance && (
-                                <span className="flex items-center gap-1.5 font-semibold text-turf-green drop-shadow-sm">
-                                  <span className="h-1 w-1 rounded-full bg-turf-green" />
-                                  {formatDistanceKm(distanceFromUserKm)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    <div className="flex flex-1 flex-col p-5">
-                      {/* Bio & Extra Sports */}
-                      <div className="mb-5">
-                        <p className="line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                          {getCoachBioSummary(coach)}
-                        </p>
-                        {additionalSportsCount > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {coach.sports
-                              .filter((s) => s !== primarySport)
-                              .map((s) => (
-                                <span
-                                  key={s}
-                                  className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400"
-                                >
-                                  {s}
-                                </span>
-                              ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Stat Pills */}
-                      <div className="mt-auto grid grid-cols-3 gap-2">
-                        <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-amber-100 group-hover:bg-amber-50/50 dark:group-hover:bg-amber-900/10 dark:group-hover:border-amber-900/30">
-                          <div className="flex items-center gap-1.5">
-                            <Star
-                              size={14}
-                              className="fill-amber-400 text-amber-400"
+                        return (
+                          <div className="relative aspect-3/4 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                            <CoachImageWithFallback
+                              sources={coachImageCandidates}
+                              alt={coachName}
+                              fallbackLabel={coachInitials}
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                             />
-                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                              {getDisplayRating(coach)}
-                            </span>
-                          </div>
-                          <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Rating
-                          </span>
-                        </div>
 
-                        <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-blue-100 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/10 dark:group-hover:border-blue-900/30">
-                          <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                            {(() => {
-                              const r = parseInt(getDisplayReviewCount(coach));
-                              return isNaN(r) ? "New" : r;
-                            })()}
-                          </span>
-                          <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Reviews
-                          </span>
-                        </div>
+                            {/* Elegant gradient overlay for perfect legibility */}
+                            <div className="absolute inset-0 bg-linear-to-t from-slate-900/90 via-slate-900/30 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-95" />
 
-                        <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-turf-green/10 group-hover:bg-turf-green/5 dark:group-hover:bg-turf-green/10 dark:group-hover:border-turf-green/20">
-                          <span className="line-clamp-1 text-[11px] font-bold text-slate-900 dark:text-slate-100">
-                            {getServiceModeLabel(coach)}
-                          </span>
-                          <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Mode
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Minimal Footer */}
-                    <div className="border-t border-slate-100/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/50 p-4 px-5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Session Price
-                          </p>
-                          {hasStartingRate ? (
-                            <div className="flex items-baseline gap-1 mt-0.5">
-                              <span className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
-                                ₹{startingRate}
-                              </span>
-                              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                /hr
-                              </span>
+                            {/* Top Badges */}
+                            <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-2">
+                              <div className="flex flex-col items-start gap-2">
+                                {venueImage && (
+                                  <span className="inline-flex items-center rounded-lg border border-white/20 bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
+                                    Venue Photo
+                                  </span>
+                                )}
+                                <span className="inline-flex items-center rounded-lg bg-turf-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                  {primarySport}
+                                </span>
+                              </div>
+                              {badge.label === "Verified" && (
+                                <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/30 bg-blue-500/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
+                                  <Award size={12} className="text-white" />
+                                  Verified
+                                </span>
+                              )}
                             </div>
-                          ) : (
-                            <p className="mt-0.5 text-sm font-bold text-slate-700 dark:text-slate-300">
-                              Contact Us
-                            </p>
+
+                            {/* Coach Intro - Bottom anchored inside image */}
+                            <div className="absolute bottom-0 left-0 right-0 p-5">
+                              <h3 className="line-clamp-1 text-2xl font-extrabold tracking-tight text-white drop-shadow-md">
+                                {coachName}
+                              </h3>
+                              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-white/90">
+                                {servingCity && (
+                                  <span className="flex items-center gap-1.5 drop-shadow-sm">
+                                    <MapPin
+                                      size={14}
+                                      className="text-white/70"
+                                    />
+                                    {servingCity}
+                                  </span>
+                                )}
+                                {showNearestDistance && (
+                                  <span className="flex items-center gap-1.5 font-semibold text-turf-green drop-shadow-sm">
+                                    <span className="h-1 w-1 rounded-full bg-turf-green" />
+                                    {formatDistanceKm(distanceFromUserKm)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      <div className="flex flex-1 flex-col p-5">
+                        {/* Bio & Extra Sports */}
+                        <div className="mb-5">
+                          <p className="line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                            {getCoachBioSummary(coach)}
+                          </p>
+                          {additionalSportsCount > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {coach.sports
+                                .filter((s) => s !== primarySport)
+                                .map((s) => (
+                                  <span
+                                    key={s}
+                                    className="rounded-md bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                                  >
+                                    {s}
+                                  </span>
+                                ))}
+                            </div>
                           )}
                         </div>
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-sm transition-all duration-300 group-hover:-rotate-45 group-hover:bg-turf-green dark:group-hover:bg-turf-green group-hover:text-white dark:group-hover:text-white group-hover:shadow-md">
-                          <ArrowRight size={18} strokeWidth={2.5} />
+
+                        {/* Stat Pills */}
+                        <div className="mt-auto grid grid-cols-3 gap-2">
+                          <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-amber-100 group-hover:bg-amber-50/50 dark:group-hover:bg-amber-900/10 dark:group-hover:border-amber-900/30">
+                            <div className="flex items-center gap-1.5">
+                              <Star
+                                size={14}
+                                className="fill-amber-400 text-amber-400"
+                              />
+                              <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {getDisplayRating(coach)}
+                              </span>
+                            </div>
+                            <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Rating
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-blue-100 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/10 dark:group-hover:border-blue-900/30">
+                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                              {(() => {
+                                const r = parseInt(
+                                  getDisplayReviewCount(coach),
+                                );
+                                return isNaN(r) ? "New" : r;
+                              })()}
+                            </span>
+                            <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Reviews
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-2.5 transition-colors group-hover:border-turf-green/10 group-hover:bg-turf-green/5 dark:group-hover:bg-turf-green/10 dark:group-hover:border-turf-green/20">
+                            <span className="line-clamp-1 text-[11px] font-bold text-slate-900 dark:text-slate-100">
+                              {getServiceModeLabel(coach)}
+                            </span>
+                            <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Mode
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Card>
+
+                      {/* Minimal Footer */}
+                      <div className="border-t border-slate-100/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/50 p-4 px-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Session Price
+                            </p>
+                            {hasStartingRate ? (
+                              <div className="flex items-baseline gap-1 mt-0.5">
+                                <span className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                                  ₹{startingRate}
+                                </span>
+                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                  /hr
+                                </span>
+                              </div>
+                            ) : (
+                              <p className="mt-0.5 text-sm font-bold text-slate-700 dark:text-slate-300">
+                                Contact Us
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-sm transition-all duration-300 group-hover:-rotate-45 group-hover:bg-turf-green dark:group-hover:bg-turf-green group-hover:text-white dark:group-hover:text-white group-hover:shadow-md">
+                            <ArrowRight size={18} strokeWidth={2.5} />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
                   </StaggerItem>
                 );
               })}
@@ -1345,11 +1352,11 @@ export default function CoachesPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+        <div className="min-h-screen bg-background transition-colors duration-300">
           <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="text-center py-20">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turf-green mx-auto mb-4"></div>
-              <p className="text-slate-600 dark:text-slate-400 font-medium">Loading coaches...</p>
+              <p className="text-slate-600 font-medium">Loading coaches...</p>
             </div>
           </div>
         </div>

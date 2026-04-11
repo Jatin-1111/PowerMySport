@@ -173,7 +173,7 @@ export default function BookingsPage() {
       />
 
       {bookings.length === 0 ? (
-        <Card className="bg-white">
+        <Card className="shop-surface premium-shadow">
           <EmptyState
             icon={CalendarX}
             title="No bookings yet"
@@ -187,7 +187,7 @@ export default function BookingsPage() {
       ) : (
         <div className="space-y-6">
           {/* Tabs */}
-          <Card className="bg-white">
+          <Card className="shop-surface premium-shadow">
             <div className="flex border-b border-slate-200">
               <button
                 onClick={() => {
@@ -232,7 +232,7 @@ export default function BookingsPage() {
 
           {/* Bookings List */}
           {filteredBookings.length === 0 ? (
-            <Card className="bg-white">
+            <Card className="shop-surface premium-shadow">
               <EmptyState
                 icon={activeTab === "venues" ? MapPin : Award}
                 title={`No ${activeTab} bookings`}
@@ -255,7 +255,7 @@ export default function BookingsPage() {
               {filteredBookings.map((booking) => (
                 <Card
                   key={booking.id}
-                  className="bg-white hover:shadow-lg transition-shadow"
+                  className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
@@ -400,7 +400,7 @@ export default function BookingsPage() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && filteredBookings.length > 0 && (
-            <Card className="bg-white">
+            <Card className="shop-surface premium-shadow">
               <div className="flex items-center justify-between gap-4">
                 <div className="text-sm text-slate-600">
                   Page {currentPage} of {pagination.totalPages} •{" "}

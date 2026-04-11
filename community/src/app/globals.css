@@ -2,12 +2,13 @@
 
 :root {
     --power-orange: #E97316;
-    --deep-slate: #0B1220;
+    --deep-slate: #0F172A;
     --ghost-white: #F8FAFC;
     --turf-green: #22C55E;
     --error-red: #EF4444;
-    --background: #f5f7fb;
+    --background: #f4f7ff;
     --foreground: #111827;
+    --surface: #ffffff;
     --card: rgba(255, 255, 255, 0.92);
     --card-foreground: #111827;
     --muted: #eef2f7;
@@ -20,6 +21,7 @@
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
+    --color-surface: var(--surface);
     --color-power-orange: var(--power-orange);
     --color-deep-slate: var(--deep-slate);
     --color-ghost-white: var(--ghost-white);
@@ -31,8 +33,9 @@
     --color-muted-foreground: var(--muted-foreground);
     --color-border: var(--border);
     --color-ring: var(--ring);
-    --font-sans: var(--font-community-sans);
-    --font-mono: var(--font-community-mono);
+    --font-sans: var(--font-space-grotesk);
+    --font-title: var(--font-syne);
+    --font-mono: var(--font-geist-mono);
 }
 
 @layer base {
@@ -45,38 +48,13 @@
     }
 
     body {
-        position: relative;
-        isolation: isolate;
         @apply bg-background text-foreground antialiased;
         min-height: 100vh;
         text-rendering: optimizeLegibility;
         background:
-            radial-gradient(circle at top left, rgba(233, 115, 22, 0.14), transparent 26%),
-            radial-gradient(circle at top right, rgba(34, 197, 94, 0.11), transparent 28%),
-            linear-gradient(180deg, #f9fbfe 0%, #eef2f8 100%);
-    }
-
-    body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        z-index: -1;
-        pointer-events: none;
-        background-image:
-            linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
-        background-size: 36px 36px;
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent 85%);
-        opacity: 0.5;
-    }
-
-    body::after {
-        content: "";
-        position: fixed;
-        inset: auto 0 0 0;
-        height: 24vh;
-        pointer-events: none;
-        background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.7));
+            radial-gradient(1100px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
+            radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 34%),
+            var(--background);
     }
 
     ::selection {
@@ -115,5 +93,26 @@
         background: rgba(233, 115, 22, 0.45);
         border: 2px solid transparent;
         background-clip: content-box;
+    }
+}
+
+@layer utilities {
+    .font-title {
+        font-family: var(--font-title), sans-serif;
+    }
+
+    .bg-app {
+        background:
+            radial-gradient(1200px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
+            radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 36%),
+            var(--background);
+    }
+
+    .nav-link {
+        @apply rounded-xl px-3 py-2 text-slate-700 transition-colors hover:bg-indigo-50 hover:text-slate-900;
+    }
+
+    .shop-surface {
+        @apply border border-white/60 bg-white/80 backdrop-blur-md;
     }
 }

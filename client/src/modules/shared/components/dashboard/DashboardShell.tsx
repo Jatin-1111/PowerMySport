@@ -127,8 +127,8 @@ export const DashboardShell = ({
   }, [userName]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 border-b border-white/60 bg-white/75 px-4 py-3 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">
@@ -140,7 +140,7 @@ export const DashboardShell = ({
           </div>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/60 bg-white/80 text-slate-700"
             aria-label="Open dashboard menu"
           >
             <Menu size={18} />
@@ -155,8 +155,8 @@ export const DashboardShell = ({
             aria-label="Close dashboard menu"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] border-r border-slate-200 bg-white shadow-lg">
-            <div className="flex items-center justify-between border-b border-slate-200 p-4">
+          <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] border-r border-white/60 bg-white/90 backdrop-blur-xl shadow-lg">
+            <div className="flex items-center justify-between border-b border-white/60 p-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">
                   {dashboardLabel}
@@ -167,7 +167,7 @@ export const DashboardShell = ({
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-700"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/60 text-slate-700"
                 aria-label="Close menu"
               >
                 <X size={18} />
@@ -180,13 +180,13 @@ export const DashboardShell = ({
               onNavigate={() => setIsMobileMenuOpen(false)}
             />
 
-            <div className="border-t border-slate-200 p-4">
+            <div className="border-t border-white/60 p-4">
               <button
                 onClick={async () => {
                   await onLogout();
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+                className="w-full rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
               >
                 Logout
               </button>
@@ -196,25 +196,25 @@ export const DashboardShell = ({
       )}
 
       <div className="flex min-h-screen lg:pt-0">
-        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-slate-200 bg-white shadow-sm lg:flex lg:flex-col">
+        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/60 bg-white/80 backdrop-blur-md shadow-sm lg:flex lg:flex-col">
           <div className="p-6">
-            <div className="rounded-2xl bg-gradient-to-br from-deep-slate to-slate-700 p-5 text-white shadow-lg">
-              <p className="text-xs uppercase tracking-wide text-slate-300">
+            <div className="rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-5 text-slate-900 shadow-sm">
+              <p className="text-xs uppercase tracking-wide text-slate-500">
                 {dashboardLabel}
               </p>
-              <h1 className="mt-2 text-2xl font-bold text-white">
+              <h1 className="font-title mt-2 text-2xl font-bold text-slate-900">
                 PowerMySport
               </h1>
-              <p className="mt-1 text-sm text-slate-200">{displayName}</p>
+              <p className="mt-1 text-sm text-slate-600">{displayName}</p>
             </div>
           </div>
 
           <NavItems items={navItems} pathname={pathname} />
 
-          <div className="mt-auto border-t border-slate-200 p-6">
+          <div className="mt-auto border-t border-white/60 p-6">
             <button
               onClick={onLogout}
-              className="w-full rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+              className="w-full rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
             >
               Logout
             </button>

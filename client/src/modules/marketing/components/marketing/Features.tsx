@@ -5,6 +5,7 @@
   CardTitle,
 } from "@/modules/shared/ui/Card";
 import { cn } from "@/utils/cn";
+import { motion } from "framer-motion";
 import {
   BarChart3,
   Calendar,
@@ -51,7 +52,7 @@ export const Features: React.FC<FeaturesProps> = ({
   };
 
   return (
-    <section className="py-16 sm:py-20 lg:py-24 bg-white">
+    <section className="py-16 sm:py-20 lg:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         {(title || subtitle || description) && (
@@ -62,17 +63,19 @@ export const Features: React.FC<FeaturesProps> = ({
             )}
           >
             {subtitle && (
-              <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
                 {subtitle}
               </p>
             )}
             {title && (
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-deep-slate mb-4">
+              <h2 className="font-title mb-4 text-3xl font-bold text-deep-slate sm:text-4xl lg:text-5xl">
                 {title}
               </h2>
             )}
             {description && (
-              <p className="text-lg text-muted-foreground">{description}</p>
+              <p className="text-base leading-7 text-muted-foreground sm:text-lg">
+                {description}
+              </p>
             )}
           </div>
         )}
@@ -82,14 +85,30 @@ export const Features: React.FC<FeaturesProps> = ({
           className={cn("grid grid-cols-1 gap-6 sm:gap-8", gridCols[columns])}
         >
           {features.map((feature, index) => (
-            <Card key={index} variant="elevated" className="h-full">
+            <Card
+              key={index}
+              variant="elevated"
+              className="group h-full rounded-2xl border border-white/60 bg-white/80 backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+            >
               <CardContent className="pt-6">
                 {/* Icon */}
                 {feature.icon && (
-                  <div className="mb-4 text-power-orange">{feature.icon}</div>
+                  <motion.div
+                    className="mb-4 origin-center text-power-orange will-change-transform"
+                    initial={{ opacity: 0, y: 10, scale: 0.94 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    whileHover={{ scale: 1.08, y: -2, rotate: 2 }}
+                    whileTap={{ scale: 0.98 }}
+                    viewport={{ once: true, amount: 0.4 }}
+                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {feature.icon}
+                  </motion.div>
                 )}
                 {/* Title */}
-                <CardTitle className="text-xl mb-3">{feature.title}</CardTitle>
+                <CardTitle className="mb-3 text-xl text-slate-900">
+                  {feature.title}
+                </CardTitle>
                 {/* Description */}
                 <CardDescription className="text-base">
                   {feature.description}

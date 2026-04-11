@@ -73,6 +73,19 @@ export const REVIEWS_PERMISSIONS = {
   DELETE: "reviews:delete",
 } as const;
 
+// Ecommerce Module
+export const PRODUCTS_PERMISSIONS = {
+  VIEW: "products:view",
+  CREATE: "products:create",
+  MANAGE: "products:manage",
+} as const;
+
+export const ORDERS_PERMISSIONS = {
+  VIEW: "orders:view",
+  MANAGE: "orders:manage",
+  REFUND: "orders:refund",
+} as const;
+
 // Flatten all permissions into a single array for validation
 export const ALL_PERMISSIONS = [
   ...Object.values(USERS_PERMISSIONS),
@@ -85,6 +98,8 @@ export const ALL_PERMISSIONS = [
   ...Object.values(ADMINS_PERMISSIONS),
   ...Object.values(SETTINGS_PERMISSIONS),
   ...Object.values(REVIEWS_PERMISSIONS),
+  ...Object.values(PRODUCTS_PERMISSIONS),
+  ...Object.values(ORDERS_PERMISSIONS),
 ] as const;
 
 // ============================================
@@ -110,18 +125,25 @@ export const OPERATIONS_ADMIN_PERMISSIONS = [
   BOOKINGS_PERMISSIONS.VIEW,
   BOOKINGS_PERMISSIONS.MANAGE,
   BOOKINGS_PERMISSIONS.CANCEL,
+  ORDERS_PERMISSIONS.VIEW,
+  ORDERS_PERMISSIONS.MANAGE,
   COACHES_PERMISSIONS.VIEW,
   COACHES_PERMISSIONS.MANAGE,
   COACHES_PERMISSIONS.VERIFY,
   USERS_PERMISSIONS.VIEW,
   INQUIRIES_PERMISSIONS.VIEW,
   REVIEWS_PERMISSIONS.VIEW,
+  PRODUCTS_PERMISSIONS.VIEW,
+  PRODUCTS_PERMISSIONS.CREATE,
+  PRODUCTS_PERMISSIONS.MANAGE,
 ] as const;
 
 // Finance Admin - Handles refunds, disputes, and financial matters
 export const FINANCE_ADMIN_PERMISSIONS = [
   BOOKINGS_PERMISSIONS.VIEW,
   BOOKINGS_PERMISSIONS.REFUND,
+  ORDERS_PERMISSIONS.VIEW,
+  ORDERS_PERMISSIONS.REFUND,
   DISPUTES_PERMISSIONS.VIEW,
   DISPUTES_PERMISSIONS.MANAGE,
   DISPUTES_PERMISSIONS.RESOLVE,
@@ -243,6 +265,14 @@ export const PERMISSION_MODULES = {
     name: "Review Management",
     permissions: Object.values(REVIEWS_PERMISSIONS),
   },
+  products: {
+    name: "Product Management",
+    permissions: Object.values(PRODUCTS_PERMISSIONS),
+  },
+  orders: {
+    name: "Order Management",
+    permissions: Object.values(ORDERS_PERMISSIONS),
+  },
 } as const;
 
 // Permission labels for display
@@ -297,6 +327,16 @@ export const PERMISSION_LABELS: Record<string, string> = {
   "reviews:view": "View Reviews",
   "reviews:manage": "Manage Reviews",
   "reviews:delete": "Delete Reviews",
+
+  // Products
+  "products:view": "View Products",
+  "products:create": "Create Products",
+  "products:manage": "Manage Products",
+
+  // Orders
+  "orders:view": "View Orders",
+  "orders:manage": "Manage Orders",
+  "orders:refund": "Refund Orders",
 };
 
 // Legacy support (for backward compatibility during migration)

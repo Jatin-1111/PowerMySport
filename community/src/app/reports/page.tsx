@@ -9,7 +9,7 @@ import { redirectToMainLogin } from "@/lib/auth/redirect";
 
 type ReportItem = {
   id: string;
-  targetType: "MESSAGE" | "GROUP";
+  targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
   targetId: string;
   reason: string;
   details?: string;
@@ -17,6 +17,15 @@ type ReportItem = {
   resolutionNote?: string;
   createdAt: string;
   reviewedAt?: string | null;
+  messageAudit?: {
+    senderId?: string;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+    editedAt?: string | null;
+    deletedAt?: string | null;
+    wasEdited: boolean;
+    wasDeleted: boolean;
+  };
 };
 
 export default function ReportsPage() {
@@ -130,6 +139,23 @@ export default function ReportsPage() {
                     <p className="mt-1 text-xs text-slate-500">
                       {report.details}
                     </p>
+                  )}
+                  {report.targetType === "MESSAGE" && report.messageAudit && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                        Message snapshot
+                      </span>
+                      {report.messageAudit.wasEdited && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                          Was edited
+                        </span>
+                      )}
+                      {report.messageAudit.wasDeleted && (
+                        <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                          Was deleted
+                        </span>
+                      )}
+                    </div>
                   )}
                   {report.resolutionNote && (
                     <div className="mt-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2">

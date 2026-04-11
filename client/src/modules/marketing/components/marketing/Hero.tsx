@@ -47,28 +47,30 @@ export const Hero: React.FC<HeroProps> = ({
     return (
       <section
         className={cn(
-          "relative py-20 sm:py-24 lg:py-32 overflow-hidden",
-          gradient && "bg-linear-to-br from-power-orange to-turf-green",
+          "relative overflow-hidden py-20 sm:py-24 lg:py-32",
+          gradient &&
+            "bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)]",
         )}
       >
-        <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl mix-blend-overlay"></div>
+        <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-sky-300/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 left-8 h-72 w-72 rounded-full bg-amber-200/40 blur-3xl" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <StaggerContainer className="text-center">
             {subtitle && (
               <StaggerItem>
-                <p className="inline-block px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm sm:text-base font-semibold text-white uppercase tracking-wide mb-6 premium-shadow">
+                <p className="mb-6 inline-block rounded-full border border-slate-200 bg-white/80 px-4 py-1.5 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600 backdrop-blur-sm sm:text-base">
                   {subtitle}
                 </p>
               </StaggerItem>
             )}
             <StaggerItem>
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white mb-6 leading-tight drop-shadow-md">
+              <h1 className="font-title mb-6 text-4xl font-extrabold leading-tight text-slate-900 sm:text-5xl lg:text-7xl">
                 {title}
               </h1>
             </StaggerItem>
             {description && (
               <StaggerItem>
-                <p className="text-lg sm:text-2xl text-white/95 max-w-3xl mx-auto mb-10 drop-shadow-sm font-light">
+                <p className="mx-auto mb-10 max-w-3xl text-base leading-7 text-slate-700 sm:text-xl sm:leading-8">
                   {description}
                 </p>
               </StaggerItem>
@@ -77,14 +79,22 @@ export const Hero: React.FC<HeroProps> = ({
               <div className="flex w-full flex-col items-stretch justify-center gap-4 sm:w-auto sm:flex-row sm:items-center">
                 {primaryCTA && (
                   <Link href={primaryCTA.href} className="w-full sm:w-auto">
-                    <Button variant="secondary" size="lg" className="premium-shadow text-lg px-8 py-6 h-auto">
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className="h-auto rounded-xl px-8 py-6 text-lg premium-shadow"
+                    >
                       {primaryCTA.label}
                     </Button>
                   </Link>
                 )}
                 {secondaryCTA && (
                   <Link href={secondaryCTA.href} className="w-full sm:w-auto">
-                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10 hover:text-white premium-shadow text-lg px-8 py-6 h-auto">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="h-auto rounded-xl border-slate-300 bg-white/90 px-8 py-6 text-lg text-slate-900 premium-shadow hover:bg-white"
+                    >
                       {secondaryCTA.label}
                     </Button>
                   </Link>
@@ -100,25 +110,26 @@ export const Hero: React.FC<HeroProps> = ({
   // Page variant - Compact hero for internal pages
   if (variant === "page") {
     return (
-      <section className="bg-deep-slate py-16 sm:py-20 relative overflow-hidden">
-        <div className="absolute inset-0 bg-linear-to-tr from-power-orange/10 to-turf-green/5"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <section className="relative overflow-hidden py-16 sm:py-20">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-sky-300/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 left-8 h-72 w-72 rounded-full bg-amber-200/35 blur-3xl" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <StaggerContainer className="text-center">
             {subtitle && (
               <StaggerItem>
-                <p className="text-sm font-semibold text-power-orange uppercase tracking-wide mb-3">
+                <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
                   {subtitle}
                 </p>
               </StaggerItem>
             )}
             <StaggerItem>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
+              <h1 className="font-title mb-4 text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900">
                 {title}
               </h1>
             </StaggerItem>
             {description && (
               <StaggerItem>
-                <p className="text-lg text-white/90 max-w-2xl mx-auto">
+                <p className="mx-auto max-w-2xl text-base leading-7 text-slate-700 sm:text-lg">
                   {description}
                 </p>
               </StaggerItem>
@@ -139,13 +150,13 @@ export const Hero: React.FC<HeroProps> = ({
             <StaggerContainer>
               {subtitle && (
                 <StaggerItem>
-                  <p className="text-sm font-bold text-power-orange uppercase tracking-wide mb-3">
+                  <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
                     {subtitle}
                   </p>
                 </StaggerItem>
               )}
               <StaggerItem>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-deep-slate mb-6 leading-tight">
+                <h1 className="font-title text-4xl sm:text-5xl lg:text-6xl font-extrabold text-deep-slate mb-6 leading-tight">
                   {title}
                 </h1>
               </StaggerItem>
@@ -160,14 +171,22 @@ export const Hero: React.FC<HeroProps> = ({
                 <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
                   {primaryCTA && (
                     <Link href={primaryCTA.href} className="w-full sm:w-auto">
-                      <Button variant="primary" size="lg" className="premium-shadow">
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="premium-shadow"
+                      >
                         {primaryCTA.label}
                       </Button>
                     </Link>
                   )}
                   {secondaryCTA && (
                     <Link href={secondaryCTA.href} className="w-full sm:w-auto">
-                      <Button variant="outline" size="lg" className="premium-shadow">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="premium-shadow"
+                      >
                         {secondaryCTA.label}
                       </Button>
                     </Link>
@@ -179,7 +198,7 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Image */}
             {imageSrc && (
               <FadeIn delay={0.2} duration={0.8}>
-                <div className="relative h-96 overflow-hidden rounded-2xl premium-shadow lg:h-[32rem]">
+                <div className="relative h-96 overflow-hidden rounded-2xl premium-shadow lg:h-128">
                   <Image
                     src={imageSrc}
                     alt={imageAlt || title}

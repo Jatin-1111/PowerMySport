@@ -15,7 +15,7 @@ export default function PublicPageHeader({
   children,
 }: PublicPageHeaderProps) {
   return (
-    <div className="relative bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden py-12 sm:py-16 md:py-20">
+    <div className="relative bg-linear-to-br from-slate-900 to-slate-800 text-white overflow-hidden py-12 sm:py-16 md:py-20">
       {/* Blob overlays */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-power-orange/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
       <div className="absolute bottom-0 left-0 w-80 h-80 bg-turf-green/10 rounded-full blur-3xl -ml-32 -mb-32"></div>

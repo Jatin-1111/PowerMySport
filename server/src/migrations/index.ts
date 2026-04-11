@@ -13,6 +13,7 @@ import { addS3KeysToDocuments } from "./05_add_s3_keys_to_documents";
 import { migrateCoachVenueToProfile } from "./06_separate_coach_venue_roles";
 import { up as addGroupBookingSupport } from "./07_add_group_booking_support";
 import { up as addNotificationsSystem } from "./08_add_notifications_system";
+import { up as backfillLegalConsents } from "./09_backfill_legal_consents";
 
 const runAllMigrations = async () => {
   console.log("=".repeat(60));
@@ -69,6 +70,12 @@ const runAllMigrations = async () => {
     console.log("📋 Running Migration 8: Add Notifications System");
     console.log("-".repeat(60));
     await addNotificationsSystem();
+    console.log();
+
+    // Migration 9: Backfill Legal Consents
+    console.log("📋 Running Migration 9: Backfill Legal Consents");
+    console.log("-".repeat(60));
+    await backfillLegalConsents();
     console.log();
 
     console.log("=".repeat(60));

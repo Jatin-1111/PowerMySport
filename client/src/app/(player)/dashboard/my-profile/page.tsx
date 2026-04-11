@@ -325,8 +325,8 @@ export default function ProfilePage() {
         subtitle="Manage your account details and keep track of your dependents in one place."
       />
 
-      <Card className="bg-white">
-        <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+      <Card className="shop-surface premium-shadow">
+        <div className="border-b border-white/70 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
               Account Details
@@ -538,8 +538,8 @@ export default function ProfilePage() {
       </Card>
 
       {/* My Sports Section */}
-      <Card className="bg-white">
-        <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+      <Card className="shop-surface premium-shadow">
+        <div className="border-b border-white/70 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
               My Sports
@@ -632,7 +632,7 @@ export default function ProfilePage() {
         {user.dependents && user.dependents.length > 0 ? (
           <div className="grid gap-4">
             {user.dependents.map((dependent) => (
-              <Card key={dependent._id} className="bg-white">
+              <Card key={dependent._id} className="shop-surface premium-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="text-base font-bold text-slate-900 sm:text-lg">
@@ -714,7 +714,7 @@ export default function ProfilePage() {
             ))}
           </div>
         ) : (
-          <Card className="bg-slate-50 border-dashed">
+          <Card className="shop-surface premium-shadow border-dashed border-white/70">
             <div className="text-center py-8">
               <p className="text-slate-600 mb-4">
                 No dependents added yet. Add your first dependent to get
@@ -731,7 +731,7 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg mt-4 text-sm">
+        <div className="bg-white/80 border border-white/70 text-slate-700 p-4 rounded-lg mt-4 text-sm premium-shadow">
           <p className="font-semibold mb-2">What is a dependent?</p>
           <p className="mb-2">
             A dependent is a person (usually a child) whose bookings you manage.

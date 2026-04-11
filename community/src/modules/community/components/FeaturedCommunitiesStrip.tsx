@@ -27,14 +27,14 @@ export function FeaturedCommunitiesStrip({
       whileInView={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.35 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-4 shadow-[0_16px_40px_-28px_rgba(15,23,42,0.45)] backdrop-blur"
+      className="overflow-hidden rounded-[1.75rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-4 shadow-sm backdrop-blur"
     >
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
             Explore communities
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
+          <h3 className="font-title mt-1 text-sm font-semibold text-slate-900 sm:text-base">
             Popular groups near players like you
           </h3>
         </div>
@@ -42,7 +42,7 @@ export function FeaturedCommunitiesStrip({
           onClick={onViewAll}
           whileHover={prefersReducedMotion ? undefined : { scale: 1.02, y: -1 }}
           whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-          className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
         >
           View all
         </motion.button>
@@ -70,10 +70,10 @@ export function FeaturedCommunitiesStrip({
                 }}
                 whileHover={prefersReducedMotion ? undefined : { y: -4 }}
                 transition={{ duration: 0.28, ease: "easeOut" }}
-                className="min-w-60 rounded-[1.35rem] border border-border bg-white/90 p-3 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.45)] sm:min-w-0"
+                className="min-w-60 rounded-[1.35rem] border border-slate-200 bg-white/90 p-3 shadow-sm sm:min-w-0"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="line-clamp-1 text-sm font-semibold text-slate-900">
+                  <p className="font-title line-clamp-1 text-sm font-semibold text-slate-900">
                     {group.name}
                   </p>
                   {group.isMember && (

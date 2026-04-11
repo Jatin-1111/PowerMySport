@@ -13,6 +13,18 @@ export interface UserDocument extends Document {
   photoS3Key?: string; // S3 key for profile picture
   lastActiveAt?: Date;
   dob?: Date;
+  legalConsents?: {
+    terms?: {
+      accepted: boolean;
+      acceptedAt?: Date;
+      version?: string;
+    };
+    privacy?: {
+      accepted: boolean;
+      acceptedAt?: Date;
+      version?: string;
+    };
+  };
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   playerProfile?: IPlayerProfile;
@@ -172,6 +184,18 @@ const userSchema = new Schema<UserDocument>(
     },
     dob: {
       type: Date,
+    },
+    legalConsents: {
+      terms: {
+        accepted: { type: Boolean, default: false },
+        acceptedAt: { type: Date },
+        version: { type: String },
+      },
+      privacy: {
+        accepted: { type: Boolean, default: false },
+        acceptedAt: { type: Date },
+        version: { type: String },
+      },
     },
     resetPasswordToken: {
       type: String,
