@@ -158,7 +158,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <Hero
         variant="home"
-        title="Every Match, Session, and Coach in One Place"
+        title="One Stop Solution For All Your Sports Needs"
         subtitle="India's Premier Sports Booking Platform"
         description="Discover venues, book trusted coaches, and manage your entire sports routine from one streamlined platform."
         primaryCTA={{
