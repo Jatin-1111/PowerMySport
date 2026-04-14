@@ -9,6 +9,7 @@ import {
   CommunityPostDetailResponse,
   CommunityPostListResponse,
   CommunityProfile,
+  CommunityMemberProfile,
   CommunityReputationSummary,
   CommunityActivityItem,
   CommunityVoteResult,
@@ -203,6 +204,19 @@ export const communityService = {
 
   async searchPlayers(query: string): Promise<CommunityUserSearchResult[]> {
     return this.searchCommunityUsers(query);
+  },
+
+  async getPlayerProfile(userId: string): Promise<CommunityMemberProfile> {
+    return withRequestCache(
+      `player-profile:${userId}`,
+      async () => {
+        const response = await axiosInstance.get<
+          ApiResponse<CommunityMemberProfile>
+        >(`/community/players/${userId}/profile`);
+        return response.data.data;
+      },
+      5000,
+    );
   },
 
   async getProfile(): Promise<CommunityProfile> {

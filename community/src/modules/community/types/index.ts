@@ -69,6 +69,23 @@ export interface CommunityUserSearchResult {
   photoUrl?: string | null;
 }
 
+export interface CommunityMemberProfile {
+  id: string;
+  role: CommunityUserRole;
+  displayName: string;
+  alias: string;
+  isIdentityPublic: boolean;
+  photoUrl?: string | null;
+  sports: string[];
+  dob?: string | null;
+  createdAt: string;
+  lastActiveAt?: string | null;
+  messagePrivacy: MessagePrivacy;
+  readReceiptsEnabled: boolean;
+  lastSeenVisible: boolean;
+  lastSeenAt?: string | null;
+}
+
 export type PlayerSearchResult = CommunityUserSearchResult;
 
 export interface BlockedUser {

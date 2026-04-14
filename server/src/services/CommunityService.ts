@@ -16,6 +16,7 @@ import { CommunityAnswer } from "../models/CommunityAnswer";
 import { CommunityVote } from "../models/CommunityVote";
 import { CommunityReputation } from "../models/CommunityReputation";
 import { NotificationService } from "./NotificationService";
+import { S3Service } from "./S3Service";
 import {
   canJoinGroupAudience,
   COMMUNITY_INTERACTION_POLICY,
@@ -42,6 +43,32 @@ const COMMUNITY_POINTS = {
   CREATE_ANSWER: 8,
   RECEIVE_UPVOTE: 2,
 } as const;
+
+const s3Service = new S3Service();
+
+const resolveUserPhotoUrl = async (user?: {
+  photoUrl?: string | null;
+  photoS3Key?: string | null;
+}): Promise<string | null> => {
+  if (!user) {
+    return null;
+  }
+
+  if (!user.photoS3Key) {
+    return user.photoUrl || null;
+  }
+
+  try {
+    return await s3Service.generateDownloadUrl(
+      user.photoS3Key,
+      "images",
+      604800,
+    );
+  } catch (error) {
+    console.error("Failed to refresh community photo URL:", error);
+    return user.photoUrl || null;
+  }
+};
 
 const makeDefaultAlias = (name?: string): string => {
   const seed = Math.floor(1000 + Math.random() * 9000);
@@ -300,7 +327,7 @@ export const CommunityService = {
 
     const [users, profiles, votes] = await Promise.all([
       User.find({ _id: { $in: authorIds } })
-        .select("_id name photoUrl")
+        .select("_id name photoUrl photoS3Key")
         .lean(),
       CommunityProfile.find({ userId: { $in: authorIds } })
         .select("userId anonymousAlias isIdentityPublic")
@@ -321,42 +348,45 @@ export const CommunityService = {
     const voteMap = new Map(votes.map((vote) => [String(vote.targetId), vote]));
 
     return {
-      items: posts.map((post) => {
-        const authorId = String(post.authorId);
-        const author = userMap.get(authorId);
-        const profile = profileMap.get(authorId);
+      items: await Promise.all(
+        posts.map(async (post) => {
+          const authorId = String(post.authorId);
+          const author = userMap.get(authorId);
+          const profile = profileMap.get(authorId);
 
-        return {
-          id: String(post._id),
-          title: post.title,
-          body: post.body,
-          tags: post.tags,
-          sport: post.sport || "",
-          city: post.city || "",
-          status: post.status,
-          voteScore: post.voteScore || 0,
-          upvoteCount: post.upvoteCount || 0,
-          downvoteCount: post.downvoteCount || 0,
-          answerCount: post.answerCount || 0,
-          viewCount: post.viewCount || 0,
-          createdAt: post.createdAt,
-          updatedAt: post.updatedAt,
-          myVote: voteMap.get(String(post._id))?.value || 0,
-          author: {
-            id: authorId,
-            displayName:
-              authorId === userId
-                ? author?.name || "Me"
-                : profile?.isIdentityPublic
-                  ? author?.name || "Player"
-                  : profile?.anonymousAlias || "Anonymous Player",
-            isIdentityPublic: profile?.isIdentityPublic || false,
-            photoUrl: profile?.isIdentityPublic
-              ? author?.photoUrl || null
-              : null,
-          },
-        };
-      }),
+          return {
+            id: String(post._id),
+            title: post.title,
+            body: post.body,
+            tags: post.tags,
+            sport: post.sport || "",
+            city: post.city || "",
+            status: post.status,
+            voteScore: post.voteScore || 0,
+            upvoteCount: post.upvoteCount || 0,
+            downvoteCount: post.downvoteCount || 0,
+            answerCount: post.answerCount || 0,
+            viewCount: post.viewCount || 0,
+            createdAt: post.createdAt,
+            updatedAt: post.updatedAt,
+            myVote: voteMap.get(String(post._id))?.value || 0,
+            author: {
+              id: authorId,
+              displayName:
+                authorId === userId
+                  ? author?.name || "Me"
+                  : profile?.isIdentityPublic
+                    ? author?.name || "Player"
+                    : profile?.anonymousAlias || "Anonymous Player",
+              isIdentityPublic: profile?.isIdentityPublic || false,
+              photoUrl:
+                profile?.isIdentityPublic && author
+                  ? await resolveUserPhotoUrl(author)
+                  : null,
+            },
+          };
+        }),
+      ),
       pagination: {
         total,
         page: safePage,
@@ -390,7 +420,9 @@ export const CommunityService = {
           .limit(safeLimit)
           .lean(),
         CommunityAnswer.countDocuments({ postId: post._id, isDeleted: false }),
-        User.findById(post.authorId).select("_id name photoUrl").lean(),
+        User.findById(post.authorId)
+          .select("_id name photoUrl photoS3Key")
+          .lean(),
         CommunityProfile.findOne({ userId: post.authorId })
           .select("userId anonymousAlias isIdentityPublic")
           .lean(),
@@ -406,7 +438,7 @@ export const CommunityService = {
     const answerAuthorIds = answers.map((item) => String(item.authorId));
     const [answerUsers, answerProfiles, answerVotes] = await Promise.all([
       User.find({ _id: { $in: answerAuthorIds } })
-        .select("_id name photoUrl")
+        .select("_id name photoUrl photoS3Key")
         .lean(),
       CommunityProfile.find({ userId: { $in: answerAuthorIds } })
         .select("userId anonymousAlias isIdentityPublic")
@@ -463,41 +495,45 @@ export const CommunityService = {
                 ? postAuthor?.name || "Player"
                 : postAuthorProfile?.anonymousAlias || "Anonymous Player",
           isIdentityPublic: postAuthorProfile?.isIdentityPublic || false,
-          photoUrl: postAuthorProfile?.isIdentityPublic
-            ? postAuthor?.photoUrl || null
-            : null,
+          photoUrl:
+            postAuthorProfile?.isIdentityPublic && postAuthor
+              ? await resolveUserPhotoUrl(postAuthor)
+              : null,
         },
       },
-      answers: answers.map((answer) => {
-        const answerAuthorId = String(answer.authorId);
-        const answerUser = answerUserMap.get(answerAuthorId);
-        const answerProfile = answerProfileMap.get(answerAuthorId);
+      answers: await Promise.all(
+        answers.map(async (answer) => {
+          const answerAuthorId = String(answer.authorId);
+          const answerUser = answerUserMap.get(answerAuthorId);
+          const answerProfile = answerProfileMap.get(answerAuthorId);
 
-        return {
-          id: String(answer._id),
-          postId: String(answer.postId),
-          content: answer.content,
-          voteScore: answer.voteScore || 0,
-          upvoteCount: answer.upvoteCount || 0,
-          downvoteCount: answer.downvoteCount || 0,
-          createdAt: answer.createdAt,
-          updatedAt: answer.updatedAt,
-          myVote: answerVoteMap.get(String(answer._id))?.value || 0,
-          author: {
-            id: answerAuthorId,
-            displayName:
-              answerAuthorId === userId
-                ? answerUser?.name || "Me"
-                : answerProfile?.isIdentityPublic
-                  ? answerUser?.name || "Player"
-                  : answerProfile?.anonymousAlias || "Anonymous Player",
-            isIdentityPublic: answerProfile?.isIdentityPublic || false,
-            photoUrl: answerProfile?.isIdentityPublic
-              ? answerUser?.photoUrl || null
-              : null,
-          },
-        };
-      }),
+          return {
+            id: String(answer._id),
+            postId: String(answer.postId),
+            content: answer.content,
+            voteScore: answer.voteScore || 0,
+            upvoteCount: answer.upvoteCount || 0,
+            downvoteCount: answer.downvoteCount || 0,
+            createdAt: answer.createdAt,
+            updatedAt: answer.updatedAt,
+            myVote: answerVoteMap.get(String(answer._id))?.value || 0,
+            author: {
+              id: answerAuthorId,
+              displayName:
+                answerAuthorId === userId
+                  ? answerUser?.name || "Me"
+                  : answerProfile?.isIdentityPublic
+                    ? answerUser?.name || "Player"
+                    : answerProfile?.anonymousAlias || "Anonymous Player",
+              isIdentityPublic: answerProfile?.isIdentityPublic || false,
+              photoUrl:
+                answerProfile?.isIdentityPublic && answerUser
+                  ? await resolveUserPhotoUrl(answerUser)
+                  : null,
+            },
+          };
+        }),
+      ),
       pagination: {
         total: answerTotal,
         page: safePage,
@@ -959,7 +995,7 @@ export const CommunityService = {
         name: regex,
         _id: { $ne: userId },
       })
-        .select("_id name photoUrl")
+        .select("_id name photoUrl photoS3Key")
         .limit(safeLimit * 3)
         .lean(),
       CommunityProfile.find({ anonymousAlias: regex, userId: { $ne: userId } })
@@ -983,7 +1019,7 @@ export const CommunityService = {
 
     const [users, profiles] = await Promise.all([
       User.find({ _id: { $in: ids }, role: { $in: COMMUNITY_ALLOWED_ROLES } })
-        .select("_id name photoUrl role")
+        .select("_id name photoUrl photoS3Key role")
         .lean(),
       CommunityProfile.find({ userId: { $in: ids } })
         .select("userId anonymousAlias isIdentityPublic blockedUsers")
@@ -993,42 +1029,132 @@ export const CommunityService = {
     const blockedByMe = new Set(profile.blockedUsers.map((id) => String(id)));
     const profileMap = new Map(profiles.map((p) => [String(p.userId), p]));
 
-    const items = users
-      .filter((user) => {
-        const candidateId = String(user._id);
-        if (blockedByMe.has(candidateId)) {
-          return false;
-        }
+    const items = await Promise.all(
+      users
+        .filter((user) => {
+          const candidateId = String(user._id);
+          if (blockedByMe.has(candidateId)) {
+            return false;
+          }
 
-        const candidateProfile = profileMap.get(candidateId);
-        const blockedMe = Boolean(
-          candidateProfile?.blockedUsers?.some(
-            (blockedUserId) => String(blockedUserId) === userId,
-          ),
-        );
+          const candidateProfile = profileMap.get(candidateId);
+          const blockedMe = Boolean(
+            candidateProfile?.blockedUsers?.some(
+              (blockedUserId) => String(blockedUserId) === userId,
+            ),
+          );
 
-        return !blockedMe;
-      })
-      .map((user) => {
-        const candidateId = String(user._id);
-        const candidateProfile = profileMap.get(candidateId);
-        const isIdentityPublic = candidateProfile?.isIdentityPublic || false;
-        const displayName = isIdentityPublic
-          ? user.name
-          : candidateProfile?.anonymousAlias || "Anonymous Member";
+          return !blockedMe;
+        })
+        .map((user) => {
+          const candidateId = String(user._id);
+          const candidateProfile = profileMap.get(candidateId);
+          const isIdentityPublic = candidateProfile?.isIdentityPublic || false;
+          const displayName = isIdentityPublic
+            ? user.name
+            : candidateProfile?.anonymousAlias || "Anonymous Member";
 
-        return {
-          id: candidateId,
-          displayName,
-          isIdentityPublic,
-          role: user.role,
-          photoUrl: isIdentityPublic ? user.photoUrl || null : null,
-        };
-      })
-      .sort((a, b) => a.displayName.localeCompare(b.displayName))
-      .slice(0, safeLimit);
+          return {
+            id: candidateId,
+            displayName,
+            isIdentityPublic,
+            role: user.role,
+            photoUrl: isIdentityPublic ? null : null,
+          };
+        })
+        .sort((a, b) => a.displayName.localeCompare(b.displayName))
+        .slice(0, safeLimit),
+    ).then((items) =>
+      Promise.all(
+        items.map(async (item) => ({
+          ...item,
+          photoUrl:
+            item.isIdentityPublic && item.id
+              ? await resolveUserPhotoUrl(
+                  users.find((user) => String(user._id) === item.id),
+                )
+              : null,
+        })),
+      ),
+    );
 
     return items;
+  },
+
+  async getPlayerProfile(viewerId: string, targetUserId: string) {
+    if (!targetUserId) {
+      throw new Error("Player not found");
+    }
+
+    await ensureProfile(viewerId);
+
+    const [targetUser, targetProfile] = await Promise.all([
+      User.findById(targetUserId)
+        .select(
+          "_id name photoUrl photoS3Key role playerProfile dob createdAt lastActiveAt",
+        )
+        .lean(),
+      CommunityProfile.findOne({ userId: targetUserId })
+        .select(
+          "userId anonymousAlias isIdentityPublic messagePrivacy readReceiptsEnabled lastSeenVisible lastSeenAt blockedUsers",
+        )
+        .lean(),
+    ]);
+
+    const targetRole = targetUser?.role as
+      | (typeof COMMUNITY_ALLOWED_ROLES)[number]
+      | undefined;
+
+    if (
+      !targetUser ||
+      !targetRole ||
+      !COMMUNITY_ALLOWED_ROLES.includes(targetRole)
+    ) {
+      throw new Error("Player not found");
+    }
+
+    if (
+      targetProfile?.blockedUsers?.some(
+        (blockedId) => String(blockedId) === viewerId,
+      )
+    ) {
+      throw new Error("Access denied");
+    }
+
+    const profile = targetProfile || {
+      anonymousAlias: "Anonymous Member",
+      isIdentityPublic: false,
+      messagePrivacy: "EVERYONE" as const,
+      readReceiptsEnabled: true,
+      lastSeenVisible: false,
+      lastSeenAt: undefined,
+    };
+    const isSelf = targetUserId === viewerId;
+    const isIdentityPublic = isSelf || Boolean(profile.isIdentityPublic);
+
+    return {
+      id: String(targetUser._id),
+      role: targetUser.role,
+      displayName: isIdentityPublic
+        ? targetUser.name
+        : profile.anonymousAlias || "Anonymous Member",
+      alias: profile.anonymousAlias || "Anonymous Member",
+      isIdentityPublic,
+      photoUrl: isIdentityPublic ? await resolveUserPhotoUrl(targetUser) : null,
+      sports: Array.isArray(targetUser.playerProfile?.sports)
+        ? targetUser.playerProfile.sports
+        : [],
+      dob: isIdentityPublic ? targetUser.dob || null : null,
+      createdAt: targetUser.createdAt,
+      lastActiveAt:
+        isIdentityPublic || Boolean(profile.lastSeenVisible)
+          ? targetUser.lastActiveAt || null
+          : null,
+      messagePrivacy: profile.messagePrivacy,
+      readReceiptsEnabled: Boolean(profile.readReceiptsEnabled),
+      lastSeenVisible: Boolean(profile.lastSeenVisible),
+      lastSeenAt: profile.lastSeenVisible ? profile.lastSeenAt || null : null,
+    };
   },
 
   async getMyProfile(userId: string) {
@@ -1104,14 +1230,16 @@ export const CommunityService = {
   async getBlockedUsers(userId: string) {
     const profile = await ensureProfile(userId);
     const users = await User.find({ _id: { $in: profile.blockedUsers } })
-      .select("_id name photoUrl")
+      .select("_id name photoUrl photoS3Key")
       .lean();
 
-    return users.map((user) => ({
-      id: String(user._id),
-      name: user.name,
-      photoUrl: user.photoUrl || null,
-    }));
+    return Promise.all(
+      users.map(async (user) => ({
+        id: String(user._id),
+        name: user.name,
+        photoUrl: await resolveUserPhotoUrl(user),
+      })),
+    );
   },
 
   async listGroups(userId: string, query = "", limit = 20) {
@@ -1659,7 +1787,7 @@ export const CommunityService = {
 
     const [users, profiles, latestMessages, groups] = await Promise.all([
       User.find({ _id: { $in: otherParticipantIds } })
-        .select("_id name photoUrl")
+        .select("_id name photoUrl photoS3Key")
         .lean(),
       CommunityProfile.find({ userId: { $in: otherParticipantIds } })
         .select(
@@ -1718,75 +1846,78 @@ export const CommunityService = {
     );
     const groupMap = new Map(groups.map((group) => [String(group._id), group]));
 
-    const mappedItems = conversations.map((conversation) => {
-      const conversationType = conversation.conversationType || "DM";
-      const otherId = String(
-        conversation.participants.find(
-          (participantId: mongoose.Types.ObjectId) =>
-            String(participantId) !== userId,
-        ),
-      );
-      const otherUser = userMap.get(otherId);
-      const otherProfile = profileMap.get(otherId);
-      const latest = messageMap.get(String(conversation._id));
-      const group = conversation.groupId
-        ? groupMap.get(String(conversation.groupId))
-        : null;
-      const groupMemberCount = group?.members?.length || 0;
+    const mappedItems = await Promise.all(
+      conversations.map(async (conversation) => {
+        const conversationType = conversation.conversationType || "DM";
+        const otherId = String(
+          conversation.participants.find(
+            (participantId: mongoose.Types.ObjectId) =>
+              String(participantId) !== userId,
+          ),
+        );
+        const otherUser = userMap.get(otherId);
+        const otherProfile = profileMap.get(otherId);
+        const latest = messageMap.get(String(conversation._id));
+        const group = conversation.groupId
+          ? groupMap.get(String(conversation.groupId))
+          : null;
+        const groupMemberCount = group?.members?.length || 0;
 
-      return {
-        id: String(conversation._id),
-        conversationType,
-        status: conversation.status,
-        requestedBy: String(conversation.requestedBy),
-        otherParticipant: {
-          id: conversationType === "GROUP" ? String(group?._id || "") : otherId,
-          displayName:
+        return {
+          id: String(conversation._id),
+          conversationType,
+          status: conversation.status,
+          requestedBy: String(conversation.requestedBy),
+          otherParticipant: {
+            id:
+              conversationType === "GROUP" ? String(group?._id || "") : otherId,
+            displayName:
+              conversationType === "GROUP"
+                ? group?.name || "Community Group"
+                : otherProfile?.isIdentityPublic
+                  ? otherUser?.name || "Player"
+                  : otherProfile?.anonymousAlias || "Anonymous Player",
+            isIdentityPublic:
+              conversationType === "GROUP"
+                ? true
+                : otherProfile?.isIdentityPublic || false,
+            photoUrl:
+              conversationType === "GROUP"
+                ? null
+                : otherProfile?.isIdentityPublic && otherUser
+                  ? await resolveUserPhotoUrl(otherUser)
+                  : null,
+            lastSeenAt:
+              conversationType === "GROUP"
+                ? null
+                : otherProfile?.lastSeenVisible
+                  ? otherProfile?.lastSeenAt || null
+                  : null,
+          },
+          group:
             conversationType === "GROUP"
-              ? group?.name || "Community Group"
-              : otherProfile?.isIdentityPublic
-                ? otherUser?.name || "Player"
-                : otherProfile?.anonymousAlias || "Anonymous Player",
-          isIdentityPublic:
-            conversationType === "GROUP"
-              ? true
-              : otherProfile?.isIdentityPublic || false,
-          photoUrl:
-            conversationType === "GROUP"
-              ? null
-              : otherProfile?.isIdentityPublic
-                ? otherUser?.photoUrl || null
-                : null,
-          lastSeenAt:
-            conversationType === "GROUP"
-              ? null
-              : otherProfile?.lastSeenVisible
-                ? otherProfile?.lastSeenAt || null
-                : null,
-        },
-        group:
-          conversationType === "GROUP"
+              ? {
+                  id: String(group?._id || ""),
+                  name: group?.name || "Community Group",
+                  description: group?.description || "",
+                  visibility: group?.visibility || "PUBLIC",
+                  sport: group?.sport || "",
+                  city: group?.city || "",
+                  memberCount: groupMemberCount,
+                }
+              : null,
+          latestMessage: latest
             ? {
-                id: String(group?._id || ""),
-                name: group?.name || "Community Group",
-                description: group?.description || "",
-                visibility: group?.visibility || "PUBLIC",
-                sport: group?.sport || "",
-                city: group?.city || "",
-                memberCount: groupMemberCount,
+                content: latest.isDeleted ? "Message deleted" : latest.content,
+                createdAt: latest.createdAt,
+                senderId: String(latest.senderId),
               }
             : null,
-        latestMessage: latest
-          ? {
-              content: latest.isDeleted ? "Message deleted" : latest.content,
-              createdAt: latest.createdAt,
-              senderId: String(latest.senderId),
-            }
-          : null,
-        unreadCount: unreadMap.get(String(conversation._id)) || 0,
-        updatedAt: conversation.updatedAt,
-      };
-    });
+          unreadCount: unreadMap.get(String(conversation._id)) || 0,
+          updatedAt: conversation.updatedAt,
+        };
+      }),
+    );
 
     const filteredItems = mappedItems.filter((conversation) => {
       const modeMatches =
@@ -1935,7 +2066,7 @@ export const CommunityService = {
 
     const allParticipantIds = conversation.participants.map((id) => String(id));
     const users = await User.find({ _id: { $in: allParticipantIds } })
-      .select("_id name photoUrl")
+      .select("_id name photoUrl photoS3Key")
       .lean();
     const profiles = await CommunityProfile.find({
       userId: { $in: allParticipantIds },
@@ -2075,7 +2206,7 @@ export const CommunityService = {
     const participants = await User.find({
       _id: { $in: conversation.participants },
     })
-      .select("_id name photoUrl")
+      .select("_id name photoUrl photoS3Key")
       .lean();
     const profiles = await CommunityProfile.find({
       userId: { $in: conversation.participants },
@@ -2411,7 +2542,7 @@ export const CommunityService = {
     await ensureProfile(userId);
 
     const group = await CommunityGroup.findById(groupId)
-      .populate("members", "_id name photoUrl")
+      .populate("members", "_id name photoUrl photoS3Key")
       .lean();
 
     if (!group) {
@@ -2429,29 +2560,33 @@ export const CommunityService = {
     const memberProfiles = await CommunityProfile.find({
       userId: { $in: group.members.map((m) => m._id) },
     })
-      .select("userId anonymousAlias isIdentityPublic photoUrl lastSeenAt")
+      .select(
+        "userId anonymousAlias isIdentityPublic photoUrl photoS3Key lastSeenAt",
+      )
       .lean();
 
     const profileMap = new Map(
       memberProfiles.map((p) => [String(p.userId), p]),
     );
 
-    return group.members.map((member: any) => {
-      const memberId = String(member._id);
-      const profile = profileMap.get(memberId);
-      const isIdentityPublic = profile?.isIdentityPublic || false;
+    return Promise.all(
+      group.members.map(async (member: any) => {
+        const memberId = String(member._id);
+        const profile = profileMap.get(memberId);
+        const isIdentityPublic = profile?.isIdentityPublic || false;
 
-      return {
-        id: memberId,
-        name: member.name || "Unknown",
-        displayName: isIdentityPublic
-          ? member.name
-          : profile?.anonymousAlias || "Anonymous",
-        photoUrl: isIdentityPublic ? member.photoUrl || null : null,
-        isIdentityPublic,
-        alias: profile?.anonymousAlias || "Anonymous",
-      };
-    });
+        return {
+          id: memberId,
+          name: member.name || "Unknown",
+          displayName: isIdentityPublic
+            ? member.name
+            : profile?.anonymousAlias || "Anonymous",
+          photoUrl: isIdentityPublic ? await resolveUserPhotoUrl(member) : null,
+          isIdentityPublic,
+          alias: profile?.anonymousAlias || "Anonymous",
+        };
+      }),
+    );
   },
 
   async joinGroupByCode(userId: string, inviteCode: string) {

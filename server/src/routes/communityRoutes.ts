@@ -14,6 +14,7 @@ import {
   editMessage,
   getBlockedUsers,
   getCommunityProfile,
+  getPlayerProfile,
   getConversationMessages,
   getGroupInviteCode,
   getGroupMembers,
@@ -60,6 +61,7 @@ router.use(authMiddleware);
 
 router.get("/profile", getCommunityProfile);
 router.get("/players/search", searchPlayers);
+router.get("/players/:userId/profile", getPlayerProfile);
 router.patch(
   "/profile",
   validateRequest(communityUpdateProfileSchema),

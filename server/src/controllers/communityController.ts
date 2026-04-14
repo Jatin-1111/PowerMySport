@@ -87,6 +87,31 @@ export const searchPlayers = async (
   }
 };
 
+export const getPlayerProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const targetUserId = String(req.params.userId || "");
+    if (!targetUserId) {
+      throw new Error("userId is required");
+    }
+
+    const data = await CommunityService.getPlayerProfile(
+      getUserId(req),
+      targetUserId,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Community player profile fetched",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to fetch player profile");
+  }
+};
+
 export const updateCommunityProfile = async (
   req: Request,
   res: Response,

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { communityService } from "../services/community";
-import { Users, UserCircle2 } from "lucide-react";
+import { ChevronRight, Users, UserCircle2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 
 export interface GroupMember {
@@ -113,7 +113,8 @@ export function GroupMembersList({
                 prefersReducedMotion ? undefined : { y: -2, scale: 1.01 }
               }
               whileTap={prefersReducedMotion ? undefined : { scale: 0.99 }}
-              className="w-full rounded-xl border border-border bg-white p-3 text-left transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-power-orange"
+              className="w-full rounded-2xl border border-border bg-white p-3 text-left transition hover:border-power-orange/30 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-power-orange"
+              aria-label={`View ${member.displayName} profile`}
             >
               <div className="flex items-center gap-3">
                 {member.photoUrl && member.isIdentityPublic ? (
@@ -134,16 +135,22 @@ export function GroupMembersList({
                   {!member.isIdentityPublic && member.alias && (
                     <div className="text-xs text-slate-500">{member.alias}</div>
                   )}
+                  <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                    Tap to view profile
+                  </div>
                 </div>
-                <span
-                  className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                    member.isIdentityPublic
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {member.isIdentityPublic ? "Public" : "Private"}
-                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      member.isIdentityPublic
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {member.isIdentityPublic ? "Public" : "Private"}
+                  </span>
+                  <ChevronRight size={14} className="text-slate-300" />
+                </div>
               </div>
             </motion.button>
           ))

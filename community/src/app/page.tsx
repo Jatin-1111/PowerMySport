@@ -10,6 +10,7 @@ import {
   GroupMembersList,
   GroupMember,
 } from "@/modules/community/components/GroupMembersList";
+import { CommunityMemberProfileModal } from "@/modules/community/components/CommunityMemberProfileModal";
 import { GroupInviteLink } from "@/modules/community/components/GroupInviteLink";
 import { communityService } from "@/modules/community/services/community";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
@@ -17,6 +18,7 @@ import {
   CommunityUserSearchResult,
   CommunityGroupSummary,
   CommunityProfile,
+  CommunityMemberProfile,
   ConversationListResponse,
   ConversationItem,
   ConversationMessage,
@@ -499,7 +501,14 @@ export default function CommunityPage() {
   const [followedGroupIds, setFollowedGroupIds] = useState<string[]>([]);
   const [isSearchingGroups, setIsSearchingGroups] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDescription, setNewGroupDescription] = useState("");
+  const [newGroupSport, setNewGroupSport] = useState("");
+  const [newGroupCity, setNewGroupCity] = useState("");
+  const [newGroupAudience, setNewGroupAudience] = useState<
+    "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY"
+  >("ALL");
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [inviteGroupId, setInviteGroupId] = useState<string | null>(null);
   const [inviteSearchQuery, setInviteSearchQuery] = useState("");
   const [inviteSearchResults, setInviteSearchResults] = useState<
@@ -535,7 +544,15 @@ export default function CommunityPage() {
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] =
     useState(true);
   const [showGroupMembersPanel, setShowGroupMembersPanel] = useState(false);
+  const [isMemberProfileOpen, setIsMemberProfileOpen] = useState(false);
+  const [isLoadingMemberProfile, setIsLoadingMemberProfile] = useState(false);
+  const [memberProfileError, setMemberProfileError] = useState<string | null>(
+    null,
+  );
+  const [selectedMemberProfile, setSelectedMemberProfile] =
+    useState<CommunityMemberProfile | null>(null);
   const selectedConversationIdRef = useRef<string | null>(null);
+  const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectedPollDelayRef = useRef(DISCONNECTED_POLL_BASE_MS);
@@ -1586,14 +1603,24 @@ export default function CommunityPage() {
 
   const handleCreateGroup = async () => {
     if (!newGroupName.trim()) {
+      toast.error("Add a group name to continue.");
       return;
     }
 
+    setIsCreatingGroup(true);
     try {
       const created = await communityService.createGroup({
         name: newGroupName.trim(),
+        description: newGroupDescription.trim() || undefined,
+        sport: newGroupSport.trim() || undefined,
+        city: newGroupCity.trim() || undefined,
+        audience: newGroupAudience,
       });
       setNewGroupName("");
+      setNewGroupDescription("");
+      setNewGroupSport("");
+      setNewGroupCity("");
+      setNewGroupAudience("ALL");
       await refreshGroupDirectoryState();
       setSelectedConversationId(created.conversationId);
       setIsCreateGroupOpen(false);
@@ -1604,6 +1631,8 @@ export default function CommunityPage() {
       const message = e instanceof Error ? e.message : "Failed to create group";
       setError(message);
       toast.error(message);
+    } finally {
+      setIsCreatingGroup(false);
     }
   };
 
@@ -1879,10 +1908,60 @@ export default function CommunityPage() {
     setSidebarMode("INBOX");
   }, []);
 
+  const handleCloseMemberProfile = useCallback(() => {
+    memberProfileRequestIdRef.current = null;
+    setIsMemberProfileOpen(false);
+    setIsLoadingMemberProfile(false);
+    setMemberProfileError(null);
+    setSelectedMemberProfile(null);
+  }, []);
+
+  const handleOpenMemberProfile = useCallback(async (memberId: string) => {
+    memberProfileRequestIdRef.current = memberId;
+    setIsMemberProfileOpen(true);
+    setIsLoadingMemberProfile(true);
+    setMemberProfileError(null);
+    setSelectedMemberProfile(null);
+
+    try {
+      const profile = await communityService.getPlayerProfile(memberId);
+      if (memberProfileRequestIdRef.current !== memberId) {
+        return;
+      }
+
+      setSelectedMemberProfile(profile);
+    } catch (e) {
+      if (memberProfileRequestIdRef.current !== memberId) {
+        return;
+      }
+
+      const message =
+        e instanceof Error ? e.message : "Failed to load player profile";
+      setMemberProfileError(message);
+      toast.error(message);
+    } finally {
+      if (memberProfileRequestIdRef.current === memberId) {
+        setIsLoadingMemberProfile(false);
+      }
+    }
+  }, []);
+
   const handleMemberClick = (member: GroupMember) => {
-    // Optional: auto-start conversation with the member
-    void handleStartConversation(member.id);
+    router.push(`/members/${member.id}`);
   };
+
+  const handleMessageSelectedMember = useCallback(() => {
+    if (!selectedMemberProfile) {
+      return;
+    }
+
+    handleCloseMemberProfile();
+    void handleStartConversation(selectedMemberProfile.id);
+  }, [
+    handleCloseMemberProfile,
+    handleStartConversation,
+    selectedMemberProfile,
+  ]);
 
   const handleLoadMoreConversations = async () => {
     if (isLoadingMoreConversations || !hasMoreConversations) {
@@ -2941,21 +3020,101 @@ export default function CommunityPage() {
                                 </div>
 
                                 {isCreateGroupOpen && (
-                                  <div className="flex gap-2">
-                                    <input
-                                      value={newGroupName}
+                                  <div className="rounded-2xl border border-power-orange/15 bg-[linear-gradient(180deg,rgba(233,115,22,0.06),rgba(255,255,255,0.96))] p-4 shadow-xs">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-power-orange">
+                                          Create a new circle
+                                        </p>
+                                        <p className="mt-1 text-sm text-slate-600">
+                                          Add a few details so people know what
+                                          the group is for.
+                                        </p>
+                                      </div>
+                                      <button
+                                        onClick={() => {
+                                          setIsCreateGroupOpen(false);
+                                        }}
+                                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+                                      >
+                                        Close
+                                      </button>
+                                    </div>
+
+                                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                      <input
+                                        value={newGroupName}
+                                        onChange={(event) =>
+                                          setNewGroupName(event.target.value)
+                                        }
+                                        placeholder="Group name"
+                                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                                      />
+                                      <input
+                                        value={newGroupSport}
+                                        onChange={(event) =>
+                                          setNewGroupSport(event.target.value)
+                                        }
+                                        placeholder="Sport e.g. Cricket"
+                                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                                      />
+                                      <input
+                                        value={newGroupCity}
+                                        onChange={(event) =>
+                                          setNewGroupCity(event.target.value)
+                                        }
+                                        placeholder="City or area"
+                                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                                      />
+                                      <select
+                                        value={newGroupAudience}
+                                        onChange={(event) =>
+                                          setNewGroupAudience(
+                                            event.target.value as
+                                              | "ALL"
+                                              | "PLAYERS_ONLY"
+                                              | "COACHES_ONLY",
+                                          )
+                                        }
+                                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                                      >
+                                        <option value="ALL">Open to all</option>
+                                        <option value="PLAYERS_ONLY">
+                                          Players only
+                                        </option>
+                                        <option value="COACHES_ONLY">
+                                          Coaches only
+                                        </option>
+                                      </select>
+                                    </div>
+
+                                    <textarea
+                                      value={newGroupDescription}
                                       onChange={(event) =>
-                                        setNewGroupName(event.target.value)
+                                        setNewGroupDescription(
+                                          event.target.value,
+                                        )
                                       }
-                                      placeholder="Create group name"
-                                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                                      placeholder="Short description"
+                                      rows={3}
+                                      className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
                                     />
-                                    <button
-                                      onClick={() => void handleCreateGroup()}
-                                      className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
-                                    >
-                                      Create
-                                    </button>
+
+                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                                      <p className="text-xs text-slate-500">
+                                        Keep it short and specific. You can
+                                        adjust settings later.
+                                      </p>
+                                      <button
+                                        onClick={() => void handleCreateGroup()}
+                                        disabled={isCreatingGroup}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        {isCreatingGroup
+                                          ? "Creating..."
+                                          : "Create group"}
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
 
@@ -3250,24 +3409,36 @@ export default function CommunityPage() {
                                                                       </span>
                                                                     )}
                                                                   </div>
-                                                                  <button
-                                                                    disabled={
-                                                                      isAddingMemberUserId ===
+                                                                  <div className="flex items-center gap-1.5">
+                                                                    <button
+                                                                      onClick={() =>
+                                                                        void handleOpenMemberProfile(
+                                                                          user.id,
+                                                                        )
+                                                                      }
+                                                                      className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
+                                                                    >
+                                                                      View
+                                                                    </button>
+                                                                    <button
+                                                                      disabled={
+                                                                        isAddingMemberUserId ===
+                                                                        user.id
+                                                                      }
+                                                                      onClick={() =>
+                                                                        void handleAddMemberToGroup(
+                                                                          group.id,
+                                                                          user.id,
+                                                                        )
+                                                                      }
+                                                                      className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                                    >
+                                                                      {isAddingMemberUserId ===
                                                                       user.id
-                                                                    }
-                                                                    onClick={() =>
-                                                                      void handleAddMemberToGroup(
-                                                                        group.id,
-                                                                        user.id,
-                                                                      )
-                                                                    }
-                                                                    className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                                                                  >
-                                                                    {isAddingMemberUserId ===
-                                                                    user.id
-                                                                      ? "Adding"
-                                                                      : "Add"}
-                                                                  </button>
+                                                                        ? "Adding"
+                                                                        : "Add"}
+                                                                    </button>
+                                                                  </div>
                                                                 </div>
                                                               ),
                                                             )
@@ -3401,24 +3572,36 @@ export default function CommunityPage() {
                                                                       </span>
                                                                     )}
                                                                   </div>
-                                                                  <button
-                                                                    disabled={
-                                                                      isAddingMemberUserId ===
+                                                                  <div className="flex items-center gap-1.5">
+                                                                    <button
+                                                                      onClick={() =>
+                                                                        void handleOpenMemberProfile(
+                                                                          user.id,
+                                                                        )
+                                                                      }
+                                                                      className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
+                                                                    >
+                                                                      View
+                                                                    </button>
+                                                                    <button
+                                                                      disabled={
+                                                                        isAddingMemberUserId ===
+                                                                        user.id
+                                                                      }
+                                                                      onClick={() =>
+                                                                        void handleAddMemberToGroup(
+                                                                          group.id,
+                                                                          user.id,
+                                                                        )
+                                                                      }
+                                                                      className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                                    >
+                                                                      {isAddingMemberUserId ===
                                                                       user.id
-                                                                    }
-                                                                    onClick={() =>
-                                                                      void handleAddMemberToGroup(
-                                                                        group.id,
-                                                                        user.id,
-                                                                      )
-                                                                    }
-                                                                    className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                                                                  >
-                                                                    {isAddingMemberUserId ===
-                                                                    user.id
-                                                                      ? "Adding"
-                                                                      : "Add"}
-                                                                  </button>
+                                                                        ? "Adding"
+                                                                        : "Add"}
+                                                                    </button>
+                                                                  </div>
                                                                 </div>
                                                               ),
                                                             )
@@ -3912,6 +4095,15 @@ export default function CommunityPage() {
           </motion.main>
         </motion.div>
       </motion.div>
+
+      <CommunityMemberProfileModal
+        isOpen={isMemberProfileOpen}
+        isLoading={isLoadingMemberProfile}
+        error={memberProfileError}
+        profile={selectedMemberProfile}
+        onClose={handleCloseMemberProfile}
+        onMessage={handleMessageSelectedMember}
+      />
 
       {/* Report Content Modal */}
       {reportModal && (
