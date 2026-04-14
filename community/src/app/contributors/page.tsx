@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { Award, ChevronLeft, Trophy, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { communityService } from "@/modules/community/services/community";
@@ -20,6 +20,22 @@ type LeaderboardItem = {
 };
 
 export default function ContributorsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-5xl rounded-2xl border border-border bg-white p-6 shadow-sm">
+            <p className="text-sm text-slate-500">Loading contributors...</p>
+          </div>
+        </div>
+      }
+    >
+      <ContributorsPageContent />
+    </Suspense>
+  );
+}
+
+function ContributorsPageContent() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<CommunityPost[]>([]);

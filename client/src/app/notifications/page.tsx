@@ -1,7 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { notificationApi, type Notification } from "@/lib/api/notification";
+import React, { Suspense, useEffect, useState } from "react";
+import {
+  notificationApi,
+  type Notification,
+  type NotificationChannelPreferences,
+  type NotificationPreferences,
+} from "@/lib/api/notification";
 import {
   Bell,
   Calendar,
@@ -32,6 +37,26 @@ type FilterType =
   | "community";
 
 export default function NotificationsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_52%,#fff7ea_100%)] py-8">
+          <Container>
+            <div className="overflow-hidden rounded-2xl border border-white/80 bg-white/90 p-6 shadow-sm backdrop-blur-sm">
+              <p className="text-sm text-muted-foreground">
+                Loading notifications...
+              </p>
+            </div>
+          </Container>
+        </div>
+      }
+    >
+      <NotificationsPageContent />
+    </Suspense>
+  );
+}
+
+function NotificationsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -41,11 +66,8 @@ export default function NotificationsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showPreferences, setShowPreferences] = useState(false);
-  const [preferences, setPreferences] = useState<{
-    email: Record<string, boolean>;
-    push: Record<string, boolean>;
-    inApp: Record<string, boolean>;
-  } | null>(null);
+  const [preferences, setPreferences] =
+    useState<NotificationPreferences | null>(null);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   useEffect(() => {
@@ -155,15 +177,17 @@ export default function NotificationsPage() {
 
   const togglePreference = async (
     channel: "email" | "push" | "inApp",
-    key: string,
+    key: keyof NotificationChannelPreferences,
   ) => {
     if (!preferences) return;
+
+    const channelPreferences = preferences[channel] || {};
 
     const next = {
       ...preferences,
       [channel]: {
-        ...preferences[channel],
-        [key]: !preferences[channel]?.[key],
+        ...channelPreferences,
+        [key]: !Boolean(channelPreferences[key]),
       },
     };
 
@@ -286,7 +310,10 @@ export default function NotificationsPage() {
     { value: "admin", label: "Admin" },
   ];
 
-  const preferenceKeys = [
+  const preferenceKeys: Array<{
+    key: keyof NotificationChannelPreferences;
+    label: string;
+  }> = [
     { key: "friendRequests", label: "Friend Requests" },
     { key: "bookingInvitations", label: "Booking Invitations" },
     { key: "bookingConfirmations", label: "Booking Confirmations" },
