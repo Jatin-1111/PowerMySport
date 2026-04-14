@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageSquare, Shield, FileWarning, House } from "lucide-react";
+import {
+  MessageSquare,
+  Shield,
+  FileWarning,
+  House,
+  Trophy,
+  UserX,
+  Heart,
+} from "lucide-react";
 
 type NavItem = {
   href: string;
@@ -29,6 +37,24 @@ const navItems: NavItem[] = [
     label: "Reports",
     icon: FileWarning,
     match: (path) => path === "/reports",
+  },
+  {
+    href: "/contributors",
+    label: "Contributors",
+    icon: Trophy,
+    match: (path) => path === "/contributors",
+  },
+  {
+    href: "/following",
+    label: "Following",
+    icon: Heart,
+    match: (path) => path === "/following",
+  },
+  {
+    href: "/safety",
+    label: "Safety",
+    icon: UserX,
+    match: (path) => path === "/safety",
   },
   {
     href: "/privacy",
@@ -77,6 +103,27 @@ export default function CommunityTopNav() {
             >
               <FileWarning size={13} />
               Reports
+            </Link>
+            <Link
+              href="/contributors"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <Trophy size={13} />
+              Contributors
+            </Link>
+            <Link
+              href="/following"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <Heart size={13} />
+              Following
+            </Link>
+            <Link
+              href="/safety"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <UserX size={13} />
+              Safety
             </Link>
             <Link
               href="/privacy"

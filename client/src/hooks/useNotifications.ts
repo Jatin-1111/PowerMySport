@@ -3,16 +3,19 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { friendService } from "@/modules/shared/services/friend";
 import { bookingApi } from "@/modules/booking/services/booking";
+import { notificationApi } from "@/lib/api/notification";
 
 interface NotificationCounts {
   friendRequests: number;
   bookingInvitations: number;
+  inAppUnread: number;
 }
 
 export function useNotifications(pollingInterval: number = 0) {
   const [counts, setCounts] = useState<NotificationCounts>({
     friendRequests: 0,
     bookingInvitations: 0,
+    inAppUnread: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,14 +31,17 @@ export function useNotifications(pollingInterval: number = 0) {
         setError(null);
 
         // Fetch both counts in parallel
-        const [friendRequestsData, invitationsData] = await Promise.all([
-          friendService.getPendingRequestsCount().catch(() => ({ count: 0 })),
-          bookingApi.getPendingInvitationsCount().catch(() => ({ count: 0 })),
-        ]);
+        const [friendRequestsData, invitationsData, unreadData] =
+          await Promise.all([
+            friendService.getPendingRequestsCount().catch(() => ({ count: 0 })),
+            bookingApi.getPendingInvitationsCount().catch(() => ({ count: 0 })),
+            notificationApi.getUnreadCount().catch(() => ({ count: 0 })),
+          ]);
 
         const nextCounts = {
           friendRequests: friendRequestsData.count || 0,
           bookingInvitations: invitationsData.count || 0,
+          inAppUnread: unreadData.count || 0,
         };
 
         setCounts((current) => {

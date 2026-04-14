@@ -18,6 +18,7 @@ import {
   CommunityVoteResult,
 } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
+import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 
@@ -72,7 +73,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
         }
 
         const session = await communityService.ensureSession();
-        if (session.role !== "PLAYER") {
+        if (!isCommunityEligibleRole(session.role)) {
           redirectToMainLogin();
           return;
         }

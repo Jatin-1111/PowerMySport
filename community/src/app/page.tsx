@@ -2,6 +2,7 @@
 
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { getMainAppUrl, redirectToMainLogin } from "@/lib/auth/redirect";
+import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { toast } from "@/lib/toast";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
 import { FeaturedCommunitiesStrip } from "@/modules/community/components/FeaturedCommunitiesStrip";
@@ -11,13 +12,14 @@ import {
 } from "@/modules/community/components/GroupMembersList";
 import { GroupInviteLink } from "@/modules/community/components/GroupInviteLink";
 import { communityService } from "@/modules/community/services/community";
+import { communityFollowStore } from "@/modules/community/lib/followStore";
 import {
+  CommunityUserSearchResult,
   CommunityGroupSummary,
   CommunityProfile,
   ConversationListResponse,
   ConversationItem,
   ConversationMessage,
-  PlayerSearchResult,
 } from "@/modules/community/types";
 import {
   Activity,
@@ -373,6 +375,38 @@ const isValidGroupToolsMode = (
 ): value is "DISCOVER" | "MANAGE" | "INVITE" =>
   value === "DISCOVER" || value === "MANAGE" || value === "INVITE";
 
+const resolveSidebarQueryState = (
+  value: string | null,
+): {
+  mode?: "INBOX" | "TOOLS";
+  tab?: "community-overview" | "conversations";
+} => {
+  const normalized = value?.trim().toLowerCase() || "";
+
+  if (!normalized) {
+    return {};
+  }
+
+  if (normalized === "tools") {
+    return { mode: "TOOLS" };
+  }
+
+  if (normalized === "inbox") {
+    return { mode: "INBOX" };
+  }
+
+  // Backward compatibility for historical deep-links.
+  if (normalized === "community-overview") {
+    return { mode: "INBOX", tab: "community-overview" };
+  }
+
+  if (normalized === "conversations") {
+    return { mode: "INBOX", tab: "conversations" };
+  }
+
+  return {};
+};
+
 export default function CommunityPage() {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
@@ -457,18 +491,19 @@ export default function CommunityPage() {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [playerSearchQuery, setPlayerSearchQuery] = useState("");
   const [playerSearchResults, setPlayerSearchResults] = useState<
-    PlayerSearchResult[]
+    CommunityUserSearchResult[]
   >([]);
   const [isSearchingPlayers, setIsSearchingPlayers] = useState(false);
   const [groupSearchQuery, setGroupSearchQuery] = useState("");
   const [groupResults, setGroupResults] = useState<CommunityGroupSummary[]>([]);
+  const [followedGroupIds, setFollowedGroupIds] = useState<string[]>([]);
   const [isSearchingGroups, setIsSearchingGroups] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [inviteGroupId, setInviteGroupId] = useState<string | null>(null);
   const [inviteSearchQuery, setInviteSearchQuery] = useState("");
   const [inviteSearchResults, setInviteSearchResults] = useState<
-    PlayerSearchResult[]
+    CommunityUserSearchResult[]
   >([]);
   const [isSearchingInvitePlayers, setIsSearchingInvitePlayers] =
     useState(false);
@@ -622,7 +657,7 @@ export default function CommunityPage() {
     : "Community Dashboard";
   const workspaceSubtitle = isConversationsView
     ? "Manage contacts, groups, and active chats."
-    : "Anonymous-first player networking and realtime chat.";
+    : "Anonymous-first community networking and realtime chat.";
   const groupsJoinedCount = useMemo(
     () => safeGroupResults.filter((group) => group.isMember).length,
     [safeGroupResults],
@@ -736,7 +771,7 @@ export default function CommunityPage() {
   const toolsSteps = useMemo(() => {
     if (directoryView === "CONTACTS") {
       return [
-        { id: "search", label: "Search players", done: true },
+        { id: "search", label: "Search users", done: true },
         {
           id: "start",
           label: "Start conversation",
@@ -882,6 +917,7 @@ export default function CommunityPage() {
       if (sectionId === "conversations") {
         setWorkspaceView("DIRECTORY");
       } else {
+        setSidebarMode("INBOX");
         setWorkspaceView("CHAT");
       }
     }
@@ -897,8 +933,10 @@ export default function CommunityPage() {
     setIsLoading(true);
     try {
       const session = await communityService.ensureSession();
-      if (session.role !== "PLAYER") {
-        toast.error("Community chat is available only for player accounts");
+      if (!isCommunityEligibleRole(session.role)) {
+        toast.error(
+          "Community chat is available only for player and coach accounts",
+        );
         redirectToMainLogin();
         return;
       }
@@ -949,13 +987,20 @@ export default function CommunityPage() {
   }, [loadBootstrap]);
 
   useEffect(() => {
-    if (!selectedConversationId) {
+    const followed = communityFollowStore
+      .getByKind("group")
+      .map((item) => item.id);
+    setFollowedGroupIds(followed);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedConversationId || !selectedConversation) {
       setMessages([]);
       return;
     }
 
     loadMessages(selectedConversationId);
-  }, [loadMessages, selectedConversationId]);
+  }, [loadMessages, selectedConversation, selectedConversationId]);
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId;
@@ -1016,14 +1061,19 @@ export default function CommunityPage() {
     }
 
     const queryParams = new URLSearchParams(searchQuery);
-    const urlSidebarMode = queryParams.get("sidebar")?.toUpperCase() || null;
+    const sidebarState = resolveSidebarQueryState(queryParams.get("sidebar"));
     const urlDirectoryView =
       queryParams.get("directory")?.toUpperCase() || null;
     const urlGroupToolsMode = queryParams.get("panel")?.toUpperCase() || null;
     const urlConversationId = queryParams.get("conversation") || null;
+    const urlQuery = queryParams.get("q") || null;
 
-    if (isValidSidebarMode(urlSidebarMode) && urlSidebarMode !== sidebarMode) {
-      setSidebarMode(urlSidebarMode);
+    if (sidebarState.mode && sidebarState.mode !== sidebarMode) {
+      setSidebarMode(sidebarState.mode);
+    }
+
+    if (sidebarState.tab && sidebarState.tab !== activeSidebarTab) {
+      setActiveSidebarTab(sidebarState.tab);
     }
 
     if (
@@ -1049,14 +1099,24 @@ export default function CommunityPage() {
       setSelectedConversationId(urlConversationId);
     }
 
+    if (
+      typeof urlQuery === "string" &&
+      urlQuery.trim() &&
+      urlQuery !== groupSearchQuery
+    ) {
+      setGroupSearchQuery(urlQuery.trim());
+    }
+
     hasHydratedUrlRef.current = true;
     lastAppliedQueryRef.current = searchQuery;
   }, [
     searchQuery,
     sidebarMode,
+    activeSidebarTab,
     directoryView,
     groupToolsMode,
     selectedConversationId,
+    groupSearchQuery,
   ]);
 
   useEffect(() => {
@@ -1109,6 +1169,16 @@ export default function CommunityPage() {
   }, [conversationMode, directoryView]);
 
   useEffect(() => {
+    if (activeSidebarTab === "community-overview") {
+      if (sidebarMode !== "INBOX") {
+        setSidebarMode("INBOX");
+      }
+      if (workspaceView !== "CHAT") {
+        setWorkspaceView("CHAT");
+      }
+      return;
+    }
+
     if (sidebarMode !== "TOOLS") {
       return;
     }
@@ -1158,11 +1228,11 @@ export default function CommunityPage() {
     const timeout = setTimeout(async () => {
       try {
         setIsSearchingPlayers(true);
-        const players = await communityService.searchPlayers(query);
-        setPlayerSearchResults(players);
+        const users = await communityService.searchCommunityUsers(query);
+        setPlayerSearchResults(users);
       } catch (e) {
         const message =
-          e instanceof Error ? e.message : "Failed to search players";
+          e instanceof Error ? e.message : "Failed to search users";
         setError(message);
         toast.error(message);
       } finally {
@@ -1211,11 +1281,11 @@ export default function CommunityPage() {
     const timeout = setTimeout(async () => {
       try {
         setIsSearchingInvitePlayers(true);
-        const players = await communityService.searchPlayers(query);
-        setInviteSearchResults(players);
+        const users = await communityService.searchCommunityUsers(query);
+        setInviteSearchResults(users);
       } catch (e) {
         const message =
-          e instanceof Error ? e.message : "Failed to search players";
+          e instanceof Error ? e.message : "Failed to search users";
         setError(message);
         toast.error(message);
       } finally {
@@ -1232,7 +1302,7 @@ export default function CommunityPage() {
     const handleConnect = () => {
       setIsSocketConnected(true);
       const currentConversationId = selectedConversationIdRef.current;
-      if (currentConversationId) {
+      if (currentConversationId && getConversationById(currentConversationId)) {
         socket.emit("community:joinConversation", {
           conversationId: currentConversationId,
         });
@@ -1369,10 +1439,15 @@ export default function CommunityPage() {
         refreshTimeoutRef.current = null;
       }
     };
-  }, [queueConversationRefresh, loadMessages, refreshConversationsNow]);
+  }, [
+    queueConversationRefresh,
+    loadMessages,
+    refreshConversationsNow,
+    getConversationById,
+  ]);
 
   useEffect(() => {
-    if (!selectedConversationId) {
+    if (!selectedConversationId || !selectedConversation) {
       return;
     }
 
@@ -1382,10 +1457,10 @@ export default function CommunityPage() {
         conversationId: selectedConversationId,
       });
     }
-  }, [selectedConversationId, isSocketConnected]);
+  }, [selectedConversationId, selectedConversation, isSocketConnected]);
 
   useEffect(() => {
-    if (isSocketConnected || !selectedConversationId) {
+    if (isSocketConnected || !selectedConversationId || !selectedConversation) {
       disconnectedPollDelayRef.current = DISCONNECTED_POLL_BASE_MS;
       return;
     }
@@ -1436,7 +1511,12 @@ export default function CommunityPage() {
         clearTimeout(timeoutHandle);
       }
     };
-  }, [applyConversationPage, isSocketConnected, selectedConversationId]);
+  }, [
+    applyConversationPage,
+    isSocketConnected,
+    selectedConversation,
+    selectedConversationId,
+  ]);
 
   useEffect(() => {
     if (!selectedConversationId) {
@@ -1609,7 +1689,7 @@ export default function CommunityPage() {
 
       toast.success(
         response.alreadyMember
-          ? "Player is already in this group"
+          ? "User is already in this group"
           : "Member added to group",
       );
     } catch (e) {
@@ -1733,7 +1813,7 @@ export default function CommunityPage() {
     if (
       typeof window !== "undefined" &&
       !window.confirm(
-        `Are you sure you want to ${actionLabel} this player for direct messages?`,
+        `Are you sure you want to ${actionLabel} this user for direct messages?`,
       )
     ) {
       return;
@@ -1756,7 +1836,7 @@ export default function CommunityPage() {
             ),
           };
         });
-        toast.success("Player unblocked");
+        toast.success("User unblocked");
       } else {
         await communityService.blockUser(targetUserId);
         setProfile((current) => {
@@ -1774,7 +1854,7 @@ export default function CommunityPage() {
             blockedUsers: [...blockedUsers, targetUserId],
           };
         });
-        toast.success("Player blocked");
+        toast.success("User blocked");
       }
 
       const updatedConversations = await communityService.listConversations(
@@ -1784,7 +1864,7 @@ export default function CommunityPage() {
       applyConversationPage(updatedConversations, { preserveSelection: true });
     } catch (e) {
       const message =
-        e instanceof Error ? e.message : `Failed to ${actionLabel} player`;
+        e instanceof Error ? e.message : `Failed to ${actionLabel} user`;
       setError(message);
       toast.error(message);
     } finally {
@@ -2399,8 +2479,8 @@ export default function CommunityPage() {
                   >
                     <CommunityPageHeader
                       title="PowerMySport Community"
-                      subtitle="Anonymous-first player chat with your privacy controls."
-                      badge="Player Network"
+                      subtitle="Anonymous-first community chat with your privacy controls."
+                      badge="Community Network"
                       action={
                         <div className="flex items-center gap-2">
                           <Link
@@ -2413,7 +2493,7 @@ export default function CommunityPage() {
                             href={mainAppUrl}
                             className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                           >
-                            Switch to Player
+                            Switch to Main App
                             <ExternalLink size={16} />
                           </a>
                         </div>
@@ -2426,6 +2506,27 @@ export default function CommunityPage() {
                     getActionLabel={getFeaturedGroupActionLabel}
                     onGroupAction={(group) => {
                       void handleFeaturedGroupAction(group);
+                    }}
+                    isGroupFollowed={(groupId) =>
+                      followedGroupIds.includes(groupId)
+                    }
+                    onToggleGroupFollow={(group) => {
+                      const result = communityFollowStore.toggle({
+                        kind: "group",
+                        id: group.id,
+                        label: group.name,
+                        href: `/`,
+                      });
+                      setFollowedGroupIds(
+                        communityFollowStore
+                          .getByKind("group")
+                          .map((item) => item.id),
+                      );
+                      toast.success(
+                        result.following
+                          ? `Following ${group.name}`
+                          : `Unfollowed ${group.name}`,
+                      );
                     }}
                     onViewAll={() => {
                       setActiveSidebarTab("conversations");
@@ -2605,7 +2706,7 @@ export default function CommunityPage() {
                           </h2>
                         </div>
                         <p className="mt-1 text-sm text-slate-500">
-                          Search players, discover groups, and select a
+                          Search users, discover groups, and select a
                           conversation.
                         </p>
 
@@ -2700,8 +2801,8 @@ export default function CommunityPage() {
                             {directoryView === "CONTACTS" ? (
                               <>
                                 <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                                  Search a player and tap their card to
-                                  instantly create or open a DM thread.
+                                  Search a user and tap their card to instantly
+                                  create or open a DM thread.
                                 </div>
                                 <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3">
                                   <Search
@@ -2724,27 +2825,36 @@ export default function CommunityPage() {
                                         Searching...
                                       </p>
                                     ) : playerSearchResults.length ? (
-                                      playerSearchResults.map((player) => (
+                                      playerSearchResults.map((user) => (
                                         <button
-                                          key={player.id}
+                                          key={user.id}
                                           onClick={() =>
                                             void handleStartConversation(
-                                              player.id,
+                                              user.id,
                                             )
                                           }
                                           className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
                                         >
-                                          <span>{player.displayName}</span>
-                                          <span className="text-xs text-slate-500">
-                                            {player.isIdentityPublic
-                                              ? "Public"
-                                              : "Anonymous"}
+                                          <span>{user.displayName}</span>
+                                          <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                                            <span>
+                                              {user.isIdentityPublic
+                                                ? "Public"
+                                                : "Anonymous"}
+                                            </span>
+                                            {user.role && (
+                                              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                {user.role === "COACH"
+                                                  ? "Coach"
+                                                  : "Player"}
+                                              </span>
+                                            )}
                                           </span>
                                         </button>
                                       ))
                                     ) : (
                                       <div className="rounded-lg border border-dashed border-border bg-white p-3 text-sm text-slate-500">
-                                        No players found for this search. Try a
+                                        No users found for this search. Try a
                                         different name or alias.
                                       </div>
                                     )}
@@ -2753,7 +2863,7 @@ export default function CommunityPage() {
                                 {playerSearchQuery.trim().length < 2 && (
                                   <div className="rounded-lg border border-dashed border-border bg-white p-3 text-xs text-slate-500">
                                     Start typing at least 2 characters to find
-                                    players.
+                                    users.
                                   </div>
                                 )}
                               </>
@@ -3107,7 +3217,7 @@ export default function CommunityPage() {
                                                                 .value,
                                                             )
                                                           }
-                                                          placeholder="Search player to add"
+                                                          placeholder="Search user to add"
                                                           className="w-full bg-transparent py-1.5 text-xs outline-none"
                                                         />
                                                       </div>
@@ -3116,38 +3226,45 @@ export default function CommunityPage() {
                                                         <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
                                                           {isSearchingInvitePlayers ? (
                                                             <p className="text-xs text-slate-500">
-                                                              Searching
-                                                              players...
+                                                              Searching users...
                                                             </p>
                                                           ) : inviteSearchResults.length ? (
                                                             inviteSearchResults.map(
-                                                              (player) => (
+                                                              (user) => (
                                                                 <div
-                                                                  key={
-                                                                    player.id
-                                                                  }
+                                                                  key={user.id}
                                                                   className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
                                                                 >
-                                                                  <span className="truncate text-xs text-slate-700">
-                                                                    {
-                                                                      player.displayName
-                                                                    }
-                                                                  </span>
+                                                                  <div className="min-w-0">
+                                                                    <span className="truncate text-xs text-slate-700">
+                                                                      {
+                                                                        user.displayName
+                                                                      }
+                                                                    </span>
+                                                                    {user.role && (
+                                                                      <span className="ml-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                                        {user.role ===
+                                                                        "COACH"
+                                                                          ? "Coach"
+                                                                          : "Player"}
+                                                                      </span>
+                                                                    )}
+                                                                  </div>
                                                                   <button
                                                                     disabled={
                                                                       isAddingMemberUserId ===
-                                                                      player.id
+                                                                      user.id
                                                                     }
                                                                     onClick={() =>
                                                                       void handleAddMemberToGroup(
                                                                         group.id,
-                                                                        player.id,
+                                                                        user.id,
                                                                       )
                                                                     }
                                                                     className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                                                                   >
                                                                     {isAddingMemberUserId ===
-                                                                    player.id
+                                                                    user.id
                                                                       ? "Adding"
                                                                       : "Add"}
                                                                   </button>
@@ -3156,7 +3273,7 @@ export default function CommunityPage() {
                                                             )
                                                           ) : (
                                                             <p className="text-xs text-slate-500">
-                                                              No players found
+                                                              No users found
                                                             </p>
                                                           )}
                                                         </div>
@@ -3251,7 +3368,7 @@ export default function CommunityPage() {
                                                                 .value,
                                                             )
                                                           }
-                                                          placeholder="Search player to add"
+                                                          placeholder="Search user to add"
                                                           className="w-full bg-transparent py-1.5 text-xs outline-none"
                                                         />
                                                       </div>
@@ -3260,38 +3377,45 @@ export default function CommunityPage() {
                                                         <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
                                                           {isSearchingInvitePlayers ? (
                                                             <p className="text-xs text-slate-500">
-                                                              Searching
-                                                              players...
+                                                              Searching users...
                                                             </p>
                                                           ) : inviteSearchResults.length ? (
                                                             inviteSearchResults.map(
-                                                              (player) => (
+                                                              (user) => (
                                                                 <div
-                                                                  key={
-                                                                    player.id
-                                                                  }
+                                                                  key={user.id}
                                                                   className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
                                                                 >
-                                                                  <span className="truncate text-xs text-slate-700">
-                                                                    {
-                                                                      player.displayName
-                                                                    }
-                                                                  </span>
+                                                                  <div className="min-w-0">
+                                                                    <span className="truncate text-xs text-slate-700">
+                                                                      {
+                                                                        user.displayName
+                                                                      }
+                                                                    </span>
+                                                                    {user.role && (
+                                                                      <span className="ml-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                                        {user.role ===
+                                                                        "COACH"
+                                                                          ? "Coach"
+                                                                          : "Player"}
+                                                                      </span>
+                                                                    )}
+                                                                  </div>
                                                                   <button
                                                                     disabled={
                                                                       isAddingMemberUserId ===
-                                                                      player.id
+                                                                      user.id
                                                                     }
                                                                     onClick={() =>
                                                                       void handleAddMemberToGroup(
                                                                         group.id,
-                                                                        player.id,
+                                                                        user.id,
                                                                       )
                                                                     }
                                                                     className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                                                                   >
                                                                     {isAddingMemberUserId ===
-                                                                    player.id
+                                                                    user.id
                                                                       ? "Adding"
                                                                       : "Add"}
                                                                   </button>
@@ -3300,7 +3424,7 @@ export default function CommunityPage() {
                                                             )
                                                           ) : (
                                                             <p className="text-xs text-slate-500">
-                                                              No players found
+                                                              No users found
                                                             </p>
                                                           )}
                                                         </div>
@@ -3602,8 +3726,8 @@ export default function CommunityPage() {
 
                     {selectedConversationIsBlocked && (
                       <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                        This player is blocked. Unblock to send or receive
-                        direct messages in this chat.
+                        This user is blocked. Unblock to send or receive direct
+                        messages in this chat.
                       </div>
                     )}
 
@@ -3697,7 +3821,7 @@ export default function CommunityPage() {
                           !selectedConversation
                             ? "Select a conversation to reply"
                             : selectedConversationIsBlocked
-                              ? "Unblock this player to continue messaging"
+                              ? "Unblock this user to continue messaging"
                               : selectedConversationNeedsMyApproval
                                 ? "Accept this request to reply"
                                 : "Type your message"

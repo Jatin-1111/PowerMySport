@@ -9,7 +9,8 @@ import {
   type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { toast } from "@/lib/toast";
-import { Calendar, Settings, ShieldCheck, User } from "lucide-react";
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { Calendar, Settings, ShieldCheck, User, Users } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -24,6 +25,7 @@ export default function CoachLayout({
   const [isGateLoading, setIsGateLoading] = useState(true);
   const [isVerificationLocked, setIsVerificationLocked] = useState(false);
   const lastGateToastKeyRef = useRef<string | null>(null);
+  const communityUrl = getCommunityAppUrl();
 
   useEffect(() => {
     let isMounted = true;
@@ -108,10 +110,18 @@ export default function CoachLayout({
       icon: Calendar,
     },
     { href: "/settings", label: "Settings", icon: Settings },
+    {
+      href: communityUrl,
+      label: "Community",
+      icon: Users,
+      external: true,
+    },
   ];
 
   const visibleNavItems = isVerificationLocked
-    ? navItems.filter((item) => item.href === "/coach/verification")
+    ? navItems.filter(
+        (item) => item.href === "/coach/verification" || item.external,
+      )
     : navItems;
 
   if (

@@ -1,4 +1,5 @@
 ﻿import { cn } from "@/utils/cn";
+import { Slot } from "@radix-ui/react-slot";
 import { Loader2 } from "lucide-react";
 import React from "react";
 
@@ -14,6 +15,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   fullWidth?: boolean;
   loading?: boolean;
   icon?: React.ReactNode;
+  asChild?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       fullWidth = false,
       loading = false,
       icon,
+      asChild = false,
       children,
       disabled,
       ...props
@@ -57,6 +60,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       md: "px-6 py-2.5 text-base",
       lg: "px-8 py-3 text-lg",
     };
+
+    if (asChild) {
+      return (
+        <Slot
+          ref={ref}
+          className={cn(
+            baseStyles,
+            variants[variant],
+            sizes[size],
+            fullWidth && "w-full",
+            loading && "cursor-wait",
+            className,
+          )}
+          {...props}
+        >
+          {children}
+        </Slot>
+      );
+    }
 
     return (
       <button

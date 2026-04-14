@@ -16,6 +16,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { toast } from "@/lib/toast";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { authApi } from "@/modules/auth/services/auth";
 import { BackButton } from "@/components/ui/back-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -41,6 +42,7 @@ import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { coachApi } from "@/modules/coach/services/coach";
+import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Coach, User, Venue } from "@/types";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
@@ -359,6 +361,13 @@ function CheckoutPageContent() {
   const hasRequiredDetails = Boolean(date && startTime && endTime && sport);
   const hasValidDuration = durationMinutes > 0;
   const isDetailsReady = type === "coach" ? Boolean(coach) : Boolean(venue);
+  const communityUrl = getCommunityAppUrl({
+    path: "q",
+    searchParams: {
+      q: `${sport} ${type === "coach" ? "coach" : "venue"}`.trim() || undefined,
+      sport: sport || undefined,
+    },
+  });
 
   const steps = [
     {
@@ -825,6 +834,15 @@ function CheckoutPageContent() {
                 </div>
               </div>
             </Card>
+
+            <CommunityInsightsCard
+              title="Need a quick second opinion before paying?"
+              description="See what players are saying about this slot, coach, or venue before final confirmation."
+              q={`${sport} ${type === "coach" ? "coach" : "venue"}`}
+              sport={sport}
+              ctaUrl={communityUrl}
+              enabled={Boolean(user && user.role === "PLAYER")}
+            />
           </div>
         }
       >

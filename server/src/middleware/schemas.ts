@@ -123,6 +123,7 @@ export const communityCreateGroupSchema = z.object({
     .trim()
     .max(80, "City cannot exceed 80 characters")
     .optional(),
+  audience: z.enum(["ALL", "PLAYERS_ONLY", "COACHES_ONLY"]).optional(),
 });
 
 export const communityAddGroupMemberSchema = z.object({

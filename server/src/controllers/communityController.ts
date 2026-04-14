@@ -79,7 +79,7 @@ export const searchPlayers = async (
 
     res.status(200).json({
       success: true,
-      message: "Players fetched",
+      message: "Community users fetched",
       data,
     });
   } catch (error) {
@@ -378,11 +378,12 @@ export const createGroup = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { name, description, sport, city } = req.body as {
+    const { name, description, sport, city, audience } = req.body as {
       name: string;
       description?: string;
       sport?: string;
       city?: string;
+      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
     };
 
     const payload: {
@@ -390,6 +391,7 @@ export const createGroup = async (
       description?: string;
       sport?: string;
       city?: string;
+      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
     } = { name };
     if (typeof description === "string") {
       payload.description = description;
@@ -399,6 +401,13 @@ export const createGroup = async (
     }
     if (typeof city === "string") {
       payload.city = city;
+    }
+    if (
+      audience === "ALL" ||
+      audience === "PLAYERS_ONLY" ||
+      audience === "COACHES_ONLY"
+    ) {
+      payload.audience = audience;
     }
 
     const data = await CommunityService.createGroup(getUserId(req), payload);

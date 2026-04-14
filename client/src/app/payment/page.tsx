@@ -2,6 +2,8 @@
 
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { CheckCircle, Clock, XCircle } from "lucide-react";
@@ -20,6 +22,15 @@ function PaymentPageContent() {
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(!!bookingId);
+  const communityUrl = getCommunityAppUrl({
+    path: "q",
+    searchParams: {
+      q:
+        `${booking?.sport || ""} ${type === "coach" ? "coach" : "venue"}`.trim() ||
+        undefined,
+      sport: booking?.sport || undefined,
+    },
+  });
 
   useEffect(() => {
     const loadBooking = async () => {
@@ -259,6 +270,17 @@ function PaymentPageContent() {
                   Mode: <span className="font-semibold">Mock payment</span>
                 </p>
               </div>
+            )}
+
+            {isSuccess && (
+              <CommunityInsightsCard
+                title="Share or ask in community"
+                description="Get tips, find partners, and discuss your upcoming session with local players and coaches."
+                q={`${booking?.sport || ""} ${type === "coach" ? "coach" : "venue"}`}
+                sport={booking?.sport || ""}
+                ctaUrl={communityUrl}
+                enabled
+              />
             )}
             <div className="flex flex-col gap-3">
               <Button

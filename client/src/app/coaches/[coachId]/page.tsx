@@ -1,8 +1,11 @@
 "use client";
 
 import { toast } from "@/lib/toast";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
+import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
+import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { reviewApi } from "@/modules/review/services/review";
 import { Button } from "@/modules/shared/ui/Button";
@@ -131,6 +134,23 @@ export default function CoachDetailsPage() {
     null,
   );
   const [reviewEligibilityReason, setReviewEligibilityReason] = useState("");
+  const communityIntent = buildCoachCommunityIntent({
+    source: "coach_detail",
+    selectedSport,
+    coachSports: coach?.sports,
+    coachId,
+  });
+  const communityUrl = getCommunityAppUrl({
+    path: "q",
+    searchParams: {
+      ask: "1",
+      q: communityIntent.q,
+      sport: communityIntent.sport,
+      utm_source: "powermysport",
+      utm_medium: "community_cta",
+      utm_campaign: "coach_detail",
+    },
+  });
 
   const getSportRate = (sport: string) => {
     if (!coach) {
@@ -545,6 +565,26 @@ export default function CoachDetailsPage() {
                 </p>
               </div>
             </Card>
+
+            <CommunityInsightsCard
+              title="Ask players about this coach"
+              description="Check community recommendations on coaching style, progression quality, and best-fit sessions."
+              q={communityIntent.q}
+              sport={communityIntent.sport}
+              ctaUrl={communityUrl}
+              ctaTracking={{
+                eventName: "community_cta_click",
+                entityType: "COACH",
+                entityId: coachId,
+                metadata: {
+                  ...communityIntent.analyticsMetadata,
+                  page: "coach_detail",
+                },
+              }}
+              enabled={Boolean(
+                user && (user.role === "PLAYER" || user.role === "COACH"),
+              )}
+            />
 
             {/* Venue Images */}
             {venueImages.length > 0 && (

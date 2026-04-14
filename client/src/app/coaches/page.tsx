@@ -7,14 +7,19 @@ import {
   StaggerContainer,
   StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { statsApi } from "@/modules/analytics/services/stats";
+import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
+import { clientFollowStore } from "@/modules/shared/lib/followStore";
 import { Coach } from "@/types";
 import {
   ArrowRight,
   Award,
+  Bookmark,
   FilterX,
   ImageIcon,
-  IndianRupee,
   MapPin,
+  MessageCircle,
   Search,
   SlidersHorizontal,
   Star,
@@ -210,11 +215,38 @@ function CoachesPageContent() {
   } | null>(null);
   const [hasLocationAccessDenied, setHasLocationAccessDenied] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [followedCoachIds, setFollowedCoachIds] = useState<string[]>([]);
   const hasRequestedInitialLoadRef = useRef(false);
   const hasHydratedFromUrlRef = useRef(false);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const communityIntent = buildCoachCommunityIntent({
+    source: "coaches_list",
+    selectedSport: appliedSportFilter || sportInput,
+  });
+  const communityUrl = getCommunityAppUrl({
+    path: "q",
+    searchParams: {
+      ask: "1",
+      q: communityIntent.q,
+      sport: communityIntent.sport,
+      utm_source: "powermysport",
+      utm_medium: "community_cta",
+      utm_campaign: "coaches_list",
+    },
+  });
+  const handleOpenCommunity = () => {
+    statsApi.trackFunnelEventNonBlocking({
+      eventName: "community_cta_click",
+      entityType: "COACH",
+      metadata: {
+        ...communityIntent.analyticsMetadata,
+        page: "coaches_list",
+      },
+      source: "WEB",
+    });
+  };
 
   useEffect(() => {
     if (hasHydratedFromUrlRef.current) {
@@ -736,6 +768,13 @@ function CoachesPageContent() {
     loadCoaches(appliedSportFilter);
   }, [appliedSportFilter]);
 
+  useEffect(() => {
+    const followed = clientFollowStore
+      .getByKind("coach")
+      .map((item) => item.id);
+    setFollowedCoachIds(followed);
+  }, []);
+
   const loadCoaches = async (sportFilter: string = "") => {
     setLoading(true);
     try {
@@ -1054,6 +1093,36 @@ function CoachesPageContent() {
                   </div>
                 )}
 
+                <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-white/85 p-4 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-power-orange">
+                      <MessageCircle size={18} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Want a second opinion before booking a coach?
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        Ask the community for coach recommendations by sport,
+                        style, or location before you decide.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-start sm:justify-end">
+                    <Button asChild variant="secondary" className="rounded-xl">
+                      <a
+                        href={communityUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={handleOpenCommunity}
+                      >
+                        Ask in Community
+                        <ArrowRight size={16} className="ml-2" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+
                 {sortBy === "nearest" && hasLocationAccessDenied && (
                   <p className="mt-3 text-xs text-slate-600">
                     Location access is off. Showing all coaches with available
@@ -1160,7 +1229,31 @@ function CoachesPageContent() {
                   userLocation !== null &&
                   distanceFromUserKm !== null;
                 const coachRoute = `/coaches/${coach.id || coach._id}`;
+                const coachId = String(coach.id || coach._id || "");
+                const isFollowed = followedCoachIds.includes(coachId);
+                const knownInCommunity =
+                  Number(coach.reviewCount || 0) >= 8 ||
+                  (Number(coach.rating || 0) >= 4.4 &&
+                    Number(coach.reviewCount || 0) >= 4);
+                const badge = getVerificationBadge(coach);
                 const onOpenCoach = () => router.push(coachRoute);
+                const onToggleFollowCoach = () => {
+                  if (!coachId) {
+                    return;
+                  }
+
+                  clientFollowStore.toggle({
+                    kind: "coach",
+                    id: coachId,
+                    label: getCoachDisplayName(coach),
+                    subtitle: getCoachSportsSummary(coach),
+                    href: coachRoute,
+                  });
+                  const followed = clientFollowStore
+                    .getByKind("coach")
+                    .map((item) => item.id);
+                  setFollowedCoachIds(followed);
+                };
 
                 return (
                   <StaggerItem key={coachCardKey} className="h-full">
@@ -1184,7 +1277,6 @@ function CoachesPageContent() {
                         const coachName = getCoachDisplayName(coach);
                         const coachInitials = getCoachInitials(coach);
                         const servingCity = getCoachServingCity(coach);
-                        const badge = getVerificationBadge(coach);
 
                         return (
                           <div className="relative aspect-3/4 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
@@ -1307,6 +1399,19 @@ function CoachesPageContent() {
                             </span>
                           </div>
                         </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                            {badge.label === "Verified"
+                              ? "Identity Verified"
+                              : "Identity Unverified"}
+                          </span>
+                          {knownInCommunity && (
+                            <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                              Known In Community
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Minimal Footer */}
@@ -1335,6 +1440,24 @@ function CoachesPageContent() {
                             <ArrowRight size={18} strokeWidth={2.5} />
                           </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onToggleFollowCoach();
+                          }}
+                          className={`mt-3 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                            isFollowed
+                              ? "border-power-orange/30 bg-power-orange/10 text-power-orange"
+                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          <Bookmark
+                            size={13}
+                            className={isFollowed ? "fill-current" : ""}
+                          />
+                          {isFollowed ? "Saved" : "Save Coach"}
+                        </button>
                       </div>
                     </Card>
                   </StaggerItem>

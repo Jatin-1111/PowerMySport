@@ -1,5 +1,7 @@
 export type MessagePrivacy = "EVERYONE" | "REQUEST_ONLY" | "NONE";
 export type ConversationType = "DM" | "GROUP";
+export type CommunityUserRole = "PLAYER" | "COACH";
+export type CommunityGroupAudience = "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
 
 export interface CommunityProfile {
   _id: string;
@@ -50,6 +52,7 @@ export interface CommunityGroupSummary {
   name: string;
   description: string;
   visibility: "PUBLIC";
+  audience?: CommunityGroupAudience;
   memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
   sport: string;
   city: string;
@@ -58,12 +61,15 @@ export interface CommunityGroupSummary {
   isAdmin?: boolean;
 }
 
-export interface PlayerSearchResult {
+export interface CommunityUserSearchResult {
   id: string;
   displayName: string;
   isIdentityPublic: boolean;
+  role?: CommunityUserRole;
   photoUrl?: string | null;
 }
+
+export type PlayerSearchResult = CommunityUserSearchResult;
 
 export interface BlockedUser {
   id: string;

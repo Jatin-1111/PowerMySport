@@ -7,6 +7,7 @@ import {
   DashboardShell,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { BottomNavItem } from "@/components/layout/BottomNav";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -31,10 +32,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { counts } = useNotifications();
-  const communityUrl =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3002"
-      : "https://community.powermysport.com";
+  const communityUrl = getCommunityAppUrl();
 
   const handleLogout = async () => {
     try {
@@ -87,6 +85,17 @@ export default function DashboardLayout({
         counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
     },
     {
+      href: "/notifications",
+      label: "Notifications",
+      icon: Bell,
+      badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,
+    },
+    {
+      href: "/saved",
+      label: "Saved",
+      icon: Calendar,
+    },
+    {
       href: "/dashboard/my-profile",
       label: "Profile",
       icon: User,
@@ -132,6 +141,12 @@ export default function DashboardLayout({
       href: "/dashboard/my-profile",
       label: "Profile",
       icon: User,
+    },
+    {
+      href: "/notifications",
+      label: "Alerts",
+      icon: Bell,
+      badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,
     },
   ];
 

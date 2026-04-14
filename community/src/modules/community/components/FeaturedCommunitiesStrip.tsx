@@ -8,6 +8,8 @@ type FeaturedCommunitiesStripProps = {
   getActionLabel: (group: CommunityGroupSummary) => string;
   onGroupAction: (group: CommunityGroupSummary) => void;
   onViewAll: () => void;
+  isGroupFollowed?: (groupId: string) => boolean;
+  onToggleGroupFollow?: (group: CommunityGroupSummary) => void;
 };
 
 export function FeaturedCommunitiesStrip({
@@ -15,6 +17,8 @@ export function FeaturedCommunitiesStrip({
   getActionLabel,
   onGroupAction,
   onViewAll,
+  isGroupFollowed,
+  onToggleGroupFollow,
 }: FeaturedCommunitiesStripProps) {
   const prefersReducedMotion = useReducedMotion();
   const listStagger = prefersReducedMotion
@@ -101,6 +105,20 @@ export function FeaturedCommunitiesStrip({
                 >
                   {actionLabel}
                 </motion.button>
+                {onToggleGroupFollow && (
+                  <button
+                    onClick={() => onToggleGroupFollow(group)}
+                    className={`mt-2 w-full rounded-lg border px-3 py-2 text-[11px] font-semibold transition ${
+                      isGroupFollowed?.(group.id)
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {isGroupFollowed?.(group.id)
+                      ? "Following Group"
+                      : "Follow Group"}
+                  </button>
+                )}
               </motion.article>
             );
           })}

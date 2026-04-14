@@ -6,6 +6,7 @@ import { ChevronLeft, FileText, Flag } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
+import { isCommunityEligibleRole } from "@/lib/auth/roles";
 
 type ReportItem = {
   id: string;
@@ -36,7 +37,7 @@ export default function ReportsPage() {
     try {
       setIsLoading(true);
       const session = await communityService.ensureSession();
-      if (session.role !== "PLAYER") {
+      if (!isCommunityEligibleRole(session.role)) {
         redirectToMainLogin();
         return;
       }

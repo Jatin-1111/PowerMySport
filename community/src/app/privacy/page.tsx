@@ -7,11 +7,12 @@ import { communityService } from "@/modules/community/services/community";
 import {
   BlockedUser,
   CommunityProfile,
+  CommunityUserSearchResult,
   MessagePrivacy,
-  PlayerSearchResult,
 } from "@/modules/community/types";
 import { toast } from "@/lib/toast";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
+import { isCommunityEligibleRole } from "@/lib/auth/roles";
 
 const privacyOptions: Array<{ value: MessagePrivacy; label: string }> = [
   { value: "EVERYONE", label: "Everyone" },
@@ -24,8 +25,10 @@ export default function PrivacyPage() {
   const [aliasDraft, setAliasDraft] = useState("");
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [blockSearch, setBlockSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<PlayerSearchResult[]>([]);
-  const [isSearchingPlayers, setIsSearchingPlayers] = useState(false);
+  const [searchResults, setSearchResults] = useState<
+    CommunityUserSearchResult[]
+  >([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [isLoadingBlockedUsers, setIsLoadingBlockedUsers] = useState(false);
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
   const [unblockingUserId, setUnblockingUserId] = useState<string | null>(null);
@@ -37,7 +40,7 @@ export default function PrivacyPage() {
       try {
         setIsLoading(true);
         const session = await communityService.ensureSession();
-        if (session.role !== "PLAYER") {
+        if (!isCommunityEligibleRole(session.role)) {
           redirectToMainLogin();
           return;
         }
@@ -103,22 +106,22 @@ export default function PrivacyPage() {
     const trimmed = blockSearch.trim();
     if (trimmed.length < 2) {
       setSearchResults([]);
-      setIsSearchingPlayers(false);
+      setIsSearchingUsers(false);
       return;
     }
 
     const timeout = setTimeout(() => {
       const search = async () => {
         try {
-          setIsSearchingPlayers(true);
-          const results = await communityService.searchPlayers(trimmed);
+          setIsSearchingUsers(true);
+          const results = await communityService.searchCommunityUsers(trimmed);
           setSearchResults(results);
         } catch (error) {
           toast.error(
-            error instanceof Error ? error.message : "Failed to search players",
+            error instanceof Error ? error.message : "Failed to search users",
           );
         } finally {
-          setIsSearchingPlayers(false);
+          setIsSearchingUsers(false);
         }
       };
 
@@ -279,50 +282,57 @@ export default function PrivacyPage() {
             Blocked Users
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Blocked players cannot start conversations with you.
+            Blocked users cannot start conversations with you.
           </p>
 
           <div className="mt-4 space-y-3">
             <label className="block text-sm">
-              <span className="mb-1 block text-slate-500">Block a player</span>
+              <span className="mb-1 block text-slate-500">Block a user</span>
               <input
                 value={blockSearch}
                 onChange={(event) => setBlockSearch(event.target.value)}
-                placeholder="Search players by name"
+                placeholder="Search users by name"
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
               />
             </label>
 
-            {isSearchingPlayers && (
-              <p className="text-xs text-slate-500">Searching players...</p>
+            {isSearchingUsers && (
+              <p className="text-xs text-slate-500">Searching users...</p>
             )}
 
-            {!isSearchingPlayers && blockSearch.trim().length >= 2 && (
+            {!isSearchingUsers && blockSearch.trim().length >= 2 && (
               <div className="space-y-2 rounded-xl border border-border/70 bg-slate-50/70 p-3">
                 {searchResults.length === 0 ? (
-                  <p className="text-xs text-slate-500">No players found.</p>
+                  <p className="text-xs text-slate-500">No users found.</p>
                 ) : (
-                  searchResults.map((player) => {
-                    const blocked = isUserBlocked(player.id);
-                    const isBlocking = blockingUserId === player.id;
+                  searchResults.map((user) => {
+                    const blocked = isUserBlocked(user.id);
+                    const isBlocking = blockingUserId === user.id;
 
                     return (
                       <div
-                        key={player.id}
+                        key={user.id}
                         className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-white px-3 py-2"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-slate-900">
-                            {player.displayName}
+                            {user.displayName}
                           </p>
-                          <p className="text-xs text-slate-500">
-                            {player.isIdentityPublic
-                              ? "Identity visible"
-                              : "Anonymous profile"}
-                          </p>
+                          <div className="mt-0.5 flex items-center gap-1.5">
+                            <p className="text-xs text-slate-500">
+                              {user.isIdentityPublic
+                                ? "Identity visible"
+                                : "Anonymous profile"}
+                            </p>
+                            {user.role && (
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                {user.role === "COACH" ? "Coach" : "Player"}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <button
-                          onClick={() => void handleBlockUser(player.id)}
+                          onClick={() => void handleBlockUser(user.id)}
                           disabled={blocked || isBlocking}
                           className="rounded-lg border border-power-orange/40 px-2.5 py-1.5 text-xs font-medium text-power-orange transition hover:bg-power-orange/10 disabled:cursor-not-allowed disabled:opacity-50"
                         >

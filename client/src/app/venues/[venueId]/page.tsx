@@ -4,9 +4,11 @@ import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
 import { BackButton } from "@/components/ui/back-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
+import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { reviewApi } from "@/modules/review/services/review";
 import { Button } from "@/modules/shared/ui/Button";
@@ -48,6 +50,15 @@ export default function VenueDetailsPage() {
     null,
   );
   const [reviewEligibilityReason, setReviewEligibilityReason] = useState("");
+  const communityUrl = getCommunityAppUrl({
+    path: "q",
+    searchParams: {
+      q:
+        `${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`.trim() ||
+        undefined,
+      sport: selectedSport || venue?.sports?.[0] || undefined,
+    },
+  });
 
   useEffect(() => {
     if (venueId) {
@@ -340,6 +351,17 @@ export default function VenueDetailsPage() {
                     "Experience world-class sports facilities at this premium venue. Perfect for athletes of all levels looking for quality training and play spaces."}
                 </p>
               </Card>
+
+              <CommunityInsightsCard
+                title="Ask the community about this venue"
+                description="Get local feedback on crowd levels, coaching-friendly slots, and match quality before you lock your booking."
+                q={`${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`}
+                sport={selectedSport || venue?.sports?.[0] || ""}
+                ctaUrl={communityUrl}
+                enabled={Boolean(
+                  user && (user.role === "PLAYER" || user.role === "COACH"),
+                )}
+              />
 
               {/* Sports Available */}
               <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">

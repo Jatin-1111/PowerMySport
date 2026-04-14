@@ -16,6 +16,14 @@ import { CommunityAnswer } from "../models/CommunityAnswer";
 import { CommunityVote } from "../models/CommunityVote";
 import { CommunityReputation } from "../models/CommunityReputation";
 import { NotificationService } from "./NotificationService";
+import {
+  canJoinGroupAudience,
+  COMMUNITY_INTERACTION_POLICY,
+  isCrossRoleInteraction,
+  ROLE_LABEL,
+  type CommunityGroupAudience,
+  type CommunityRole,
+} from "./communityPolicy";
 import { getVoteTransitionDeltas, normalizeTags } from "./communityQnaUtils";
 
 const buildParticipantKey = (a: string, b: string): string =>
@@ -27,6 +35,8 @@ const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const MESSAGE_EDIT_DELETE_WINDOW_MS = 30 * 60 * 1000;
+const COMMUNITY_ALLOWED_ROLES = ["PLAYER", "COACH"] as const;
+const COMMUNITY_DEFAULT_GROUP_AUDIENCE = "ALL" as const;
 const COMMUNITY_POINTS = {
   CREATE_POST: 5,
   CREATE_ANSWER: 8,
@@ -35,7 +45,7 @@ const COMMUNITY_POINTS = {
 
 const makeDefaultAlias = (name?: string): string => {
   const seed = Math.floor(1000 + Math.random() * 9000);
-  const safeName = name?.trim().split(" ")[0] || "Player";
+  const safeName = name?.trim().split(" ")[0] || "Member";
   return `${safeName}-${seed}`;
 };
 
@@ -49,30 +59,82 @@ const generateInviteCode = (): string => {
   return code;
 };
 
-const ensurePlayerUser = async (userId: string) => {
+const getCommunityRole = async (userId: string): Promise<CommunityRole> => {
+  const user = await ensureCommunityUser(userId);
+  return user.role as CommunityRole;
+};
+
+const ensurePolicyAllowed = (policyEnabled: boolean, message: string): void => {
+  if (!policyEnabled) {
+    throw new Error(message);
+  }
+};
+
+const trackCommunityRoleMixEvent = (
+  event: string,
+  payload: Record<string, unknown>,
+) => {
+  // Phase-3 telemetry hook: swap with analytics sink when available.
+  console.info("[community-role-mix]", event, payload);
+};
+
+const ensureQnaAllowedForRole = (role: CommunityRole): void => {
+  ensurePolicyAllowed(
+    COMMUNITY_INTERACTION_POLICY.allowCrossRoleQna,
+    `Q&A participation is currently disabled for ${ROLE_LABEL[role]} accounts`,
+  );
+};
+
+const ensureCommunityUser = async (userId: string) => {
   const user = await User.findById(userId).select("_id role name").lean();
   if (!user) {
     throw new Error("User not found");
   }
 
-  if (user.role !== "PLAYER") {
-    throw new Error("Only players can use community chat");
+  if (!COMMUNITY_ALLOWED_ROLES.includes(user.role as "PLAYER" | "COACH")) {
+    throw new Error(
+      "Community is available only for player and coach accounts",
+    );
   }
 
   return user;
 };
 
-const ensureProfile = async (userId: string) => {
-  const user = await ensurePlayerUser(userId);
-  let profile = await CommunityProfile.findOne({ userId });
-  if (!profile) {
-    profile = await CommunityProfile.create({
-      userId,
-      anonymousAlias: makeDefaultAlias(user.name),
-    });
-  }
+const isDuplicateKeyError = (error: unknown): boolean =>
+  Boolean((error as { code?: number })?.code === 11000);
 
-  return profile;
+const ensureProfile = async (userId: string) => {
+  const user = await ensureCommunityUser(userId);
+
+  try {
+    const profile = await CommunityProfile.findOneAndUpdate(
+      { userId },
+      {
+        $setOnInsert: {
+          userId,
+          anonymousAlias: makeDefaultAlias(user.name),
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    if (!profile) {
+      throw new Error("Failed to initialize community profile");
+    }
+
+    return profile;
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      throw error;
+    }
+
+    const existingProfile = await CommunityProfile.findOne({ userId });
+    if (existingProfile) {
+      return existingProfile;
+    }
+
+    throw new Error("Failed to initialize community profile");
+  }
 };
 
 const isBlockedBetween = async (
@@ -117,7 +179,7 @@ const formatParticipant = (
       ? participant.name
       : profile?.isIdentityPublic
         ? participant.name
-        : profile?.anonymousAlias || "Anonymous Player",
+        : profile?.anonymousAlias || "Anonymous Member",
     isIdentityPublic: profile?.isIdentityPublic || false,
     photoUrl:
       !isSelf && profile?.isIdentityPublic ? participant.photoUrl : null,
@@ -165,6 +227,8 @@ export const CommunityService = {
     },
   ) {
     await ensureProfile(userId);
+    const userRole = await getCommunityRole(userId);
+    ensureQnaAllowedForRole(userRole);
 
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(50, Math.max(1, limit));
@@ -453,6 +517,8 @@ export const CommunityService = {
     },
   ) {
     await ensureProfile(userId);
+    const userRole = await getCommunityRole(userId);
+    ensureQnaAllowedForRole(userRole);
 
     const post = await CommunityPost.create({
       authorId: userId,
@@ -479,6 +545,12 @@ export const CommunityService = {
       },
       { upsert: true },
     );
+
+    trackCommunityRoleMixEvent("qna_post_created", {
+      userRole,
+      userId,
+      postId: String(post._id),
+    });
 
     return {
       id: String(post._id),
@@ -581,6 +653,8 @@ export const CommunityService = {
 
   async createAnswer(userId: string, postId: string, content: string) {
     await ensureProfile(userId);
+    const userRole = await getCommunityRole(userId);
+    ensureQnaAllowedForRole(userRole);
 
     const post = await CommunityPost.findOne({ _id: postId, isDeleted: false });
     if (!post) {
@@ -633,6 +707,13 @@ export const CommunityService = {
         { upsert: true },
       ),
     ]);
+
+    trackCommunityRoleMixEvent("qna_answer_created", {
+      userRole,
+      userId,
+      postId: String(post._id),
+      answerId: String(answer._id),
+    });
 
     return {
       id: String(answer._id),
@@ -873,7 +954,11 @@ export const CommunityService = {
     const regex = new RegExp(escapeRegex(normalizedQuery), "i");
 
     const [nameMatches, aliasMatches] = await Promise.all([
-      User.find({ role: "PLAYER", name: regex, _id: { $ne: userId } })
+      User.find({
+        role: { $in: COMMUNITY_ALLOWED_ROLES },
+        name: regex,
+        _id: { $ne: userId },
+      })
         .select("_id name photoUrl")
         .limit(safeLimit * 3)
         .lean(),
@@ -897,8 +982,8 @@ export const CommunityService = {
     }
 
     const [users, profiles] = await Promise.all([
-      User.find({ _id: { $in: ids }, role: "PLAYER" })
-        .select("_id name photoUrl")
+      User.find({ _id: { $in: ids }, role: { $in: COMMUNITY_ALLOWED_ROLES } })
+        .select("_id name photoUrl role")
         .lean(),
       CommunityProfile.find({ userId: { $in: ids } })
         .select("userId anonymousAlias isIdentityPublic blockedUsers")
@@ -930,12 +1015,13 @@ export const CommunityService = {
         const isIdentityPublic = candidateProfile?.isIdentityPublic || false;
         const displayName = isIdentityPublic
           ? user.name
-          : candidateProfile?.anonymousAlias || "Anonymous Player";
+          : candidateProfile?.anonymousAlias || "Anonymous Member";
 
         return {
           id: candidateId,
           displayName,
           isIdentityPublic,
+          role: user.role,
           photoUrl: isIdentityPublic ? user.photoUrl || null : null,
         };
       })
@@ -991,7 +1077,10 @@ export const CommunityService = {
       throw new Error("You cannot block yourself");
     }
 
-    await Promise.all([ensureProfile(userId), ensurePlayerUser(targetUserId)]);
+    await Promise.all([
+      ensureProfile(userId),
+      ensureCommunityUser(targetUserId),
+    ]);
 
     await CommunityProfile.updateOne(
       { userId },
@@ -1054,6 +1143,7 @@ export const CommunityService = {
         name: group.name,
         description: group.description || "",
         visibility: group.visibility,
+        audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
         sport: group.sport || "",
         city: group.city || "",
         createdBy: String(group.createdBy),
@@ -1072,9 +1162,12 @@ export const CommunityService = {
       description?: string;
       sport?: string;
       city?: string;
+      audience?: CommunityGroupAudience;
     },
   ) {
     await ensureProfile(userId);
+
+    const creatorRole = await getCommunityRole(userId);
 
     const name = payload.name.trim();
     if (!name) {
@@ -1088,10 +1181,17 @@ export const CommunityService = {
       city: normalizeOptionalText(payload.city),
       visibility: "PUBLIC",
       memberAddPolicy: "ADMIN_ONLY",
+      audience: payload.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
       createdBy: userId,
       members: [userId],
       admins: [userId],
       inviteCode: generateInviteCode(),
+    });
+
+    trackCommunityRoleMixEvent("group_created", {
+      groupId: String(group._id),
+      createdByRole: creatorRole,
+      audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
     });
 
     const conversation = await CommunityConversation.create({
@@ -1108,6 +1208,7 @@ export const CommunityService = {
       name: group.name,
       description: group.description || "",
       visibility: group.visibility,
+      audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
       sport: group.sport || "",
       city: group.city || "",
       memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
@@ -1147,9 +1248,18 @@ export const CommunityService = {
   async joinGroup(userId: string, groupId: string) {
     await ensureProfile(userId);
 
+    const userRole = await getCommunityRole(userId);
+
     const group = await CommunityGroup.findById(groupId);
     if (!group) {
       throw new Error("Group not found");
+    }
+
+    const groupAudience =
+      (group.audience as CommunityGroupAudience | undefined) ||
+      COMMUNITY_DEFAULT_GROUP_AUDIENCE;
+    if (!canJoinGroupAudience(groupAudience, userRole)) {
+      throw new Error("This group is not available for your role");
     }
 
     const alreadyMember = group.members.some(
@@ -1158,6 +1268,12 @@ export const CommunityService = {
     if (!alreadyMember) {
       group.members.push(new mongoose.Types.ObjectId(userId));
       await group.save();
+
+      trackCommunityRoleMixEvent("group_joined", {
+        groupId,
+        audience: groupAudience,
+        role: userRole,
+      });
     }
 
     const conversation = await CommunityConversation.findOneAndUpdate(
@@ -1243,7 +1359,10 @@ export const CommunityService = {
   },
 
   async addGroupMember(userId: string, groupId: string, targetUserId: string) {
-    await Promise.all([ensureProfile(userId), ensurePlayerUser(targetUserId)]);
+    await Promise.all([
+      ensureProfile(userId),
+      ensureCommunityUser(targetUserId),
+    ]);
 
     if (userId === targetUserId) {
       throw new Error("Use join group to add yourself");
@@ -1252,6 +1371,31 @@ export const CommunityService = {
     const group = await CommunityGroup.findById(groupId);
     if (!group) {
       throw new Error("Group not found");
+    }
+
+    const [requesterRole, targetRole] = await Promise.all([
+      getCommunityRole(userId),
+      getCommunityRole(targetUserId),
+    ]);
+
+    const groupAudience =
+      (group.audience as CommunityGroupAudience | undefined) ||
+      COMMUNITY_DEFAULT_GROUP_AUDIENCE;
+    if (!canJoinGroupAudience(groupAudience, targetRole)) {
+      throw new Error("This group is not available for the selected user role");
+    }
+
+    if (isCrossRoleInteraction(requesterRole, targetRole)) {
+      ensurePolicyAllowed(
+        COMMUNITY_INTERACTION_POLICY.allowCrossRoleGroupMembership,
+        "Cross-role group membership is currently disabled",
+      );
+      trackCommunityRoleMixEvent("group_cross_role_invite", {
+        groupId,
+        audience: groupAudience,
+        requesterRole,
+        targetRole,
+      });
     }
 
     const requesterIsAdmin = group.admins.some(
@@ -1271,7 +1415,7 @@ export const CommunityService = {
 
     const blocked = await isBlockedBetween(userId, targetUserId);
     if (blocked) {
-      throw new Error("Cannot add this player due to privacy settings");
+      throw new Error("Cannot add this user due to privacy settings");
     }
 
     const alreadyMember = group.members.some(
@@ -1317,6 +1461,22 @@ export const CommunityService = {
       ensureProfile(userId),
       ensureProfile(targetUserId),
     ]);
+
+    const [requesterRole, targetRole] = await Promise.all([
+      getCommunityRole(userId),
+      getCommunityRole(targetUserId),
+    ]);
+
+    if (isCrossRoleInteraction(requesterRole, targetRole)) {
+      ensurePolicyAllowed(
+        COMMUNITY_INTERACTION_POLICY.allowCrossRoleDm,
+        `Direct messages between ${ROLE_LABEL[requesterRole]} and ${ROLE_LABEL[targetRole]} accounts are currently disabled`,
+      );
+      trackCommunityRoleMixEvent("dm_cross_role_start", {
+        requesterRole,
+        targetRole,
+      });
+    }
 
     const blocked = await isBlockedBetween(userId, targetUserId);
     if (blocked) {

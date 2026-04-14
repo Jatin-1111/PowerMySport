@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -20,7 +21,9 @@ import {
   CommunityReputationSummary,
 } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
+import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { getCommunitySocket } from "@/lib/realtime/socket";
+import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { toast } from "@/lib/toast";
 
 const SORT_OPTIONS: Array<{ value: CommunityFeedSort; label: string }> = [
@@ -56,6 +59,9 @@ const getActivityLabel = (item: CommunityActivityItem): string => {
 };
 
 export default function QnAFeedClient() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const urlSearchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"ALL" | "MINE">("ALL");
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -84,6 +90,35 @@ export default function QnAFeedClient() {
   const [tags, setTags] = useState("");
   const [sport, setSport] = useState("");
   const [city, setCity] = useState("");
+  const [isUrlHydrated, setIsUrlHydrated] = useState(false);
+  const [followedTopics, setFollowedTopics] = useState<string[]>([]);
+
+  useEffect(() => {
+    const qParam = (urlSearchParams.get("q") || "").trim();
+    const tagParam = (urlSearchParams.get("tag") || "").trim();
+    const sportParam = (urlSearchParams.get("sport") || "").trim();
+    const cityParam = (urlSearchParams.get("city") || "").trim();
+    const askParam = urlSearchParams.get("ask") === "1";
+    const sortParam = (urlSearchParams.get("sort") || "").toUpperCase();
+    const mineParam = urlSearchParams.get("mine") === "1";
+
+    const nextSort: CommunityFeedSort =
+      sortParam === "TOP" || sortParam === "UNANSWERED" ? sortParam : "NEW";
+
+    setSearchInput(qParam);
+    setQ(qParam);
+    setActiveTag(tagParam);
+    setSportFilterInput(sportParam);
+    setSportFilter(sportParam);
+    setCityFilterInput(cityParam);
+    setCityFilter(cityParam);
+    setSort(nextSort);
+    setViewMode(mineParam ? "MINE" : "ALL");
+    if (askParam) {
+      setShowAskForm(true);
+    }
+    setIsUrlHydrated(true);
+  }, [urlSearchParams]);
 
   const loadFeed = useCallback(
     async (targetPage = 1, append = false) => {
@@ -95,7 +130,7 @@ export default function QnAFeedClient() {
         }
 
         const session = await communityService.ensureSession();
-        if (session.role !== "PLAYER") {
+        if (!isCommunityEligibleRole(session.role)) {
           redirectToMainLogin();
           return;
         }
@@ -195,6 +230,68 @@ export default function QnAFeedClient() {
 
     return () => clearTimeout(handle);
   }, [sportFilterInput, cityFilterInput]);
+
+  useEffect(() => {
+    const followed = communityFollowStore
+      .getByKind("topic")
+      .map((item) => item.id.toLowerCase());
+    setFollowedTopics(followed);
+  }, []);
+
+  useEffect(() => {
+    if (!isUrlHydrated) {
+      return;
+    }
+
+    const currentQ = (urlSearchParams.get("q") || "").trim();
+    const currentTag = (urlSearchParams.get("tag") || "").trim();
+    const currentSport = (urlSearchParams.get("sport") || "").trim();
+    const currentCity = (urlSearchParams.get("city") || "").trim();
+    const currentSort = (urlSearchParams.get("sort") || "").toUpperCase();
+    const currentMine = urlSearchParams.get("mine") === "1" ? "MINE" : "ALL";
+
+    const desiredQ = q.trim();
+    const desiredTag = activeTag.trim();
+    const desiredSport = sportFilter.trim();
+    const desiredCity = cityFilter.trim();
+    const desiredSort = sort;
+    const desiredMine = viewMode;
+
+    if (
+      currentQ === desiredQ &&
+      currentTag === desiredTag &&
+      currentSport === desiredSport &&
+      currentCity === desiredCity &&
+      (currentSort || "NEW") === desiredSort &&
+      currentMine === desiredMine
+    ) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams();
+    if (desiredQ) nextParams.set("q", desiredQ);
+    if (desiredTag) nextParams.set("tag", desiredTag);
+    if (desiredSport) nextParams.set("sport", desiredSport);
+    if (desiredCity) nextParams.set("city", desiredCity);
+    if (desiredSort !== "NEW") nextParams.set("sort", desiredSort);
+    if (desiredMine === "MINE") nextParams.set("mine", "1");
+
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
+      scroll: false,
+    });
+  }, [
+    activeTag,
+    cityFilter,
+    isUrlHydrated,
+    pathname,
+    q,
+    router,
+    sort,
+    sportFilter,
+    urlSearchParams,
+    viewMode,
+  ]);
 
   const handleCreatePost = async () => {
     if (title.trim().length < 10 || body.trim().length < 20) {
@@ -395,6 +492,27 @@ export default function QnAFeedClient() {
         .slice(0, 3),
     [nonFeaturedPosts],
   );
+
+  const toggleTopicFollow = (topic: string) => {
+    const normalized = topic.trim().toLowerCase();
+    if (!normalized) {
+      return;
+    }
+
+    const result = communityFollowStore.toggle({
+      kind: "topic",
+      id: normalized,
+      label: `#${topic}`,
+      href: `/q?tag=${encodeURIComponent(normalized)}`,
+    });
+
+    setFollowedTopics(
+      communityFollowStore.getByKind("topic").map((item) => item.id),
+    );
+    toast.success(
+      result.following ? `Following #${topic}` : `Unfollowed #${topic}`,
+    );
+  };
 
   return (
     <div className="relative isolate min-h-[calc(100vh-5.5rem)] bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_42%,#fff6e9_100%)]">
@@ -617,17 +735,30 @@ export default function QnAFeedClient() {
                     All
                   </button>
                   {spotlight.popularTags.map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => setActiveTag(tag)}
-                      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                        activeTag === tag
-                          ? "border-power-orange/40 bg-power-orange/10 text-power-orange"
-                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      #{tag}
-                    </button>
+                    <div key={tag} className="inline-flex items-center gap-1">
+                      <button
+                        onClick={() => setActiveTag(tag)}
+                        className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                          activeTag === tag
+                            ? "border-power-orange/40 bg-power-orange/10 text-power-orange"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        #{tag}
+                      </button>
+                      <button
+                        onClick={() => toggleTopicFollow(tag)}
+                        className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
+                          followedTopics.includes(tag.toLowerCase())
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
+                        }`}
+                      >
+                        {followedTopics.includes(tag.toLowerCase())
+                          ? "Following"
+                          : "Follow"}
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}

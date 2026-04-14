@@ -46,8 +46,10 @@ export default function JoinCommunityPage() {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         setStatus("redirecting");
 
-        // Navigate to the community page with the new conversation selected
-        router.push(`/?conversation=${result.conversationId}`);
+        // Navigate to the community page with a stable inbox/conversations context.
+        router.push(
+          `/?sidebar=inbox&conversation=${encodeURIComponent(result.conversationId)}`,
+        );
       } catch {
         const message = "Failed to join community";
         setError(message);

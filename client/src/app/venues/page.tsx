@@ -2,6 +2,8 @@
 
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { clientFollowStore } from "@/modules/shared/lib/followStore";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
@@ -9,9 +11,11 @@ import { sportsApi } from "@/modules/sports/services/sports";
 import { Venue } from "@/types";
 import {
   ArrowRight,
+  Bookmark,
   Building2,
   ChevronLeft,
   ChevronRight,
+  MessageCircle,
   IndianRupee,
   MapPin,
   Search,
@@ -34,7 +38,16 @@ export default function VenuesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalVenues, setTotalVenues] = useState(0);
+  const [followedVenueIds, setFollowedVenueIds] = useState<string[]>([]);
   const router = useRouter();
+  const communityUrl = getCommunityAppUrl({
+    searchParams: {
+      sidebar: "inbox",
+      directory: "groups",
+      panel: "discover",
+      q: appliedSportFilter || sportInput || undefined,
+    },
+  });
 
   useEffect(() => {
     loadVenues(currentPage, appliedSportFilter);
@@ -43,6 +56,13 @@ export default function VenuesPage() {
 
   useEffect(() => {
     loadSportOptions();
+  }, []);
+
+  useEffect(() => {
+    const followed = clientFollowStore
+      .getByKind("venue")
+      .map((item) => item.id);
+    setFollowedVenueIds(followed);
   }, []);
 
   useEffect(() => {
@@ -365,6 +385,31 @@ export default function VenuesPage() {
                     Clear Search
                   </Button>
                 )}
+
+                <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-white/85 p-4 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-power-orange">
+                      <MessageCircle size={18} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Not sure which venue fits your game?
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        Ask local players and coaches for recommendations, then
+                        come back and book with more confidence.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-start sm:justify-end">
+                    <Button asChild variant="secondary" className="rounded-xl">
+                      <a href={communityUrl} target="_blank" rel="noreferrer">
+                        Ask in Community
+                        <ArrowRight size={16} className="ml-2" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
               </div>
             </Card>
           ) : (
@@ -386,115 +431,177 @@ export default function VenuesPage() {
 
               {/* Venues Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filteredVenues.map((venue) => (
+                {filteredVenues.map((venue, index) => (
                   <Card
-                    key={venue.id}
+                    key={String(
+                      venue.id || venue._id || `${venue.name}-${index}`,
+                    )}
                     className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg group cursor-pointer"
                     onClick={() =>
                       router.push(`/venues/${venue.id || venue._id}`)
                     }
                   >
-                    {venue.images && venue.images.length > 0 ? (
-                      <div className="h-48 w-full overflow-hidden bg-slate-100">
-                        <img
-                          src={venue.images[0]}
-                          alt={venue.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      </div>
-                    ) : (
-                      <div className="h-48 w-full bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                        <Building2 size={48} className="text-slate-300" />
-                      </div>
-                    )}
+                    {(() => {
+                      const venueId = String(venue.id || venue._id || "");
+                      const isFollowed = followedVenueIds.includes(venueId);
+                      const knownInCommunity =
+                        Number(venue.reviewCount || 0) >= 10 ||
+                        (Number(venue.rating || 0) >= 4.3 &&
+                          Number(venue.reviewCount || 0) >= 5);
+                      const onToggleFollowVenue = () => {
+                        if (!venueId) {
+                          return;
+                        }
 
-                    <div className="p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-lg font-bold text-slate-900 flex-1">
-                          {venue.name}
-                        </h3>
-                        {venue.rating && venue.rating > 0 && (
-                          <div className="flex items-center gap-1 ml-2">
-                            <Star
-                              size={16}
-                              className="text-yellow-500 fill-yellow-500"
-                            />
-                            <span className="text-sm font-semibold text-slate-700">
-                              {venue.rating.toFixed(1)}
-                            </span>
+                        clientFollowStore.toggle({
+                          kind: "venue",
+                          id: venueId,
+                          label: venue.name,
+                          subtitle: venue.address,
+                          href: `/venues/${venue.id || venue._id}`,
+                        });
+                        const followed = clientFollowStore
+                          .getByKind("venue")
+                          .map((item) => item.id);
+                        setFollowedVenueIds(followed);
+                      };
+
+                      return (
+                        <>
+                          {venue.images && venue.images.length > 0 ? (
+                            <div className="h-48 w-full overflow-hidden bg-slate-100">
+                              <img
+                                src={venue.images[0]}
+                                alt={venue.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-48 w-full bg-linear-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                              <Building2 size={48} className="text-slate-300" />
+                            </div>
+                          )}
+
+                          <div className="p-5">
+                            <div className="flex items-start justify-between mb-3">
+                              <h3 className="text-lg font-bold text-slate-900 flex-1">
+                                {venue.name}
+                              </h3>
+                              {venue.rating && venue.rating > 0 && (
+                                <div className="flex items-center gap-1 ml-2">
+                                  <Star
+                                    size={16}
+                                    className="text-yellow-500 fill-yellow-500"
+                                  />
+                                  <span className="text-sm font-semibold text-slate-700">
+                                    {venue.rating.toFixed(1)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="space-y-2 mb-4">
+                              {venue.address ? (
+                                <p className="text-sm text-slate-600 flex items-start gap-2">
+                                  <MapPin
+                                    size={16}
+                                    className="text-power-orange shrink-0 mt-0.5"
+                                  />
+                                  <span className="line-clamp-2">
+                                    {venue.address}
+                                  </span>
+                                </p>
+                              ) : venue.location ? (
+                                <p className="text-sm text-slate-600 flex items-center gap-2">
+                                  <MapPin
+                                    size={16}
+                                    className="text-power-orange shrink-0"
+                                  />
+                                  {venue.location.coordinates[1].toFixed(3)}°N,{" "}
+                                  {venue.location.coordinates[0].toFixed(3)}°E
+                                </p>
+                              ) : null}
+                            </div>
+
+                            {/* Sports Tags */}
+                            <div className="flex flex-wrap gap-1.5 mb-4">
+                              {venue.sports.slice(0, 3).map((sport, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium"
+                                >
+                                  {sport}
+                                </span>
+                              ))}
+                              {venue.sports.length > 3 && (
+                                <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">
+                                  +{venue.sports.length - 3} more
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-100">
+                              <div className="mb-2 flex flex-wrap gap-2">
+                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                                  Verified Venue
+                                </span>
+                                {knownInCommunity && (
+                                  <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                                    Known In Community
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                                    Starting from
+                                  </p>
+                                  <p className="text-xl font-bold text-power-orange flex items-center gap-1 mt-0.5">
+                                    <IndianRupee size={18} />
+                                    {getDisplayPrice(venue)}
+                                    <span className="text-sm text-slate-500 font-normal">
+                                      /hr
+                                    </span>
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  className="group-hover:shadow-lg transition-shadow"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(
+                                      `/venues/${venue.id || venue._id}`,
+                                    );
+                                  }}
+                                >
+                                  Book
+                                  <ArrowRight size={16} className="ml-1" />
+                                </Button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onToggleFollowVenue();
+                                }}
+                                className={`mt-3 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                                  isFollowed
+                                    ? "border-power-orange/30 bg-power-orange/10 text-power-orange"
+                                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                                }`}
+                              >
+                                <Bookmark
+                                  size={13}
+                                  className={isFollowed ? "fill-current" : ""}
+                                />
+                                {isFollowed ? "Saved" : "Save Venue"}
+                              </button>
+                            </div>
                           </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 mb-4">
-                        {venue.address ? (
-                          <p className="text-sm text-slate-600 flex items-start gap-2">
-                            <MapPin
-                              size={16}
-                              className="text-power-orange shrink-0 mt-0.5"
-                            />
-                            <span className="line-clamp-2">
-                              {venue.address}
-                            </span>
-                          </p>
-                        ) : venue.location ? (
-                          <p className="text-sm text-slate-600 flex items-center gap-2">
-                            <MapPin
-                              size={16}
-                              className="text-power-orange shrink-0"
-                            />
-                            {venue.location.coordinates[1].toFixed(3)}°N,{" "}
-                            {venue.location.coordinates[0].toFixed(3)}°E
-                          </p>
-                        ) : null}
-                      </div>
-
-                      {/* Sports Tags */}
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {venue.sports.slice(0, 3).map((sport, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium"
-                          >
-                            {sport}
-                          </span>
-                        ))}
-                        {venue.sports.length > 3 && (
-                          <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">
-                            +{venue.sports.length - 3} more
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-100">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                              Starting from
-                            </p>
-                            <p className="text-xl font-bold text-power-orange flex items-center gap-1 mt-0.5">
-                              <IndianRupee size={18} />
-                              {getDisplayPrice(venue)}
-                              <span className="text-sm text-slate-500 font-normal">
-                                /hr
-                              </span>
-                            </p>
-                          </div>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            className="group-hover:shadow-lg transition-shadow"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/venues/${venue.id || venue._id}`);
-                            }}
-                          >
-                            Book
-                            <ArrowRight size={16} className="ml-1" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                        </>
+                      );
+                    })()}
                   </Card>
                 ))}
               </div>

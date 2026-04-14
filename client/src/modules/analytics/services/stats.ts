@@ -1,6 +1,9 @@
 ﻿import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, Booking, Venue } from "@/types";
 
+const STATS_API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
 export interface PlatformStats {
   totalUsers: number;
   totalVenues: number;
@@ -28,6 +31,32 @@ export const statsApi = {
   }): Promise<{ success: boolean; message: string }> => {
     const response = await axiosInstance.post("/stats/funnel/event", payload);
     return response.data;
+  },
+
+  // Use this for link clicks/navigation flows where axios interceptors can disrupt UX.
+  trackFunnelEventNonBlocking: (payload: {
+    eventName: string;
+    entityType?: string;
+    entityId?: string;
+    metadata?: Record<string, unknown>;
+    source?: "WEB" | "MOBILE" | "SERVER";
+  }): void => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    void fetch(`${STATS_API_BASE_URL}/stats/funnel/event`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: "include",
+      keepalive: true,
+      body: JSON.stringify(payload),
+    }).catch(() => {});
   },
 
   getPlatformStats: async (): Promise<ApiResponse<PlatformStats>> => {

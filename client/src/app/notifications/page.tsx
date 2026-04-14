@@ -9,6 +9,7 @@ import {
   CheckCheck,
   CreditCard,
   Filter,
+  ExternalLink,
   MessageCircle,
   Settings,
   Star,
@@ -18,6 +19,7 @@ import {
 import { cn } from "@/utils/cn";
 import { formatDistanceToNow } from "@/utils/date";
 import { Container } from "@/components/layout/Container";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type FilterType =
   | "all"
@@ -26,15 +28,35 @@ type FilterType =
   | "booking"
   | "payment"
   | "review"
-  | "admin";
+  | "admin"
+  | "community";
 
 export default function NotificationsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [preferences, setPreferences] = useState<{
+    email: Record<string, boolean>;
+    push: Record<string, boolean>;
+    inApp: Record<string, boolean>;
+  } | null>(null);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+
+  useEffect(() => {
+    const intent = (searchParams.get("intent") || "").toLowerCase();
+    if (intent === "community") setFilter("community");
+    if (intent === "booking") setFilter("booking");
+    if (intent === "social") setFilter("social");
+    if (intent === "payment") setFilter("payment");
+    if (intent === "review") setFilter("review");
+    if (intent === "admin") setFilter("admin");
+  }, [searchParams]);
 
   useEffect(() => {
     fetchNotifications();
@@ -43,7 +65,21 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetchUnreadCount();
+    fetchPreferences();
   }, []);
+
+  const fetchPreferences = async () => {
+    try {
+      const response = await notificationApi.getPreferences();
+      setPreferences({
+        email: response.data?.email || {},
+        push: response.data?.push || {},
+        inApp: response.data?.inApp || {},
+      });
+    } catch (error) {
+      console.error("Failed to fetch notification preferences:", error);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -115,6 +151,60 @@ export default function NotificationsPage() {
     } catch (error) {
       console.error("Failed to delete notification:", error);
     }
+  };
+
+  const togglePreference = async (
+    channel: "email" | "push" | "inApp",
+    key: string,
+  ) => {
+    if (!preferences) return;
+
+    const next = {
+      ...preferences,
+      [channel]: {
+        ...preferences[channel],
+        [key]: !preferences[channel]?.[key],
+      },
+    };
+
+    setPreferences(next);
+    try {
+      setIsSavingPreferences(true);
+      await notificationApi.updatePreferences(next);
+    } catch (error) {
+      console.error("Failed to save notification preferences:", error);
+      setPreferences(preferences);
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  };
+
+  const getNotificationAction = (notification: Notification) => {
+    const data = (notification.data || {}) as Record<string, unknown>;
+    if (notification.category === "BOOKING") {
+      return { label: "Open bookings", href: "/dashboard/my-bookings" };
+    }
+    if (notification.category === "SOCIAL") {
+      return { label: "Open friends", href: "/dashboard/friends" };
+    }
+    if (notification.category === "PAYMENT") {
+      return { label: "Open payments", href: "/dashboard/my-bookings" };
+    }
+    if (notification.category === "REVIEW") {
+      return { label: "Open reviews", href: "/dashboard/my-bookings" };
+    }
+    if (notification.category === "COMMUNITY") {
+      const postId = typeof data.postId === "string" ? data.postId : "";
+      return {
+        label: "Open community",
+        href: postId
+          ? `https://community.powermysport.com/q/${postId}`
+          : "https://community.powermysport.com/q",
+        external: true,
+      };
+    }
+
+    return { label: "Open dashboard", href: "/dashboard" };
   };
 
   const getNotificationIcon = (category: string) => {
@@ -192,7 +282,19 @@ export default function NotificationsPage() {
     { value: "booking", label: "Bookings" },
     { value: "payment", label: "Payments" },
     { value: "review", label: "Reviews" },
+    { value: "community", label: "Community" },
     { value: "admin", label: "Admin" },
+  ];
+
+  const preferenceKeys = [
+    { key: "friendRequests", label: "Friend Requests" },
+    { key: "bookingInvitations", label: "Booking Invitations" },
+    { key: "bookingConfirmations", label: "Booking Confirmations" },
+    { key: "bookingReminders", label: "Booking Reminders" },
+    { key: "reviews", label: "Reviews" },
+    { key: "payments", label: "Payments" },
+    { key: "admin", label: "Admin Updates" },
+    { key: "marketing", label: "Marketing" },
   ];
 
   return (
@@ -221,7 +323,57 @@ export default function NotificationsPage() {
                 Mark All Read
               </button>
             )}
+            <button
+              onClick={() => setShowPreferences((prev) => !prev)}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <Settings className="w-4 h-4" />
+              Preferences
+            </button>
           </div>
+
+          {showPreferences && preferences && (
+            <div className="mb-4 rounded-2xl border border-slate-200 bg-white/90 p-4">
+              <p className="text-sm font-semibold text-slate-900">
+                Notification preferences{" "}
+                {isSavingPreferences ? "(saving...)" : ""}
+              </p>
+              <div className="mt-3 grid gap-4 md:grid-cols-3">
+                {(["inApp", "push", "email"] as const).map((channel) => (
+                  <div
+                    key={channel}
+                    className="rounded-xl border border-slate-200 bg-white p-3"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {channel}
+                    </p>
+                    <div className="mt-2 space-y-2">
+                      {preferenceKeys.map((pref) => {
+                        const checked = Boolean(
+                          preferences[channel]?.[pref.key],
+                        );
+                        return (
+                          <label
+                            key={`${channel}-${pref.key}`}
+                            className="flex items-center justify-between gap-2 text-xs text-slate-700"
+                          >
+                            <span>{pref.label}</span>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() =>
+                                togglePreference(channel, pref.key)
+                              }
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -338,6 +490,27 @@ export default function NotificationsPage() {
                               )}
                             </span>
                           </div>
+                          {(() => {
+                            const action = getNotificationAction(notification);
+                            return action.external ? (
+                              <a
+                                href={action.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-power-orange hover:underline"
+                              >
+                                {action.label}
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            ) : (
+                              <button
+                                onClick={() => router.push(action.href)}
+                                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-power-orange hover:underline"
+                              >
+                                {action.label}
+                              </button>
+                            );
+                          })()}
                         </div>
 
                         {/* Actions */}

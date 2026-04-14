@@ -1,6 +1,8 @@
 import axiosInstance from "@/lib/api/axios";
 import {
   BlockedUser,
+  CommunityGroupAudience,
+  CommunityUserSearchResult,
   CommunityAnswer,
   CommunityGroupSummary,
   CommunityPost,
@@ -15,7 +17,6 @@ import {
   ConversationMessage,
   CommunityFeedSort,
   MessagePrivacy,
-  PlayerSearchResult,
 } from "../types";
 
 interface ApiResponse<T> {
@@ -181,13 +182,15 @@ export const communityService = {
     return response.data.data;
   },
 
-  async searchPlayers(query: string): Promise<PlayerSearchResult[]> {
+  async searchCommunityUsers(
+    query: string,
+  ): Promise<CommunityUserSearchResult[]> {
     const normalizedQuery = query.trim().toLowerCase();
     return withRequestCache(
       `players:${normalizedQuery}`,
       async () => {
         const response = await axiosInstance.get<
-          ApiResponse<PlayerSearchResult[]>
+          ApiResponse<CommunityUserSearchResult[]>
         >("/community/players/search", {
           params: { q: query, limit: 8 },
         });
@@ -196,6 +199,10 @@ export const communityService = {
       },
       2000,
     );
+  },
+
+  async searchPlayers(query: string): Promise<CommunityUserSearchResult[]> {
+    return this.searchCommunityUsers(query);
   },
 
   async getProfile(): Promise<CommunityProfile> {
@@ -445,6 +452,7 @@ export const communityService = {
     description?: string;
     sport?: string;
     city?: string;
+    audience?: CommunityGroupAudience;
   }): Promise<CommunityGroupSummary & { conversationId: string }> {
     const response = await axiosInstance.post<
       ApiResponse<CommunityGroupSummary & { conversationId: string }>
