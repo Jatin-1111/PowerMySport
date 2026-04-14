@@ -82,7 +82,7 @@ export const Hero: React.FC<HeroProps> = ({
                     <Button
                       variant="primary"
                       size="lg"
-                      className="h-auto rounded-xl px-8 py-6 text-lg premium-shadow"
+                      className="h-auto rounded-xl px-8 py-6 text-lg premium-shadow transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_-18px_rgba(255,106,0,0.55)] hover:bg-orange-600"
                     >
                       {primaryCTA.label}
                     </Button>
@@ -93,7 +93,7 @@ export const Hero: React.FC<HeroProps> = ({
                     <Button
                       variant="outline"
                       size="lg"
-                      className="h-auto rounded-xl border-slate-300 bg-white/90 px-8 py-6 text-lg text-slate-900 premium-shadow hover:bg-white"
+                      className="h-auto rounded-xl border-slate-300 bg-white/90 px-8 py-6 text-lg text-slate-900 premium-shadow hover:border-slate-400 hover:bg-white hover:text-slate-900"
                     >
                       {secondaryCTA.label}
                     </Button>
