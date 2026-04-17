@@ -26,7 +26,7 @@ export function CommunityPageHeader({
       initial={prefersReducedMotion ? false : { opacity: 0, y: 18 }}
       animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       transition={cardTransition}
-      className="relative overflow-hidden rounded-[4xl] border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8"
+      className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-4 text-slate-900 shadow-sm sm:rounded-[4xl] sm:p-8"
     >
       <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -35,7 +35,7 @@ export function CommunityPageHeader({
               {badge}
             </span>
           )}
-          <h1 className="font-title mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="font-title mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">
             {title}
           </h1>
           {subtitle && (

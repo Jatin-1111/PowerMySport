@@ -74,7 +74,7 @@ export function GroupMembersList({
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur"
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Users size={16} className="text-slate-600" />
           <h3 className="text-base font-semibold tracking-tight">
@@ -87,7 +87,7 @@ export function GroupMembersList({
         <button
           onClick={() => void loadMembers()}
           disabled={isLoading}
-          className="text-xs font-medium text-slate-500 transition hover:text-slate-700 disabled:opacity-50"
+          className="min-h-10 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:text-slate-700 disabled:opacity-50"
         >
           Refresh
         </button>
@@ -113,7 +113,7 @@ export function GroupMembersList({
                 prefersReducedMotion ? undefined : { y: -2, scale: 1.01 }
               }
               whileTap={prefersReducedMotion ? undefined : { scale: 0.99 }}
-              className="w-full rounded-2xl border border-border bg-white p-3 text-left transition hover:border-power-orange/30 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-power-orange"
+              className="w-full rounded-2xl border border-border bg-white p-3 text-left transition hover:border-power-orange/30 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-power-orange sm:p-3.5"
               aria-label={`View ${member.displayName} profile`}
             >
               <div className="flex items-center gap-3">
@@ -129,7 +129,7 @@ export function GroupMembersList({
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-slate-900">
+                  <div className="text-sm font-semibold text-slate-900 sm:text-base">
                     {member.displayName}
                   </div>
                   {!member.isIdentityPublic && member.alias && (

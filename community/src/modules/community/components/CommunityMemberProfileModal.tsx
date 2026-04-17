@@ -78,7 +78,7 @@ export function CommunityMemberProfileModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-60 flex items-end justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-60 flex items-end justify-center bg-slate-950/50 p-2 backdrop-blur-sm sm:items-center sm:p-4"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               onClose();
@@ -104,14 +104,14 @@ export function CommunityMemberProfileModal({
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="w-full max-w-2xl overflow-hidden rounded-3xl border border-border bg-white shadow-2xl"
           >
-            <div className="relative overflow-hidden border-b border-border bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.94))] px-5 py-5 text-white sm:px-6">
+            <div className="relative overflow-hidden border-b border-border bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.94))] px-4 py-4 text-white sm:px-6 sm:py-5">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(233,115,22,0.18),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(26,163,88,0.12),transparent_36%)]" />
               <div className="relative flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
                     Community member profile
                   </p>
-                  <h3 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  <h3 className="mt-2 text-xl font-semibold tracking-tight sm:text-3xl">
                     {profile?.displayName || "Member profile"}
                   </h3>
                   {profile && (
@@ -137,7 +137,7 @@ export function CommunityMemberProfileModal({
               </div>
             </div>
 
-            <div className="max-h-[80vh] overflow-y-auto p-5 sm:p-6">
+            <div className="max-h-[80vh] overflow-y-auto p-5 sm:p-6 lg:p-7">
               {isLoading ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-4 rounded-2xl border border-border bg-slate-50 p-4">
@@ -160,8 +160,8 @@ export function CommunityMemberProfileModal({
                 </div>
               ) : profile ? (
                 <div className="space-y-5">
-                  <div className="flex flex-col gap-4 rounded-2xl border border-border bg-slate-50 p-4 sm:flex-row sm:items-center">
-                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white bg-white shadow-sm">
+                  <div className="flex flex-col gap-4 rounded-2xl border border-border bg-slate-50 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5 lg:p-6">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white bg-white shadow-sm">
                       {profile.photoUrl ? (
                         <img
                           src={profile.photoUrl}
@@ -174,7 +174,7 @@ export function CommunityMemberProfileModal({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-lg font-semibold tracking-tight text-slate-900">
+                        <h4 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
                           {profile.displayName}
                         </h4>
                         {profile.isIdentityPublic ? (
@@ -211,7 +211,7 @@ export function CommunityMemberProfileModal({
                     </div>
                     <button
                       onClick={onMessage}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                      className="w-full min-h-10 inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto"
                     >
                       <MessageSquare size={16} />
                       Message
@@ -219,7 +219,7 @@ export function CommunityMemberProfileModal({
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-border bg-white p-4 shadow-xs">
+                    <div className="rounded-2xl border border-border bg-white p-4 shadow-xs sm:p-5">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         Role
                       </p>
@@ -227,7 +227,7 @@ export function CommunityMemberProfileModal({
                         {profile.role === "COACH" ? "Coach" : "Player"}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-border bg-white p-4 shadow-xs">
+                    <div className="rounded-2xl border border-border bg-white p-4 shadow-xs sm:p-5">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         Privacy
                       </p>
@@ -239,7 +239,7 @@ export function CommunityMemberProfileModal({
                             : "Open messages"}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-border bg-white p-4 shadow-xs">
+                    <div className="rounded-2xl border border-border bg-white p-4 shadow-xs sm:p-5">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                         Read receipts
                       </p>
@@ -249,7 +249,7 @@ export function CommunityMemberProfileModal({
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-border bg-white p-4 shadow-xs">
+                  <div className="rounded-2xl border border-border bg-white p-4 shadow-xs sm:p-5">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                       Public sports
                     </p>
@@ -272,7 +272,7 @@ export function CommunityMemberProfileModal({
                   </div>
 
                   {profile.lastSeenVisible && profile.lastSeenAt && (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 sm:p-5">
                       Last seen at {formatDateTime(profile.lastSeenAt)}
                     </div>
                   )}

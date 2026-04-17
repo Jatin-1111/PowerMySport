@@ -169,8 +169,8 @@ export default function PrivacyPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="community-page-shell">
+        <div className="community-content-wrap-narrow rounded-3xl border border-border bg-white p-5 shadow-sm sm:p-6">
           <div className="h-6 w-44 animate-pulse rounded bg-slate-200" />
           <div className="mt-4 h-28 animate-pulse rounded-xl bg-slate-100" />
         </div>
@@ -179,47 +179,42 @@ export default function PrivacyPage() {
   }
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-3xl space-y-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-        >
+    <div className="community-page-shell">
+      <div className="community-content-wrap-narrow space-y-4">
+        <Link href="/" className="community-back-link">
           <ChevronLeft size={14} />
           Back to Community
         </Link>
 
-        <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <section className="community-card">
           <div className="flex items-center gap-2">
             <Shield size={17} className="text-slate-600" />
-            <h1 className="text-lg font-semibold text-slate-900">
-              Privacy Settings
-            </h1>
+            <h1 className="community-section-title">Privacy Settings</h1>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="community-section-copy">
             Configure your identity and messaging preferences.
           </p>
 
-          <div className="mt-5 space-y-4">
-            <label className="block text-sm">
+          <div className="mt-5 space-y-4 sm:space-y-5">
+            <label className="block text-sm sm:text-base">
               <span className="mb-1 block text-slate-500">Anonymous alias</span>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   value={aliasDraft}
                   onChange={(event) => setAliasDraft(event.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                  className="w-full rounded-2xl border border-border bg-background px-3 py-2.5 text-sm shadow-xs focus:border-power-orange focus:outline-none"
                 />
                 <button
                   onClick={() => void saveAlias()}
                   disabled={isSavingAlias || !aliasDraft.trim()}
-                  className="rounded-lg bg-power-orange px-3 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-power-orange px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 sm:min-w-28"
                 >
                   {isSavingAlias ? "Saving" : "Save"}
                 </button>
               </div>
             </label>
 
-            <label className="flex items-center justify-between text-sm">
+            <label className="flex items-center justify-between gap-3 text-sm sm:text-base">
               <span className="text-slate-500">Show my real identity</span>
               <input
                 type="checkbox"
@@ -230,7 +225,7 @@ export default function PrivacyPage() {
               />
             </label>
 
-            <label className="flex items-center justify-between text-sm">
+            <label className="flex items-center justify-between gap-3 text-sm sm:text-base">
               <span className="text-slate-500">Read receipts</span>
               <input
                 type="checkbox"
@@ -243,7 +238,7 @@ export default function PrivacyPage() {
               />
             </label>
 
-            <label className="flex items-center justify-between text-sm">
+            <label className="flex items-center justify-between gap-3 text-sm sm:text-base">
               <span className="text-slate-500">Show last seen</span>
               <input
                 type="checkbox"
@@ -254,12 +249,12 @@ export default function PrivacyPage() {
               />
             </label>
 
-            <label className="block text-sm">
+            <label className="block text-sm sm:text-base">
               <span className="mb-1 block text-slate-500">
                 Who can message me
               </span>
               <select
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                className="w-full rounded-2xl border border-border bg-background px-3 py-2.5 text-sm shadow-xs focus:border-power-orange focus:outline-none"
                 value={profile?.messagePrivacy || "EVERYONE"}
                 onChange={(event) =>
                   void updateProfile({
@@ -277,7 +272,7 @@ export default function PrivacyPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <section className="community-card">
           <h2 className="text-base font-semibold text-slate-900">
             Blocked Users
           </h2>
@@ -292,7 +287,7 @@ export default function PrivacyPage() {
                 value={blockSearch}
                 onChange={(event) => setBlockSearch(event.target.value)}
                 placeholder="Search users by name"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                className="w-full rounded-2xl border border-border bg-background px-3 py-2.5 text-sm shadow-xs focus:border-power-orange focus:outline-none"
               />
             </label>
 
@@ -312,7 +307,7 @@ export default function PrivacyPage() {
                     return (
                       <div
                         key={user.id}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-white px-3 py-2"
+                        className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-slate-900">
@@ -334,7 +329,7 @@ export default function PrivacyPage() {
                         <button
                           onClick={() => void handleBlockUser(user.id)}
                           disabled={blocked || isBlocking}
-                          className="rounded-lg border border-power-orange/40 px-2.5 py-1.5 text-xs font-medium text-power-orange transition hover:bg-power-orange/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-power-orange/40 px-3 py-2 text-xs font-medium text-power-orange transition hover:bg-power-orange/10 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {blocked
                             ? "Blocked"
@@ -343,17 +338,17 @@ export default function PrivacyPage() {
                               : "Block"}
                         </button>
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                    <div
+                      key={user.id}
+                      className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
+                    >
             )}
           </div>
 
           <div className="mt-5 space-y-2">
             <h3 className="text-sm font-medium text-slate-800">
               Current blocked list
-            </h3>
+                        className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-power-orange transition hover:bg-power-orange/10 disabled:opacity-50"
             {isLoadingBlockedUsers ? (
               <p className="text-xs text-slate-500">Loading blocked users...</p>
             ) : blockedUsers.length === 0 ? (

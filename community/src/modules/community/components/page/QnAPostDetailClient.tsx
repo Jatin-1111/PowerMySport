@@ -419,7 +419,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-10 text-center text-slate-500">
+      <div className="mx-auto max-w-5xl px-4 py-6 text-center text-slate-500 sm:py-10">
         Loading question...
       </div>
     );
@@ -427,7 +427,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
 
   if (!post) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-10 text-center">
+      <div className="mx-auto max-w-5xl px-4 py-6 text-center sm:py-10">
         <p className="text-slate-700">Question not found.</p>
         <Link
           href="/q"
@@ -440,24 +440,24 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex items-center justify-between gap-3">
+    <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/q"
-          className="rounded-lg border border-border bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex min-h-10 items-center rounded-lg border border-border bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-4"
         >
           Back to Feed
         </Link>
         <button
           onClick={() => void reportTarget("POST", post.id)}
-          className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 sm:px-4"
         >
           <Flag size={14} /> Report Question
         </button>
       </div>
 
-      <article className="rounded-2xl border border-border bg-white p-5 sm:p-6">
-        <div className="flex gap-4">
+      <article className="rounded-2xl border border-border bg-white p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
           <div className="flex w-12 shrink-0 flex-col items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2">
             <button
               onClick={() => void vote("POST", post.id, 1)}
@@ -484,19 +484,19 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                 <input
                   value={postTitleDraft}
                   onChange={(event) => setPostTitleDraft(event.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-base font-semibold focus:border-power-orange focus:outline-none"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base font-semibold focus:border-power-orange focus:outline-none sm:py-3"
                 />
                 <textarea
                   value={postBodyDraft}
                   onChange={(event) => setPostBodyDraft(event.target.value)}
                   rows={5}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none sm:py-3"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
                   <button
                     onClick={() => void savePostEdits()}
                     disabled={isMutatingPost}
-                    className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
+                    className="min-h-10 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60 sm:px-5"
                   >
                     Save
                   </button>
@@ -506,7 +506,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                       setPostTitleDraft(post.title);
                       setPostBodyDraft(post.body);
                     }}
-                    className="rounded-md border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="min-h-10 rounded-lg border border-border bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-5"
                   >
                     Cancel
                   </button>
@@ -514,7 +514,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
               </div>
             ) : (
               <>
-                <h1 className="text-2xl font-semibold text-slate-900">
+                <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">
                   {post.title}
                 </h1>
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
@@ -543,11 +543,11 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
             </div>
 
             {post.author.id === currentUserId ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-2.5">
                 {!isEditingPost ? (
                   <button
                     onClick={() => setIsEditingPost(true)}
-                    className="inline-flex items-center gap-1 rounded-md border border-border bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-200"
+                    className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 sm:px-3.5"
                   >
                     <Pencil size={12} /> Edit Question
                   </button>
@@ -555,7 +555,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                 <button
                   onClick={() => void removePost()}
                   disabled={isMutatingPost}
-                  className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
+                  className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 sm:px-3.5"
                 >
                   <Trash2 size={12} /> Delete Question
                 </button>
@@ -565,7 +565,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
         </div>
       </article>
 
-      <section className="rounded-2xl border border-border bg-white p-5 sm:p-6">
+      <section className="rounded-2xl border border-border bg-white p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-slate-900">
           Share Your Knowledge
         </h2>
@@ -588,13 +588,13 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
               : "Write a clear answer with steps, caveats, and practical tips"
           }
           disabled={post.status === "CLOSED"}
-          className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+          className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none sm:py-3"
         />
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-4 flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => void submitAnswer()}
             disabled={isSubmitting || post.status === "CLOSED"}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
+            className="min-h-10 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
           >
             {post.status === "CLOSED"
               ? "Answers closed"
@@ -606,7 +606,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
             Community Answers
           </h3>
@@ -625,7 +625,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
               key={answer.id}
               className="rounded-2xl border border-border bg-white p-4 sm:p-5"
             >
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                 <div className="flex w-12 shrink-0 flex-col items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2">
                   <button
                     onClick={() => void vote("ANSWER", answer.id, 1)}
@@ -661,26 +661,26 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                     </div>
                     <button
                       onClick={() => void reportTarget("ANSWER", answer.id)}
-                      className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100"
+                      className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
                     >
                       <Flag size={12} /> Report
                     </button>
                   </div>
                   {editingAnswerId === answer.id ? (
-                    <div className="mt-2 space-y-2">
+                    <div className="mt-3 space-y-3">
                       <textarea
                         value={editingAnswerDraft}
                         onChange={(event) =>
                           setEditingAnswerDraft(event.target.value)
                         }
                         rows={4}
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none sm:py-3"
                       />
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
                         <button
                           onClick={() => void saveAnswerEdits(answer.id)}
                           disabled={isMutatingAnswerId === answer.id}
-                          className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
+                          className="min-h-10 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60 sm:px-5"
                         >
                           Save
                         </button>
@@ -689,7 +689,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                             setEditingAnswerId(null);
                             setEditingAnswerDraft("");
                           }}
-                          className="rounded-md border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          className="min-h-10 rounded-lg border border-border bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-5"
                         >
                           Cancel
                         </button>
@@ -703,17 +703,17 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
 
                   {answer.author.id === currentUserId &&
                   editingAnswerId !== answer.id ? (
-                    <div className="mt-3 flex items-center gap-2">
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-2.5">
                       <button
                         onClick={() => startEditingAnswer(answer)}
-                        className="inline-flex items-center gap-1 rounded-md border border-border bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-200"
+                        className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 sm:px-3.5"
                       >
                         <Pencil size={12} /> Edit
                       </button>
                       <button
                         onClick={() => void removeAnswer(answer)}
                         disabled={isMutatingAnswerId === answer.id}
-                        className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
+                        className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 sm:px-3.5"
                       >
                         <Trash2 size={12} /> Delete
                       </button>

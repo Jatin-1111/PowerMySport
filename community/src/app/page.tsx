@@ -207,6 +207,8 @@ type MessageBubbleProps = {
   onRetry: (message: ConversationMessage) => void;
   onEdit: (message: ConversationMessage) => void;
   onDelete: (message: ConversationMessage) => void;
+  onCopy: (message: ConversationMessage) => void;
+  isCopied: boolean;
   isEditing: boolean;
   isMutating: boolean;
 };
@@ -219,6 +221,8 @@ const MessageBubble = memo(function MessageBubble({
   onRetry,
   onEdit,
   onDelete,
+  onCopy,
+  isCopied,
   isEditing,
   isMutating,
 }: MessageBubbleProps) {
@@ -272,31 +276,29 @@ const MessageBubble = memo(function MessageBubble({
       className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`max-w-[80%] rounded-[1.35rem] border px-3.5 py-2.5 text-sm shadow-[0_14px_32px_-24px_rgba(15,23,42,0.55)] ${
+        className={`max-w-sm rounded-[1.35rem] border px-4 py-3 text-sm shadow-[0_14px_32px_-24px_rgba(15,23,42,0.55)] sm:max-w-[70%] lg:max-w-[60%] ${
           isOwnMessage
             ? "border-orange-300/40 bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-white"
             : "border-border bg-white/95 text-slate-800 backdrop-blur"
         }`}
       >
         {isGroupConversation && (
-          <div className={`text-[11px] font-semibold ${bubbleMetaTextClass}`}>
+          <div className={`text-xs font-semibold ${bubbleMetaTextClass}`}>
             {message.senderDisplayName}
           </div>
         )}
-        <div className="mt-0.5 wrap-break-word leading-relaxed">
-          {message.content}
-        </div>
+        <div className="mt-1 wrap-break-word leading-6">{message.content}</div>
 
         <div
-          className={`mt-2 flex flex-wrap items-center justify-end gap-1.5 text-[10px] ${bubbleMetaTextClass}`}
+          className={`mt-2.5 flex flex-wrap items-center justify-end gap-2 text-xs ${bubbleMetaTextClass}`}
         >
           {message.isDeleted && (
-            <span className="rounded-full border border-current/30 px-1.5 py-0.5 font-semibold">
+            <span className="inline-flex min-h-6 items-center rounded-full border border-current/30 px-2 py-0.5 text-xs font-semibold">
               Deleted
             </span>
           )}
           {message.isEdited && !message.isDeleted && (
-            <span className="rounded-full border border-current/30 px-1.5 py-0.5 font-semibold">
+            <span className="inline-flex min-h-6 items-center rounded-full border border-current/30 px-2 py-0.5 text-xs font-semibold">
               Edited
             </span>
           )}
@@ -304,19 +306,29 @@ const MessageBubble = memo(function MessageBubble({
             {getMessageTimestamp(message.createdAt)}
           </span>
           {messageStateLabel && (
-            <span className="rounded-full border border-current/30 px-1.5 py-0.5 font-semibold">
+            <span className="inline-flex min-h-6 items-center rounded-full border border-current/30 px-2 py-0.5 text-xs font-semibold">
               {messageStateLabel}
             </span>
           )}
         </div>
 
-        <div className="mt-1.5 flex flex-wrap items-center justify-end gap-1.5 text-[10px]">
+        <div className="mt-3 flex flex-wrap items-center justify-end gap-2 text-xs">
           {isOwnMessage && message.messageStatus === "FAILED" && (
             <button
               onClick={() => onRetry(message)}
-              className={`rounded-md px-2 py-0.5 font-semibold transition ${actionButtonClass}`}
+              className={`min-h-8 rounded-lg px-2.5 py-1 font-semibold transition ${actionButtonClass}`}
             >
               Retry
+            </button>
+          )}
+          {!message.isDeleted && (
+            <button
+              onClick={() => onCopy(message)}
+              title={isCopied ? "Copied" : "Copy message"}
+              aria-label={isCopied ? "Message copied" : "Copy message"}
+              className={`min-h-8 rounded-lg px-2.5 py-1 font-semibold transition ${actionButtonClass}`}
+            >
+              {isCopied ? "Copied" : "Copy"}
             </button>
           )}
           {isOwnMessage &&
@@ -327,7 +339,7 @@ const MessageBubble = memo(function MessageBubble({
                   onClick={() => onEdit(message)}
                   disabled={isMutating || !canMutateMessage}
                   title={mutationDisabledReason || "Edit message"}
-                  className={`rounded-md px-2 py-0.5 font-semibold transition ${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                  className={`min-h-8 rounded-lg px-2.5 py-1 font-semibold transition ${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   {isEditing ? "Editing" : "Edit"}
                 </button>
@@ -335,7 +347,7 @@ const MessageBubble = memo(function MessageBubble({
                   onClick={() => onDelete(message)}
                   disabled={isMutating || !canMutateMessage}
                   title={mutationDisabledReason || "Delete message"}
-                  className={`rounded-md px-2 py-0.5 font-semibold transition ${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                  className={`min-h-8 rounded-lg px-2.5 py-1 font-semibold transition ${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   Delete
                 </button>
@@ -343,7 +355,7 @@ const MessageBubble = memo(function MessageBubble({
             )}
           {isOwnMessage && !canMutateMessage && !message.isDeleted && (
             <span
-              className={`rounded-full border px-1.5 py-0.5 font-semibold ${bubbleMetaTextClass}`}
+              className={`inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 font-semibold ${bubbleMetaTextClass}`}
             >
               Edit window expired
             </span>
@@ -368,9 +380,6 @@ const isValidDirectoryView = (
   value: string | null,
 ): value is "ALL" | "CONTACTS" | "GROUPS" =>
   value === "ALL" || value === "CONTACTS" || value === "GROUPS";
-
-const isValidSidebarMode = (value: string | null): value is "INBOX" | "TOOLS" =>
-  value === "INBOX" || value === "TOOLS";
 
 const isValidGroupToolsMode = (
   value: string | null,
@@ -538,6 +547,7 @@ export default function CommunityPage() {
   const [isMutatingMessageId, setIsMutatingMessageId] = useState<string | null>(
     null,
   );
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [isTogglingBlockUser, setIsTogglingBlockUser] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -553,11 +563,23 @@ export default function CommunityPage() {
     useState<CommunityMemberProfile | null>(null);
   const selectedConversationIdRef = useRef<string | null>(null);
   const memberProfileRequestIdRef = useRef<string | null>(null);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectedPollDelayRef = useRef(DISCONNECTED_POLL_BASE_MS);
   const isRefreshingConversationsRef = useRef(false);
   const shouldRefreshConversationsRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const safeConversations = useMemo(
     () => (Array.isArray(conversations) ? conversations : []),
     [conversations],
@@ -1545,38 +1567,41 @@ export default function CommunityPage() {
     });
   }, [messages, selectedConversationId]);
 
-  const handleStartConversation = async (targetUserId: string) => {
-    if (!targetUserId.trim()) {
-      return;
-    }
+  const handleStartConversation = useCallback(
+    async (targetUserId: string) => {
+      if (!targetUserId.trim()) {
+        return;
+      }
 
-    setError(null);
-    try {
-      const conversation = await communityService.startConversation(
-        targetUserId.trim(),
-      );
-      setPlayerSearchQuery("");
-      setPlayerSearchResults([]);
-      const updated = await communityService.listConversations(
-        1,
-        CONVERSATION_PAGE_SIZE,
-      );
-      applyConversationPage(updated, { preserveSelection: true });
-      setSelectedConversationId(conversation.id);
-      setActiveSidebarTab("conversations");
-      setWorkspaceView("CHAT");
-      toast.success(
-        conversation.status === "PENDING"
-          ? "Message request sent"
-          : "Conversation started",
-      );
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to start conversation";
-      setError(message);
-      toast.error(message);
-    }
-  };
+      setError(null);
+      try {
+        const conversation = await communityService.startConversation(
+          targetUserId.trim(),
+        );
+        setPlayerSearchQuery("");
+        setPlayerSearchResults([]);
+        const updated = await communityService.listConversations(
+          1,
+          CONVERSATION_PAGE_SIZE,
+        );
+        applyConversationPage(updated, { preserveSelection: true });
+        setSelectedConversationId(conversation.id);
+        setActiveSidebarTab("conversations");
+        setWorkspaceView("CHAT");
+        toast.success(
+          conversation.status === "PENDING"
+            ? "Message request sent"
+            : "Conversation started",
+        );
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Failed to start conversation";
+        setError(message);
+        toast.error(message);
+      }
+    },
+    [applyConversationPage],
+  );
 
   const refreshGroupDirectoryState = useCallback(
     async (options?: { refreshConversations?: boolean }) => {
@@ -2286,6 +2311,32 @@ export default function CommunityPage() {
     }
   };
 
+  const handleCopyMessage = (message: ConversationMessage) => {
+    if (!message.content || message.isDeleted) {
+      return;
+    }
+
+    navigator.clipboard
+      .writeText(message.content)
+      .then(() => {
+        if (copyFeedbackTimeoutRef.current) {
+          clearTimeout(copyFeedbackTimeoutRef.current);
+        }
+
+        setCopiedMessageId(message.id);
+        copyFeedbackTimeoutRef.current = setTimeout(() => {
+          setCopiedMessageId((current) =>
+            current === message.id ? null : current,
+          );
+          copyFeedbackTimeoutRef.current = null;
+        }, 1600);
+        toast.success("Message copied to clipboard");
+      })
+      .catch(() => {
+        toast.error("Failed to copy message");
+      });
+  };
+
   const handleSendMessage = async () => {
     if (!selectedConversation || !newMessage.trim()) {
       return;
@@ -2405,7 +2456,7 @@ export default function CommunityPage() {
           variants={shellVariants}
           initial="hidden"
           animate="show"
-          className="mx-auto grid min-h-screen w-full max-w-480 gap-6 px-3 py-4 sm:px-6 sm:py-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8"
+          className="mx-auto grid min-h-screen w-full max-w-480 gap-3 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4 lg:gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8 lg:py-6"
         >
           <motion.aside
             variants={panelVariants}
@@ -2446,16 +2497,16 @@ export default function CommunityPage() {
               })}
             </nav>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-4 grid grid-cols-2 gap-2.5">
               <Link
                 href="/privacy"
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Privacy
               </Link>
               <Link
                 href="/reports"
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Reports
               </Link>
@@ -2484,40 +2535,45 @@ export default function CommunityPage() {
             variants={panelVariants}
             className="flex min-w-0 flex-col rounded-3xl border border-border/70 bg-white/80 shadow-sm backdrop-blur"
           >
-            <div className="sticky top-0 z-20 rounded-t-3xl border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="sticky top-0 z-20 rounded-t-3xl border-b border-slate-200/80 bg-white/90 px-4 py-3.5 backdrop-blur sm:px-5 sm:py-4 lg:px-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                  <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
                     {workspaceHeading}
                   </h2>
-                  <p className="text-sm text-slate-500">{workspaceSubtitle}</p>
+                  <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+                    {workspaceSubtitle}
+                  </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                    {safeConversations.length} conversation
-                    {safeConversations.length === 1 ? "" : "s"}
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <div className="inline-flex min-h-8 shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700 sm:min-h-9 sm:px-3 sm:py-1.5 sm:text-xs">
+                    <span>{safeConversations.length}</span>
+                    <span className="ml-1 hidden sm:inline">
+                      conversation
+                      {safeConversations.length === 1 ? "" : "s"}
+                    </span>
                   </div>
-                  <div className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
+                  <div className="rounded-full bg-power-orange/10 px-2.5 py-1 text-[11px] font-medium text-power-orange sm:px-3 sm:text-xs">
                     {totalUnread} unread
                   </div>
-                  <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                  <div className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-700 sm:px-3 sm:text-xs">
                     {pendingRequestsCount} requests
                   </div>
                   <Link
                     href="/privacy"
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                    className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100 sm:px-3 sm:text-xs"
                   >
                     Privacy
                   </Link>
                   <Link
                     href="/reports"
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                    className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100 sm:px-3 sm:text-xs"
                   >
                     Reports
                   </Link>
                   <div
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium sm:px-3 sm:text-xs ${
                       isSocketConnected
                         ? "bg-turf-green/10 text-turf-green"
                         : "bg-amber-100 text-amber-700"
@@ -2549,7 +2605,7 @@ export default function CommunityPage() {
               </div>
             </div>
 
-            <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+            <div className="space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
               {isCommunityView && (
                 <>
                   <section
@@ -2561,16 +2617,16 @@ export default function CommunityPage() {
                       subtitle="Anonymous-first community chat with your privacy controls."
                       badge="Community Network"
                       action={
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Link
                             href="/q"
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto sm:px-4"
                           >
                             Explore Q&A
                           </Link>
                           <a
                             href={mainAppUrl}
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto sm:px-4"
                           >
                             Switch to Main App
                             <ExternalLink size={16} />
@@ -3920,6 +3976,7 @@ export default function CommunityPage() {
                           message.senderId === profile?.userId;
                         const isGroupConversation =
                           selectedConversation?.conversationType === "GROUP";
+
                         return (
                           <MessageBubble
                             key={message.id}
@@ -3930,12 +3987,13 @@ export default function CommunityPage() {
                             onRetry={retryFailedMessage}
                             onEdit={handleBeginEditMessage}
                             onDelete={handleDeleteMessage}
+                            onCopy={handleCopyMessage}
+                            isCopied={copiedMessageId === message.id}
                             isEditing={editingMessageId === message.id}
                             isMutating={isMutatingMessageId === message.id}
                           />
                         );
                       })}
-
                       {!selectedConversation && (
                         <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
                           Choose a conversation to start chatting.

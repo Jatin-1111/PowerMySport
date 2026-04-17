@@ -35,22 +35,19 @@ export default function FollowingPage() {
   };
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl space-y-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-        >
+    <div className="community-page-shell">
+      <div className="community-content-wrap-narrow space-y-4">
+        <Link href="/" className="community-back-link">
           <ChevronLeft size={14} />
           Back to Community
         </Link>
 
-        <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <section className="community-card">
           <div className="flex items-center gap-2">
             <Heart size={18} className="text-rose-600" />
-            <h1 className="text-xl font-semibold text-slate-900">Following</h1>
+            <h1 className="community-section-title">Following</h1>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="community-section-copy">
             Groups and topics you follow for faster discovery.
           </p>
 
@@ -59,7 +56,7 @@ export default function FollowingPage() {
               No followed items yet.
             </p>
           ) : (
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <Layers size={14} className="text-blue-600" />
@@ -74,7 +71,7 @@ export default function FollowingPage() {
                     followedGroups.map((item) => (
                       <div
                         key={`${item.kind}-${item.id}`}
-                        className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
                       >
                         <p className="text-sm font-medium text-slate-800">
                           {item.label}
@@ -104,7 +101,7 @@ export default function FollowingPage() {
                     followedTopics.map((item) => (
                       <div
                         key={`${item.kind}-${item.id}`}
-                        className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
                       >
                         <p className="text-sm font-medium text-slate-800">
                           {item.label}

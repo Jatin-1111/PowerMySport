@@ -62,12 +62,12 @@ export default function JoinCommunityPage() {
   }, [inviteCode, router]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-white p-8 shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] px-4 py-6 sm:py-8">
+      <div className="w-full max-w-md rounded-2xl border border-border bg-white p-5 shadow-xl sm:p-8">
         {status === "loading" && (
           <div className="text-center">
             <Loader className="mx-auto h-12 w-12 animate-spin text-power-orange" />
-            <h2 className="mt-4 text-xl font-semibold text-slate-900">
+            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
               Joining Group...
             </h2>
             <p className="mt-2 text-sm text-slate-600">
@@ -79,7 +79,7 @@ export default function JoinCommunityPage() {
         {status === "success" && (
           <div className="text-center">
             <CheckCircle className="mx-auto h-12 w-12 text-turf-green" />
-            <h2 className="mt-4 text-xl font-semibold text-slate-900">
+            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
               Successfully Joined!
             </h2>
             <p className="mt-2 text-sm text-slate-600">
@@ -91,7 +91,7 @@ export default function JoinCommunityPage() {
         {status === "redirecting" && (
           <div className="text-center">
             <Loader className="mx-auto h-12 w-12 animate-spin text-power-orange" />
-            <h2 className="mt-4 text-xl font-semibold text-slate-900">
+            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
               Taking you to the group...
             </h2>
           </div>
@@ -100,7 +100,7 @@ export default function JoinCommunityPage() {
         {status === "error" && (
           <div className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-            <h2 className="mt-4 text-xl font-semibold text-slate-900">
+            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
               Could Not Join
             </h2>
             <p className="mt-2 text-sm text-slate-600">{error}</p>

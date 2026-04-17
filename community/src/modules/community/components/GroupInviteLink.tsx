@@ -127,7 +127,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
           Invite Members
         </h3>
       </div>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm leading-6 text-slate-500">
         Share this link to invite others to join the group
       </p>
 
@@ -149,8 +149,8 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
 
       {inviteCode && (
         <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-            <code className="flex-1 break-all text-sm text-slate-600">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+            <code className="flex-1 break-all text-xs text-slate-600 sm:text-sm">
               {buildInviteLink(inviteCode)}
             </code>
             <button
@@ -166,10 +166,10 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
             </button>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <button
               onClick={() => void copyToClipboard()}
-              className="flex-1 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+              className="flex-1 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
             >
               <Copy size={14} className="mr-2 inline" />
               Copy Link
@@ -177,7 +177,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
             {canUseNativeShare && (
               <button
                 onClick={() => void openShareDialog()}
-                className="flex-1 rounded-xl bg-power-orange px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                className="flex-1 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
               >
                 <Share2 size={14} className="mr-2 inline" />
                 Share

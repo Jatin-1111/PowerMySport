@@ -103,39 +103,46 @@ export default function AdminVenuesPage() {
       ) : (
         <div className="space-y-6">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {venues.map((venue) => (
-              <Card
-                key={venue.id}
-                className="bg-white hover:shadow-lg transition-shadow"
-              >
-                <h3 className="text-lg font-bold mb-2 text-slate-900">
-                  {venue.name}
-                </h3>
-                <p className="text-sm text-slate-600 mb-3 flex items-center gap-1">
-                  <MapPin size={16} />
-                  {typeof venue.location === "object" &&
-                  venue.location.coordinates
-                    ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
-                    : "Location not available"}
-                </p>
+            {venues.map((venue, venueIndex) => {
+              const venueKey =
+                venue.id ||
+                venue._id ||
+                `${venue.name}-${venue.createdAt}-${venueIndex}`;
 
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {venue.sports.map((sport, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 bg-power-orange/10 text-power-orange text-xs rounded-full"
-                    >
-                      {sport}
-                    </span>
-                  ))}
-                </div>
+              return (
+                <Card
+                  key={venueKey}
+                  className="bg-white hover:shadow-lg transition-shadow"
+                >
+                  <h3 className="text-lg font-bold mb-2 text-slate-900">
+                    {venue.name}
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-3 flex items-center gap-1">
+                    <MapPin size={16} />
+                    {typeof venue.location === "object" &&
+                    venue.location.coordinates
+                      ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
+                      : "Location not available"}
+                  </p>
 
-                <p className="text-xl font-bold text-power-orange">
-                  ₹{venue.pricePerHour}
-                  <span className="text-sm text-slate-600">/hour</span>
-                </p>
-              </Card>
-            ))}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {venue.sports.map((sport, index) => (
+                      <span
+                        key={`${venueKey}-${sport}-${index}`}
+                        className="px-2 py-1 bg-power-orange/10 text-power-orange text-xs rounded-full"
+                      >
+                        {sport}
+                      </span>
+                    ))}
+                  </div>
+
+                  <p className="text-xl font-bold text-power-orange">
+                    ₹{venue.pricePerHour}
+                    <span className="text-sm text-slate-600">/hour</span>
+                  </p>
+                </Card>
+              );
+            })}
           </div>
 
           {/* Pagination Controls */}

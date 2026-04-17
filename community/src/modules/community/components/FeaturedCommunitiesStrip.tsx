@@ -31,7 +31,7 @@ export function FeaturedCommunitiesStrip({
       whileInView={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.35 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="overflow-hidden rounded-[1.75rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-4 shadow-sm backdrop-blur"
+      className="overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-4 shadow-sm backdrop-blur sm:rounded-[1.75rem]"
     >
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -46,7 +46,7 @@ export function FeaturedCommunitiesStrip({
           onClick={onViewAll}
           whileHover={prefersReducedMotion ? undefined : { scale: 1.02, y: -1 }}
           whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-          className="rounded-xl border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+          className="min-h-10 rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
         >
           View all
         </motion.button>
@@ -61,7 +61,7 @@ export function FeaturedCommunitiesStrip({
             hidden: {},
             show: { transition: listStagger },
           }}
-          className="mt-4 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 xl:grid-cols-3"
+          className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:snap-none sm:overflow-visible sm:pb-0 xl:grid-cols-3"
         >
           {groups.map((group) => {
             const actionLabel = getActionLabel(group);
@@ -74,7 +74,7 @@ export function FeaturedCommunitiesStrip({
                 }}
                 whileHover={prefersReducedMotion ? undefined : { y: -4 }}
                 transition={{ duration: 0.28, ease: "easeOut" }}
-                className="min-w-60 rounded-[1.35rem] border border-slate-200 bg-white/90 p-3 shadow-sm sm:min-w-0"
+                className="min-w-[84vw] snap-start rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.96))] p-3 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.35)] sm:min-w-0"
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-title line-clamp-1 text-sm font-semibold text-slate-900">
@@ -97,7 +97,7 @@ export function FeaturedCommunitiesStrip({
                 <motion.button
                   onClick={() => onGroupAction(group)}
                   whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-                  className={`mt-3 w-full rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                  className={`mt-3 w-full rounded-2xl px-3 py-2.5 text-xs font-semibold transition ${
                     !group.isMember
                       ? "bg-power-orange text-white hover:opacity-90"
                       : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
@@ -108,7 +108,7 @@ export function FeaturedCommunitiesStrip({
                 {onToggleGroupFollow && (
                   <button
                     onClick={() => onToggleGroupFollow(group)}
-                    className={`mt-2 w-full rounded-lg border px-3 py-2 text-[11px] font-semibold transition ${
+                    className={`mt-2 w-full rounded-2xl border px-3 py-2.5 text-[11px] font-semibold transition ${
                       isGroupFollowed?.(group.id)
                         ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"

@@ -23,8 +23,8 @@ export default function ContributorsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-5xl rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <div className="community-page-shell">
+          <div className="community-content-wrap rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-6">
             <p className="text-sm text-slate-500">Loading contributors...</p>
           </div>
         </div>
@@ -115,30 +115,25 @@ function ContributorsPageContent() {
   );
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-4">
-        <Link
-          href="/q"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-        >
+    <div className="community-page-shell">
+      <div className="community-content-wrap space-y-4">
+        <Link href="/q" className="community-back-link">
           <ChevronLeft size={14} />
           Back to Q&A
         </Link>
 
-        <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <section className="community-card">
           <div className="flex items-center gap-2">
             <Trophy size={18} className="text-amber-600" />
-            <h1 className="text-xl font-semibold text-slate-900">
-              Contributor Leaderboard
-            </h1>
+            <h1 className="community-section-title">Contributor Leaderboard</h1>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="community-section-copy">
             Recognizing players and coaches who share high-value community
             knowledge.
           </p>
 
           {myReputation && (
-            <div className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:grid-cols-4">
+            <div className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <p className="text-[11px] uppercase tracking-wide text-amber-700">
                   Your Points
@@ -187,7 +182,7 @@ function ContributorsPageContent() {
               {leaderboard.map((item, index) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-xl border border-border bg-slate-50 px-4 py-3"
+                  className="flex flex-col gap-3 rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-3">
                     <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
@@ -206,7 +201,7 @@ function ContributorsPageContent() {
                       </p>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
                     <Award size={12} />
                     {item.score} pts
                   </span>
@@ -217,7 +212,7 @@ function ContributorsPageContent() {
         </section>
 
         {selectedAuthor && (
-          <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+          <section className="community-card">
             <h2 className="text-lg font-semibold text-slate-900">
               Contributor Profile: {selectedAuthor.name}
             </h2>
@@ -225,7 +220,7 @@ function ContributorsPageContent() {
               Post and answer history for this contributor.
             </p>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-4">
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                 <p className="text-[11px] uppercase tracking-wide text-slate-500">
                   Posts
@@ -270,7 +265,7 @@ function ContributorsPageContent() {
                   <Link
                     key={post.id}
                     href={`/q/${post.id}`}
-                    className="block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 hover:bg-slate-100"
+                    className="block rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 shadow-xs transition hover:bg-slate-100"
                   >
                     <p className="text-sm font-semibold text-slate-900">
                       {post.title}
@@ -285,7 +280,7 @@ function ContributorsPageContent() {
           </section>
         )}
 
-        <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <section className="community-card">
           <div className="flex items-center gap-2">
             <Users size={18} className="text-power-orange" />
             <h2 className="text-lg font-semibold text-slate-900">

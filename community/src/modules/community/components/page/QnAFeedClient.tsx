@@ -526,8 +526,8 @@ export default function QnAFeedClient() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.14)_1px,transparent_1px)] bg-size-[42px_42px] opacity-40" />
       </div>
 
-      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden rounded-4xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_36%,#fff1dc_100%)] px-6 py-10 text-slate-900 shadow-sm sm:px-10 sm:py-12">
+      <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-8 lg:px-8">
+        <section className="relative overflow-hidden rounded-3xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_36%,#fff1dc_100%)] px-4 py-7 text-slate-900 shadow-sm sm:rounded-4xl sm:px-10 sm:py-12">
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-amber-200/30 blur-3xl" />
 
@@ -536,7 +536,7 @@ export default function QnAFeedClient() {
               <p className="inline-flex rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
                 Community Knowledge Exchange
               </p>
-              <h1 className="font-title mt-4 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
+              <h1 className="font-title mt-4 text-3xl font-semibold leading-[1.08] tracking-tight sm:text-4xl lg:text-5xl">
                 Ask Better Questions. Share Better Answers.
               </h1>
               <p className="mt-4 max-w-2xl text-sm text-slate-700 sm:text-base">
@@ -556,7 +556,7 @@ export default function QnAFeedClient() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 self-end">
+            <div className="flex flex-wrap items-center gap-2 self-end sm:gap-3">
               <Link
                 href="/"
                 className="rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white"
@@ -584,7 +584,7 @@ export default function QnAFeedClient() {
                   animate={{ opacity: 1, height: "auto", y: 0 }}
                   exit={{ opacity: 0, height: 0, y: -8 }}
                   transition={{ duration: 0.28, ease: "easeOut" }}
-                  className="relative overflow-hidden rounded-3xl border border-white/90 bg-[linear-gradient(140deg,rgba(255,255,255,0.9)_0%,rgba(247,251,255,0.88)_60%,rgba(255,245,230,0.8)_100%)] p-5 shadow-sm backdrop-blur-lg sm:p-6"
+                  className="relative overflow-hidden rounded-3xl border border-white/90 bg-[linear-gradient(140deg,rgba(255,255,255,0.9)_0%,rgba(247,251,255,0.88)_60%,rgba(255,245,230,0.8)_100%)] p-4 shadow-sm backdrop-blur-lg sm:p-6"
                 >
                   <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-sky-200/35 blur-3xl" />
                   <div className="pointer-events-none absolute -bottom-16 -left-14 h-44 w-44 rounded-full bg-amber-200/25 blur-3xl" />
@@ -611,7 +611,7 @@ export default function QnAFeedClient() {
                         rows={5}
                         className="w-full rounded-xl border border-border bg-white/85 px-3 py-2 text-sm shadow-xs focus:border-power-orange focus:outline-none"
                       />
-                      <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="grid gap-3 lg:grid-cols-3">
                         <input
                           value={tags}
                           onChange={(event) => setTags(event.target.value)}
@@ -631,7 +631,7 @@ export default function QnAFeedClient() {
                           className="rounded-xl border border-border bg-white/85 px-3 py-2 text-sm shadow-xs focus:border-power-orange focus:outline-none"
                         />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           onClick={() => void handleCreatePost()}
                           disabled={isSubmitting}
@@ -677,7 +677,7 @@ export default function QnAFeedClient() {
                   </button>
                 </div>
 
-                <div className="grid w-full gap-2 sm:w-auto sm:grid-cols-3">
+                <div className="grid w-full gap-2 lg:w-auto lg:grid-cols-3">
                   <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 shadow-xs">
                     <Search size={16} className="text-slate-500" />
                     <input
@@ -702,7 +702,7 @@ export default function QnAFeedClient() {
                     className="rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
                   />
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
                   {SORT_OPTIONS.map((option) => (
                     <button
                       key={option.value}
@@ -777,7 +777,7 @@ export default function QnAFeedClient() {
             ) : (
               <section className="space-y-4">
                 {urgentUnanswered.length > 0 ? (
-                  <div className="grid gap-3 lg:grid-cols-[1.35fr_minmax(0,1fr)]">
+                  <div className="grid gap-3 xl:grid-cols-[1.35fr_minmax(0,1fr)]">
                     <div className="rounded-2xl border border-amber-200/80 bg-[linear-gradient(120deg,#fff9ed_0%,#fff3dc_100%)] p-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">
                         Help Needed Now
@@ -1048,7 +1048,7 @@ export default function QnAFeedClient() {
                     <button
                       onClick={() => void loadMore()}
                       disabled={isLoadingMore}
-                      className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                      className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
                     >
                       {isLoadingMore ? (
                         <>

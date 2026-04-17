@@ -41,6 +41,7 @@
 @layer base {
     html {
         scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
     }
 
     * {
@@ -71,6 +72,7 @@
 
     button {
         @apply cursor-pointer;
+        touch-action: manipulation;
     }
 
     ::-webkit-scrollbar {
@@ -93,6 +95,36 @@
         background: rgba(233, 115, 22, 0.45);
         border: 2px solid transparent;
         background-clip: content-box;
+    }
+}
+
+@layer components {
+    .community-page-shell {
+        @apply min-h-screen px-4 py-5 sm:px-6 sm:py-8 lg:px-8;
+    }
+
+    .community-content-wrap {
+        @apply mx-auto w-full max-w-6xl;
+    }
+
+    .community-content-wrap-narrow {
+        @apply mx-auto w-full max-w-4xl;
+    }
+
+    .community-back-link {
+        @apply inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-border bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+    }
+
+    .community-card {
+        @apply rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-6;
+    }
+
+    .community-section-title {
+        @apply text-lg font-semibold text-slate-900 sm:text-xl;
+    }
+
+    .community-section-copy {
+        @apply mt-1 text-sm leading-6 text-slate-500 sm:text-base;
     }
 }
 

@@ -67,24 +67,19 @@ export default function SafetyPage() {
   };
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-4">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-        >
+    <div className="community-page-shell">
+      <div className="community-content-wrap space-y-4">
+        <Link href="/" className="community-back-link">
           <ChevronLeft size={14} />
           Back to Community
         </Link>
 
-        <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <section className="community-card">
           <div className="flex items-center gap-2">
             <Shield size={18} className="text-power-orange" />
-            <h1 className="text-xl font-semibold text-slate-900">
-              Safety Center
-            </h1>
+            <h1 className="community-section-title">Safety Center</h1>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="community-section-copy">
             Moderation status visibility and personal safety controls in one
             place.
           </p>
@@ -94,8 +89,8 @@ export default function SafetyPage() {
               Loading safety data...
             </p>
           ) : (
-            <div className="mt-4 grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mt-4 grid gap-4 xl:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 shadow-sm">
                 <p className="text-sm font-semibold text-slate-900">
                   Blocked Users
                 </p>
@@ -109,14 +104,14 @@ export default function SafetyPage() {
                     blockedUsers.map((user) => (
                       <div
                         key={user.id}
-                        className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2"
+                        className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
                       >
                         <p className="text-sm font-medium text-slate-800">
                           {user.name}
                         </p>
                         <button
                           onClick={() => unblock(user.id)}
-                          className="text-xs font-semibold text-power-orange hover:underline"
+                          className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-power-orange/40 px-3 py-2 text-xs font-semibold text-power-orange transition hover:bg-power-orange/10"
                         >
                           Unblock
                         </button>
@@ -126,7 +121,7 @@ export default function SafetyPage() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 shadow-sm">
                 <p className="text-sm font-semibold text-slate-900">
                   My Report Status
                 </p>
@@ -142,9 +137,9 @@ export default function SafetyPage() {
                     reports.map((report) => (
                       <div
                         key={report.id}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+                        className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xs"
                       >
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <p className="text-xs font-semibold text-slate-700">
                             {report.targetType}
                           </p>
@@ -154,11 +149,11 @@ export default function SafetyPage() {
                             {report.status}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-slate-800">
+                        <p className="mt-1 text-sm leading-6 text-slate-800">
                           {report.reason}
                         </p>
                         {report.resolutionNote && (
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs leading-6 text-slate-500">
                             {report.resolutionNote}
                           </p>
                         )}
@@ -171,14 +166,14 @@ export default function SafetyPage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <section className="community-card">
           <div className="flex items-center gap-2">
             <UserX size={18} className="text-rose-600" />
             <h2 className="text-lg font-semibold text-slate-900">
               How Safety Actions Work
             </h2>
           </div>
-          <ul className="mt-2 list-disc pl-5 text-sm text-slate-600 space-y-1">
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
             <li>Blocked users cannot message you directly.</li>
             <li>
               Reports are reviewed by moderation and updated with status notes.
