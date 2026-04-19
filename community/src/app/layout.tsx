@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Space_Grotesk, Syne } from "next/font/google";
 import { Toaster } from "sonner";
+import CommunityNotificationToastListener from "@/modules/community/components/layout/CommunityNotificationToastListener";
 import CommunityTopNav from "@/modules/community/components/layout/CommunityTopNav";
 import "./globals.css";
 
@@ -34,10 +35,13 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-app text-slate-900">
-        <div className="min-h-full">
+      <body className="h-dvh bg-app text-slate-900 overflow-y-auto lg:overflow-hidden">
+        <div className="flex h-dvh flex-col">
           <CommunityTopNav />
-          <main>{children}</main>
+          <CommunityNotificationToastListener />
+          <main className="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
+            {children}
+          </main>
         </div>
         <Toaster richColors closeButton position="top-right" />
       </body>

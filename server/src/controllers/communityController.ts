@@ -24,6 +24,13 @@ const getStatusCode = (message: string): number => {
   if (message === "Access denied") return 403;
   if (message.includes("not found")) return 404;
   if (
+    message.includes("Invalid target ID") ||
+    message.includes("Cast to ObjectId failed") ||
+    message.includes("validation failed")
+  ) {
+    return 400;
+  }
+  if (
     message.includes("cannot") ||
     message.includes("required") ||
     message.includes("privacy") ||

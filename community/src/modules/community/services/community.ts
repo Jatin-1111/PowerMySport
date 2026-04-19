@@ -26,6 +26,10 @@ interface ApiResponse<T> {
   data: T;
 }
 
+interface PaginatedApiResponse<T, P> extends ApiResponse<T> {
+  pagination?: P;
+}
+
 interface AuthBridgeSession {
   id: string;
   role:
@@ -173,6 +177,11 @@ const buildPostsKey = (
   ].join(":");
 const buildPostDetailsKey = (postId: string, page: number, limit: number) =>
   `post:${postId}:${page}:${limit}`;
+const buildCommunityNotificationsKey = (
+  page: number,
+  limit: number,
+  isRead?: boolean,
+) => `community-notifications:${page}:${limit}:${String(isRead)}`;
 
 const BLOCKED_USERS_CACHE_KEY = "blocked-users";
 
@@ -602,7 +611,7 @@ export const communityService = {
     };
   }> {
     const response = await axiosInstance.get<
-      ApiResponse<
+      PaginatedApiResponse<
         Array<{
           id: string;
           targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
@@ -622,16 +631,13 @@ export const communityService = {
             wasEdited: boolean;
             wasDeleted: boolean;
           };
-        }>
+        }>,
+        { total: number; page: number; totalPages: number }
       >
     >("/community/reports/my", { params: { page, limit } });
     return {
       items: response.data.data,
-      pagination: (
-        response.data as unknown as {
-          pagination?: { total: number; page: number; totalPages: number };
-        }
-      ).pagination,
+      pagination: response.data.pagination,
     };
   },
 
@@ -736,6 +742,30 @@ export const communityService = {
 
   async listMyKnowledgeActivity(limit = 20): Promise<CommunityActivityItem[]> {
     return withRequestCache(`qna-activity:${limit}`, async () => {
+      const notifications = await this.listCommunityNotifications(1, limit);
+      return notifications.items.filter(
+        (item) =>
+          item.data?.event === "COMMUNITY_ANSWER_CREATED" ||
+          item.data?.event === "COMMUNITY_UPVOTE_RECEIVED",
+      );
+    });
+  },
+
+  async listCommunityNotifications(
+    page = 1,
+    limit = 25,
+    isRead?: boolean,
+  ): Promise<{
+    items: CommunityActivityItem[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  }> {
+    const cacheKey = buildCommunityNotificationsKey(page, limit, isRead);
+    return withRequestCache(cacheKey, async () => {
       const response = await axiosInstance.get<{
         success: boolean;
         data: Array<{
@@ -750,16 +780,28 @@ export const communityService = {
             targetId?: string;
             targetType?: "POST" | "ANSWER";
             actorUserId?: string;
+            conversationId?: string;
+            messageId?: string;
+            groupId?: string;
+            conversationType?: "DM" | "GROUP";
           };
         }>;
+        pagination?: {
+          page?: number;
+          limit?: number;
+          total?: number;
+          pages?: number;
+        };
       }>("/notifications", {
         params: {
           category: "COMMUNITY",
+          page,
           limit,
+          ...(typeof isRead === "boolean" ? { isRead } : {}),
         },
       });
 
-      return (response.data.data || []).map((item) => ({
+      const items = (response.data.data || []).map((item) => ({
         id: item._id,
         title: item.title,
         message: item.message,
@@ -767,7 +809,75 @@ export const communityService = {
         createdAt: item.createdAt,
         data: item.data,
       }));
+
+      return {
+        items,
+        pagination: {
+          page: response.data.pagination?.page || page,
+          limit: response.data.pagination?.limit || limit,
+          total: response.data.pagination?.total || 0,
+          pages: response.data.pagination?.pages || 0,
+        },
+      };
     });
+  },
+
+  async getCommunityUnreadNotificationCount(): Promise<number> {
+    return withRequestCache("community-unread-count", async () => {
+      const response = await axiosInstance.get<{
+        success: boolean;
+        count: number;
+      }>("/notifications/unread-count", {
+        params: {
+          category: "COMMUNITY",
+        },
+      });
+      return response.data.count || 0;
+    });
+  },
+
+  async markCommunityNotificationRead(notificationId: string): Promise<void> {
+    await axiosInstance.patch(`/notifications/${notificationId}/read`);
+    clearCacheByPrefixes([
+      "qna-activity",
+      "community-notifications",
+      "community-unread-count",
+    ]);
+  },
+
+  async markAllCommunityNotificationsRead(): Promise<number> {
+    let totalMarked = 0;
+    let page = 1;
+    const limit = 100;
+
+    while (true) {
+      const unread = await this.listCommunityNotifications(page, limit, false);
+      const ids = unread.items.map((item) => item.id);
+
+      if (!ids.length) {
+        break;
+      }
+
+      await Promise.all(
+        ids.map((id) => axiosInstance.patch(`/notifications/${id}/read`)),
+      );
+
+      totalMarked += ids.length;
+
+      if (ids.length < limit) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    clearCacheByPrefixes([
+      "qna-activity",
+      "community-notifications",
+      "community-unread-count",
+    ]);
+
+    return totalMarked;
   },
 
   async getPostDetails(

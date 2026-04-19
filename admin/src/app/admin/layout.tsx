@@ -31,6 +31,20 @@ type StoredAdmin = {
   mustChangePassword?: boolean;
 };
 
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number }>;
+};
+
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+};
+
+const isAdminRouteActive = (pathname: string, href: string) =>
+  href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+
 export default function AdminLayout({
   children,
 }: {
@@ -79,6 +93,96 @@ export default function AdminLayout({
   const isSuperAdmin = storedAdmin?.role === "SYSTEM_ADMIN";
   const mustChangePassword = storedAdmin?.mustChangePassword === true;
 
+  const navGroups = useMemo<NavGroup[]>(() => {
+    const groups: NavGroup[] = [
+      {
+        title: "Overview",
+        items: [
+          { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+          { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
+          {
+            href: "/admin/notifications",
+            label: "Notifications",
+            icon: Bell,
+          },
+          { href: "/admin/profile", label: "Profile", icon: UserCircle2 },
+        ],
+      },
+      {
+        title: "Operations",
+        items: [
+          {
+            href: "/admin/venue-approval",
+            label: "Venue Approvals",
+            icon: CheckCircle,
+          },
+          {
+            href: "/admin/coach-verification",
+            label: "Coach Verification",
+            icon: UserCheck,
+          },
+          { href: "/admin/bookings", label: "All Bookings", icon: Calendar },
+          {
+            href: "/admin/support-tickets",
+            label: "Support Tickets",
+            icon: LifeBuoy,
+          },
+          {
+            href: "/admin/community-reports",
+            label: "Community Reports",
+            icon: MessageSquareWarning,
+          },
+        ],
+      },
+      {
+        title: "Marketplace",
+        items: [
+          { href: "/admin/venues", label: "All Venues", icon: Building2 },
+          { href: "/admin/products", label: "Products", icon: Package },
+          { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+          { href: "/admin/reviews", label: "Reviews", icon: Star },
+          { href: "/admin/promo-codes", label: "Promo Codes", icon: Tag },
+        ],
+      },
+      {
+        title: "Programs",
+        items: [
+          { href: "/admin/coach-plans", label: "Coach Plans", icon: Package },
+          {
+            href: "/admin/coach-subscriptions",
+            label: "Coach Subscriptions",
+            icon: Calendar,
+          },
+          {
+            href: "/admin/coach-subscription-overrides",
+            label: "Override Reviews",
+            icon: ShieldAlert,
+          },
+        ],
+      },
+      {
+        title: "Users",
+        items: [
+          { href: "/admin/users", label: "Users", icon: Users },
+          {
+            href: "/admin/user-safety",
+            label: "User Safety",
+            icon: ShieldAlert,
+          },
+        ],
+      },
+    ];
+
+    if (isSuperAdmin) {
+      groups.push({
+        title: "System",
+        items: [{ href: "/admin/admins", label: "Admins", icon: ShieldCheck }],
+      });
+    }
+
+    return groups;
+  }, [isSuperAdmin]);
+
   useEffect(() => {
     if (!isLoginPage) {
       const token = localStorage.getItem("token");
@@ -112,98 +216,6 @@ export default function AdminLayout({
     router.replace("/admin/login");
   };
 
-  const navItems = [
-    {
-      href: "/admin",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/admin/venue-approval",
-      label: "Venue Approvals",
-      icon: CheckCircle,
-    },
-    {
-      href: "/admin/users",
-      label: "Users",
-      icon: Users,
-    },
-    {
-      href: "/admin/user-safety",
-      label: "User Safety",
-      icon: ShieldAlert,
-    },
-    {
-      href: "/admin/venues",
-      label: "All Venues",
-      icon: Building2,
-    },
-    {
-      href: "/admin/coach-verification",
-      label: "Coach Verification",
-      icon: UserCheck,
-    },
-    {
-      href: "/admin/profile",
-      label: "Profile",
-      icon: UserCircle2,
-    },
-    {
-      href: "/admin/bookings",
-      label: "All Bookings",
-      icon: Calendar,
-    },
-    {
-      href: "/admin/products",
-      label: "Products",
-      icon: Package,
-    },
-    {
-      href: "/admin/orders",
-      label: "Orders",
-      icon: ShoppingBag,
-    },
-    {
-      href: "/admin/reviews",
-      label: "Reviews",
-      icon: Star,
-    },
-    {
-      href: "/admin/analytics",
-      label: "Analytics",
-      icon: BarChart2,
-    },
-    {
-      href: "/admin/support-tickets",
-      label: "Support Tickets",
-      icon: LifeBuoy,
-    },
-    {
-      href: "/admin/promo-codes",
-      label: "Promo Codes",
-      icon: Tag,
-    },
-    {
-      href: "/admin/community-reports",
-      label: "Community Reports",
-      icon: MessageSquareWarning,
-    },
-    {
-      href: "/admin/notifications",
-      label: "Notifications",
-      icon: Bell,
-    },
-    ...(isSuperAdmin
-      ? [
-          {
-            href: "/admin/admins",
-            label: "Admins",
-            icon: ShieldCheck,
-          },
-        ]
-      : []),
-  ];
-
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen">
@@ -227,27 +239,37 @@ export default function AdminLayout({
                   Logout
                 </button>
               </div>
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                {navItems.map((item) => {
-                  const isActive =
-                    item.href === "/admin"
-                      ? pathname === "/admin"
-                      : pathname.startsWith(item.href);
 
-                  return (
-                    <Link
-                      key={`mobile-${item.href}`}
-                      href={item.href}
-                      className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        isActive
-                          ? "bg-power-orange text-white"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
+              <div className="mt-4 space-y-4 pb-1">
+                {navGroups.map((group) => (
+                  <div key={group.title}>
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      {group.title}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {group.items.map((item) => {
+                        const isActive = isAdminRouteActive(
+                          pathname,
+                          item.href,
+                        );
+
+                        return (
+                          <Link
+                            key={`mobile-${item.href}`}
+                            href={item.href}
+                            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                              isActive
+                                ? "bg-power-orange text-white"
+                                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                            }`}
+                          >
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -264,31 +286,40 @@ export default function AdminLayout({
                 </div>
               </div>
 
-              <nav className="mt-2 space-y-1 px-4">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive =
-                    item.href === "/admin"
-                      ? pathname === "/admin"
-                      : pathname.startsWith(item.href);
+              <nav className="mt-2 space-y-5 px-4 pb-6">
+                {navGroups.map((group) => (
+                  <div key={group.title}>
+                    <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      {group.title}
+                    </p>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = isAdminRouteActive(
+                          pathname,
+                          item.href,
+                        );
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
-                        isActive
-                          ? "bg-power-orange text-white shadow-sm"
-                          : "text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      <Icon size={18} />
-                      <span className="text-sm font-semibold">
-                        {item.label}
-                      </span>
-                    </Link>
-                  );
-                })}
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
+                              isActive
+                                ? "bg-power-orange text-white shadow-sm"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            <Icon size={18} />
+                            <span className="text-sm font-semibold">
+                              {item.label}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </nav>
 
               <div className="mt-auto border-t border-slate-200 p-6">

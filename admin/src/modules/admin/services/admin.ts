@@ -1,6 +1,9 @@
 ﻿import axiosInstance from "@/lib/api/axios";
 import {
   ApiResponse,
+  CoachPlan,
+  CoachSubscriptionOverrideRequestRecord,
+  CoachSubscriptionRecord,
   Coach,
   CoachVerificationStatus,
   RoleTemplate,
@@ -109,6 +112,15 @@ export interface SupportTicketRecord {
   } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+interface PaginationResult<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    totalPages: number;
+  };
 }
 
 const normalizeAdmin = (admin: Partial<Admin> | null | undefined): Admin => {
@@ -289,6 +301,117 @@ export const adminApi = {
   ): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post(
       `/admin/coaches/${coachId}/notify`,
+    );
+    return response.data;
+  },
+
+  listCoachPlans: async (params?: {
+    isActive?: boolean;
+  }): Promise<ApiResponse<{ plans: CoachPlan[] }>> => {
+    const query = new URLSearchParams();
+    if (typeof params?.isActive === "boolean") {
+      query.append("isActive", String(params.isActive));
+    }
+
+    const response = await axiosInstance.get(
+      `/admin/coach-plans${query.toString() ? `?${query.toString()}` : ""}`,
+    );
+    return response.data;
+  },
+
+  createCoachPlan: async (payload: {
+    code: string;
+    name: string;
+    description?: string;
+    pricing: {
+      monthly?: number;
+      yearly?: number;
+    };
+    features?: string[];
+    isActive?: boolean;
+    supportsOverrides?: boolean;
+  }): Promise<ApiResponse<{ plan: CoachPlan }>> => {
+    const response = await axiosInstance.post("/admin/coach-plans", payload);
+    return response.data;
+  },
+
+  updateCoachPlan: async (
+    planId: string,
+    payload: Partial<{
+      name: string;
+      description: string;
+      pricing: {
+        monthly?: number;
+        yearly?: number;
+      };
+      features: string[];
+      isActive: boolean;
+      supportsOverrides: boolean;
+    }>,
+  ): Promise<ApiResponse<{ plan: CoachPlan }>> => {
+    const response = await axiosInstance.patch(
+      `/admin/coach-plans/${planId}`,
+      payload,
+    );
+    return response.data;
+  },
+
+  listCoachSubscriptions: async (params?: {
+    status?: string;
+    planId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<
+    ApiResponse<{
+      subscriptions: CoachSubscriptionRecord[];
+      pagination: PaginationResult<CoachSubscriptionRecord>["pagination"];
+    }>
+  > => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.planId) query.append("planId", params.planId);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+
+    const response = await axiosInstance.get(
+      `/admin/coach-subscriptions${query.toString() ? `?${query.toString()}` : ""}`,
+    );
+    return response.data;
+  },
+
+  listCoachSubscriptionOverrides: async (params?: {
+    status?: "PENDING" | "APPROVED" | "REJECTED";
+    page?: number;
+    limit?: number;
+  }): Promise<
+    ApiResponse<{
+      requests: CoachSubscriptionOverrideRequestRecord[];
+      pagination: PaginationResult<CoachSubscriptionOverrideRequestRecord>["pagination"];
+    }>
+  > => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+
+    const response = await axiosInstance.get(
+      `/admin/coach-subscription-overrides${query.toString() ? `?${query.toString()}` : ""}`,
+    );
+    return response.data;
+  },
+
+  reviewCoachSubscriptionOverride: async (
+    requestId: string,
+    payload: {
+      status: "APPROVED" | "REJECTED";
+      reviewNote?: string;
+    },
+  ): Promise<
+    ApiResponse<{ request: CoachSubscriptionOverrideRequestRecord }>
+  > => {
+    const response = await axiosInstance.patch(
+      `/admin/coach-subscription-overrides/${requestId}/review`,
+      payload,
     );
     return response.data;
   },

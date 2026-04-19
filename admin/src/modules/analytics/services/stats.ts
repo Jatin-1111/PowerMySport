@@ -111,6 +111,40 @@ export interface FunnelSummaryRow {
   uniqueUsers: number;
 }
 
+export interface FunnelTrendPoint {
+  dateKey: string;
+  label: string;
+  total: number;
+  WEB: number;
+  MOBILE: number;
+  SERVER: number;
+}
+
+export interface FunnelTrendBreakdown {
+  source: "WEB" | "MOBILE" | "SERVER";
+  count: number;
+}
+
+export interface FunnelTrends {
+  days: number;
+  dailyActivity: FunnelTrendPoint[];
+  sourceBreakdown: FunnelTrendBreakdown[];
+}
+
+export interface UserGrowthPoint {
+  monthKey: string;
+  label: string;
+  total: number;
+  PLAYER: number;
+  COACH: number;
+  VENUE_LISTER: number;
+}
+
+export interface UserGrowthAnalytics {
+  months: number;
+  series: UserGrowthPoint[];
+}
+
 export interface FinanceReconciliation {
   totalBookingsChecked: number;
   matched: number;
@@ -122,6 +156,26 @@ export interface FinanceReconciliation {
     paid: number;
     status: string;
   }>;
+}
+
+export interface ObservabilityRouteMetric {
+  routeKey: string;
+  totalRequests: number;
+  totalErrors: number;
+  errorRate: number;
+  avgLatencyMs: number;
+  maxLatencyMs: number;
+  lastSeenAt: string;
+}
+
+export interface ObservabilitySnapshot {
+  totals: {
+    requests: number;
+    errors: number;
+    errorRate: number;
+  };
+  routes: ObservabilityRouteMetric[];
+  generatedAt: string;
 }
 
 export const statsApi = {
@@ -146,6 +200,15 @@ export const statsApi = {
 
   getUsersRoleSummary: async (): Promise<ApiResponse<UsersRoleSummary>> => {
     const response = await axiosInstance.get("/stats/users/summary");
+    return response.data;
+  },
+
+  getUserGrowthAnalytics: async (
+    months = 6,
+  ): Promise<ApiResponse<UserGrowthAnalytics>> => {
+    const response = await axiosInstance.get("/stats/users/growth", {
+      params: { months },
+    });
     return response.data;
   },
 
@@ -247,6 +310,13 @@ export const statsApi = {
     return response.data;
   },
 
+  getFunnelTrends: async (days = 30): Promise<ApiResponse<FunnelTrends>> => {
+    const response = await axiosInstance.get("/stats/funnel/trends", {
+      params: { days },
+    });
+    return response.data;
+  },
+
   getFinanceReconciliation: async (): Promise<
     ApiResponse<FinanceReconciliation>
   > => {
@@ -254,7 +324,9 @@ export const statsApi = {
     return response.data;
   },
 
-  getObservabilitySnapshot: async (): Promise<ApiResponse<unknown>> => {
+  getObservabilitySnapshot: async (): Promise<
+    ApiResponse<ObservabilitySnapshot>
+  > => {
     const response = await axiosInstance.get("/stats/observability");
     return response.data;
   },

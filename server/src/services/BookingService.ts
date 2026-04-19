@@ -3,6 +3,7 @@ import mongoose, { ClientSession } from "mongoose";
 import { Booking, BookingDocument } from "../models/Booking";
 import { BookingSlotLock } from "../models/BookingSlotLock";
 import { Coach } from "../models/Coach";
+import { CoachSubscription } from "../models/CoachSubscription";
 import { User } from "../models/User";
 import { Venue, VenueDocument } from "../models/Venue";
 import {
@@ -64,6 +65,8 @@ export interface InitiateBookingResponse {
 const TIME_FORMAT_REGEX = /^([01]?\d|2[0-3]):([0-5]\d)$/;
 const CHECK_IN_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const MAX_TRANSACTION_RETRIES = 3;
+const COACH_SUBSCRIPTIONS_ENFORCE_BOOKING =
+  process.env.COACH_SUBSCRIPTIONS_ENFORCE_BOOKING === "true";
 
 interface BookingCreatePayload {
   userId: string;
@@ -671,6 +674,29 @@ export const initiateBooking = async (
       const coach = await Coach.findById(payload.coachId).populate("userId");
       if (!coach) {
         throw new Error("Coach not found");
+      }
+
+      if (COACH_SUBSCRIPTIONS_ENFORCE_BOOKING) {
+        const now = new Date();
+
+        const coachSubscription = await CoachSubscription.findOne({
+          coachId: coach._id,
+          status: { $in: ["ACTIVE", "PAST_DUE"] },
+        }).sort({ createdAt: -1 });
+
+        if (!coachSubscription) {
+          throw new Error("Coach subscription is inactive for new bookings");
+        }
+
+        const isActive = coachSubscription.status === "ACTIVE";
+        const isPastDueWithinGrace =
+          coachSubscription.status === "PAST_DUE" &&
+          coachSubscription.gracePeriodEndsAt &&
+          coachSubscription.gracePeriodEndsAt > now;
+
+        if (!isActive && !isPastDueWithinGrace) {
+          throw new Error("Coach subscription is inactive for new bookings");
+        }
       }
 
       if (!payload.venueId && !payload.playerLocation) {

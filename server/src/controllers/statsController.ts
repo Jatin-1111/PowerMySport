@@ -12,11 +12,29 @@ import { getPaginationParams } from "../utils/pagination";
 
 type AdminUserRole = "PLAYER" | "COACH" | "VENUE_LISTER";
 
+type FunnelSource = "WEB" | "MOBILE" | "SERVER";
+
 const USER_ROLE_SET: ReadonlySet<AdminUserRole> = new Set([
   "PLAYER",
   "COACH",
   "VENUE_LISTER",
 ]);
+
+const FUNNEL_SOURCE_SET: ReadonlySet<FunnelSource> = new Set([
+  "WEB",
+  "MOBILE",
+  "SERVER",
+]);
+
+const MONTH_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+});
+
+const DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+});
 
 const getRoleFromQuery = (value: unknown): AdminUserRole | null => {
   if (typeof value !== "string") return null;
@@ -32,6 +50,60 @@ const getStartOfCurrentMonth = (): Date => {
 
 const getTwentyFourHoursAgo = (): Date => {
   return new Date(Date.now() - 24 * 60 * 60 * 1000);
+};
+
+const getMonthKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+};
+
+const getMonthLabel = (date: Date): string => {
+  return MONTH_FORMATTER.format(date);
+};
+
+const getDayKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getDayLabel = (date: Date): string => {
+  return DAY_FORMATTER.format(date);
+};
+
+const buildMonthSeries = (
+  months: number,
+): Array<{ key: string; label: string }> => {
+  const series: Array<{ key: string; label: string }> = [];
+  const current = new Date();
+  current.setDate(1);
+  current.setHours(0, 0, 0, 0);
+
+  for (let index = months - 1; index >= 0; index -= 1) {
+    const date = new Date(current.getFullYear(), current.getMonth() - index, 1);
+    series.push({ key: getMonthKey(date), label: getMonthLabel(date) });
+  }
+
+  return series;
+};
+
+const buildDaySeries = (
+  days: number,
+): Array<{ key: string; label: string }> => {
+  const series: Array<{ key: string; label: string }> = [];
+  const start = new Date();
+  start.setDate(start.getDate() - (days - 1));
+  start.setHours(0, 0, 0, 0);
+
+  for (let index = 0; index < days; index += 1) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    series.push({ key: getDayKey(date), label: getDayLabel(date) });
+  }
+
+  return series;
 };
 
 // Get platform statistics
@@ -177,6 +249,84 @@ export const getUserRoleSummary = async (
         error instanceof Error
           ? error.message
           : "Failed to retrieve user role summary",
+    });
+  }
+};
+
+export const getUserGrowthAnalytics = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const months = Math.min(12, Math.max(3, Number(req.query.months) || 6));
+    const start = new Date();
+    start.setMonth(start.getMonth() - (months - 1));
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+
+    const growth = await User.aggregate<{
+      _id: { month: string; role: AdminUserRole };
+      count: number;
+    }>([
+      {
+        $match: {
+          role: { $in: ["PLAYER", "COACH", "VENUE_LISTER"] },
+          createdAt: { $gte: start },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            month: {
+              $dateToString: {
+                format: "%Y-%m",
+                date: "$createdAt",
+              },
+            },
+            role: "$role",
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: {
+          "_id.month": 1,
+          "_id.role": 1,
+        },
+      },
+    ]);
+
+    const monthSeries = buildMonthSeries(months);
+    const monthBuckets = new Map(
+      monthSeries.map((item) => [
+        item.key,
+        { ...item, total: 0, PLAYER: 0, COACH: 0, VENUE_LISTER: 0 },
+      ]),
+    );
+
+    for (const row of growth) {
+      const bucket = monthBuckets.get(row._id.month);
+      if (!bucket) continue;
+
+      bucket[row._id.role] += row.count;
+      bucket.total += row.count;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User growth analytics retrieved successfully",
+      data: {
+        months,
+        series: Array.from(monthBuckets.values()),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve user growth analytics",
     });
   }
 };
@@ -469,6 +619,96 @@ export const getPlayersAnalytics = async (
         error instanceof Error
           ? error.message
           : "Failed to retrieve players analytics",
+    });
+  }
+};
+
+export const getFunnelTrends = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const days = Math.min(90, Math.max(7, Number(req.query.days) || 30));
+    const start = new Date();
+    start.setDate(start.getDate() - (days - 1));
+    start.setHours(0, 0, 0, 0);
+
+    const trendRows = await AnalyticsEvent.aggregate<{
+      _id: { day: string; source: FunnelSource };
+      count: number;
+    }>([
+      {
+        $match: {
+          createdAt: { $gte: start },
+          source: { $in: Array.from(FUNNEL_SOURCE_SET) },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            day: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$createdAt",
+              },
+            },
+            source: "$source",
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: {
+          "_id.day": 1,
+          "_id.source": 1,
+        },
+      },
+    ]);
+
+    const daySeries = buildDaySeries(days);
+    const dayBuckets = new Map(
+      daySeries.map((item) => [
+        item.key,
+        { ...item, total: 0, WEB: 0, MOBILE: 0, SERVER: 0 },
+      ]),
+    );
+
+    const sourceTotals: Record<FunnelSource, number> = {
+      WEB: 0,
+      MOBILE: 0,
+      SERVER: 0,
+    };
+
+    for (const row of trendRows) {
+      const bucket = dayBuckets.get(row._id.day);
+      if (!bucket) continue;
+
+      bucket[row._id.source] += row.count;
+      bucket.total += row.count;
+      sourceTotals[row._id.source] += row.count;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Funnel trends retrieved successfully",
+      data: {
+        days,
+        dailyActivity: Array.from(dayBuckets.values()),
+        sourceBreakdown: (Object.keys(sourceTotals) as FunnelSource[]).map(
+          (source) => ({
+            source,
+            count: sourceTotals[source],
+          }),
+        ),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve funnel trends",
     });
   }
 };
@@ -834,7 +1074,9 @@ export const getFinanceReconciliation = async (
       }>([
         {
           $match: {
-            status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
+            status: {
+              $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"],
+            },
           },
         },
         {
@@ -875,7 +1117,9 @@ export const getFinanceReconciliation = async (
       }>([
         {
           $match: {
-            status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
+            status: {
+              $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"],
+            },
           },
         },
         {

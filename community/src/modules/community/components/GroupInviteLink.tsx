@@ -32,7 +32,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
   const [copied, setCopied] = useState(false);
 
   const buildInviteLink = useCallback((code: string) => {
-    return `${window.location.origin}/community/join/${encodeURIComponent(code)}`;
+    return `${window.location.origin}/join/${encodeURIComponent(code)}`;
   }, []);
 
   const copyInviteLink = useCallback(

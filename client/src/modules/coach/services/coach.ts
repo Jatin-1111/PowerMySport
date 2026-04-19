@@ -1,6 +1,10 @@
 ﻿import axiosInstance from "@/lib/api/axios";
 import {
   ApiResponse,
+  CoachPlan,
+  CoachPlanBillingCycle,
+  CoachSubscription,
+  CoachSubscriptionOverrideRequest,
   Coach,
   CoachVerificationDocument,
   IAvailability,
@@ -11,6 +15,13 @@ export interface CoachVerificationUploadResponse {
   downloadUrl: string;
   fileName: string;
   key: string;
+}
+
+interface PaginationResult {
+  total: number;
+  page: number;
+  totalPages: number;
+  limit?: number;
 }
 
 export const coachApi = {
@@ -160,6 +171,75 @@ export const coachApi = {
     const response = await axiosInstance.post(
       "/coaches/verification/upload-url",
       payload,
+    );
+    return response.data;
+  },
+
+  listSubscriptionPlans: async (): Promise<
+    ApiResponse<{ plans: CoachPlan[] }>
+  > => {
+    const response = await axiosInstance.get("/coaches/subscription/plans");
+    return response.data;
+  },
+
+  getMySubscription: async (): Promise<
+    ApiResponse<{ subscription: CoachSubscription | null }>
+  > => {
+    const response = await axiosInstance.get(
+      "/coaches/subscription/my-subscription",
+    );
+    return response.data;
+  },
+
+  subscribeToPlan: async (payload: {
+    planId: string;
+    billingCycle?: CoachPlanBillingCycle;
+  }): Promise<ApiResponse<{ subscription: CoachSubscription }>> => {
+    const response = await axiosInstance.post(
+      "/coaches/subscription/subscribe",
+      payload,
+    );
+    return response.data;
+  },
+
+  cancelSubscription: async (payload?: {
+    reason?: string;
+  }): Promise<ApiResponse<{ subscription: CoachSubscription }>> => {
+    const response = await axiosInstance.post(
+      "/coaches/subscription/cancel",
+      payload || {},
+    );
+    return response.data;
+  },
+
+  requestSubscriptionOverride: async (payload: {
+    note: string;
+    requestedPlanId?: string;
+  }): Promise<ApiResponse<{ request: CoachSubscriptionOverrideRequest }>> => {
+    const response = await axiosInstance.post(
+      "/coaches/subscription/override-request",
+      payload,
+    );
+    return response.data;
+  },
+
+  listMyOverrideRequests: async (params?: {
+    status?: "PENDING" | "APPROVED" | "REJECTED";
+    page?: number;
+    limit?: number;
+  }): Promise<
+    ApiResponse<{
+      requests: CoachSubscriptionOverrideRequest[];
+      pagination: PaginationResult;
+    }>
+  > => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+
+    const response = await axiosInstance.get(
+      `/coaches/subscription/override-requests${query.toString() ? `?${query.toString()}` : ""}`,
     );
     return response.data;
   },

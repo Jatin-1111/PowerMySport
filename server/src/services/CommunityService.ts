@@ -105,6 +105,23 @@ const trackCommunityRoleMixEvent = (
   console.info("[community-role-mix]", event, payload);
 };
 
+const sendCommunityNotification = (
+  userId: string,
+  title: string,
+  message: string,
+  data: Record<string, unknown>,
+) => {
+  NotificationService.send({
+    userId,
+    type: "MESSAGE_RECEIVED",
+    title,
+    message,
+    data,
+  }).catch((error: unknown) => {
+    console.error("Failed to send community notification:", error);
+  });
+};
+
 const ensureQnaAllowedForRole = (role: CommunityRole): void => {
   ensurePolicyAllowed(
     COMMUNITY_INTERACTION_POLICY.allowCrossRoleQna,
@@ -569,8 +586,6 @@ export const CommunityService = {
       { userId },
       {
         $setOnInsert: {
-          totalPoints: 0,
-          questionCount: 0,
           answerCount: 0,
           receivedUpvotes: 0,
         },
@@ -730,9 +745,7 @@ export const CommunityService = {
         { userId },
         {
           $setOnInsert: {
-            totalPoints: 0,
             questionCount: 0,
-            answerCount: 0,
             receivedUpvotes: 0,
           },
           $inc: {
@@ -834,6 +847,10 @@ export const CommunityService = {
   ) {
     await ensureProfile(userId);
 
+    if (!mongoose.Types.ObjectId.isValid(payload.targetId)) {
+      throw new Error("Invalid target ID");
+    }
+
     let targetAuthorId = "";
 
     if (payload.targetType === "POST") {
@@ -915,10 +932,8 @@ export const CommunityService = {
         { userId: targetAuthorId },
         {
           $setOnInsert: {
-            totalPoints: 0,
             questionCount: 0,
             answerCount: 0,
-            receivedUpvotes: 0,
           },
           $inc: {
             totalPoints: deltas.upvoteCount * COMMUNITY_POINTS.RECEIVE_UPVOTE,
@@ -1421,6 +1436,26 @@ export const CommunityService = {
       { upsert: true, new: true },
     );
 
+    if (!alreadyMember) {
+      const adminIds = group.admins
+        .map((adminId) => String(adminId))
+        .filter((adminId) => adminId !== userId);
+
+      for (const adminId of adminIds) {
+        sendCommunityNotification(
+          adminId,
+          "New group member",
+          `A new member joined ${group.name}.`,
+          {
+            event: "COMMUNITY_GROUP_JOINED",
+            groupId: String(group._id),
+            conversationId: String(conversation?._id || ""),
+            actorUserId: userId,
+          },
+        );
+      }
+    }
+
     return {
       groupId: String(group._id),
       conversationId: String(conversation?._id || ""),
@@ -1483,6 +1518,24 @@ export const CommunityService = {
     }
 
     await group.save();
+
+    const remainingAdminIds = group.admins
+      .map((adminId) => String(adminId))
+      .filter((adminId) => adminId !== userId);
+
+    for (const adminId of remainingAdminIds) {
+      sendCommunityNotification(
+        adminId,
+        "Member left group",
+        `A member left ${group.name}.`,
+        {
+          event: "COMMUNITY_GROUP_LEFT",
+          groupId: String(group._id),
+          actorUserId: userId,
+        },
+      );
+    }
+
     return { groupId: String(group._id), removed: true, deletedGroup: false };
   },
 
@@ -1571,6 +1624,20 @@ export const CommunityService = {
       { upsert: true, new: true },
     );
 
+    if (!alreadyMember && targetUserId !== userId) {
+      sendCommunityNotification(
+        targetUserId,
+        "You were added to a group",
+        `${group.name} added you to the community discussion.`,
+        {
+          event: "COMMUNITY_GROUP_MEMBER_ADDED",
+          groupId: String(group._id),
+          conversationId: String(conversation?._id || ""),
+          actorUserId: userId,
+        },
+      );
+    }
+
     return {
       groupId: String(group._id),
       conversationId: String(conversation?._id || ""),
@@ -1616,6 +1683,18 @@ export const CommunityService = {
     }
 
     const participantKey = buildParticipantKey(userId, targetUserId);
+    const existingConversation = await CommunityConversation.findOne({
+      participantKey,
+    });
+    if (existingConversation) {
+      return {
+        id: String(existingConversation._id),
+        status: existingConversation.status,
+        requestedBy: String(existingConversation.requestedBy),
+        myAlias: meProfile.anonymousAlias,
+      };
+    }
+
     const initialStatus =
       targetProfile.messagePrivacy === "REQUEST_ONLY" ? "PENDING" : "ACTIVE";
 
@@ -1636,6 +1715,26 @@ export const CommunityService = {
 
     if (!conversation) {
       throw new Error("Failed to start conversation");
+    }
+
+    if (targetUserId !== userId) {
+      sendCommunityNotification(
+        targetUserId,
+        initialStatus === "PENDING"
+          ? "New message request"
+          : "New conversation started",
+        initialStatus === "PENDING"
+          ? "Someone wants to connect with you in community chat."
+          : "Someone started a conversation with you.",
+        {
+          event:
+            initialStatus === "PENDING"
+              ? "COMMUNITY_CONVERSATION_REQUESTED"
+              : "COMMUNITY_CONVERSATION_STARTED",
+          conversationId: String(conversation._id),
+          actorUserId: userId,
+        },
+      );
     }
 
     return {
@@ -1670,6 +1769,17 @@ export const CommunityService = {
       }
       conversation.status = "ACTIVE";
       await conversation.save();
+
+      sendCommunityNotification(
+        requester,
+        "Message request accepted",
+        "Your community conversation request was accepted.",
+        {
+          event: "COMMUNITY_CONVERSATION_ACCEPTED",
+          conversationId: String(conversation._id),
+          actorUserId: userId,
+        },
+      );
     }
 
     return { id: String(conversation._id), status: conversation.status };
@@ -1696,6 +1806,17 @@ export const CommunityService = {
     if (requester === userId) {
       throw new Error("Requester cannot reject own request");
     }
+
+    sendCommunityNotification(
+      requester,
+      "Message request declined",
+      "Your community conversation request was declined.",
+      {
+        event: "COMMUNITY_CONVERSATION_REJECTED",
+        conversationId: String(conversation._id),
+        actorUserId: userId,
+      },
+    );
 
     await Promise.all([
       CommunityMessage.deleteMany({ conversationId: conversation._id }),
@@ -2221,14 +2342,37 @@ export const CommunityService = {
       (profile) => String(profile.userId) === userId,
     );
 
+    const senderDisplayName = senderProfile?.isIdentityPublic
+      ? sender?.name || "Player"
+      : senderProfile?.anonymousAlias || "Anonymous Player";
+
+    const otherParticipantIds = conversation.participants
+      .map((participantId) => String(participantId))
+      .filter((participantId) => participantId !== userId);
+
+    for (const participantId of otherParticipantIds) {
+      sendCommunityNotification(
+        participantId,
+        conversation.conversationType === "GROUP"
+          ? "New group message"
+          : "New message",
+        `${senderDisplayName} sent you a message in community chat.`,
+        {
+          event: "COMMUNITY_MESSAGE_RECEIVED",
+          conversationId: String(conversation._id),
+          messageId: String(message._id),
+          actorUserId: userId,
+          conversationType: conversation.conversationType || "DM",
+        },
+      );
+    }
+
     return {
       id: String(message._id),
       conversationId: String(message.conversationId),
       conversationType: conversation.conversationType || "DM",
       senderId: String(message.senderId),
-      senderDisplayName: senderProfile?.isIdentityPublic
-        ? sender?.name || "Player"
-        : senderProfile?.anonymousAlias || "Anonymous Player",
+      senderDisplayName,
       content: message.content,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
@@ -2591,6 +2735,7 @@ export const CommunityService = {
 
   async joinGroupByCode(userId: string, inviteCode: string) {
     await ensureProfile(userId);
+    const userRole = await getCommunityRole(userId);
 
     const group = await CommunityGroup.findOne({
       inviteCode: inviteCode.trim(),
@@ -2598,6 +2743,13 @@ export const CommunityService = {
 
     if (!group) {
       throw new Error("Invalid invite code");
+    }
+
+    const groupAudience =
+      (group.audience as CommunityGroupAudience | undefined) ||
+      COMMUNITY_DEFAULT_GROUP_AUDIENCE;
+    if (!canJoinGroupAudience(groupAudience, userRole)) {
+      throw new Error("This group is not available for your role");
     }
 
     const alreadyMember = group.members.some(
@@ -2636,6 +2788,24 @@ export const CommunityService = {
       },
       { upsert: true, new: true },
     );
+
+    const adminIds = group.admins
+      .map((adminId) => String(adminId))
+      .filter((adminId) => adminId !== userId);
+
+    for (const adminId of adminIds) {
+      sendCommunityNotification(
+        adminId,
+        "New member joined via invite",
+        `A member joined ${group.name} using an invite code.`,
+        {
+          event: "COMMUNITY_GROUP_JOINED",
+          groupId: String(group._id),
+          conversationId: String(conversation?._id || ""),
+          actorUserId: userId,
+        },
+      );
+    }
 
     return {
       groupId: String(group._id),

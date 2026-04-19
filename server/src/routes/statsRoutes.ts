@@ -11,6 +11,8 @@ import {
   getPlayersAnalytics,
   getCoachesAnalytics,
   getVenueListersAnalytics,
+  getFunnelTrends,
+  getUserGrowthAnalytics,
   getFinanceReconciliation,
   getFunnelSummary,
   getObservabilityStats,
@@ -41,10 +43,12 @@ router.get("/users/venue-listers", getVenueListerUsers);
 router.get("/users/analytics/players", getPlayersAnalytics);
 router.get("/users/analytics/coaches", getCoachesAnalytics);
 router.get("/users/analytics/venue-listers", getVenueListersAnalytics);
+router.get("/users/growth", getUserGrowthAnalytics);
 router.get("/users", getAllUsers);
 router.get("/venues", getAllVenues);
 router.get("/bookings", getAllBookings);
 router.get("/funnel/summary", getFunnelSummary);
+router.get("/funnel/trends", getFunnelTrends);
 router.get("/finance/reconciliation", getFinanceReconciliation);
 router.get("/observability", getObservabilityStats);
 

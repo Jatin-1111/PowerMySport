@@ -338,17 +338,17 @@ export default function PrivacyPage() {
                               : "Block"}
                         </button>
                       </div>
-                    <div
-                      key={user.id}
-                      className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
-                    >
+                    );
+                  })
+                )}
+              </div>
             )}
           </div>
 
           <div className="mt-5 space-y-2">
             <h3 className="text-sm font-medium text-slate-800">
               Current blocked list
-                        className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-power-orange transition hover:bg-power-orange/10 disabled:opacity-50"
+            </h3>
             {isLoadingBlockedUsers ? (
               <p className="text-xs text-slate-500">Loading blocked users...</p>
             ) : blockedUsers.length === 0 ? (

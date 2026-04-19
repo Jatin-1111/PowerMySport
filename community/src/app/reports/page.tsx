@@ -43,10 +43,7 @@ export default function ReportsPage() {
       }
 
       const data = await communityService.listMyReports(1, 50);
-      const list =
-        (data as unknown as { reports?: ReportItem[] })?.reports ??
-        data?.items ??
-        [];
+      const list = data?.items ?? [];
       setReports(Array.isArray(list) ? list : []);
     } catch (error) {
       toast.error(
@@ -119,7 +116,7 @@ export default function ReportsPage() {
                         {report.targetType}
                       </span>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${report.status === "RESOLVED" ? "bg-green-100 text-green-700" : report.status === "PENDING" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${report.status === "RESOLVED" ? "bg-green-100 text-green-700" : report.status === "OPEN" || report.status === "UNDER_REVIEW" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}`}
                       >
                         {report.status}
                       </span>

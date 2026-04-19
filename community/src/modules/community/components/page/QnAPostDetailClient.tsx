@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowBigDown,
   ArrowBigUp,
+  ChevronLeft,
   Flag,
   LoaderCircle,
   MessageCircle,
@@ -326,6 +327,33 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
     }
   };
 
+  const togglePostStatus = async () => {
+    if (!post) {
+      return;
+    }
+
+    const nextStatus = post.status === "OPEN" ? "CLOSED" : "OPEN";
+    try {
+      setIsMutatingPost(true);
+      const updated = await communityService.updatePost(post.id, {
+        status: nextStatus,
+      });
+
+      setPost((current) =>
+        current ? { ...current, status: updated.status } : current,
+      );
+      toast.success(
+        `Question ${nextStatus === "OPEN" ? "reopened" : "closed"}`,
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update question",
+      );
+    } finally {
+      setIsMutatingPost(false);
+    }
+  };
+
   const startEditingAnswer = (answer: CommunityAnswer) => {
     setEditingAnswerId(answer.id);
     setEditingAnswerDraft(answer.content);
@@ -441,167 +469,217 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-5 sm:space-y-6 sm:px-6 sm:py-8 lg:px-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Header Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <Link
           href="/q"
-          className="inline-flex min-h-10 items-center rounded-lg border border-border bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-4"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
         >
-          Back to Feed
+          <ChevronLeft size={16} />
+          Back to Q&A
         </Link>
         <button
           onClick={() => void reportTarget("POST", post.id)}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 sm:px-4"
+          className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+          title="Report this question"
         >
-          <Flag size={14} /> Report Question
+          <Flag size={14} />
         </button>
       </div>
 
-      <article className="rounded-2xl border border-border bg-white p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-          <div className="flex w-12 shrink-0 flex-col items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2">
-            <button
-              onClick={() => void vote("POST", post.id, 1)}
-              disabled={isVotingKey === `POST:${post.id}`}
-              className={`rounded p-1 ${post.myVote === 1 ? "text-power-orange" : "text-slate-600"}`}
-            >
-              <ArrowBigUp size={18} />
-            </button>
-            <span className="text-sm font-bold text-slate-900">
-              {post.voteScore}
-            </span>
-            <button
-              onClick={() => void vote("POST", post.id, -1)}
-              disabled={isVotingKey === `POST:${post.id}`}
-              className={`rounded p-1 ${post.myVote === -1 ? "text-red-600" : "text-slate-600"}`}
-            >
-              <ArrowBigDown size={18} />
-            </button>
-          </div>
+      {/* Post Card */}
+      <article className="group relative flex gap-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+        {/* Voting Sidebar */}
+        <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r border-slate-200 bg-slate-50 px-2.5 py-4 group-hover:bg-slate-100">
+          <button
+            onClick={() => void vote("POST", post.id, 1)}
+            disabled={isVotingKey === `POST:${post.id}`}
+            className={`rounded-md p-1.5 transition-colors ${
+              post.myVote === 1
+                ? "bg-orange-100 text-power-orange"
+                : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+            } disabled:opacity-50`}
+            title="Upvote"
+          >
+            <ArrowBigUp size={16} />
+          </button>
+          <span className="text-xs font-bold text-slate-700">
+            {post.voteScore}
+          </span>
+          <button
+            onClick={() => void vote("POST", post.id, -1)}
+            disabled={isVotingKey === `POST:${post.id}`}
+            className={`rounded-md p-1.5 transition-colors ${
+              post.myVote === -1
+                ? "bg-red-100 text-red-600"
+                : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+            } disabled:opacity-50`}
+            title="Downvote"
+          >
+            <ArrowBigDown size={16} />
+          </button>
+        </div>
 
-          <div className="min-w-0 flex-1">
-            {isEditingPost ? (
-              <div className="space-y-3">
-                <input
-                  value={postTitleDraft}
-                  onChange={(event) => setPostTitleDraft(event.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base font-semibold focus:border-power-orange focus:outline-none sm:py-3"
-                />
-                <textarea
-                  value={postBodyDraft}
-                  onChange={(event) => setPostBodyDraft(event.target.value)}
-                  rows={5}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none sm:py-3"
-                />
-                <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
-                  <button
-                    onClick={() => void savePostEdits()}
-                    disabled={isMutatingPost}
-                    className="min-h-10 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60 sm:px-5"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditingPost(false);
-                      setPostTitleDraft(post.title);
-                      setPostBodyDraft(post.body);
-                    }}
-                    className="min-h-10 rounded-lg border border-border bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-5"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">
-                  {post.title}
-                </h1>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                  {post.body}
-                </p>
-              </>
-            )}
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {post.tags.map((tag) => (
-                <span
-                  key={`${post.id}-tag-${tag}`}
-                  className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-              <span className="font-medium">{post.author.displayName}</span>
-              <span>{toRelativeTime(post.createdAt)} ago</span>
-              <span className="inline-flex items-center gap-1">
-                <MessageCircle size={13} /> {post.answerCount} answers
-              </span>
-            </div>
-
-            {post.author.id === currentUserId ? (
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-2.5">
-                {!isEditingPost ? (
-                  <button
-                    onClick={() => setIsEditingPost(true)}
-                    className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 sm:px-3.5"
-                  >
-                    <Pencil size={12} /> Edit Question
-                  </button>
-                ) : null}
+        {/* Content */}
+        <div className="flex-1 p-5 sm:p-6">
+          {isEditingPost ? (
+            <div className="space-y-3">
+              <input
+                value={postTitleDraft}
+                onChange={(event) => setPostTitleDraft(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-lg font-bold text-slate-900 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
+                placeholder="Question title..."
+              />
+              <textarea
+                value={postBodyDraft}
+                onChange={(event) => setPostBodyDraft(event.target.value)}
+                rows={6}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
+                placeholder="Question details..."
+              />
+              <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => void removePost()}
+                  onClick={() => void savePostEdits()}
                   disabled={isMutatingPost}
-                  className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 sm:px-3.5"
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
                 >
-                  <Trash2 size={12} /> Delete Question
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingPost(false);
+                    setPostTitleDraft(post.title);
+                    setPostBodyDraft(post.body);
+                  }}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Cancel
                 </button>
               </div>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
+                {post.title}
+              </h1>
+              <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-slate-700">
+                {post.body}
+              </p>
+            </>
+          )}
+
+          {/* Tags */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {post.tags.map((tag) => (
+              <span
+                key={`${post.id}-tag-${tag}`}
+                className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700"
+              >
+                {tag}
+              </span>
+            ))}
+            {post.sport ? (
+              <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                {post.sport}
+              </span>
+            ) : null}
+            {post.city ? (
+              <span className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                {post.city}
+              </span>
             ) : null}
           </div>
+
+          {/* Metadata */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+            <div className="flex items-center gap-3 text-xs text-slate-600">
+              <span className="font-semibold text-slate-900">
+                {post.author.displayName}
+              </span>
+              <span className="text-slate-500">
+                {toRelativeTime(post.createdAt)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                <MessageCircle size={13} /> {post.answerCount}
+              </span>
+              {post.status === "CLOSED" ? (
+                <span className="inline-flex rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  Closed
+                </span>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Owner Actions */}
+          {post.author.id === currentUserId ? (
+            <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+              {!isEditingPost ? (
+                <button
+                  onClick={() => setIsEditingPost(true)}
+                  className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  <Pencil size={13} /> Edit
+                </button>
+              ) : null}
+              <button
+                onClick={() => void removePost()}
+                disabled={isMutatingPost}
+                className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+              >
+                <Trash2 size={13} /> Delete
+              </button>
+              <button
+                onClick={() => void togglePostStatus()}
+                disabled={isMutatingPost}
+                className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+              >
+                {post.status === "OPEN" ? "Close Question" : "Reopen Question"}
+              </button>
+            </div>
+          ) : null}
         </div>
       </article>
 
-      <section className="rounded-2xl border border-border bg-white p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-slate-900">
-          Share Your Knowledge
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Explain what worked for you, include context, and keep it actionable.
+      {/* Answer Form */}
+      <section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-slate-900">Share Your Answer</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Be specific and actionable. Share what worked, include context, and explain your reasoning.
         </p>
         {post.status === "CLOSED" ? (
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-            This question is closed. You can still vote and read existing
-            answers.
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+            ⓘ This question is closed. You can still vote and read existing answers.
           </div>
         ) : null}
         <textarea
           value={answerDraft}
           onChange={(event) => setAnswerDraft(event.target.value)}
-          rows={5}
+          rows={6}
           placeholder={
             post.status === "CLOSED"
               ? "Question is closed for answers"
-              : "Write a clear answer with steps, caveats, and practical tips"
+              : "Write your answer here... Include specific steps, tips, or experiences that helped solve the problem."
           }
           disabled={post.status === "CLOSED"}
-          className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none sm:py-3"
+          className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange disabled:bg-slate-50"
         />
         <div className="mt-4 flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => void submitAnswer()}
             disabled={isSubmitting || post.status === "CLOSED"}
-            className="min-h-10 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
+            className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
           >
             {post.status === "CLOSED"
-              ? "Answers closed"
+              ? "Question Closed"
               : isSubmitting
                 ? "Posting..."
                 : "Post Answer"}
           </button>
+          <span className="text-xs text-slate-500">
+            {answerDraft.length} characters
+          </span>
         </div>
       </section>
 
@@ -616,108 +694,136 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
         </div>
 
         {sortedAnswers.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-white/80 p-8 text-center text-slate-600">
-            No answers yet. Be first to help.
+          <div className="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+            <MessageCircle size={32} className="mx-auto text-slate-400 mb-3" />
+            <p className="font-semibold text-slate-700">No answers yet</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Be the first to share knowledge and help others
+            </p>
           </div>
         ) : (
           sortedAnswers.map((answer, index) => (
             <article
               key={answer.id}
-              className="rounded-2xl border border-border bg-white p-4 sm:p-5"
+              className="group relative flex gap-0 overflow-hidden rounded-lg border border-slate-200 bg-white transition-all hover:border-slate-300 hover:shadow-md"
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-                <div className="flex w-12 shrink-0 flex-col items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2">
+              {/* Voting Sidebar */}
+              <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r border-slate-200 bg-slate-50 px-2.5 py-3 group-hover:bg-slate-100">
+                <button
+                  onClick={() => void vote("ANSWER", answer.id, 1)}
+                  disabled={isVotingKey === `ANSWER:${answer.id}`}
+                  title="Upvote"
+                  className={`rounded-md p-1.5 transition-colors ${
+                    answer.myVote === 1
+                      ? "bg-orange-100 text-power-orange"
+                      : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                  } disabled:opacity-50`}
+                >
+                  <ArrowBigUp size={16} />
+                </button>
+                <span className="text-xs font-bold text-slate-700">
+                  {answer.voteScore}
+                </span>
+                <button
+                  onClick={() => void vote("ANSWER", answer.id, -1)}
+                  disabled={isVotingKey === `ANSWER:${answer.id}`}
+                  title="Downvote"
+                  className={`rounded-md p-1.5 transition-colors ${
+                    answer.myVote === -1
+                      ? "bg-red-100 text-red-600"
+                      : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                  } disabled:opacity-50`}
+                >
+                  <ArrowBigDown size={16} />
+                </button>
+              </div>
+
+              {/* Main Content Area */}
+              <div className="flex-1 p-4 sm:p-5">
+                {/* Header - Author & Time */}
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-900">
+                        {answer.author.displayName}
+                      </span>
+                      {index === 0 && answer.voteScore > 0 ? (
+                        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">
+                          Top Answer
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {toRelativeTime(answer.createdAt)} ago
+                    </p>
+                  </div>
                   <button
-                    onClick={() => void vote("ANSWER", answer.id, 1)}
-                    disabled={isVotingKey === `ANSWER:${answer.id}`}
-                    className={`rounded p-1 ${answer.myVote === 1 ? "text-power-orange" : "text-slate-600"}`}
+                    onClick={() => void reportTarget("ANSWER", answer.id)}
+                    className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                    title="Report answer"
                   >
-                    <ArrowBigUp size={18} />
-                  </button>
-                  <span className="text-sm font-bold text-slate-900">
-                    {answer.voteScore}
-                  </span>
-                  <button
-                    onClick={() => void vote("ANSWER", answer.id, -1)}
-                    disabled={isVotingKey === `ANSWER:${answer.id}`}
-                    className={`rounded p-1 ${answer.myVote === -1 ? "text-red-600" : "text-slate-600"}`}
-                  >
-                    <ArrowBigDown size={18} />
+                    <Flag size={14} />
                   </button>
                 </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      {index === 0 && answer.voteScore > 0 ? (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                          Top answer
-                        </span>
-                      ) : null}
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {answer.author.displayName} •{" "}
-                        {toRelativeTime(answer.createdAt)} ago
-                      </p>
+                {/* Content */}
+                {editingAnswerId === answer.id ? (
+                  <div className="mt-3 space-y-3">
+                    <textarea
+                      value={editingAnswerDraft}
+                      onChange={(event) =>
+                        setEditingAnswerDraft(event.target.value)
+                      }
+                      rows={5}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-900 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
+                      placeholder="Share your answer..."
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => void saveAnswerEdits(answer.id)}
+                        disabled={isMutatingAnswerId === answer.id}
+                        className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingAnswerId(null);
+                          setEditingAnswerDraft("");
+                        }}
+                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        Cancel
+                      </button>
                     </div>
-                    <button
-                      onClick={() => void reportTarget("ANSWER", answer.id)}
-                      className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
-                    >
-                      <Flag size={12} /> Report
-                    </button>
                   </div>
-                  {editingAnswerId === answer.id ? (
-                    <div className="mt-3 space-y-3">
-                      <textarea
-                        value={editingAnswerDraft}
-                        onChange={(event) =>
-                          setEditingAnswerDraft(event.target.value)
-                        }
-                        rows={4}
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none sm:py-3"
-                      />
-                      <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-3">
-                        <button
-                          onClick={() => void saveAnswerEdits(answer.id)}
-                          disabled={isMutatingAnswerId === answer.id}
-                          className="min-h-10 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60 sm:px-5"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingAnswerId(null);
-                            setEditingAnswerDraft("");
-                          }}
-                          className="min-h-10 rounded-lg border border-border bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 sm:px-5"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                ) : (
+                  <div className="mt-3">
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                       {answer.content}
                     </p>
-                  )}
+                  </div>
+                )}
 
+                {/* Actions */}
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                   {answer.author.id === currentUserId &&
                   editingAnswerId !== answer.id ? (
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-2.5">
+                    <>
                       <button
                         onClick={() => startEditingAnswer(answer)}
-                        className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 sm:px-3.5"
+                        className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                       >
-                        <Pencil size={12} /> Edit
+                        <Pencil size={13} /> Edit
                       </button>
                       <button
                         onClick={() => void removeAnswer(answer)}
                         disabled={isMutatingAnswerId === answer.id}
-                        className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 sm:px-3.5"
+                        className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
                       >
-                        <Trash2 size={12} /> Delete
+                        <Trash2 size={13} /> Delete
                       </button>
-                    </div>
+                    </>
                   ) : null}
                 </div>
               </div>

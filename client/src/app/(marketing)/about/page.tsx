@@ -6,9 +6,11 @@ import {
   Features,
 } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
-import { Stats } from "@/modules/marketing/components/marketing/Stats";
+import { getCommunityAppUrl } from "@/lib/community/url";
 
 export default function AboutPage() {
+  const communityUrl = getCommunityAppUrl();
+
   // Core values
   const values = [
     {
@@ -37,27 +39,24 @@ export default function AboutPage() {
     },
   ];
 
-  // Impact stats
-  const stats = [
+  const communityFeatures = [
     {
-      value: "2020",
-      label: "Founded",
-      description: "Our journey began",
+      title: "Shared answers",
+      description:
+        "Players and coaches can ask practical questions and get context from people who have already been there.",
+      icon: FeatureIcons.Users,
     },
     {
-      value: "50+",
-      label: "Cities",
-      description: "Nationwide presence",
+      title: "Local trust signals",
+      description:
+        "Reviews and recommendations help surface which venues and coaches actually work well in real life.",
+      icon: FeatureIcons.Star,
     },
     {
-      value: "500+",
-      label: "Venues",
-      description: "Partner facilities",
-    },
-    {
-      value: "10K+",
-      label: "Users",
-      description: "Active community",
+      title: "Connected ecosystem",
+      description:
+        "Bookings, discussion, and recommendations sit together so the community can influence every decision.",
+      icon: FeatureIcons.Calendar,
     },
   ];
 
@@ -92,16 +91,23 @@ export default function AboutPage() {
               power your sports journey.
             </p>
             <p className="text-lg text-muted-foreground">
-              Today, we&apos;re proud to be India&apos;s fastest-growing sports
-              booking platform, serving thousands of users across major cities
-              and helping the sports community thrive.
+              Today, we&apos;re focused on building a dependable sports platform
+              where discovery, bookings, and community advice work together so
+              players can make better decisions with less guesswork.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <Stats stats={stats} variant="gradient" columns={4} />
+      {/* Community System */}
+      <Features
+        title="Our Community System"
+        subtitle="Shared Sports Intelligence"
+        description="PowerMySport is designed to turn experience into useful guidance so players, parents, coaches, and venue partners can all learn from each other."
+        features={communityFeatures}
+        columns={3}
+        variant="centered"
+      />
 
       {/* Core Values */}
       <Features
@@ -188,14 +194,14 @@ export default function AboutPage() {
                 quality coaching.
               </p>
               <p className="text-lg text-muted-foreground mb-4">
-                We&apos;re expanding to cover more sports, more cities, and more
-                services. From AI-powered skill assessments to virtual coaching
-                sessions, we&apos;re constantly innovating to serve the sports
-                community better.
+                We&apos;re expanding the platform to cover more sports, more
+                service types, and better ways to surface community knowledge so
+                people can find the right fit faster.
               </p>
               <p className="text-lg text-muted-foreground">
-                Join us on this journey to make India a more active, healthier
-                nation - one booking at a time.
+                Join us on this journey to make it easier for every sports
+                community to share what works, what doesn&apos;t, and where the
+                best experiences are happening.
               </p>
             </div>
 
@@ -203,31 +209,32 @@ export default function AboutPage() {
               {/* Milestone cards */}
               <div className="bg-white border-2 border-power-orange rounded-lg p-6">
                 <h3 className="text-xl font-bold text-deep-slate mb-2">
-                  2024: Multi-Sport Expansion
+                  More sports, same community
                 </h3>
                 <p className="text-muted-foreground">
-                  Expanding beyond badminton and cricket to include football,
-                  tennis, swimming, and more
+                  Extending the platform across additional sports while keeping
+                  the same shared discussion and recommendation layer.
                 </p>
               </div>
 
               <div className="bg-white border-2 border-turf-green rounded-lg p-6">
                 <h3 className="text-xl font-bold text-deep-slate mb-2">
-                  2025: AI-Powered Matching
+                  Better recommendations
                 </h3>
                 <p className="text-muted-foreground">
-                  Intelligent matching of players with ideal venues and coaches
-                  based on skill level and goals
+                  Using community feedback and booking context to guide players
+                  toward venues and coaches that fit their goals.
                 </p>
               </div>
 
               <div className="bg-white border-2 border-deep-slate rounded-lg p-6">
                 <h3 className="text-xl font-bold text-deep-slate mb-2">
-                  2026: National Coverage
+                  A stronger sports network
                 </h3>
                 <p className="text-muted-foreground">
-                  Present in 100+ cities with 5,000+ partner venues and 1,000+
-                  certified coaches
+                  Building a reliable network where conversations, reviews, and
+                  bookings reinforce each other instead of living in separate
+                  places.
                 </p>
               </div>
             </div>
@@ -238,11 +245,11 @@ export default function AboutPage() {
       {/* CTA */}
       <CTA
         variant="gradient"
-        title="Be Part of Our Story"
-        description="Join thousands of players, venues, and coaches who are already part of the PowerMySport community"
+        title="Be part of the community"
+        description="Join the people using PowerMySport to share advice, compare options, and make smarter sports decisions together."
         primaryCTA={{
-          label: "Get Started Today",
-          href: "/register",
+          label: "Open Community",
+          href: communityUrl,
         }}
         secondaryCTA={{
           label: "Contact Us",

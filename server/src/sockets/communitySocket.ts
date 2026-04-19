@@ -102,8 +102,12 @@ export const setupCommunitySocket = (io: Server): void => {
   communityNamespace.on("connection", async (socket) => {
     const userId = socket.data.userId as string;
     const socketRateLimit = new Map<string, RateLimitState>();
-    await CommunityService.touchLastSeen(userId);
-    await markUserOnline(userId, socket.id);
+    try {
+      await CommunityService.touchLastSeen(userId);
+      await markUserOnline(userId, socket.id);
+    } catch (error) {
+      console.error("Failed to initialize community socket presence:", error);
+    }
 
     const heartbeat = setInterval(() => {
       touchUserLastActive(userId).catch((error: unknown) => {
@@ -403,8 +407,17 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("disconnect", async () => {
       clearInterval(heartbeat);
-      await markUserOffline(userId, socket.id);
-      await CommunityService.touchLastSeen(userId);
+      try {
+        await markUserOffline(userId, socket.id);
+      } catch (error) {
+        console.error("Failed to mark community user offline:", error);
+      }
+
+      try {
+        await CommunityService.touchLastSeen(userId);
+      } catch (error) {
+        console.error("Failed to persist community last seen on disconnect:", error);
+      }
     });
   });
 };

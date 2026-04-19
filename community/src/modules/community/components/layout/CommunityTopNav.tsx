@@ -5,7 +5,10 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { communityService } from "@/modules/community/services/community";
+import { getCommunitySocket } from "@/lib/realtime/socket";
 import {
+  Bell,
   Menu,
   MessageSquare,
   Shield,
@@ -16,69 +19,38 @@ import {
   Heart,
 } from "lucide-react";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof House;
-  match: (path: string) => boolean;
-};
-
-const navItems: NavItem[] = [
-  {
-    href: "/",
-    label: "Community",
-    icon: House,
-    match: (path) => path === "/",
-  },
-  {
-    href: "/q",
-    label: "Knowledge",
-    icon: MessageSquare,
-    match: (path) => path === "/q" || path.startsWith("/q/"),
-  },
-  {
-    href: "/reports",
-    label: "Reports",
-    icon: FileWarning,
-    match: (path) => path === "/reports",
-  },
-  {
-    href: "/contributors",
-    label: "Contributors",
-    icon: Trophy,
-    match: (path) => path === "/contributors",
-  },
-  {
-    href: "/following",
-    label: "Following",
-    icon: Heart,
-    match: (path) => path === "/following",
-  },
-  {
-    href: "/safety",
-    label: "Safety",
-    icon: UserX,
-    match: (path) => path === "/safety",
-  },
-  {
-    href: "/privacy",
-    label: "Privacy",
-    icon: Shield,
-    match: (path) => path === "/privacy",
-  },
-];
-
 export default function CommunityTopNav() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const isMounted = typeof document !== "undefined";
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+    const loadUnreadCount = async () => {
+      try {
+        const count =
+          await communityService.getCommunityUnreadNotificationCount();
+        setUnreadCount(count);
+      } catch {
+        setUnreadCount(0);
+      }
+    };
 
-  useEffect(() => {
-    setIsMounted(true);
+    void loadUnreadCount();
+
+    const socket = getCommunitySocket();
+    const handleNotification = () => {
+      void loadUnreadCount();
+    };
+
+    socket.on("notification:new", handleNotification);
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    return () => {
+      socket.off("notification:new", handleNotification);
+    };
   }, []);
 
   if (pathname.startsWith("/join/")) {
@@ -110,6 +82,18 @@ export default function CommunityTopNav() {
             >
               <MessageSquare size={13} />
               Knowledge
+            </Link>
+            <Link
+              href="/notifications"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white/85 px-3 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-white"
+            >
+              <Bell size={13} />
+              Notifications
+              {unreadCount > 0 ? (
+                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-power-orange px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
             </Link>
             <Link
               href="/reports"
@@ -212,7 +196,9 @@ export default function CommunityTopNav() {
                         <p className="text-sm font-semibold text-slate-900">
                           PowerMySport Home
                         </p>
-                        <p className="text-xs text-slate-500">Overview and chat</p>
+                        <p className="text-xs text-slate-500">
+                          Overview and chat
+                        </p>
                       </div>
                     </Link>
                   </div>
@@ -224,6 +210,18 @@ export default function CommunityTopNav() {
                     >
                       <MessageSquare size={15} />
                       Knowledge
+                    </Link>
+                    <Link
+                      href="/notifications"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <Bell size={15} />
+                      Alerts
+                      {unreadCount > 0 ? (
+                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-power-orange px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      ) : null}
                     </Link>
                     <Link
                       href="/reports"

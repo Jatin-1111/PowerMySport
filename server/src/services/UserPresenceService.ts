@@ -27,7 +27,14 @@ const persistLastActive = async (
     return;
   }
 
-  await User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date() } });
+  try {
+    await User.updateOne(
+      { _id: userId },
+      { $set: { lastActiveAt: new Date() } },
+    );
+  } catch (error) {
+    console.error("Failed to persist user lastActiveAt:", error);
+  }
 };
 
 const emitPresenceUpdate = (userId: string, isOnlineNow: boolean): void => {

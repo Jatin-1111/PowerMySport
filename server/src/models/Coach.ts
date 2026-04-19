@@ -24,6 +24,9 @@ export interface CoachDocument extends Document {
   verificationStatus?: CoachVerificationStatus;
   verificationNotes?: string;
   onboardingProgressStep?: 1 | 2 | 3;
+  activeSubscriptionId?: mongoose.Types.ObjectId | null;
+  subscriptionStatus?: "NONE" | "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
+  subscriptionExpiresAt?: Date | null;
   verificationSubmittedAt?: Date;
   lastVerificationReminderAt?: Date | null;
   verifiedAt?: Date | null;
@@ -273,6 +276,20 @@ const coachSchema = new Schema<CoachDocument>(
       enum: [1, 2, 3],
       default: 1,
     },
+    activeSubscriptionId: {
+      type: Schema.Types.ObjectId,
+      ref: "CoachSubscription",
+      default: null,
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ["NONE", "ACTIVE", "PAST_DUE", "CANCELLED", "EXPIRED"],
+      default: "NONE",
+    },
+    subscriptionExpiresAt: {
+      type: Date,
+      default: null,
+    },
     verificationSubmittedAt: {
       type: Date,
     },
@@ -357,5 +374,6 @@ coachSchema.index({ sports: 1 });
 coachSchema.index({ serviceMode: 1 });
 coachSchema.index({ isVerified: 1 });
 coachSchema.index({ verificationStatus: 1 });
+coachSchema.index({ subscriptionStatus: 1 });
 
 export const Coach = mongoose.model<CoachDocument>("Coach", coachSchema);

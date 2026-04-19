@@ -67,11 +67,13 @@ export default function QnAFeedClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
+  const [isMarkingActivityRead, setIsMarkingActivityRead] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMutatingPostId, setIsMutatingPostId] = useState<string | null>(null);
   const [isVotingKey, setIsVotingKey] = useState<string | null>(null);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [activity, setActivity] = useState<CommunityActivityItem[]>([]);
+  const [activityUnreadCount, setActivityUnreadCount] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [reputation, setReputation] =
@@ -170,12 +172,68 @@ export default function QnAFeedClient() {
       setIsLoadingActivity(true);
       const items = await communityService.listMyKnowledgeActivity(20);
       setActivity(items);
+      setActivityUnreadCount(
+        items.reduce((count, item) => (item.isRead ? count : count + 1), 0),
+      );
     } catch {
       setActivity([]);
+      setActivityUnreadCount(0);
     } finally {
       setIsLoadingActivity(false);
     }
   }, []);
+
+  const handleActivityOpen = useCallback(
+    async (item: CommunityActivityItem) => {
+      if (item.isRead) {
+        return;
+      }
+
+      try {
+        await communityService.markCommunityNotificationRead(item.id);
+        setActivity((current) =>
+          current.map((entry) =>
+            entry.id === item.id ? { ...entry, isRead: true } : entry,
+          ),
+        );
+        setActivityUnreadCount((count) => Math.max(0, count - 1));
+      } catch {
+        // Keep navigation responsive even if read status update fails.
+      }
+    },
+    [],
+  );
+
+  const handleMarkAllActivityRead = useCallback(async () => {
+    if (!activityUnreadCount || isMarkingActivityRead) {
+      return;
+    }
+
+    try {
+      setIsMarkingActivityRead(true);
+      const unreadIds = activity
+        .filter((entry) => !entry.isRead)
+        .map((entry) => entry.id);
+
+      await Promise.all(
+        unreadIds.map((notificationId) =>
+          communityService.markCommunityNotificationRead(notificationId),
+        ),
+      );
+      setActivity((current) =>
+        current.map((entry) => ({
+          ...entry,
+          isRead: true,
+        })),
+      );
+      setActivityUnreadCount(0);
+      toast.success("Activity marked as read");
+    } catch {
+      toast.error("Failed to mark activity as read");
+    } finally {
+      setIsMarkingActivityRead(false);
+    }
+  }, [activity, activityUnreadCount, isMarkingActivityRead]);
 
   useEffect(() => {
     void loadFeed();
@@ -193,12 +251,17 @@ export default function QnAFeedClient() {
       void loadActivity();
     };
 
+    const handleNotificationEvent = () => {
+      void loadActivity();
+    };
+
     socket.on("community:qnaPostCreated", refreshFeed);
     socket.on("community:qnaPostUpdated", refreshFeed);
     socket.on("community:qnaPostDeleted", refreshFeed);
     socket.on("community:qnaAnswerCreated", refreshFeed);
     socket.on("community:qnaAnswerDeleted", refreshFeed);
     socket.on("community:qnaVoteUpdated", refreshFeed);
+    socket.on("notification:new", handleNotificationEvent);
 
     if (!socket.connected) {
       socket.connect();
@@ -211,6 +274,7 @@ export default function QnAFeedClient() {
       socket.off("community:qnaAnswerCreated", refreshFeed);
       socket.off("community:qnaAnswerDeleted", refreshFeed);
       socket.off("community:qnaVoteUpdated", refreshFeed);
+      socket.off("notification:new", handleNotificationEvent);
     };
   }, [loadFeed, loadActivity]);
 
@@ -584,64 +648,94 @@ export default function QnAFeedClient() {
                   animate={{ opacity: 1, height: "auto", y: 0 }}
                   exit={{ opacity: 0, height: 0, y: -8 }}
                   transition={{ duration: 0.28, ease: "easeOut" }}
-                  className="relative overflow-hidden rounded-3xl border border-white/90 bg-[linear-gradient(140deg,rgba(255,255,255,0.9)_0%,rgba(247,251,255,0.88)_60%,rgba(255,245,230,0.8)_100%)] p-4 shadow-sm backdrop-blur-lg sm:p-6"
+                  className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 sm:p-6 shadow-lg"
                 >
-                  <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-sky-200/35 blur-3xl" />
-                  <div className="pointer-events-none absolute -bottom-16 -left-14 h-44 w-44 rounded-full bg-amber-200/25 blur-3xl" />
-
                   <div className="relative">
-                    <h2 className="font-title text-xl font-semibold text-slate-900">
-                      Start a knowledge thread
+                    <h2 className="font-title text-xl font-bold text-slate-900">
+                      Start a New Question
                     </h2>
                     <p className="mt-1 text-sm text-slate-600">
-                      Be specific and actionable so players can respond faster.
+                      Be specific and clear so others can help you quickly.
+                      Include what you tried and what you want to achieve.
                     </p>
 
-                    <div className="mt-4 grid gap-3">
-                      <input
-                        value={title}
-                        onChange={(event) => setTitle(event.target.value)}
-                        placeholder="Question title (be specific, min 10 chars)"
-                        className="w-full rounded-xl border border-border bg-white/85 px-3 py-2 text-sm shadow-xs focus:border-power-orange focus:outline-none"
-                      />
-                      <textarea
-                        value={body}
-                        onChange={(event) => setBody(event.target.value)}
-                        placeholder="Add context: what you tried, where you're stuck, and what outcome you want (min 20 chars)"
-                        rows={5}
-                        className="w-full rounded-xl border border-border bg-white/85 px-3 py-2 text-sm shadow-xs focus:border-power-orange focus:outline-none"
-                      />
-                      <div className="grid gap-3 lg:grid-cols-3">
+                    <div className="mt-5 space-y-4">
+                      <div>
+                        <label
+                          htmlFor="q-title"
+                          className="block text-xs font-semibold uppercase text-slate-500 mb-1.5"
+                        >
+                          Question Title
+                        </label>
                         <input
-                          value={tags}
-                          onChange={(event) => setTags(event.target.value)}
-                          placeholder="tags e.g. badminton,fitness"
-                          className="rounded-xl border border-border bg-white/85 px-3 py-2 text-sm shadow-xs focus:border-power-orange focus:outline-none"
+                          id="q-title"
+                          value={title}
+                          onChange={(event) => setTitle(event.target.value)}
+                          placeholder="What's your question? (min 10 characters)"
+                          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
                         />
-                        <input
-                          value={sport}
-                          onChange={(event) => setSport(event.target.value)}
-                          placeholder="sport"
-                          className="rounded-xl border border-border bg-white/85 px-3 py-2 text-sm shadow-xs focus:border-power-orange focus:outline-none"
-                        />
-                        <input
-                          value={city}
-                          onChange={(event) => setCity(event.target.value)}
-                          placeholder="city"
-                          className="rounded-xl border border-border bg-white/85 px-3 py-2 text-sm shadow-xs focus:border-power-orange focus:outline-none"
-                        />
+                        <p className="mt-1 text-xs text-slate-500">
+                          {title.length} / 500 characters
+                        </p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
+
+                      <div>
+                        <label
+                          htmlFor="q-body"
+                          className="block text-xs font-semibold uppercase text-slate-500 mb-1.5"
+                        >
+                          Details & Context
+                        </label>
+                        <textarea
+                          id="q-body"
+                          value={body}
+                          onChange={(event) => setBody(event.target.value)}
+                          placeholder="Describe: what's your situation? What have you already tried? What result do you want? (min 20 characters)"
+                          rows={6}
+                          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">
+                          {body.length} / 2000 characters
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-2">
+                          Additional Info
+                        </label>
+                        <div className="grid gap-3 lg:grid-cols-3">
+                          <input
+                            value={tags}
+                            onChange={(event) => setTags(event.target.value)}
+                            placeholder="Tags (e.g., badminton, fitness)"
+                            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none"
+                          />
+                          <input
+                            value={sport}
+                            onChange={(event) => setSport(event.target.value)}
+                            placeholder="Sport (optional)"
+                            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none"
+                          />
+                          <input
+                            value={city}
+                            onChange={(event) => setCity(event.target.value)}
+                            placeholder="City (optional)"
+                            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
                         <button
                           onClick={() => void handleCreatePost()}
                           disabled={isSubmitting}
-                          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-700 disabled:opacity-60"
+                          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
                         >
-                          {isSubmitting ? "Posting..." : "Publish Question"}
+                          {isSubmitting ? "Publishing..." : "Publish Question"}
                         </button>
                         <button
                           onClick={() => setShowAskForm(false)}
-                          className="rounded-xl border border-border bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                          className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                         >
                           Cancel
                         </button>
@@ -652,15 +746,15 @@ export default function QnAFeedClient() {
               )}
             </AnimatePresence>
 
-            <section className="rounded-3xl border border-white/90 bg-white/88 p-4 shadow-sm backdrop-blur-md sm:p-5">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1">
+                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
                   <button
                     onClick={() => setViewMode("ALL")}
                     className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
                       viewMode === "ALL"
-                        ? "bg-slate-900 text-white"
-                        : "text-slate-600 hover:bg-slate-100"
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-white"
                     }`}
                   >
                     All Threads
@@ -669,8 +763,8 @@ export default function QnAFeedClient() {
                     onClick={() => setViewMode("MINE")}
                     className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
                       viewMode === "MINE"
-                        ? "bg-slate-900 text-white"
-                        : "text-slate-600 hover:bg-slate-100"
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-white"
                     }`}
                   >
                     My Posts
@@ -678,13 +772,13 @@ export default function QnAFeedClient() {
                 </div>
 
                 <div className="grid w-full gap-2 lg:w-auto lg:grid-cols-3">
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 shadow-xs">
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2">
                     <Search size={16} className="text-slate-500" />
                     <input
                       value={searchInput}
                       onChange={(event) => setSearchInput(event.target.value)}
                       placeholder="Search questions"
-                      className="w-full bg-transparent text-sm text-slate-800 outline-none sm:w-52"
+                      className="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none sm:w-52"
                     />
                   </div>
                   <input
@@ -693,13 +787,13 @@ export default function QnAFeedClient() {
                       setSportFilterInput(event.target.value)
                     }
                     placeholder="Filter sport"
-                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-power-orange focus:bg-white focus:outline-none"
                   />
                   <input
                     value={cityFilterInput}
                     onChange={(event) => setCityFilterInput(event.target.value)}
                     placeholder="Filter city"
-                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                    className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-power-orange focus:bg-white focus:outline-none"
                   />
                 </div>
                 <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
@@ -709,8 +803,8 @@ export default function QnAFeedClient() {
                       onClick={() => setSort(option.value)}
                       className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
                         sort === option.value
-                          ? "border-power-orange/40 bg-power-orange/10 text-power-orange"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+                          ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
+                          : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
                       }`}
                     >
                       {option.label}
@@ -835,83 +929,100 @@ export default function QnAFeedClient() {
                 ) : null}
 
                 {featuredPost ? (
-                  <article className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-[linear-gradient(130deg,#ffffff_0%,#f2f8ff_48%,#fff5e6_100%)] p-5 shadow-sm sm:p-6">
-                    <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-sky-200/35 blur-3xl" />
-                    <div className="pointer-events-none absolute -left-12 bottom-0 h-36 w-36 rounded-full bg-amber-200/35 blur-3xl" />
+                  <article className="group relative flex gap-0 overflow-hidden rounded-xl border-2 border-power-orange/30 bg-linear-to-br from-power-orange/5 via-white to-white shadow-lg transition-all hover:border-power-orange/50 hover:shadow-xl">
+                    {/* Voting Sidebar */}
+                    <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r-2 border-power-orange/20 bg-power-orange/5 px-2.5 py-4 group-hover:bg-power-orange/10">
+                      <button
+                        onClick={() => void vote(featuredPost, 1)}
+                        disabled={isVotingKey === `POST:${featuredPost.id}`}
+                        className={`rounded-md p-1.5 transition-colors ${
+                          featuredPost.myVote === 1
+                            ? "bg-orange-100 text-power-orange"
+                            : "text-slate-400 hover:text-power-orange"
+                        } disabled:opacity-50`}
+                        title="Upvote"
+                      >
+                        <ArrowBigUp size={18} />
+                      </button>
+                      <span className="text-xs font-bold text-slate-700">
+                        {featuredPost.voteScore}
+                      </span>
+                      <button
+                        onClick={() => void vote(featuredPost, -1)}
+                        disabled={isVotingKey === `POST:${featuredPost.id}`}
+                        className={`rounded-md p-1.5 transition-colors ${
+                          featuredPost.myVote === -1
+                            ? "bg-red-100 text-red-600"
+                            : "text-slate-400 hover:text-red-600"
+                        } disabled:opacity-50`}
+                        title="Downvote"
+                      >
+                        <ArrowBigDown size={18} />
+                      </button>
+                    </div>
 
-                    <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start">
-                      <div className="flex w-12 shrink-0 flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white/90 py-2">
-                        <button
-                          onClick={() => void vote(featuredPost, 1)}
-                          disabled={isVotingKey === `POST:${featuredPost.id}`}
-                          className={`rounded p-1 ${featuredPost.myVote === 1 ? "text-power-orange" : "text-slate-600"}`}
-                          title="Upvote"
-                        >
-                          <ArrowBigUp size={18} />
-                        </button>
-                        <span className="text-sm font-bold text-slate-900">
-                          {featuredPost.voteScore}
+                    {/* Featured Content */}
+                    <div className="flex-1 p-5 sm:p-6">
+                      <div className="inline-flex gap-2 items-center rounded-full border-2 border-power-orange/30 bg-power-orange/10 px-3 py-1.5 mb-3">
+                        <Trophy
+                          size={14}
+                          className="text-power-orange font-bold"
+                        />
+                        <span className="text-xs font-bold uppercase tracking-wide text-power-orange">
+                          Featured Thread
                         </span>
-                        <button
-                          onClick={() => void vote(featuredPost, -1)}
-                          disabled={isVotingKey === `POST:${featuredPost.id}`}
-                          className={`rounded p-1 ${featuredPost.myVote === -1 ? "text-red-600" : "text-slate-600"}`}
-                          title="Downvote"
-                        >
-                          <ArrowBigDown size={18} />
-                        </button>
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <p className="mb-2 inline-flex rounded-full border border-slate-200 bg-white/85 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-                          Featured Thread
-                        </p>
-                        <Link
-                          href={`/q/${featuredPost.id}`}
-                          className="font-title text-2xl font-semibold leading-tight text-slate-900 transition hover:text-power-orange"
-                        >
-                          {featuredPost.title}
-                        </Link>
+                      <Link
+                        href={`/q/${featuredPost.id}`}
+                        className="block font-title text-2xl font-bold leading-tight text-slate-900 transition-colors hover:text-power-orange"
+                      >
+                        {featuredPost.title}
+                      </Link>
 
-                        <p className="mt-2 line-clamp-3 text-sm text-slate-700">
-                          {featuredPost.body}
-                        </p>
+                      <p className="mt-2.5 line-clamp-3 text-sm leading-relaxed text-slate-700">
+                        {featuredPost.body}
+                      </p>
 
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          {featuredPost.tags.map((tag) => (
-                            <span
-                              key={`${featuredPost.id}-${tag}`}
-                              className="rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                          {featuredPost.sport ? (
-                            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
-                              {featuredPost.sport}
-                            </span>
-                          ) : null}
-                          {featuredPost.city ? (
-                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                              {featuredPost.city}
-                            </span>
-                          ) : null}
-                        </div>
+                      {/* Tags */}
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        {featuredPost.tags.map((tag) => (
+                          <span
+                            key={`${featuredPost.id}-${tag}`}
+                            className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {featuredPost.sport ? (
+                          <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                            {featuredPost.sport}
+                          </span>
+                        ) : null}
+                        {featuredPost.city ? (
+                          <span className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                            {featuredPost.city}
+                          </span>
+                        ) : null}
+                      </div>
 
-                        <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                          <span className="font-medium">
+                      {/* Footer */}
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/50 pt-4">
+                        <div className="flex items-center gap-3 text-xs text-slate-600">
+                          <span className="font-semibold text-slate-900">
                             {featuredPost.author.displayName}
                           </span>
-                          <span>
+                          <span className="text-slate-500">
                             {toRelativeTime(featuredPost.createdAt)} ago
                           </span>
-                          <span className="inline-flex items-center gap-1">
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
                             <MessageCircle size={13} />{" "}
-                            {featuredPost.answerCount} answers
+                            {featuredPost.answerCount}
                           </span>
-                          <span className="inline-flex items-center gap-1">
-                            <Trophy size={13} /> {featuredPost.upvoteCount}{" "}
-                            upvotes
+                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                            <Trophy size={13} /> {featuredPost.upvoteCount}
                           </span>
                         </div>
                       </div>
@@ -919,124 +1030,136 @@ export default function QnAFeedClient() {
                   </article>
                 ) : null}
 
-                <div className="grid auto-rows-fr gap-3 lg:grid-cols-6">
-                  {nonFeaturedPosts.map((post, index) => {
+                <div className="space-y-2">
+                  {nonFeaturedPosts.map((post) => {
                     const voteKey = `POST:${post.id}`;
                     return (
                       <article
                         key={post.id}
-                        className={`rounded-3xl border border-white/90 bg-white/92 p-4 shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
-                          index % 5 === 0
-                            ? "lg:col-span-4"
-                            : index % 3 === 0
-                              ? "lg:col-span-3"
-                              : "lg:col-span-2"
-                        }`}
+                        className="group relative flex gap-0 overflow-hidden rounded-lg border border-slate-200 bg-white transition-all hover:border-slate-300 hover:shadow-md"
                       >
-                        <div className="flex gap-3">
-                          <div className="flex w-12 shrink-0 flex-col items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2">
-                            <button
-                              onClick={() => void vote(post, 1)}
-                              disabled={isVotingKey === voteKey}
-                              className={`rounded p-1 ${post.myVote === 1 ? "text-power-orange" : "text-slate-600"}`}
-                              title="Upvote"
-                            >
-                              <ArrowBigUp size={18} />
-                            </button>
-                            <span className="text-sm font-bold text-slate-900">
-                              {post.voteScore}
-                            </span>
-                            <button
-                              onClick={() => void vote(post, -1)}
-                              disabled={isVotingKey === voteKey}
-                              className={`rounded p-1 ${post.myVote === -1 ? "text-red-600" : "text-slate-600"}`}
-                              title="Downvote"
-                            >
-                              <ArrowBigDown size={18} />
-                            </button>
+                        {/* Voting Sidebar - Reddit Style */}
+                        <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r border-slate-200 bg-slate-50 px-2.5 py-3 group-hover:bg-slate-100">
+                          <button
+                            onClick={() => void vote(post, 1)}
+                            disabled={isVotingKey === voteKey}
+                            title="Upvote"
+                            className={`rounded-md p-1.5 transition-colors ${
+                              post.myVote === 1
+                                ? "bg-orange-100 text-power-orange"
+                                : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                            } disabled:opacity-50`}
+                          >
+                            <ArrowBigUp size={16} />
+                          </button>
+                          <span className="text-xs font-bold text-slate-700">
+                            {post.voteScore}
+                          </span>
+                          <button
+                            onClick={() => void vote(post, -1)}
+                            disabled={isVotingKey === voteKey}
+                            title="Downvote"
+                            className={`rounded-md p-1.5 transition-colors ${
+                              post.myVote === -1
+                                ? "bg-red-100 text-red-600"
+                                : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                            } disabled:opacity-50`}
+                          >
+                            <ArrowBigDown size={16} />
+                          </button>
+                        </div>
+
+                        {/* Main Content Area */}
+                        <div className="flex-1 overflow-hidden p-4 sm:p-5">
+                          {/* Title */}
+                          <Link
+                            href={`/q/${post.id}`}
+                            className="block font-title text-lg font-semibold text-slate-900 transition-colors hover:text-power-orange"
+                          >
+                            {post.title}
+                          </Link>
+
+                          {/* Excerpt */}
+                          <p className="mt-1.5 line-clamp-2 text-sm text-slate-600">
+                            {post.body}
+                          </p>
+
+                          {/* Tags & Status */}
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {post.tags.map((tag) => (
+                              <span
+                                key={`${post.id}-${tag}`}
+                                className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {post.sport ? (
+                              <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700">
+                                {post.sport}
+                              </span>
+                            ) : null}
+                            {post.city ? (
+                              <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+                                {post.city}
+                              </span>
+                            ) : null}
+                            {post.status === "CLOSED" ? (
+                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                                Closed
+                              </span>
+                            ) : null}
                           </div>
 
-                          <div className="min-w-0 flex-1">
-                            <Link
-                              href={`/q/${post.id}`}
-                              className="font-title text-xl font-semibold text-slate-900 transition hover:text-power-orange"
-                            >
-                              {post.title}
-                            </Link>
-
-                            {post.status === "CLOSED" ? (
-                              <div className="mt-2 inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                                Closed for answers
-                              </div>
-                            ) : null}
-
-                            <p className="mt-1 line-clamp-2 text-sm text-slate-600">
-                              {post.body}
-                            </p>
-
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              {post.tags.map((tag) => (
-                                <span
-                                  key={`${post.id}-${tag}`}
-                                  className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
-                                >
-                                  #{tag}
-                                </span>
-                              ))}
-                              {post.sport ? (
-                                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
-                                  {post.sport}
-                                </span>
-                              ) : null}
-                              {post.city ? (
-                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                  {post.city}
-                                </span>
-                              ) : null}
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                              <span className="font-medium">
+                          {/* Footer - Metadata & Actions */}
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                            <div className="flex items-center gap-3 text-xs text-slate-500">
+                              <span className="font-medium text-slate-700">
                                 {post.author.displayName}
                               </span>
-                              <span>{toRelativeTime(post.createdAt)} ago</span>
-                              <span className="inline-flex items-center gap-1">
-                                <MessageCircle size={13} /> {post.answerCount}{" "}
-                                answers
+                              <span className="text-slate-400">
+                                {toRelativeTime(post.createdAt)} ago
                               </span>
-                              <span className="inline-flex items-center gap-1">
-                                <Trophy size={13} /> {post.upvoteCount} upvotes
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                <MessageCircle size={13} /> {post.answerCount}
+                              </span>
+                              <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                <Trophy size={13} /> {post.upvoteCount}
                               </span>
                               {post.answerCount === 0 ? (
-                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                                  Needs an answer
+                                <span className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                                  Unanswered
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                  Knowledge shared
+                                <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                  Answered
                                 </span>
                               )}
                             </div>
-
-                            {post.author.id === currentUserId ? (
-                              <div className="mt-3 flex flex-wrap items-center gap-2">
-                                <button
-                                  onClick={() => void togglePostStatus(post)}
-                                  disabled={isMutatingPostId === post.id}
-                                  className="rounded-md border border-border bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-60"
-                                >
-                                  {post.status === "OPEN" ? "Close" : "Reopen"}
-                                </button>
-                                <button
-                                  onClick={() => void deletePost(post)}
-                                  disabled={isMutatingPostId === post.id}
-                                  className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            ) : null}
                           </div>
+
+                          {/* Owner Actions */}
+                          {post.author.id === currentUserId ? (
+                            <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                              <button
+                                onClick={() => void togglePostStatus(post)}
+                                disabled={isMutatingPostId === post.id}
+                                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50"
+                              >
+                                {post.status === "OPEN" ? "Close" : "Reopen"}
+                              </button>
+                              <button
+                                onClick={() => void deletePost(post)}
+                                disabled={isMutatingPostId === post.id}
+                                className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:border-red-300 disabled:opacity-50"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       </article>
                     );
@@ -1127,12 +1250,28 @@ export default function QnAFeedClient() {
                 <h3 className="font-title text-lg font-semibold text-slate-900">
                   Activity On Your Knowledge
                 </h3>
-                <button
-                  onClick={() => void loadActivity()}
-                  className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                  {activityUnreadCount > 0 ? (
+                    <span className="rounded-full bg-power-orange/10 px-2.5 py-1 text-[11px] font-semibold text-power-orange">
+                      {activityUnreadCount} unread
+                    </span>
+                  ) : null}
+                  <button
+                    onClick={() => void loadActivity()}
+                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    onClick={() => void handleMarkAllActivityRead()}
+                    disabled={
+                      activityUnreadCount === 0 || isMarkingActivityRead
+                    }
+                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isMarkingActivityRead ? "Marking..." : "Mark all read"}
+                  </button>
+                </div>
               </div>
 
               {isLoadingActivity ? (
@@ -1152,8 +1291,12 @@ export default function QnAFeedClient() {
                     return (
                       <div
                         key={item.id}
-                        className={`rounded-2xl border border-slate-200 bg-white p-3 ${
+                        className={`rounded-2xl border p-3 ${
                           index % 2 === 0 ? "xl:mr-3" : "xl:ml-3"
+                        } ${
+                          item.isRead
+                            ? "border-slate-200 bg-white"
+                            : "border-power-orange/30 bg-power-orange/5"
                         }`}
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1170,6 +1313,9 @@ export default function QnAFeedClient() {
                         {postLink ? (
                           <Link
                             href={postLink}
+                            onClick={() => {
+                              void handleActivityOpen(item);
+                            }}
                             className="mt-2 inline-flex text-xs font-semibold text-power-orange hover:underline"
                           >
                             Open thread

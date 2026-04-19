@@ -201,5 +201,12 @@ export interface CommunityActivityItem {
     targetId?: string;
     targetType?: "POST" | "ANSWER";
     actorUserId?: string;
+    conversationId?: string;
+    messageId?: string;
+    groupId?: string;
+    conversationType?: "DM" | "GROUP";
+    // Conversation/group lifecycle events
+    // COMMUNITY_CONVERSATION_REQUESTED | COMMUNITY_CONVERSATION_ACCEPTED | COMMUNITY_CONVERSATION_REJECTED
+    // COMMUNITY_GROUP_JOINED | COMMUNITY_GROUP_LEFT
   };
 }

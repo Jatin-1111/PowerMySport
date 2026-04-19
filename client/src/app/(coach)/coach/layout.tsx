@@ -10,7 +10,14 @@ import {
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { toast } from "@/lib/toast";
 import { getCommunityAppUrl } from "@/lib/community/url";
-import { Calendar, Settings, ShieldCheck, User, Users } from "lucide-react";
+import {
+  Calendar,
+  CreditCard,
+  Settings,
+  ShieldCheck,
+  User,
+  Users,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -104,6 +111,7 @@ export default function CoachLayout({
   const navItems: DashboardNavItem[] = [
     { href: "/coach/profile", label: "Profile", icon: User },
     { href: "/coach/verification", label: "Verification", icon: ShieldCheck },
+    { href: "/coach/billing", label: "Billing & Plan", icon: CreditCard },
     {
       href: "/coach/my-bookings",
       label: "My Bookings",

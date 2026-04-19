@@ -26,15 +26,18 @@ import {
 import {
   Activity,
   ChevronLeft,
-  Clock3,
+  Check,
+  CheckCheck,
+  Copy,
   ExternalLink,
   Flag,
   MessageSquare,
-  PanelLeftClose,
-  PanelLeftOpen,
+  Pencil,
   PanelRightClose,
   PanelRightOpen,
+  RotateCcw,
   Search,
+  Trash2,
   UserCircle2,
   Users,
   X,
@@ -43,11 +46,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-const shellNavItems = [
-  { id: "community-overview", label: "Community", icon: Users },
-  { id: "conversations", label: "Conversations", icon: MessageSquare },
-];
 
 const COMMUNITY_ACTIVE_TAB_KEY = "community:activeSidebarTab";
 const COMMUNITY_WORKSPACE_VIEW_KEY = "community:workspaceView";
@@ -60,8 +58,9 @@ const DISCONNECTED_POLL_MAX_MS = 30000;
 const MESSAGE_EDIT_DELETE_WINDOW_MS = 30 * 60 * 1000;
 
 const messageTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  hour: "2-digit",
+  hour: "numeric",
   minute: "2-digit",
+  hour12: true,
 });
 
 const shellVariants = {
@@ -149,48 +148,47 @@ const ConversationListItem = memo(function ConversationListItem({
   return (
     <motion.button
       onClick={() => onOpenConversation(conversation.id)}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.99 }}
-      className={`w-full rounded-2xl border p-3 text-left transition-all ${
-        isSelected
-          ? "border-power-orange/50 bg-[linear-gradient(180deg,rgba(233,115,22,0.08),rgba(255,255,255,0.95))] shadow-[0_14px_30px_-24px_rgba(233,115,22,0.55)]"
-          : "border-border bg-white/80 hover:bg-white"
+      whileTap={{ scale: 0.995 }}
+      className={`w-full min-h-18 border-b border-slate-100 px-3.5 py-2.5 text-left transition-all last:border-b-0 ${
+        isSelected ? "bg-power-orange/10" : "bg-white hover:bg-slate-50"
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-start gap-2">
-          <div className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-slate-100 text-[11px] font-semibold uppercase text-slate-600">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          {/* WhatsApp-style avatar */}
+          <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-slate-200 to-slate-300 text-sm font-bold uppercase text-slate-700 shadow-sm">
             {conversationName.slice(0, 2).toUpperCase()}
           </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-900">
-              <span className="truncate">{conversationName}</span>
-              <span className="text-[10px] uppercase text-slate-500">
-                {conversation.conversationType === "GROUP" ? "Group" : "DM"}
-              </span>
+          <div className="min-w-0 flex-1">
+            {/* Name with status badge */}
+            <div className="flex items-center gap-2">
+              <p className="truncate text-[15px] font-500 text-slate-900">
+                {conversationName}
+              </p>
               {conversation.status === "PENDING" && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
-                  Request
+                <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                  Pending
                 </span>
               )}
             </div>
-            <div className="mt-0.5 line-clamp-1 text-xs text-slate-500">
+            {/* Message preview */}
+            <p className="mt-1 line-clamp-1 text-sm text-slate-500">
               {conversation.status === "PENDING"
                 ? "Message request"
                 : conversation.latestMessage?.content || "No messages yet"}
-            </div>
+            </p>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        {/* Time and unread badge */}
+        <div className="flex shrink-0 flex-col items-end gap-1">
           {conversation.latestMessage?.createdAt && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-400">
-              <Clock3 size={11} />
+            <span className="text-[11px] font-normal leading-none tabular-nums text-slate-400">
               {getRelativeTime(conversation.latestMessage.createdAt)}
             </span>
           )}
           {conversation.unreadCount > 0 && (
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-power-orange px-2 py-0.5 text-xs font-semibold text-white">
-              {conversation.unreadCount}
+            <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-power-orange px-1.5 py-0.5 text-[11px] font-bold text-white">
+              {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
             </span>
           )}
         </div>
@@ -204,6 +202,7 @@ type MessageBubbleProps = {
   isOwnMessage: boolean;
   isGroupConversation: boolean;
   profileUserId?: string;
+  onOpenMobileActions?: (message: ConversationMessage) => void;
   onRetry: (message: ConversationMessage) => void;
   onEdit: (message: ConversationMessage) => void;
   onDelete: (message: ConversationMessage) => void;
@@ -218,6 +217,7 @@ const MessageBubble = memo(function MessageBubble({
   isOwnMessage,
   isGroupConversation,
   profileUserId,
+  onOpenMobileActions,
   onRetry,
   onEdit,
   onDelete,
@@ -243,29 +243,69 @@ const MessageBubble = memo(function MessageBubble({
     otherParticipantId &&
     message.readBy?.includes(otherParticipantId),
   );
-  const messageStateLabel = isOwnMessage
-    ? message.messageStatus === "FAILED"
-      ? "Not sent"
-      : message.messageStatus === "SENDING"
-        ? "Sending"
-        : hasBeenSeenByOther
-          ? "Seen"
-          : "Sent"
-    : null;
   const canMutateMessage =
     isOwnMessage &&
     !message.isDeleted &&
     message.messageStatus !== "FAILED" &&
     isWithinMessageEditWindow(message.createdAt);
-  const mutationDisabledReason = isWithinMessageEditWindow(message.createdAt)
-    ? ""
-    : "Edit/delete window expired";
-  const bubbleMetaTextClass = isOwnMessage
-    ? "text-orange-100/95"
-    : "text-slate-500";
-  const actionButtonClass = isOwnMessage
-    ? "border border-white/30 bg-white/16 text-white hover:bg-white/26"
-    : "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200";
+  const bubbleShapeClass = isOwnMessage
+    ? "rounded-2xl rounded-br-[5px]"
+    : "rounded-2xl rounded-bl-[5px]";
+  const canOpenMobileActions =
+    (isOwnMessage && message.messageStatus === "FAILED") ||
+    !message.isDeleted ||
+    (isOwnMessage &&
+      !message.isDeleted &&
+      message.messageStatus !== "FAILED" &&
+      canMutateMessage);
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const clearLongPressTimeout = useCallback(() => {
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+      longPressTimeoutRef.current = null;
+    }
+  }, []);
+
+  const openMobileActions = useCallback(() => {
+    if (!onOpenMobileActions || !canOpenMobileActions) {
+      return;
+    }
+
+    onOpenMobileActions(message);
+  }, [canOpenMobileActions, message, onOpenMobileActions]);
+
+  const startLongPress = useCallback(() => {
+    if (!onOpenMobileActions || !canOpenMobileActions) {
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      const isMobileViewport = window.matchMedia("(max-width: 639px)").matches;
+      if (!isMobileViewport) {
+        return;
+      }
+    }
+
+    clearLongPressTimeout();
+    longPressTimeoutRef.current = setTimeout(() => {
+      openMobileActions();
+      clearLongPressTimeout();
+    }, 380);
+  }, [
+    canOpenMobileActions,
+    clearLongPressTimeout,
+    onOpenMobileActions,
+    openMobileActions,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      clearLongPressTimeout();
+    };
+  }, [clearLongPressTimeout]);
 
   return (
     <motion.div
@@ -273,62 +313,125 @@ const MessageBubble = memo(function MessageBubble({
       initial={{ opacity: 0, y: 8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
-      className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
+      className={`flex gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
     >
+      {/* Avatar for group incoming messages */}
+      {!isOwnMessage && isGroupConversation && (
+        <div className="mt-auto h-7 w-7 shrink-0 rounded-full bg-slate-200" />
+      )}
+
       <div
-        className={`max-w-sm rounded-[1.35rem] border px-4 py-3 text-sm shadow-[0_14px_32px_-24px_rgba(15,23,42,0.55)] sm:max-w-[70%] lg:max-w-[60%] ${
+        className={`max-w-[84%] ${bubbleShapeClass} px-3 py-1.5 text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.1)] sm:max-w-[78%] sm:px-3.5 sm:py-2 sm:text-sm lg:max-w-[65%] ${
           isOwnMessage
-            ? "border-orange-300/40 bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-white"
-            : "border-border bg-white/95 text-slate-800 backdrop-blur"
+            ? "bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-white"
+            : "border border-slate-200 bg-white text-slate-800"
         }`}
+        onTouchStart={startLongPress}
+        onTouchEnd={clearLongPressTimeout}
+        onTouchCancel={clearLongPressTimeout}
+        onMouseDown={startLongPress}
+        onMouseUp={clearLongPressTimeout}
+        onMouseLeave={clearLongPressTimeout}
+        onContextMenu={(event) => {
+          if (typeof window !== "undefined") {
+            const isMobileViewport =
+              window.matchMedia("(max-width: 639px)").matches;
+            if (isMobileViewport && canOpenMobileActions) {
+              event.preventDefault();
+              openMobileActions();
+            }
+          }
+        }}
       >
-        {isGroupConversation && (
-          <div className={`text-xs font-semibold ${bubbleMetaTextClass}`}>
+        {/* Sender name for group messages */}
+        {isGroupConversation && !isOwnMessage && (
+          <div className="mb-0.5 text-[12px] font-600 text-power-orange">
             {message.senderDisplayName}
           </div>
         )}
-        <div className="mt-1 wrap-break-word leading-6">{message.content}</div>
 
-        <div
-          className={`mt-2.5 flex flex-wrap items-center justify-end gap-2 text-xs ${bubbleMetaTextClass}`}
-        >
-          {message.isDeleted && (
-            <span className="inline-flex min-h-6 items-center rounded-full border border-current/30 px-2 py-0.5 text-xs font-semibold">
-              Deleted
-            </span>
-          )}
-          {message.isEdited && !message.isDeleted && (
-            <span className="inline-flex min-h-6 items-center rounded-full border border-current/30 px-2 py-0.5 text-xs font-semibold">
-              Edited
-            </span>
-          )}
-          <span className="opacity-90">
-            {getMessageTimestamp(message.createdAt)}
-          </span>
-          {messageStateLabel && (
-            <span className="inline-flex min-h-6 items-center rounded-full border border-current/30 px-2 py-0.5 text-xs font-semibold">
-              {messageStateLabel}
-            </span>
-          )}
+        {/* Message content */}
+        <div className="whitespace-pre-wrap wrap-break-word leading-5 sm:leading-6">
+          {message.content}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-end gap-2 text-xs">
+        {/* Message metadata footer - WhatsApp style */}
+        <div
+          className={`mt-1 flex flex-wrap items-center gap-1.5 text-[11px] sm:gap-2 sm:text-xs ${
+            isOwnMessage ? "justify-end" : "justify-start"
+          } ${isOwnMessage ? "text-orange-100/90" : "text-slate-500"}`}
+        >
+          {message.isDeleted && (
+            <span className="italic opacity-75">Deleted</span>
+          )}
+          {message.isEdited && !message.isDeleted && (
+            <span className="opacity-75">(edited)</span>
+          )}
+          <span className="font-normal leading-none tracking-[0.01em] tabular-nums opacity-90">
+            {getMessageTimestamp(message.createdAt)}
+          </span>
+          {isOwnMessage &&
+            (message.messageStatus === "FAILED" ? (
+              <span className="font-medium text-red-100/95">!</span>
+            ) : message.messageStatus === "SENDING" ? (
+              <span className="font-medium opacity-80">...</span>
+            ) : hasBeenSeenByOther ? (
+              <span
+                aria-label="Seen"
+                title="Seen"
+                className="inline-flex items-center text-sky-200"
+              >
+                <CheckCheck size={14} strokeWidth={2.2} />
+              </span>
+            ) : (
+              <span
+                aria-label="Sent"
+                title="Sent"
+                className="inline-flex items-center opacity-85"
+              >
+                <Check size={13} strokeWidth={2.2} />
+              </span>
+            ))}
+        </div>
+
+        {/* Desktop action buttons */}
+        <div
+          className={`mt-1.5 hidden flex-wrap items-center gap-1 sm:mt-2 sm:flex sm:gap-1.5 ${
+            isOwnMessage ? "justify-end" : "justify-start"
+          }`}
+        >
           {isOwnMessage && message.messageStatus === "FAILED" && (
             <button
               onClick={() => onRetry(message)}
-              className={`min-h-8 rounded-lg px-2.5 py-1 font-semibold transition ${actionButtonClass}`}
+              aria-label="Retry sending message"
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition hover:opacity-80 ${
+                isOwnMessage ? "text-orange-100/90" : "text-slate-600"
+              }`}
+              title="Retry"
             >
-              Retry
+              <RotateCcw size={12} />
+              <span>Retry</span>
             </button>
           )}
           {!message.isDeleted && (
             <button
               onClick={() => onCopy(message)}
-              title={isCopied ? "Copied" : "Copy message"}
-              aria-label={isCopied ? "Message copied" : "Copy message"}
-              className={`min-h-8 rounded-lg px-2.5 py-1 font-semibold transition ${actionButtonClass}`}
+              title={isCopied ? "Copied!" : "Copy"}
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition hover:opacity-80 ${
+                isOwnMessage ? "text-orange-100/90" : "text-slate-600"
+              }`}
             >
-              {isCopied ? "Copied" : "Copy"}
+              {isCopied ? (
+                <>
+                  <Check size={12} />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={12} />
+                  <span>Copy</span>
+                </>
+              )}
             </button>
           )}
           {isOwnMessage &&
@@ -338,28 +441,27 @@ const MessageBubble = memo(function MessageBubble({
                 <button
                   onClick={() => onEdit(message)}
                   disabled={isMutating || !canMutateMessage}
-                  title={mutationDisabledReason || "Edit message"}
-                  className={`min-h-8 rounded-lg px-2.5 py-1 font-semibold transition ${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                  title="Edit message"
+                  className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isOwnMessage ? "text-orange-100/90" : "text-slate-600"
+                  }`}
                 >
-                  {isEditing ? "Editing" : "Edit"}
+                  <Pencil size={12} />
+                  <span>{isEditing ? "Editing..." : "Edit"}</span>
                 </button>
                 <button
                   onClick={() => onDelete(message)}
                   disabled={isMutating || !canMutateMessage}
-                  title={mutationDisabledReason || "Delete message"}
-                  className={`min-h-8 rounded-lg px-2.5 py-1 font-semibold transition ${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                  title="Delete message"
+                  className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isOwnMessage ? "text-orange-100/90" : "text-red-600"
+                  }`}
                 >
-                  Delete
+                  <Trash2 size={12} />
+                  <span>Delete</span>
                 </button>
               </>
             )}
-          {isOwnMessage && !canMutateMessage && !message.isDeleted && (
-            <span
-              className={`inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 font-semibold ${bubbleMetaTextClass}`}
-            >
-              Edit window expired
-            </span>
-          )}
         </div>
       </div>
     </motion.div>
@@ -548,6 +650,9 @@ export default function CommunityPage() {
     null,
   );
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [mobileActionMessageId, setMobileActionMessageId] = useState<
+    string | null
+  >(null);
   const [isTogglingBlockUser, setIsTogglingBlockUser] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -621,6 +726,15 @@ export default function CommunityPage() {
     () => getConversationById(selectedConversationId),
     [getConversationById, selectedConversationId],
   );
+  const mobileActionMessage = useMemo(() => {
+    if (!mobileActionMessageId) {
+      return null;
+    }
+
+    return (
+      messages.find((message) => message.id === mobileActionMessageId) || null
+    );
+  }, [messages, mobileActionMessageId]);
 
   const appendMessage = (incoming: ConversationMessage) => {
     setMessages((current) => {
@@ -691,12 +805,25 @@ export default function CommunityPage() {
     isConversationsView &&
     showGroupMembersPanel &&
     selectedConversation?.conversationType === "GROUP";
-  const workspaceHeading = isConversationsView
-    ? "Conversations"
-    : "Community Dashboard";
-  const workspaceSubtitle = isConversationsView
-    ? "Manage contacts, groups, and active chats."
-    : "Anonymous-first community networking and realtime chat.";
+  const selectedConversationDisplayName = selectedConversation
+    ? selectedConversation.conversationType === "GROUP"
+      ? selectedConversation.group?.name ||
+        selectedConversation.otherParticipant.displayName
+      : selectedConversation.otherParticipant.displayName
+    : "No conversation selected";
+  const selectedConversationInitials = selectedConversationDisplayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const activeMobileDockTab: "CHAT" | "LIST" | "TOOLS" =
+    sidebarMode === "TOOLS"
+      ? "TOOLS"
+      : workspaceView === "CHAT"
+        ? "CHAT"
+        : "LIST";
   const groupsJoinedCount = useMemo(
     () => safeGroupResults.filter((group) => group.isMember).length,
     [safeGroupResults],
@@ -840,11 +967,6 @@ export default function CommunityPage() {
       },
     ];
   }, [directoryView, selectedConversation, groupToolsMode, inviteGroupId]);
-  const guidedEmptyState = useMemo(
-    () => safeConversations.length === 0 && groupsJoinedCount === 0,
-    [safeConversations.length, groupsJoinedCount],
-  );
-
   const applyConversationPage = useCallback(
     (
       response: ConversationListResponse,
@@ -949,23 +1071,6 @@ export default function CommunityPage() {
       })
       .slice(0, 6);
   }, [safeGroupResults]);
-
-  const scrollToSection = (sectionId: string) => {
-    if (sectionId === "community-overview" || sectionId === "conversations") {
-      setActiveSidebarTab(sectionId);
-      if (sectionId === "conversations") {
-        setWorkspaceView("DIRECTORY");
-      } else {
-        setSidebarMode("INBOX");
-        setWorkspaceView("CHAT");
-      }
-    }
-
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
 
   const loadBootstrap = useCallback(async () => {
     setError(null);
@@ -1238,6 +1343,34 @@ export default function CommunityPage() {
       return;
     }
 
+    const isMobileViewport = window.matchMedia("(max-width: 1279px)").matches;
+    if (!isMobileViewport || !isConversationsView || selectedConversationId) {
+      return;
+    }
+
+    // WhatsApp-style mobile entry: open chat list first when no chat is selected.
+    if (workspaceView !== "DIRECTORY") {
+      setWorkspaceView("DIRECTORY");
+    }
+    if (sidebarMode !== "INBOX") {
+      setSidebarMode("INBOX");
+    }
+    if (!isConversationSidebarOpen) {
+      setIsConversationSidebarOpen(true);
+    }
+  }, [
+    isConversationSidebarOpen,
+    isConversationsView,
+    selectedConversationId,
+    sidebarMode,
+    workspaceView,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     if (selectedConversationId) {
       window.localStorage.setItem(
         COMMUNITY_SELECTED_CONVERSATION_KEY,
@@ -1497,6 +1630,10 @@ export default function CommunityPage() {
       });
     }
   }, [selectedConversationId, selectedConversation, isSocketConnected]);
+
+  useEffect(() => {
+    setMobileActionMessageId(null);
+  }, [selectedConversationId]);
 
   useEffect(() => {
     if (isSocketConnected || !selectedConversationId || !selectedConversation) {
@@ -2450,1381 +2587,1102 @@ export default function CommunityPage() {
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1 }}
         transition={{ duration: 0.28 }}
-        className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
+        className="min-h-full bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] lg:h-full lg:overflow-hidden"
       >
+        {/* Main Layout */}
         <motion.div
           variants={shellVariants}
           initial="hidden"
           animate="show"
-          className="mx-auto grid min-h-screen w-full max-w-480 gap-3 px-3 py-3 sm:gap-4 sm:px-4 sm:py-4 lg:gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-8 lg:py-6"
+          className={`mx-auto grid min-h-full w-full max-w-full gap-0 lg:h-full lg:overflow-hidden ${
+            isCommunityView
+              ? "grid-cols-1"
+              : isConversationsView
+                ? "grid-cols-1"
+                : "grid-cols-1"
+          }`}
         >
-          <motion.aside
-            variants={panelVariants}
-            className="hidden h-[calc(100vh-3rem)] rounded-3xl border border-border/70 bg-white/85 p-6 shadow-sm backdrop-blur lg:sticky lg:top-6 lg:block"
-          >
-            <div className="rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-5 text-slate-900 shadow-sm">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
-                Community Hub
-              </p>
-              <h1 className="font-title mt-2 text-2xl font-bold text-slate-900">
-                PowerMySport
-              </h1>
-              <p className="mt-1 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-sm text-slate-700">
-                <UserCircle2 size={14} />
-                {profile?.anonymousAlias}
-              </p>
-            </div>
-
-            <nav className="mt-6 space-y-2">
-              {shellNavItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => scrollToSection(item.id)}
-                    className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-                      activeSidebarTab === item.id
-                        ? "border-power-orange/30 bg-power-orange/5 text-slate-900"
-                        : "border-transparent text-slate-700 hover:border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span className="text-sm font-semibold tracking-tight">
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            <div className="mt-4 grid grid-cols-2 gap-2.5">
-              <Link
-                href="/privacy"
-                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-              >
-                Privacy
-              </Link>
-              <Link
-                href="/reports"
-                className="inline-flex min-h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-              >
-                Reports
-              </Link>
-            </div>
-
-            <div className="mt-6 rounded-2xl border border-border bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Live status
-              </p>
-              <p
-                className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                  isSocketConnected
-                    ? "bg-turf-green/15 text-turf-green"
-                    : "bg-amber-100 text-amber-700"
-                }`}
-              >
-                {isSocketConnected ? "Realtime connected" : "Reconnecting"}
-              </p>
-              <p className="mt-3 text-sm text-slate-500">
-                Keep this page open for instant updates.
-              </p>
-            </div>
-          </motion.aside>
-
-          <motion.main
-            variants={panelVariants}
-            className="flex min-w-0 flex-col rounded-3xl border border-border/70 bg-white/80 shadow-sm backdrop-blur"
-          >
-            <div className="sticky top-0 z-20 rounded-t-3xl border-b border-slate-200/80 bg-white/90 px-4 py-3.5 backdrop-blur sm:px-5 sm:py-4 lg:px-8">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-                    {workspaceHeading}
-                  </h2>
-                  <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
-                    {workspaceSubtitle}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <div className="inline-flex min-h-8 shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700 sm:min-h-9 sm:px-3 sm:py-1.5 sm:text-xs">
-                    <span>{safeConversations.length}</span>
-                    <span className="ml-1 hidden sm:inline">
-                      conversation
-                      {safeConversations.length === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                  <div className="rounded-full bg-power-orange/10 px-2.5 py-1 text-[11px] font-medium text-power-orange sm:px-3 sm:text-xs">
-                    {totalUnread} unread
-                  </div>
-                  <div className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-700 sm:px-3 sm:text-xs">
-                    {pendingRequestsCount} requests
-                  </div>
-                  <Link
-                    href="/privacy"
-                    className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100 sm:px-3 sm:text-xs"
-                  >
-                    Privacy
-                  </Link>
-                  <Link
-                    href="/reports"
-                    className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100 sm:px-3 sm:text-xs"
-                  >
-                    Reports
-                  </Link>
-                  <div
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium sm:px-3 sm:text-xs ${
-                      isSocketConnected
-                        ? "bg-turf-green/10 text-turf-green"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {isSocketConnected ? "Live" : "Offline mode"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-                {shellNavItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => scrollToSection(item.id)}
-                      className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-xs transition ${
-                        activeSidebarTab === item.id
-                          ? "border-power-orange/40 bg-power-orange/10 text-power-orange"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      <Icon size={14} />
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
-              {isCommunityView && (
-                <>
-                  <section
-                    id="community-overview"
-                    className="mb-6 scroll-mt-28"
-                  >
-                    <CommunityPageHeader
-                      title="PowerMySport Community"
-                      subtitle="Anonymous-first community chat with your privacy controls."
-                      badge="Community Network"
-                      action={
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                          <Link
-                            href="/q"
-                            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto sm:px-4"
-                          >
-                            Explore Q&A
-                          </Link>
-                          <a
-                            href={mainAppUrl}
-                            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto sm:px-4"
-                          >
-                            Switch to Main App
-                            <ExternalLink size={16} />
-                          </a>
-                        </div>
-                      }
-                    />
-                  </section>
-
-                  <FeaturedCommunitiesStrip
-                    groups={featuredGroups}
-                    getActionLabel={getFeaturedGroupActionLabel}
-                    onGroupAction={(group) => {
-                      void handleFeaturedGroupAction(group);
-                    }}
-                    isGroupFollowed={(groupId) =>
-                      followedGroupIds.includes(groupId)
+          {/* Community View - Full Width */}
+          {isCommunityView && (
+            <motion.main
+              variants={panelVariants}
+              className="flex min-h-full min-w-0 flex-col overflow-y-auto lg:h-full lg:overflow-hidden"
+            >
+              <div className="space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
+                <section id="community-overview" className="mb-6 scroll-mt-28">
+                  <CommunityPageHeader
+                    title="PowerMySport Community"
+                    subtitle="Anonymous-first community chat with your privacy controls."
+                    badge="Community Network"
+                    action={
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Link
+                          href="/q"
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto sm:px-4"
+                        >
+                          Explore Q&A
+                        </Link>
+                        <a
+                          href={mainAppUrl}
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto sm:px-4"
+                        >
+                          Switch to Main App
+                          <ExternalLink size={16} />
+                        </a>
+                      </div>
                     }
-                    onToggleGroupFollow={(group) => {
-                      const result = communityFollowStore.toggle({
-                        kind: "group",
-                        id: group.id,
-                        label: group.name,
-                        href: `/`,
-                      });
-                      setFollowedGroupIds(
-                        communityFollowStore
-                          .getByKind("group")
-                          .map((item) => item.id),
-                      );
-                      toast.success(
-                        result.following
-                          ? `Following ${group.name}`
-                          : `Unfollowed ${group.name}`,
-                      );
-                    }}
-                    onViewAll={() => {
-                      setActiveSidebarTab("conversations");
-                      setWorkspaceView("DIRECTORY");
-                      setDirectoryView("GROUPS");
-                    }}
                   />
+                </section>
 
-                  <motion.section
-                    variants={shellVariants}
-                    initial="hidden"
-                    animate="show"
-                    className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                <FeaturedCommunitiesStrip
+                  groups={featuredGroups}
+                  getActionLabel={getFeaturedGroupActionLabel}
+                  onGroupAction={(group) => {
+                    void handleFeaturedGroupAction(group);
+                  }}
+                  isGroupFollowed={(groupId) =>
+                    followedGroupIds.includes(groupId)
+                  }
+                  onToggleGroupFollow={(group) => {
+                    const result = communityFollowStore.toggle({
+                      kind: "group",
+                      id: group.id,
+                      label: group.name,
+                      href: `/`,
+                    });
+                    setFollowedGroupIds(
+                      communityFollowStore
+                        .getByKind("group")
+                        .map((item) => item.id),
+                    );
+                    toast.success(
+                      result.following
+                        ? `Following ${group.name}`
+                        : `Unfollowed ${group.name}`,
+                    );
+                  }}
+                  onViewAll={() => {
+                    setActiveSidebarTab("conversations");
+                    setWorkspaceView("DIRECTORY");
+                    setDirectoryView("GROUPS");
+                  }}
+                />
+
+                <motion.section
+                  variants={shellVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                >
+                  <motion.div
+                    variants={panelVariants}
+                    whileHover={{ y: -3 }}
+                    className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
                   >
-                    <motion.div
-                      variants={panelVariants}
-                      whileHover={{ y: -3 }}
-                      className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Conversations
-                      </p>
-                      <p className="mt-2 text-2xl font-bold text-slate-900">
-                        {safeConversations.length}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Active threads
-                      </p>
-                    </motion.div>
-                    <motion.div
-                      variants={panelVariants}
-                      whileHover={{ y: -3 }}
-                      className="rounded-2xl border border-white/70 bg-white p-4 shadow-sm"
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Unread
-                      </p>
-                      <p className="mt-2 text-2xl font-bold text-slate-900">
-                        {totalUnread}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Messages waiting
-                      </p>
-                    </motion.div>
-                    <motion.div
-                      variants={panelVariants}
-                      whileHover={{ y: -3 }}
-                      className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Groups joined
-                      </p>
-                      <p className="mt-2 text-2xl font-bold text-slate-900">
-                        {groupsJoinedCount}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Community circles
-                      </p>
-                    </motion.div>
-                    <motion.div
-                      variants={panelVariants}
-                      whileHover={{ y: -3 }}
-                      className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Connection
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-slate-900">
-                        {isSocketConnected ? "Realtime" : "Polling"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {isSocketConnected
-                          ? "Instant updates"
-                          : "Auto-refreshing"}
-                      </p>
-                    </motion.div>
-                  </motion.section>
-                </>
-              )}
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Conversations
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-slate-900">
+                      {safeConversations.length}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Active threads
+                    </p>
+                  </motion.div>
+                  <motion.div
+                    variants={panelVariants}
+                    whileHover={{ y: -3 }}
+                    className="rounded-2xl border border-white/70 bg-white p-4 shadow-sm"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Unread
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-slate-900">
+                      {totalUnread}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Messages waiting
+                    </p>
+                  </motion.div>
+                  <motion.div
+                    variants={panelVariants}
+                    whileHover={{ y: -3 }}
+                    className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Groups joined
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-slate-900">
+                      {groupsJoinedCount}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Community circles
+                    </p>
+                  </motion.div>
+                  <motion.div
+                    variants={panelVariants}
+                    whileHover={{ y: -3 }}
+                    className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Connection
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-slate-900">
+                      {isSocketConnected ? "Realtime" : "Polling"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {isSocketConnected
+                        ? "Instant updates"
+                        : "Auto-refreshing"}
+                    </p>
+                  </motion.div>
+                </motion.section>
+              </div>
+            </motion.main>
+          )}
 
-              {isConversationsView && (
-                <section className="xl:hidden">
-                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-white p-1">
-                    {[
-                      { id: "CHAT", label: "Chat" },
-                      { id: "DIRECTORY", label: "Contacts" },
-                    ].map((view) => (
+          {/* Conversations View Layout */}
+          {isConversationsView && (
+            <div className="contents">
+              {/* Main Chat Area */}
+              <motion.main
+                variants={panelVariants}
+                className="grid min-h-full min-w-0 grid-cols-1 lg:h-full lg:grid-cols-[380px_minmax(0,1fr)] lg:overflow-hidden"
+              >
+                <motion.section
+                  className={`min-h-full overflow-visible border-r border-slate-200 bg-white p-3.5 pb-24 sm:p-4 lg:h-full lg:overflow-y-auto lg:pb-4 ${
+                    workspaceView === "DIRECTORY" ? "block" : "hidden lg:block"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-3 sm:px-3.5 sm:py-3.5">
+                    <Users size={16} className="text-slate-600" />
+                    <h2 className="text-base font-semibold tracking-tight">
+                      Conversations
+                    </h2>
+                  </div>
+                  <p className="px-3 py-2 text-sm text-slate-500 sm:px-3.5">
+                    Search users, discover groups, and select a conversation.
+                  </p>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-border bg-slate-50 p-1">
+                    {["INBOX", "TOOLS"].map((mode) => (
                       <button
-                        key={view.id}
+                        key={mode}
                         onClick={() =>
-                          setWorkspaceView(view.id as "CHAT" | "DIRECTORY")
+                          setSidebarMode(mode as "INBOX" | "TOOLS")
                         }
-                        className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                          workspaceView === view.id
-                            ? "bg-power-orange text-white"
-                            : "text-slate-600 hover:bg-slate-100"
+                        className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                          sidebarMode === mode
+                            ? "bg-white text-slate-900 shadow-xs"
+                            : "text-slate-500 hover:text-slate-800"
                         }`}
                       >
-                        {view.label}
+                        {mode === "INBOX" ? "Inbox" : "Tools"}
                       </button>
                     ))}
                   </div>
-                </section>
-              )}
 
-              {isConversationsView && guidedEmptyState && (
-                <section className="rounded-2xl border border-dashed border-power-orange/35 bg-power-orange/5 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-power-orange">
-                    Getting started
-                  </p>
-                  <h3 className="mt-1 text-base font-semibold text-slate-900">
-                    Start your community in 3 steps
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Use Tools first to join or create a group, then return to
-                    Inbox to chat.
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-1">
                     <button
-                      onClick={() => {
-                        setSidebarMode("TOOLS");
-                        setDirectoryView("GROUPS");
-                        setWorkspaceView("DIRECTORY");
-                      }}
-                      className="rounded-lg bg-power-orange px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+                      onClick={() => setDirectoryView("CONTACTS")}
+                      title="DM chats"
+                      aria-label="DM chats"
+                      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
+                        directoryView === "CONTACTS"
+                          ? "bg-white text-slate-900 shadow-xs"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
                     >
-                      Open Group Tools
+                      <MessageSquare size={14} />
+                      DM
                     </button>
                     <button
-                      onClick={() => {
-                        setSidebarMode("TOOLS");
-                        setDirectoryView("CONTACTS");
-                        setWorkspaceView("DIRECTORY");
-                      }}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                      onClick={() => setDirectoryView("GROUPS")}
+                      title="Group chats"
+                      aria-label="Group chats"
+                      className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
+                        directoryView === "GROUPS"
+                          ? "bg-white text-slate-900 shadow-xs"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
                     >
-                      Start a DM
+                      <Users size={14} />
+                      Groups
                     </button>
                   </div>
-                </section>
-              )}
 
-              {isConversationsView && (
-                <div
-                  className={`grid grid-cols-1 gap-4 ${
-                    showGroupInsightsSidebar
-                      ? isConversationSidebarOpen
-                        ? "xl:grid-cols-[320px_minmax(0,1fr)_340px]"
-                        : "xl:grid-cols-[minmax(0,1fr)_340px]"
-                      : isConversationSidebarOpen
-                        ? "xl:grid-cols-[340px_minmax(0,1fr)]"
-                        : "xl:grid-cols-[minmax(0,1fr)]"
-                  }`}
-                >
-                  <AnimatePresence initial={false}>
-                    {workspaceView === "DIRECTORY" ||
-                    isConversationSidebarOpen ? (
-                      <motion.section
-                        key="conversations-sidebar"
-                        id="conversations"
-                        initial={{ opacity: 0, x: -18 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -18 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className={`scroll-mt-28 rounded-2xl border border-border/80 bg-white p-5 text-card-foreground shadow-xs xl:sticky xl:top-28 xl:h-[calc(100vh-8rem)] xl:overflow-y-auto ${
-                          !isConversationsView
-                            ? "hidden"
-                            : workspaceView === "DIRECTORY"
-                              ? "block"
-                              : "hidden xl:block"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Users size={16} className="text-slate-600" />
-                          <h2 className="text-base font-semibold tracking-tight">
-                            Conversations
-                          </h2>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-500">
-                          Search users, discover groups, and select a
-                          conversation.
+                  {sidebarMode === "TOOLS" ? (
+                    <div className="mt-3 space-y-3 rounded-xl border border-border bg-slate-50 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {directoryView === "GROUPS"
+                          ? "Group tools"
+                          : "Direct chat tools"}
+                      </p>
+
+                      <div className="rounded-lg border border-border bg-white p-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          Workflow
                         </p>
-
-                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-border bg-slate-50 p-1">
-                          {["INBOX", "TOOLS"].map((mode) => (
-                            <button
-                              key={mode}
-                              onClick={() =>
-                                setSidebarMode(mode as "INBOX" | "TOOLS")
-                              }
-                              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                                sidebarMode === mode
-                                  ? "bg-white text-slate-900 shadow-xs"
-                                  : "text-slate-500 hover:text-slate-800"
-                              }`}
+                        <div className="mt-2 grid gap-1">
+                          {toolsSteps.map((step, index) => (
+                            <div
+                              key={step.id}
+                              className="flex items-center gap-2 text-xs"
                             >
-                              {mode === "INBOX" ? "Inbox" : "Tools"}
-                            </button>
+                              <span
+                                className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${
+                                  step.done
+                                    ? "bg-turf-green/15 text-turf-green"
+                                    : "bg-slate-100 text-slate-500"
+                                }`}
+                              >
+                                {index + 1}
+                              </span>
+                              <span
+                                className={
+                                  step.done
+                                    ? "font-medium text-slate-800"
+                                    : "text-slate-500"
+                                }
+                              >
+                                {step.label}
+                              </span>
+                            </div>
                           ))}
                         </div>
+                      </div>
 
-                        <div className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-slate-50 p-1">
-                          <button
-                            onClick={() => setDirectoryView("CONTACTS")}
-                            title="DM chats"
-                            aria-label="DM chats"
-                            className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
-                              directoryView === "CONTACTS"
-                                ? "bg-white text-slate-900 shadow-xs"
-                                : "text-slate-500 hover:text-slate-800"
-                            }`}
-                          >
-                            <MessageSquare size={14} />
-                            DM
-                          </button>
-                          <button
-                            onClick={() => setDirectoryView("GROUPS")}
-                            title="Group chats"
-                            aria-label="Group chats"
-                            className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
-                              directoryView === "GROUPS"
-                                ? "bg-white text-slate-900 shadow-xs"
-                                : "text-slate-500 hover:text-slate-800"
-                            }`}
-                          >
-                            <Users size={14} />
-                            Groups
-                          </button>
-                        </div>
-
-                        {sidebarMode === "TOOLS" ? (
-                          <div className="mt-3 space-y-3 rounded-xl border border-border bg-slate-50 p-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              {directoryView === "GROUPS"
-                                ? "Group tools"
-                                : "Direct chat tools"}
-                            </p>
-
-                            <div className="rounded-lg border border-border bg-white p-2">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                Workflow
-                              </p>
-                              <div className="mt-2 grid gap-1">
-                                {toolsSteps.map((step, index) => (
-                                  <div
-                                    key={step.id}
-                                    className="flex items-center gap-2 text-xs"
-                                  >
-                                    <span
-                                      className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${
-                                        step.done
-                                          ? "bg-turf-green/15 text-turf-green"
-                                          : "bg-slate-100 text-slate-500"
-                                      }`}
-                                    >
-                                      {index + 1}
-                                    </span>
-                                    <span
-                                      className={
-                                        step.done
-                                          ? "font-medium text-slate-800"
-                                          : "text-slate-500"
-                                      }
-                                    >
-                                      {step.label}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {directoryView === "CONTACTS" ? (
-                              <>
-                                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                                  Search a user and tap their card to instantly
-                                  create or open a DM thread.
-                                </div>
-                                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3">
-                                  <Search
-                                    size={14}
-                                    className="text-slate-400"
-                                  />
-                                  <input
-                                    value={playerSearchQuery}
-                                    onChange={(event) =>
-                                      setPlayerSearchQuery(event.target.value)
-                                    }
-                                    placeholder="Search by name or alias"
-                                    className="w-full bg-transparent py-2 text-sm outline-none"
-                                  />
-                                </div>
-                                {playerSearchQuery.trim().length >= 2 && (
-                                  <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-2">
-                                    {isSearchingPlayers ? (
-                                      <p className="text-sm text-slate-500">
-                                        Searching...
-                                      </p>
-                                    ) : playerSearchResults.length ? (
-                                      playerSearchResults.map((user) => (
-                                        <button
-                                          key={user.id}
-                                          onClick={() =>
-                                            void handleStartConversation(
-                                              user.id,
-                                            )
-                                          }
-                                          className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
-                                        >
-                                          <span>{user.displayName}</span>
-                                          <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                                            <span>
-                                              {user.isIdentityPublic
-                                                ? "Public"
-                                                : "Anonymous"}
-                                            </span>
-                                            {user.role && (
-                                              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                                                {user.role === "COACH"
-                                                  ? "Coach"
-                                                  : "Player"}
-                                              </span>
-                                            )}
-                                          </span>
-                                        </button>
-                                      ))
-                                    ) : (
-                                      <div className="rounded-lg border border-dashed border-border bg-white p-3 text-sm text-slate-500">
-                                        No users found for this search. Try a
-                                        different name or alias.
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                {playerSearchQuery.trim().length < 2 && (
-                                  <div className="rounded-lg border border-dashed border-border bg-white p-3 text-xs text-slate-500">
-                                    Start typing at least 2 characters to find
-                                    users.
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-                                  Use Discover to join groups, Manage for policy
-                                  and controls, and Invite to share group
-                                  access.
-                                </div>
-                                <div className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
-                                  {[
-                                    { value: "DISCOVER", label: "Discover" },
-                                    { value: "MANAGE", label: "Manage" },
-                                    { value: "INVITE", label: "Invite" },
-                                  ].map((item) => (
-                                    <button
-                                      key={item.value}
-                                      onClick={() =>
-                                        setGroupToolsMode(
-                                          item.value as
-                                            | "DISCOVER"
-                                            | "MANAGE"
-                                            | "INVITE",
-                                        )
-                                      }
-                                      className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
-                                        groupToolsMode === item.value
-                                          ? "bg-slate-900 text-white"
-                                          : "text-slate-500 hover:bg-slate-100"
-                                      }`}
-                                    >
-                                      {item.label}
-                                    </button>
-                                  ))}
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <div className="grid grow grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
-                                    {[
-                                      { value: "ALL", label: "All" },
-                                      { value: "JOINED", label: "Joined" },
-                                      { value: "DISCOVER", label: "Discover" },
-                                    ].map((item) => (
-                                      <button
-                                        key={item.value}
-                                        onClick={() =>
-                                          setGroupMode(
-                                            item.value as
-                                              | "ALL"
-                                              | "JOINED"
-                                              | "DISCOVER",
-                                          )
-                                        }
-                                        className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
-                                          groupMode === item.value
-                                            ? "bg-slate-900 text-white"
-                                            : "text-slate-500 hover:bg-slate-100"
-                                        }`}
-                                      >
-                                        {item.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                  <button
-                                    onClick={() =>
-                                      setIsCreateGroupOpen(
-                                        (current) => !current,
-                                      )
-                                    }
-                                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
-                                  >
-                                    {isCreateGroupOpen ? "Close" : "New group"}
-                                  </button>
-                                </div>
-
-                                {isCreateGroupOpen && (
-                                  <div className="rounded-2xl border border-power-orange/15 bg-[linear-gradient(180deg,rgba(233,115,22,0.06),rgba(255,255,255,0.96))] p-4 shadow-xs">
-                                    <div className="flex items-start justify-between gap-3">
-                                      <div>
-                                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-power-orange">
-                                          Create a new circle
-                                        </p>
-                                        <p className="mt-1 text-sm text-slate-600">
-                                          Add a few details so people know what
-                                          the group is for.
-                                        </p>
-                                      </div>
-                                      <button
-                                        onClick={() => {
-                                          setIsCreateGroupOpen(false);
-                                        }}
-                                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
-                                      >
-                                        Close
-                                      </button>
-                                    </div>
-
-                                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                      <input
-                                        value={newGroupName}
-                                        onChange={(event) =>
-                                          setNewGroupName(event.target.value)
-                                        }
-                                        placeholder="Group name"
-                                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
-                                      />
-                                      <input
-                                        value={newGroupSport}
-                                        onChange={(event) =>
-                                          setNewGroupSport(event.target.value)
-                                        }
-                                        placeholder="Sport e.g. Cricket"
-                                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
-                                      />
-                                      <input
-                                        value={newGroupCity}
-                                        onChange={(event) =>
-                                          setNewGroupCity(event.target.value)
-                                        }
-                                        placeholder="City or area"
-                                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
-                                      />
-                                      <select
-                                        value={newGroupAudience}
-                                        onChange={(event) =>
-                                          setNewGroupAudience(
-                                            event.target.value as
-                                              | "ALL"
-                                              | "PLAYERS_ONLY"
-                                              | "COACHES_ONLY",
-                                          )
-                                        }
-                                        className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
-                                      >
-                                        <option value="ALL">Open to all</option>
-                                        <option value="PLAYERS_ONLY">
-                                          Players only
-                                        </option>
-                                        <option value="COACHES_ONLY">
-                                          Coaches only
-                                        </option>
-                                      </select>
-                                    </div>
-
-                                    <textarea
-                                      value={newGroupDescription}
-                                      onChange={(event) =>
-                                        setNewGroupDescription(
-                                          event.target.value,
-                                        )
-                                      }
-                                      placeholder="Short description"
-                                      rows={3}
-                                      className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
-                                    />
-
-                                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                                      <p className="text-xs text-slate-500">
-                                        Keep it short and specific. You can
-                                        adjust settings later.
-                                      </p>
-                                      <button
-                                        onClick={() => void handleCreateGroup()}
-                                        disabled={isCreatingGroup}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                                      >
-                                        {isCreatingGroup
-                                          ? "Creating..."
-                                          : "Create group"}
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <input
-                                  value={groupSearchQuery}
-                                  onChange={(event) =>
-                                    setGroupSearchQuery(event.target.value)
-                                  }
-                                  placeholder="Search groups by name, sport, city"
-                                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                                />
-
-                                {selectedConversation?.conversationType ===
-                                  "GROUP" &&
-                                  selectedConversation.group && (
-                                    <div className="rounded-xl border border-border bg-white p-2">
-                                      <GroupInviteLink
-                                        groupId={selectedConversation.group.id}
-                                        groupName={
-                                          selectedConversation.group.name
-                                        }
-                                      />
-                                    </div>
-                                  )}
-
-                                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                                  {isSearchingGroups ? (
-                                    <p className="text-sm text-slate-500">
-                                      Loading groups...
-                                    </p>
-                                  ) : toolVisibleGroups.length ? (
-                                    toolVisibleGroups.map((group) => {
-                                      const memberAddPolicy =
-                                        group.memberAddPolicy || "ADMIN_ONLY";
-                                      const canCurrentUserAddMembers =
-                                        memberAddPolicy === "ANY_MEMBER" ||
-                                        !!group.isAdmin;
-                                      const groupConversation =
-                                        getGroupConversationByGroupId(group.id);
-
-                                      return (
-                                        <div
-                                          key={group.id}
-                                          className="space-y-2 rounded-lg border border-border bg-white px-2 py-2"
-                                        >
-                                          <div className="flex items-center justify-between gap-2">
-                                            <div>
-                                              <p className="text-sm font-medium">
-                                                {group.name}
-                                              </p>
-                                              <p className="text-xs text-slate-500">
-                                                {group.memberCount} members
-                                              </p>
-                                            </div>
-                                            {group.isMember ? (
-                                              <button
-                                                onClick={() => {
-                                                  if (groupConversation) {
-                                                    handleOpenConversation(
-                                                      groupConversation.id,
-                                                    );
-                                                    return;
-                                                  }
-
-                                                  setDirectoryView("GROUPS");
-                                                  setGroupSearchQuery(
-                                                    group.name,
-                                                  );
-                                                }}
-                                                className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
-                                              >
-                                                {groupConversation
-                                                  ? "Open"
-                                                  : "View"}
-                                              </button>
-                                            ) : (
-                                              <div className="flex items-center gap-1">
-                                                <button
-                                                  onClick={() =>
-                                                    void handleJoinGroup(
-                                                      group.id,
-                                                    )
-                                                  }
-                                                  className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
-                                                >
-                                                  Join
-                                                </button>
-                                                <button
-                                                  onClick={() =>
-                                                    handleOpenReportModal(
-                                                      "GROUP",
-                                                      group.id,
-                                                    )
-                                                  }
-                                                  title="Report group"
-                                                  className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-100"
-                                                >
-                                                  <Flag
-                                                    size={11}
-                                                    className="inline-block"
-                                                  />
-                                                </button>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {group.isMember &&
-                                            groupToolsMode === "MANAGE" && (
-                                              <div className="space-y-2 border-t border-border pt-2">
-                                                <div className="rounded-md border border-border bg-slate-50 p-2">
-                                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                                    Group settings
-                                                  </p>
-                                                  <div className="mt-1 flex items-center justify-between gap-2">
-                                                    <span className="text-xs text-slate-600">
-                                                      Who can add members
-                                                    </span>
-                                                    {group.isAdmin ? (
-                                                      <select
-                                                        value={memberAddPolicy}
-                                                        onChange={(event) =>
-                                                          void handleUpdateGroupMemberAddPolicy(
-                                                            group.id,
-                                                            event.target
-                                                              .value as
-                                                              | "ADMIN_ONLY"
-                                                              | "ANY_MEMBER",
-                                                          )
-                                                        }
-                                                        disabled={
-                                                          isUpdatingGroupPolicyId ===
-                                                          group.id
-                                                        }
-                                                        className="rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-power-orange focus:outline-none disabled:opacity-50"
-                                                      >
-                                                        <option value="ADMIN_ONLY">
-                                                          Admins only
-                                                        </option>
-                                                        <option value="ANY_MEMBER">
-                                                          Any member
-                                                        </option>
-                                                      </select>
-                                                    ) : (
-                                                      <span className="text-xs font-medium text-slate-600">
-                                                        {memberAddPolicy ===
-                                                        "ANY_MEMBER"
-                                                          ? "Any member"
-                                                          : "Admins only"}
-                                                      </span>
-                                                    )}
-                                                  </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-2">
-                                                  <button
-                                                    onClick={() =>
-                                                      void handleLeaveGroup(
-                                                        group.id,
-                                                      )
-                                                    }
-                                                    disabled={
-                                                      isLeavingGroupId ===
-                                                      group.id
-                                                    }
-                                                    className="flex-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100 disabled:opacity-60"
-                                                  >
-                                                    {isLeavingGroupId ===
-                                                    group.id
-                                                      ? "Leaving..."
-                                                      : "Leave group"}
-                                                  </button>
-                                                  <button
-                                                    onClick={() =>
-                                                      handleOpenReportModal(
-                                                        "GROUP",
-                                                        group.id,
-                                                      )
-                                                    }
-                                                    title="Report group"
-                                                    className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
-                                                  >
-                                                    <Flag
-                                                      size={12}
-                                                      className="inline-block"
-                                                    />
-                                                  </button>
-                                                </div>
-
-                                                <div className="flex items-center justify-between">
-                                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                                    Add member
-                                                  </p>
-                                                  {canCurrentUserAddMembers ? (
-                                                    <button
-                                                      onClick={() => {
-                                                        if (
-                                                          inviteGroupId ===
-                                                          group.id
-                                                        ) {
-                                                          setInviteGroupId(
-                                                            null,
-                                                          );
-                                                          setInviteSearchQuery(
-                                                            "",
-                                                          );
-                                                          setInviteSearchResults(
-                                                            [],
-                                                          );
-                                                          return;
-                                                        }
-
-                                                        setInviteGroupId(
-                                                          group.id,
-                                                        );
-                                                        setInviteSearchQuery(
-                                                          "",
-                                                        );
-                                                        setInviteSearchResults(
-                                                          [],
-                                                        );
-                                                      }}
-                                                      className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
-                                                    >
-                                                      {inviteGroupId ===
-                                                      group.id
-                                                        ? "Close"
-                                                        : "Add"}
-                                                    </button>
-                                                  ) : (
-                                                    <span className="text-[11px] text-slate-500">
-                                                      Admin-only action
-                                                    </span>
-                                                  )}
-                                                </div>
-
-                                                {!canCurrentUserAddMembers && (
-                                                  <p className="text-xs text-slate-500">
-                                                    Only admins can add members
-                                                    in this group.
-                                                  </p>
-                                                )}
-
-                                                {canCurrentUserAddMembers &&
-                                                  inviteGroupId ===
-                                                    group.id && (
-                                                    <>
-                                                      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
-                                                        <Search
-                                                          size={13}
-                                                          className="text-slate-400"
-                                                        />
-                                                        <input
-                                                          value={
-                                                            inviteSearchQuery
-                                                          }
-                                                          onChange={(event) =>
-                                                            setInviteSearchQuery(
-                                                              event.target
-                                                                .value,
-                                                            )
-                                                          }
-                                                          placeholder="Search user to add"
-                                                          className="w-full bg-transparent py-1.5 text-xs outline-none"
-                                                        />
-                                                      </div>
-                                                      {inviteSearchQuery.trim()
-                                                        .length >= 2 && (
-                                                        <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
-                                                          {isSearchingInvitePlayers ? (
-                                                            <p className="text-xs text-slate-500">
-                                                              Searching users...
-                                                            </p>
-                                                          ) : inviteSearchResults.length ? (
-                                                            inviteSearchResults.map(
-                                                              (user) => (
-                                                                <div
-                                                                  key={user.id}
-                                                                  className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
-                                                                >
-                                                                  <div className="min-w-0">
-                                                                    <span className="truncate text-xs text-slate-700">
-                                                                      {
-                                                                        user.displayName
-                                                                      }
-                                                                    </span>
-                                                                    {user.role && (
-                                                                      <span className="ml-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                                                                        {user.role ===
-                                                                        "COACH"
-                                                                          ? "Coach"
-                                                                          : "Player"}
-                                                                      </span>
-                                                                    )}
-                                                                  </div>
-                                                                  <div className="flex items-center gap-1.5">
-                                                                    <button
-                                                                      onClick={() =>
-                                                                        void handleOpenMemberProfile(
-                                                                          user.id,
-                                                                        )
-                                                                      }
-                                                                      className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
-                                                                    >
-                                                                      View
-                                                                    </button>
-                                                                    <button
-                                                                      disabled={
-                                                                        isAddingMemberUserId ===
-                                                                        user.id
-                                                                      }
-                                                                      onClick={() =>
-                                                                        void handleAddMemberToGroup(
-                                                                          group.id,
-                                                                          user.id,
-                                                                        )
-                                                                      }
-                                                                      className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                                                                    >
-                                                                      {isAddingMemberUserId ===
-                                                                      user.id
-                                                                        ? "Adding"
-                                                                        : "Add"}
-                                                                    </button>
-                                                                  </div>
-                                                                </div>
-                                                              ),
-                                                            )
-                                                          ) : (
-                                                            <p className="text-xs text-slate-500">
-                                                              No users found
-                                                            </p>
-                                                          )}
-                                                        </div>
-                                                      )}
-                                                    </>
-                                                  )}
-                                              </div>
-                                            )}
-
-                                          {group.isMember &&
-                                            groupToolsMode === "INVITE" && (
-                                              <div className="space-y-2 border-t border-border pt-2">
-                                                {group.isAdmin && (
-                                                  <div className="rounded-xl border border-border bg-slate-50 p-2">
-                                                    <GroupInviteLink
-                                                      groupId={group.id}
-                                                      groupName={group.name}
-                                                    />
-                                                  </div>
-                                                )}
-
-                                                <div className="flex items-center justify-between">
-                                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                                    Add member
-                                                  </p>
-                                                  {canCurrentUserAddMembers ? (
-                                                    <button
-                                                      onClick={() => {
-                                                        if (
-                                                          inviteGroupId ===
-                                                          group.id
-                                                        ) {
-                                                          setInviteGroupId(
-                                                            null,
-                                                          );
-                                                          setInviteSearchQuery(
-                                                            "",
-                                                          );
-                                                          setInviteSearchResults(
-                                                            [],
-                                                          );
-                                                          return;
-                                                        }
-
-                                                        setInviteGroupId(
-                                                          group.id,
-                                                        );
-                                                        setInviteSearchQuery(
-                                                          "",
-                                                        );
-                                                        setInviteSearchResults(
-                                                          [],
-                                                        );
-                                                      }}
-                                                      className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
-                                                    >
-                                                      {inviteGroupId ===
-                                                      group.id
-                                                        ? "Close"
-                                                        : "Add"}
-                                                    </button>
-                                                  ) : (
-                                                    <span className="text-[11px] text-slate-500">
-                                                      Admin-only action
-                                                    </span>
-                                                  )}
-                                                </div>
-
-                                                {!canCurrentUserAddMembers && (
-                                                  <p className="text-xs text-slate-500">
-                                                    Only admins can add members
-                                                    in this group.
-                                                  </p>
-                                                )}
-
-                                                {canCurrentUserAddMembers &&
-                                                  inviteGroupId ===
-                                                    group.id && (
-                                                    <>
-                                                      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
-                                                        <Search
-                                                          size={13}
-                                                          className="text-slate-400"
-                                                        />
-                                                        <input
-                                                          value={
-                                                            inviteSearchQuery
-                                                          }
-                                                          onChange={(event) =>
-                                                            setInviteSearchQuery(
-                                                              event.target
-                                                                .value,
-                                                            )
-                                                          }
-                                                          placeholder="Search user to add"
-                                                          className="w-full bg-transparent py-1.5 text-xs outline-none"
-                                                        />
-                                                      </div>
-                                                      {inviteSearchQuery.trim()
-                                                        .length >= 2 && (
-                                                        <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
-                                                          {isSearchingInvitePlayers ? (
-                                                            <p className="text-xs text-slate-500">
-                                                              Searching users...
-                                                            </p>
-                                                          ) : inviteSearchResults.length ? (
-                                                            inviteSearchResults.map(
-                                                              (user) => (
-                                                                <div
-                                                                  key={user.id}
-                                                                  className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
-                                                                >
-                                                                  <div className="min-w-0">
-                                                                    <span className="truncate text-xs text-slate-700">
-                                                                      {
-                                                                        user.displayName
-                                                                      }
-                                                                    </span>
-                                                                    {user.role && (
-                                                                      <span className="ml-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                                                                        {user.role ===
-                                                                        "COACH"
-                                                                          ? "Coach"
-                                                                          : "Player"}
-                                                                      </span>
-                                                                    )}
-                                                                  </div>
-                                                                  <div className="flex items-center gap-1.5">
-                                                                    <button
-                                                                      onClick={() =>
-                                                                        void handleOpenMemberProfile(
-                                                                          user.id,
-                                                                        )
-                                                                      }
-                                                                      className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
-                                                                    >
-                                                                      View
-                                                                    </button>
-                                                                    <button
-                                                                      disabled={
-                                                                        isAddingMemberUserId ===
-                                                                        user.id
-                                                                      }
-                                                                      onClick={() =>
-                                                                        void handleAddMemberToGroup(
-                                                                          group.id,
-                                                                          user.id,
-                                                                        )
-                                                                      }
-                                                                      className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                                                                    >
-                                                                      {isAddingMemberUserId ===
-                                                                      user.id
-                                                                        ? "Adding"
-                                                                        : "Add"}
-                                                                    </button>
-                                                                  </div>
-                                                                </div>
-                                                              ),
-                                                            )
-                                                          ) : (
-                                                            <p className="text-xs text-slate-500">
-                                                              No users found
-                                                            </p>
-                                                          )}
-                                                        </div>
-                                                      )}
-                                                    </>
-                                                  )}
-                                              </div>
-                                            )}
-                                        </div>
-                                      );
-                                    })
-                                  ) : (
-                                    <div className="rounded-lg border border-dashed border-border bg-white p-3 text-sm text-slate-500">
-                                      {groupToolsMode === "DISCOVER"
-                                        ? "No discoverable groups right now. Try changing search or switch to All mode."
-                                        : groupToolsMode === "MANAGE"
-                                          ? "No joined groups to manage yet. Join a group from Discover first."
-                                          : "No group available for invites. Join or open a group first."}
-                                    </div>
-                                  )}
-                                </div>
-                              </>
-                            )}
+                      {directoryView === "CONTACTS" ? (
+                        <>
+                          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                            Search a user and tap their card to instantly create
+                            or open a DM thread.
                           </div>
-                        ) : (
-                          <>
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                                {managedConversations.length} result
-                                {managedConversations.length === 1 ? "" : "s"}
-                              </span>
-                              <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
-                                {pendingRequestsCount} request
-                                {pendingRequestsCount === 1 ? "" : "s"}
-                              </span>
-                              {!!conversationFilterQuery.trim() && (
-                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                                  &ldquo;{conversationFilterQuery.trim()}&rdquo;
-                                </span>
+                          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3">
+                            <Search size={14} className="text-slate-400" />
+                            <input
+                              value={playerSearchQuery}
+                              onChange={(event) =>
+                                setPlayerSearchQuery(event.target.value)
+                              }
+                              placeholder="Search by name or alias"
+                              className="w-full bg-transparent py-2 text-sm outline-none"
+                            />
+                          </div>
+                          {playerSearchQuery.trim().length >= 2 && (
+                            <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-2">
+                              {isSearchingPlayers ? (
+                                <p className="text-sm text-slate-500">
+                                  Searching...
+                                </p>
+                              ) : playerSearchResults.length ? (
+                                playerSearchResults.map((user) => (
+                                  <button
+                                    key={user.id}
+                                    onClick={() =>
+                                      void handleStartConversation(user.id)
+                                    }
+                                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted"
+                                  >
+                                    <span>{user.displayName}</span>
+                                    <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                                      <span>
+                                        {user.isIdentityPublic
+                                          ? "Public"
+                                          : "Anonymous"}
+                                      </span>
+                                      {user.role && (
+                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                          {user.role === "COACH"
+                                            ? "Coach"
+                                            : "Player"}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="rounded-lg border border-dashed border-border bg-white p-3 text-sm text-slate-500">
+                                  No users found for this search. Try a
+                                  different name or alias.
+                                </div>
                               )}
                             </div>
+                          )}
+                          {playerSearchQuery.trim().length < 2 && (
+                            <div className="rounded-lg border border-dashed border-border bg-white p-3 text-xs text-slate-500">
+                              Start typing at least 2 characters to find users.
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                            Use Discover to join groups, Manage for policy and
+                            controls, and Invite to share group access.
+                          </div>
+                          <div className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
+                            {[
+                              { value: "DISCOVER", label: "Discover" },
+                              { value: "MANAGE", label: "Manage" },
+                              { value: "INVITE", label: "Invite" },
+                            ].map((item) => (
+                              <button
+                                key={item.value}
+                                onClick={() =>
+                                  setGroupToolsMode(
+                                    item.value as
+                                      | "DISCOVER"
+                                      | "MANAGE"
+                                      | "INVITE",
+                                  )
+                                }
+                                className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                                  groupToolsMode === item.value
+                                    ? "bg-slate-900 text-white"
+                                    : "text-slate-500 hover:bg-slate-100"
+                                }`}
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+                          </div>
 
-                            <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-border bg-slate-50 p-1">
-                              {conversationModeOptions.map((item) => (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="grid grow grid-cols-3 gap-1 rounded-lg border border-border bg-white p-1">
+                              {[
+                                { value: "ALL", label: "All" },
+                                { value: "JOINED", label: "Joined" },
+                                { value: "DISCOVER", label: "Discover" },
+                              ].map((item) => (
                                 <button
                                   key={item.value}
                                   onClick={() =>
-                                    setConversationMode(
+                                    setGroupMode(
                                       item.value as
                                         | "ALL"
-                                        | "UNREAD"
-                                        | "REQUESTS",
+                                        | "JOINED"
+                                        | "DISCOVER",
                                     )
                                   }
-                                  className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
-                                    conversationMode === item.value
-                                      ? "bg-white text-slate-900 shadow-xs"
-                                      : "text-slate-500 hover:text-slate-800"
+                                  className={`rounded-md px-2 py-1 text-[11px] font-semibold transition ${
+                                    groupMode === item.value
+                                      ? "bg-slate-900 text-white"
+                                      : "text-slate-500 hover:bg-slate-100"
                                   }`}
                                 >
                                   {item.label}
                                 </button>
                               ))}
                             </div>
+                            <button
+                              onClick={() =>
+                                setIsCreateGroupOpen((current) => !current)
+                              }
+                              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
+                            >
+                              {isCreateGroupOpen ? "Close" : "New group"}
+                            </button>
+                          </div>
 
-                            <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
-                              <Search size={14} className="text-slate-400" />
-                              <input
-                                value={conversationFilterQuery}
-                                onChange={(event) =>
-                                  setConversationFilterQuery(event.target.value)
-                                }
-                                placeholder={
-                                  directoryView === "GROUPS"
-                                    ? "Filter group chats"
-                                    : "Filter DM chats"
-                                }
-                                className="w-full bg-transparent py-2 text-sm outline-none"
-                              />
-                              {!!conversationFilterQuery.trim() && (
-                                <button
-                                  onClick={() => setConversationFilterQuery("")}
-                                  className="text-slate-400 transition hover:text-slate-600"
-                                  aria-label="Clear conversation filter"
-                                >
-                                  <X size={14} />
-                                </button>
-                              )}
-                            </div>
-
-                            {hasConversationFilters && (
-                              <div className="mt-2 flex justify-end">
+                          {isCreateGroupOpen && (
+                            <div className="rounded-2xl border border-power-orange/15 bg-[linear-gradient(180deg,rgba(233,115,22,0.06),rgba(255,255,255,0.96))] p-4 shadow-xs">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-power-orange">
+                                    Create a new circle
+                                  </p>
+                                  <p className="mt-1 text-sm text-slate-600">
+                                    Add a few details so people know what the
+                                    group is for.
+                                  </p>
+                                </div>
                                 <button
                                   onClick={() => {
-                                    setConversationMode("ALL");
-                                    setConversationFilterQuery("");
+                                    setIsCreateGroupOpen(false);
                                   }}
-                                  className="text-xs font-medium text-slate-500 transition hover:text-slate-700"
+                                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
                                 >
-                                  Reset conversation filters
+                                  Close
                                 </button>
+                              </div>
+
+                              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                <input
+                                  value={newGroupName}
+                                  onChange={(event) =>
+                                    setNewGroupName(event.target.value)
+                                  }
+                                  placeholder="Group name"
+                                  className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                                />
+                                <input
+                                  value={newGroupSport}
+                                  onChange={(event) =>
+                                    setNewGroupSport(event.target.value)
+                                  }
+                                  placeholder="Sport e.g. Cricket"
+                                  className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                                />
+                                <input
+                                  value={newGroupCity}
+                                  onChange={(event) =>
+                                    setNewGroupCity(event.target.value)
+                                  }
+                                  placeholder="City or area"
+                                  className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                                />
+                                <select
+                                  value={newGroupAudience}
+                                  onChange={(event) =>
+                                    setNewGroupAudience(
+                                      event.target.value as
+                                        | "ALL"
+                                        | "PLAYERS_ONLY"
+                                        | "COACHES_ONLY",
+                                    )
+                                  }
+                                  className="rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                                >
+                                  <option value="ALL">Open to all</option>
+                                  <option value="PLAYERS_ONLY">
+                                    Players only
+                                  </option>
+                                  <option value="COACHES_ONLY">
+                                    Coaches only
+                                  </option>
+                                </select>
+                              </div>
+
+                              <textarea
+                                value={newGroupDescription}
+                                onChange={(event) =>
+                                  setNewGroupDescription(event.target.value)
+                                }
+                                placeholder="Short description"
+                                rows={3}
+                                className="mt-3 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none"
+                              />
+
+                              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                                <p className="text-xs text-slate-500">
+                                  Keep it short and specific. You can adjust
+                                  settings later.
+                                </p>
+                                <button
+                                  onClick={() => void handleCreateGroup()}
+                                  disabled={isCreatingGroup}
+                                  className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {isCreatingGroup
+                                    ? "Creating..."
+                                    : "Create group"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          <input
+                            value={groupSearchQuery}
+                            onChange={(event) =>
+                              setGroupSearchQuery(event.target.value)
+                            }
+                            placeholder="Search groups by name, sport, city"
+                            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                          />
+
+                          {selectedConversation?.conversationType === "GROUP" &&
+                            selectedConversation.group && (
+                              <div className="rounded-xl border border-border bg-white p-2">
+                                <GroupInviteLink
+                                  groupId={selectedConversation.group.id}
+                                  groupName={selectedConversation.group.name}
+                                />
                               </div>
                             )}
 
-                            <div className="mt-4 max-h-90 space-y-2 overflow-y-auto pr-1">
-                              {managedConversations.map((conversation) => (
-                                <ConversationListItem
-                                  key={conversation.id}
-                                  conversation={conversation}
-                                  isSelected={
-                                    conversation.id === selectedConversationId
-                                  }
-                                  onOpenConversation={handleOpenConversation}
-                                />
-                              ))}
-                              {!managedConversations.length && (
-                                <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
-                                  {hasConversationFilters
-                                    ? "No matches for current filters. Reset filters to see all conversations."
-                                    : "No conversations yet. Start a new contact chat or join a group."}
-                                </div>
-                              )}
+                          <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                            {isSearchingGroups ? (
+                              <p className="text-sm text-slate-500">
+                                Loading groups...
+                              </p>
+                            ) : toolVisibleGroups.length ? (
+                              toolVisibleGroups.map((group) => {
+                                const memberAddPolicy =
+                                  group.memberAddPolicy || "ADMIN_ONLY";
+                                const canCurrentUserAddMembers =
+                                  memberAddPolicy === "ANY_MEMBER" ||
+                                  !!group.isAdmin;
+                                const groupConversation =
+                                  getGroupConversationByGroupId(group.id);
 
-                              {!hasConversationFilters &&
-                                hasMoreConversations && (
-                                  <button
-                                    onClick={() =>
-                                      void handleLoadMoreConversations()
-                                    }
-                                    disabled={isLoadingMoreConversations}
-                                    className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                                return (
+                                  <div
+                                    key={group.id}
+                                    className="space-y-2 rounded-lg border border-border bg-white px-2 py-2"
                                   >
-                                    {isLoadingMoreConversations
-                                      ? "Loading more..."
-                                      : "Load more conversations"}
-                                  </button>
-                                )}
-                            </div>
-                          </>
-                        )}
-                      </motion.section>
-                    ) : null}
-                  </AnimatePresence>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div>
+                                        <p className="text-sm font-medium">
+                                          {group.name}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                          {group.memberCount} members
+                                        </p>
+                                      </div>
+                                      {group.isMember ? (
+                                        <button
+                                          onClick={() => {
+                                            if (groupConversation) {
+                                              handleOpenConversation(
+                                                groupConversation.id,
+                                              );
+                                              return;
+                                            }
 
-                  <motion.section
-                    className={`rounded-2xl border border-border/80 bg-white p-5 text-card-foreground shadow-xs xl:sticky xl:top-28 xl:flex xl:h-[calc(100vh-8rem)] xl:flex-col ${
-                      !isConversationsView
-                        ? "hidden xl:hidden"
-                        : workspaceView === "CHAT"
-                          ? "block"
-                          : "hidden xl:block"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare size={16} className="text-slate-600" />
-                        <h2 className="text-base font-semibold tracking-tight">
-                          Chat
-                        </h2>
+                                            setDirectoryView("GROUPS");
+                                            setGroupSearchQuery(group.name);
+                                          }}
+                                          className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
+                                        >
+                                          {groupConversation ? "Open" : "View"}
+                                        </button>
+                                      ) : (
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() =>
+                                              void handleJoinGroup(group.id)
+                                            }
+                                            className="rounded-md border border-border bg-slate-100 px-2 py-1 text-xs font-medium transition hover:bg-slate-200"
+                                          >
+                                            Join
+                                          </button>
+                                          <button
+                                            onClick={() =>
+                                              handleOpenReportModal(
+                                                "GROUP",
+                                                group.id,
+                                              )
+                                            }
+                                            title="Report group"
+                                            className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-100"
+                                          >
+                                            <Flag
+                                              size={11}
+                                              className="inline-block"
+                                            />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {group.isMember &&
+                                      groupToolsMode === "MANAGE" && (
+                                        <div className="space-y-2 border-t border-border pt-2">
+                                          <div className="rounded-md border border-border bg-slate-50 p-2">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                              Group settings
+                                            </p>
+                                            <div className="mt-1 flex items-center justify-between gap-2">
+                                              <span className="text-xs text-slate-600">
+                                                Who can add members
+                                              </span>
+                                              {group.isAdmin ? (
+                                                <select
+                                                  value={memberAddPolicy}
+                                                  onChange={(event) =>
+                                                    void handleUpdateGroupMemberAddPolicy(
+                                                      group.id,
+                                                      event.target.value as
+                                                        | "ADMIN_ONLY"
+                                                        | "ANY_MEMBER",
+                                                    )
+                                                  }
+                                                  disabled={
+                                                    isUpdatingGroupPolicyId ===
+                                                    group.id
+                                                  }
+                                                  className="rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-power-orange focus:outline-none disabled:opacity-50"
+                                                >
+                                                  <option value="ADMIN_ONLY">
+                                                    Admins only
+                                                  </option>
+                                                  <option value="ANY_MEMBER">
+                                                    Any member
+                                                  </option>
+                                                </select>
+                                              ) : (
+                                                <span className="text-xs font-medium text-slate-600">
+                                                  {memberAddPolicy ===
+                                                  "ANY_MEMBER"
+                                                    ? "Any member"
+                                                    : "Admins only"}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center gap-2">
+                                            <button
+                                              onClick={() =>
+                                                void handleLeaveGroup(group.id)
+                                              }
+                                              disabled={
+                                                isLeavingGroupId === group.id
+                                              }
+                                              className="flex-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100 disabled:opacity-60"
+                                            >
+                                              {isLeavingGroupId === group.id
+                                                ? "Leaving..."
+                                                : "Leave group"}
+                                            </button>
+                                            <button
+                                              onClick={() =>
+                                                handleOpenReportModal(
+                                                  "GROUP",
+                                                  group.id,
+                                                )
+                                              }
+                                              title="Report group"
+                                              className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100"
+                                            >
+                                              <Flag
+                                                size={12}
+                                                className="inline-block"
+                                              />
+                                            </button>
+                                          </div>
+
+                                          <div className="flex items-center justify-between">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                              Add member
+                                            </p>
+                                            {canCurrentUserAddMembers ? (
+                                              <button
+                                                onClick={() => {
+                                                  if (
+                                                    inviteGroupId === group.id
+                                                  ) {
+                                                    setInviteGroupId(null);
+                                                    setInviteSearchQuery("");
+                                                    setInviteSearchResults([]);
+                                                    return;
+                                                  }
+
+                                                  setInviteGroupId(group.id);
+                                                  setInviteSearchQuery("");
+                                                  setInviteSearchResults([]);
+                                                }}
+                                                className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
+                                              >
+                                                {inviteGroupId === group.id
+                                                  ? "Close"
+                                                  : "Add"}
+                                              </button>
+                                            ) : (
+                                              <span className="text-[11px] text-slate-500">
+                                                Admin-only action
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          {!canCurrentUserAddMembers && (
+                                            <p className="text-xs text-slate-500">
+                                              Only admins can add members in
+                                              this group.
+                                            </p>
+                                          )}
+
+                                          {canCurrentUserAddMembers &&
+                                            inviteGroupId === group.id && (
+                                              <>
+                                                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
+                                                  <Search
+                                                    size={13}
+                                                    className="text-slate-400"
+                                                  />
+                                                  <input
+                                                    value={inviteSearchQuery}
+                                                    onChange={(event) =>
+                                                      setInviteSearchQuery(
+                                                        event.target.value,
+                                                      )
+                                                    }
+                                                    placeholder="Search user to add"
+                                                    className="w-full bg-transparent py-1.5 text-xs outline-none"
+                                                  />
+                                                </div>
+                                                {inviteSearchQuery.trim()
+                                                  .length >= 2 && (
+                                                  <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
+                                                    {isSearchingInvitePlayers ? (
+                                                      <p className="text-xs text-slate-500">
+                                                        Searching users...
+                                                      </p>
+                                                    ) : inviteSearchResults.length ? (
+                                                      inviteSearchResults.map(
+                                                        (user) => (
+                                                          <div
+                                                            key={user.id}
+                                                            className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
+                                                          >
+                                                            <div className="min-w-0">
+                                                              <span className="truncate text-xs text-slate-700">
+                                                                {
+                                                                  user.displayName
+                                                                }
+                                                              </span>
+                                                              {user.role && (
+                                                                <span className="ml-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                                  {user.role ===
+                                                                  "COACH"
+                                                                    ? "Coach"
+                                                                    : "Player"}
+                                                                </span>
+                                                              )}
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                              <button
+                                                                onClick={() =>
+                                                                  void handleOpenMemberProfile(
+                                                                    user.id,
+                                                                  )
+                                                                }
+                                                                className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
+                                                              >
+                                                                View
+                                                              </button>
+                                                              <button
+                                                                disabled={
+                                                                  isAddingMemberUserId ===
+                                                                  user.id
+                                                                }
+                                                                onClick={() =>
+                                                                  void handleAddMemberToGroup(
+                                                                    group.id,
+                                                                    user.id,
+                                                                  )
+                                                                }
+                                                                className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                              >
+                                                                {isAddingMemberUserId ===
+                                                                user.id
+                                                                  ? "Adding"
+                                                                  : "Add"}
+                                                              </button>
+                                                            </div>
+                                                          </div>
+                                                        ),
+                                                      )
+                                                    ) : (
+                                                      <p className="text-xs text-slate-500">
+                                                        No users found
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </>
+                                            )}
+                                        </div>
+                                      )}
+
+                                    {group.isMember &&
+                                      groupToolsMode === "INVITE" && (
+                                        <div className="space-y-2 border-t border-border pt-2">
+                                          {group.isAdmin && (
+                                            <div className="rounded-xl border border-border bg-slate-50 p-2">
+                                              <GroupInviteLink
+                                                groupId={group.id}
+                                                groupName={group.name}
+                                              />
+                                            </div>
+                                          )}
+
+                                          <div className="flex items-center justify-between">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                              Add member
+                                            </p>
+                                            {canCurrentUserAddMembers ? (
+                                              <button
+                                                onClick={() => {
+                                                  if (
+                                                    inviteGroupId === group.id
+                                                  ) {
+                                                    setInviteGroupId(null);
+                                                    setInviteSearchQuery("");
+                                                    setInviteSearchResults([]);
+                                                    return;
+                                                  }
+
+                                                  setInviteGroupId(group.id);
+                                                  setInviteSearchQuery("");
+                                                  setInviteSearchResults([]);
+                                                }}
+                                                className="text-xs font-medium text-slate-600 transition hover:text-slate-900"
+                                              >
+                                                {inviteGroupId === group.id
+                                                  ? "Close"
+                                                  : "Add"}
+                                              </button>
+                                            ) : (
+                                              <span className="text-[11px] text-slate-500">
+                                                Admin-only action
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          {!canCurrentUserAddMembers && (
+                                            <p className="text-xs text-slate-500">
+                                              Only admins can add members in
+                                              this group.
+                                            </p>
+                                          )}
+
+                                          {canCurrentUserAddMembers &&
+                                            inviteGroupId === group.id && (
+                                              <>
+                                                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-2">
+                                                  <Search
+                                                    size={13}
+                                                    className="text-slate-400"
+                                                  />
+                                                  <input
+                                                    value={inviteSearchQuery}
+                                                    onChange={(event) =>
+                                                      setInviteSearchQuery(
+                                                        event.target.value,
+                                                      )
+                                                    }
+                                                    placeholder="Search user to add"
+                                                    className="w-full bg-transparent py-1.5 text-xs outline-none"
+                                                  />
+                                                </div>
+                                                {inviteSearchQuery.trim()
+                                                  .length >= 2 && (
+                                                  <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg border border-border bg-background p-1.5">
+                                                    {isSearchingInvitePlayers ? (
+                                                      <p className="text-xs text-slate-500">
+                                                        Searching users...
+                                                      </p>
+                                                    ) : inviteSearchResults.length ? (
+                                                      inviteSearchResults.map(
+                                                        (user) => (
+                                                          <div
+                                                            key={user.id}
+                                                            className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1"
+                                                          >
+                                                            <div className="min-w-0">
+                                                              <span className="truncate text-xs text-slate-700">
+                                                                {
+                                                                  user.displayName
+                                                                }
+                                                              </span>
+                                                              {user.role && (
+                                                                <span className="ml-1 inline-flex rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                                                  {user.role ===
+                                                                  "COACH"
+                                                                    ? "Coach"
+                                                                    : "Player"}
+                                                                </span>
+                                                              )}
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                              <button
+                                                                onClick={() =>
+                                                                  void handleOpenMemberProfile(
+                                                                    user.id,
+                                                                  )
+                                                                }
+                                                                className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-100"
+                                                              >
+                                                                View
+                                                              </button>
+                                                              <button
+                                                                disabled={
+                                                                  isAddingMemberUserId ===
+                                                                  user.id
+                                                                }
+                                                                onClick={() =>
+                                                                  void handleAddMemberToGroup(
+                                                                    group.id,
+                                                                    user.id,
+                                                                  )
+                                                                }
+                                                                className="rounded-md border border-border bg-white px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                                                              >
+                                                                {isAddingMemberUserId ===
+                                                                user.id
+                                                                  ? "Adding"
+                                                                  : "Add"}
+                                                              </button>
+                                                            </div>
+                                                          </div>
+                                                        ),
+                                                      )
+                                                    ) : (
+                                                      <p className="text-xs text-slate-500">
+                                                        No users found
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </>
+                                            )}
+                                        </div>
+                                      )}
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="rounded-lg border border-dashed border-border bg-white p-3 text-sm text-slate-500">
+                                {groupToolsMode === "DISCOVER"
+                                  ? "No discoverable groups right now. Try changing search or switch to All mode."
+                                  : groupToolsMode === "MANAGE"
+                                    ? "No joined groups to manage yet. Join a group from Discover first."
+                                    : "No group available for invites. Join or open a group first."}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                          {managedConversations.length} result
+                          {managedConversations.length === 1 ? "" : "s"}
+                        </span>
+                        <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-medium text-power-orange">
+                          {pendingRequestsCount} request
+                          {pendingRequestsCount === 1 ? "" : "s"}
+                        </span>
+                        {!!conversationFilterQuery.trim() && (
+                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                            &ldquo;{conversationFilterQuery.trim()}&rdquo;
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
+
+                      <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-border bg-slate-50 p-1">
+                        {conversationModeOptions.map((item) => (
+                          <button
+                            key={item.value}
+                            onClick={() =>
+                              setConversationMode(
+                                item.value as "ALL" | "UNREAD" | "REQUESTS",
+                              )
+                            }
+                            className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition ${
+                              conversationMode === item.value
+                                ? "bg-white text-slate-900 shadow-xs"
+                                : "text-slate-500 hover:text-slate-800"
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background px-3">
+                        <Search size={14} className="text-slate-400" />
+                        <input
+                          value={conversationFilterQuery}
+                          onChange={(event) =>
+                            setConversationFilterQuery(event.target.value)
+                          }
+                          placeholder={
+                            directoryView === "GROUPS"
+                              ? "Filter group chats"
+                              : "Filter DM chats"
+                          }
+                          className="w-full bg-transparent py-2 text-sm outline-none"
+                        />
+                        {!!conversationFilterQuery.trim() && (
+                          <button
+                            onClick={() => setConversationFilterQuery("")}
+                            className="text-slate-400 transition hover:text-slate-600"
+                            aria-label="Clear conversation filter"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+
+                      {hasConversationFilters && (
+                        <div className="mt-2 flex justify-end">
+                          <button
+                            onClick={() => {
+                              setConversationMode("ALL");
+                              setConversationFilterQuery("");
+                            }}
+                            className="text-xs font-medium text-slate-500 transition hover:text-slate-700"
+                          >
+                            Reset conversation filters
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="mt-4 max-h-90 overflow-y-auto rounded-xl border border-slate-200 bg-white xl:max-h-none xl:flex-1">
+                        {managedConversations.map((conversation) => (
+                          <ConversationListItem
+                            key={conversation.id}
+                            conversation={conversation}
+                            isSelected={
+                              conversation.id === selectedConversationId
+                            }
+                            onOpenConversation={handleOpenConversation}
+                          />
+                        ))}
+                        {!managedConversations.length && (
+                          <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
+                            {hasConversationFilters
+                              ? "No matches for current filters. Reset filters to see all conversations."
+                              : "No conversations yet. Start a new contact chat or join a group."}
+                          </div>
+                        )}
+
+                        {!hasConversationFilters && hasMoreConversations && (
+                          <button
+                            onClick={() => void handleLoadMoreConversations()}
+                            disabled={isLoadingMoreConversations}
+                            className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                          >
+                            {isLoadingMoreConversations
+                              ? "Loading more..."
+                              : "Load more conversations"}
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </motion.section>
+                <motion.section
+                  className={`min-h-full min-w-0 flex-col overflow-visible bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-position-[0_0,11px_11px] bg-size-[22px_22px] lg:h-full lg:overflow-hidden ${
+                    workspaceView === "CHAT" ? "flex" : "hidden lg:flex"
+                  }`}
+                >
+                  <div className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-2 sm:px-4 sm:py-2.5 lg:min-h-15 lg:px-4 lg:py-2">
+                    {/* WhatsApp-style chat header */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        {/* Avatar and name */}
+                        <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-slate-200 to-slate-300 text-sm font-bold uppercase text-slate-700">
+                          {selectedConversationInitials || "--"}
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="truncate text-[15px] font-500 text-slate-900">
+                            {selectedConversationDisplayName}
+                          </h2>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {selectedConversation?.conversationType === "GROUP"
+                              ? `Group · ${selectedConversation?.group?.memberCount || 0} members`
+                              : "Direct message"}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Action buttons */}
+                      <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
                         <button
                           onClick={() => {
                             setIsConversationSidebarOpen(true);
@@ -3833,116 +3691,29 @@ export default function CommunityPage() {
                               setWorkspaceView("DIRECTORY");
                             }
                           }}
-                          className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                          className="hidden items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 sm:inline-flex"
                         >
-                          <Users size={14} />
+                          <Users size={13} />
                           Tools
                         </button>
-                        <button
-                          onClick={() =>
-                            setIsConversationSidebarOpen((current) => !current)
-                          }
-                          className="hidden items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 xl:inline-flex"
-                        >
-                          {isConversationSidebarOpen ? (
-                            <>
-                              <PanelLeftClose size={14} />
-                              Close list
-                            </>
-                          ) : (
-                            <>
-                              <PanelLeftOpen size={14} />
-                              Open list
-                            </>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => setWorkspaceView("DIRECTORY")}
-                          className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 xl:hidden"
-                        >
-                          <ChevronLeft size={14} />
-                          Back to list
-                        </button>
-                      </div>
-                    </div>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Messages stay anonymous unless identity is public.
-                    </p>
-
-                    {selectedConversationIsPending && (
-                      <div className="mt-3 rounded-xl border border-power-orange/40 bg-power-orange/10 p-3 text-sm text-card-foreground">
-                        {selectedConversationNeedsMyApproval ? (
-                          <>
-                            <p className="font-medium">
-                              This conversation is pending your approval.
-                            </p>
-                            <div className="mt-2 flex gap-2">
-                              <button
-                                onClick={handleAcceptRequest}
-                                className="rounded-md bg-power-orange px-3 py-1 text-white transition hover:opacity-90"
-                              >
-                                Accept
-                              </button>
-                              <button
-                                onClick={handleRejectRequest}
-                                className="rounded-md border border-border bg-background px-3 py-1 transition hover:bg-slate-50"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <p className="font-medium">
-                            Request sent. You can send more messages while
-                            waiting for acceptance.
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="mt-4 flex items-center justify-between rounded-lg border border-border bg-slate-50 px-3 py-2">
-                      <div>
-                        <p className="text-sm font-medium text-slate-700">
-                          {selectedConversation
-                            ? selectedConversation.conversationType === "GROUP"
-                              ? selectedConversation.group?.name ||
-                                selectedConversation.otherParticipant
-                                  .displayName
-                              : selectedConversation.otherParticipant
-                                  .displayName
-                            : "No conversation selected"}
-                        </p>
-                        {!!selectedConversation?.conversationType && (
-                          <p className="text-xs text-slate-500">
-                            {selectedConversation.conversationType === "GROUP"
-                              ? "Group conversation"
-                              : "Direct message"}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <p className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-500">
-                          <Activity size={13} />
+                        <span className="hidden items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 sm:inline-flex">
+                          <Activity size={12} />
                           {isSocketConnected ? "Live" : "Syncing"}
-                        </p>
+                        </span>
                         {selectedConversation?.conversationType !== "GROUP" &&
                           selectedConversation && (
                             <button
                               onClick={handleToggleConversationBlock}
                               disabled={isTogglingBlockUser}
-                              className={`inline-flex items-center rounded-md border px-3 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                              className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
                                 selectedConversationIsBlocked
                                   ? "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                                   : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
                               }`}
                             >
-                              {isTogglingBlockUser
-                                ? selectedConversationIsBlocked
-                                  ? "Unblocking"
-                                  : "Blocking"
-                                : selectedConversationIsBlocked
-                                  ? "Unblock"
-                                  : "Block"}
+                              {selectedConversationIsBlocked
+                                ? "Unblock"
+                                : "Block"}
                             </button>
                           )}
                         {selectedConversation?.conversationType === "GROUP" && (
@@ -3950,103 +3721,141 @@ export default function CommunityPage() {
                             onClick={() =>
                               setShowGroupMembersPanel((current) => !current)
                             }
-                            className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            className="hidden items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 sm:inline-flex"
                           >
                             {showGroupMembersPanel ? (
-                              <PanelRightClose size={14} />
+                              <PanelRightClose size={13} />
                             ) : (
-                              <PanelRightOpen size={14} />
+                              <PanelRightOpen size={13} />
                             )}
-                            {showGroupMembersPanel ? "Close" : "Open"} Sidebar
                           </button>
                         )}
+                        <button
+                          onClick={() => setWorkspaceView("DIRECTORY")}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 sm:hidden"
+                        >
+                          <ChevronLeft size={13} />
+                        </button>
                       </div>
                     </div>
-
+                    {/* Status messages */}
+                    {selectedConversationIsPending && (
+                      <div className="mt-3 rounded-lg border border-power-orange/30 bg-power-orange/8 p-2.5 text-sm text-slate-700">
+                        {selectedConversationNeedsMyApproval ? (
+                          <>
+                            <p className="font-500">
+                              Message request pending approval
+                            </p>
+                            <div className="mt-2 flex gap-2">
+                              <button
+                                onClick={handleAcceptRequest}
+                                className="rounded-md bg-power-orange px-3 py-1 text-xs font-semibold text-white transition hover:opacity-90"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={handleRejectRequest}
+                                className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-xs">
+                            Request sent. Message while waiting.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {selectedConversationIsBlocked && (
-                      <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                        This user is blocked. Unblock to send or receive direct
-                        messages in this chat.
+                      <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs font-medium text-red-700">
+                        Conversation blocked. Unblock to send messages.
                       </div>
                     )}
+                  </div>
 
-                    <div className="mt-3 min-h-80 flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-background p-3">
-                      {messages.map((message) => {
-                        const isOwnMessage =
-                          message.senderId === profile?.userId;
-                        const isGroupConversation =
-                          selectedConversation?.conversationType === "GROUP";
+                  <div className="min-h-0 flex-1 space-y-2 px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4 lg:overflow-y-auto">
+                    {messages.map((message) => {
+                      const isOwnMessage = message.senderId === profile?.userId;
+                      const isGroupConversation =
+                        selectedConversation?.conversationType === "GROUP";
 
-                        return (
-                          <MessageBubble
-                            key={message.id}
-                            message={message}
-                            isOwnMessage={isOwnMessage}
-                            isGroupConversation={!!isGroupConversation}
-                            profileUserId={profile?.userId}
-                            onRetry={retryFailedMessage}
-                            onEdit={handleBeginEditMessage}
-                            onDelete={handleDeleteMessage}
-                            onCopy={handleCopyMessage}
-                            isCopied={copiedMessageId === message.id}
-                            isEditing={editingMessageId === message.id}
-                            isMutating={isMutatingMessageId === message.id}
-                          />
-                        );
-                      })}
-                      {!selectedConversation && (
-                        <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
-                          Choose a conversation to start chatting.
-                        </div>
-                      )}
-
-                      {!!selectedConversation && !messages.length && (
-                        <div className="rounded-lg border border-dashed border-border bg-slate-50 p-4 text-center text-sm text-slate-500">
-                          No messages yet. Start the conversation.
-                        </div>
-                      )}
-
-                      <div ref={messagesEndRef} />
-                    </div>
-
-                    {editingMessageId && (
-                      <div className="mt-3 rounded-xl border border-power-orange/40 bg-power-orange/10 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-power-orange">
-                          Editing message
-                        </p>
-                        <textarea
-                          value={editingMessageDraft}
-                          onChange={(event) =>
-                            setEditingMessageDraft(event.target.value)
+                      return (
+                        <MessageBubble
+                          key={message.id}
+                          message={message}
+                          isOwnMessage={isOwnMessage}
+                          isGroupConversation={!!isGroupConversation}
+                          profileUserId={profile?.userId}
+                          onOpenMobileActions={(selectedMessage) =>
+                            setMobileActionMessageId(selectedMessage.id)
                           }
-                          rows={2}
-                          className="mt-2 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                          onRetry={retryFailedMessage}
+                          onEdit={handleBeginEditMessage}
+                          onDelete={handleDeleteMessage}
+                          onCopy={handleCopyMessage}
+                          isCopied={copiedMessageId === message.id}
+                          isEditing={editingMessageId === message.id}
+                          isMutating={isMutatingMessageId === message.id}
                         />
-                        <div className="mt-2 flex items-center gap-2">
-                          <button
-                            onClick={handleSaveEditedMessage}
-                            disabled={
-                              isMutatingMessageId === editingMessageId ||
-                              !editingMessageDraft.trim()
-                            }
-                            className="rounded-md bg-power-orange px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isMutatingMessageId === editingMessageId
-                              ? "Saving"
-                              : "Save"}
-                          </button>
-                          <button
-                            onClick={handleCancelEditMessage}
-                            disabled={isMutatingMessageId === editingMessageId}
-                            className="rounded-md border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Cancel
-                          </button>
-                        </div>
+                      );
+                    })}
+                    {!selectedConversation && (
+                      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm text-slate-500">
+                        Select a conversation to start messaging
                       </div>
                     )}
 
-                    <div className="mt-3 flex gap-2 rounded-xl border border-border bg-white p-2 xl:sticky xl:bottom-0">
+                    {!!selectedConversation && !messages.length && (
+                      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm text-slate-500">
+                        No messages yet. Start the conversation!
+                      </div>
+                    )}
+
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {editingMessageId && (
+                    <div className="mt-2 shrink-0 rounded-lg border border-power-orange/30 bg-power-orange/8 p-3">
+                      <p className="text-xs font-semibold text-power-orange">
+                        Editing message
+                      </p>
+                      <textarea
+                        value={editingMessageDraft}
+                        onChange={(event) =>
+                          setEditingMessageDraft(event.target.value)
+                        }
+                        rows={2}
+                        className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
+                      />
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          onClick={handleSaveEditedMessage}
+                          disabled={
+                            isMutatingMessageId === editingMessageId ||
+                            !editingMessageDraft.trim()
+                          }
+                          className="rounded-md bg-power-orange px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isMutatingMessageId === editingMessageId
+                            ? "Saving"
+                            : "Save"}
+                        </button>
+                        <button
+                          onClick={handleCancelEditMessage}
+                          disabled={isMutatingMessageId === editingMessageId}
+                          className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* WhatsApp-style composer */}
+                  <div className="sticky bottom-0 z-20 shrink-0 border-t border-slate-200/80 bg-[#f0f2f5] px-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:pt-2.5 sm:pb-[calc(0.875rem+env(safe-area-inset-bottom))] lg:static">
+                    <div className="flex min-w-0 items-end gap-2.5">
                       <textarea
                         value={newMessage}
                         onChange={(event) => setNewMessage(event.target.value)}
@@ -4060,18 +3869,18 @@ export default function CommunityPage() {
                         }}
                         placeholder={
                           !selectedConversation
-                            ? "Select a conversation to reply"
+                            ? "Select a conversation"
                             : selectedConversationIsBlocked
-                              ? "Unblock this user to continue messaging"
+                              ? "Conversation blocked"
                               : selectedConversationNeedsMyApproval
-                                ? "Accept this request to reply"
-                                : "Type your message"
+                                ? "Accept request first"
+                                : "Type a message..."
                         }
                         disabled={
                           !canSendSelectedConversationMessage || isSending
                         }
                         rows={1}
-                        className="max-h-28 w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-power-orange focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
+                        className="max-h-28 min-w-0 flex-1 resize-none rounded-3xl border border-slate-200 bg-white px-4 py-2.5 text-sm leading-6 placeholder-slate-400 focus:border-power-orange focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
                       />
                       <button
                         disabled={
@@ -4080,77 +3889,187 @@ export default function CommunityPage() {
                           !newMessage.trim()
                         }
                         onClick={handleSendMessage}
-                        className="rounded-lg bg-power-orange px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-power-orange text-white transition hover:opacity-90 active:scale-95 disabled:opacity-50"
+                        aria-label={isSending ? "Sending" : "Send message"}
                       >
-                        {isSending ? "Sending" : "Send"}
+                        {isSending ? (
+                          <RotateCcw size={16} className="animate-spin" />
+                        ) : (
+                          <MessageSquare size={16} />
+                        )}
                       </button>
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      Press Enter to send, Shift+Enter for a new line.
+                    <p className="mt-1 hidden text-[11px] text-slate-500 sm:block">
+                      Enter to send • Shift+Enter for new line
                     </p>
+                  </div>
 
-                    {error && (
-                      <p className="mt-2 text-sm text-error-red">{error}</p>
-                    )}
-                  </motion.section>
+                  {error && (
+                    <p className="mt-2 shrink-0 px-3 pb-2 text-xs font-medium text-red-600 sm:px-4">
+                      {error}
+                    </p>
+                  )}
+                </motion.section>
 
-                  <AnimatePresence initial={false}>
-                    {showGroupInsightsSidebar && selectedConversation?.group ? (
-                      <>
-                        <motion.button
-                          key="group-sidebar-backdrop"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2, ease: "easeOut" }}
-                          onClick={() => setShowGroupMembersPanel(false)}
-                          className="fixed inset-0 z-40 bg-slate-900/40 xl:hidden"
-                          aria-label="Close member sidebar"
-                        />
-                        <motion.section
-                          key="group-sidebar-panel"
-                          initial={{ opacity: 0, x: 28 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 24 }}
-                          transition={{ duration: 0.24, ease: "easeOut" }}
-                          className="fixed inset-y-0 right-0 z-50 w-[92vw] max-w-sm overflow-y-auto border-l border-border bg-white p-4 shadow-xl xl:static xl:z-auto xl:block xl:h-[calc(100vh-8rem)] xl:w-auto xl:max-w-none xl:rounded-2xl xl:border xl:border-border/80 xl:p-5 xl:shadow-xs"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <UserCircle2
-                                size={16}
-                                className="text-slate-600"
-                              />
-                              <h3 className="text-base font-semibold tracking-tight">
-                                Group Sidebar
-                              </h3>
-                            </div>
-                            <button
-                              onClick={() => setShowGroupMembersPanel(false)}
-                              className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-                            >
-                              <PanelRightClose size={14} />
-                              Close
-                            </button>
+                <AnimatePresence initial={false}>
+                  {showGroupInsightsSidebar && selectedConversation?.group ? (
+                    <>
+                      <motion.button
+                        key="group-sidebar-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        onClick={() => setShowGroupMembersPanel(false)}
+                        className="fixed inset-0 z-40 bg-slate-900/40 xl:hidden"
+                        aria-label="Close member sidebar"
+                      />
+                      <motion.section
+                        key="group-sidebar-panel"
+                        initial={{ opacity: 0, x: 28 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 24 }}
+                        transition={{ duration: 0.24, ease: "easeOut" }}
+                        className="fixed inset-y-0 right-0 z-50 w-[92vw] max-w-sm overflow-y-auto border-l border-border bg-white p-4 shadow-xl xl:w-95 xl:max-w-none"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <UserCircle2 size={16} className="text-slate-600" />
+                            <h3 className="text-base font-semibold tracking-tight">
+                              Group Sidebar
+                            </h3>
                           </div>
-                          <p className="mt-1 text-sm text-slate-500">
-                            Members, quick profile access, and invite tools.
-                          </p>
+                          <button
+                            onClick={() => setShowGroupMembersPanel(false)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                          >
+                            <PanelRightClose size={14} />
+                            Close
+                          </button>
+                        </div>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Members, quick profile access, and invite tools.
+                        </p>
 
-                          <div className="mt-4 space-y-3">
-                            <GroupMembersList
-                              groupId={selectedConversation.group.id}
-                              onMemberClick={handleMemberClick}
-                            />
-                          </div>
-                        </motion.section>
-                      </>
-                    ) : null}
-                  </AnimatePresence>
-                </div>
-              )}
+                        <div className="mt-4 space-y-3">
+                          <GroupMembersList
+                            groupId={selectedConversation.group.id}
+                            onMemberClick={handleMemberClick}
+                          />
+                        </div>
+                      </motion.section>
+                    </>
+                  ) : null}
+                </AnimatePresence>
+
+                {isConversationsView && workspaceView !== "CHAT" && (
+                  <nav
+                    className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/96 backdrop-blur lg:hidden"
+                    style={{
+                      paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
+                    }}
+                  >
+                    <div className="mx-auto grid max-w-lg grid-cols-3 gap-0.5 p-2">
+                      {/* Chat Tab */}
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          if (selectedConversationId) {
+                            setWorkspaceView("CHAT");
+                          } else {
+                            setWorkspaceView("DIRECTORY");
+                          }
+                          setSidebarMode("INBOX");
+                        }}
+                        className={`relative inline-flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2.5 text-xs font-500 transition ${
+                          activeMobileDockTab === "CHAT"
+                            ? "text-white"
+                            : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        {activeMobileDockTab === "CHAT" && (
+                          <motion.div
+                            layoutId="mobile-dock-pill"
+                            className="absolute inset-0 rounded-lg bg-power-orange"
+                            transition={{
+                              type: "spring",
+                              stiffness: 380,
+                              damping: 30,
+                            }}
+                          />
+                        )}
+                        <span className="relative z-10 inline-flex items-center justify-center">
+                          <MessageSquare size={20} />
+                        </span>
+                        <span className="relative z-10 text-[11px]">Chat</span>
+                      </motion.button>
+
+                      {/* List Tab */}
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          setSidebarMode("INBOX");
+                          setWorkspaceView("DIRECTORY");
+                        }}
+                        className={`relative inline-flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2.5 text-xs font-500 transition ${
+                          activeMobileDockTab === "LIST"
+                            ? "text-white"
+                            : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        {activeMobileDockTab === "LIST" && (
+                          <motion.div
+                            layoutId="mobile-dock-pill"
+                            className="absolute inset-0 rounded-lg bg-power-orange"
+                            transition={{
+                              type: "spring",
+                              stiffness: 380,
+                              damping: 30,
+                            }}
+                          />
+                        )}
+                        <span className="relative z-10 inline-flex items-center justify-center">
+                          <Users size={20} />
+                        </span>
+                        <span className="relative z-10 text-[11px]">Chats</span>
+                      </motion.button>
+
+                      {/* Tools Tab */}
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          setSidebarMode("TOOLS");
+                          setWorkspaceView("DIRECTORY");
+                          setDirectoryView("GROUPS");
+                        }}
+                        className={`relative inline-flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2.5 text-xs font-500 transition ${
+                          activeMobileDockTab === "TOOLS"
+                            ? "text-white"
+                            : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        {activeMobileDockTab === "TOOLS" && (
+                          <motion.div
+                            layoutId="mobile-dock-pill"
+                            className="absolute inset-0 rounded-lg bg-power-orange"
+                            transition={{
+                              type: "spring",
+                              stiffness: 380,
+                              damping: 30,
+                            }}
+                          />
+                        )}
+                        <span className="relative z-10 inline-flex items-center justify-center">
+                          <Search size={20} />
+                        </span>
+                        <span className="relative z-10 text-[11px]">Tools</span>
+                      </motion.button>
+                    </div>
+                  </nav>
+                )}
+              </motion.main>
             </div>
-          </motion.main>
+          )}
         </motion.div>
       </motion.div>
 
@@ -4162,6 +4081,106 @@ export default function CommunityPage() {
         onClose={handleCloseMemberProfile}
         onMessage={handleMessageSelectedMember}
       />
+
+      {mobileActionMessage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-60 flex items-end bg-slate-900/40 p-0 sm:hidden"
+          onClick={() => setMobileActionMessageId(null)}
+        >
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 30, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="w-full rounded-t-3xl border-t border-slate-200 bg-white px-4 pb-8 pt-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* Handle indicator */}
+            <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-slate-300" />
+
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Message options
+            </p>
+
+            {/* WhatsApp-style action buttons */}
+            <div className="mt-4 space-y-2.5">
+              {!mobileActionMessage.isDeleted && (
+                <button
+                  onClick={() => {
+                    handleCopyMessage(mobileActionMessage);
+                    setMobileActionMessageId(null);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-500 text-slate-800 transition hover:bg-slate-50 active:bg-slate-100"
+                >
+                  <Copy size={18} className="text-slate-600" />
+                  Copy message
+                </button>
+              )}
+
+              {mobileActionMessage.senderId === profile?.userId &&
+                mobileActionMessage.messageStatus === "FAILED" && (
+                  <button
+                    onClick={() => {
+                      void retryFailedMessage(mobileActionMessage);
+                      setMobileActionMessageId(null);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-500 text-slate-800 transition hover:bg-slate-50 active:bg-slate-100"
+                  >
+                    <RotateCcw size={18} className="text-slate-600" />
+                    Retry sending
+                  </button>
+                )}
+
+              {mobileActionMessage.senderId === profile?.userId &&
+                !mobileActionMessage.isDeleted &&
+                mobileActionMessage.messageStatus !== "FAILED" && (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleBeginEditMessage(mobileActionMessage);
+                        setMobileActionMessageId(null);
+                      }}
+                      disabled={
+                        !isWithinMessageEditWindow(
+                          mobileActionMessage.createdAt,
+                        )
+                      }
+                      className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-500 text-slate-800 transition hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Pencil size={18} className="text-slate-600" />
+                      Edit message
+                    </button>
+                    <button
+                      onClick={() => {
+                        void handleDeleteMessage(mobileActionMessage);
+                        setMobileActionMessageId(null);
+                      }}
+                      disabled={
+                        !isWithinMessageEditWindow(
+                          mobileActionMessage.createdAt,
+                        )
+                      }
+                      className="flex w-full items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-500 text-red-700 transition hover:bg-red-100 active:bg-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Trash2 size={18} className="text-red-600" />
+                      Delete message
+                    </button>
+                  </>
+                )}
+            </div>
+
+            <button
+              onClick={() => setMobileActionMessageId(null)}
+              className="mt-3 w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-500 text-slate-800 transition hover:bg-slate-200 active:bg-slate-300"
+            >
+              Done
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* Report Content Modal */}
       {reportModal && (

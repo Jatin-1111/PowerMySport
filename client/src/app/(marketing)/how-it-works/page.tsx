@@ -1,7 +1,12 @@
 ﻿"use client";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
+import {
+  FeatureIcons,
+  Features,
+} from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import {
   Card,
   CardContent,
@@ -19,6 +24,29 @@ const iconMotion = {
 };
 
 export default function HowItWorksPage() {
+  const communityUrl = getCommunityAppUrl();
+
+  const communityFeatures = [
+    {
+      title: "Ask before booking",
+      description:
+        "Check with other players and coaches to get practical advice on venues, timing, and setup.",
+      icon: FeatureIcons.Users,
+    },
+    {
+      title: "See what people learned",
+      description:
+        "Use community feedback to avoid surprises and choose options that fit your sport and skill level.",
+      icon: FeatureIcons.Star,
+    },
+    {
+      title: "Move from discovery to action",
+      description:
+        "Turn community guidance into a booking path without leaving the PowerMySport experience.",
+      icon: FeatureIcons.Calendar,
+    },
+  ];
+
   return (
     <main>
       {/* Hero Section */}
@@ -27,6 +55,16 @@ export default function HowItWorksPage() {
         title="How It Works"
         subtitle="Getting Started"
         description="Simple, straightforward steps to start booking venues and coaches on PowerMySport"
+      />
+
+      {/* Community Section */}
+      <Features
+        title="Community Guidance Inside the Booking Journey"
+        subtitle="Community System"
+        description="You do not have to guess. Community context helps you decide faster before you move into booking and payment."
+        features={communityFeatures}
+        columns={3}
+        variant="centered"
       />
 
       {/* For Players Journey */}
@@ -505,14 +543,14 @@ export default function HowItWorksPage() {
       <CTA
         variant="gradient"
         title="Ready to Get Started?"
-        description="Join thousands of satisfied users who are already booking with PowerMySport"
+        description="Join players, coaches, and venue partners who are already using the community to book smarter."
         primaryCTA={{
           label: "Create Account",
           href: "/register",
         }}
         secondaryCTA={{
-          label: "Contact Support",
-          href: "/contact",
+          label: "Open Community",
+          href: communityUrl,
         }}
       />
     </main>

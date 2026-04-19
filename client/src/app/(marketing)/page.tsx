@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
@@ -8,7 +9,6 @@ import {
   Features,
 } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
-import { Stats } from "@/modules/marketing/components/marketing/Stats";
 import { Testimonials } from "@/modules/marketing/components/marketing/Testimonials";
 import {
   Building2,
@@ -24,6 +24,7 @@ import Script from "next/script";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 export default function HomePage() {
   const { user } = useAuthStore();
+  const communityUrl = getCommunityAppUrl();
 
   const organizationSchema = {
     "@context": "https://schema.org",
@@ -86,27 +87,24 @@ export default function HomePage() {
     },
   ];
 
-  // Stats data
-  const stats = [
+  const communityFeatures = [
     {
-      value: "500+",
-      label: "Active Venues",
-      description: "Sports facilities nationwide",
+      title: "Ask before you book",
+      description:
+        "Get recommendations from players and coaches who know the venue, sport, and training setup already.",
+      icon: FeatureIcons.Users,
     },
     {
-      value: "10,000+",
-      label: "Happy Players",
-      description: "Active platform users",
+      title: "Read real feedback",
+      description:
+        "See what local players are saying about venue quality, coaching style, and the overall experience.",
+      icon: FeatureIcons.Star,
     },
     {
-      value: "200+",
-      label: "Certified Coaches",
-      description: "Professional trainers available",
-    },
-    {
-      value: "50,000+",
-      label: "Successful Bookings",
-      description: "Sessions completed",
+      title: "Built for every role",
+      description:
+        "Players, parents, coaches, and venue partners all participate in the same connected sports community.",
+      icon: FeatureIcons.Calendar,
     },
   ];
 
@@ -189,8 +187,29 @@ export default function HomePage() {
         variant="centered"
       />
 
-      {/* Stats Section */}
-      <Stats stats={stats} variant="gradient" columns={4} />
+      {/* Community Section */}
+      <Features
+        title="A Community System That Helps You Decide Faster"
+        subtitle="Community System"
+        description="PowerMySport connects discovery, reviews, and discussion so you can make better sports decisions with local context instead of guesswork."
+        features={communityFeatures}
+        columns={3}
+        variant="centered"
+      />
+
+      <CTA
+        variant="gradient"
+        title="Join the community before you book"
+        description="Check what other players, parents, coaches, and venue owners are discussing, then move into booking with more confidence."
+        primaryCTA={{
+          label: "Open Community",
+          href: communityUrl,
+        }}
+        secondaryCTA={{
+          label: user ? "Go to Dashboard" : "Start Booking Now",
+          href: getDashboardLink(),
+        }}
+      />
 
       {/* Parent-Child Management Highlight Section */}
       <section className="py-16 sm:py-20 lg:py-24">
@@ -390,7 +409,7 @@ export default function HomePage() {
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
                       <Check size={14} />
                     </span>
-                    <span>Reach thousands of players</span>
+                    <span>Reach players actively searching for venues</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <span className="text-power-orange font-bold shrink-0 mt-0.5">
@@ -526,7 +545,7 @@ export default function HomePage() {
         description={
           user
             ? "Book your next venue or coach session and stay in rhythm."
-            : "Join thousands of players, coaches, and venue partners already building better sports experiences with PowerMySport."
+            : "Join players, coaches, and venue partners who are building better sports experiences with PowerMySport."
         }
         primaryCTA={{
           label: user ? "Go to Dashboard" : "Get Started Free",

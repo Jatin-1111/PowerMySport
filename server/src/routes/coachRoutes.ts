@@ -14,8 +14,19 @@ import {
   updateMyCoachAvailability,
   updateCoachProfile,
 } from "../controllers/coachController";
+import {
+  cancelMyCoachSubscriptionHandler,
+  createOrUpdateMyCoachSubscriptionHandler,
+  createOverrideRequestHandler,
+  getMyCoachSubscriptionHandler,
+  listMyOverrideRequestsHandler,
+  listCoachPlansHandler,
+} from "../controllers/coachSubscriptionController";
 import { authMiddleware } from "../middleware/auth";
 import {
+  coachSubscriptionCancelSchema,
+  coachSubscriptionCreateSchema,
+  coachSubscriptionOverrideRequestSchema,
   coachVerificationStep1Schema,
   coachVerificationStep2Schema,
   coachVerificationStep3Schema,
@@ -77,6 +88,37 @@ router.post(
   authMiddleware,
   validateRequest(coachVerificationStep3Schema),
   submitCoachVerificationHandler,
+);
+
+// Coach subscription routes
+router.get("/subscription/plans", authMiddleware, listCoachPlansHandler);
+router.get(
+  "/subscription/my-subscription",
+  authMiddleware,
+  getMyCoachSubscriptionHandler,
+);
+router.post(
+  "/subscription/subscribe",
+  authMiddleware,
+  validateRequest(coachSubscriptionCreateSchema),
+  createOrUpdateMyCoachSubscriptionHandler,
+);
+router.post(
+  "/subscription/cancel",
+  authMiddleware,
+  validateRequest(coachSubscriptionCancelSchema),
+  cancelMyCoachSubscriptionHandler,
+);
+router.post(
+  "/subscription/override-request",
+  authMiddleware,
+  validateRequest(coachSubscriptionOverrideRequestSchema),
+  createOverrideRequestHandler,
+);
+router.get(
+  "/subscription/override-requests",
+  authMiddleware,
+  listMyOverrideRequestsHandler,
 );
 
 // Check coach availability

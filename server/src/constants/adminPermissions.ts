@@ -86,6 +86,15 @@ export const ORDERS_PERMISSIONS = {
   REFUND: "orders:refund",
 } as const;
 
+export const COACH_SUBSCRIPTIONS_PERMISSIONS = {
+  VIEW: "coach-subscriptions:view",
+  CREATE: "coach-subscriptions:create",
+  MANAGE: "coach-subscriptions:manage",
+  CANCEL: "coach-subscriptions:cancel",
+  REFUND: "coach-subscriptions:refund",
+  OVERRIDE_REVIEW: "coach-subscriptions:override-review",
+} as const;
+
 // Flatten all permissions into a single array for validation
 export const ALL_PERMISSIONS = [
   ...Object.values(USERS_PERMISSIONS),
@@ -100,6 +109,7 @@ export const ALL_PERMISSIONS = [
   ...Object.values(REVIEWS_PERMISSIONS),
   ...Object.values(PRODUCTS_PERMISSIONS),
   ...Object.values(ORDERS_PERMISSIONS),
+  ...Object.values(COACH_SUBSCRIPTIONS_PERMISSIONS),
 ] as const;
 
 // ============================================
@@ -136,6 +146,10 @@ export const OPERATIONS_ADMIN_PERMISSIONS = [
   PRODUCTS_PERMISSIONS.VIEW,
   PRODUCTS_PERMISSIONS.CREATE,
   PRODUCTS_PERMISSIONS.MANAGE,
+  COACH_SUBSCRIPTIONS_PERMISSIONS.VIEW,
+  COACH_SUBSCRIPTIONS_PERMISSIONS.CREATE,
+  COACH_SUBSCRIPTIONS_PERMISSIONS.MANAGE,
+  COACH_SUBSCRIPTIONS_PERMISSIONS.OVERRIDE_REVIEW,
 ] as const;
 
 // Finance Admin - Handles refunds, disputes, and financial matters
@@ -150,6 +164,9 @@ export const FINANCE_ADMIN_PERMISSIONS = [
   USERS_PERMISSIONS.VIEW,
   VENUES_PERMISSIONS.VIEW,
   ANALYTICS_PERMISSIONS.VIEW,
+  COACH_SUBSCRIPTIONS_PERMISSIONS.VIEW,
+  COACH_SUBSCRIPTIONS_PERMISSIONS.CANCEL,
+  COACH_SUBSCRIPTIONS_PERMISSIONS.REFUND,
 ] as const;
 
 // Analytics Admin - View-only access to reports and analytics
@@ -273,6 +290,10 @@ export const PERMISSION_MODULES = {
     name: "Order Management",
     permissions: Object.values(ORDERS_PERMISSIONS),
   },
+  coachSubscriptions: {
+    name: "Coach Subscriptions",
+    permissions: Object.values(COACH_SUBSCRIPTIONS_PERMISSIONS),
+  },
 } as const;
 
 // Permission labels for display
@@ -337,6 +358,14 @@ export const PERMISSION_LABELS: Record<string, string> = {
   "orders:view": "View Orders",
   "orders:manage": "Manage Orders",
   "orders:refund": "Refund Orders",
+
+  // Coach subscriptions
+  "coach-subscriptions:view": "View Coach Subscriptions",
+  "coach-subscriptions:create": "Create Coach Plans",
+  "coach-subscriptions:manage": "Manage Coach Plans",
+  "coach-subscriptions:cancel": "Cancel Coach Subscriptions",
+  "coach-subscriptions:refund": "Refund Coach Subscriptions",
+  "coach-subscriptions:override-review": "Review Coach Plan Override Requests",
 };
 
 // Legacy support (for backward compatibility during migration)

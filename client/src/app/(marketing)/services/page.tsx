@@ -5,6 +5,7 @@ import {
   FeatureIcons,
   Features,
 } from "@/modules/marketing/components/marketing/Features";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import {
   Card,
@@ -23,12 +24,14 @@ const iconMotion = {
 };
 
 export default function ServicesPage() {
+  const communityUrl = getCommunityAppUrl();
+
   // Main services for players
   const playerServices = [
     {
       title: "Premium Venue Booking",
       description:
-        "Browse and instantly book from thousands of verified sports venues nationwide. Real-time availability, transparent pricing, and verified facility details. Book badminton courts, cricket grounds, football fields, and more.",
+        "Browse and instantly book verified sports venues nationwide. Real-time availability, transparent pricing, and verified facility details. Book badminton courts, cricket grounds, football fields, and more.",
       icon: FeatureIcons.Location,
     },
     {
@@ -50,7 +53,6 @@ export default function ServicesPage() {
       icon: FeatureIcons.CreditCard,
     },
   ];
-
   // Services for venue owners
   const venueOwnerFeatures = [
     {
@@ -74,7 +76,7 @@ export default function ServicesPage() {
     {
       title: "Marketing & Visibility",
       description:
-        "Get discovered by thousands of players searching on PowerMySport. Featured listings, reviews, and ratings help you stand out and attract more bookings.",
+        "Get discovered by players searching on PowerMySport. Featured listings, reviews, and ratings help you stand out and attract more bookings.",
       icon: FeatureIcons.Star,
     },
   ];
@@ -103,6 +105,26 @@ export default function ServicesPage() {
     },
   ];
 
+  const communityFeatures = [
+    {
+      title: "Ask the community",
+      description:
+        "Let players and coaches help you choose the right venue, sport setup, or training option before you commit.",
+      icon: FeatureIcons.Users,
+    },
+    {
+      title: "Learn from real feedback",
+      description:
+        "Use reviews and discussions to understand what works well for different sports, locations, and skill levels.",
+      icon: FeatureIcons.Star,
+    },
+    {
+      title: "Connect every service",
+      description:
+        "Keep bookings, coaching, and community advice in one flow so discovery feels connected instead of fragmented.",
+      icon: FeatureIcons.Calendar,
+    },
+  ];
   return (
     <main>
       {/* Hero Section */}
@@ -111,6 +133,16 @@ export default function ServicesPage() {
         title="Our Services"
         subtitle="What We Offer"
         description="Comprehensive solutions for players, venue owners, and coaches. Everything you need to power your sports experience."
+      />
+
+      {/* Community Section */}
+      <Features
+        title="Community Support Built Into Every Service"
+        subtitle="Community System"
+        description="PowerMySport combines booking and conversation so you can validate options with people who already play, coach, or manage venues."
+        features={communityFeatures}
+        columns={3}
+        variant="centered"
       />
 
       {/* For Players Section */}
@@ -461,14 +493,14 @@ export default function ServicesPage() {
       <CTA
         variant="gradient"
         title="Ready to Experience These Services?"
-        description="Join PowerMySport today and see how seamless sports booking can feel."
+        description="Join PowerMySport today and see how seamless sports booking and community support can feel."
         primaryCTA={{
           label: "Get Started Free",
           href: "/register",
         }}
         secondaryCTA={{
-          label: "Learn More",
-          href: "/how-it-works",
+          label: "Open Community",
+          href: communityUrl,
         }}
       />
     </main>

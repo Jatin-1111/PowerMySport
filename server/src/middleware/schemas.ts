@@ -490,6 +490,76 @@ export const coachVerificationStep3Schema = z.object({
     .default([]),
 });
 
+export const coachSubscriptionCreateSchema = z.object({
+  planId: z.string().min(1, "planId is required"),
+  billingCycle: z.enum(["MONTHLY", "YEARLY"]).optional().default("MONTHLY"),
+});
+
+export const coachSubscriptionCancelSchema = z.object({
+  reason: z.string().trim().max(300).optional(),
+});
+
+export const coachSubscriptionOverrideRequestSchema = z.object({
+  requestedPlanId: z.string().min(1).optional(),
+  note: z
+    .string()
+    .trim()
+    .min(5, "Override request note must be at least 5 characters")
+    .max(1000, "Override request note cannot exceed 1000 characters"),
+});
+
+export const adminCreateCoachPlanSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(2, "Plan code must be at least 2 characters")
+    .max(40, "Plan code cannot exceed 40 characters"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Plan name must be at least 2 characters")
+    .max(120, "Plan name cannot exceed 120 characters"),
+  description: z.string().trim().max(600).optional(),
+  pricing: z
+    .object({
+      monthly: z.number().min(0).optional(),
+      yearly: z.number().min(0).optional(),
+    })
+    .refine(
+      (value) => value.monthly !== undefined || value.yearly !== undefined,
+      {
+        message: "At least one pricing option is required",
+        path: ["monthly"],
+      },
+    ),
+  features: z.array(z.string().trim().min(1)).optional().default([]),
+  isActive: z.boolean().optional(),
+  supportsOverrides: z.boolean().optional(),
+});
+
+export const adminUpdateCoachPlanSchema = z
+  .object({
+    name: z.string().trim().min(2).max(120).optional(),
+    description: z.string().trim().max(600).optional(),
+    pricing: z
+      .object({
+        monthly: z.number().min(0).optional(),
+        yearly: z.number().min(0).optional(),
+      })
+      .optional(),
+    features: z.array(z.string().trim().min(1)).optional(),
+    isActive: z.boolean().optional(),
+    supportsOverrides: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required to update the plan",
+  });
+
+export const adminReviewCoachOverrideSchema = z.object({
+  status: z.enum(["APPROVED", "REJECTED"]),
+  reviewNote: z.string().trim().max(1000).optional(),
+});
+
 // ============================================
 // VENUE ONBOARDING SCHEMAS (4-Step Flow)
 // ============================================

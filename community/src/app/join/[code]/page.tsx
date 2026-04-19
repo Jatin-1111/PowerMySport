@@ -29,6 +29,8 @@ export default function JoinCommunityPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isActive = true;
+
     const joinGroup = async () => {
       try {
         if (!isValidInviteCode(inviteCode)) {
@@ -40,18 +42,32 @@ export default function JoinCommunityPage() {
           inviteCode.trim(),
         );
 
+        if (!isActive) {
+          return;
+        }
+
         setStatus("success");
 
-        // Auto-redirect after 2 seconds
         await new Promise((resolve) => setTimeout(resolve, 2000));
+        if (!isActive) {
+          return;
+        }
+
         setStatus("redirecting");
 
         // Navigate to the community page with a stable inbox/conversations context.
         router.push(
           `/?sidebar=inbox&conversation=${encodeURIComponent(result.conversationId)}`,
         );
-      } catch {
-        const message = "Failed to join community";
+      } catch (joinError) {
+        if (!isActive) {
+          return;
+        }
+
+        const message =
+          joinError instanceof Error
+            ? joinError.message
+            : "Failed to join community";
         setError(message);
         setStatus("error");
         toast.error(message);
@@ -59,6 +75,10 @@ export default function JoinCommunityPage() {
     };
 
     void joinGroup();
+
+    return () => {
+      isActive = false;
+    };
   }, [inviteCode, router]);
 
   return (

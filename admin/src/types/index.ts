@@ -161,6 +161,113 @@ export interface Coach {
   updatedAt: string;
 }
 
+export type CoachPlanBillingCycle = "MONTHLY" | "YEARLY";
+export type CoachSubscriptionStatus =
+  | "ACTIVE"
+  | "PAST_DUE"
+  | "CANCELLED"
+  | "EXPIRED";
+
+export interface CoachPlan {
+  id?: string;
+  _id?: string;
+  code: string;
+  name: string;
+  description?: string;
+  pricing: {
+    monthly?: number;
+    yearly?: number;
+  };
+  features: string[];
+  isActive: boolean;
+  supportsOverrides: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CoachSubscriptionRecord {
+  id?: string;
+  _id?: string;
+  coachId:
+    | string
+    | {
+        _id?: string;
+        id?: string;
+        userId?: string;
+        sports?: string[];
+        verificationStatus?: CoachVerificationStatus;
+      };
+  userId: string;
+  planId:
+    | string
+    | {
+        _id?: string;
+        id?: string;
+        code?: string;
+        name?: string;
+        pricing?: {
+          monthly?: number;
+          yearly?: number;
+        };
+      };
+  status: CoachSubscriptionStatus;
+  billingCycle: CoachPlanBillingCycle;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  nextBillingDate: string;
+  autoRenew: boolean;
+  gracePeriodEndsAt?: string | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CoachSubscriptionOverrideStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED";
+
+export interface CoachSubscriptionOverrideRequestRecord {
+  id?: string;
+  _id?: string;
+  coachId:
+    | string
+    | {
+        _id?: string;
+        id?: string;
+        userId?: string;
+        sports?: string[];
+        verificationStatus?: CoachVerificationStatus;
+      };
+  userId: string;
+  currentPlanId?:
+    | string
+    | {
+        _id?: string;
+        id?: string;
+        code?: string;
+        name?: string;
+      }
+    | null;
+  requestedPlanId?:
+    | string
+    | {
+        _id?: string;
+        id?: string;
+        code?: string;
+        name?: string;
+      }
+    | null;
+  note: string;
+  status: CoachSubscriptionOverrideStatus;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  reviewNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ============================================
 // VENUE TYPES
 // ============================================
