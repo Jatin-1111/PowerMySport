@@ -17,6 +17,7 @@ export interface DashboardNavItem {
   icon: LucideIcon;
   external?: boolean;
   badge?: number | string;
+  section?: string;
 }
 
 interface DashboardShellProps {
@@ -45,64 +46,89 @@ const NavItems = ({
   pathname: string;
   onNavigate?: () => void;
 }) => {
+  const sections = items.reduce<
+    Array<{ title?: string; items: DashboardNavItem[] }>
+  >((acc, item) => {
+    const last = acc.at(-1);
+
+    if (last && last.title === item.section) {
+      last.items.push(item);
+      return acc;
+    }
+
+    acc.push({ title: item.section, items: [item] });
+    return acc;
+  }, []);
+
   return (
-    <nav className="mt-2 space-y-1 px-4" aria-label="Main navigation">
-      {items.map((item) => {
-        const Icon = item.icon;
-        const active = isItemActive(pathname, item.href);
-        const badgeText = item.badge ? `, ${item.badge} pending` : "";
+    <nav className="mt-1 space-y-3 px-4" aria-label="Main navigation">
+      {sections.map((section, sectionIndex) => (
+        <div key={`${section.title ?? "general"}-${sectionIndex}`}>
+          {section.title && (
+            <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              {section.title}
+            </p>
+          )}
+          <div className="space-y-1">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const active = isItemActive(pathname, item.href);
+              const badgeText = item.badge ? `, ${item.badge} pending` : "";
 
-        if (item.external) {
-          return (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
-              aria-label={`${item.label}${badgeText}`}
-            >
-              <Icon size={18} aria-hidden="true" />
-              <span className="text-sm font-semibold">{item.label}</span>
-              {item.badge && (
-                <Badge
-                  variant="destructive"
-                  className="ml-auto"
-                  aria-label={`${item.badge} pending`}
+              if (item.external) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+                    aria-label={`${item.label}${badgeText}`}
+                  >
+                    <Icon size={17} aria-hidden="true" />
+                    <span className="text-sm font-medium">{item.label}</span>
+                    {item.badge && (
+                      <Badge
+                        variant="destructive"
+                        className="ml-auto"
+                        aria-label={`${item.badge} pending`}
+                      >
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
+                    active
+                      ? "bg-slate-100 text-slate-900"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                  aria-label={`${item.label}${badgeText}`}
+                  aria-current={active ? "page" : undefined}
                 >
-                  {item.badge}
-                </Badge>
-              )}
-            </a>
-          );
-        }
-
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
-              active
-                ? "bg-slate-100 text-slate-900"
-                : "text-slate-700 hover:bg-slate-100"
-            }`}
-            aria-label={`${item.label}${badgeText}`}
-            aria-current={active ? "page" : undefined}
-          >
-            <Icon size={18} aria-hidden="true" />
-            <span className="text-sm font-semibold">{item.label}</span>
-            {item.badge && (
-              <Badge
-                variant="destructive"
-                className="ml-auto"
-                aria-label={`${item.badge} pending`}
-              >
-                {item.badge}
-              </Badge>
-            )}
-          </Link>
-        );
-      })}
+                  <Icon size={17} aria-hidden="true" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                  {item.badge && (
+                    <Badge
+                      variant="destructive"
+                      className="ml-auto"
+                      aria-label={`${item.badge} pending`}
+                    >
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 };

@@ -207,9 +207,9 @@ export default function BookCoachPage() {
           </h2>
 
           <div className="space-y-4">
-            <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+            <div className="flex justify-between items-center bg-white/50 border border-slate-200/60 p-3 rounded-lg">
               <span className="font-semibold text-slate-700">Service Mode</span>
-              <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+              <span className="text-sm bg-blue-100/70 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
                 {coach.serviceMode}
               </span>
             </div>
@@ -279,7 +279,7 @@ export default function BookCoachPage() {
                   value={bookingData.sport}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                  className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
                 >
                   <option value="">Select a sport</option>
                   {venue.sports.map((sport) => (
@@ -301,7 +301,7 @@ export default function BookCoachPage() {
                 onChange={handleChange}
                 min={new Date().toISOString().split("T")[0]}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
               />
             </div>
 
@@ -315,7 +315,7 @@ export default function BookCoachPage() {
                   name="dependentId"
                   value={bookingData.dependentId}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                  className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
                 >
                   <option value="">Me ({user.name})</option>
                   {user.dependents.map((dependent) => (
@@ -337,7 +337,7 @@ export default function BookCoachPage() {
                 value={bookingData.startTime}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
               />
             </div>
 
@@ -351,25 +351,25 @@ export default function BookCoachPage() {
                 value={bookingData.endTime}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
+                className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
               />
             </div>
 
             {duration > 0 && (
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                <div className="flex justify-between items-center mb-2">
+              <div className="bg-white/50 rounded-lg p-4 border border-slate-200/60 space-y-2">
+                <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Duration</span>
                   <span className="font-semibold text-slate-900">
                     {duration} hours
                   </span>
                 </div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Rate / hr</span>
                   <span className="font-semibold text-slate-900">
                     ₹{coach.hourlyRate + (venue ? venue.pricePerHour : 0)}
                   </span>
                 </div>
-                <div className="border-t border-slate-300 pt-2 mt-2">
+                <div className="border-t border-slate-200/60 pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-slate-900">Total</span>
                     <span className="text-2xl font-bold text-power-orange">

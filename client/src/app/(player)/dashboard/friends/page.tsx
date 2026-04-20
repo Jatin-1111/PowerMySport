@@ -283,17 +283,17 @@ export default function FriendsPage() {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-3 shop-surface border border-white/60 h-auto p-1 premium-shadow">
+          <TabsList className="grid w-full grid-cols-3 shop-surface border border-slate-200/60 h-auto p-1 premium-shadow">
             <TabsTrigger
               value="friends"
-              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-3"
+              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-2.5 text-sm"
             >
               <Users className="h-4 w-4" />
               Friends
               {friends.length > 0 && (
                 <Badge
                   variant="secondary"
-                  className="ml-1 bg-slate-200 text-slate-700"
+                  className="ml-1 bg-blue-100/70 text-blue-700 text-xs"
                 >
                   {friends.length}
                 </Badge>
@@ -301,19 +301,19 @@ export default function FriendsPage() {
             </TabsTrigger>
             <TabsTrigger
               value="requests"
-              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-3"
+              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-2.5 text-sm"
             >
               <Clock className="h-4 w-4" />
               Requests
               {pendingRequests.length > 0 && (
-                <Badge variant="destructive" className="ml-1">
+                <Badge variant="destructive" className="ml-1 text-xs">
                   {pendingRequests.length}
                 </Badge>
               )}
             </TabsTrigger>
             <TabsTrigger
               value="search"
-              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-3"
+              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-2.5 text-sm"
             >
               <Search className="h-4 w-4" />
               Search
@@ -337,7 +337,7 @@ export default function FriendsPage() {
                 {friends.map((friend) => (
                   <Card
                     key={friend.id}
-                    className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                    className="shop-surface premium-shadow hover:shadow-md transition-all duration-200 overflow-hidden"
                   >
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">

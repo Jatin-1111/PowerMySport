@@ -50,32 +50,32 @@ export default function DashboardLayout({
       href: "/venues",
       label: "Browse Venues",
       icon: MapPin,
+      section: "Discover",
     },
     {
       href: "/coaches",
       label: "Browse Coaches",
       icon: Users,
+      section: "Discover",
     },
     {
       href: "/dashboard/my-bookings",
       label: "My Bookings",
       icon: Calendar,
-    },
-    {
-      href: "/dashboard/support",
-      label: "Support Tickets",
-      icon: LifeBuoy,
+      section: "Activity",
     },
     {
       href: "/dashboard/reminder-preferences",
       label: "Reminders",
       icon: Bell,
+      section: "Activity",
     },
     {
       href: "/dashboard/friends",
       label: "Friends",
       icon: UserPlus,
       badge: counts.friendRequests > 0 ? counts.friendRequests : undefined,
+      section: "Community",
     },
     {
       href: "/dashboard/invitations",
@@ -83,33 +83,45 @@ export default function DashboardLayout({
       icon: Mail,
       badge:
         counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
+      section: "Community",
     },
     {
       href: "/notifications",
       label: "Notifications",
       icon: Bell,
       badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,
+      section: "Community",
     },
     {
       href: "/saved",
       label: "Saved",
       icon: Calendar,
+      section: "Community",
+    },
+    {
+      href: "/dashboard/support",
+      label: "Support Tickets",
+      icon: LifeBuoy,
+      section: "Account",
     },
     {
       href: "/dashboard/my-profile",
       label: "Profile",
       icon: User,
+      section: "Account",
     },
     {
       href: "/settings",
       label: "Settings",
       icon: Settings,
+      section: "Account",
     },
     {
       href: communityUrl,
       label: "Community",
       icon: Users,
       external: true,
+      section: "Account",
     },
   ] satisfies DashboardNavItem[];
 

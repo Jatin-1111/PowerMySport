@@ -125,7 +125,7 @@ export default function InvitationsPage() {
                 {pendingInvitations.map((invitation) => (
                   <Card
                     key={invitation.id}
-                    className="shop-surface premium-shadow border-l-4 border-l-orange-600 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
+                    className="shop-surface premium-shadow border-l-4 border-l-power-orange hover:shadow-md transition-all duration-200 overflow-hidden"
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between">

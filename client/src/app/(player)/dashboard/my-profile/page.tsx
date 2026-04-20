@@ -326,7 +326,7 @@ export default function ProfilePage() {
       />
 
       <Card className="shop-surface premium-shadow">
-        <div className="border-b border-white/70 px-6 py-4 flex items-center justify-between">
+        <div className="border-b border-slate-200/60 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
               Account Details
@@ -338,7 +338,7 @@ export default function ProfilePage() {
           {!isEditingProfile && (
             <button
               onClick={handleEditProfileClick}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-power-orange text-white text-sm font-medium rounded-lg hover:bg-power-orange/90 transition-colors"
             >
               Edit
             </button>
@@ -380,7 +380,7 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setProfileForm({ ...profileForm, name: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80"
                     />
                   </div>
 
@@ -397,7 +397,7 @@ export default function ProfilePage() {
                           email: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80"
                     />
                   </div>
 
@@ -414,7 +414,7 @@ export default function ProfilePage() {
                           phone: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80"
                     />
                   </div>
 
@@ -428,7 +428,7 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setProfileForm({ ...profileForm, dob: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80"
                     />
                   </div>
 
@@ -436,16 +436,16 @@ export default function ProfilePage() {
                     <label className="block text-slate-600 text-sm font-semibold mb-2">
                       Account Type
                     </label>
-                    <div className="px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="px-3 py-2 bg-white/50 rounded-lg border border-slate-200/60">
                       <p className="text-slate-900 capitalize">{user.role}</p>
                     </div>
                   </div>
 
-                  <div className="sm:col-span-2 flex gap-3 pt-4 border-t border-slate-200">
+                  <div className="sm:col-span-2 flex gap-3 pt-4 border-t border-slate-200/60">
                     <button
                       onClick={handleSaveProfile}
                       disabled={isSavingProfile}
-                      className="px-6 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="px-6 py-2.5 bg-power-orange text-white text-sm font-medium rounded-lg hover:bg-power-orange/90 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
                     >
                       {isSavingProfile ? "Saving..." : "Save Changes"}
                     </button>

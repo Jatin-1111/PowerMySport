@@ -116,6 +116,15 @@ const getMessageTimestamp = (value?: string | null) => {
   return messageTimeFormatter.format(date);
 };
 
+const getAvatarCharacter = (value?: string | null): string => {
+  const normalized = (value || "").trim();
+  if (!normalized) {
+    return "?";
+  }
+
+  return normalized.charAt(0).toUpperCase();
+};
+
 const isWithinMessageEditWindow = (createdAt?: string | null): boolean => {
   if (!createdAt) {
     return false;
@@ -144,6 +153,11 @@ const ConversationListItem = memo(function ConversationListItem({
     conversation.conversationType === "GROUP"
       ? conversation.group?.name || conversation.otherParticipant.displayName
       : conversation.otherParticipant.displayName;
+  const conversationPhotoUrl =
+    conversation.conversationType === "GROUP"
+      ? null
+      : (conversation.otherParticipant.photoUrl ?? null);
+  const conversationAvatarChar = getAvatarCharacter(conversationName);
 
   return (
     <motion.button
@@ -156,8 +170,17 @@ const ConversationListItem = memo(function ConversationListItem({
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {/* WhatsApp-style avatar */}
-          <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-slate-200 to-slate-300 text-sm font-bold uppercase text-slate-700 shadow-sm">
-            {conversationName.slice(0, 2).toUpperCase()}
+          <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-slate-200 to-slate-300 text-sm font-bold uppercase text-slate-700 shadow-sm">
+            {conversationPhotoUrl ? (
+              <img
+                src={conversationPhotoUrl}
+                alt={conversationName}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              conversationAvatarChar
+            )}
           </div>
           <div className="min-w-0 flex-1">
             {/* Name with status badge */}
@@ -258,6 +281,7 @@ const MessageBubble = memo(function MessageBubble({
       !message.isDeleted &&
       message.messageStatus !== "FAILED" &&
       canMutateMessage);
+  const senderAvatarChar = getAvatarCharacter(message.senderDisplayName);
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -317,7 +341,9 @@ const MessageBubble = memo(function MessageBubble({
     >
       {/* Avatar for group incoming messages */}
       {!isOwnMessage && isGroupConversation && (
-        <div className="mt-auto h-7 w-7 shrink-0 rounded-full bg-slate-200" />
+        <div className="mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold uppercase text-slate-700">
+          {senderAvatarChar}
+        </div>
       )}
 
       <div
@@ -811,13 +837,13 @@ export default function CommunityPage() {
         selectedConversation.otherParticipant.displayName
       : selectedConversation.otherParticipant.displayName
     : "No conversation selected";
-  const selectedConversationInitials = selectedConversationDisplayName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
+  const selectedConversationPhotoUrl =
+    selectedConversation?.conversationType === "GROUP"
+      ? null
+      : (selectedConversation?.otherParticipant?.photoUrl ?? null);
+  const selectedConversationAvatarChar = getAvatarCharacter(
+    selectedConversationDisplayName,
+  );
   const activeMobileDockTab: "CHAT" | "LIST" | "TOOLS" =
     sidebarMode === "TOOLS"
       ? "TOOLS"
@@ -3667,8 +3693,17 @@ export default function CommunityPage() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         {/* Avatar and name */}
-                        <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-slate-200 to-slate-300 text-sm font-bold uppercase text-slate-700">
-                          {selectedConversationInitials || "--"}
+                        <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-slate-200 to-slate-300 text-sm font-bold uppercase text-slate-700">
+                          {selectedConversationPhotoUrl ? (
+                            <img
+                              src={selectedConversationPhotoUrl}
+                              alt={selectedConversationDisplayName}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            selectedConversationAvatarChar
+                          )}
                         </div>
                         <div className="min-w-0">
                           <h2 className="truncate text-[15px] font-500 text-slate-900">
@@ -3696,6 +3731,17 @@ export default function CommunityPage() {
                           <Users size={13} />
                           Tools
                         </button>
+                        <button
+                          onClick={() => {
+                            setIsConversationSidebarOpen(true);
+                            setSidebarMode("TOOLS");
+                            setWorkspaceView("DIRECTORY");
+                          }}
+                          className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 sm:hidden"
+                          aria-label="Open tools"
+                        >
+                          <Users size={13} />
+                        </button>
                         <span className="hidden items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 sm:inline-flex">
                           <Activity size={12} />
                           {isSocketConnected ? "Live" : "Syncing"}
@@ -3721,7 +3767,12 @@ export default function CommunityPage() {
                             onClick={() =>
                               setShowGroupMembersPanel((current) => !current)
                             }
-                            className="hidden items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 sm:inline-flex"
+                            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                            aria-label={
+                              showGroupMembersPanel
+                                ? "Hide group members"
+                                : "Show group members"
+                            }
                           >
                             {showGroupMembersPanel ? (
                               <PanelRightClose size={13} />

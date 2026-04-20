@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { getMainAppUrl } from "@/lib/auth/redirect";
 import { communityService } from "@/modules/community/services/community";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import {
@@ -17,10 +18,12 @@ import {
   Trophy,
   UserX,
   Heart,
+  ExternalLink,
 } from "lucide-react";
 
 export default function CommunityTopNav() {
   const pathname = usePathname();
+  const mainAppUrl = getMainAppUrl();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const isMounted = typeof document !== "undefined";
@@ -202,6 +205,14 @@ export default function CommunityTopNav() {
                       </div>
                     </Link>
                   </div>
+
+                  <a
+                    href={mainAppUrl}
+                    className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-power-orange/30 bg-power-orange/10 px-3 py-3 text-sm font-semibold text-power-orange shadow-sm transition hover:bg-power-orange/15"
+                  >
+                    Main App
+                    <ExternalLink size={15} />
+                  </a>
 
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <Link

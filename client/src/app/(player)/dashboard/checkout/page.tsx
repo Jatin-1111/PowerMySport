@@ -981,7 +981,7 @@ function CheckoutPageContent() {
                 </div>
               )}
               <CheckoutDetailList items={bookingDetails} />
-              <div className="mt-4 flex flex-wrap gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="mt-4 flex flex-wrap gap-3 rounded-xl bg-white/50 border border-slate-200/60 p-4 text-sm text-slate-600">
                 <span className="flex items-center gap-2">
                   <Clock size={16} className="text-slate-400" />
                   Arrival buffer: 10 minutes before slot start.
@@ -1018,7 +1018,7 @@ function CheckoutPageContent() {
                 onChange={setPaymentMethod}
                 options={paymentOptions}
               />
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+              <div className="mt-4 rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-xs text-slate-500">
                 Selected:{" "}
                 {
                   paymentOptions.find((option) => option.id === paymentMethod)
@@ -1064,7 +1064,7 @@ function CheckoutPageContent() {
             description="Review your summary before confirming payment."
           >
             <CheckoutDetailList items={bookingDetails} />
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+            <div className="mt-4 rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-xs text-slate-500">
               Payment method:{" "}
               {
                 paymentOptions.find((option) => option.id === paymentMethod)
@@ -1088,7 +1088,7 @@ function CheckoutPageContent() {
         )}
 
         {showWaitlistPrompt && (
-          <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-800">
+          <div className="rounded-xl border border-blue-200/60 bg-blue-50/50 px-4 py-4 text-sm text-blue-700">
             <p className="font-semibold">Selected slot was just taken.</p>
             {alternateSlots.length > 0 ? (
               <p className="mt-1 text-xs">

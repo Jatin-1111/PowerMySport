@@ -133,7 +133,7 @@ export default function ReminderPreferencesPage() {
         subtitle="Control when and how you receive booking reminders."
       />
 
-      <Card className="shop-surface premium-shadow space-y-6">
+      <Card className="shop-surface premium-shadow space-y-6 border-slate-200/60">
         <div className="flex items-center gap-3">
           <motion.div
             className="rounded-xl bg-power-orange/10 p-2"

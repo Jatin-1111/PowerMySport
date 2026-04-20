@@ -187,23 +187,23 @@ export default function BookingsPage() {
       ) : (
         <div className="space-y-6">
           {/* Tabs */}
-          <Card className="shop-surface premium-shadow">
-            <div className="flex border-b border-slate-200">
+          <Card className="shop-surface premium-shadow overflow-hidden">
+            <div className="flex flex-col sm:flex-row border-b border-slate-200/60">
               <button
                 onClick={() => {
                   setActiveTab("venues");
                   setCurrentPage(1);
                 }}
-                className={`flex-1 px-6 py-4 font-semibold text-center transition-colors border-b-2 ${
+                className={`flex-1 px-3 sm:px-6 py-3 sm:py-4 font-semibold text-center transition-colors border-b-2 ${
                   activeTab === "venues"
                     ? "border-power-orange text-power-orange"
                     : "border-transparent text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <div className="flex items-center justify-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  <span>Venue Bookings</span>
-                  <span className="ml-2 bg-slate-100 text-slate-700 text-xs rounded-full px-2 py-1 font-medium">
+                <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-sm sm:text-base">Venue Bookings</span>
+                  <span className="bg-blue-100/70 text-blue-700 text-[10px] sm:text-xs rounded-full px-2 py-0.5 font-semibold">
                     {venueBookings.length}
                   </span>
                 </div>
@@ -213,16 +213,16 @@ export default function BookingsPage() {
                   setActiveTab("coaches");
                   setCurrentPage(1);
                 }}
-                className={`flex-1 px-6 py-4 font-semibold text-center transition-colors border-b-2 ${
+                className={`flex-1 px-3 sm:px-6 py-3 sm:py-4 font-semibold text-center transition-colors border-b-2 sm:border-l sm:border-b-2 ${
                   activeTab === "coaches"
                     ? "border-power-orange text-power-orange"
                     : "border-transparent text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <div className="flex items-center justify-center gap-2">
-                  <Award className="h-5 w-5" />
-                  <span>Coach Bookings</span>
-                  <span className="ml-2 bg-slate-100 text-slate-700 text-xs rounded-full px-2 py-1 font-medium">
+                <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
+                  <Award className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-sm sm:text-base">Coach Bookings</span>
+                  <span className="bg-purple-100/70 text-purple-700 text-[10px] sm:text-xs rounded-full px-2 py-0.5 font-semibold">
                     {coachBookings.length}
                   </span>
                 </div>
@@ -255,9 +255,9 @@ export default function BookingsPage() {
               {filteredBookings.map((booking) => (
                 <Card
                   key={booking.id}
-                  className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200"
+                  className="shop-surface premium-shadow hover:shadow-md hover:border-slate-200 transition-all duration-200 overflow-hidden"
                 >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
                       {/* Venue Booking */}
                       {activeTab === "venues" &&
@@ -367,7 +367,7 @@ export default function BookingsPage() {
                             .replace(/_/g, " ")}
                       </span>
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
                       {booking.status === "CONFIRMED" &&
                         booking.paymentType === "SPLIT" &&
                         booking.organizerId === user?.id && (
