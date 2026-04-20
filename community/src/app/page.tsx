@@ -2587,14 +2587,14 @@ export default function CommunityPage() {
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1 }}
         transition={{ duration: 0.28 }}
-        className="min-h-full bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] lg:h-full lg:overflow-hidden"
+        className="h-full min-h-0 bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] lg:overflow-hidden"
       >
         {/* Main Layout */}
         <motion.div
           variants={shellVariants}
           initial="hidden"
           animate="show"
-          className={`mx-auto grid min-h-full w-full max-w-full gap-0 lg:h-full lg:overflow-hidden ${
+          className={`mx-auto grid h-full min-h-0 w-full max-w-full gap-0 lg:overflow-hidden ${
             isCommunityView
               ? "grid-cols-1"
               : isConversationsView
@@ -2747,10 +2747,10 @@ export default function CommunityPage() {
               {/* Main Chat Area */}
               <motion.main
                 variants={panelVariants}
-                className="grid min-h-full min-w-0 grid-cols-1 lg:h-full lg:grid-cols-[380px_minmax(0,1fr)] lg:overflow-hidden"
+                className="grid h-full min-h-0 min-w-0 grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] lg:overflow-hidden"
               >
                 <motion.section
-                  className={`min-h-full overflow-visible border-r border-slate-200 bg-white p-3.5 pb-24 sm:p-4 lg:h-full lg:overflow-y-auto lg:pb-4 ${
+                  className={`h-full min-h-0 overflow-y-auto border-r border-slate-200 bg-white p-3.5 pb-24 sm:p-4 lg:pb-4 ${
                     workspaceView === "DIRECTORY" ? "block" : "hidden lg:block"
                   }`}
                 >
@@ -3658,7 +3658,7 @@ export default function CommunityPage() {
                   )}
                 </motion.section>
                 <motion.section
-                  className={`min-h-full min-w-0 flex-col overflow-visible bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-position-[0_0,11px_11px] bg-size-[22px_22px] lg:h-full lg:overflow-hidden ${
+                  className={`h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-position-[0_0,11px_11px] bg-size-[22px_22px] lg:overflow-hidden ${
                     workspaceView === "CHAT" ? "flex" : "hidden lg:flex"
                   }`}
                 >
@@ -3775,7 +3775,7 @@ export default function CommunityPage() {
                     )}
                   </div>
 
-                  <div className="min-h-0 flex-1 space-y-2 px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4 lg:overflow-y-auto">
+                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
                     {messages.map((message) => {
                       const isOwnMessage = message.senderId === profile?.userId;
                       const isGroupConversation =
