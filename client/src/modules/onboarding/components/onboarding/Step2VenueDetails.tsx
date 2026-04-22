@@ -5,6 +5,7 @@ import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { OnboardingStep2Payload } from "@/modules/onboarding/types/onboarding";
 import { Button } from "@/modules/shared/ui/Button";
 import { useEffect, useState } from "react";
+import OnboardingSectionCard from "./OnboardingSectionCard";
 import OpeningHoursInput, { getDefaultOpeningHours } from "./OpeningHoursInput";
 
 interface Step2VenueDetailsProps {
@@ -42,6 +43,14 @@ const AMENITIES_OPTIONS = [
 
 const isDev =
   typeof window !== "undefined" && process.env.NODE_ENV === "development";
+
+const isValidTimeRange = (openTime?: string, closeTime?: string): boolean => {
+  if (!openTime || !closeTime) {
+    return false;
+  }
+
+  return openTime < closeTime;
+};
 
 export default function Step2VenueDetails({
   venueId,
@@ -258,8 +267,9 @@ export default function Step2VenueDetails({
     e.preventDefault();
 
     // Validation
-    if (!formData.name.trim()) {
-      toast.error("Please enter venue name");
+    const trimmedName = formData.name.trim();
+    if (trimmedName.length < 2) {
+      toast.error("Please enter a venue name with at least 2 characters");
       return;
     }
     if (formData.sports.length === 0) {
@@ -280,8 +290,31 @@ export default function Step2VenueDetails({
         return;
       }
     }
-    if (!formData.address.trim()) {
-      toast.error("Please enter venue address");
+
+    const trimmedAddress = formData.address.trim();
+    if (trimmedAddress.length < 5) {
+      toast.error("Please enter a venue address with at least 5 characters");
+      return;
+    }
+
+    if (formData.description.trim().length > 500) {
+      toast.error("Description cannot exceed 500 characters");
+      return;
+    }
+
+    const openDays = Object.entries(formData.openingHours).filter(
+      ([, hours]) => hours.isOpen,
+    );
+    if (openDays.length === 0) {
+      toast.error("Please set opening hours for at least one day");
+      return;
+    }
+
+    const invalidDay = openDays.find(
+      ([, hours]) => !isValidTimeRange(hours.openTime, hours.closeTime),
+    );
+    if (invalidDay) {
+      toast.error("Opening time must be before closing time for open days");
       return;
     }
 
@@ -331,6 +364,9 @@ export default function Step2VenueDetails({
 
       await onSubmit({
         ...formData,
+        name: trimmedName,
+        address: trimmedAddress,
+        description: formData.description.trim(),
         pricePerHour: effectiveBasePrice,
         sportPricing: pricingMap,
       });
@@ -340,7 +376,7 @@ export default function Step2VenueDetails({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-slate-900 mb-2">
           Tell us about your venue
@@ -350,7 +386,10 @@ export default function Step2VenueDetails({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Venue Name */}
-        <div>
+        <OnboardingSectionCard
+          title="Venue Name"
+          subtitle="Give your facility a clear, recognizable name"
+        >
           <label className="block text-sm font-semibold text-slate-900 mb-2">
             Venue Name <span className="text-error-red">*</span>
           </label>
@@ -364,10 +403,13 @@ export default function Step2VenueDetails({
             required
             disabled={loading}
           />
-        </div>
+        </OnboardingSectionCard>
 
         {/* Sports Selection */}
-        <div>
+        <OnboardingSectionCard
+          title="Sports Available"
+          subtitle="Choose all sports your venue supports"
+        >
           <label className="block text-sm font-semibold text-slate-900 mb-3">
             Sports Available <span className="text-error-red">*</span>
           </label>
@@ -388,10 +430,14 @@ export default function Step2VenueDetails({
               </label>
             ))}
           </div>
-        </div>
+        </OnboardingSectionCard>
 
         {/* Pricing */}
-        <div className="space-y-4">
+        <OnboardingSectionCard
+          title="Pricing"
+          subtitle="Set hourly rates for each sport"
+          contentClassName="space-y-4"
+        >
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <label className="block text-sm font-semibold text-slate-900">
               Pricing (per hour) <span className="text-error-red">*</span>
@@ -476,18 +522,26 @@ export default function Step2VenueDetails({
               ))}
             </div>
           )}
-        </div>
+        </OnboardingSectionCard>
 
         {/* Opening Hours */}
-        <OpeningHoursInput
-          value={formData.openingHours}
-          onChange={(hours) =>
-            setFormData((prev) => ({ ...prev, openingHours: hours }))
-          }
-        />
+        <OnboardingSectionCard
+          title="Opening Hours"
+          subtitle="Set weekly operating schedule for your venue"
+        >
+          <OpeningHoursInput
+            value={formData.openingHours}
+            onChange={(hours) =>
+              setFormData((prev) => ({ ...prev, openingHours: hours }))
+            }
+          />
+        </OnboardingSectionCard>
 
         {/* Address */}
-        <div>
+        <OnboardingSectionCard
+          title="Venue Address"
+          subtitle="Use search suggestions or current location for accurate mapping"
+        >
           <label className="block text-sm font-semibold text-slate-900 mb-2">
             Address <span className="text-error-red">*</span>
           </label>
@@ -538,10 +592,13 @@ export default function Step2VenueDetails({
               ))}
             </div>
           )}
-        </div>
+        </OnboardingSectionCard>
 
         {/* Description */}
-        <div>
+        <OnboardingSectionCard
+          title="Description"
+          subtitle="Help players understand your venue experience"
+        >
           <label className="block text-sm font-semibold text-slate-900 mb-2">
             Description
           </label>
@@ -554,10 +611,13 @@ export default function Step2VenueDetails({
             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500 resize-none"
             disabled={loading}
           />
-        </div>
+        </OnboardingSectionCard>
 
         {/* Amenities */}
-        <div>
+        <OnboardingSectionCard
+          title="Amenities"
+          subtitle="Select facilities available for your customers"
+        >
           <label className="block text-sm font-semibold text-slate-900 mb-3">
             Amenities
           </label>
@@ -578,37 +638,41 @@ export default function Step2VenueDetails({
               </label>
             ))}
           </div>
-        </div>
+        </OnboardingSectionCard>
 
         {/* External Coaches */}
-        <div className="flex items-center space-x-2 p-4 bg-power-orange/5 border border-power-orange/20 rounded-lg">
-          <input
-            type="checkbox"
-            name="allowExternalCoaches"
-            checked={formData.allowExternalCoaches}
-            onChange={handleInputChange}
-            className="w-4 h-4 accent-power-orange rounded"
-            disabled={loading}
-          />
-          <label className="text-sm text-slate-700">
-            Allow external coaches at your venue?
-          </label>
-        </div>
+        <OnboardingSectionCard
+          title="Coach Preferences"
+          subtitle="Configure external and in-house coach settings"
+        >
+          <div className="flex items-center space-x-2 p-4 bg-power-orange/5 border border-power-orange/20 rounded-lg">
+            <input
+              type="checkbox"
+              name="allowExternalCoaches"
+              checked={formData.allowExternalCoaches}
+              onChange={handleInputChange}
+              className="w-4 h-4 accent-power-orange rounded"
+              disabled={loading}
+            />
+            <label className="text-sm text-slate-700">
+              Allow external coaches at your venue?
+            </label>
+          </div>
 
-        {/* In-House Coaches */}
-        <div className="flex items-center space-x-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <input
-            type="checkbox"
-            name="hasCoaches"
-            checked={formData.hasCoaches}
-            onChange={handleInputChange}
-            className="w-4 h-4 accent-blue-600 rounded"
-            disabled={loading}
-          />
-          <label className="text-sm text-slate-700">
-            Do you have in-house coaches? (Add them in the next step)
-          </label>
-        </div>
+          <div className="flex items-center space-x-2 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+            <input
+              type="checkbox"
+              name="hasCoaches"
+              checked={formData.hasCoaches}
+              onChange={handleInputChange}
+              className="w-4 h-4 accent-power-orange rounded"
+              disabled={loading}
+            />
+            <label className="text-sm text-slate-700">
+              Do you have in-house coaches? (Add them in the next step)
+            </label>
+          </div>
+        </OnboardingSectionCard>
 
         {/* Submit Button */}
         <Button

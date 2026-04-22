@@ -6,6 +6,7 @@ import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import VenueInquiry from "../models/VenueInquiry";
 import { getObservabilitySnapshot } from "../middleware/observability";
+import { transformDocuments } from "../middleware/responseTransform";
 import { isUserOnline } from "../services/UserPresenceService";
 import { getAllVenues as getAllVenuesService } from "../services/VenueService";
 import { getPaginationParams } from "../utils/pagination";
@@ -862,7 +863,7 @@ export const getAllVenues = async (
     res.status(200).json({
       success: true,
       message: "All venues retrieved successfully",
-      data: result.venues,
+      data: transformDocuments(result.venues),
       pagination: {
         total: result.total,
         page: result.page,

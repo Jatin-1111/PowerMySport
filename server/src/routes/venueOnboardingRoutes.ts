@@ -32,6 +32,7 @@ import {
   getDocumentUploadUrlsSchema,
   venueOnboardingStep3ImagesSchema,
   venueOnboardingStep4Schema,
+  venueOnboardingStep5Schema,
   adminRejectVenueSchema,
   adminReviewVenueSchema,
   sendVerificationCodeSchema,
@@ -124,11 +125,11 @@ router.post(
   finalizeOnboardingStep3,
 );
 
-/**
- * STEP 5: Add in-house coaches to venue
- * POST /api/venues/onboarding/step5/coaches
- */
-router.post("/step5/coaches", addVenueCoaches);
+router.post(
+  "/step5/coaches",
+  validateRequest(venueOnboardingStep5Schema),
+  addVenueCoaches,
+);
 
 /**
  * Get presigned URL for coach profile photo upload

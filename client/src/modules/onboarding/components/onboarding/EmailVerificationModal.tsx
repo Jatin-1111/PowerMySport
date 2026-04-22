@@ -194,13 +194,13 @@ export default function EmailVerificationModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+    <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 relative">
         {/* Close button */}
         {showCloseButton && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
             disabled={loading}
           >
             <X size={24} />
@@ -212,13 +212,13 @@ export default function EmailVerificationModal({
           <div className="w-16 h-16 bg-power-orange/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Mail size={30} className="text-power-orange" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">
             Verify Your Email
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-slate-600 text-sm">
             We've sent a 6-digit code to
             <br />
-            <span className="font-semibold text-gray-900">{email}</span>
+            <span className="font-semibold text-slate-900">{email}</span>
           </p>
         </div>
 
@@ -237,14 +237,14 @@ export default function EmailVerificationModal({
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-power-orange focus:outline-none transition"
+                className="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-300 rounded-lg focus:border-power-orange focus:outline-none transition"
                 disabled={loading}
               />
             ))}
           </div>
 
           {/* Timer */}
-          <div className="text-center text-sm text-gray-600 mb-4">
+          <div className="text-center text-sm text-slate-600 mb-4">
             {timeLeft > 0 ? (
               <span>Code expires in {formatTime(timeLeft)}</span>
             ) : (
@@ -264,9 +264,9 @@ export default function EmailVerificationModal({
 
         {/* Resend */}
         <div className="text-center text-sm">
-          <span className="text-gray-600">Didn't receive the code? </span>
+          <span className="text-slate-600">Didn't receive the code? </span>
           {resendCooldown > 0 ? (
-            <span className="text-gray-400">Resend in {resendCooldown}s</span>
+            <span className="text-slate-400">Resend in {resendCooldown}s</span>
           ) : (
             <button
               onClick={handleResend}

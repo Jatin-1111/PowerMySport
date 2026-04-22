@@ -367,42 +367,62 @@ export default function VenuesPage() {
               <p className="text-slate-600 font-medium">Loading venues...</p>
             </div>
           ) : filteredVenues.length === 0 ? (
-            <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
-              <div className="text-center py-16 bg-white/70 rounded-xl">
-                <Building2 size={56} className="mx-auto mb-4 text-slate-300" />
-                <h3 className="text-xl font-bold text-slate-900 mb-2">
-                  {appliedSportFilter
-                    ? "No venues found"
-                    : "No venues available"}
-                </h3>
-                <p className="text-slate-500 mb-6">
-                  {appliedSportFilter
-                    ? `We couldn't find any venues for "${appliedSportFilter}". Try a different sport.`
-                    : "Check back soon for new venues."}
-                </p>
-                {appliedSportFilter && (
-                  <Button variant="secondary" onClick={handleClearFilters}>
-                    Clear Search
-                  </Button>
-                )}
+            <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm sm:p-8">
+              <div className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
+                <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-6 sm:p-7">
+                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                    <Building2 size={30} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    {appliedSportFilter
+                      ? "No venues match this filter"
+                      : "No venues available right now"}
+                  </h3>
+                  <p className="mt-2 text-slate-600">
+                    {appliedSportFilter
+                      ? `We couldn't find any venues for "${appliedSportFilter}". Try another sport or reset your filters.`
+                      : "We're adding new venues continuously. Check again in a bit or ask the community for trusted options."}
+                  </p>
 
-                <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200/70 bg-white/85 p-4 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    {appliedSportFilter && (
+                      <Button variant="secondary" onClick={handleClearFilters}>
+                        Clear Search
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        void loadVenues(1, appliedSportFilter);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      Refresh Results
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-5 sm:p-6">
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-power-orange">
                       <MessageCircle size={18} />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Not sure which venue fits your game?
+                        Need help choosing a venue?
                       </p>
-                      <p className="text-sm text-slate-600">
+                      <p className="mt-1 text-sm text-slate-600">
                         Ask local players and coaches for recommendations, then
-                        come back and book with more confidence.
+                        jump back and book with confidence.
                       </p>
                     </div>
                   </div>
-                  <div className="flex justify-start sm:justify-end">
-                    <Button asChild variant="secondary" className="rounded-xl">
+                  <div className="mt-5">
+                    <Button
+                      asChild
+                      variant="secondary"
+                      className="w-full rounded-xl"
+                    >
                       <a href={communityUrl} target="_blank" rel="noreferrer">
                         Ask in Community
                         <ArrowRight size={16} className="ml-2" />

@@ -218,7 +218,10 @@ export const findVenuesNearby = async (
           distanceField: "distanceMeters",
           maxDistance: radiusMeters,
           spherical: true,
-          query: sport ? { sports: sport } : {},
+          query: {
+            approvalStatus: "APPROVED",
+            ...(sport ? { sports: sport } : {}),
+          },
         },
       },
       {
@@ -244,7 +247,7 @@ export const findVenuesNearby = async (
     ];
 
     const [result] = await Venue.aggregate(pipeline);
-    
+
     const total = result.metadata[0]?.total || 0;
     const paginatedVenues = result.data || [];
 
@@ -271,7 +274,10 @@ export const findVenuesNearby = async (
 };
 
 export const getAllVenues = async (
-  filters?: { sports?: string[] },
+  filters?: {
+    sports?: string[];
+    approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+  },
   page: number = 1,
   limit: number = 20,
 ): Promise<{
@@ -286,6 +292,10 @@ export const getAllVenues = async (
     query.sports = { $in: filters.sports };
   }
 
+  if (filters?.approvalStatus) {
+    query.approvalStatus = filters.approvalStatus;
+  }
+
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
   const venues = await Venue.find(query)
@@ -296,7 +306,7 @@ export const getAllVenues = async (
 
   // Refresh URLs for all venues
   await Promise.all(venues.map((v) => v.refreshAllUrls()));
-  
+
   return {
     venues,
     total,

@@ -81,13 +81,13 @@ export default function OpeningHoursInput({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-semibold text-slate-900">
           Opening Hours
         </label>
         <button
           type="button"
           onClick={copyToAllDays}
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          className="text-sm text-power-orange hover:text-orange-600 font-semibold"
         >
           Copy Monday to all days
         </button>
@@ -99,16 +99,16 @@ export default function OpeningHoursInput({
           return (
             <div
               key={key}
-              className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg justify-between"
+              className="flex items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-lg justify-between"
             >
               <div className="flex items-center gap-2 w-32">
                 <input
                   type="checkbox"
                   checked={dayHours.isOpen}
                   onChange={() => handleDayToggle(key)}
-                  className="w-4 h-4 text-blue-600 rounded"
+                  className="w-4 h-4 accent-power-orange rounded"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-slate-700">
                   {label}
                 </span>
               </div>
@@ -121,20 +121,20 @@ export default function OpeningHoursInput({
                     onChange={(e) =>
                       handleTimeChange(key, "openTime", e.target.value)
                     }
-                    className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-3 py-1.5 border border-slate-300 rounded-md text-sm text-slate-900 focus:ring-2 focus:ring-power-orange focus:border-transparent"
                   />
-                  <span className="text-gray-500 text-sm">to</span>
+                  <span className="text-slate-500 text-sm">to</span>
                   <input
                     type="time"
                     value={dayHours.closeTime || "21:00"}
                     onChange={(e) =>
                       handleTimeChange(key, "closeTime", e.target.value)
                     }
-                    className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-3 py-1.5 border border-slate-300 rounded-md text-sm text-slate-900 focus:ring-2 focus:ring-power-orange focus:border-transparent"
                   />
                 </div>
               ) : (
-                <span className="text-sm text-gray-500 italic">Closed</span>
+                <span className="text-sm text-slate-500 italic">Closed</span>
               )}
             </div>
           );

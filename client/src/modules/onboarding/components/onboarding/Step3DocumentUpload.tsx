@@ -7,17 +7,18 @@ import {
   BadgeCheck,
   Briefcase,
   Building2,
-  CheckCircle, // Keep X as it's used for error display
+  CheckCircle,
   ClipboardCheck,
   ClipboardList,
-  FileText, // Keep ClipboardCheck if it's used elsewhere, or remove if not
+  FileText,
   Mail,
   Shield,
   Upload,
-  X, // Keep Mail if it's used elsewhere, or remove if not
+  X,
   Zap,
 } from "lucide-react";
 import { useState } from "react";
+import OnboardingSectionCard from "./OnboardingSectionCard";
 
 interface UploadedDoc {
   type: string;
@@ -168,179 +169,197 @@ export default function Step3DocumentUpload({
   const uploadProgress = (uploadedDocs.length / presignedUrls.length) * 100;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">
           Upload Required Documents
         </h2>
-        <p className="text-gray-600">
+        <p className="text-slate-600">
           Upload verification documents to complete your venue registration
         </p>
       </div>
 
       {/* Progress Bar */}
-      <div className="mb-6 p-4 bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+      <OnboardingSectionCard
+        title="Upload Progress"
+        subtitle="Track completion of required onboarding documents"
+        className="mb-6 bg-linear-to-r from-power-orange/10 to-white border-power-orange/20"
+      >
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-slate-700">
             Upload Progress
           </span>
-          <span className="text-sm font-bold text-blue-600">
+          <span className="text-sm font-bold text-power-orange">
             {uploadedDocs.length} / {presignedUrls.length}
           </span>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-linear-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out"
+            className="h-full bg-linear-to-r from-power-orange to-orange-500 transition-all duration-500 ease-out"
             style={{ width: `${uploadProgress}%` }}
           ></div>
         </div>
-      </div>
+      </OnboardingSectionCard>
 
       {/* Document Upload Cards */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {presignedUrls.map((presigned) => {
-            const docTypeKey = presigned.field.replace("document_", "");
-            const docInfo = DOCUMENT_INFO[docTypeKey] || {
-              label: docTypeKey,
-              description: "Required document",
-              IconComponent: FileText,
-            };
-            const uploadedDoc = uploadedDocs.find(
-              (doc) => doc.type === docTypeKey,
-            );
-            const isUploaded = !!uploadedDoc;
-            const isUploading = uploading[presigned.field];
-            const uploadError = uploadErrors[presigned.field];
+        <OnboardingSectionCard
+          title="Required Documents"
+          subtitle="Upload each document in PDF, JPG, or PNG format"
+          contentClassName="space-y-0"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {presignedUrls.map((presigned) => {
+              const docTypeKey = presigned.field.replace("document_", "");
+              const docInfo = DOCUMENT_INFO[docTypeKey] || {
+                label: docTypeKey,
+                description: "Required document",
+                IconComponent: FileText,
+              };
+              const uploadedDoc = uploadedDocs.find(
+                (doc) => doc.type === docTypeKey,
+              );
+              const isUploaded = !!uploadedDoc;
+              const isUploading = uploading[presigned.field];
+              const uploadError = uploadErrors[presigned.field];
 
-            return (
-              <div
-                key={presigned.field}
-                className={`relative border-2 rounded-lg p-5 transition-all ${
-                  isUploaded
-                    ? "border-green-400 bg-green-50"
-                    : "border-gray-200 bg-white hover:border-blue-400 hover:shadow-md"
-                }`}
-              >
-                {/* Document Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <docInfo.IconComponent className="w-8 h-8 text-blue-600" />
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {docInfo.label}
-                      </h3>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        {docInfo.description}
-                      </p>
-                    </div>
-                  </div>
-                  {isUploaded && (
-                    <CheckCircle className="w-6 h-6 text-green-600 shrink-0" />
-                  )}
-                </div>
-
-                {/* Upload Area */}
-                <label className="block cursor-pointer">
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file)
-                        handleDocumentSelect(file, presigned.field, presigned);
-                    }}
-                    disabled={isUploading}
-                    className="hidden"
-                  />
-
-                  {isUploading ? (
-                    <div className="flex flex-col items-center justify-center py-6 bg-blue-50 rounded-lg border-2 border-blue-300">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <p className="text-sm text-blue-700 mt-2 font-medium">
-                        Uploading...
-                      </p>
-                    </div>
-                  ) : isUploaded ? (
-                    <div className="relative py-4 px-4 bg-white rounded-lg border-2 border-green-300">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-8 h-8 text-green-600" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {uploadedDoc.fileName}
-                          </p>
-                          <p className="text-xs text-green-600 mt-0.5">
-                            Successfully uploaded
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleRemoveDocument(docTypeKey);
-                          }}
-                          className="shrink-0 p-1 hover:bg-red-100 rounded-full transition"
-                        >
-                          <X className="w-5 h-5 text-red-600" />
-                        </button>
+              return (
+                <div
+                  key={presigned.field}
+                  className={`relative border-2 rounded-lg p-5 transition-all ${
+                    isUploaded
+                      ? "border-emerald-400 bg-emerald-50"
+                      : "border-slate-200 bg-white hover:border-power-orange/50 hover:shadow-sm"
+                  }`}
+                >
+                  {/* Document Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <docInfo.IconComponent className="w-8 h-8 text-power-orange" />
+                      <div>
+                        <h3 className="font-semibold text-slate-900">
+                          {docInfo.label}
+                        </h3>
+                        <p className="text-xs text-slate-600 mt-0.5">
+                          {docInfo.description}
+                        </p>
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all">
-                      <Upload className="w-10 h-10 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600 font-medium">
-                        Click to upload
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        PDF, JPG, PNG (Max 10MB)
-                      </p>
-                    </div>
-                  )}
-                </label>
+                    {isUploaded && (
+                      <CheckCircle className="w-6 h-6 text-green-600 shrink-0" />
+                    )}
+                  </div>
 
-                {/* Error Message */}
-                {uploadError && (
-                  <p className="text-red-600 text-xs mt-2 flex items-center gap-1">
-                    <X className="w-3 h-3" />
-                    {uploadError}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  {/* Upload Area */}
+                  <label className="block cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file)
+                          handleDocumentSelect(
+                            file,
+                            presigned.field,
+                            presigned,
+                          );
+                      }}
+                      disabled={isUploading}
+                      className="hidden"
+                    />
+
+                    {isUploading ? (
+                      <div className="flex flex-col items-center justify-center py-6 bg-power-orange/10 rounded-lg border-2 border-power-orange/25">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-power-orange"></div>
+                        <p className="text-sm text-power-orange mt-2 font-medium">
+                          Uploading...
+                        </p>
+                      </div>
+                    ) : isUploaded ? (
+                      <div className="relative py-4 px-4 bg-white rounded-lg border-2 border-emerald-300">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-8 h-8 text-emerald-600" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate">
+                              {uploadedDoc.fileName}
+                            </p>
+                            <p className="text-xs text-emerald-600 mt-0.5">
+                              Successfully uploaded
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleRemoveDocument(docTypeKey);
+                            }}
+                            className="shrink-0 p-1 hover:bg-red-100 rounded-full transition"
+                          >
+                            <X className="w-5 h-5 text-red-600" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300 hover:border-power-orange/40 hover:bg-power-orange/5 transition-all">
+                        <Upload className="w-10 h-10 text-slate-400 mb-2" />
+                        <p className="text-sm text-slate-600 font-medium">
+                          Click to upload
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          PDF, JPG, PNG (Max 10MB)
+                        </p>
+                      </div>
+                    )}
+                  </label>
+
+                  {/* Error Message */}
+                  {uploadError && (
+                    <p className="text-error-red text-xs mt-2 flex items-center gap-1">
+                      <X className="w-3 h-3" />
+                      {uploadError}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </OnboardingSectionCard>
 
         {/* Info Box */}
-        <div className="mt-6 p-5 bg-linear-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-          <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-blue-600" />
+        <OnboardingSectionCard
+          title="What Happens Next"
+          className="mt-6 bg-linear-to-br from-power-orange/10 to-white border-power-orange/20"
+          contentClassName="space-y-0"
+        >
+          <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-power-orange" />
             What happens next?
           </h4>
           <ul className="space-y-2">
-            <li className="flex items-start gap-3 text-sm text-blue-800">
-              <ClipboardCheck className="w-5 h-5 shrink-0 text-blue-600 mt-0.5" />
+            <li className="flex items-start gap-3 text-sm text-slate-700">
+              <ClipboardCheck className="w-5 h-5 shrink-0 text-power-orange mt-0.5" />
               <span>
                 Our review team will review your venue and documents within
                 24-48 hours
               </span>
             </li>
-            <li className="flex items-start gap-3 text-sm text-blue-800">
-              <Mail className="w-5 h-5 shrink-0 text-blue-600 mt-0.5" />
+            <li className="flex items-start gap-3 text-sm text-slate-700">
+              <Mail className="w-5 h-5 shrink-0 text-power-orange mt-0.5" />
               <span>
                 You'll receive an email notification once approved or if we need
                 additional information
               </span>
             </li>
-            <li className="flex items-start gap-3 text-sm text-blue-800">
-              <CheckCircle className="w-5 h-5 shrink-0 text-blue-600 mt-0.5" />
+            <li className="flex items-start gap-3 text-sm text-slate-700">
+              <CheckCircle className="w-5 h-5 shrink-0 text-power-orange mt-0.5" />
               <span>
                 Once approved, your venue will be live and ready to accept
                 bookings immediately
               </span>
             </li>
           </ul>
-        </div>
+        </OnboardingSectionCard>
 
         {/* Submit Button */}
         <div className="flex gap-4 mt-6">
@@ -349,8 +368,8 @@ export default function Step3DocumentUpload({
             disabled={loading || uploadedDocs.length < presignedUrls.length}
             className={`flex-1 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
               uploadedDocs.length >= presignedUrls.length && !loading
-                ? "bg-linear-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                ? "bg-power-orange text-white hover:bg-orange-600 shadow-sm"
+                : "bg-slate-300 text-slate-500 cursor-not-allowed"
             }`}
           >
             {loading ? (
@@ -378,9 +397,9 @@ export default function Step3DocumentUpload({
           )}
         </div>
 
-        <p className="text-xs text-gray-500 text-center mt-4">
+        <p className="text-xs text-slate-500 text-center mt-4">
           By submitting, you agree to our{" "}
-          <a href="#" className="text-blue-600 hover:underline">
+          <a href="#" className="text-power-orange hover:underline">
             venue terms and conditions
           </a>
         </p>

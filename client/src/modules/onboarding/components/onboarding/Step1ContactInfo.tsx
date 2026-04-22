@@ -5,7 +5,6 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Lightbulb } from "lucide-react";
 import { useState } from "react";
-import EmailVerificationModal from "./EmailVerificationModal";
 
 interface ContactInfoFormData {
   ownerName: string;
@@ -19,7 +18,6 @@ interface Step1ContactInfoProps {
   ) => Promise<{ venueId: string }>;
   loading?: boolean;
   onSkip?: () => Promise<void>;
-  onVerificationComplete?: () => void;
 }
 
 const isDev =
@@ -29,7 +27,6 @@ export default function Step1ContactInfo({
   onContactInfoSubmit,
   loading = false,
   onSkip,
-  onVerificationComplete,
 }: Step1ContactInfoProps) {
   const [formData, setFormData] = useState<ContactInfoFormData>({
     ownerName: "",
@@ -37,9 +34,13 @@ export default function Step1ContactInfo({
     ownerPhone: "",
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [venueId, setVenueId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const getInputClassName = (hasError: boolean) => {
+    return `w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition text-slate-900 placeholder-slate-500 ${
+      hasError ? "border-error-red bg-red-50" : "border-slate-300 bg-white"
+    }`;
+  };
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -88,12 +89,7 @@ export default function Step1ContactInfo({
     setIsSubmitting(true);
 
     try {
-      // Submit contact info - backend will send verification code automatically
-      const result = await onContactInfoSubmit(formData);
-      setVenueId(result.venueId);
-
-      // Show verification modal - code has already been sent by backend
-      setShowVerificationModal(true);
+      await onContactInfoSubmit(formData);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save contact info",
@@ -103,14 +99,8 @@ export default function Step1ContactInfo({
     }
   };
 
-  const handleVerificationSuccess = () => {
-    setShowVerificationModal(false);
-    // Call parent callback to proceed to next step
-    onVerificationComplete?.();
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-slate-900 mb-2">
           Step 1: Tell us about you
@@ -131,11 +121,7 @@ export default function Step1ContactInfo({
             value={formData.ownerName}
             onChange={handleInputChange}
             placeholder="Your full name"
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition text-slate-900 placeholder-slate-500 ${
-              fieldErrors.ownerName
-                ? "border-error-red bg-red-50"
-                : "border-slate-300 bg-white"
-            }`}
+            className={getInputClassName(Boolean(fieldErrors.ownerName))}
             disabled={loading}
           />
           {fieldErrors.ownerName && (
@@ -158,11 +144,7 @@ export default function Step1ContactInfo({
             value={formData.ownerEmail}
             onChange={handleInputChange}
             placeholder="your.email@example.com"
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition text-slate-900 placeholder-slate-500 ${
-              fieldErrors.ownerEmail
-                ? "border-error-red bg-red-50"
-                : "border-slate-300 bg-white"
-            }`}
+            className={getInputClassName(Boolean(fieldErrors.ownerEmail))}
             disabled={loading}
           />
           {fieldErrors.ownerEmail && (
@@ -185,11 +167,7 @@ export default function Step1ContactInfo({
             value={formData.ownerPhone}
             onChange={handleInputChange}
             placeholder="+91 98765 43210"
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition text-slate-900 placeholder-slate-500 ${
-              fieldErrors.ownerPhone
-                ? "border-error-red bg-red-50"
-                : "border-slate-300 bg-white"
-            }`}
+            className={getInputClassName(Boolean(fieldErrors.ownerPhone))}
             disabled={loading}
           />
           {fieldErrors.ownerPhone && (
@@ -223,7 +201,7 @@ export default function Step1ContactInfo({
         )}
       </form>
 
-      <Card className="bg-power-orange/5 border-power-orange/20">
+      <Card className="rounded-xl border border-power-orange/20 bg-power-orange/5 shadow-none">
         <p className="text-sm text-slate-700 flex items-start gap-2">
           <Lightbulb size={18} className="text-power-orange shrink-0 mt-0.5" />
           <span>
@@ -234,17 +212,6 @@ export default function Step1ContactInfo({
           </span>
         </p>
       </Card>
-
-      {/* Email Verification Modal */}
-      {showVerificationModal && (
-        <EmailVerificationModal
-          email={formData.ownerEmail}
-          venueId={venueId}
-          onVerified={handleVerificationSuccess}
-          onClose={() => setShowVerificationModal(false)}
-          showCloseButton={false}
-        />
-      )}
     </div>
   );
 }

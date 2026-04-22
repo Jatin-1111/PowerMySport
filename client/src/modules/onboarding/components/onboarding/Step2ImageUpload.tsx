@@ -206,26 +206,26 @@ export default function Step2ImageUpload({
   const isComplete = totalUploaded === totalRequired;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+    <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
+      <h2 className="text-2xl font-bold text-slate-900 mb-2">
         Upload Venue Images
       </h2>
-      <p className="text-gray-600 mb-6">
+      <p className="text-slate-600 mb-6">
         Upload {totalRequired} images: 3 general venue images + 5 images per
         sport
       </p>
 
       {/* Progress */}
       <div className="mb-6">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
+        <div className="flex justify-between text-sm text-slate-600 mb-2">
           <span>
             {totalUploaded} of {totalRequired} images uploaded
           </span>
           <span>{Math.round((totalUploaded / totalRequired) * 100)}%</span>
         </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-600 transition-all duration-300"
+            className="h-full bg-power-orange transition-all duration-300"
             style={{ width: `${(totalUploaded / totalRequired) * 100}%` }}
           ></div>
         </div>
@@ -233,13 +233,13 @@ export default function Step2ImageUpload({
 
       {/* General Venue Images Section */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+        <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+          <span className="bg-power-orange/10 text-power-orange px-2 py-1 rounded text-sm">
             Required
           </span>
           General Venue Images (3)
         </h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-slate-600 mb-4">
           Upload overall facility shots. Select one as your cover photo.
         </p>
 
@@ -252,7 +252,7 @@ export default function Step2ImageUpload({
             return (
               <div
                 key={presignedUrl.field}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition"
+                className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-power-orange/60 transition"
               >
                 {uploaded ? (
                   <div className="relative">
@@ -277,9 +277,9 @@ export default function Step2ImageUpload({
                           name="coverPhoto"
                           checked={coverPhotoIndex === index}
                           onChange={() => setCoverPhotoIndex(index)}
-                          className="w-4 h-4"
+                          className="w-4 h-4 accent-power-orange"
                         />
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-slate-700">
                           Set as cover photo
                         </span>
                       </label>
@@ -288,19 +288,19 @@ export default function Step2ImageUpload({
                 ) : (
                   <div>
                     <label className="cursor-pointer block">
-                      <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+                      <div className="flex flex-col items-center justify-center h-48 text-slate-500">
                         {isUploading ? (
                           <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-power-orange mx-auto mb-2"></div>
                             <p className="text-sm">Uploading...</p>
                           </div>
                         ) : (
                           <>
-                            <Camera className="w-12 h-12 mb-3 text-gray-400" />
+                            <Camera className="w-12 h-12 mb-3 text-slate-400" />
                             <p className="text-sm font-medium">
                               Click to upload image {index + 1}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-slate-400 mt-1">
                               JPG, PNG up to 10MB
                             </p>
                           </>
@@ -324,7 +324,9 @@ export default function Step2ImageUpload({
                       />
                     </label>
                     {uploadError && (
-                      <p className="text-red-500 text-sm mt-2">{uploadError}</p>
+                      <p className="text-error-red text-sm mt-2">
+                        {uploadError}
+                      </p>
                     )}
                   </div>
                 )}
@@ -342,13 +344,13 @@ export default function Step2ImageUpload({
 
         return (
           <div key={sport} className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <span className="bg-power-orange/10 text-power-orange px-2 py-1 rounded text-sm">
                 Required
               </span>
               {sport} Images ({sportUploaded}/5)
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-slate-600 mb-4">
               Upload 5 images showcasing your {sport} facilities
             </p>
 
@@ -361,7 +363,7 @@ export default function Step2ImageUpload({
                 return (
                   <div
                     key={presignedUrl.field}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-2 hover:border-green-400 transition"
+                    className="border-2 border-dashed border-slate-300 rounded-lg p-2 hover:border-power-orange/60 transition"
                   >
                     {uploaded ? (
                       <div className="relative">
@@ -381,15 +383,15 @@ export default function Step2ImageUpload({
                     ) : (
                       <div>
                         <label className="cursor-pointer block">
-                          <div className="flex flex-col items-center justify-center h-32 text-gray-500">
+                          <div className="flex flex-col items-center justify-center h-32 text-slate-500">
                             {isUploading ? (
                               <>
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-power-orange"></div>
                                 <p className="mt-1 text-xs">Uploading...</p>
                               </>
                             ) : (
                               <>
-                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                <Upload className="w-8 h-8 mb-2 text-slate-400" />
                                 <p className="text-xs">Image {index + 1}</p>
                               </>
                             )}
@@ -412,7 +414,7 @@ export default function Step2ImageUpload({
                           />
                         </label>
                         {uploadError && (
-                          <p className="text-red-500 text-xs mt-1">
+                          <p className="text-error-red text-xs mt-1">
                             {uploadError}
                           </p>
                         )}
@@ -433,8 +435,8 @@ export default function Step2ImageUpload({
           disabled={!isComplete || loading}
           className={`flex-1 py-3 rounded-lg font-medium transition ${
             isComplete && !loading
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              ? "bg-power-orange text-white hover:bg-orange-600"
+              : "bg-slate-300 text-slate-500 cursor-not-allowed"
           }`}
         >
           {loading ? "Processing..." : "Continue"}
@@ -452,7 +454,7 @@ export default function Step2ImageUpload({
       </div>
 
       {/* Help Text */}
-      <p className="text-sm text-gray-500 mt-4 text-center">
+      <p className="text-sm text-slate-500 mt-4 text-center">
         Tip: Use high-quality images that showcase your facilities well. The
         cover photo will be displayed prominently on your venue listing.
       </p>

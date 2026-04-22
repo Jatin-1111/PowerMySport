@@ -141,21 +141,45 @@ export default function Step5CoachList({
     e.preventDefault();
 
     // Validation
-    if (!newCoach.name.trim()) {
-      toast.error("Coach name is required");
+    const trimmedName = newCoach.name.trim();
+    const trimmedBio = (newCoach.bio ?? "").trim();
+    if (trimmedName.length < 2) {
+      toast.error("Coach name must be at least 2 characters");
       return;
     }
     if (!newCoach.sport.trim()) {
       toast.error("Sport is required");
       return;
     }
+    if (!SPORTS_OPTIONS.includes(newCoach.sport)) {
+      toast.error("Please select a valid sport");
+      return;
+    }
     if (newCoach.hourlyRate <= 0) {
       toast.error("Hourly rate must be greater than 0");
       return;
     }
+    if (trimmedBio.length > 0) {
+      if (trimmedBio.length < 20) {
+        toast.error("Coach bio must be at least 20 characters");
+        return;
+      }
+      if (trimmedBio.length > 500) {
+        toast.error("Coach bio cannot exceed 500 characters");
+        return;
+      }
+    }
 
     // Add coach to list
-    setCoaches((prev) => [...prev, { ...newCoach }]);
+    setCoaches((prev) => [
+      ...prev,
+      {
+        ...newCoach,
+        name: trimmedName,
+        sport: newCoach.sport.trim(),
+        bio: trimmedBio,
+      },
+    ]);
 
     // Reset form
     setNewCoach({
@@ -163,6 +187,7 @@ export default function Step5CoachList({
       sport: "",
       hourlyRate: 0,
       bio: "",
+      profilePhoto: "",
     });
     setShowForm(false);
   };
@@ -188,14 +213,14 @@ export default function Step5CoachList({
   };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto rounded-lg">
+    <Card className="w-full max-w-3xl mx-auto rounded-2xl border border-slate-200 bg-white/90 shadow-xs">
       <div className="p-6 md:p-8 space-y-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-ghost-white">
+          <h1 className="text-3xl font-bold text-slate-900">
             Add In-House Coaches
           </h1>
-          <p className="mt-2 text-ghost-white">
+          <p className="mt-2 text-slate-600">
             Step 5 of 5: List your internal coaches (optional)
           </p>
         </div>
@@ -203,7 +228,7 @@ export default function Step5CoachList({
         {/* Coaches List */}
         {coaches.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-ghost-white">
+            <h2 className="text-lg font-semibold text-slate-900">
               Added Coaches ({coaches.length})
             </h2>
             <div className="space-y-2">
@@ -262,14 +287,14 @@ export default function Step5CoachList({
           <Button
             type="button"
             onClick={() => setShowForm(true)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5"
+            className="w-full bg-power-orange hover:bg-orange-600 text-white py-2.5"
           >
             + Add Coach
           </Button>
         ) : (
           <form
             onSubmit={handleAddCoach}
-            className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200"
+            className="space-y-4 p-4 bg-power-orange/5 rounded-lg border border-power-orange/20"
           >
             {/* Coach Name */}
             <div>
@@ -321,9 +346,9 @@ export default function Step5CoachList({
                 {/* Upload Button */}
                 <div className="">
                   <label className="cursor-pointer">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 transition-colors">
-                      <Camera className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-600">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white border border-power-orange/30 rounded-lg hover:bg-power-orange/5 transition-colors">
+                      <Camera className="w-4 h-4 text-power-orange" />
+                      <span className="text-sm font-medium text-power-orange">
                         {isUploadingPhoto
                           ? "Uploading..."
                           : newCoach.profilePhoto
@@ -414,14 +439,14 @@ export default function Step5CoachList({
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2"
+                className="flex-1 bg-power-orange hover:bg-orange-600 text-white py-2"
               >
                 {loading ? "Adding..." : "Add Coach"}
               </Button>
               <Button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2"
+                className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2"
               >
                 Cancel
               </Button>
@@ -430,9 +455,9 @@ export default function Step5CoachList({
         )}
 
         {/* Info Message */}
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800 flex items-start gap-2">
-            <Lightbulb className="h-4 w-4 mt-0.5 text-blue-700" />
+        <div className="p-4 bg-power-orange/5 border border-power-orange/20 rounded-lg">
+          <p className="text-sm text-slate-700 flex items-start gap-2">
+            <Lightbulb className="h-4 w-4 mt-0.5 text-power-orange" />
             <span>
               <strong>Tip:</strong> You can add coaches now or skip this step
               and add them later from your venue dashboard.
@@ -446,7 +471,7 @@ export default function Step5CoachList({
             type="button"
             onClick={handleSkip}
             disabled={loading}
-            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2.5"
+            className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2.5"
           >
             {loading ? "Processing..." : "Skip"}
           </Button>
@@ -454,7 +479,7 @@ export default function Step5CoachList({
             type="button"
             onClick={handleComplete}
             disabled={loading}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5"
+            className="flex-1 bg-power-orange hover:bg-orange-600 text-white py-2.5"
           >
             {loading ? "Completing..." : "Complete Onboarding"}
           </Button>

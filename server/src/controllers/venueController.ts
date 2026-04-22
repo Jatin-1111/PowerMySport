@@ -12,7 +12,10 @@ import {
   updateVenue,
 } from "../services/VenueService";
 import { getPaginationParams } from "../utils/pagination";
-import { transformDocument } from "../middleware/responseTransform";
+import {
+  transformDocument,
+  transformDocuments,
+} from "../middleware/responseTransform";
 
 interface DiscoveryContext {
   page: number;
@@ -61,7 +64,14 @@ const fetchDiscoveryVenues = async (ctx: DiscoveryContext) => {
     ctx.latitude === undefined ||
     ctx.longitude === undefined
   ) {
-    const venueFilters = ctx.sportFilter ? { sports: [ctx.sportFilter] } : {};
+    const venueFilters = ctx.sportFilter
+      ? {
+          sports: [ctx.sportFilter],
+          approvalStatus: "APPROVED" as const,
+        }
+      : {
+          approvalStatus: "APPROVED" as const,
+        };
     return getAllVenues(venueFilters, ctx.page, ctx.limit);
   }
 
@@ -251,7 +261,7 @@ export const discoverNearby = async (
       success: true,
       message: "Discovery results retrieved successfully",
       data: {
-        venues: venuesResult.venues,
+        venues: transformDocuments(venuesResult.venues),
       },
       pagination: {
         venues: {
@@ -288,12 +298,16 @@ export const searchVenues = async (
 
     const { page, limit } = getPaginationParams(queryPage, queryLimit, 20, 100);
 
-    const result = await getAllVenues(filters, page, limit);
+    const result = await getAllVenues(
+      { ...filters, approvalStatus: "APPROVED" },
+      page,
+      limit,
+    );
 
     res.status(200).json({
       success: true,
       message: "Search results retrieved successfully",
-      data: result.venues,
+      data: transformDocuments(result.venues),
       pagination: {
         total: result.total,
         page: result.page,

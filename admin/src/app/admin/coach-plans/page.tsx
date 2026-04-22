@@ -306,6 +306,8 @@ export default function AdminCoachPlansPage() {
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
             <input
+              type="number"
+              min="0"
               value={form.monthly}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, monthly: event.target.value }))
@@ -314,6 +316,8 @@ export default function AdminCoachPlansPage() {
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
             />
             <input
+              type="number"
+              min="0"
               value={form.yearly}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, yearly: event.target.value }))
@@ -392,6 +396,8 @@ export default function AdminCoachPlansPage() {
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
               <input
+                type="number"
+                min="0"
                 value={editForm.monthly}
                 onChange={(event) =>
                   setEditForm((prev) => ({
@@ -403,6 +409,8 @@ export default function AdminCoachPlansPage() {
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
               <input
+                type="number"
+                min="0"
                 value={editForm.yearly}
                 onChange={(event) =>
                   setEditForm((prev) => ({
