@@ -45,7 +45,15 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const COMMUNITY_ACTIVE_TAB_KEY = "community:activeSidebarTab";
 const COMMUNITY_WORKSPACE_VIEW_KEY = "community:workspaceView";
@@ -546,7 +554,7 @@ const resolveSidebarQueryState = (
   return {};
 };
 
-export default function CommunityPage() {
+function CommunityPageContent() {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const pathname = usePathname();
@@ -4315,5 +4323,13 @@ export default function CommunityPage() {
         </motion.div>
       )}
     </>
+  );
+}
+
+export default function CommunityPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <CommunityPageContent />
+    </Suspense>
   );
 }
