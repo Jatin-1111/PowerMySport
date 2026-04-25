@@ -35,13 +35,11 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-dvh bg-app text-slate-900 overflow-y-auto lg:overflow-hidden">
+      <body className="h-dvh bg-app text-slate-900 overflow-y-auto">
         <div className="flex h-dvh flex-col">
           <CommunityTopNav />
           <CommunityNotificationToastListener />
-          <main className="min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
-            {children}
-          </main>
+          <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
         </div>
         <Toaster richColors closeButton position="top-right" />
       </body>

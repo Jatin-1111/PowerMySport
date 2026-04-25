@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const COMMUNITY_ACTIVE_TAB_KEY = "community:activeSidebarTab";
@@ -550,13 +550,8 @@ export default function CommunityPage() {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const pathname = usePathname();
-  const [searchQuery, setSearchQuery] = useState(() => {
-    if (typeof window === "undefined") {
-      return "";
-    }
-
-    return window.location.search.replace(/^\?/, "");
-  });
+  const urlSearchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState("");
   const lastAppliedQueryRef = useRef(searchQuery);
   const hasHydratedUrlRef = useRef(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState<
@@ -1209,18 +1204,8 @@ export default function CommunityPage() {
   }, [sidebarMode]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const syncSearch = () => {
-      setSearchQuery(window.location.search.replace(/^\?/, ""));
-    };
-
-    syncSearch();
-    window.addEventListener("popstate", syncSearch);
-    return () => window.removeEventListener("popstate", syncSearch);
-  }, []);
+    setSearchQuery(urlSearchParams.toString());
+  }, [urlSearchParams]);
 
   useEffect(() => {
     if (
@@ -2613,14 +2598,14 @@ export default function CommunityPage() {
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1 }}
         transition={{ duration: 0.28 }}
-        className="h-full min-h-0 bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] lg:overflow-hidden"
+        className="h-full min-h-0 bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
       >
         {/* Main Layout */}
         <motion.div
           variants={shellVariants}
           initial="hidden"
           animate="show"
-          className={`mx-auto grid h-full min-h-0 w-full max-w-full gap-0 lg:overflow-hidden ${
+          className={`mx-auto grid h-full min-h-0 w-full max-w-full gap-0 ${
             isCommunityView
               ? "grid-cols-1"
               : isConversationsView
@@ -2632,7 +2617,7 @@ export default function CommunityPage() {
           {isCommunityView && (
             <motion.main
               variants={panelVariants}
-              className="flex min-h-full min-w-0 flex-col overflow-y-auto lg:h-full lg:overflow-hidden"
+              className="flex min-h-full min-w-0 flex-col overflow-y-auto lg:h-full"
             >
               <div className="space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
                 <section id="community-overview" className="mb-6 scroll-mt-28">
@@ -2642,6 +2627,18 @@ export default function CommunityPage() {
                     badge="Community Network"
                     action={
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSidebarTab("conversations");
+                            setSidebarMode("INBOX");
+                            setWorkspaceView("DIRECTORY");
+                            setDirectoryView("CONTACTS");
+                          }}
+                          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto sm:px-4"
+                        >
+                          Open chats
+                        </button>
                         <Link
                           href="/q"
                           className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 sm:w-auto sm:px-4"
@@ -2773,7 +2770,7 @@ export default function CommunityPage() {
               {/* Main Chat Area */}
               <motion.main
                 variants={panelVariants}
-                className="grid h-full min-h-0 min-w-0 grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] lg:overflow-hidden"
+                className="grid h-full min-h-0 min-w-0 grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)]"
               >
                 <motion.section
                   className={`h-full min-h-0 overflow-y-auto border-r border-slate-200 bg-white p-3.5 pb-24 sm:p-4 lg:pb-4 ${
@@ -3684,7 +3681,7 @@ export default function CommunityPage() {
                   )}
                 </motion.section>
                 <motion.section
-                  className={`h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-position-[0_0,11px_11px] bg-size-[22px_22px] lg:overflow-hidden ${
+                  className={`h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-position-[0_0,11px_11px] bg-size-[22px_22px] ${
                     workspaceView === "CHAT" ? "flex" : "hidden lg:flex"
                   }`}
                 >

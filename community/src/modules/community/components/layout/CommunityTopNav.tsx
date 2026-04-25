@@ -64,7 +64,10 @@ export default function CommunityTopNav() {
     <header className="sticky top-0 z-120 border-b border-white/70 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/75 px-3 py-2.5 shadow-sm shadow-slate-900/5 backdrop-blur sm:px-4">
-          <Link href="/" className="flex items-center gap-2">
+          <Link
+            href="/?sidebar=community-overview"
+            className="flex items-center gap-2"
+          >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-sm font-black text-white shadow-[0_10px_24px_-12px_rgba(233,115,22,0.75)]">
               PM
             </span>
@@ -189,7 +192,7 @@ export default function CommunityTopNav() {
 
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
                     <Link
-                      href="/"
+                      href="/?sidebar=community-overview"
                       className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-power-orange/10 text-power-orange">
