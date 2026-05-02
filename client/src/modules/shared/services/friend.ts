@@ -12,6 +12,8 @@ export interface Friend {
   photoUrl?: string;
   friendsSince: string;
   connectionId: string;
+  isIdentityPublic?: boolean;
+  anonymousAlias?: string;
 }
 
 export interface SearchUserResult {
@@ -20,6 +22,8 @@ export interface SearchUserResult {
   email: string;
   photoUrl?: string;
   friendStatus: "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "NONE";
+  isIdentityPublic?: boolean;
+  anonymousAlias?: string;
 }
 
 export interface FriendRequest {
@@ -29,12 +33,16 @@ export interface FriendRequest {
     name: string;
     email: string;
     photoUrl?: string;
+    isIdentityPublic?: boolean;
+    anonymousAlias?: string;
   };
   recipient: {
     id: string;
     name: string;
     email: string;
     photoUrl?: string;
+    isIdentityPublic?: boolean;
+    anonymousAlias?: string;
   };
   status: string;
   createdAt: string;

@@ -55,6 +55,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
+  isIdentityPublic?: boolean;
   dob?: string;
   role: UserRole;
   photoUrl?: string;

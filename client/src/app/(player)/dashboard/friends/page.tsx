@@ -342,23 +342,35 @@ export default function FriendsPage() {
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 flex-1">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={friend.photoUrl} />
-                            <AvatarFallback>
-                              {friend.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-slate-900">
-                              {friend.name}
-                            </h3>
-                            <p className="text-sm text-slate-600">
-                              Friends since{" "}
-                              {new Date(
-                                friend.friendsSince,
-                              ).toLocaleDateString()}
-                            </p>
-                          </div>
+                          {(() => {
+                            const isPublic = friend.isIdentityPublic !== false;
+                            const displayName = isPublic
+                              ? friend.name
+                              : friend.anonymousAlias || "Anonymous Member";
+                            return (
+                              <>
+                                <Avatar className="h-12 w-12">
+                                  <AvatarImage
+                                    src={isPublic ? friend.photoUrl : undefined}
+                                  />
+                                  <AvatarFallback>
+                                    {displayName.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <h3 className="font-semibold text-slate-900">
+                                    {displayName}
+                                  </h3>
+                                  <p className="text-sm text-slate-600">
+                                    Friends since{" "}
+                                    {new Date(
+                                      friend.friendsSince,
+                                    ).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger>
@@ -424,20 +436,38 @@ export default function FriendsPage() {
                       transition={{ duration: 0.2, ease: "easeOut" }}
                     >
                       <div className="flex items-center gap-4">
-                        <Avatar>
-                          <AvatarImage src={request.requester.photoUrl} />
-                          <AvatarFallback>
-                            {request.requester.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h4 className="font-semibold text-slate-900">
-                            {request.requester.name}
-                          </h4>
-                          <p className="text-sm text-slate-600">
-                            {request.requester.email}
-                          </p>
-                        </div>
+                        {(() => {
+                          const isPublic =
+                            request.requester.isIdentityPublic !== false;
+                          const displayName = isPublic
+                            ? request.requester.name
+                            : request.requester.anonymousAlias ||
+                              "Anonymous Member";
+                          return (
+                            <>
+                              <Avatar>
+                                <AvatarImage
+                                  src={
+                                    isPublic
+                                      ? request.requester.photoUrl
+                                      : undefined
+                                  }
+                                />
+                                <AvatarFallback>
+                                  {displayName.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h4 className="font-semibold text-slate-900">
+                                  {displayName}
+                                </h4>
+                                <p className="text-sm text-slate-600">
+                                  Friend request
+                                </p>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -560,17 +590,29 @@ export default function FriendsPage() {
                         transition={{ duration: 0.2, ease: "easeOut" }}
                       >
                         <div className="flex items-center gap-4">
-                          <Avatar>
-                            <AvatarImage src={user.photoUrl} />
-                            <AvatarFallback>
-                              {user.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h4 className="font-semibold text-slate-900">
-                              {user.name}
-                            </h4>
-                          </div>
+                          {(() => {
+                            const isPublic = user.isIdentityPublic !== false;
+                            const displayName = isPublic
+                              ? user.name
+                              : user.anonymousAlias || "Anonymous Member";
+                            return (
+                              <>
+                                <Avatar>
+                                  <AvatarImage
+                                    src={isPublic ? user.photoUrl : undefined}
+                                  />
+                                  <AvatarFallback>
+                                    {displayName.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <h4 className="font-semibold text-slate-900">
+                                    {displayName}
+                                  </h4>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                         <div>
                           {user.friendStatus === "FRIENDS" && (

@@ -162,17 +162,30 @@ export function FriendSelector({
                 onCheckedChange={() => toggleFriend(friend.id)}
                 className="pointer-events-none"
               />
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={friend.photoUrl} alt={friend.name} />
-                <AvatarFallback className="bg-slate-200 text-slate-700 font-semibold">
-                  {friend.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 truncate">
-                  {friend.name}
-                </p>
-              </div>
+              {(() => {
+                const isPublic = friend.isIdentityPublic !== false;
+                const displayName = isPublic
+                  ? friend.name
+                  : friend.anonymousAlias || "Anonymous Member";
+                return (
+                  <>
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage
+                        src={isPublic ? friend.photoUrl : undefined}
+                        alt={displayName}
+                      />
+                      <AvatarFallback className="bg-slate-200 text-slate-700 font-semibold">
+                        {displayName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 truncate">
+                        {displayName}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
             </button>
           );
         })}
