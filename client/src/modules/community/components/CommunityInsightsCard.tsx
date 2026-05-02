@@ -2,6 +2,10 @@
 
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { statsApi } from "@/modules/analytics/services/stats";
+import {
+  useActiveGroup,
+  canViewToolsFor,
+} from "@/modules/community/context/ActiveGroupContext";
 import { Card } from "@/modules/shared/ui/Card";
 import {
   communityInsightsService,
@@ -24,6 +28,7 @@ type CommunityInsightsCardProps = {
     entityId?: string;
     metadata?: Record<string, unknown>;
   };
+  groupId?: string; // optional group id this card is associated with
 };
 
 export function CommunityInsightsCard({
@@ -40,6 +45,7 @@ export function CommunityInsightsCard({
   const [items, setItems] = useState<CommunityInsightPost[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+  const { activeGroupId } = useActiveGroup();
 
   useEffect(() => {
     if (!enabled) {
@@ -138,6 +144,12 @@ export function CommunityInsightsCard({
 
           {!enabled ? (
             <p className="mt-3 text-xs text-slate-500">
+              {/* If group tools are not allowed, show locked message */}
+              {!canViewToolsFor(groupId, activeGroupId) ? (
+                <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                  Tools for this group are locked while another group is open.
+                </div>
+              ) : null}
               Sign in as a player or coach to view live community insights.
             </p>
           ) : null}

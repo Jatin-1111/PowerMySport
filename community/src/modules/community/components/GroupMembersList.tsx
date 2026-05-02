@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { communityService } from "../services/community";
 import { ChevronRight, Users, UserCircle2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useAsync } from "@/lib/hooks/useAsync";
 
 export interface GroupMember {
   id: string;
@@ -24,27 +24,21 @@ export function GroupMembersList({
   onMemberClick,
 }: GroupMembersListProps) {
   const prefersReducedMotion = useReducedMotion();
-  const [members, setMembers] = useState<GroupMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const loadMembers = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const {
+    data: members = [],
+    isLoading,
+    error,
+    execute,
+  } = useAsync(
+    async (signal) => {
+      // Pass signal to axios via requestConfig
       const data = await communityService.getGroupMembers(groupId);
-      setMembers(Array.isArray(data) ? data : []);
-    } catch {
-      const message = "Failed to load members";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [groupId]);
-
-  useEffect(() => {
-    void loadMembers();
-  }, [loadMembers]);
+      return Array.isArray(data) ? data : [];
+    },
+    [groupId],
+    { onError: () => {} }, // Silent error handling - rely on error state
+  );
 
   if (isLoading) {
     return (
@@ -85,7 +79,7 @@ export function GroupMembersList({
           </span>
         </div>
         <button
-          onClick={() => void loadMembers()}
+          onClick={() => void execute()}
           disabled={isLoading}
           className="min-h-10 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:text-slate-700 disabled:opacity-50"
         >
@@ -99,7 +93,9 @@ export function GroupMembersList({
 
       {error && (
         <div className="mt-4 rounded-xl border border-red-200 bg-red-50/80 p-3">
-          <p className="text-sm text-red-700">{error}</p>
+          <p className="text-sm text-red-700">
+            {error.message || "Failed to load members"}
+          </p>
         </div>
       )}
 

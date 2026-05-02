@@ -5,6 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import dynamic from "next/dynamic";
+const GroupToolsPanel = dynamic(
+  () =>
+    import("@/modules/community/components/GroupToolsPanel").then(
+      (m) => m.GroupToolsPanel,
+    ),
+  { ssr: false },
+);
 import {
   BottomNav,
   BottomNavSpacer,
@@ -236,6 +244,16 @@ export const DashboardShell = ({
           </div>
 
           <NavItems items={navItems} pathname={pathname} />
+
+          {/* Group tools panel */}
+          <div className="px-6 mt-4">
+            <div className="sticky top-24">
+              {/* lazy load to avoid server-side issues */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* @ts-ignore */}
+              <GroupToolsPanel />
+            </div>
+          </div>
 
           <div className="mt-auto border-t border-white/60 p-6">
             <button

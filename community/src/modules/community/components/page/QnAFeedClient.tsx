@@ -25,6 +25,7 @@ import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { toast } from "@/lib/toast";
+import { useMutationState } from "@/lib/hooks/useMutationState";
 
 const SORT_OPTIONS: Array<{ value: CommunityFeedSort; label: string }> = [
   { value: "NEW", label: "New" },
@@ -69,8 +70,6 @@ export default function QnAFeedClient() {
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
   const [isMarkingActivityRead, setIsMarkingActivityRead] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isMutatingPostId, setIsMutatingPostId] = useState<string | null>(null);
-  const [isVotingKey, setIsVotingKey] = useState<string | null>(null);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [activity, setActivity] = useState<CommunityActivityItem[]>([]);
   const [activityUnreadCount, setActivityUnreadCount] = useState(0);
@@ -78,6 +77,77 @@ export default function QnAFeedClient() {
   const [hasMore, setHasMore] = useState(false);
   const [reputation, setReputation] =
     useState<CommunityReputationSummary | null>(null);
+
+  // Unified voting mutation state - replaces isMutatingPostId and isVotingKey
+  const voting = useMutationState(
+    async (postId: string, payload: { value: 1 | -1 }) => {
+      return await communityService.vote({
+        targetType: "POST",
+        targetId: postId,
+        value: payload.value,
+      });
+    },
+    {
+      onSuccess: (postId, result) => {
+        setPosts((current) =>
+          current.map((item) =>
+            item.id === postId
+              ? {
+                  ...item,
+                  myVote: result.myVote,
+                  voteScore: result.voteScore,
+                  upvoteCount: result.upvoteCount,
+                  downvoteCount: result.downvoteCount,
+                }
+              : item,
+          ),
+        );
+        void loadActivity();
+      },
+      onError: (postId, error) => {
+        toast.error(error.message || "Failed to vote");
+      },
+    },
+  );
+
+  // Post edit/delete mutation state - replaces isMutatingPostId for close/open/delete
+  const postMutations = useMutationState(
+    async (
+      postId: string,
+      payload: { action: "toggle" | "delete"; nextStatus?: "OPEN" | "CLOSED" },
+    ) => {
+      if (payload.action === "toggle") {
+        return await communityService.updatePost(postId, {
+          status: payload.nextStatus,
+        });
+      } else {
+        await communityService.deletePost(postId);
+        return null;
+      }
+    },
+    {
+      onSuccess: (postId, result, payload) => {
+        if (payload.action === "toggle" && result) {
+          setPosts((current) =>
+            current.map((item) =>
+              item.id === postId ? { ...item, status: result.status } : item,
+            ),
+          );
+          toast.success(
+            `Question ${payload.nextStatus === "OPEN" ? "reopened" : "closed"}`,
+          );
+        } else if (payload.action === "delete") {
+          setPosts((current) => current.filter((item) => item.id !== postId));
+          toast.success("Question deleted");
+          void loadActivity();
+        }
+      },
+      onError: (postId, error, payload) => {
+        const action = payload.action === "toggle" ? "update" : "delete";
+        toast.error(error.message || `Failed to ${action} question`);
+      },
+    },
+  );
   const [sort, setSort] = useState<CommunityFeedSort>("NEW");
   const [q, setQ] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -404,27 +474,10 @@ export default function QnAFeedClient() {
 
   const togglePostStatus = async (post: CommunityPost) => {
     const nextStatus = post.status === "OPEN" ? "CLOSED" : "OPEN";
-    try {
-      setIsMutatingPostId(post.id);
-      const updated = await communityService.updatePost(post.id, {
-        status: nextStatus,
-      });
-
-      setPosts((current) =>
-        current.map((item) =>
-          item.id === post.id ? { ...item, status: updated.status } : item,
-        ),
-      );
-      toast.success(
-        `Question ${nextStatus === "OPEN" ? "reopened" : "closed"}`,
-      );
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update question",
-      );
-    } finally {
-      setIsMutatingPostId(null);
-    }
+    await postMutations.mutate(post.id, {
+      action: "toggle",
+      nextStatus,
+    });
   };
 
   const deletePost = async (post: CommunityPost) => {
@@ -435,50 +488,11 @@ export default function QnAFeedClient() {
       return;
     }
 
-    try {
-      setIsMutatingPostId(post.id);
-      await communityService.deletePost(post.id);
-      setPosts((current) => current.filter((item) => item.id !== post.id));
-      toast.success("Question deleted");
-      await loadActivity();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete question",
-      );
-    } finally {
-      setIsMutatingPostId(null);
-    }
+    await postMutations.mutate(post.id, { action: "delete" });
   };
 
   const vote = async (post: CommunityPost, value: 1 | -1) => {
-    const key = `POST:${post.id}`;
-    try {
-      setIsVotingKey(key);
-      const result = await communityService.vote({
-        targetType: "POST",
-        targetId: post.id,
-        value,
-      });
-
-      setPosts((current) =>
-        current.map((item) =>
-          item.id === post.id
-            ? {
-                ...item,
-                myVote: result.myVote,
-                voteScore: result.voteScore,
-                upvoteCount: result.upvoteCount,
-                downvoteCount: result.downvoteCount,
-              }
-            : item,
-        ),
-      );
-      await loadActivity();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to vote");
-    } finally {
-      setIsVotingKey(null);
-    }
+    await voting.mutate(post.id, { value });
   };
 
   const summary = useMemo(
@@ -934,7 +948,7 @@ export default function QnAFeedClient() {
                     <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r-2 border-power-orange/20 bg-power-orange/5 px-2.5 py-4 group-hover:bg-power-orange/10">
                       <button
                         onClick={() => void vote(featuredPost, 1)}
-                        disabled={isVotingKey === `POST:${featuredPost.id}`}
+                        disabled={voting.isLoading(featuredPost.id)}
                         className={`rounded-md p-1.5 transition-colors ${
                           featuredPost.myVote === 1
                             ? "bg-orange-100 text-power-orange"
@@ -949,7 +963,7 @@ export default function QnAFeedClient() {
                       </span>
                       <button
                         onClick={() => void vote(featuredPost, -1)}
-                        disabled={isVotingKey === `POST:${featuredPost.id}`}
+                        disabled={voting.isLoading(featuredPost.id)}
                         className={`rounded-md p-1.5 transition-colors ${
                           featuredPost.myVote === -1
                             ? "bg-red-100 text-red-600"
@@ -1032,7 +1046,6 @@ export default function QnAFeedClient() {
 
                 <div className="space-y-2">
                   {nonFeaturedPosts.map((post) => {
-                    const voteKey = `POST:${post.id}`;
                     return (
                       <article
                         key={post.id}
@@ -1042,7 +1055,7 @@ export default function QnAFeedClient() {
                         <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r border-slate-200 bg-slate-50 px-2.5 py-3 group-hover:bg-slate-100">
                           <button
                             onClick={() => void vote(post, 1)}
-                            disabled={isVotingKey === voteKey}
+                            disabled={voting.isLoading(post.id)}
                             title="Upvote"
                             className={`rounded-md p-1.5 transition-colors ${
                               post.myVote === 1
@@ -1057,7 +1070,7 @@ export default function QnAFeedClient() {
                           </span>
                           <button
                             onClick={() => void vote(post, -1)}
-                            disabled={isVotingKey === voteKey}
+                            disabled={voting.isLoading(post.id)}
                             title="Downvote"
                             className={`rounded-md p-1.5 transition-colors ${
                               post.myVote === -1
@@ -1146,14 +1159,14 @@ export default function QnAFeedClient() {
                             <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                               <button
                                 onClick={() => void togglePostStatus(post)}
-                                disabled={isMutatingPostId === post.id}
+                                disabled={postMutations.isLoading(post.id)}
                                 className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50"
                               >
                                 {post.status === "OPEN" ? "Close" : "Reopen"}
                               </button>
                               <button
                                 onClick={() => void deletePost(post)}
-                                disabled={isMutatingPostId === post.id}
+                                disabled={postMutations.isLoading(post.id)}
                                 className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:border-red-300 disabled:opacity-50"
                               >
                                 Delete
