@@ -1238,56 +1238,52 @@ function CommunityPageContent() {
     const urlConversationId = queryParams.get("conversation") || null;
     const urlQuery = queryParams.get("q") || null;
 
-    if (sidebarState.mode && sidebarState.mode !== sidebarMode) {
-      setSidebarMode(sidebarState.mode);
+    const nextSidebarMode = sidebarState.mode;
+    if (nextSidebarMode) {
+      setSidebarMode((current) =>
+        current === nextSidebarMode ? current : nextSidebarMode,
+      );
     }
 
-    if (sidebarState.tab && sidebarState.tab !== activeSidebarTab) {
-      setActiveSidebarTab(sidebarState.tab);
+    const nextSidebarTab = sidebarState.tab;
+    if (nextSidebarTab) {
+      setActiveSidebarTab((current) =>
+        current === nextSidebarTab ? current : nextSidebarTab,
+      );
     }
 
     if (
       isValidDirectoryView(urlDirectoryView) &&
-      (urlDirectoryView === "CONTACTS" || urlDirectoryView === "GROUPS") &&
-      urlDirectoryView !== directoryView
+      (urlDirectoryView === "CONTACTS" || urlDirectoryView === "GROUPS")
     ) {
-      setDirectoryView(urlDirectoryView);
+      setDirectoryView((current) =>
+        current === urlDirectoryView ? current : urlDirectoryView,
+      );
     }
 
-    if (
-      isValidGroupToolsMode(urlGroupToolsMode) &&
-      urlGroupToolsMode !== groupToolsMode
-    ) {
-      setGroupToolsMode(urlGroupToolsMode);
+    if (isValidGroupToolsMode(urlGroupToolsMode)) {
+      const nextGroupToolsMode = urlGroupToolsMode;
+      setGroupToolsMode((current) =>
+        current === nextGroupToolsMode ? current : nextGroupToolsMode,
+      );
     }
 
-    if (
-      typeof urlConversationId === "string" &&
-      urlConversationId.trim() &&
-      urlConversationId !== selectedConversationId
-    ) {
-      setSelectedConversationId(urlConversationId);
+    if (typeof urlConversationId === "string" && urlConversationId.trim()) {
+      setSelectedConversationId((current) =>
+        current === urlConversationId ? current : urlConversationId,
+      );
     }
 
-    if (
-      typeof urlQuery === "string" &&
-      urlQuery.trim() &&
-      urlQuery !== groupSearchQuery
-    ) {
-      setGroupSearchQuery(urlQuery.trim());
+    if (typeof urlQuery === "string" && urlQuery.trim()) {
+      const normalized = urlQuery.trim();
+      setGroupSearchQuery((current) =>
+        current === normalized ? current : normalized,
+      );
     }
 
     hasHydratedUrlRef.current = true;
     lastAppliedQueryRef.current = searchQuery;
-  }, [
-    searchQuery,
-    sidebarMode,
-    activeSidebarTab,
-    directoryView,
-    groupToolsMode,
-    selectedConversationId,
-    groupSearchQuery,
-  ]);
+  }, [searchQuery]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchQuery);
@@ -1307,6 +1303,11 @@ function CommunityPageContent() {
     }
 
     const nextQuery = params.toString();
+    if (nextQuery === searchQuery) {
+      lastAppliedQueryRef.current = nextQuery;
+      return;
+    }
+
     if (nextQuery !== lastAppliedQueryRef.current) {
       lastAppliedQueryRef.current = nextQuery;
       router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
@@ -2857,22 +2858,38 @@ function CommunityPageContent() {
                         <div className="relative z-10 flex items-center justify-between">
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-600/80">
-                              {directoryView === "GROUPS" ? "Community" : "Direct Messages"}
+                              {directoryView === "GROUPS"
+                                ? "Community"
+                                : "Direct Messages"}
                             </p>
                             <h3 className="font-title mt-1 text-lg font-bold text-slate-900">
-                              {directoryView === "GROUPS" ? "Group Tools" : "Chat Tools"}
+                              {directoryView === "GROUPS"
+                                ? "Group Tools"
+                                : "Chat Tools"}
                             </h3>
                           </div>
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/60 shadow-sm backdrop-blur-md">
-                            {directoryView === "GROUPS" ? <Users size={20} className="text-sky-600" /> : <MessageSquare size={20} className="text-sky-600" />}
+                            {directoryView === "GROUPS" ? (
+                              <Users size={20} className="text-sky-600" />
+                            ) : (
+                              <MessageSquare
+                                size={20}
+                                className="text-sky-600"
+                              />
+                            )}
                           </div>
                         </div>
 
                         {/* Progress Steps Indicator */}
                         <div className="mt-4 flex gap-1">
                           {toolsSteps.map((step, index) => (
-                            <div key={step.id} className="group relative flex-1">
-                              <div className={`h-1.5 w-full rounded-full transition-colors duration-300 ${step.done ? "bg-turf-green" : "bg-white/60 shadow-inner"}`} />
+                            <div
+                              key={step.id}
+                              className="group relative flex-1"
+                            >
+                              <div
+                                className={`h-1.5 w-full rounded-full transition-colors duration-300 ${step.done ? "bg-turf-green" : "bg-white/60 shadow-inner"}`}
+                              />
                               <div className="mt-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                                 <p className="text-center text-[9px] font-bold uppercase tracking-wide text-slate-500">
                                   {step.label}
@@ -2890,7 +2907,10 @@ function CommunityPageContent() {
                             or open a DM thread.
                           </div>
                           <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <Search
+                              size={14}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                            />
                             <input
                               value={playerSearchQuery}
                               onChange={(event) =>
@@ -2915,7 +2935,9 @@ function CommunityPageContent() {
                                     }
                                     className="flex w-full items-center justify-between rounded-lg bg-white px-3 py-2.5 text-left text-sm shadow-sm transition-colors hover:border-power-orange/30 hover:bg-power-orange/5"
                                   >
-                                    <span className="font-semibold text-slate-800">{user.displayName}</span>
+                                    <span className="font-semibold text-slate-800">
+                                      {user.displayName}
+                                    </span>
                                     <span className="flex items-center gap-1.5 text-xs text-slate-500">
                                       <span>
                                         {user.isIdentityPublic
@@ -2951,31 +2973,59 @@ function CommunityPageContent() {
                             Use Discover to join groups, Manage for policy and
                             controls, and Invite to share group access.
                           </div>
-                          
+
                           {/* Animated Tabs */}
                           <div className="relative flex rounded-xl border border-slate-200/60 bg-slate-100/50 p-1 backdrop-blur-sm">
                             {[
-                              { value: "DISCOVER", label: "Discover", icon: Compass },
-                              { value: "MANAGE", label: "Manage", icon: Settings },
-                              { value: "INVITE", label: "Invite", icon: UserPlus },
+                              {
+                                value: "DISCOVER",
+                                label: "Discover",
+                                icon: Compass,
+                              },
+                              {
+                                value: "MANAGE",
+                                label: "Manage",
+                                icon: Settings,
+                              },
+                              {
+                                value: "INVITE",
+                                label: "Invite",
+                                icon: UserPlus,
+                              },
                             ].map((item) => {
                               const isActive = groupToolsMode === item.value;
                               const Icon = item.icon;
                               return (
                                 <button
                                   key={item.value}
-                                  onClick={() => setGroupToolsMode(item.value as "DISCOVER" | "MANAGE" | "INVITE")}
+                                  onClick={() =>
+                                    setGroupToolsMode(
+                                      item.value as
+                                        | "DISCOVER"
+                                        | "MANAGE"
+                                        | "INVITE",
+                                    )
+                                  }
                                   className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-semibold transition-colors z-10 ${isActive ? "text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
                                 >
                                   {isActive && (
                                     <motion.div
                                       layoutId="groupToolsTab"
                                       className="absolute inset-0 z-0 rounded-lg bg-white shadow-sm border border-slate-200/50"
-                                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                      transition={{
+                                        type: "spring",
+                                        stiffness: 400,
+                                        damping: 30,
+                                      }}
                                     />
                                   )}
                                   <span className="relative z-10 flex items-center gap-1.5">
-                                    <Icon size={14} className={isActive ? "text-power-orange" : ""} />
+                                    <Icon
+                                      size={14}
+                                      className={
+                                        isActive ? "text-power-orange" : ""
+                                      }
+                                    />
                                     {item.label}
                                   </span>
                                 </button>
@@ -2993,7 +3043,14 @@ function CommunityPageContent() {
                               ].map((item) => (
                                 <button
                                   key={item.value}
-                                  onClick={() => setGroupMode(item.value as "ALL" | "JOINED" | "DISCOVER")}
+                                  onClick={() =>
+                                    setGroupMode(
+                                      item.value as
+                                        | "ALL"
+                                        | "JOINED"
+                                        | "DISCOVER",
+                                    )
+                                  }
                                   className={`rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${groupMode === item.value ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" : "text-slate-500 hover:bg-slate-100 border border-transparent"}`}
                                 >
                                   {item.label}
@@ -3001,10 +3058,16 @@ function CommunityPageContent() {
                               ))}
                             </div>
                             <button
-                              onClick={() => setIsCreateGroupOpen((current) => !current)}
+                              onClick={() =>
+                                setIsCreateGroupOpen((current) => !current)
+                              }
                               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold shadow-sm transition ${isCreateGroupOpen ? "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200" : "bg-slate-900 text-white hover:bg-slate-700"}`}
                             >
-                              {isCreateGroupOpen ? <X size={12} /> : <Plus size={12} />}
+                              {isCreateGroupOpen ? (
+                                <X size={12} />
+                              ) : (
+                                <Plus size={12} />
+                              )}
                               {isCreateGroupOpen ? "Close" : "New Group"}
                             </button>
                           </div>
@@ -3014,7 +3077,11 @@ function CommunityPageContent() {
                             {isCreateGroupOpen && (
                               <motion.div
                                 initial={{ opacity: 0, height: 0, scale: 0.98 }}
-                                animate={{ opacity: 1, height: "auto", scale: 1 }}
+                                animate={{
+                                  opacity: 1,
+                                  height: "auto",
+                                  scale: 1,
+                                }}
                                 exit={{ opacity: 0, height: 0, scale: 0.98 }}
                                 transition={{ duration: 0.2 }}
                                 className="overflow-hidden"
@@ -3026,7 +3093,8 @@ function CommunityPageContent() {
                                         Create a new circle
                                       </p>
                                       <p className="mt-1 text-sm font-medium text-slate-700">
-                                        Add a few details so people know what the group is for.
+                                        Add a few details so people know what
+                                        the group is for.
                                       </p>
                                     </div>
                                   </div>
@@ -3099,7 +3167,13 @@ function CommunityPageContent() {
                                       className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-power-orange to-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:opacity-90 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                       {isCreatingGroup ? (
-                                        <><Activity size={16} className="animate-spin" /> Creating...</>
+                                        <>
+                                          <Activity
+                                            size={16}
+                                            className="animate-spin"
+                                          />{" "}
+                                          Creating...
+                                        </>
                                       ) : (
                                         "Create Group"
                                       )}
@@ -3111,7 +3185,10 @@ function CommunityPageContent() {
                           </AnimatePresence>
 
                           <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <Search
+                              size={14}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                            />
                             <input
                               value={groupSearchQuery}
                               onChange={(event) =>
@@ -3122,13 +3199,14 @@ function CommunityPageContent() {
                             />
                           </div>
 
-
                           <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1 pb-2 custom-scrollbar">
                             {isSearchingGroups ? (
-                               <div className="py-8 text-center">
-                                 <Activity className="mx-auto h-6 w-6 animate-pulse text-slate-300" />
-                                 <p className="mt-2 text-xs font-medium text-slate-500">Loading communities...</p>
-                               </div>
+                              <div className="py-8 text-center">
+                                <Activity className="mx-auto h-6 w-6 animate-pulse text-slate-300" />
+                                <p className="mt-2 text-xs font-medium text-slate-500">
+                                  Loading communities...
+                                </p>
+                              </div>
                             ) : toolVisibleGroups.length ? (
                               toolVisibleGroups.map((group) => {
                                 const memberAddPolicy =
@@ -3158,12 +3236,18 @@ function CommunityPageContent() {
                                               {group.name}
                                             </h4>
                                             <p className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                                              <Users size={12} className="text-slate-400" />
-                                              {group.memberCount} member{group.memberCount !== 1 ? "s" : ""}
+                                              <Users
+                                                size={12}
+                                                className="text-slate-400"
+                                              />
+                                              {group.memberCount} member
+                                              {group.memberCount !== 1
+                                                ? "s"
+                                                : ""}
                                             </p>
                                           </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-1.5 shrink-0">
                                           {group.isMember ? (
                                             <button
@@ -3174,12 +3258,16 @@ function CommunityPageContent() {
                                                   );
                                                 } else {
                                                   setDirectoryView("GROUPS");
-                                                  setGroupSearchQuery(group.name);
+                                                  setGroupSearchQuery(
+                                                    group.name,
+                                                  );
                                                 }
                                               }}
                                               className="rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-slate-700"
                                             >
-                                              {groupConversation ? "Chat" : "View"}
+                                              {groupConversation
+                                                ? "Chat"
+                                                : "View"}
                                             </button>
                                           ) : (
                                             <>
@@ -3212,15 +3300,24 @@ function CommunityPageContent() {
                                         {group.isMember &&
                                           groupToolsMode === "MANAGE" && (
                                             <motion.div
-                                              initial={{ opacity: 0, height: 0 }}
-                                              animate={{ opacity: 1, height: "auto" }}
+                                              initial={{
+                                                opacity: 0,
+                                                height: 0,
+                                              }}
+                                              animate={{
+                                                opacity: 1,
+                                                height: "auto",
+                                              }}
                                               exit={{ opacity: 0, height: 0 }}
                                               className="mt-4 overflow-hidden border-t border-slate-100 pt-3"
                                             >
                                               <div className="space-y-3">
                                                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                                                   <div className="flex items-center gap-1.5 mb-2">
-                                                    <Shield size={14} className="text-slate-500" />
+                                                    <Shield
+                                                      size={14}
+                                                      className="text-slate-500"
+                                                    />
                                                     <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
                                                       Group Policy
                                                     </p>
@@ -3235,7 +3332,8 @@ function CommunityPageContent() {
                                                         onChange={(event) =>
                                                           void handleUpdateGroupMemberAddPolicy(
                                                             group.id,
-                                                            event.target.value as
+                                                            event.target
+                                                              .value as
                                                               | "ADMIN_ONLY"
                                                               | "ANY_MEMBER",
                                                           )
@@ -3267,15 +3365,19 @@ function CommunityPageContent() {
                                                 <div className="flex items-center gap-2">
                                                   <button
                                                     onClick={() =>
-                                                      void handleLeaveGroup(group.id)
+                                                      void handleLeaveGroup(
+                                                        group.id,
+                                                      )
                                                     }
                                                     disabled={
-                                                      isLeavingGroupId === group.id
+                                                      isLeavingGroupId ===
+                                                      group.id
                                                     }
                                                     className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-bold text-rose-600 transition hover:bg-rose-100 disabled:opacity-60"
                                                   >
                                                     <LogOut size={14} />
-                                                    {isLeavingGroupId === group.id
+                                                    {isLeavingGroupId ===
+                                                    group.id
                                                       ? "Leaving..."
                                                       : "Leave Group"}
                                                   </button>
@@ -3296,7 +3398,10 @@ function CommunityPageContent() {
                                                 <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                                                   <div className="flex items-center justify-between mb-2">
                                                     <div className="flex items-center gap-1.5">
-                                                      <UserPlus size={14} className="text-slate-500" />
+                                                      <UserPlus
+                                                        size={14}
+                                                        className="text-slate-500"
+                                                      />
                                                       <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
                                                         Add Member
                                                       </p>
@@ -3305,21 +3410,35 @@ function CommunityPageContent() {
                                                       <button
                                                         onClick={() => {
                                                           if (
-                                                            inviteGroupId === group.id
+                                                            inviteGroupId ===
+                                                            group.id
                                                           ) {
-                                                            setInviteGroupId(null);
-                                                            setInviteSearchQuery("");
-                                                            setInviteSearchResults([]);
+                                                            setInviteGroupId(
+                                                              null,
+                                                            );
+                                                            setInviteSearchQuery(
+                                                              "",
+                                                            );
+                                                            setInviteSearchResults(
+                                                              [],
+                                                            );
                                                             return;
                                                           }
 
-                                                          setInviteGroupId(group.id);
-                                                          setInviteSearchQuery("");
-                                                          setInviteSearchResults([]);
+                                                          setInviteGroupId(
+                                                            group.id,
+                                                          );
+                                                          setInviteSearchQuery(
+                                                            "",
+                                                          );
+                                                          setInviteSearchResults(
+                                                            [],
+                                                          );
                                                         }}
                                                         className="text-[11px] font-bold text-power-orange transition hover:text-orange-600"
                                                       >
-                                                        {inviteGroupId === group.id
+                                                        {inviteGroupId ===
+                                                        group.id
                                                           ? "Cancel"
                                                           : "Add Now"}
                                                       </button>
@@ -3332,15 +3451,23 @@ function CommunityPageContent() {
 
                                                   {!canCurrentUserAddMembers && (
                                                     <p className="text-[11px] text-slate-500">
-                                                      Only admins can add members directly.
+                                                      Only admins can add
+                                                      members directly.
                                                     </p>
                                                   )}
 
                                                   {canCurrentUserAddMembers &&
-                                                    inviteGroupId === group.id && (
+                                                    inviteGroupId ===
+                                                      group.id && (
                                                       <motion.div
-                                                        initial={{ opacity: 0, y: -5 }}
-                                                        animate={{ opacity: 1, y: 0 }}
+                                                        initial={{
+                                                          opacity: 0,
+                                                          y: -5,
+                                                        }}
+                                                        animate={{
+                                                          opacity: 1,
+                                                          y: 0,
+                                                        }}
                                                         className="mt-2 space-y-2"
                                                       >
                                                         <div className="relative">
@@ -3349,10 +3476,13 @@ function CommunityPageContent() {
                                                             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
                                                           />
                                                           <input
-                                                            value={inviteSearchQuery}
+                                                            value={
+                                                              inviteSearchQuery
+                                                            }
                                                             onChange={(event) =>
                                                               setInviteSearchQuery(
-                                                                event.target.value,
+                                                                event.target
+                                                                  .value,
                                                               )
                                                             }
                                                             placeholder="Search user to add"
@@ -3370,7 +3500,9 @@ function CommunityPageContent() {
                                                               inviteSearchResults.map(
                                                                 (user) => (
                                                                   <div
-                                                                    key={user.id}
+                                                                    key={
+                                                                      user.id
+                                                                    }
                                                                     className="flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1.5 shadow-sm border border-slate-100"
                                                                   >
                                                                     <div className="min-w-0">
@@ -3440,8 +3572,14 @@ function CommunityPageContent() {
                                         {group.isMember &&
                                           groupToolsMode === "INVITE" && (
                                             <motion.div
-                                              initial={{ opacity: 0, height: 0 }}
-                                              animate={{ opacity: 1, height: "auto" }}
+                                              initial={{
+                                                opacity: 0,
+                                                height: 0,
+                                              }}
+                                              animate={{
+                                                opacity: 1,
+                                                height: "auto",
+                                              }}
                                               exit={{ opacity: 0, height: 0 }}
                                               className="mt-4 overflow-hidden border-t border-slate-100 pt-3"
                                             >
@@ -3458,7 +3596,10 @@ function CommunityPageContent() {
                                                 <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                                                   <div className="flex items-center justify-between mb-2">
                                                     <div className="flex items-center gap-1.5">
-                                                      <UserPlus size={14} className="text-slate-500" />
+                                                      <UserPlus
+                                                        size={14}
+                                                        className="text-slate-500"
+                                                      />
                                                       <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">
                                                         Add Member Directly
                                                       </p>
@@ -3467,21 +3608,35 @@ function CommunityPageContent() {
                                                       <button
                                                         onClick={() => {
                                                           if (
-                                                            inviteGroupId === group.id
+                                                            inviteGroupId ===
+                                                            group.id
                                                           ) {
-                                                            setInviteGroupId(null);
-                                                            setInviteSearchQuery("");
-                                                            setInviteSearchResults([]);
+                                                            setInviteGroupId(
+                                                              null,
+                                                            );
+                                                            setInviteSearchQuery(
+                                                              "",
+                                                            );
+                                                            setInviteSearchResults(
+                                                              [],
+                                                            );
                                                             return;
                                                           }
 
-                                                          setInviteGroupId(group.id);
-                                                          setInviteSearchQuery("");
-                                                          setInviteSearchResults([]);
+                                                          setInviteGroupId(
+                                                            group.id,
+                                                          );
+                                                          setInviteSearchQuery(
+                                                            "",
+                                                          );
+                                                          setInviteSearchResults(
+                                                            [],
+                                                          );
                                                         }}
                                                         className="text-[11px] font-bold text-power-orange transition hover:text-orange-600"
                                                       >
-                                                        {inviteGroupId === group.id
+                                                        {inviteGroupId ===
+                                                        group.id
                                                           ? "Cancel"
                                                           : "Add Now"}
                                                       </button>
@@ -3494,15 +3649,23 @@ function CommunityPageContent() {
 
                                                   {!canCurrentUserAddMembers && (
                                                     <p className="text-[11px] text-slate-500">
-                                                      Only admins can add members directly.
+                                                      Only admins can add
+                                                      members directly.
                                                     </p>
                                                   )}
 
                                                   {canCurrentUserAddMembers &&
-                                                    inviteGroupId === group.id && (
+                                                    inviteGroupId ===
+                                                      group.id && (
                                                       <motion.div
-                                                        initial={{ opacity: 0, y: -5 }}
-                                                        animate={{ opacity: 1, y: 0 }}
+                                                        initial={{
+                                                          opacity: 0,
+                                                          y: -5,
+                                                        }}
+                                                        animate={{
+                                                          opacity: 1,
+                                                          y: 0,
+                                                        }}
                                                         className="mt-2 space-y-2"
                                                       >
                                                         <div className="relative">
@@ -3511,10 +3674,13 @@ function CommunityPageContent() {
                                                             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
                                                           />
                                                           <input
-                                                            value={inviteSearchQuery}
+                                                            value={
+                                                              inviteSearchQuery
+                                                            }
                                                             onChange={(event) =>
                                                               setInviteSearchQuery(
-                                                                event.target.value,
+                                                                event.target
+                                                                  .value,
                                                               )
                                                             }
                                                             placeholder="Search user to add"
@@ -3532,7 +3698,9 @@ function CommunityPageContent() {
                                                               inviteSearchResults.map(
                                                                 (user) => (
                                                                   <div
-                                                                    key={user.id}
+                                                                    key={
+                                                                      user.id
+                                                                    }
                                                                     className="flex items-center justify-between gap-2 rounded-md bg-white px-2 py-1.5 shadow-sm border border-slate-100"
                                                                   >
                                                                     <div className="min-w-0">
