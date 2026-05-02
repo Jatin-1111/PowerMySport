@@ -16,6 +16,7 @@ import { up as addNotificationsSystem } from "./08_add_notifications_system";
 import { up as backfillLegalConsents } from "./09_backfill_legal_consents";
 import { migrateVenueImages } from "./10_migrate_venue_images";
 import { fixCommunityConversationIndexes } from "./11_fix_community_conversation_indexes";
+import { migrateCommunitySchemas } from "./12_migrate_community_schemas";
 
 const runAllMigrations = async () => {
   console.log("=".repeat(60));
@@ -90,6 +91,12 @@ const runAllMigrations = async () => {
     console.log("📋 Running Migration 11: Fix Community Conversation Indexes");
     console.log("-".repeat(60));
     await fixCommunityConversationIndexes();
+    console.log();
+
+    // Migration 12: Migrate Community Schemas
+    console.log("📋 Running Migration 12: Migrate Community Schemas");
+    console.log("-".repeat(60));
+    await migrateCommunitySchemas();
     console.log();
 
     console.log("=".repeat(60));

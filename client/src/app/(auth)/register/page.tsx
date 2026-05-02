@@ -35,15 +35,30 @@ function RegisterContent() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
-    const nextValue =
-      type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
+    const inputElement = e.target as HTMLInputElement;
+
+    // For checkboxes, always get the checked value directly from the element
+    const nextValue = type === "checkbox" ? inputElement.checked : value;
 
     setFormData((prev) => ({
       ...prev,
       [name]: nextValue,
     }));
+
+    // Clear error for this field when user makes a change
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+      setErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
+
+    // If user fixes checkbox errors, dismiss error toasts after a small delay
+    if (type === "checkbox" && nextValue === true) {
+      setTimeout(() => {
+        toast.dismiss();
+      }, 50);
     }
   };
 
@@ -353,7 +368,8 @@ function RegisterContent() {
                     name="acceptedTerms"
                     checked={formData.acceptedTerms}
                     onChange={handleChange}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-power-orange focus:ring-power-orange/50"
+                    value="true"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-power-orange focus:ring-power-orange/50 cursor-pointer"
                   />
                   <span>
                     I agree to the{" "}
@@ -376,7 +392,8 @@ function RegisterContent() {
                     name="acceptedPrivacy"
                     checked={formData.acceptedPrivacy}
                     onChange={handleChange}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-power-orange focus:ring-power-orange/50"
+                    value="true"
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-power-orange focus:ring-power-orange/50 cursor-pointer"
                   />
                   <span>
                     I agree to the{" "}

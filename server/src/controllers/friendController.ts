@@ -77,8 +77,9 @@ export const sendFriendRequest = async (
     if (requester && recipient) {
       const requesterPhotoUrl = await resolveUserPhotoUrl(requester);
 
-      // Send notification via NotificationService (socket + email + persist to DB)
-      await NotificationService.send(
+      // Send notification via NotificationService (socket + persist to DB) - wait for this
+      // But send emails asynchronously in the background
+      NotificationService.send(
         {
           userId: recipientId,
           type: "FRIEND_REQUEST",
@@ -95,11 +96,11 @@ export const sendFriendRequest = async (
         {
           persistToDb: true,
           sendSocket: true,
-          sendEmail: true,
+          sendEmail: false, // Don't await email - send async below
         },
-      );
+      ).catch((err) => console.error("Failed to send notification:", err));
 
-      // Send detailed email notification using existing template (async, don't wait)
+      // Send detailed email notification asynchronously (don't wait)
       sendFriendRequestEmail({
         recipientName: recipient.name,
         recipientEmail: recipient.email,
@@ -159,8 +160,8 @@ export const acceptFriendRequest = async (
 
     const acceptedByPhotoUrl = await resolveUserPhotoUrl(acceptedBy);
 
-    // Send notification via NotificationService (socket + email + persist to DB)
-    await NotificationService.send(
+    // Send notification via NotificationService (socket + persist to DB) - don't await email
+    NotificationService.send(
       {
         userId: connection.requesterId.toString(),
         type: "FRIEND_REQUEST_ACCEPTED",
@@ -177,11 +178,11 @@ export const acceptFriendRequest = async (
       {
         persistToDb: true,
         sendSocket: true,
-        sendEmail: true,
+        sendEmail: false, // Don't await email - send async below
       },
-    );
+    ).catch((err) => console.error("Failed to send notification:", err));
 
-    // Send detailed email notification using existing template (async, don't wait)
+    // Send detailed email notification asynchronously (don't wait)
     sendFriendRequestAcceptedEmail({
       requesterName: requester.name,
       requesterEmail: requester.email,

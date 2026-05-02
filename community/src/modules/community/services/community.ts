@@ -671,15 +671,28 @@ export const communityService = {
     conversationId: string;
     memberCount: number;
   }> {
-    const response = await axiosInstance.post<
-      ApiResponse<{
-        groupId: string;
-        conversationId: string;
-        memberCount: number;
-      }>
-    >(`/community/groups/join-by-code/${inviteCode}`);
-    clearCacheByPrefixes(["groups", "conversations"]);
-    return response.data.data;
+    try {
+      const response = await axiosInstance.post<
+        ApiResponse<{
+          groupId: string;
+          conversationId: string;
+          memberCount: number;
+        }>
+      >(`/community/groups/join-by-code/${inviteCode}`);
+      clearCacheByPrefixes(["groups", "conversations"]);
+      return response.data.data;
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { status?: number; data?: { message?: string } };
+      };
+      if (axiosError.response?.status === 403) {
+        throw new Error(
+          axiosError.response?.data?.message ||
+            "You cannot join this group. It may have membership restrictions based on your account type.",
+        );
+      }
+      throw error;
+    }
   },
 
   async getGroupInviteCode(groupId: string): Promise<{

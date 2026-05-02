@@ -2767,7 +2767,12 @@ export const CommunityService = {
       (group.audience as CommunityGroupAudience | undefined) ||
       COMMUNITY_DEFAULT_GROUP_AUDIENCE;
     if (!canJoinGroupAudience(groupAudience, userRole)) {
-      throw new Error("This group is not available for your role");
+      const userRoleLabel = ROLE_LABEL[userRole] || userRole;
+      const audienceLabel =
+        groupAudience === "PLAYERS_ONLY" ? "players" : "coaches";
+      throw new Error(
+        `This group is for ${audienceLabel} only. As a ${userRoleLabel}, you cannot join this group.`,
+      );
     }
 
     const alreadyMember = group.members.some(

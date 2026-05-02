@@ -297,7 +297,16 @@ export const googleAuth = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { googleId, email, name, photoUrl, role, action } = req.body;
+    const {
+      googleId,
+      email,
+      name,
+      photoUrl,
+      role,
+      action,
+      acceptedTerms,
+      acceptedPrivacy,
+    } = req.body;
 
     const user = await googleLogin({
       googleId,
@@ -306,6 +315,8 @@ export const googleAuth = async (
       photoUrl,
       role,
       action,
+      acceptedTerms,
+      acceptedPrivacy,
     });
 
     const token = generateToken({
