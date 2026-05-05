@@ -200,6 +200,9 @@ export default function CookiePolicy() {
                   teams@powermysport.com
                 </a>
               </p>
+              <p className="text-slate-700">
+                <strong>Phone:</strong> +91 89685 82443
+              </p>
             </div>
           </section>
 

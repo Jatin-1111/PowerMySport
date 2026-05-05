@@ -158,35 +158,28 @@ export default function RefundPolicy() {
             </h3>
             <ul className="list-disc pl-6 space-y-2">
               <li>
-                <strong>Card Payments:</strong> Refunded to original card within
-                5-7 business days
+                <strong>Card Payments:</strong> Credited/refunded to the
+                original card within 5-7 business days
               </li>
               <li>
-                <strong>UPI/Bank Transfer:</strong> Refunded to original account
-                within 5-7 business days
+                <strong>UPI/Bank Transfer:</strong> Credited to the original
+                account within 5-7 business days
               </li>
               <li>
-                <strong>Wallet:</strong> Instant credit to PowerMySport account
-                (can be used for future bookings)
+                <strong>Wallet:</strong> Instant credited to PowerMySport
+                account (can be used for future bookings)
               </li>
               <li>
-                <strong>Combination Payments:</strong> Each payment method
-                refunded proportionally based on original transaction
+                <strong>Combination Payments:</strong> Each payment method is
+                credited/refunded proportionally based on the original
+                transaction
               </li>
             </ul>
-
-            <h3 className="text-xl font-semibold mt-6 mb-3">
-              3.3 Refund Deductions
-            </h3>
-            <p>The following deductions may apply in certain circumstances:</p>
-            <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>Outstanding disputes or chargebacks filed by the player</li>
-              <li>Booking recovery costs for fraudulent activity</li>
-              <li>
-                Payment processing fees (if applicable, from 50% or forfeit
-                refunds)
-              </li>
-            </ul>
+            <p className="mt-4">
+              Payment processing fees (if applicable) may be deducted by the
+              payment provider or applied according to the original payment
+              method's policy.
+            </p>
           </section>
 
           <section className="mb-8">
@@ -457,6 +450,15 @@ export default function RefundPolicy() {
                   className="text-blue-600 hover:underline"
                 >
                   teams@powermysport.com
+                </a>
+              </p>
+              <p>
+                Phone:{" "}
+                <a
+                  href="tel:+918968582443"
+                  className="text-blue-600 hover:underline"
+                >
+                  +91 89685 82443
                 </a>
               </p>
               <p>Response Time: 24 hours (business days)</p>

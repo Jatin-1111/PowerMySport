@@ -256,11 +256,6 @@ const faqs = [
           "Yes. All coaches and venue owners on PowerMySport must maintain active insurance coverage. This protects you if an incident occurs. We verify insurance at onboarding and throughout the year.",
       },
       {
-        question: "What are the minimum insurance requirements?",
-        answer:
-          "Coaches must have: Professional Liability Insurance (₹25-50 lakh). Venues must have: General Liability (₹50-100 lakh), Property Insurance (₹10-25 lakh), and Employer's Liability (₹10-25 lakh if they have staff). See our Insurance Requirements page for details and recommended providers.",
-      },
-      {
         question: "What happens if a coach or venue doesn't have insurance?",
         answer:
           "Coaches and venues without valid insurance cannot operate on PowerMySport. They have 7 days to provide proof of insurance. If they don't, they're suspended for 14 days. If still not resolved, their account is terminated.",
@@ -420,12 +415,6 @@ export default function FAQPage() {
               className="text-power-orange hover:underline font-medium"
             >
               → Content Moderation Policy
-            </Link>
-            <Link
-              href="/insurance-requirements"
-              className="text-power-orange hover:underline font-medium"
-            >
-              → Insurance Requirements
             </Link>
             <Link
               href="/cookies"

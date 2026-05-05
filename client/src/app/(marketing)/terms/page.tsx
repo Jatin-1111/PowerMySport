@@ -40,8 +40,8 @@ export default function TermsOfServicePage() {
             <p className="text-slate-600 leading-relaxed mb-4">
               Welcome to PowerMySport, operated by Powermysport PVT. LTD. By
               accessing or using our platform, you agree to be bound by these
-              Terms of Service ("Terms"). Please read these Terms carefully
-              before using our services.
+              Terms of Service (&quot;Terms&quot;). Please read these Terms
+              carefully before using our services.
             </p>
             <p className="text-slate-600 leading-relaxed">
               If you do not agree to these Terms, you may not access or use our
@@ -269,9 +269,9 @@ export default function TermsOfServicePage() {
               Disclaimer of Warranties
             </h2>
             <p className="text-slate-600 leading-relaxed mb-4">
-              THE PLATFORM IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT
-              WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. WE DO NOT
-              WARRANT THAT:
+              THE PLATFORM IS PROVIDED &quot;AS IS&quot; AND &quot;AS
+              AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+              IMPLIED. WE DO NOT WARRANT THAT:
             </p>
             <ul className="list-disc pl-6 text-slate-600 space-y-2">
               <li>The platform will be uninterrupted or error-free</li>
@@ -365,8 +365,8 @@ export default function TermsOfServicePage() {
               These Terms shall be governed by and construed in accordance with
               the laws of India, without regard to its conflict of law
               provisions. Any legal action or proceeding arising under these
-              Terms will be brought exclusively in the courts located in [Your
-              City], India.
+              Terms will be brought exclusively in the courts located in Punjab,
+              India.
             </p>
           </section>
 
@@ -381,6 +381,9 @@ export default function TermsOfServicePage() {
               <p className="text-slate-700 flex items-center gap-2 mb-2">
                 <Mail size={18} className="text-power-orange" />
                 <strong>Email:</strong> teams@powermysport.com
+              </p>
+              <p className="text-slate-700">
+                <strong>Phone:</strong> +91 89685 82443
               </p>
               <p className="text-slate-700">
                 <strong>Address:</strong> Mullanpur, Punjab.

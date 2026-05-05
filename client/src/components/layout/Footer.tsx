@@ -38,7 +38,6 @@ export const Footer: React.FC = () => {
       links: [
         { label: "Cookie Policy", href: "/cookies" },
         { label: "Content Policy", href: "/content-policy" },
-        { label: "Insurance Info", href: "/insurance-requirements" },
       ],
     },
   };

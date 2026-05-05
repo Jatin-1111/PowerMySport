@@ -598,6 +598,9 @@ export default function ParentalConsent() {
                   teams@powermysport.com
                 </a>
               </p>
+              <p className="text-slate-700">
+                <strong>Phone:</strong> +91 89685 82443
+              </p>
               <p>Response Time: 24 hours (business days)</p>
             </div>
           </section>

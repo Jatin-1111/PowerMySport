@@ -251,6 +251,9 @@ export default function PrivacyPolicyPage() {
                 <strong>Email:</strong> teams@powermysport.com
               </p>
               <p className="text-slate-700">
+                <strong>Phone:</strong> +91 89685 82443
+              </p>
+              <p className="text-slate-700">
                 <strong>Address:</strong> Mullanpur, Punjab.
               </p>
             </div>

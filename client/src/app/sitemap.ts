@@ -15,7 +15,6 @@ const staticRoutes = [
   "/cookies",
   "/content-policy",
   "/refund-policy",
-  "/insurance-requirements",
   "/health-waiver",
   "/parental-consent",
   "/coaches",
