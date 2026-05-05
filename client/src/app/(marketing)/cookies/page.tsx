@@ -21,11 +21,11 @@ export default function CookiePolicy() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mt-8 mb-4">1. Overview</h2>
             <p>
-              PowerMySport ("we," "us," "our," or "Company") uses cookies and
-              similar tracking technologies on our website and mobile
-              applications to enhance your experience, analyze site performance,
-              and deliver personalized content. This Cookie Policy explains how
-              we use cookies and your choices regarding them.
+              PowerMySport ("we," "us," "our," or "Company") uses essential
+              cookies to keep you signed in and protect the platform. We do not
+              use advertising cookies, and there is no cookie consent banner at
+              this time. This Cookie Policy explains how we use cookies and your
+              choices regarding them.
             </p>
           </section>
 
@@ -57,75 +57,16 @@ export default function CookiePolicy() {
             <ul className="list-disc pl-6 space-y-2 mt-3">
               <li>User authentication and login sessions</li>
               <li>Security measures and fraud prevention</li>
-              <li>Server load balancing</li>
-              <li>Payment processing and transaction security</li>
+              <li>Secure session management for bookings</li>
             </ul>
-
             <h3 className="text-xl font-semibold mt-6 mb-3">
-              3.2 Performance/Analytics Cookies
+              3.2 Service-Provider Cookies
             </h3>
             <p>
-              These cookies help us understand how visitors use our website,
-              which pages are popular, and where users encounter errors. They do
-              not identify individual users. Services include:
+              Payment providers may set their own cookies during checkout to
+              secure transactions. These cookies are controlled by the provider
+              and are governed by their policies.
             </p>
-            <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>
-                <strong>Google Analytics:</strong> Analyzes website traffic,
-                user behavior, and conversion funnels
-              </li>
-              <li>
-                <strong>Mixpanel:</strong> Tracks user actions and funnel
-                analysis for product optimization
-              </li>
-              <li>
-                <strong>Session Recording:</strong> Optional recording of user
-                sessions (with explicit consent) to improve UX
-              </li>
-            </ul>
-
-            <h3 className="text-xl font-semibold mt-6 mb-3">
-              3.3 Functional Cookies
-            </h3>
-            <p>
-              These cookies enable enhanced functionality and personalization:
-            </p>
-            <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>Remembering your preferences and settings</li>
-              <li>
-                Saving search history and previously viewed venues/coaches
-              </li>
-              <li>Maintaining your language and location preferences</li>
-              <li>
-                Implementing user-requested features like theme preferences
-              </li>
-            </ul>
-
-            <h3 className="text-xl font-semibold mt-6 mb-3">
-              3.4 Advertising/Marketing Cookies
-            </h3>
-            <p>
-              If applicable, we use cookies to deliver relevant advertisements,
-              measure campaign effectiveness, and track conversions from
-              advertising campaigns. Third-party advertisers may place cookies
-              on your device.
-            </p>
-
-            <h3 className="text-xl font-semibold mt-6 mb-3">
-              3.5 Third-Party Cookies
-            </h3>
-            <p>
-              Third-party services we integrate may place their own cookies.
-              These include:
-            </p>
-            <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>
-                Payment gateways (Razorpay, PayU, etc.) for secure transactions
-              </li>
-              <li>Google Analytics for traffic analysis</li>
-              <li>Chat support providers (if applicable)</li>
-              <li>Social media platforms (if you connect via social login)</li>
-            </ul>
           </section>
 
           <section className="mb-8">
@@ -138,8 +79,8 @@ export default function CookiePolicy() {
                 browser (e.g., login tokens)
               </li>
               <li>
-                <strong>Persistent Cookies:</strong> Remain on your device for a
-                set period (typically 1-2 years) or until manually deleted
+                <strong>Persistent Cookies:</strong> Remain on your device until
+                they expire or you delete them
               </li>
             </ul>
           </section>
@@ -150,12 +91,8 @@ export default function CookiePolicy() {
             </h2>
             <p>Through cookies, we may collect:</p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>Your device type, browser, and operating system</li>
-              <li>Pages visited and time spent on each page</li>
-              <li>Clicks, searches, and booking actions</li>
-              <li>Referral source (how you arrived at our site)</li>
-              <li>General location (city/region level, not precise)</li>
-              <li>Your user ID (if logged in)</li>
+              <li>Authentication and session identifiers</li>
+              <li>Basic security signals needed to protect the platform</li>
             </ul>
           </section>
 
@@ -180,60 +117,6 @@ export default function CookiePolicy() {
             <p className="mt-3">
               <strong>Note:</strong> Disabling essential cookies may break
               website functionality.
-            </p>
-
-            <h3 className="text-xl font-semibold mt-6 mb-3">
-              6.2 Cookie Banner
-            </h3>
-            <p>
-              When you first visit our website, we display a cookie consent
-              banner. You can:
-            </p>
-            <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>
-                <strong>Accept All:</strong> Allow all non-essential cookies
-              </li>
-              <li>
-                <strong>Reject All:</strong> Decline non-essential cookies
-                (essential cookies still used)
-              </li>
-              <li>
-                <strong>Customize:</strong> Choose specific cookie categories
-              </li>
-            </ul>
-
-            <h3 className="text-xl font-semibold mt-6 mb-3">
-              6.3 Opt-Out Tools
-            </h3>
-            <p>You can opt out of specific services:</p>
-            <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>
-                <strong>Google Analytics:</strong> Install the{" "}
-                <a
-                  href="https://tools.google.com/dlpage/gaoptout"
-                  className="text-blue-600 hover:underline"
-                >
-                  Google Analytics Opt-out Browser Add-on
-                </a>
-              </li>
-              <li>
-                <strong>Mixpanel:</strong> Opt out via{" "}
-                <a
-                  href="https://mixpanel.com/optout"
-                  className="text-blue-600 hover:underline"
-                >
-                  Mixpanel's opt-out page
-                </a>
-              </li>
-            </ul>
-
-            <h3 className="text-xl font-semibold mt-6 mb-3">
-              6.4 Do Not Track (DNT)
-            </h3>
-            <p>
-              Some browsers include a "Do Not Track" feature. Currently, there
-              is no industry standard for responding to DNT signals. We will
-              honor opt-out preferences you've set in your account settings.
             </p>
           </section>
 
@@ -309,28 +192,7 @@ export default function CookiePolicy() {
             </p>
             <div className="bg-gray-100 p-6 rounded-lg mt-4">
               <p>
-                <strong>PowerMySport Legal Team</strong>
-              </p>
-              <p>
                 Email:{" "}
-                <a
-                  href="mailto:teams@powermysport.com"
-                  className="text-blue-600 hover:underline"
-                >
-                  teams@powermysport.com
-                </a>
-              </p>
-              <p>
-                Email (Legal):{" "}
-                <a
-                  href="mailto:teams@powermysport.com"
-                  className="text-blue-600 hover:underline"
-                >
-                  teams@powermysport.com
-                </a>
-              </p>
-              <p>
-                Support:{" "}
                 <a
                   href="mailto:teams@powermysport.com"
                   className="text-blue-600 hover:underline"

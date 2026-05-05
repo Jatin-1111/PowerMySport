@@ -38,9 +38,10 @@ export default function TermsOfServicePage() {
               Agreement to Terms
             </h2>
             <p className="text-slate-600 leading-relaxed mb-4">
-              Welcome to PowerMySport. By accessing or using our platform, you
-              agree to be bound by these Terms of Service ("Terms"). Please read
-              these Terms carefully before using our services.
+              Welcome to PowerMySport, operated by Powermysport PVT. LTD. By
+              accessing or using our platform, you agree to be bound by these
+              Terms of Service ("Terms"). Please read these Terms carefully
+              before using our services.
             </p>
             <p className="text-slate-600 leading-relaxed">
               If you do not agree to these Terms, you may not access or use our
@@ -382,13 +383,7 @@ export default function TermsOfServicePage() {
                 <strong>Email:</strong> teams@powermysport.com
               </p>
               <p className="text-slate-700">
-                <strong>Address:</strong> PowerMySport HQ, Bangalore, India
-              </p>
-              <p className="text-slate-700 mt-2">
-                <strong>Legal Contact:</strong> teams@powermysport.com
-              </p>
-              <p className="text-slate-700">
-                <strong>Privacy Contact:</strong> teams@powermysport.com
+                <strong>Address:</strong> Mullanpur, Punjab.
               </p>
             </div>
           </section>

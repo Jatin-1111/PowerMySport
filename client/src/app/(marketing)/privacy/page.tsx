@@ -205,10 +205,11 @@ export default function PrivacyPolicyPage() {
               Cookies and Tracking
             </h2>
             <p className="text-slate-600 leading-relaxed">
-              We use cookies and similar tracking technologies to improve your
-              experience on our platform. You can control cookie preferences
-              through your browser settings. Note that disabling cookies may
-              affect some functionality of the platform.
+              We use essential cookies to keep you signed in and protect the
+              platform. We do not use advertising cookies, and there is no
+              cookie consent banner at this time. You can control cookies
+              through your browser settings, but disabling essential cookies may
+              affect login and booking functionality.
             </p>
           </section>
 
@@ -250,8 +251,7 @@ export default function PrivacyPolicyPage() {
                 <strong>Email:</strong> teams@powermysport.com
               </p>
               <p className="text-slate-700">
-                <strong>Address:</strong> PowerMySport HQ, Sports Complex Road,
-                Your City, Country
+                <strong>Address:</strong> Mullanpur, Punjab.
               </p>
             </div>
           </section>

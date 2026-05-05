@@ -21,12 +21,7 @@ export const Footer: React.FC = () => {
         { label: "Book Venues", href: "/venues" },
         { label: "List Your Venue", href: "/onboarding" },
         { label: "Become a Coach", href: "/register?role=COACH" },
-        {
-          label: "Request Academy Onboarding",
-          href: "/contact?subject=Academy%20onboarding",
-        },
         { label: "Browse Coaches", href: "/coaches" },
-        { label: "Browse Academies", href: "/academies" },
       ],
     },
     policies: {
@@ -44,7 +39,6 @@ export const Footer: React.FC = () => {
         { label: "Cookie Policy", href: "/cookies" },
         { label: "Content Policy", href: "/content-policy" },
         { label: "Insurance Info", href: "/insurance-requirements" },
-        { label: "Accessibility", href: "/accessibility" },
       ],
     },
   };
@@ -173,7 +167,7 @@ export const Footer: React.FC = () => {
             {/* Copyright */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
               <p className="text-xs text-slate-500">
-                © {currentYear} PowerMySport Pvt. Ltd. All rights reserved.
+                © {currentYear} Powermysport PVT. LTD. All rights reserved.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-xs">
                 <Link

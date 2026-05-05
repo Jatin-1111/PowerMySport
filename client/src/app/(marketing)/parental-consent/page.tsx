@@ -598,15 +598,6 @@ export default function ParentalConsent() {
                   teams@powermysport.com
                 </a>
               </p>
-              <p>
-                Email (Urgent):{" "}
-                <a
-                  href="mailto:teams@powermysport.com"
-                  className="text-blue-600 hover:underline"
-                >
-                  teams@powermysport.com
-                </a>
-              </p>
               <p>Response Time: 24 hours (business days)</p>
             </div>
           </section>

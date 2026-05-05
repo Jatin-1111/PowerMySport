@@ -545,50 +545,6 @@ export default function HomePage() {
                 </a>
               </div>
 
-              <div className="group shop-surface relative flex flex-col rounded-2xl border-2 border-indigo-500 p-8 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg md:scale-105">
-                <div className="absolute top-0 right-0 bg-indigo-600 text-white px-4 py-1 rounded-bl-lg rounded-tr-xl text-xs font-bold">
-                  NEW
-                </div>
-                <div className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 transition-transform group-hover:scale-110">
-                  <GraduationCap size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
-                  Academy Owners
-                </h3>
-                <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
-                  <li className="flex items-start gap-3">
-                    <span className="text-indigo-600 font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Build a public academy profile</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-indigo-600 font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Manage onboarding, batches, and coaches</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-indigo-600 font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Track approval and payouts in one place</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-indigo-600 font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Reach players, parents, and schools</span>
-                  </li>
-                </ul>
-                <a
-                  href="/contact?subject=Academy%20onboarding"
-                  className="inline-block w-full rounded-xl bg-indigo-600 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-indigo-700"
-                >
-                  Request Academy Onboarding
-                </a>
-              </div>
-
               {/* Coach Card */}
               <div className="group shop-surface rounded-2xl p-8 premium-shadow flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
                 <div className="w-16 h-16 bg-turf-green text-white rounded-full flex items-center justify-center mx-auto mb-6 transition-transform group-hover:scale-110">

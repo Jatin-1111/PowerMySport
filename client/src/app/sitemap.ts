@@ -10,7 +10,6 @@ const staticRoutes = [
   "/faq",
   "/contact",
   "/careers",
-  "/accessibility",
   "/privacy",
   "/terms",
   "/cookies",

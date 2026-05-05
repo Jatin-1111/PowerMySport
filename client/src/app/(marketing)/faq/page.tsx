@@ -278,12 +278,12 @@ const faqs = [
       {
         question: "Does PowerMySport use cookies?",
         answer:
-          "Yes. We use cookies to remember your login, improve the website, and show you relevant ads. When you first visit, you'll see a cookie consent banner. You can manage your preferences or visit our Cookie Policy anytime.",
+          "Yes. We use essential cookies to keep you signed in and protect the platform. We do not use advertising cookies, and there is no cookie banner at this time.",
       },
       {
         question: "What can I do if I don't want cookies?",
         answer:
-          "You can: (1) Decline non-essential cookies in our cookie banner; (2) Disable cookies in your browser settings; (3) Use our opt-out links in the Cookie Policy for specific services like Google Analytics or Mixpanel; (4) Use your browser's 'Do Not Track' feature. Note: Some cookies are required for the site to function.",
+          "You can disable cookies in your browser settings or clear them at any time. Note: blocking essential cookies may prevent login and bookings from working properly.",
       },
       {
         question: "How is my personal data used?",
@@ -294,31 +294,6 @@ const faqs = [
         question: "Can I delete my account and data?",
         answer:
           "Yes. Go to Account Settings, select 'Privacy & Data,' and click 'Request Account Deletion.' We'll delete your personal data within 30 days, except for transaction records (required by law) and dispute/legal records. Some data may be anonymized instead of deleted.",
-      },
-    ],
-  },
-  {
-    category: "Accessibility",
-    questions: [
-      {
-        question: "Is PowerMySport accessible to people with disabilities?",
-        answer:
-          "Yes. We're committed to WCAG 2.1 Level AA compliance, meaning our site is usable by people with visual, hearing, motor, and cognitive disabilities. We support screen readers (NVDA, JAWS, VoiceOver, TalkBack), keyboard navigation, and have high color contrast.",
-      },
-      {
-        question: "What accessibility features does PowerMySport have?",
-        answer:
-          "Features include: keyboard navigation (Tab through all elements), skip-to-content links, semantic HTML, alt text for images, 4.5:1 color contrast for text, screen reader support, resizable text, focus indicators, and mobile accessibility (large touch targets).",
-      },
-      {
-        question: "How do I use PowerMySport with a screen reader?",
-        answer:
-          "Our website is optimized for NVDA (Windows), JAWS (Windows), VoiceOver (Mac/iOS), and TalkBack (Android). All buttons, links, and form labels are properly labeled. If you encounter an issue, email teams@powermysport.com with your device/screen reader version and we'll help.",
-      },
-      {
-        question: "What if I find an accessibility issue?",
-        answer:
-          "Please report it to teams@powermysport.com with: the issue description, what you were trying to do, your device/browser/assistive tech, and screenshots if possible. We aim to respond within 24-48 hours and fix issues quickly.",
       },
     ],
   },
@@ -358,7 +333,7 @@ const faqs = [
       {
         question: "How do I contact PowerMySport?",
         answer:
-          "You can reach us via:\n• Email: teams@powermysport.com (general queries)\n• Legal issues: teams@powermysport.com\n• Safety concerns: teams@powermysport.com\n• Accessibility: teams@powermysport.com\n• Contact form: powermysport.com/contact\n• In-app help center available to logged-in users",
+          "You can reach us at teams@powermysport.com, use the contact form at powermysport.com/contact, or access the in-app help center when logged in.",
       },
     ],
   },
@@ -457,12 +432,6 @@ export default function FAQPage() {
               className="text-power-orange hover:underline font-medium"
             >
               → Cookie Policy
-            </Link>
-            <Link
-              href="/accessibility"
-              className="text-power-orange hover:underline font-medium"
-            >
-              → Accessibility Statement
             </Link>
           </div>
         </div>

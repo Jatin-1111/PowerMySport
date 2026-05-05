@@ -79,7 +79,7 @@ export const academyOnboardingApi = {
    */
   getImageUploadUrls: async (
     academyId: string,
-    imageTypes: ("logo" | "coverPhoto" | "galleryPhotos")[],
+    imageTypes: string[],
   ): Promise<ApiResponse<{ uploadUrls: PresignedUrl[] }>> => {
     const response = await axiosInstance.post(
       `${API_BASE}/${academyId}/image-upload-urls`,

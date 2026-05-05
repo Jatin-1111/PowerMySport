@@ -60,11 +60,6 @@ const roleSettingsLinks: Record<
       label: "Academy Dashboard",
       description: "Manage your academy profile and settings.",
     },
-    {
-      href: "/contact?subject=Academy%20onboarding",
-      label: "Onboarding Support",
-      description: "Request academy onboarding help from the admin team.",
-    },
   ],
   ADMIN: [
     {

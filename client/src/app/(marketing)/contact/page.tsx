@@ -23,7 +23,6 @@ const SUBJECT_OPTIONS = [
   "Partnership",
   "Billing and payments",
   "Technical support",
-  "Academy onboarding",
 ];
 
 const iconMotion = {
@@ -317,16 +316,7 @@ export default function ContactPage() {
                           Email
                         </h3>
                         <p className="text-muted-foreground">
-                          General Inquiries:{" "}
-                          <a
-                            href="mailto:teams@powermysport.com"
-                            className="text-power-orange hover:underline"
-                          >
-                            teams@powermysport.com
-                          </a>
-                        </p>
-                        <p className="text-muted-foreground">
-                          Support:{" "}
+                          Email:{" "}
                           <a
                             href="mailto:teams@powermysport.com"
                             className="text-power-orange hover:underline"
@@ -367,10 +357,10 @@ export default function ContactPage() {
                         <p className="text-muted-foreground">
                           Customer Support:{" "}
                           <a
-                            href="tel:+911234567890"
+                            href="tel:+918968582443"
                             className="text-power-orange hover:underline"
                           >
-                            +91 123 456 7890
+                            +91 89685 82443
                           </a>
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -407,13 +397,9 @@ export default function ContactPage() {
                           Office Address
                         </h3>
                         <p className="text-muted-foreground">
-                          PowerMySport Technologies Pvt. Ltd.
+                          Powermysport PVT. LTD.
                           <br />
-                          123 Sports Complex, MG Road
-                          <br />
-                          Bengaluru, Karnataka 560001
-                          <br />
-                          India
+                          Mullanpur, Punjab.
                         </p>
                       </div>
                     </div>

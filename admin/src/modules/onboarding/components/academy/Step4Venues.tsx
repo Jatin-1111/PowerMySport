@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
+import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { Button } from "@/modules/shared/ui/Button";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import AmenitiesMultiSelect from "@/modules/shared/components/AmenitiesMultiSelect";
+import { Camera, Loader, Trash2, Upload } from "lucide-react";
 import OpeningHoursInput, {
   getDefaultOpeningHours,
 } from "@/modules/onboarding/components/OpeningHoursInput";
@@ -22,13 +25,8 @@ interface Step4VenuesProps {
   previousData?: AcademyStep4Payload;
 }
 
-const parseLines = (value: string): string[] =>
-  value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-const toLines = (value?: string[]): string => (value || []).join("\n");
+const MAX_GENERAL_IMAGES = 3;
+const MAX_SPORT_IMAGES = 5;
 
 const createEmptyVenue = (): AcademyOwnedVenueInput => ({
   name: "",
@@ -79,6 +77,9 @@ export default function Step4Venues({
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
+  const [dragActive, setDragActive] = useState<Record<string, boolean>>({});
   const skipAutocompleteRef = useRef(false);
 
   useEffect(() => {
@@ -122,6 +123,363 @@ export default function Step4Venues({
         currentIndex === index ? updater(venue) : venue,
       ),
     );
+  };
+
+  const getCoverKeyFromImages = (
+    imageUrls: string[],
+    imageKeys: string[],
+    coverUrl: string,
+    fallback: string,
+  ) => {
+    const coverIndex = imageUrls.findIndex((url) => url === coverUrl);
+    return coverIndex >= 0 ? imageKeys[coverIndex] || fallback : fallback;
+  };
+
+  const getSlotKey = (
+    index: number,
+    type: "general" | "sport",
+    slotIndex: number,
+    sport?: string,
+  ) => `venue-${index}-${type}${sport ? `-${sport}` : ""}-${slotIndex}`;
+
+  const setUploadState = (key: string, value: boolean) =>
+    setUploading((prev) => ({ ...prev, [key]: value }));
+
+  const setDragState = (key: string, value: boolean) =>
+    setDragActive((prev) => ({ ...prev, [key]: value }));
+
+  const setUploadError = (key: string, message: string) =>
+    setUploadErrors((prev) => ({ ...prev, [key]: message }));
+
+  const validateImageFile = (file: File, maxSizeBytes: number) => {
+    if (!file.type.startsWith("image/")) {
+      return "Only image files are allowed";
+    }
+
+    if (file.size > maxSizeBytes) {
+      const maxMb = Math.round(maxSizeBytes / (1024 * 1024));
+      return `Image must be smaller than ${maxMb}MB`;
+    }
+
+    return "";
+  };
+
+  const fetchUploadUrls = async (imageTypes: string[]) => {
+    const response = await academyOnboardingApi.getImageUploadUrls(
+      academyId,
+      imageTypes,
+    );
+
+    if (!response.success || !response.data?.uploadUrls?.length) {
+      throw new Error("Failed to prepare image uploads");
+    }
+
+    return response.data.uploadUrls;
+  };
+
+  const uploadGeneralImageAtSlot = async (
+    index: number,
+    slotIndex: number,
+    file?: File | null,
+    minFilledSlots?: number,
+  ): Promise<boolean> => {
+    if (!file) return false;
+
+    const venue = venues[index];
+    const slotKey = getSlotKey(index, "general", slotIndex);
+    const allowedSlots =
+      typeof minFilledSlots === "number"
+        ? minFilledSlots
+        : venue.generalImages.length;
+
+    if (slotIndex > allowedSlots) {
+      setUploadError(slotKey, "Upload previous images first");
+      return false;
+    }
+
+    setUploadState(slotKey, true);
+    setUploadError(slotKey, "");
+
+    try {
+      const uploadUrls = await fetchUploadUrls(["academyVenue_general"]);
+      const candidates = uploadUrls.filter((url) =>
+        url.field.startsWith("academyVenue_general"),
+      );
+      const upload = candidates[slotIndex] || candidates[0];
+
+      if (!upload) {
+        throw new Error("No upload slots available");
+      }
+
+      const fileError = validateImageFile(file, upload.maxSizeBytes);
+      if (fileError) {
+        setUploadError(slotKey, fileError);
+        return false;
+      }
+
+      await uploadFileToPresignedUrl(
+        file,
+        upload.uploadUrl,
+        upload.contentType,
+      );
+
+      updateVenue(index, (v) => {
+        const nextImages = [...v.generalImages];
+        const nextKeys = [...v.generalImageKeys];
+        const replacing = slotIndex < nextImages.length;
+        const previousUrl = replacing ? nextImages[slotIndex] : "";
+
+        if (replacing) {
+          nextImages[slotIndex] = upload.downloadUrl;
+          nextKeys[slotIndex] = upload.s3Key;
+        } else {
+          nextImages.push(upload.downloadUrl);
+          nextKeys.push(upload.s3Key);
+        }
+
+        let nextCoverUrl = v.coverPhotoUrl || nextImages[0] || "";
+        if (previousUrl && v.coverPhotoUrl === previousUrl) {
+          nextCoverUrl = upload.downloadUrl;
+        }
+
+        const nextCoverKey = nextCoverUrl
+          ? getCoverKeyFromImages(
+              nextImages,
+              nextKeys,
+              nextCoverUrl,
+              v.coverPhotoKey || "",
+            )
+          : "";
+
+        return {
+          ...v,
+          generalImages: nextImages,
+          generalImageKeys: nextKeys,
+          coverPhotoUrl: nextCoverUrl,
+          coverPhotoKey: nextCoverKey,
+        };
+      });
+
+      return true;
+    } catch (error) {
+      setUploadError(
+        slotKey,
+        error instanceof Error ? error.message : "Upload failed",
+      );
+      return false;
+    } finally {
+      setUploadState(slotKey, false);
+    }
+  };
+
+  const uploadGeneralImagesBatchFromSlot = async (
+    index: number,
+    startSlot: number,
+    files?: FileList | null,
+  ) => {
+    if (!files || files.length === 0) return;
+
+    const venue = venues[index];
+    const remaining = MAX_GENERAL_IMAGES - venue.generalImages.length;
+
+    if (remaining <= 0) {
+      setUploadError(
+        getSlotKey(index, "general", startSlot),
+        "All general image slots are filled",
+      );
+      return;
+    }
+
+    const selected = Array.from(files).slice(0, remaining);
+    let expectedLength = venue.generalImages.length;
+
+    for (let i = 0; i < selected.length; i += 1) {
+      const slotIndex = startSlot + i;
+      if (slotIndex >= MAX_GENERAL_IMAGES) break;
+
+      const success = await uploadGeneralImageAtSlot(
+        index,
+        slotIndex,
+        selected[i],
+        expectedLength,
+      );
+
+      if (success && slotIndex >= expectedLength) {
+        expectedLength += 1;
+      }
+    }
+  };
+
+  const uploadSportImageAtSlot = async (
+    index: number,
+    sport: string,
+    slotIndex: number,
+    file?: File | null,
+    minFilledSlots?: number,
+  ): Promise<boolean> => {
+    if (!file) return false;
+
+    const venue = venues[index];
+    const current = venue.sportImages[sport] || [];
+    const slotKey = getSlotKey(index, "sport", slotIndex, sport);
+    const allowedSlots =
+      typeof minFilledSlots === "number" ? minFilledSlots : current.length;
+
+    if (slotIndex > allowedSlots) {
+      setUploadError(slotKey, "Upload previous images first");
+      return false;
+    }
+
+    setUploadState(slotKey, true);
+    setUploadError(slotKey, "");
+
+    try {
+      const uploadUrls = await fetchUploadUrls(["academyVenue_sport"]);
+      const candidates = uploadUrls.filter((url) =>
+        url.field.startsWith("academyVenue_sport"),
+      );
+      const upload = candidates[slotIndex] || candidates[0];
+
+      if (!upload) {
+        throw new Error("No upload slots available");
+      }
+
+      const fileError = validateImageFile(file, upload.maxSizeBytes);
+      if (fileError) {
+        setUploadError(slotKey, fileError);
+        return false;
+      }
+
+      await uploadFileToPresignedUrl(
+        file,
+        upload.uploadUrl,
+        upload.contentType,
+      );
+
+      updateVenue(index, (v) => {
+        const nextImages = [...(v.sportImages[sport] || [])];
+        const nextKeys = [...(v.sportImageKeys[sport] || [])];
+
+        if (slotIndex < nextImages.length) {
+          nextImages[slotIndex] = upload.downloadUrl;
+          nextKeys[slotIndex] = upload.s3Key;
+        } else {
+          nextImages.push(upload.downloadUrl);
+          nextKeys.push(upload.s3Key);
+        }
+
+        return {
+          ...v,
+          sportImages: {
+            ...v.sportImages,
+            [sport]: nextImages,
+          },
+          sportImageKeys: {
+            ...v.sportImageKeys,
+            [sport]: nextKeys,
+          },
+        };
+      });
+
+      return true;
+    } catch (error) {
+      setUploadError(
+        slotKey,
+        error instanceof Error ? error.message : "Upload failed",
+      );
+      return false;
+    } finally {
+      setUploadState(slotKey, false);
+    }
+  };
+
+  const uploadSportImagesBatchFromSlot = async (
+    index: number,
+    sport: string,
+    startSlot: number,
+    files?: FileList | null,
+  ) => {
+    if (!files || files.length === 0) return;
+
+    const venue = venues[index];
+    const current = venue.sportImages[sport] || [];
+    const remaining = MAX_SPORT_IMAGES - current.length;
+
+    if (remaining <= 0) {
+      setUploadError(
+        getSlotKey(index, "sport", startSlot, sport),
+        "All sport image slots are filled",
+      );
+      return;
+    }
+
+    const selected = Array.from(files).slice(0, remaining);
+    let expectedLength = current.length;
+
+    for (let i = 0; i < selected.length; i += 1) {
+      const slotIndex = startSlot + i;
+      if (slotIndex >= MAX_SPORT_IMAGES) break;
+
+      const success = await uploadSportImageAtSlot(
+        index,
+        sport,
+        slotIndex,
+        selected[i],
+        expectedLength,
+      );
+
+      if (success && slotIndex >= expectedLength) {
+        expectedLength += 1;
+      }
+    }
+  };
+
+  const removeGeneralImage = (index: number, imageIndex: number) => {
+    updateVenue(index, (v) => {
+      const nextImages = v.generalImages.filter((_, i) => i !== imageIndex);
+      const nextKeys = v.generalImageKeys.filter((_, i) => i !== imageIndex);
+      const removedUrl = v.generalImages[imageIndex];
+      const nextCoverUrl =
+        v.coverPhotoUrl === removedUrl ? nextImages[0] || "" : v.coverPhotoUrl;
+      const nextCoverKey = nextCoverUrl
+        ? getCoverKeyFromImages(nextImages, nextKeys, nextCoverUrl, "")
+        : "";
+
+      return {
+        ...v,
+        generalImages: nextImages,
+        generalImageKeys: nextKeys,
+        coverPhotoUrl: nextCoverUrl,
+        coverPhotoKey: nextCoverKey,
+      };
+    });
+  };
+
+  const removeSportImage = (
+    index: number,
+    sport: string,
+    imageIndex: number,
+  ) => {
+    updateVenue(index, (v) => {
+      const nextImages = (v.sportImages[sport] || []).filter(
+        (_, i) => i !== imageIndex,
+      );
+      const nextKeys = (v.sportImageKeys[sport] || []).filter(
+        (_, i) => i !== imageIndex,
+      );
+
+      return {
+        ...v,
+        sportImages: {
+          ...v.sportImages,
+          [sport]: nextImages,
+        },
+        sportImageKeys: {
+          ...v.sportImageKeys,
+          [sport]: nextKeys,
+        },
+      };
+    });
   };
 
   const ensureAddressQueriesLength = (nextLength: number) => {
@@ -209,16 +567,17 @@ export default function Step4Venues({
         errors[`${key}_pricePerHour`] = "Price per hour must be at least Rs 1";
       }
       if (!venue.coverPhotoUrl.trim()) {
-        errors[`${key}_coverPhotoUrl`] = "Cover photo URL is required";
+        errors[`${key}_coverPhotoUrl`] =
+          "Select a cover photo from the uploaded S3 images";
       }
       if (venue.generalImages.length < 3) {
         errors[`${key}_generalImages`] =
-          "At least 3 general image URLs are required";
+          "At least 3 general images are required";
       }
       for (const sport of venue.sports) {
         if (!venue.sportImages[sport] || venue.sportImages[sport].length < 5) {
           errors[`${key}_sportImages_${sport}`] =
-            `Add at least 5 image URLs for ${sport}`;
+            `Add at least 5 images for ${sport}`;
         }
       }
     });
@@ -258,7 +617,7 @@ export default function Step4Venues({
         </h2>
         <p className="text-slate-600">
           Add full venue onboarding details, including sports, amenities, maps
-          location, and image URLs.
+          location, and image uploads.
         </p>
       </div>
 
@@ -484,100 +843,393 @@ export default function Step4Venues({
               Allow external coaches
             </label>
 
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700">
-                  Cover photo URL *
-                </label>
-                <input
-                  type="url"
-                  value={venue.coverPhotoUrl}
-                  onChange={(e) =>
-                    updateVenue(index, (v) => ({
-                      ...v,
-                      coverPhotoUrl: e.target.value,
-                    }))
-                  }
-                  placeholder="https://..."
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  disabled={isSubmitting || loading}
-                />
-                {fieldErrors[`venue_${index}_coverPhotoUrl`] ? (
-                  <p className="mt-1 text-xs text-red-600">
-                    {fieldErrors[`venue_${index}_coverPhotoUrl`]}
-                  </p>
-                ) : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700">
-                  Cover photo key (optional)
-                </label>
-                <input
-                  type="text"
-                  value={venue.coverPhotoKey || ""}
-                  onChange={(e) =>
-                    updateVenue(index, (v) => ({
-                      ...v,
-                      coverPhotoKey: e.target.value,
-                    }))
-                  }
-                  placeholder="s3/key/path"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  disabled={isSubmitting || loading}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700">
-                General image URLs (one per line, min 3)
-              </label>
-              <textarea
-                rows={3}
-                value={toLines(venue.generalImages)}
-                onChange={(e) =>
-                  updateVenue(index, (v) => ({
-                    ...v,
-                    generalImages: parseLines(e.target.value),
-                  }))
-                }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                disabled={isSubmitting || loading}
-              />
-              {fieldErrors[`venue_${index}_generalImages`] ? (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors[`venue_${index}_generalImages`]}
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-slate-900">
+                  Venue Photos
                 </p>
-              ) : null}
-            </div>
-
-            {venue.sports.map((sport) => (
-              <div key={`${index}-${sport}`}>
-                <label className="mb-1 block text-xs font-medium text-slate-700">
-                  {sport} image URLs (one per line, min 5)
-                </label>
-                <textarea
-                  rows={3}
-                  value={toLines(venue.sportImages[sport])}
-                  onChange={(e) =>
-                    updateVenue(index, (v) => ({
-                      ...v,
-                      sportImages: {
-                        ...v.sportImages,
-                        [sport]: parseLines(e.target.value),
-                      },
-                    }))
-                  }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2"
-                  disabled={isSubmitting || loading}
-                />
-                {fieldErrors[`venue_${index}_sportImages_${sport}`] ? (
-                  <p className="mt-1 text-xs text-red-600">
-                    {fieldErrors[`venue_${index}_sportImages_${sport}`]}
-                  </p>
-                ) : null}
+                <p className="text-xs text-slate-500">
+                  Upload 3 general images and 5 per sport.
+                </p>
               </div>
-            ))}
+
+              <div className="space-y-3">
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-slate-900">
+                    Venue Images (3 required)
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {Array.from({ length: MAX_GENERAL_IMAGES }).map(
+                      (_, slotIndex) => {
+                        const slotKey = getSlotKey(index, "general", slotIndex);
+                        const slotUploading = uploading[slotKey];
+                        const slotDragActive = dragActive[slotKey];
+                        const slotError = uploadErrors[slotKey];
+                        const imageUrl = venue.generalImages[slotIndex];
+                        const slotEnabled =
+                          slotIndex <= venue.generalImages.length &&
+                          !isSubmitting &&
+                          !loading;
+
+                        return (
+                          <div key={`general-${index}-${slotIndex}`}>
+                            {imageUrl ? (
+                              <div className="relative aspect-square">
+                                <img
+                                  src={imageUrl}
+                                  alt={`General ${slotIndex + 1}`}
+                                  className="h-full w-full rounded-lg border border-slate-200 object-cover"
+                                />
+                                {venue.coverPhotoUrl === imageUrl ? (
+                                  <span className="absolute bottom-2 left-2 rounded bg-green-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                    Cover
+                                  </span>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeGeneralImage(index, slotIndex)
+                                  }
+                                  className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <label
+                                className={`flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-xs transition ${
+                                  slotDragActive
+                                    ? "border-power-orange bg-power-orange/5"
+                                    : "border-slate-300"
+                                } ${slotEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+                                onDragOver={(event) => {
+                                  event.preventDefault();
+                                  if (!slotEnabled) return;
+                                  setDragState(slotKey, true);
+                                }}
+                                onDragLeave={(event) => {
+                                  event.preventDefault();
+                                  setDragState(slotKey, false);
+                                }}
+                                onDrop={(event) => {
+                                  event.preventDefault();
+                                  setDragState(slotKey, false);
+                                  if (!slotEnabled) return;
+                                  const files = event.dataTransfer.files;
+                                  if (files && files.length > 1) {
+                                    uploadGeneralImagesBatchFromSlot(
+                                      index,
+                                      slotIndex,
+                                      files,
+                                    );
+                                    return;
+                                  }
+                                  uploadGeneralImageAtSlot(
+                                    index,
+                                    slotIndex,
+                                    files?.[0],
+                                  );
+                                }}
+                              >
+                                {slotUploading ? (
+                                  <Loader
+                                    className="mb-2 animate-spin text-power-orange"
+                                    size={22}
+                                  />
+                                ) : (
+                                  <Upload
+                                    className="mb-2 text-slate-400"
+                                    size={22}
+                                  />
+                                )}
+                                <span className="text-slate-600">
+                                  Image {slotIndex + 1}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  className="hidden"
+                                  disabled={!slotEnabled}
+                                  onChange={(event) => {
+                                    const files = event.target.files;
+                                    if (files && files.length > 1) {
+                                      uploadGeneralImagesBatchFromSlot(
+                                        index,
+                                        slotIndex,
+                                        files,
+                                      );
+                                      return;
+                                    }
+                                    uploadGeneralImageAtSlot(
+                                      index,
+                                      slotIndex,
+                                      files?.[0],
+                                    );
+                                  }}
+                                />
+                              </label>
+                            )}
+                            {slotError ? (
+                              <p className="mt-1 text-xs text-red-600">
+                                {slotError}
+                              </p>
+                            ) : null}
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
+                  {venue.generalImages.length > 0 ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                      <span>Set cover photo:</span>
+                      <select
+                        value={venue.coverPhotoUrl || ""}
+                        onChange={(e) => {
+                          const selectedUrl = e.target.value;
+                          const selectedIndex = venue.generalImages.findIndex(
+                            (imageUrl) => imageUrl === selectedUrl,
+                          );
+
+                          updateVenue(index, (v) => ({
+                            ...v,
+                            coverPhotoUrl: selectedUrl,
+                            coverPhotoKey:
+                              selectedIndex >= 0
+                                ? v.generalImageKeys[selectedIndex] || ""
+                                : v.coverPhotoKey || "",
+                          }));
+                        }}
+                        className="rounded border border-slate-300 bg-white px-2 py-1 text-xs"
+                        disabled={isSubmitting || loading}
+                      >
+                        <option value="">Choose image</option>
+                        {venue.generalImages.map((imageUrl, imageIndex) => (
+                          <option
+                            key={`${index}-cover-${imageIndex}`}
+                            value={imageUrl}
+                          >
+                            Image {imageIndex + 1}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  {fieldErrors[`venue_${index}_coverPhotoUrl`] ? (
+                    <p className="mt-1 text-xs text-red-600">
+                      {fieldErrors[`venue_${index}_coverPhotoUrl`]}
+                    </p>
+                  ) : null}
+                  {fieldErrors[`venue_${index}_generalImages`] ? (
+                    <p className="mt-1 text-xs text-red-600">
+                      {fieldErrors[`venue_${index}_generalImages`]}
+                    </p>
+                  ) : null}
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1">
+                      <Upload size={14} className="text-slate-500" />
+                      Upload multiple images
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        disabled={
+                          isSubmitting ||
+                          loading ||
+                          venue.generalImages.length >= MAX_GENERAL_IMAGES
+                        }
+                        onChange={(event) =>
+                          uploadGeneralImagesBatchFromSlot(
+                            index,
+                            venue.generalImages.length,
+                            event.target.files,
+                          )
+                        }
+                      />
+                    </label>
+                    <span>Fills the next available slots.</span>
+                  </div>
+                </div>
+
+                {venue.sports.map((sport) => {
+                  const sportImages = venue.sportImages[sport] || [];
+
+                  return (
+                    <div key={`${index}-${sport}`} className="pt-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {sport} Images ({sportImages.length}/
+                          {MAX_SPORT_IMAGES})
+                        </p>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                        {Array.from({ length: MAX_SPORT_IMAGES }).map(
+                          (_, slotIndex) => {
+                            const slotKey = getSlotKey(
+                              index,
+                              "sport",
+                              slotIndex,
+                              sport,
+                            );
+                            const slotUploading = uploading[slotKey];
+                            const slotDragActive = dragActive[slotKey];
+                            const slotError = uploadErrors[slotKey];
+                            const imageUrl = sportImages[slotIndex];
+                            const slotEnabled =
+                              slotIndex <= sportImages.length &&
+                              !isSubmitting &&
+                              !loading;
+
+                            return (
+                              <div key={`${sport}-${slotIndex}`}>
+                                {imageUrl ? (
+                                  <div className="relative aspect-square">
+                                    <img
+                                      src={imageUrl}
+                                      alt={`${sport} ${slotIndex + 1}`}
+                                      className="h-full w-full rounded-lg border border-slate-200 object-cover"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        removeSportImage(
+                                          index,
+                                          sport,
+                                          slotIndex,
+                                        )
+                                      }
+                                      className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label
+                                    className={`flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-xs transition ${
+                                      slotDragActive
+                                        ? "border-power-orange bg-power-orange/5"
+                                        : "border-slate-300"
+                                    } ${slotEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+                                    onDragOver={(event) => {
+                                      event.preventDefault();
+                                      if (!slotEnabled) return;
+                                      setDragState(slotKey, true);
+                                    }}
+                                    onDragLeave={(event) => {
+                                      event.preventDefault();
+                                      setDragState(slotKey, false);
+                                    }}
+                                    onDrop={(event) => {
+                                      event.preventDefault();
+                                      setDragState(slotKey, false);
+                                      if (!slotEnabled) return;
+                                      const files = event.dataTransfer.files;
+                                      if (files && files.length > 1) {
+                                        uploadSportImagesBatchFromSlot(
+                                          index,
+                                          sport,
+                                          slotIndex,
+                                          files,
+                                        );
+                                        return;
+                                      }
+                                      uploadSportImageAtSlot(
+                                        index,
+                                        sport,
+                                        slotIndex,
+                                        files?.[0],
+                                      );
+                                    }}
+                                  >
+                                    {slotUploading ? (
+                                      <Loader
+                                        className="mb-2 animate-spin text-power-orange"
+                                        size={18}
+                                      />
+                                    ) : (
+                                      <Camera
+                                        className="mb-2 text-slate-400"
+                                        size={18}
+                                      />
+                                    )}
+                                    <span className="text-slate-600">
+                                      Image {slotIndex + 1}
+                                    </span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      className="hidden"
+                                      disabled={!slotEnabled}
+                                      onChange={(event) => {
+                                        const files = event.target.files;
+                                        if (files && files.length > 1) {
+                                          uploadSportImagesBatchFromSlot(
+                                            index,
+                                            sport,
+                                            slotIndex,
+                                            files,
+                                          );
+                                          return;
+                                        }
+                                        uploadSportImageAtSlot(
+                                          index,
+                                          sport,
+                                          slotIndex,
+                                          files?.[0],
+                                        );
+                                      }}
+                                    />
+                                  </label>
+                                )}
+                                {slotError ? (
+                                  <p className="mt-1 text-xs text-red-600">
+                                    {slotError}
+                                  </p>
+                                ) : null}
+                              </div>
+                            );
+                          },
+                        )}
+                      </div>
+                      {fieldErrors[`venue_${index}_sportImages_${sport}`] ? (
+                        <p className="mt-1 text-xs text-red-600">
+                          {fieldErrors[`venue_${index}_sportImages_${sport}`]}
+                        </p>
+                      ) : null}
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1">
+                          <Camera size={14} className="text-slate-500" />
+                          Upload multiple images
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            disabled={
+                              isSubmitting ||
+                              loading ||
+                              sportImages.length >= MAX_SPORT_IMAGES
+                            }
+                            onChange={(event) =>
+                              uploadSportImagesBatchFromSlot(
+                                index,
+                                sport,
+                                sportImages.length,
+                                event.target.files,
+                              )
+                            }
+                          />
+                        </label>
+                        <span>Fills the next available slots.</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ))}
 
