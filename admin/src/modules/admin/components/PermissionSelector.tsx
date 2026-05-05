@@ -8,6 +8,8 @@ import {
   Calendar,
   Gauge,
   Info,
+  Package,
+  ShoppingBag,
   Settings,
   ShieldAlert,
   Star,
@@ -22,11 +24,18 @@ const PERMISSION_MODULES = {
   venues: { name: "Venue Management", Icon: Warehouse },
   bookings: { name: "Booking Management", Icon: Calendar },
   coaches: { name: "Coach Management", Icon: Briefcase },
+  inquiries: { name: "Inquiry Management", Icon: ShieldAlert },
   disputes: { name: "Dispute & Refund Management", Icon: ShieldAlert },
   analytics: { name: "Analytics & Reports", Icon: BarChart3 },
   admins: { name: "Admin Management", Icon: UserCog },
   settings: { name: "System Settings", Icon: Settings },
   reviews: { name: "Review Management", Icon: Star },
+  products: { name: "Product Management", Icon: Package },
+  orders: { name: "Order Management", Icon: ShoppingBag },
+  "coach-subscriptions": {
+    name: "Coach Subscriptions",
+    Icon: Calendar,
+  },
 };
 
 // Permission labels for display
@@ -46,6 +55,9 @@ const PERMISSION_LABELS: Record<string, string> = {
   "coaches:manage": "Manage Coaches",
   "coaches:verify": "Verify Coaches",
   "coaches:delete": "Delete Coaches",
+  "inquiries:view": "View Inquiries",
+  "inquiries:manage": "Manage Inquiries",
+  "inquiries:delete": "Delete Inquiries",
   "disputes:view": "View Disputes",
   "disputes:manage": "Manage Disputes",
   "disputes:resolve": "Resolve Disputes",
@@ -59,6 +71,18 @@ const PERMISSION_LABELS: Record<string, string> = {
   "reviews:view": "View Reviews",
   "reviews:manage": "Manage Reviews",
   "reviews:delete": "Delete Reviews",
+  "products:view": "View Products",
+  "products:create": "Create Products",
+  "products:manage": "Manage Products",
+  "orders:view": "View Orders",
+  "orders:manage": "Manage Orders",
+  "orders:refund": "Refund Orders",
+  "coach-subscriptions:view": "View Coach Subscriptions",
+  "coach-subscriptions:create": "Create Coach Plans",
+  "coach-subscriptions:manage": "Manage Coach Plans",
+  "coach-subscriptions:cancel": "Cancel Coach Subscriptions",
+  "coach-subscriptions:refund": "Refund Coach Subscriptions",
+  "coach-subscriptions:override-review": "Review Coach Plan Override Requests",
 };
 
 interface PermissionSelectorProps {

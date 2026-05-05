@@ -121,59 +121,47 @@ export default function AdminLayout({
         ],
       },
       {
-        title: "Operations",
+        title: "People",
         items: [
+          { href: "/admin/users", label: "Users", icon: Users },
+          { href: "/admin/coaches", label: "Coaches", icon: Users },
           {
-            href: "/admin/venue-approval",
-            label: "Venue Approvals",
-            icon: CheckCircle,
+            href: "/admin/coaches/add",
+            label: "Create Coach",
+            icon: Plus,
           },
           {
             href: "/admin/coach-verification",
             label: "Coach Verification",
             icon: UserCheck,
           },
-          {
-            href: "/admin/academy-onboarding",
-            label: "Academy Onboarding",
-            icon: BookOpen,
-          },
+          { href: "/admin/academies", label: "Academies", icon: BookOpen },
           {
             href: "/admin/academies/add",
             label: "Create Academy",
             icon: Plus,
           },
-          { href: "/admin/bookings", label: "All Bookings", icon: Calendar },
           {
-            href: "/admin/support-tickets",
-            label: "Support Tickets",
-            icon: LifeBuoy,
-          },
-          {
-            href: "/admin/community-reports",
-            label: "Community Reports",
-            icon: MessageSquareWarning,
-          },
-          {
-            href: "/admin/coaches",
-            label: "All Coaches",
-            icon: Users,
-          },
-          {
-            href: "/admin/coaches/add",
-            label: "Create Coach",
-            icon: Plus,
+            href: "/admin/academy-onboarding",
+            label: "Academy Onboarding",
+            icon: CheckCircle,
           },
         ],
       },
       {
-        title: "Marketplace",
+        title: "Commerce",
         items: [
-          { href: "/admin/venues", label: "All Venues", icon: Building2 },
+          { href: "/admin/bookings", label: "Bookings", icon: Calendar },
+          { href: "/admin/venues", label: "Venues", icon: Building2 },
           {
             href: "/admin/venues/add",
             label: "Create Venue",
             icon: Plus,
+          },
+          {
+            href: "/admin/venue-approval",
+            label: "Venue Approvals",
+            icon: CheckCircle,
           },
           { href: "/admin/products", label: "Products", icon: Package },
           { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
@@ -198,13 +186,22 @@ export default function AdminLayout({
         ],
       },
       {
-        title: "Users",
+        title: "Trust & Support",
         items: [
-          { href: "/admin/users", label: "Users", icon: Users },
           {
             href: "/admin/user-safety",
             label: "User Safety",
             icon: ShieldAlert,
+          },
+          {
+            href: "/admin/community-reports",
+            label: "Community Reports",
+            icon: MessageSquareWarning,
+          },
+          {
+            href: "/admin/support-tickets",
+            label: "Support Tickets",
+            icon: LifeBuoy,
           },
         ],
       },
@@ -414,7 +411,7 @@ export default function AdminLayout({
                                 <span className="text-sm font-semibold">
                                   {item.label}
                                 </span>
-                                {item.href === "/admin/academies" &&
+                                {item.href === "/admin/academy-onboarding" &&
                                   pendingAcademyCount > 0 && (
                                     <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">
                                       {pendingAcademyCount}
@@ -482,7 +479,7 @@ export default function AdminLayout({
                               <span className="text-sm font-semibold">
                                 {item.label}
                               </span>
-                              {item.href === "/admin/academies" &&
+                              {item.href === "/admin/academy-onboarding" &&
                                 pendingAcademyCount > 0 && (
                                   <span className="ml-auto rounded-full bg-power-orange px-2 py-0.5 text-[11px] font-bold text-white">
                                     {pendingAcademyCount}

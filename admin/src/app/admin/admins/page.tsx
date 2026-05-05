@@ -29,6 +29,10 @@ const PERMISSION_LABELS: Record<string, string> = {
   "coaches:manage": "Manage Coaches",
   "coaches:verify": "Verify Coaches",
   "coaches:delete": "Delete Coaches",
+  // Inquiries
+  "inquiries:view": "View Inquiries",
+  "inquiries:manage": "Manage Inquiries",
+  "inquiries:delete": "Delete Inquiries",
   // Disputes
   "disputes:view": "View Disputes",
   "disputes:manage": "Manage Disputes",
@@ -47,6 +51,21 @@ const PERMISSION_LABELS: Record<string, string> = {
   "reviews:view": "View Reviews",
   "reviews:manage": "Manage Reviews",
   "reviews:delete": "Delete Reviews",
+  // Products
+  "products:view": "View Products",
+  "products:create": "Create Products",
+  "products:manage": "Manage Products",
+  // Orders
+  "orders:view": "View Orders",
+  "orders:manage": "Manage Orders",
+  "orders:refund": "Refund Orders",
+  // Coach Subscriptions
+  "coach-subscriptions:view": "View Coach Subscriptions",
+  "coach-subscriptions:create": "Create Coach Plans",
+  "coach-subscriptions:manage": "Manage Coach Plans",
+  "coach-subscriptions:cancel": "Cancel Coach Subscriptions",
+  "coach-subscriptions:refund": "Refund Coach Subscriptions",
+  "coach-subscriptions:override-review": "Review Coach Plan Overrides",
 };
 
 const formatPermissionLabel = (permission: string): string => {
@@ -55,7 +74,11 @@ const formatPermissionLabel = (permission: string): string => {
   }
 
   return permission
-    .split("_")
+    .replace(/:/g, " ")
+    .replace(/-/g, " ")
+    .replace(/_/g, " ")
+    .split(" ")
+    .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 };
