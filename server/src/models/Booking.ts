@@ -285,22 +285,20 @@ bookingSchema.index({ userId: 1, status: 1, date: -1 });
 // Compound index for admin: all bookings by status sorted by creation date
 bookingSchema.index({ status: 1, createdAt: -1 });
 
-// Unique index for venue bookings only
+// Index for venue bookings only
 bookingSchema.index(
   { userId: 1, venueId: 1, date: 1, startTime: 1 },
   {
-    unique: true,
-    name: "unique_venue_booking_slot",
+    name: "user_venue_booking_slot",
     partialFilterExpression: { venueId: { $exists: true } },
   },
 );
 
-// Unique index for coach bookings only
+// Index for coach bookings only
 bookingSchema.index(
   { userId: 1, coachId: 1, date: 1, startTime: 1 },
   {
-    unique: true,
-    name: "unique_coach_booking_slot",
+    name: "user_coach_booking_slot",
     partialFilterExpression: { coachId: { $exists: true } },
   },
 );
