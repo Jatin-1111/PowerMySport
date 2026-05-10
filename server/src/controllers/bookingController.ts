@@ -27,6 +27,7 @@ import {
 import {
   getPhonePeOrderStatus,
   initiatePhonePePayment,
+  isPhonePeGatewayError,
   validatePhonePeCallback,
 } from "../services/PhonePeService";
 import { generateHourlySlots } from "../utils/booking";
@@ -1301,12 +1302,17 @@ export const initiatePhonePePaymentForBooking = async (
       },
     });
   } catch (error) {
-    res.status(400).json({
+    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
+
+    res.status(statusCode).json({
       success: false,
       message:
         error instanceof Error
           ? error.message
           : "Failed to initiate PhonePe payment",
+      ...(isPhonePeGatewayError(error)
+        ? { data: { code: error.code, retryable: error.retryable } }
+        : {}),
     });
   }
 };
@@ -1380,12 +1386,17 @@ export const handlePhonePeCallback = async (
       message: "PhonePe callback processed",
     });
   } catch (error) {
-    res.status(400).json({
+    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
+
+    res.status(statusCode).json({
       success: false,
       message:
         error instanceof Error
           ? error.message
           : "Failed to process PhonePe callback",
+      ...(isPhonePeGatewayError(error)
+        ? { data: { code: error.code, retryable: error.retryable } }
+        : {}),
     });
   }
 };
@@ -1471,12 +1482,17 @@ export const verifyPhonePeOrderStatus = async (
       },
     });
   } catch (error) {
-    res.status(400).json({
+    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
+
+    res.status(statusCode).json({
       success: false,
       message:
         error instanceof Error
           ? error.message
           : "Failed to verify PhonePe order status",
+      ...(isPhonePeGatewayError(error)
+        ? { data: { code: error.code, retryable: error.retryable } }
+        : {}),
     });
   }
 };

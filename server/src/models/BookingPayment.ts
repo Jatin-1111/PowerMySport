@@ -17,6 +17,7 @@ export interface BookingPaymentTransactionDocument extends Document {
   callbackPayload?: Record<string, any>;
   lastStatusPayload?: Record<string, any>;
   refundMerchantId?: string;
+  refundId?: string;
   refundState?: string;
   refundAmount?: number;
   refundResponse?: Record<string, any>;
@@ -69,6 +70,9 @@ const bookingPaymentTransactionSchema =
         type: Schema.Types.Mixed,
       },
       refundMerchantId: {
+        type: String,
+      },
+      refundId: {
         type: String,
       },
       refundState: {

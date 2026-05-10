@@ -215,6 +215,21 @@ export interface SupportTicketRecord {
   updatedAt: string;
 }
 
+export interface AdminPhonePeRefundTransaction {
+  merchantOrderId: string;
+  merchantRefundId: string;
+  refundId?: string;
+  state?: string;
+  amount: number;
+}
+
+export interface AdminPhonePeRefundStatus {
+  bookingId: string;
+  refundStatus: "PENDING" | "PROCESSED" | "REJECTED";
+  refundAmount: number;
+  transactions: AdminPhonePeRefundTransaction[];
+}
+
 interface PaginationResult<T> {
   data: T[];
   pagination: {
@@ -545,6 +560,15 @@ export const adminApi = {
     const response = await axiosInstance.post(
       `/admin/refunds/${bookingId}`,
       data,
+    );
+    return response.data;
+  },
+
+  getPhonePeRefundStatus: async (
+    bookingId: string,
+  ): Promise<ApiResponse<AdminPhonePeRefundStatus>> => {
+    const response = await axiosInstance.get(
+      `/admin/refunds/${bookingId}/status`,
     );
     return response.data;
   },

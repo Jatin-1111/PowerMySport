@@ -1,7 +1,10 @@
 ﻿"use client";
 
 import { toast } from "@/lib/toast";
-import { adminApi } from "@/modules/admin/services/admin";
+import {
+  adminApi,
+  type AdminPhonePeRefundStatus,
+} from "@/modules/admin/services/admin";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
@@ -44,6 +47,11 @@ export default function AdminBookingsPage() {
   >("NO_REFUND");
   const [reason, setReason] = useState("");
   const [evidence, setEvidence] = useState("");
+  const [refundStatusByBookingId, setRefundStatusByBookingId] = useState<
+    Record<string, AdminPhonePeRefundStatus>
+  >({});
+  const [refundStatusLoadingByBookingId, setRefundStatusLoadingByBookingId] =
+    useState<Record<string, boolean>>({});
   const PAGE_SIZE = 10;
 
   const getBookingId = (booking: Booking): string => {
@@ -109,6 +117,47 @@ export default function AdminBookingsPage() {
     setEvidence("");
   };
 
+  const checkPhonePeRefundStatus = useCallback(
+    async (bookingId: string, silent = false) => {
+      setRefundStatusLoadingByBookingId((previous) => ({
+        ...previous,
+        [bookingId]: true,
+      }));
+
+      try {
+        const response = await adminApi.getPhonePeRefundStatus(bookingId);
+        const refundStatus = response.data;
+
+        if (!response.success || !refundStatus) {
+          throw new Error(response.message || "Failed to load refund status.");
+        }
+
+        setRefundStatusByBookingId((previous) => ({
+          ...previous,
+          [bookingId]: refundStatus,
+        }));
+
+        if (!silent) {
+          toast.success("PhonePe refund status updated.");
+        }
+      } catch (error) {
+        if (!silent) {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to load PhonePe refund status.",
+          );
+        }
+      } finally {
+        setRefundStatusLoadingByBookingId((previous) => ({
+          ...previous,
+          [bookingId]: false,
+        }));
+      }
+    },
+    [],
+  );
+
   const submitAction = async () => {
     if (!actionBookingId || !actionType) return;
     if (!reason.trim()) {
@@ -124,6 +173,7 @@ export default function AdminBookingsPage() {
           reason: reason.trim(),
         });
         toast.success("Refund request submitted.");
+        await checkPhonePeRefundStatus(actionBookingId, true);
       } else {
         await adminApi.handleDispute(actionBookingId, {
           disputeType,
@@ -146,7 +196,7 @@ export default function AdminBookingsPage() {
 
   useEffect(() => {
     loadBookings();
-  }, [loadBookings]);
+  }, [checkPhonePeRefundStatus, loadBookings]);
 
   // Filter bookings based on active tab
   const filteredBookings = bookings.filter((booking) => {
@@ -495,7 +545,72 @@ export default function AdminBookingsPage() {
                       >
                         Cancel
                       </button>
+                      {actionType === "REFUND" && (
+                        <button
+                          onClick={() =>
+                            checkPhonePeRefundStatus(getBookingId(booking))
+                          }
+                          disabled={
+                            actionLoading ||
+                            Boolean(
+                              refundStatusLoadingByBookingId[
+                                getBookingId(booking)
+                              ],
+                            )
+                          }
+                          className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {refundStatusLoadingByBookingId[getBookingId(booking)]
+                            ? "Checking..."
+                            : "Check PhonePe Status"}
+                        </button>
+                      )}
                     </div>
+
+                    {actionType === "REFUND" &&
+                      refundStatusByBookingId[getBookingId(booking)] && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            PhonePe Refund Snapshot
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <span className="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-700">
+                              Status:{" "}
+                              {
+                                refundStatusByBookingId[getBookingId(booking)]
+                                  .refundStatus
+                              }
+                            </span>
+                            <span className="rounded bg-slate-100 px-2 py-1 font-semibold text-slate-700">
+                              Amount: ₹
+                              {
+                                refundStatusByBookingId[getBookingId(booking)]
+                                  .refundAmount
+                              }
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {refundStatusByBookingId[
+                              getBookingId(booking)
+                            ].transactions.map((transaction) => (
+                              <div
+                                key={transaction.merchantRefundId}
+                                className="rounded border border-slate-200 bg-white p-2 text-xs text-slate-700"
+                              >
+                                <p>
+                                  Merchant Refund ID:{" "}
+                                  {transaction.merchantRefundId}
+                                </p>
+                                <p>State: {transaction.state || "PENDING"}</p>
+                                <p>Amount: ₹{transaction.amount}</p>
+                                {transaction.refundId && (
+                                  <p>Refund ID: {transaction.refundId}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
                 )}
               </Card>

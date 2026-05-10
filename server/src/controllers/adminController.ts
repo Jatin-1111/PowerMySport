@@ -24,7 +24,10 @@ import {
   updateCoach,
   submitCoachVerification,
 } from "../services/CoachService";
-import { processBookingRefund } from "../services/BookingService";
+import {
+  getBookingPhonePeRefundStatus,
+  processBookingRefund,
+} from "../services/BookingService";
 import { transformDocument } from "../middleware/responseTransform";
 import {
   sendCoachVerificationReminderEmail,
@@ -33,6 +36,7 @@ import {
   sendVenueAdminCredentialsEmail,
 } from "../utils/email";
 import { NotificationService } from "../services/NotificationService";
+import { isPhonePeGatewayError } from "../services/PhonePeService";
 
 const normalizeAdminResponse = (admin: unknown) => {
   if (!admin || typeof admin !== "object") {
@@ -966,10 +970,58 @@ export const processRefund = async (
       },
     });
   } catch (error) {
-    res.status(500).json({
+    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 500;
+
+    res.status(statusCode).json({
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to process refund",
+      ...(isPhonePeGatewayError(error)
+        ? { data: { code: error.code, retryable: error.retryable } }
+        : {}),
+    });
+  }
+};
+
+/**
+ * Get PhonePe refund status for a booking
+ * GET /api/admin/refunds/:bookingId/status
+ */
+export const getRefundStatus = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+
+    if (!bookingId) {
+      res.status(400).json({
+        success: false,
+        message: "bookingId is required",
+      });
+      return;
+    }
+
+    const status = await getBookingPhonePeRefundStatus(bookingId);
+
+    res.status(200).json({
+      success: true,
+      message: "Refund status retrieved successfully",
+      data: status,
+    });
+  } catch (error) {
+    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 500;
+
+    res.status(statusCode).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch refund status",
+      ...(isPhonePeGatewayError(error)
+        ? { data: { code: error.code, retryable: error.retryable } }
+        : {}),
     });
   }
 };

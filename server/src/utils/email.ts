@@ -191,6 +191,224 @@ export const sendWelcomeEmail = async (
   });
 };
 
+type BookingLifecycleState = "PENDING_CONFIRMATION" | "CONFIRMED" | "CANCELLED";
+
+type BookingLifecycleRecipientRole = "PLAYER" | "PROVIDER";
+
+interface BookingLifecycleEmailOptions {
+  email: string;
+  name: string;
+  venueName: string;
+  sport: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  totalAmount: number;
+  state: BookingLifecycleState;
+  recipientRole: BookingLifecycleRecipientRole;
+  checkInCode?: string;
+  refundAmount?: number;
+  refundPercentage?: number;
+  cancellationReason?: string;
+}
+
+export const sendBookingLifecycleEmail = async (
+  options: BookingLifecycleEmailOptions,
+): Promise<void> => {
+  const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
+  const bookingDate = options.date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const amountValue = options.totalAmount.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const stateConfig =
+    options.state === "CONFIRMED"
+      ? {
+          title: "Booking Confirmed",
+          emoji: "✅",
+          headerGradient: "linear-gradient(135deg,#0f9d58 0%,#22c55e 100%)",
+          badgeBg: "#ecfdf3",
+          badgeBorder: "#bbf7d0",
+          badgeText: "#15803d",
+          badge: "CONFIRMED",
+        }
+      : options.state === "CANCELLED"
+        ? {
+            title: "Booking Cancelled",
+            emoji: "🛑",
+            headerGradient: "linear-gradient(135deg,#dc2626 0%,#ef4444 100%)",
+            badgeBg: "#fef2f2",
+            badgeBorder: "#fecaca",
+            badgeText: "#b91c1c",
+            badge: "CANCELLED",
+          }
+        : {
+            title: "Booking Received",
+            emoji: "⏳",
+            headerGradient: "linear-gradient(135deg,#f59e0b 0%,#d97706 100%)",
+            badgeBg: "#fffbeb",
+            badgeBorder: "#fde68a",
+            badgeText: "#92400e",
+            badge: "AWAITING CONFIRMATION",
+          };
+
+  const recipientLeadText =
+    options.state === "CONFIRMED"
+      ? options.recipientRole === "PLAYER"
+        ? "Your booking is confirmed and ready in your dashboard."
+        : "You approved a booking and the player has been notified."
+      : options.state === "CANCELLED"
+        ? options.recipientRole === "PLAYER"
+          ? "Your booking was cancelled."
+          : "A booking under your control was cancelled."
+        : options.recipientRole === "PLAYER"
+          ? "We have received your booking and it's waiting for provider approval."
+          : "A new booking is waiting for your approval.";
+
+  const refundSection =
+    options.state === "CANCELLED"
+      ? `
+                <tr>
+                  <td style="padding:10px 0 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Refund</td>
+                  <td style="padding:10px 0 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">
+                    ${options.refundPercentage ? `${options.refundPercentage}% - ` : ""}₹${(options.refundAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                </tr>
+                ${
+                  options.cancellationReason
+                    ? `
+                <tr>
+                  <td colspan="2" style="padding:12px 0 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Reason</td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding:4px 0 0;font-size:13px;color:#0f172a;">${options.cancellationReason}</td>
+                </tr>`
+                    : ""
+                }
+      `
+      : "";
+
+  const checkInRow =
+    options.checkInCode &&
+    options.state === "CONFIRMED" &&
+    options.recipientRole === "PLAYER"
+      ? `
+                <tr>
+                  <td style="padding:10px 0 14px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Check-in Code</td>
+                  <td style="padding:10px 0 14px;border-top:1px solid #e2e8f0;font-size:16px;color:#0f172a;font-weight:800;text-align:right;font-family:monospace;letter-spacing:2px;">${options.checkInCode}</td>
+                </tr>
+      `
+      : "";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;">
+    ${recipientLeadText}
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dbe3ee;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="background:${stateConfig.headerGradient};padding:30px 28px 24px;text-align:center;">
+              <div style="font-size:34px;line-height:34px;">${stateConfig.emoji}</div>
+              <h1 style="margin:12px 0 0;font-size:30px;line-height:34px;color:#ffffff;font-weight:800;">${stateConfig.title}</h1>
+              <p style="margin:10px 0 0;font-size:15px;line-height:22px;color:rgba(255,255,255,0.9);">${recipientLeadText}</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 28px 22px;background-color:#ffffff;">
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">${options.state === "CONFIRMED" ? "Here are your confirmed booking details." : options.state === "CANCELLED" ? "We have updated your booking status." : "Here are the booking details for your review."}</p>
+
+              <div style="display:inline-block;background-color:${stateConfig.badgeBg};border:1px solid ${stateConfig.badgeBorder};color:${stateConfig.badgeText};font-size:12px;font-weight:700;line-height:12px;padding:8px 12px;border-radius:999px;margin-bottom:16px;">${stateConfig.badge}</div>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:0 16px;">
+                <tr>
+                  <td colspan="2" style="padding:14px 0 10px;font-size:15px;line-height:20px;color:#1e293b;font-weight:800;">Booking Summary</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;font-size:13px;color:#64748b;">Venue</td>
+                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.venueName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Sport</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.sport}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Date</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${bookingDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Time</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.startTime} - ${options.endTime}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0 14px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Amount</td>
+                  <td style="padding:12px 0 14px;border-top:1px solid #e2e8f0;font-size:16px;color:#15803d;font-weight:800;text-align:right;">₹${amountValue}</td>
+                </tr>
+                ${checkInRow}
+                ${refundSection}
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+                <tr>
+                  <td align="center">
+                    <a href="${bookingsUrl}" style="display:inline-block;padding:13px 28px;background-color:#ff6b35;color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:0.2px;">View My Bookings</a>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+                <tr>
+                  <td align="center" style="font-size:12px;line-height:18px;color:#94a3b8;">
+                    Need help? Reach us from the app support section.<br/>
+                    © ${new Date().getFullYear()} PowerMySport. All rights reserved.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  const subject =
+    options.state === "CONFIRMED"
+      ? options.recipientRole === "PLAYER"
+        ? "Your Booking is Confirmed ✨ | PowerMySport"
+        : `Booking Confirmed - ${options.sport} at ${options.venueName} | PowerMySport`
+      : options.state === "CANCELLED"
+        ? `Booking Cancelled - ${options.sport} at ${options.venueName} | PowerMySport`
+        : options.recipientRole === "PLAYER"
+          ? `Booking Received - Awaiting Confirmation | PowerMySport`
+          : `New Booking Request - Awaiting Confirmation | PowerMySport`;
+
+  await sendEmail({
+    to: options.email,
+    subject,
+    html,
+  });
+};
+
 interface PasswordResetEmailOptions {
   name: string;
   email: string;

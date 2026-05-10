@@ -29,6 +29,7 @@ import {
   markCoachVerificationForReview,
   notifyCoachVerificationPending,
   processRefund,
+  getRefundStatus,
   rejectCoachVerification,
   reviewCommunityReport,
   listCommunityReports,
@@ -287,6 +288,13 @@ router.post(
   adminMiddleware,
   requirePermission("bookings:refund"),
   processRefund,
+);
+router.get(
+  "/refunds/:bookingId/status",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  getRefundStatus,
 );
 router.post(
   "/disputes/:bookingId",
