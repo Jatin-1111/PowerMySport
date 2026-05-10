@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { adminApi } from "@/modules/admin/services/admin";
 import {
@@ -10,6 +10,7 @@ import {
   CheckCircle,
   LayoutDashboard,
   LifeBuoy,
+  Landmark,
   Menu,
   MessageSquareWarning,
   Package,
@@ -152,6 +153,7 @@ export default function AdminLayout({
         title: "Commerce",
         items: [
           { href: "/admin/bookings", label: "Bookings", icon: Calendar },
+          { href: "/admin/payouts", label: "Payouts", icon: Landmark },
           { href: "/admin/venues", label: "Venues", icon: Building2 },
           {
             href: "/admin/venues/add",

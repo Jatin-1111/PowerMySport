@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -13,13 +13,17 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import {
   Calendar,
   CreditCard,
+  BadgeIndianRupee,
   Settings,
   ShieldCheck,
   User,
   Users,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { payoutApi } from "@/modules/shared/services/payout";
+import { PayoutBanner } from "@/modules/shared/components/payout/PayoutBanner";
+import { IPayoutMethod } from "@/types";
 
 export default function CoachLayout({
   children,
@@ -33,6 +37,10 @@ export default function CoachLayout({
   const [isVerificationLocked, setIsVerificationLocked] = useState(false);
   const lastGateToastKeyRef = useRef<string | null>(null);
   const communityUrl = getCommunityAppUrl();
+  // undefined = still loading, null = no method, object = has method
+  const [coachPayoutMethod, setCoachPayoutMethod] = useState<
+    IPayoutMethod | null | undefined
+  >(undefined);
 
   useEffect(() => {
     let isMounted = true;
@@ -97,6 +105,21 @@ export default function CoachLayout({
     };
   }, [pathname, router, user?.role]);
 
+  // Silently check payout method for banner
+  const loadPayoutStatus = useCallback(async () => {
+    if (user?.role !== "COACH") return;
+    try {
+      const res = await payoutApi.getCoachPayoutMethod();
+      setCoachPayoutMethod(res.data?.payoutMethod ?? null);
+    } catch {
+      setCoachPayoutMethod(null); // show banner on error too
+    }
+  }, [user?.role]);
+
+  useEffect(() => {
+    void loadPayoutStatus();
+  }, [loadPayoutStatus]);
+
   const handleLogout = async () => {
     try {
       await authApi.logout();
@@ -112,6 +135,11 @@ export default function CoachLayout({
     { href: "/coach/profile", label: "Profile", icon: User },
     { href: "/coach/verification", label: "Verification", icon: ShieldCheck },
     { href: "/coach/billing", label: "Billing & Plan", icon: CreditCard },
+    {
+      href: "/coach/payouts",
+      label: "Payouts",
+      icon: BadgeIndianRupee,
+    },
     {
       href: "/coach/my-bookings",
       label: "My Bookings",
@@ -151,6 +179,14 @@ export default function CoachLayout({
       navItems={visibleNavItems}
       onLogout={handleLogout}
     >
+      {/* Payout banner – only on pages other than /coach/payouts */}
+      {!isVerificationLocked && pathname !== "/coach/payouts" && (
+        <PayoutBanner
+          payoutMethod={coachPayoutMethod}
+          payoutHref="/coach/payouts"
+          ctaLabel="Set Up Payout Method"
+        />
+      )}
       {children}
     </DashboardShell>
   );

@@ -1,0 +1,164 @@
+import { Request, Response } from "express";
+import { Booking } from "../models/Booking";
+import { Coach } from "../models/Coach";
+import { Venue } from "../models/Venue";
+import { User } from "../models/User";
+import mongoose from "mongoose";
+
+/**
+ * Admin: Get all pending payouts grouped by vendor
+ * GET /api/admin/payouts/pending
+ */
+export const listPendingPayouts = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    // Find all completed bookings with pending payments for coaches or venue listers
+    const bookings = await Booking.find({
+      status: "COMPLETED",
+      "payments.status": "PENDING",
+      "payments.userType": { $in: ["VENUE_LISTER", "COACH"] },
+    }).lean();
+
+    const payoutMap = new Map<string, any>();
+
+    bookings.forEach((booking) => {
+      booking.payments.forEach((payment) => {
+        if (
+          payment.status === "PENDING" &&
+          (payment.userType === "VENUE_LISTER" || payment.userType === "COACH")
+        ) {
+          const userIdStr = payment.userId.toString();
+          const key = `${userIdStr}_${payment.userType}`;
+
+          if (!payoutMap.has(key)) {
+            payoutMap.set(key, {
+              vendorId: userIdStr,
+              vendorRole: payment.userType,
+              totalPendingAmount: 0,
+              bookingIds: [],
+            });
+          }
+
+          const current = payoutMap.get(key)!;
+          current.totalPendingAmount += payment.amount;
+          current.bookingIds.push(booking._id.toString());
+        }
+      });
+    });
+
+    const pendingPayouts = Array.from(payoutMap.values());
+
+    // Populate vendor details and payout methods
+    const populatedPayouts = await Promise.all(
+      pendingPayouts.map(async (payout) => {
+        const user = await User.findById(payout.vendorId).select("name email phone").lean();
+        
+        let payoutMethod = null;
+        if (payout.vendorRole === "COACH") {
+          const coach = await Coach.findOne({ userId: payout.vendorId }).select("payoutMethod").lean();
+          if (coach && coach.payoutMethod) payoutMethod = coach.payoutMethod;
+        } else if (payout.vendorRole === "VENUE_LISTER") {
+          const venue = await Venue.findOne({ ownerId: payout.vendorId }).select("payoutMethod").lean();
+          if (venue && venue.payoutMethod) payoutMethod = venue.payoutMethod;
+        }
+
+        return {
+          ...payout,
+          vendorName: user?.name || "Unknown",
+          vendorEmail: user?.email || "Unknown",
+          vendorPhone: user?.phone || "Unknown",
+          payoutMethod,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Pending payouts retrieved",
+      data: populatedPayouts,
+    });
+  } catch (error) {
+    console.error("listPendingPayouts error:", error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to load payouts",
+    });
+  }
+};
+
+/**
+ * Admin: Mark a vendor's pending payouts as paid
+ * POST /api/admin/payouts/mark-paid
+ */
+export const markPayoutsAsPaid = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { vendorId, vendorRole, bookingIds } = req.body;
+
+    if (!vendorId || !vendorRole || !Array.isArray(bookingIds) || bookingIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: "vendorId, vendorRole, and an array of bookingIds are required",
+      });
+      return;
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const now = new Date();
+      let updatedCount = 0;
+
+      for (const bookingId of bookingIds) {
+        const result = await Booking.updateOne(
+          {
+            _id: bookingId,
+            status: "COMPLETED",
+            "payments.userId": vendorId,
+            "payments.userType": vendorRole,
+            "payments.status": "PENDING"
+          },
+          {
+            $set: {
+              "payments.$[elem].status": "PAID",
+              "payments.$[elem].paidAt": now
+            }
+          },
+          {
+            arrayFilters: [
+              { "elem.userId": vendorId, "elem.userType": vendorRole, "elem.status": "PENDING" }
+            ],
+            session
+          }
+        );
+
+        if (result.modifiedCount > 0) {
+          updatedCount++;
+        }
+      }
+
+      await session.commitTransaction();
+
+      res.status(200).json({
+        success: true,
+        message: `Successfully marked ${updatedCount} booking payments as PAID.`,
+      });
+    } catch (transactionError) {
+      await session.abortTransaction();
+      throw transactionError;
+    } finally {
+      session.endSession();
+    }
+  } catch (error) {
+    console.error("markPayoutsAsPaid error:", error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to process payout",
+    });
+  }
+};

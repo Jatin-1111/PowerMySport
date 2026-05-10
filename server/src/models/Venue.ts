@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation } from "../types";
+import { IPayoutMethod } from "./Coach";
 
 export interface VenueCoach {
   name: string;
@@ -43,6 +44,7 @@ export interface VenueDocument extends Document {
   reviewCount: number;
   hasCoaches: boolean;
   venueCoaches: VenueCoach[];
+  payoutMethod?: IPayoutMethod;
   createdAt: Date;
   updatedAt: Date;
 
@@ -313,6 +315,19 @@ const venueSchema = new Schema<VenueDocument>(
       type: Number,
       default: 0,
       min: 0,
+    },
+    payoutMethod: {
+      type: {
+        type: String,
+        enum: ["BANK_TRANSFER", "UPI"],
+      },
+      accountHolderName: { type: String, trim: true },
+      accountNumber: { type: String, trim: true },
+      ifscCode: { type: String, trim: true, uppercase: true },
+      bankName: { type: String, trim: true },
+      upiId: { type: String, trim: true },
+      addedAt: { type: Date },
+      updatedAt: { type: Date },
     },
   },
   { timestamps: true },

@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // USER & AUTH TYPES
 // ============================================
 export interface IPlayerProfile {
@@ -330,6 +330,24 @@ export interface Booking {
   splitMethod?: SplitMethod;
   createdAt: string;
   updatedAt: string;
+}
+
+// ============================================
+// PAYOUT METHOD TYPES
+// ============================================
+export type PayoutMethodType = "BANK_TRANSFER" | "UPI";
+
+export interface IPayoutMethod {
+  type: PayoutMethodType;
+  // Bank transfer fields
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  bankName?: string;
+  // UPI fields
+  upiId?: string;
+  addedAt?: string;
+  updatedAt?: string;
 }
 
 // ============================================

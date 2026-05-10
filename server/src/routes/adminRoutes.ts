@@ -9,6 +9,10 @@ import {
   updateCoachPlanAdminHandler,
 } from "../controllers/coachSubscriptionController";
 import {
+  listPendingPayouts,
+  markPayoutsAsPaid,
+} from "../controllers/adminPayoutController";
+import {
   adminLogin,
   adminLogout,
   approveCoachVerification,
@@ -302,6 +306,22 @@ router.post(
   adminMiddleware,
   requirePermission("disputes:resolve"),
   handleDispute,
+);
+
+// Payouts & Settlements
+router.get(
+  "/payouts/pending",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:view"),
+  listPendingPayouts,
+);
+router.post(
+  "/payouts/mark-paid",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"), // You could create a 'payouts:manage' permission, but bookings:refund is functionally identical for finance ops
+  markPayoutsAsPaid,
 );
 
 router.get(

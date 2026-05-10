@@ -1,4 +1,4 @@
-﻿import axiosInstance from "@/lib/api/axios";
+import axiosInstance from "@/lib/api/axios";
 import {
   ApiResponse,
   CoachPlan,
@@ -228,6 +228,17 @@ export interface AdminPhonePeRefundStatus {
   refundStatus: "PENDING" | "PROCESSED" | "REJECTED";
   refundAmount: number;
   transactions: AdminPhonePeRefundTransaction[];
+}
+
+export interface PayoutSummary {
+  vendorId: string;
+  vendorRole: "VENUE_LISTER" | "COACH";
+  totalPendingAmount: number;
+  bookingIds: string[];
+  vendorName: string;
+  vendorEmail: string;
+  vendorPhone: string;
+  payoutMethod: any | null;
 }
 
 interface PaginationResult<T> {
@@ -981,4 +992,19 @@ export const adminApi = {
     );
     return response.data;
   },
+
+  getPendingPayouts: async (): Promise<ApiResponse<PayoutSummary[]>> => {
+    const response = await axiosInstance.get("/admin/payouts/pending");
+    return response.data;
+  },
+
+  markPayoutsAsPaid: async (data: {
+    vendorId: string;
+    vendorRole: "VENUE_LISTER" | "COACH";
+    bookingIds: string[];
+  }): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.post("/admin/payouts/mark-paid", data);
+    return response.data;
+  },
 };
+

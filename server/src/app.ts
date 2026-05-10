@@ -29,6 +29,7 @@ import venueRoutes from "./routes/venueRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
 import ecommerceRoutes from "./routes/ecommerceRoutes";
 import academyOnboardingRoutes from "./routes/academyOnboardingRoutes";
+import payoutRoutes from "./routes/payoutRoutes";
 
 export const app: Express = express();
 
@@ -134,6 +135,7 @@ app.use("/api/venue-inquiries", venueInquiryRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/v1", ecommerceRoutes);
+app.use("/api/payouts", payoutRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

@@ -1,6 +1,21 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IAvailability, IOwnVenueDetails, ServiceMode } from "../types";
 
+export type PayoutMethodType = "BANK_TRANSFER" | "UPI";
+
+export interface IPayoutMethod {
+  type: PayoutMethodType;
+  // Bank transfer fields
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  bankName?: string;
+  // UPI fields
+  upiId?: string;
+  addedAt: Date;
+  updatedAt: Date;
+}
+
 export interface CoachDocument extends Document {
   id?: string;
   userId: mongoose.Types.ObjectId;
@@ -32,6 +47,7 @@ export interface CoachDocument extends Document {
   verifiedAt?: Date | null;
   verifiedBy?: mongoose.Types.ObjectId | null;
   isVerified: boolean;
+  payoutMethod?: IPayoutMethod;
   rating: number;
   reviewCount: number;
   createdAt: Date;
@@ -309,6 +325,19 @@ const coachSchema = new Schema<CoachDocument>(
     isVerified: {
       type: Boolean,
       default: false,
+    },
+    payoutMethod: {
+      type: {
+        type: String,
+        enum: ["BANK_TRANSFER", "UPI"],
+      },
+      accountHolderName: { type: String, trim: true },
+      accountNumber: { type: String, trim: true },
+      ifscCode: { type: String, trim: true, uppercase: true },
+      bankName: { type: String, trim: true },
+      upiId: { type: String, trim: true },
+      addedAt: { type: Date },
+      updatedAt: { type: Date },
     },
   },
   {
