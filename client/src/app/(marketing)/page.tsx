@@ -11,10 +11,12 @@ import {
 } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { Testimonials } from "@/modules/marketing/components/marketing/Testimonials";
+import { Button } from "@/modules/shared/ui/Button";
 import {
   Building2,
   Check,
   GraduationCap,
+  TicketPercent,
   Trophy,
   User as UserIcon,
   Users,
@@ -100,6 +102,12 @@ export default function HomePage() {
 
   // Features data
   const features = [
+    {
+      title: "Zero commission launch",
+      description:
+        "0% platform commission for a limited time. Pay only the venue or coach rate plus taxes.",
+      icon: <TicketPercent className="h-10 w-10" />,
+    },
     {
       title: "Book Premium Venues",
       description:
@@ -208,8 +216,8 @@ export default function HomePage() {
       <Hero
         variant="home"
         title="One Stop Solution For All Your Sporting Needs"
-        subtitle="India's Premier Sporting Platform"
-        description="Discover venues, book trusted coaches, and manage your entire sporting routine from one streamlined platform."
+        subtitle="Zero Commission Launch"
+        description="Book venues and coaches with 0% platform commission for a limited time. Discover, book, and manage your entire sporting routine from one streamlined platform."
         primaryCTA={{
           label: user ? "Go to Dashboard" : "Start Booking Now",
           href: getDashboardLink(),
@@ -227,6 +235,83 @@ export default function HomePage() {
         }
         gradient
       />
+
+      <section className="relative py-10 sm:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-3xl border border-amber-100/80 bg-[linear-gradient(120deg,#fff7e7_0%,#fffdf4_35%,#f3f9ff_100%)] p-6 shadow-sm sm:p-8">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-amber-200/40 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 left-10 h-44 w-44 rounded-full bg-sky-200/35 blur-3xl" />
+            <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Limited-time zero commission
+                </p>
+                <h2 className="font-title mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+                  0% platform commission on every booking
+                </h2>
+                <p className="mt-3 text-base text-slate-700 sm:text-lg">
+                  Pay only the venue or coach rate plus taxes. No extra platform
+                  fees added during our launch window.
+                </p>
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <Link href={getDashboardLink()} className="w-full sm:w-auto">
+                    <Button variant="primary" size="lg" className="rounded-xl">
+                      Start booking now
+                    </Button>
+                  </Link>
+                  <Link href="/venues" className="w-full sm:w-auto">
+                    <Button variant="outline" size="lg" className="rounded-xl">
+                      Browse venues
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Platform fee
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-power-orange">
+                    ₹0
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Automatically applied
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Transparent totals
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">100%</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Venue + coach rates
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Instant confirmation
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">Live</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Real-time availability
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Trust & safety
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">
+                    Secure
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Protected payments
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="relative py-12 sm:py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

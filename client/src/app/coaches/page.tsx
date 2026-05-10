@@ -1290,26 +1290,6 @@ function CoachesPageContent() {
                             {/* Elegant gradient overlay for perfect legibility */}
                             <div className="absolute inset-0 bg-linear-to-t from-slate-900/90 via-slate-900/30 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-95" />
 
-                            {/* Top Badges */}
-                            <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-2">
-                              <div className="flex flex-col items-start gap-2">
-                                {venueImage && (
-                                  <span className="inline-flex items-center rounded-lg border border-white/20 bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
-                                    Venue Photo
-                                  </span>
-                                )}
-                                <span className="inline-flex items-center rounded-lg bg-turf-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                                  {primarySport}
-                                </span>
-                              </div>
-                              {badge.label === "Verified" && (
-                                <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-400/30 bg-blue-500/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
-                                  <Award size={12} className="text-white" />
-                                  Verified
-                                </span>
-                              )}
-                            </div>
-
                             {/* Coach Intro - Bottom anchored inside image */}
                             <div className="absolute bottom-0 left-0 right-0 p-5">
                               <h3 className="line-clamp-1 text-2xl font-extrabold tracking-tight text-white drop-shadow-md">
@@ -1338,6 +1318,32 @@ function CoachesPageContent() {
                       })()}
 
                       <div className="flex flex-1 flex-col p-5">
+                        {(() => {
+                          const hasVenueImage = Boolean(
+                            getCoachVenueImage(coach),
+                          );
+
+                          return (
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {hasVenueImage && (
+                                  <span className="inline-flex items-center rounded-lg border border-slate-200/80 bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                                    Venue Photo
+                                  </span>
+                                )}
+                                <span className="inline-flex items-center rounded-lg bg-turf-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                  {primarySport}
+                                </span>
+                              </div>
+                              {badge.label === "Verified" && (
+                                <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200/70 bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">
+                                  <Award size={12} className="text-blue-500" />
+                                  Verified
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         {/* Bio & Extra Sports */}
                         <div className="mb-5">
                           <p className="line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">

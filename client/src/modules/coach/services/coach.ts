@@ -83,22 +83,6 @@ export const coachApi = {
     return response.data;
   },
 
-  // Create coach profile
-  createProfile: async (data: {
-    bio: string;
-    certifications: string[];
-    sports: string[];
-    hourlyRate: number;
-    serviceMode: "OWN_VENUE" | "FREELANCE" | "HYBRID";
-    venueId?: string;
-    serviceRadiusKm?: number;
-    travelBufferTime?: number;
-    availability: IAvailability[];
-  }): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post("/coaches", data);
-    return response.data;
-  },
-
   // Get current user's coach profile
   getMyProfile: async (): Promise<ApiResponse<Coach>> => {
     const response = await axiosInstance.get("/coaches/my-profile");
@@ -120,28 +104,6 @@ export const coachApi = {
     return response.data;
   },
 
-  // Delete coach profile
-  deleteProfile: async (coachId: string): Promise<ApiResponse<null>> => {
-    const response = await axiosInstance.delete(`/coaches/${coachId}`);
-    return response.data;
-  },
-
-  // Check coach availability
-  checkAvailability: async (
-    coachId: string,
-    date: string,
-    startTime: string,
-    endTime: string,
-  ): Promise<ApiResponse<{ available: boolean }>> => {
-    const response = await axiosInstance.get(
-      `/coaches/availability/${coachId}`,
-      {
-        params: { date, startTime, endTime },
-      },
-    );
-    return response.data;
-  },
-
   // Update current coach availability by sport
   updateMyAvailability: async (data: {
     availabilityBySport: Record<string, IAvailability[]>;
@@ -150,14 +112,6 @@ export const coachApi = {
       "/coaches/my-profile/availability",
       data,
     );
-    return response.data;
-  },
-
-  // Submit verification documents
-  submitVerification: async (payload: {
-    documents: CoachVerificationDocument[];
-  }): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post("/coaches/verification", payload);
     return response.data;
   },
 

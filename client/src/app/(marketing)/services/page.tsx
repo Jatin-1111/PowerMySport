@@ -49,7 +49,7 @@ export default function ServicesPage() {
     {
       title: "Secure Integrated Payments",
       description:
-        "Pay securely with transparent totals, promo support, and group booking payment options (single payer or split). Get instant booking confirmations and status updates.",
+        "Pay securely with transparent totals, promo support, and group booking payment options (single payer or split). Limited-time zero platform commission applies automatically.",
       icon: FeatureIcons.CreditCard,
     },
   ];
@@ -101,7 +101,7 @@ export default function ServicesPage() {
     {
       title: "Automated Revenue Tracking",
       description:
-        "Monitor earnings in real-time with detailed reports. Get paid automatically after each coaching session with transparent commission structures.",
+        "Monitor earnings in real-time with detailed reports. Get paid automatically after each coaching session with transparent payout tracking and launch-period zero commission.",
     },
   ];
 

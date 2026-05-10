@@ -626,7 +626,14 @@ export const getCoachAvailability = async (
           targetDate.getDate() + 1,
         ),
       },
-      status: { $in: ["PENDING_PAYMENT", "CONFIRMED", "IN_PROGRESS"] },
+      status: {
+        $in: [
+          "PENDING_CONFIRMATION",
+          "PENDING_INVITES",
+          "CONFIRMED",
+          "IN_PROGRESS",
+        ],
+      },
     }).select("startTime endTime");
 
     const bookedSlots = activeBookings.map((booking) => ({

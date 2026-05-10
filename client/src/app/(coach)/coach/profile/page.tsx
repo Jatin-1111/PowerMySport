@@ -4,11 +4,13 @@ import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Coach, IAvailability, ServiceMode, User } from "@/types";
+import { Booking, Coach, IAvailability, ServiceMode, User } from "@/types";
+import { formatDate, formatTime } from "@/utils/format";
 import {
   AlertCircle,
   CheckCircle,
@@ -120,6 +122,12 @@ export default function CoachProfilePage() {
     serviceRadiusKmInput: "10",
     travelBufferTimeInput: "30",
   });
+  const [checkInCode, setCheckInCode] = useState("");
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkInMessage, setCheckInMessage] = useState<string | null>(null);
+  const [checkedInBooking, setCheckedInBooking] = useState<Booking | null>(
+    null,
+  );
 
   useEffect(() => {
     loadProfile();
@@ -196,6 +204,42 @@ export default function CoachProfilePage() {
       }
     } catch (error) {
       console.error("Failed to load user:", error);
+    }
+  };
+
+  const handleCoachCheckIn = async () => {
+    const normalizedCode = checkInCode.trim().toUpperCase();
+    if (!normalizedCode) {
+      setCheckInMessage("Please enter a check-in code.");
+      return;
+    }
+
+    if (normalizedCode.length !== 8) {
+      setCheckInMessage("Enter the full 8-character check-in code.");
+      return;
+    }
+
+    try {
+      setCheckInLoading(true);
+      setCheckInMessage(null);
+      setCheckedInBooking(null);
+
+      const response = await bookingApi.checkInBookingByCode(normalizedCode);
+
+      if (response.success && response.data) {
+        setCheckedInBooking(response.data);
+        setCheckInMessage("Check-in confirmed. Session is now IN_PROGRESS.");
+        setCheckInCode("");
+        return;
+      }
+
+      setCheckInMessage(response.message || "Unable to verify check-in code.");
+    } catch (error: any) {
+      setCheckInMessage(
+        error?.response?.data?.message || "Unable to verify check-in code.",
+      );
+    } finally {
+      setCheckInLoading(false);
     }
   };
 
@@ -1727,6 +1771,75 @@ export default function CoachProfilePage() {
           </div>
 
           <div className="space-y-6 xl:col-span-4 xl:sticky xl:top-6 xl:self-start">
+            <Card className="border border-slate-200 bg-white shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                Session Check-in
+              </h3>
+              <p className="text-xs text-slate-500 mb-3">
+                Enter the player&#39;s 8-character code to start the session.
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={checkInCode}
+                  maxLength={8}
+                  onChange={(event) => {
+                    const nextValue = event.target.value
+                      .toUpperCase()
+                      .replace(/[^A-Z0-9]/g, "")
+                      .slice(0, 8);
+                    setCheckInCode(nextValue);
+                  }}
+                  placeholder="Enter 8-character code"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase font-mono tracking-[0.35em] text-slate-900 focus:border-power-orange focus:outline-none"
+                  autoComplete="one-time-code"
+                />
+                <Button
+                  type="button"
+                  onClick={handleCoachCheckIn}
+                  disabled={checkInLoading}
+                  className="w-full"
+                >
+                  {checkInLoading ? "Verifying..." : "Confirm Check-in"}
+                </Button>
+              </div>
+              {checkInMessage && (
+                <div
+                  className={`mt-3 rounded-lg border px-3 py-2 text-xs font-medium ${
+                    checkedInBooking
+                      ? "border-green-200 bg-green-50 text-green-700"
+                      : "border-amber-200 bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  {checkInMessage}
+                </div>
+              )}
+              {checkedInBooking && (
+                <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+                  <p className="font-semibold">Session started</p>
+                  <p className="mt-1">
+                    {checkedInBooking.sport} -{" "}
+                    {formatDate(checkedInBooking.date)}
+                  </p>
+                  <p>
+                    {formatTime(checkedInBooking.startTime)} -{" "}
+                    {formatTime(checkedInBooking.endTime)}
+                  </p>
+                  {checkedInBooking.participantName && (
+                    <p className="mt-1">
+                      Player: {checkedInBooking.participantName}
+                    </p>
+                  )}
+                </div>
+              )}
+              <Link
+                href="/coach/my-bookings"
+                className="mt-3 inline-flex text-xs font-semibold text-power-orange hover:text-orange-600"
+              >
+                View upcoming bookings
+              </Link>
+            </Card>
+
             <Card className="border border-slate-200 bg-white shadow-sm">
               <h3 className="text-lg font-semibold text-slate-900 mb-3">
                 Verification Status

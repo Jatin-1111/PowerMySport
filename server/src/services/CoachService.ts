@@ -502,14 +502,21 @@ export const checkCoachAvailability = async (
     }
 
     // Check for existing bookings
-    // Only active bookings block slots: PENDING_PAYMENT, CONFIRMED, IN_PROGRESS
+    // Only active bookings block slots: PENDING_CONFIRMATION, PENDING_INVITES, CONFIRMED, IN_PROGRESS
     const existingBooking = await Booking.findOne({
       coachId,
       date: {
         $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
         $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
       },
-      status: { $in: ["PENDING_PAYMENT", "CONFIRMED", "IN_PROGRESS"] },
+      status: {
+        $in: [
+          "PENDING_CONFIRMATION",
+          "PENDING_INVITES",
+          "CONFIRMED",
+          "IN_PROGRESS",
+        ],
+      },
       $or: [
         // Requested slot starts during existing booking
         { startTime: { $lte: startTime }, endTime: { $gt: startTime } },

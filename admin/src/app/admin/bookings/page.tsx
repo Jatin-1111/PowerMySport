@@ -18,7 +18,8 @@ interface PaginationData {
 
 type BookingActionType = "REFUND" | "DISPUTE";
 type BookingTabType = "ALL" | "VENUE" | "COACH";
-const PAYMENT_ACTIONS_ENABLED = false;
+const REFUND_ACTIONS_ENABLED = true;
+const DISPUTE_ACTIONS_ENABLED = false;
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -34,9 +35,7 @@ export default function AdminBookingsPage() {
   const [actionBookingId, setActionBookingId] = useState<string | null>(null);
   const [actionType, setActionType] = useState<BookingActionType | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [refundType, setRefundType] = useState<
-    "FULL" | "PARTIAL" | "VENUE_ONLY" | "COACH_ONLY"
-  >("FULL");
+  const [refundType, setRefundType] = useState<"FULL" | "PARTIAL">("FULL");
   const [disputeType, setDisputeType] = useState<
     "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER"
   >("OTHER");
@@ -78,8 +77,13 @@ export default function AdminBookingsPage() {
   }, [currentPage]);
 
   const openAction = (booking: Booking, type: BookingActionType) => {
-    if (!PAYMENT_ACTIONS_ENABLED) {
-      toast.error("Refund and dispute actions are not available yet.");
+    if (type === "REFUND" && !REFUND_ACTIONS_ENABLED) {
+      toast.error("Refund actions are not available yet.");
+      return;
+    }
+
+    if (type === "DISPUTE" && !DISPUTE_ACTIONS_ENABLED) {
+      toast.error("Dispute actions are not available yet.");
       return;
     }
 
@@ -267,13 +271,11 @@ export default function AdminBookingsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {!PAYMENT_ACTIONS_ENABLED && (
-            <Card className="bg-white">
-              <p className="text-sm text-slate-700">
-                Refund and dispute processing will be enabled after payment
-                gateway integration.
-              </p>
-            </Card>
+          {!DISPUTE_ACTIONS_ENABLED && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+              Dispute processing will be enabled after payment gateway
+              integration.
+            </div>
           )}
 
           <div className="space-y-4">
@@ -290,15 +292,25 @@ export default function AdminBookingsPage() {
                       ? booking.venueId?.name
                       : undefined) ||
                     "Unknown venue";
-                  const populatedCoach = booking.coach as
-                    | { userId?: string | { name?: string } }
-                    | undefined;
+                  const coachRecord =
+                    typeof booking.coachId === "object" && booking.coachId
+                      ? booking.coachId
+                      : typeof booking.coach === "object"
+                        ? booking.coach
+                        : undefined;
+                  const coachUser =
+                    coachRecord &&
+                    typeof (coachRecord as any).userId === "object"
+                      ? ((coachRecord as any).userId as {
+                          name?: string;
+                          email?: string;
+                        })
+                      : undefined;
                   const coachName =
-                    typeof booking.coachId === "object"
-                      ? (booking.coachId as any)?.name || "Unknown coach"
-                      : typeof populatedCoach?.userId === "object"
-                        ? populatedCoach.userId?.name || "Unknown coach"
-                        : "Unknown coach";
+                    coachUser?.name ||
+                    coachUser?.email ||
+                    (coachRecord as any)?.name ||
+                    "Unknown coach";
                   const playerName = booking.playerName || "Unknown player";
 
                   return (
@@ -372,14 +384,14 @@ export default function AdminBookingsPage() {
                         <div className="mt-3 grid grid-cols-2 gap-2 md:flex md:flex-col">
                           <button
                             onClick={() => openAction(booking, "REFUND")}
-                            disabled={!PAYMENT_ACTIONS_ENABLED}
+                            disabled={!REFUND_ACTIONS_ENABLED}
                             className="rounded-lg border border-orange-300 px-3 py-1.5 text-xs font-semibold text-orange-700 hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Refund
                           </button>
                           <button
                             onClick={() => openAction(booking, "DISPUTE")}
-                            disabled={!PAYMENT_ACTIONS_ENABLED}
+                            disabled={!DISPUTE_ACTIONS_ENABLED}
                             className="rounded-lg border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Dispute
@@ -403,19 +415,13 @@ export default function AdminBookingsPage() {
                         value={refundType}
                         onChange={(event) =>
                           setRefundType(
-                            event.target.value as
-                              | "FULL"
-                              | "PARTIAL"
-                              | "VENUE_ONLY"
-                              | "COACH_ONLY",
+                            event.target.value as "FULL" | "PARTIAL",
                           )
                         }
                         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                       >
                         <option value="FULL">FULL</option>
                         <option value="PARTIAL">PARTIAL</option>
-                        <option value="VENUE_ONLY">VENUE_ONLY</option>
-                        <option value="COACH_ONLY">COACH_ONLY</option>
                       </select>
                     ) : (
                       <div className="grid gap-3 md:grid-cols-2">

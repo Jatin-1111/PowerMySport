@@ -6,6 +6,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Booking, Venue } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
+import { toast } from "@/lib/toast";
 import {
   Calendar,
   ChevronLeft,
@@ -26,6 +27,10 @@ const PAGE_SIZE = 10;
 
 const getStatusBadgeClass = (status: Booking["status"]) => {
   switch (status) {
+    case "PENDING_CONFIRMATION":
+      return "bg-amber-100 text-amber-700 border border-amber-300";
+    case "PENDING_INVITES":
+      return "bg-blue-100 text-blue-700 border border-blue-300";
     case "CONFIRMED":
       return "bg-green-100 text-green-700 border border-green-300";
     case "IN_PROGRESS":
@@ -47,6 +52,8 @@ export default function CoachBookingsPage() {
   const [allCoachBookings, setAllCoachBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -102,6 +109,57 @@ export default function CoachBookingsPage() {
     };
   }, [allCoachBookings]);
 
+  const handleApproveBooking = async (bookingId: string) => {
+    try {
+      setApprovingId(bookingId);
+      const response = await bookingApi.confirmBookingByProvider(bookingId);
+      const confirmedStatus = response.data?.status;
+      if (response.success && confirmedStatus) {
+        setAllCoachBookings((prev) =>
+          prev.map((booking) =>
+            booking.id === bookingId
+              ? { ...booking, status: confirmedStatus }
+              : booking,
+          ),
+        );
+        toast.success("Booking confirmed.");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Unable to confirm booking.",
+      );
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleRejectBooking = async (bookingId: string) => {
+    try {
+      setRejectingId(bookingId);
+      const response = await bookingApi.rejectBookingByProvider(
+        bookingId,
+        "Rejected by coach",
+      );
+      const rejectedBooking = response.data?.booking;
+      if (response.success && rejectedBooking) {
+        setAllCoachBookings((prev) =>
+          prev.map((booking) =>
+            booking.id === bookingId
+              ? { ...booking, status: rejectedBooking.status }
+              : booking,
+          ),
+        );
+        toast.success("Booking rejected.");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Unable to reject booking.",
+      );
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-center py-12">Loading bookings...</div>;
   }
@@ -135,164 +193,197 @@ export default function CoachBookingsPage() {
         <div className="space-y-6">
           <StaggerContainer className="grid gap-4 md:grid-cols-4">
             <StaggerItem className="h-full">
-            <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-              <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Total Bookings</p>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
-            </Card>
+              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
+                  Total Bookings
+                </p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white">
+                  {stats.total}
+                </p>
+              </Card>
             </StaggerItem>
             <StaggerItem className="h-full">
-            <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-              <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Confirmed</p>
-              <p className="text-3xl font-bold text-green-600">
-                {stats.confirmed}
-              </p>
-            </Card>
+              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
+                  Confirmed
+                </p>
+                <p className="text-3xl font-bold text-green-600">
+                  {stats.confirmed}
+                </p>
+              </Card>
             </StaggerItem>
             <StaggerItem className="h-full">
-            <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-              <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Completed</p>
-              <p className="text-3xl font-bold text-emerald-600">
-                {stats.completed}
-              </p>
-            </Card>
+              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
+                  Completed
+                </p>
+                <p className="text-3xl font-bold text-emerald-600">
+                  {stats.completed}
+                </p>
+              </Card>
             </StaggerItem>
             <StaggerItem className="h-full">
-            <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-              <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Tracked Earnings</p>
-              <p className="text-3xl font-bold text-power-orange">
-                ₹{stats.totalEarnings}
-              </p>
-            </Card>
+              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
+                  Tracked Earnings
+                </p>
+                <p className="text-3xl font-bold text-power-orange">
+                  ₹{stats.totalEarnings}
+                </p>
+              </Card>
             </StaggerItem>
           </StaggerContainer>
 
           <StaggerContainer className="space-y-4">
             {paginatedBookings.map((booking) => (
               <StaggerItem key={booking.id}>
-              <Card
-                className="glass-panel hover:shadow-lg transition-all"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex-1">
-                    <div className="mb-3 flex flex-wrap items-center gap-3">
-                      <h3 className="text-lg font-semibold text-slate-900">
-                        Session #{booking.id.slice(-6)}
-                      </h3>
-                      <span
-                        className={`inline-block rounded px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
-                          booking.status,
-                        )}`}
-                      >
-                        {formatStatusLabel(booking.status)}
-                      </span>
-                    </div>
+                <Card className="glass-panel hover:shadow-lg transition-all">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1">
+                      <div className="mb-3 flex flex-wrap items-center gap-3">
+                        <h3 className="text-lg font-semibold text-slate-900">
+                          Session #{booking.id.slice(-6)}
+                        </h3>
+                        <span
+                          className={`inline-block rounded px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
+                            booking.status,
+                          )}`}
+                        >
+                          {formatStatusLabel(booking.status)}
+                        </span>
+                      </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <p className="mb-1 text-sm text-slate-600">
-                          Date & Time
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <p className="mb-1 text-sm text-slate-600">
+                            Date & Time
+                          </p>
+                          <p className="flex items-center gap-2 font-semibold text-slate-900">
+                            <Calendar className="h-4 w-4 text-slate-500" />
+                            {formatDate(booking.date)}
+                          </p>
+                          <p className="mt-1 flex items-center gap-2 text-sm text-slate-700">
+                            <Clock className="h-4 w-4 text-slate-400" />
+                            {formatTime(booking.startTime)} -{" "}
+                            {formatTime(booking.endTime)}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="mb-1 text-sm text-slate-600">Venue</p>
+                          {typeof booking.venueId === "object" &&
+                          booking.venueId !== null ? (
+                            <>
+                              <Link
+                                href={`/venues/${(booking.venueId as Venue).id || (booking.venueId as Venue)._id}`}
+                                className="inline-flex items-center gap-2 font-semibold text-slate-900 transition-colors hover:text-power-orange"
+                              >
+                                <MapPin className="h-4 w-4 text-slate-400" />
+                                {(booking.venueId as Venue).name || "Venue"}
+                              </Link>
+                              {(booking.venueId as Venue).address && (
+                                <p className="mt-1 text-sm text-slate-600">
+                                  {(booking.venueId as Venue).address}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <p className="font-semibold text-slate-900">
+                              Venue ID: {String(booking.venueId || "N/A")}
+                            </p>
+                          )}
+                          {booking.sport && (
+                            <p className="mt-1 text-sm text-slate-600">
+                              Sport:{" "}
+                              <span className="font-medium">
+                                {booking.sport}
+                              </span>
+                            </p>
+                          )}
+                          {booking.participantName && (
+                            <p className="mt-1 text-sm text-slate-600">
+                              Participant:{" "}
+                              <span className="font-medium">
+                                {booking.participantName}
+                              </span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <p className="mb-2 text-sm font-semibold text-slate-900">
+                          Session Value
                         </p>
-                        <p className="flex items-center gap-2 font-semibold text-slate-900">
-                          <Calendar className="h-4 w-4 text-slate-500" />
-                          {formatDate(booking.date)}
-                        </p>
-                        <p className="mt-1 flex items-center gap-2 text-sm text-slate-700">
-                          <Clock className="h-4 w-4 text-slate-400" />
-                          {formatTime(booking.startTime)} -{" "}
-                          {formatTime(booking.endTime)}
+                        <p className="flex items-center gap-1 text-2xl font-bold text-power-orange">
+                          <IndianRupee className="h-5 w-5" />
+                          {booking.totalAmount}
                         </p>
                       </div>
 
-                      <div>
-                        <p className="mb-1 text-sm text-slate-600">Venue</p>
-                        {typeof booking.venueId === "object" &&
-                        booking.venueId !== null ? (
-                          <>
-                            <Link
-                              href={`/venues/${(booking.venueId as Venue).id || (booking.venueId as Venue)._id}`}
-                              className="inline-flex items-center gap-2 font-semibold text-slate-900 transition-colors hover:text-power-orange"
-                            >
-                              <MapPin className="h-4 w-4 text-slate-400" />
-                              {(booking.venueId as Venue).name || "Venue"}
-                            </Link>
-                            {(booking.venueId as Venue).address && (
-                              <p className="mt-1 text-sm text-slate-600">
-                                {(booking.venueId as Venue).address}
-                              </p>
-                            )}
-                          </>
-                        ) : (
-                          <p className="font-semibold text-slate-900">
-                            Venue ID: {String(booking.venueId || "N/A")}
-                          </p>
-                        )}
-                        {booking.sport && (
-                          <p className="mt-1 text-sm text-slate-600">
-                            Sport:{" "}
-                            <span className="font-medium">{booking.sport}</span>
-                          </p>
-                        )}
-                        {booking.participantName && (
-                          <p className="mt-1 text-sm text-slate-600">
-                            Participant:{" "}
-                            <span className="font-medium">
-                              {booking.participantName}
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <p className="mb-2 text-sm font-semibold text-slate-900">
-                        Session Value
-                      </p>
-                      <p className="flex items-center gap-1 text-2xl font-bold text-power-orange">
-                        <IndianRupee className="h-5 w-5" />
-                        {booking.totalAmount}
-                      </p>
+                      {booking.status === "PENDING_CONFIRMATION" && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Button
+                            variant="primary"
+                            onClick={() => handleApproveBooking(booking.id)}
+                            disabled={approvingId === booking.id}
+                          >
+                            {approvingId === booking.id
+                              ? "Confirming..."
+                              : "Confirm booking"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleRejectBooking(booking.id)}
+                            disabled={rejectingId === booking.id}
+                          >
+                            {rejectingId === booking.id
+                              ? "Rejecting..."
+                              : "Reject"}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
               </StaggerItem>
             ))}
           </StaggerContainer>
 
           {totalPages > 1 && (
             <SlideUp delay={0.2} yOffset={10}>
-            <Card className="glass-panel">
-              <div className="flex items-center justify-between gap-4">
-                <div className="text-sm text-slate-600">
-                  Page {currentPage} of {totalPages} • {allCoachBookings.length}{" "}
-                  bookings
+              <Card className="glass-panel">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="text-sm text-slate-600">
+                    Page {currentPage} of {totalPages} •{" "}
+                    {allCoachBookings.length} bookings
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.max(1, page - 1))
+                      }
+                      disabled={currentPage === 1 || isLoading}
+                      className="flex items-center gap-2"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.min(totalPages, page + 1))
+                      }
+                      disabled={currentPage === totalPages || isLoading}
+                      className="flex items-center gap-2"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      setCurrentPage((page) => Math.max(1, page - 1))
-                    }
-                    disabled={currentPage === 1 || isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      setCurrentPage((page) => Math.min(totalPages, page + 1))
-                    }
-                    disabled={currentPage === totalPages || isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
+              </Card>
             </SlideUp>
           )}
         </div>

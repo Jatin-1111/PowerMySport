@@ -135,7 +135,14 @@ export interface CoachVerificationDocument {
 export interface Coach {
   _id?: string;
   id: string;
-  userId: string;
+  userId:
+    | string
+    | {
+        _id?: string;
+        id?: string;
+        name?: string;
+        email?: string;
+      };
   bio: string;
   certifications: string[];
   sports: string[];

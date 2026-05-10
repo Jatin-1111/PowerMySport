@@ -538,7 +538,7 @@ export const adminApi = {
   processRefund: async (
     bookingId: string,
     data: {
-      refundType: "FULL" | "PARTIAL" | "VENUE_ONLY" | "COACH_ONLY";
+      refundType: "FULL" | "PARTIAL";
       reason: string;
     },
   ): Promise<ApiResponse<unknown>> => {

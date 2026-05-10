@@ -23,6 +23,8 @@ import { calculateGroupPaymentSplits } from "../utils/payment";
 import { generateHourlySlots } from "../utils/booking";
 import { NotificationService } from "./NotificationService";
 import { ScheduledNotificationService } from "./ScheduledNotificationService";
+import { BookingPaymentTransaction } from "../models/BookingPayment";
+import { initiatePhonePeRefund } from "./PhonePeService";
 
 /**
  * Booking State Machine:
@@ -67,6 +69,8 @@ const CHECK_IN_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const MAX_TRANSACTION_RETRIES = 3;
 const COACH_SUBSCRIPTIONS_ENFORCE_BOOKING =
   process.env.COACH_SUBSCRIPTIONS_ENFORCE_BOOKING === "true";
+const SERVICE_FEE_RATE = Number(process.env.SERVICE_FEE_RATE ?? 0);
+const TAX_RATE = Number(process.env.TAX_RATE ?? 0.05);
 
 interface BookingCreatePayload {
   userId: string;
@@ -185,7 +189,14 @@ const hasConflictingVenueBooking = async (
       $gte: start,
       $lt: end,
     },
-    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+      ],
+    },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
       { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
@@ -215,7 +226,14 @@ const hasConflictingCoachBooking = async (
       $gte: start,
       $lt: end,
     },
-    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+      ],
+    },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
       { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
@@ -329,9 +347,9 @@ const createBookingAtomically = async (
           ...(payload.discountAmount
             ? { discountAmount: payload.discountAmount }
             : {}),
-          status: "CONFIRMED",
+          status: "PENDING_CONFIRMATION",
           checkInCode: payload.checkInCode,
-          // No expiration for confirmed bookings - they're already paid/confirmed
+          // Awaiting provider confirmation before booking is confirmed
           participantName: payload.participantName,
           participantId: payload.participantId,
           ...(payload.participantAge !== undefined
@@ -758,8 +776,8 @@ export const initiateBooking = async (
     }
 
     const subtotal = venuePrice + coachPrice;
-    const serviceFee = Math.round(subtotal * 0.02);
-    const taxAmount = Math.round(subtotal * 0.05);
+    const serviceFee = Math.round(subtotal * SERVICE_FEE_RATE);
+    const taxAmount = serviceFee > 0 ? Math.round(serviceFee * TAX_RATE) : 0;
     let discountAmount = 0;
     let validPromoCode: string | undefined = undefined;
 
@@ -834,9 +852,9 @@ export const initiateBooking = async (
             ...(bookingPayload.discountAmount
               ? { discountAmount: bookingPayload.discountAmount }
               : {}),
-            status: "CONFIRMED",
+            status: "PENDING_CONFIRMATION",
             checkInCode: bookingPayload.checkInCode,
-            // No expiration for confirmed bookings - they're already paid/confirmed
+            // Awaiting provider confirmation before booking is confirmed
             participantName: bookingPayload.participantName,
             participantId: bookingPayload.participantId,
             ...(bookingPayload.participantAge !== undefined
@@ -911,7 +929,16 @@ export const getVenueBookings = async (
 }> => {
   const query = {
     venueId,
-    status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "NO_SHOW",
+      ],
+    },
   };
   const skip = (page - 1) * limit;
 
@@ -944,7 +971,14 @@ export const getVenueBookingsForDate = async (
       $gte: startOfDay,
       $lte: endOfDay,
     },
-    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+      ],
+    },
   }).select("startTime endTime");
 };
 
@@ -967,7 +1001,16 @@ export const getVenueListerBookings = async (
 
   const query = {
     venueId: { $in: venueIds },
-    status: { $in: ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"] },
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "NO_SHOW",
+      ],
+    },
   };
   const skip = (page - 1) * limit;
 
@@ -980,6 +1023,202 @@ export const getVenueListerBookings = async (
     .limit(limit);
 
   return { bookings, total, page, totalPages: Math.ceil(total / limit) };
+};
+
+/**
+ * Get all bookings for a coach (by coach userId)
+ */
+export const getCoachBookings = async (
+  userId: string,
+  page: number = 1,
+  limit: number = 20,
+): Promise<{
+  bookings: BookingDocument[];
+  total: number;
+  page: number;
+  totalPages: number;
+}> => {
+  const coach = await Coach.findOne({ userId }).select("_id");
+  if (!coach) {
+    throw new Error("Coach profile not found");
+  }
+
+  const query = {
+    coachId: coach._id,
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "NO_SHOW",
+      ],
+    },
+  };
+  const skip = (page - 1) * limit;
+
+  const total = await Booking.countDocuments(query);
+  const bookings = await Booking.find(query)
+    .populate("userId venueId coachId")
+    .sort({ date: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  return { bookings, total, page, totalPages: Math.ceil(total / limit) };
+};
+
+const toPaise = (amount: number): number => Math.round(amount * 100);
+
+const getBookingParticipantIds = (booking: BookingDocument): string[] => {
+  const acceptedParticipants = booking.participants
+    .filter((participant) => participant.status === "ACCEPTED")
+    .map((participant) => participant.userId.toString());
+
+  return Array.from(
+    new Set([booking.organizerId.toString(), ...acceptedParticipants]),
+  );
+};
+
+const buildRefundTargets = (
+  booking: BookingDocument,
+  refundPercentage: number,
+): Array<{ userId: string; amountPaise: number }> => {
+  const percent = Math.max(0, Math.min(100, refundPercentage));
+
+  if (booking.payments && booking.payments.length > 0) {
+    const playerPayments = booking.payments.filter(
+      (payment) => payment.userType === "PLAYER" && payment.status === "PAID",
+    );
+
+    if (playerPayments.length > 0) {
+      return playerPayments.map((payment) => ({
+        userId: payment.userId.toString(),
+        amountPaise: toPaise((payment.amount * percent) / 100),
+      }));
+    }
+  }
+
+  return [
+    {
+      userId: booking.userId.toString(),
+      amountPaise: toPaise((booking.totalAmount * percent) / 100),
+    },
+  ];
+};
+
+const initiateBookingRefunds = async (
+  booking: BookingDocument,
+  refundPercentage: number,
+  reason: string,
+): Promise<{
+  refundStatus: "PENDING" | "PROCESSED" | "REJECTED";
+  refundAmount: number;
+}> => {
+  const targets = buildRefundTargets(booking, refundPercentage).filter(
+    (target) => target.amountPaise >= 100,
+  );
+
+  if (targets.length === 0) {
+    throw new Error("No refundable payment amount found for this booking");
+  }
+
+  let hasFailure = false;
+  let hasPending = false;
+  let totalRefundPaise = 0;
+
+  for (const target of targets) {
+    const transaction = await BookingPaymentTransaction.findOne({
+      bookingId: booking._id,
+      userId: target.userId,
+      status: "COMPLETED",
+    }).sort({ createdAt: -1 });
+
+    if (!transaction) {
+      hasFailure = true;
+      continue;
+    }
+
+    if (transaction.refundState) {
+      hasPending = true;
+      continue;
+    }
+
+    const refundMerchantId = `rf_${booking._id.toString()}_${target.userId}_${Date.now()}_${randomBytes(3).toString("hex")}`;
+    const refundResponse = await initiatePhonePeRefund({
+      merchantRefundId: refundMerchantId,
+      originalMerchantOrderId: transaction.merchantOrderId,
+      amount: target.amountPaise,
+    });
+    const refundState = refundResponse.state || "PENDING";
+
+    transaction.refundMerchantId = refundMerchantId;
+    transaction.refundState = refundState;
+    transaction.refundAmount = target.amountPaise;
+    transaction.refundResponse = refundResponse.raw;
+    await transaction.save();
+
+    totalRefundPaise += target.amountPaise;
+
+    if (refundState === "FAILED") {
+      hasFailure = true;
+    } else if (refundState !== "COMPLETED") {
+      hasPending = true;
+    }
+  }
+
+  if (totalRefundPaise === 0) {
+    throw new Error("No eligible payment transactions found for refund");
+  }
+
+  const refundStatus: "PENDING" | "PROCESSED" | "REJECTED" = hasFailure
+    ? "REJECTED"
+    : hasPending
+      ? "PENDING"
+      : "PROCESSED";
+
+  return {
+    refundStatus,
+    refundAmount: Math.round(totalRefundPaise) / 100,
+  };
+};
+
+export const processBookingRefund = async (
+  bookingId: string,
+  refundPercentage: number,
+  reason: string,
+): Promise<{
+  booking: BookingDocument;
+  refundAmount: number;
+  refundPercentage: number;
+  refundStatus: "PENDING" | "PROCESSED" | "REJECTED";
+}> => {
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.refundStatus === "PROCESSED") {
+    throw new Error("Refund already processed for this booking");
+  }
+
+  const refundResult = await initiateBookingRefunds(
+    booking,
+    refundPercentage,
+    reason,
+  );
+
+  booking.refundAmount = refundResult.refundAmount;
+  booking.refundStatus = refundResult.refundStatus;
+  await booking.save();
+
+  return {
+    booking,
+    refundAmount: refundResult.refundAmount,
+    refundPercentage,
+    refundStatus: refundResult.refundStatus,
+  };
 };
 
 /**
@@ -1004,7 +1243,14 @@ export const cancelBooking = async (
 }> => {
   const booking = await Booking.findOne({
     _id: bookingId,
-    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+      ],
+    },
   });
 
   if (!booking) {
@@ -1138,6 +1384,24 @@ export const cancelBooking = async (
         err,
       ),
     );
+
+    if (refundAmount > 0) {
+      try {
+        const refundResult = await initiateBookingRefunds(
+          updatedBooking,
+          refundPercentage,
+          cancellationReason || "Cancelled by user",
+        );
+        updatedBooking.refundStatus = refundResult.refundStatus;
+        updatedBooking.refundAmount = refundResult.refundAmount;
+        await updatedBooking.save();
+      } catch (refundError) {
+        console.error(
+          `Failed to initiate refund for booking ${updatedBooking._id.toString()}:`,
+          refundError,
+        );
+      }
+    }
   }
 
   return {
@@ -1154,6 +1418,10 @@ export const checkInBookingByCode = async (
 ): Promise<BookingDocument> => {
   const normalizedCode = checkInCode.trim().toUpperCase();
 
+  if (normalizedCode.length !== 8) {
+    throw new Error("Check-in code must be 8 characters");
+  }
+
   const booking = await Booking.findOne({ checkInCode: normalizedCode }).select(
     "+checkInCode",
   );
@@ -1166,10 +1434,25 @@ export const checkInBookingByCode = async (
     throw new Error(`Cannot check-in. Booking status is ${booking.status}`);
   }
 
-  // Verify authorization
+  // Verify authorization (admin, venue owner, or assigned coach)
   if (requesterRole !== "ADMIN") {
-    const venue = await Venue.findById(booking.venueId).select("ownerId");
-    if (!venue || venue.ownerId?.toString() !== requesterUserId) {
+    let isAuthorized = false;
+
+    if (requesterRole === "COACH" && booking.coachId) {
+      const coach = await Coach.findById(booking.coachId).select("userId");
+      if (coach?.userId?.toString() === requesterUserId) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized && booking.venueId) {
+      const venue = await Venue.findById(booking.venueId).select("ownerId");
+      if (venue?.ownerId?.toString() === requesterUserId) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
       throw new Error("Unauthorized to check in this booking");
     }
   }
@@ -1277,7 +1560,14 @@ const checkCoachAvailabilityForBooking = async (
       $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
       $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
     },
-    status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    status: {
+      $in: [
+        "PENDING_CONFIRMATION",
+        "PENDING_INVITES",
+        "CONFIRMED",
+        "IN_PROGRESS",
+      ],
+    },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
       { startTime: { $lt: endTime }, endTime: { $gte: endTime } },
@@ -1324,7 +1614,7 @@ export const confirmMockPaymentSuccess = async (
     {
       _id: bookingId,
       userId,
-      status: { $ne: "CANCELLED" },
+      status: "CONFIRMED",
       confirmationEmailSentAt: { $exists: false },
     },
     {
@@ -1382,6 +1672,23 @@ export const confirmMockPaymentSuccess = async (
       err,
     ),
   );
+  if (updatedBooking.status !== "CONFIRMED") {
+    NotificationService.send({
+      userId: userId,
+      type: "BOOKING_STATUS_UPDATED",
+      title: "Awaiting provider confirmation",
+      message: `Your booking for ${updatedBooking.sport} is awaiting provider confirmation.`,
+      data: {
+        bookingId: updatedBooking._id.toString(),
+        status: updatedBooking.status,
+        date: updatedBooking.date.toISOString(),
+        startTime: updatedBooking.startTime,
+        endTime: updatedBooking.endTime,
+      },
+    }).catch(() => {});
+
+    return updatedBooking;
+  }
 
   NotificationService.send({
     userId: userId,
@@ -1411,7 +1718,7 @@ export const confirmMockPaymentSuccess = async (
         endTime: updatedBooking.endTime,
         sport: updatedBooking.sport,
         venueName: venue?.name,
-        coachName: undefined, // TODO: Add coach name when implementing coach bookings
+        coachName: undefined,
       },
       user.reminderPreferences.bookingReminders,
       {
@@ -1425,6 +1732,132 @@ export const confirmMockPaymentSuccess = async (
   }
 
   return updatedBooking;
+};
+
+const sendBookingPaymentConfirmation = async (
+  bookingId: string,
+): Promise<void> => {
+  const booking = await Booking.findById(bookingId).select("+checkInCode");
+
+  if (!booking) {
+    return;
+  }
+
+  const emailClaimedBooking = await Booking.findOneAndUpdate(
+    {
+      _id: bookingId,
+      status: "CONFIRMED",
+      confirmationEmailSentAt: { $exists: false },
+    },
+    {
+      $set: { confirmationEmailSentAt: new Date() },
+    },
+    { new: true },
+  ).select("+checkInCode");
+
+  if (emailClaimedBooking) {
+    const user = await User.findById(booking.userId).select("name email");
+    const venue = await Venue.findById(booking.venueId).select("name");
+
+    if (user?.email) {
+      await sendBookingConfirmationEmail({
+        name: user.name,
+        email: user.email,
+        venueName: venue?.name || "Venue",
+        sport: emailClaimedBooking.sport,
+        date: emailClaimedBooking.date,
+        startTime: emailClaimedBooking.startTime,
+        endTime: emailClaimedBooking.endTime,
+        totalAmount: emailClaimedBooking.totalAmount,
+        ...(emailClaimedBooking.checkInCode && {
+          checkInCode: emailClaimedBooking.checkInCode,
+        }),
+      });
+    }
+  }
+
+  const venue = await Venue.findById(booking.venueId).select("name");
+  NotificationService.send({
+    userId: booking.userId.toString(),
+    type: "PAYMENT_CONFIRMED",
+    title: "Payment Confirmed",
+    message: `Your payment for ${booking.sport} at ${venue?.name || "the venue"} has been confirmed!`,
+    data: {
+      bookingId: booking._id.toString(),
+      venueName: venue?.name || "Venue",
+      sport: booking.sport,
+      date: booking.date.toISOString(),
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      totalAmount: booking.totalAmount,
+    },
+  }).catch((err: Error) =>
+    console.error(
+      `Failed to send payment confirmation notification to ${booking.userId.toString()}:`,
+      err,
+    ),
+  );
+
+  if (booking.status !== "CONFIRMED") {
+    NotificationService.send({
+      userId: booking.userId.toString(),
+      type: "BOOKING_STATUS_UPDATED",
+      title: "Awaiting provider confirmation",
+      message: `Your booking for ${booking.sport} is awaiting provider confirmation.`,
+      data: {
+        bookingId: booking._id.toString(),
+        status: booking.status,
+        date: booking.date.toISOString(),
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+      },
+    }).catch(() => {});
+
+    return;
+  }
+
+  NotificationService.send({
+    userId: booking.userId.toString(),
+    type: "BOOKING_CONFIRMED",
+    title: "Booking confirmed",
+    message: `Your booking for ${booking.sport} is confirmed.`,
+    data: {
+      bookingId: booking._id.toString(),
+      status: booking.status,
+      date: booking.date.toISOString(),
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+    },
+  }).catch(() => {});
+
+  const user = await User.findById(booking.userId).select(
+    "reminderPreferences notificationPreferences",
+  );
+  if (user && user.reminderPreferences?.bookingReminders?.enabled) {
+    ScheduledNotificationService.createBookingReminders(
+      {
+        bookingId: booking._id,
+        userId: booking.userId,
+        bookingDate: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        sport: booking.sport,
+        venueName: venue?.name,
+        coachName: undefined,
+      },
+      user.reminderPreferences.bookingReminders,
+      {
+        email: user.notificationPreferences?.email?.bookingReminders ?? true,
+        push: user.notificationPreferences?.push?.bookingReminders ?? true,
+        inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
+      },
+    ).catch((err: Error) =>
+      console.error(
+        `Failed to create booking reminders for ${booking.userId.toString()}:`,
+        err,
+      ),
+    );
+  }
 };
 
 export const updatePaymentStatus = async (
@@ -1443,6 +1876,8 @@ export const updatePaymentStatus = async (
   if (!booking) {
     throw new Error("Booking not found");
   }
+
+  const wasPaymentConfirmed = Boolean(booking.paymentConfirmedAt);
 
   if (booking.payments && booking.payments.length > 0) {
     booking.payments = booking.payments.map((payment) => {
@@ -1470,6 +1905,10 @@ export const updatePaymentStatus = async (
     await booking.save({ session });
   } else {
     await booking.save();
+  }
+
+  if (status === "PAID" && booking.paymentConfirmedAt && !wasPaymentConfirmed) {
+    await sendBookingPaymentConfirmation(bookingId);
   }
 
   // Send payment status notification
@@ -1858,7 +2297,7 @@ export const respondToBookingInvitation = async (
     if (allResponded) {
       if (anyAccepted || booking.participants.length === 1) {
         // At least one person accepted, or organizer booking alone after declines
-        booking.status = "CONFIRMED";
+        booking.status = "PENDING_CONFIRMATION";
       } else {
         // Everyone declined
         booking.status = "CANCELLED";
@@ -1901,8 +2340,8 @@ export const respondToBookingInvitation = async (
         ),
       );
 
-      // If booking is now confirmed, notify all accepted participants
-      if (booking.status === "CONFIRMED") {
+      // If booking is now pending confirmation, notify all accepted participants
+      if (booking.status === "PENDING_CONFIRMATION") {
         const acceptedParticipants = booking.participants.filter(
           (p) =>
             p.status === "ACCEPTED" &&
@@ -1914,9 +2353,9 @@ export const respondToBookingInvitation = async (
           if (participantUser) {
             NotificationService.send({
               userId: participant.userId.toString(),
-              type: "BOOKING_CONFIRMED",
-              title: "Booking Confirmed",
-              message: `Your booking for ${booking.sport} at ${venue.name} is confirmed!`,
+              type: "BOOKING_STATUS_UPDATED",
+              title: "Booking awaiting confirmation",
+              message: `Your booking for ${booking.sport} at ${venue.name} is awaiting provider confirmation.`,
               data: {
                 bookingId: booking._id.toString(),
                 venueName: venue.name,
@@ -1924,10 +2363,11 @@ export const respondToBookingInvitation = async (
                 date: booking.date.toISOString(),
                 startTime: booking.startTime,
                 endTime: booking.endTime,
+                status: booking.status,
               },
             }).catch((err: Error) =>
               console.error(
-                `Failed to send booking confirmed notification to ${participant.userId}:`,
+                `Failed to send booking pending notification to ${participant.userId}:`,
                 err,
               ),
             );
@@ -1944,6 +2384,200 @@ export const respondToBookingInvitation = async (
       `Failed to respond to invitation: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
+};
+
+const isProviderAuthorizedForBooking = async (
+  booking: BookingDocument,
+  providerUserId: string,
+): Promise<boolean> => {
+  const checks: Array<Promise<boolean>> = [];
+
+  if (booking.coachId) {
+    checks.push(
+      Coach.findById(booking.coachId)
+        .select("userId")
+        .then((coach) => coach?.userId?.toString() === providerUserId),
+    );
+  }
+
+  if (booking.venueId) {
+    checks.push(
+      Venue.findById(booking.venueId)
+        .select("ownerId")
+        .then((venue) => venue?.ownerId?.toString() === providerUserId),
+    );
+  }
+
+  if (checks.length === 0) {
+    return false;
+  }
+
+  const results = await Promise.all(checks);
+  return results.some(Boolean);
+};
+
+export const confirmBookingByProvider = async (
+  bookingId: string,
+  providerUserId: string,
+): Promise<BookingDocument> => {
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.status !== "PENDING_CONFIRMATION") {
+    throw new Error("Booking is not awaiting confirmation");
+  }
+
+  const isAuthorized = await isProviderAuthorizedForBooking(
+    booking,
+    providerUserId,
+  );
+  if (!isAuthorized) {
+    throw new Error("Not authorized to confirm this booking");
+  }
+
+  if (!booking.paymentConfirmedAt) {
+    throw new Error("Payment has not been confirmed yet");
+  }
+
+  booking.status = "CONFIRMED";
+  await booking.save();
+
+  const venue = await Venue.findById(booking.venueId).select("name");
+  const participantIds = getBookingParticipantIds(booking);
+
+  for (const participantId of participantIds) {
+    NotificationService.send({
+      userId: participantId,
+      type: "BOOKING_CONFIRMED",
+      title: "Booking confirmed",
+      message: `Your booking for ${booking.sport} at ${venue?.name || "the venue"} is confirmed.`,
+      data: {
+        bookingId: booking._id.toString(),
+        venueName: venue?.name || "Venue",
+        sport: booking.sport,
+        date: booking.date.toISOString(),
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        status: booking.status,
+      },
+    }).catch(() => {});
+  }
+
+  const user = await User.findById(booking.userId).select(
+    "reminderPreferences notificationPreferences",
+  );
+  if (user && user.reminderPreferences?.bookingReminders?.enabled) {
+    ScheduledNotificationService.createBookingReminders(
+      {
+        bookingId: booking._id,
+        userId: booking.userId,
+        bookingDate: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        sport: booking.sport,
+        venueName: venue?.name,
+        coachName: undefined,
+      },
+      user.reminderPreferences.bookingReminders,
+      {
+        email: user.notificationPreferences?.email?.bookingReminders ?? true,
+        push: user.notificationPreferences?.push?.bookingReminders ?? true,
+        inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
+      },
+    ).catch((err: Error) =>
+      console.error(
+        `Failed to create booking reminders for ${booking.userId.toString()}:`,
+        err,
+      ),
+    );
+  }
+
+  return booking;
+};
+
+export const rejectBookingByProvider = async (
+  bookingId: string,
+  providerUserId: string,
+  reason?: string,
+): Promise<{
+  booking: BookingDocument;
+  refundAmount: number;
+  refundStatus?: "PENDING" | "PROCESSED" | "REJECTED";
+}> => {
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  if (booking.status !== "PENDING_CONFIRMATION") {
+    throw new Error("Booking is not awaiting confirmation");
+  }
+
+  const isAuthorized = await isProviderAuthorizedForBooking(
+    booking,
+    providerUserId,
+  );
+  if (!isAuthorized) {
+    throw new Error("Not authorized to reject this booking");
+  }
+
+  booking.status = "CANCELLED";
+  booking.cancelledAt = new Date();
+  booking.cancellationReason = reason || "Rejected by provider";
+  await booking.save();
+
+  let refundAmount = 0;
+  let refundStatus: "PENDING" | "PROCESSED" | "REJECTED" | undefined;
+  if (booking.paymentConfirmedAt) {
+    try {
+      const refund = await processBookingRefund(
+        bookingId,
+        100,
+        booking.cancellationReason,
+      );
+      refundAmount = refund.refundAmount;
+      refundStatus = refund.refundStatus;
+    } catch (error) {
+      console.error("Failed to process provider rejection refund:", error);
+    }
+  }
+
+  const venue = await Venue.findById(booking.venueId).select("name");
+  const participantIds = getBookingParticipantIds(booking);
+
+  for (const participantId of participantIds) {
+    NotificationService.send({
+      userId: participantId,
+      type: "BOOKING_CANCELLED",
+      title: "Booking declined",
+      message: `Your booking for ${booking.sport} at ${venue?.name || "the venue"} was declined by the provider.`,
+      data: {
+        bookingId: booking._id.toString(),
+        venueName: venue?.name || "Venue",
+        sport: booking.sport,
+        date: booking.date.toISOString(),
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        status: booking.status,
+        refundAmount,
+        refundStatus,
+      },
+    }).catch(() => {});
+  }
+
+  ScheduledNotificationService.cancelBookingReminders(booking._id).catch(
+    () => {},
+  );
+
+  return {
+    booking,
+    refundAmount,
+    ...(refundStatus !== undefined ? { refundStatus } : {}),
+  };
 };
 
 /**

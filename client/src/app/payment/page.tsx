@@ -17,11 +17,16 @@ function PaymentPageContent() {
   const searchParams = useSearchParams();
   const status = searchParams.get("status") || "pending";
   const bookingId = searchParams.get("bookingId") || "";
+  const merchantOrderId = searchParams.get("merchantOrderId") || "";
   const type = searchParams.get("type") || "venue";
-  const isMockPayment = searchParams.get("mock") === "true";
+  const isMockPayment =
+    searchParams.get("mode") === "mock" ||
+    searchParams.get("mock") === "true" ||
+    searchParams.get("mockPayment") === "true";
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(!!bookingId);
+  const [resolvedStatus, setResolvedStatus] = useState(status);
   const communityUrl = getCommunityAppUrl({
     path: "q",
     searchParams: {
@@ -50,8 +55,56 @@ function PaymentPageContent() {
     loadBooking();
   }, [bookingId]);
 
-  const isSuccess = status === "success";
-  const isCancel = status === "cancel";
+  useEffect(() => {
+    setResolvedStatus(status);
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== "pending" || !merchantOrderId) {
+      return;
+    }
+
+    let isActive = true;
+    let attempts = 0;
+    const maxAttempts = 12;
+    const pollIntervalMs = 5000;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+    const verifyPayment = async () => {
+      try {
+        attempts += 1;
+        const result =
+          await bookingApi.verifyPhonePeOrderStatus(merchantOrderId);
+        if (!isActive) return;
+
+        if (result?.state === "COMPLETED") {
+          setResolvedStatus("success");
+          if (pollTimer) clearInterval(pollTimer);
+        } else if (result?.state === "FAILED") {
+          setResolvedStatus("cancel");
+          if (pollTimer) clearInterval(pollTimer);
+        } else if (attempts >= maxAttempts && pollTimer) {
+          clearInterval(pollTimer);
+        }
+      } catch (error) {
+        console.error("Failed to verify PhonePe payment:", error);
+        if (attempts >= maxAttempts && pollTimer) {
+          clearInterval(pollTimer);
+        }
+      }
+    };
+
+    verifyPayment();
+    pollTimer = setInterval(verifyPayment, pollIntervalMs);
+
+    return () => {
+      isActive = false;
+      if (pollTimer) clearInterval(pollTimer);
+    };
+  }, [merchantOrderId, status]);
+
+  const isSuccess = resolvedStatus === "success";
+  const isCancel = resolvedStatus === "cancel";
 
   const title = isSuccess
     ? "Payment successful"
@@ -60,11 +113,9 @@ function PaymentPageContent() {
       : "Processing payment";
 
   const description = isSuccess
-    ? isMockPayment
-      ? "Mock payment completed successfully. Your booking is confirmed."
-      : booking?.bookingType === "GROUP" && booking?.paymentType === "SPLIT"
-        ? "Your payment share is confirmed. We'll notify you once all participants complete their payments."
-        : "Thanks! Your payment is confirmed. We will update your booking shortly."
+    ? booking?.bookingType === "GROUP" && booking?.paymentType === "SPLIT"
+      ? "Your payment share is confirmed. We'll notify you once all participants complete their payments."
+      : "Thanks! Your payment is confirmed. We will update your booking shortly."
     : isCancel
       ? "No charge was made. You can try again whenever you are ready."
       : "We are confirming your payment. You can safely leave this page.";

@@ -943,7 +943,11 @@ export const getAllBookings = async (
 
     const total = await Booking.countDocuments();
     const bookings = await Booking.find()
-      .populate("userId venueId coachId")
+      .populate("userId venueId")
+      .populate({
+        path: "coachId",
+        populate: { path: "userId", select: "name email" },
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

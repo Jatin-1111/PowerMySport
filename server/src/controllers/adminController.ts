@@ -24,6 +24,7 @@ import {
   updateCoach,
   submitCoachVerification,
 } from "../services/CoachService";
+import { processBookingRefund } from "../services/BookingService";
 import { transformDocument } from "../middleware/responseTransform";
 import {
   sendCoachVerificationReminderEmail,
@@ -924,15 +925,8 @@ export const reviewCommunityReport = async (
 };
 
 /**
- * Process refund for a booking (STUB - requires payment gateway integration)
+ * Process refund for a booking
  * POST /api/admin/refunds/:bookingId
- *
- * Future implementation:
- * - Verify booking exists and is eligible for refund
- * - Calculate refund amount based on cancellation policy
- * - Process refund through payment gateway
- * - Update booking payment status
- * - Notify player, venue owner, and coach
  */
 export const processRefund = async (
   req: Request,
@@ -941,20 +935,34 @@ export const processRefund = async (
   try {
     const bookingId = (req.params as Record<string, unknown>)
       .bookingId as string;
-    const { refundType, reason } = req.body;
+    const { refundType, reason } = req.body as {
+      refundType: "FULL" | "PARTIAL";
+      reason: string;
+    };
 
-    // TODO: Implement actual refund logic when payment gateway is integrated
-    // Current implementation is a stub for route structure
+    if (!refundType || !reason?.trim()) {
+      res.status(400).json({
+        success: false,
+        message: "refundType and reason are required",
+      });
+      return;
+    }
 
-    res.status(501).json({
-      success: false,
-      message:
-        "Refund processing not implemented yet - payment gateway required",
+    const refundPercentage = refundType === "FULL" ? 100 : 50;
+    const result = await processBookingRefund(
+      bookingId,
+      refundPercentage,
+      reason.trim(),
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Refund initiated successfully",
       data: {
         bookingId,
-        refundType, // 'FULL' | 'PARTIAL' | 'VENUE_ONLY' | 'COACH_ONLY'
-        reason,
-        note: "This endpoint will be functional after payment gateway integration",
+        refundAmount: result.refundAmount,
+        refundPercentage: result.refundPercentage,
+        refundStatus: result.refundStatus,
       },
     });
   } catch (error) {

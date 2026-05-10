@@ -33,6 +33,9 @@ interface PaginationInfo {
 }
 
 type TabType = "venues" | "coaches";
+const canViewInvoice = (status: Booking["status"]): boolean => {
+  return ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"].includes(status);
+};
 
 export default function BookingsPage() {
   const { user } = useAuthStore();
@@ -355,9 +358,13 @@ export default function BookingsPage() {
                         className={`inline-block mt-2 px-3 py-1 rounded text-sm font-semibold ${
                           booking.status === "CONFIRMED"
                             ? "bg-green-100 text-green-700 border border-green-300"
-                            : booking.status === "IN_PROGRESS"
-                              ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                              : "bg-red-100 text-red-700 border border-red-300"
+                            : booking.status === "PENDING_CONFIRMATION"
+                              ? "bg-amber-100 text-amber-700 border border-amber-300"
+                              : booking.status === "PENDING_INVITES"
+                                ? "bg-blue-100 text-blue-700 border border-blue-300"
+                                : booking.status === "IN_PROGRESS"
+                                  ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                                  : "bg-red-100 text-red-700 border border-red-300"
                         }`}
                       >
                         {booking.status.charAt(0).toUpperCase() +
@@ -368,6 +375,13 @@ export default function BookingsPage() {
                       </span>
                     </div>
                     <div className="flex flex-col gap-2 w-full sm:w-auto">
+                      {canViewInvoice(booking.status) && (
+                        <Link
+                          href={`/dashboard/my-bookings/${booking.id}/invoice`}
+                        >
+                          <Button variant="secondary">Invoice</Button>
+                        </Link>
+                      )}
                       {booking.status === "CONFIRMED" &&
                         booking.paymentType === "SPLIT" &&
                         booking.organizerId === user?.id && (
@@ -383,7 +397,9 @@ export default function BookingsPage() {
                               : "Cover Unpaid"}
                           </Button>
                         )}
-                      {booking.status === "CONFIRMED" && (
+                      {(booking.status === "CONFIRMED" ||
+                        booking.status === "PENDING_CONFIRMATION" ||
+                        booking.status === "PENDING_INVITES") && (
                         <Button
                           onClick={() => handleCancelClick(booking.id)}
                           variant="danger"

@@ -102,7 +102,13 @@ app.use(cors(corsOptions));
 app.use(observabilityMiddleware);
 app.use(securityHeadersMiddleware);
 app.use(apiRateLimitMiddleware);
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      (req as any).rawBody = buf.toString();
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 

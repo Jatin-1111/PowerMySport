@@ -2,17 +2,23 @@ import { Router } from "express";
 import {
   cancelBookingById,
   checkInBookingWithCode,
+  confirmBookingByProviderHandler,
   confirmMockPaymentSuccessById,
+  handlePhonePeCallback,
   getBookingById,
+  downloadBookingInvoicePdf,
   getMyBookings,
   joinBookingWaitlist,
   getVenueAvailability,
+  initiatePhonePePaymentForBooking,
   initiateNewBooking,
   initiateNewGroupBooking,
   respondToInvitation,
+  rejectBookingByProviderHandler,
   getMyInvitations,
   coverUnpaidPayments,
   getPendingInvitationsCount,
+  verifyPhonePeOrderStatus,
   validateBookingPromoCode,
 } from "../controllers/bookingController";
 import {
@@ -114,6 +120,25 @@ router.post(
   confirmMockPaymentSuccessById,
 );
 
+// Initiate PhonePe payment for a booking
+router.post(
+  "/:bookingId/phonepe/initiate",
+  authMiddleware,
+  playerOnlyMiddleware,
+  initiatePhonePePaymentForBooking,
+);
+
+// PhonePe callback (no auth)
+router.post("/phonepe/callback", handlePhonePeCallback);
+
+// Verify PhonePe order status (fallback if callback is delayed)
+router.get(
+  "/phonepe/status/:merchantOrderId",
+  authMiddleware,
+  playerOnlyMiddleware,
+  verifyPhonePeOrderStatus,
+);
+
 // Get user's bookings
 router.get(
   "/my-bookings",
@@ -131,6 +156,27 @@ router.get(
   authMiddleware,
   coachVerificationCompletedMiddleware,
   getBookingById,
+);
+
+// Download booking invoice PDF
+router.get(
+  "/:bookingId/invoice/pdf",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  downloadBookingInvoicePdf,
+);
+
+// Provider confirmation
+router.post(
+  "/:bookingId/provider/confirm",
+  authMiddleware,
+  confirmBookingByProviderHandler,
+);
+
+router.post(
+  "/:bookingId/provider/reject",
+  authMiddleware,
+  rejectBookingByProviderHandler,
 );
 
 // Cancel booking

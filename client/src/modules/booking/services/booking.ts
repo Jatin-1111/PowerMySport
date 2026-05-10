@@ -89,8 +89,33 @@ export const bookingApi = {
   },
 
   // Cancel booking
-  cancelBooking: async (bookingId: string): Promise<ApiResponse<null>> => {
-    const response = await axiosInstance.delete(`/bookings/${bookingId}`);
+  cancelBooking: async (
+    bookingId: string,
+    cancellationReason?: string,
+  ): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.delete(`/bookings/${bookingId}`, {
+      data: cancellationReason ? { cancellationReason } : undefined,
+    });
+    return response.data;
+  },
+
+  confirmBookingByProvider: async (
+    bookingId: string,
+  ): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/provider/confirm`,
+    );
+    return response.data;
+  },
+
+  rejectBookingByProvider: async (
+    bookingId: string,
+    reason?: string,
+  ): Promise<ApiResponse<{ booking: Booking; refundAmount?: number }>> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/provider/reject`,
+      reason ? { reason } : undefined,
+    );
     return response.data;
   },
 
@@ -102,6 +127,32 @@ export const bookingApi = {
       `/bookings/${bookingId}/mock-payment-success`,
     );
     return response.data;
+  },
+
+  // Initiate PhonePe payment for booking
+  initiatePhonePePayment: async (
+    bookingId: string,
+    payload?: { type?: "coach" | "venue" },
+  ): Promise<{
+    redirectUrl: string;
+    merchantOrderId: string;
+    state?: string;
+  }> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/phonepe/initiate`,
+      payload || {},
+    );
+    return response.data.data;
+  },
+
+  // Verify PhonePe order status (fallback)
+  verifyPhonePeOrderStatus: async (
+    merchantOrderId: string,
+  ): Promise<{ state?: string; merchantOrderId: string }> => {
+    const response = await axiosInstance.get(
+      `/bookings/phonepe/status/${merchantOrderId}`,
+    );
+    return response.data.data;
   },
 
   // Check-in booking using player-provided random code
@@ -118,6 +169,14 @@ export const bookingApi = {
   getBooking: async (bookingId: string): Promise<ApiResponse<Booking>> => {
     const response = await axiosInstance.get(`/bookings/${bookingId}`);
     return response.data;
+  },
+
+  downloadInvoicePdf: async (bookingId: string): Promise<Blob> => {
+    const response = await axiosInstance.get(
+      `/bookings/${bookingId}/invoice/pdf`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
   },
 
   validatePromoCode: async (payload: {

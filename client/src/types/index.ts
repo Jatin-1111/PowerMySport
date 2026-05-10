@@ -14,6 +14,7 @@ export type UserRole =
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
   | "PENDING_INVITES"
+  | "PENDING_CONFIRMATION"
   | "CONFIRMED"
   | "IN_PROGRESS"
   | "COMPLETED"
@@ -294,7 +295,7 @@ export interface BookingParticipant {
 
 export interface Booking {
   id: string;
-  userId: string;
+  userId: string | User;
   venueId?: string | Venue; // Can be populated
   venue?: Venue; // Populated venue data
   coachId?: string | Coach; // Can be populated
@@ -306,6 +307,8 @@ export interface Booking {
   totalAmount: number;
   serviceFee?: number;
   taxAmount?: number;
+  discountAmount?: number;
+  promoCode?: string;
   payments?: Array<{
     userId: string;
     userType: PaymentUserType;

@@ -128,13 +128,14 @@ const bookingSchema = new Schema<BookingDocument>(
       type: String,
       enum: [
         "PENDING_INVITES",
+        "PENDING_CONFIRMATION",
         "CONFIRMED",
         "IN_PROGRESS",
         "COMPLETED",
         "CANCELLED",
         "NO_SHOW",
       ],
-      default: "CONFIRMED",
+      default: "PENDING_CONFIRMATION",
     },
     expiresAt: {
       type: Date,

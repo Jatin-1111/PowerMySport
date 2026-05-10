@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
+import PDFDocument from "pdfkit";
 import { Booking } from "../models/Booking";
 import { Venue } from "../models/Venue";
+import { User } from "../models/User";
+import { BookingPaymentTransaction } from "../models/BookingPayment";
 import {
   cancelBooking,
   checkInBookingByCode,
@@ -8,15 +11,24 @@ import {
   createBookingWaitlistEntry,
   getAlternateVenueSlots,
   getUserBookings,
+  getCoachBookings,
   getVenueBookingsForDate,
   getVenueListerBookings,
   initiateBooking,
   initiateGroupBooking,
   respondToBookingInvitation,
   coverUnpaidShares,
+  confirmBookingByProvider,
   getUserBookingInvitations,
+  updatePaymentStatus,
   validatePromoCodeForUser,
+  rejectBookingByProvider,
 } from "../services/BookingService";
+import {
+  getPhonePeOrderStatus,
+  initiatePhonePePayment,
+  validatePhonePeCallback,
+} from "../services/PhonePeService";
 import { generateHourlySlots } from "../utils/booking";
 import { isWithinOpeningHours } from "../utils/openingHours";
 import { getPaginationParams } from "../utils/pagination";
@@ -31,7 +43,8 @@ export const initiateNewBooking = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id) {
+    const user = req.user;
+    if (!user) {
       res.status(401).json({
         success: false,
         message: "Unauthorized",
@@ -39,7 +52,7 @@ export const initiateNewBooking = async (
       return;
     }
 
-    if (req.user.role !== "PLAYER") {
+    if (user.role !== "PLAYER") {
       res.status(403).json({
         success: false,
         message: "Booking is available for player accounts only.",
@@ -48,7 +61,7 @@ export const initiateNewBooking = async (
     }
 
     const result = await initiateBooking({
-      userId: req.user.id,
+      userId: user.id,
       ...req.body,
       date: new Date(req.body.date),
     });
@@ -90,6 +103,8 @@ export const getMyBookings = async (
       return;
     }
 
+    const userId = req.user.id;
+
     const { page, limit } = getPaginationParams(
       req.query.page,
       req.query.limit,
@@ -102,6 +117,8 @@ export const getMyBookings = async (
     // Different logic based on role
     if (req.user.role === "VENUE_LISTER") {
       result = await getVenueListerBookings(req.user.id, page, limit);
+    } else if (req.user.role === "COACH") {
+      result = await getCoachBookings(req.user.id, page, limit);
     } else {
       // For PLAYER and others, get bookings they made
       result = await getUserBookings(req.user.id, page, limit);
@@ -198,6 +215,493 @@ export const getBookingById = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to fetch booking",
+    });
+  }
+};
+
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+const formatInvoiceDate = (date: Date): string => {
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const buildInvoiceNumber = (bookingId: string, bookingDate: Date): string => {
+  const datePart = bookingDate.toISOString().slice(0, 10).replace(/-/g, "");
+  const suffix = bookingId.slice(-6).toUpperCase();
+  return `INV-${datePart}-${suffix}`;
+};
+
+const getReferenceId = (value: unknown): string | null => {
+  if (!value || typeof value !== "object") return null;
+  const asRecord = value as Record<string, unknown>;
+  const id = asRecord._id || asRecord.id;
+  return id ? String(id) : null;
+};
+
+const formatStatusLabel = (value: string): string =>
+  value
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const getStatusPalette = (status: string): { fill: string; text: string } => {
+  switch (status) {
+    case "COMPLETED":
+      return { fill: "#DCFCE7", text: "#166534" };
+    case "CONFIRMED":
+      return { fill: "#E0F2FE", text: "#075985" };
+    case "IN_PROGRESS":
+      return { fill: "#FEF3C7", text: "#92400E" };
+    case "CANCELLED":
+    case "NO_SHOW":
+      return { fill: "#FEE2E2", text: "#991B1B" };
+    case "PENDING_INVITES":
+    case "PENDING_CONFIRMATION":
+    default:
+      return { fill: "#FFEDD5", text: "#C2410C" };
+  }
+};
+
+const formatPaymentLabel = (value: string): string =>
+  value === "SPLIT" ? "Split payment" : "Single payment";
+
+const formatBookingTypeLabel = (value: string): string =>
+  value === "GROUP" ? "Group booking" : "Individual booking";
+
+const canGenerateInvoiceForStatus = (status: string): boolean => {
+  return ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"].includes(status);
+};
+
+const collectPdfBuffer = async (
+  doc: InstanceType<typeof PDFDocument>,
+): Promise<Buffer> => {
+  const chunks: Buffer[] = [];
+  return new Promise((resolve, reject) => {
+    doc.on("data", (chunk: Buffer | string) =>
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+    );
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+    doc.end();
+  });
+};
+
+/**
+ * Download booking invoice PDF
+ * GET /api/bookings/:bookingId/invoice/pdf
+ */
+export const downloadBookingInvoicePdf = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+
+    const booking = await Booking.findById(bookingId)
+      .select("+checkInCode")
+      .populate("userId venueId coachId participantId");
+
+    if (!booking) {
+      res.status(404).json({ success: false, message: "Booking not found" });
+      return;
+    }
+
+    const isAdmin = req.user.role === "ADMIN";
+    const bookingOwnerId =
+      getReferenceId(booking.userId) || String(booking.userId);
+    const isBookingOwner = bookingOwnerId === req.user.id;
+
+    let isVenueOwner = false;
+    if (booking.venueId && req.user.role === "VENUE_LISTER") {
+      const venue = await Venue.findById(booking.venueId).select("ownerId");
+      isVenueOwner = Boolean(
+        venue && venue.ownerId?.toString() === req.user.id,
+      );
+    }
+
+    if (!isAdmin && !isBookingOwner && !isVenueOwner) {
+      res.status(403).json({ success: false, message: "Forbidden" });
+      return;
+    }
+
+    if (!canGenerateInvoiceForStatus(booking.status)) {
+      res.status(409).json({
+        success: false,
+        message:
+          "Invoice will be available after the coach confirms your booking.",
+      });
+      return;
+    }
+
+    const bookingDate = new Date(booking.date);
+    const invoiceNumber = buildInvoiceNumber(booking.id, bookingDate);
+    const issueDate = formatInvoiceDate(new Date());
+
+    const user = booking.userId as any;
+    const venue = booking.venueId as any;
+    const coach = booking.coachId as any;
+
+    const providerName =
+      venue?.name ||
+      (coach ? `${coach.sports?.[0] || "Coach"} Coach` : "Provider");
+    const providerAddress =
+      venue?.address || coach?.ownVenueDetails?.address || "-";
+    const providerGst = venue?.gstNumber || coach?.gstNumber || "-";
+
+    const serviceFee = booking.serviceFee || 0;
+    const taxAmount = booking.taxAmount || 0;
+    const discountAmount = booking.discountAmount || 0;
+    const subtotal =
+      booking.totalAmount - serviceFee - taxAmount + discountAmount;
+    const discountLabel =
+      discountAmount > 0
+        ? `-${formatCurrency(discountAmount)}`
+        : formatCurrency(0);
+
+    const doc = new PDFDocument({ size: "A4", margin: 48 });
+    const brand = {
+      slate: "#0F172A",
+      orange: "#E97316",
+      line: "#E2E8F0",
+      text: "#0F172A",
+      muted: "#64748B",
+      soft: "#F8FAFC",
+      white: "#FFFFFF",
+    };
+    const pageLeft = doc.page.margins.left;
+    const pageTop = doc.page.margins.top;
+    const pageWidth =
+      doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const halfWidth = (pageWidth - 12) / 2;
+    const startY = pageTop;
+    let currentY = startY;
+
+    const drawSectionCard = (
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+      title: string,
+    ): void => {
+      doc.save();
+      doc
+        .roundedRect(x, y, width, height, 16)
+        .fillAndStroke(brand.white, brand.line);
+      doc.restore();
+      doc
+        .fillColor(brand.muted)
+        .font("Helvetica-Bold")
+        .fontSize(9)
+        .text(title.toUpperCase(), x + 16, y + 14, {
+          width: width - 32,
+          characterSpacing: 0.8,
+        });
+    };
+
+    const drawKeyValue = (
+      x: number,
+      y: number,
+      label: string,
+      value: string,
+      width: number,
+    ): number => {
+      doc
+        .fillColor(brand.muted)
+        .font("Helvetica")
+        .fontSize(8)
+        .text(label, x, y, { width });
+      const valueY = y + 13;
+      doc
+        .fillColor(brand.text)
+        .font("Helvetica-Bold")
+        .fontSize(10)
+        .text(value, x, valueY, { width });
+      return valueY + Math.max(18, doc.heightOfString(value, { width }) + 4);
+    };
+
+    const headerHeight = 120;
+    doc.save();
+    doc
+      .roundedRect(pageLeft, currentY, pageWidth, headerHeight, 20)
+      .fill(brand.slate);
+    doc.restore();
+    doc.save();
+    doc.roundedRect(pageLeft, currentY, pageWidth, 10, 20).fill(brand.orange);
+    doc.restore();
+
+    doc
+      .fillColor(brand.white)
+      .font("Helvetica-Bold")
+      .fontSize(24)
+      .text("PowerMySport", pageLeft + 20, currentY + 24, {
+        width: pageWidth - 240,
+      });
+    doc
+      .fillColor("#E2E8F0")
+      .font("Helvetica")
+      .fontSize(10)
+      .text("Booking invoice", pageLeft + 20, currentY + 56);
+    doc
+      .fillColor("#CBD5E1")
+      .font("Helvetica")
+      .fontSize(9)
+      .text(
+        "Premium sports bookings, designed for a clean and reliable checkout experience.",
+        pageLeft + 20,
+        currentY + 72,
+        { width: pageWidth - 260 },
+      );
+
+    const statusPalette = getStatusPalette(booking.status);
+    const statusText = formatStatusLabel(booking.status);
+    const statusChipX = pageLeft + pageWidth - 176;
+
+    doc.save();
+    doc
+      .roundedRect(statusChipX, currentY + 24, 132, 26, 13)
+      .fill(statusPalette.fill);
+    doc.restore();
+    doc
+      .fillColor(statusPalette.text)
+      .font("Helvetica-Bold")
+      .fontSize(9)
+      .text(statusText, statusChipX, currentY + 32, {
+        width: 132,
+        align: "center",
+      });
+
+    doc
+      .fillColor("#CBD5E1")
+      .font("Helvetica")
+      .fontSize(8)
+      .text("Invoice number", statusChipX, currentY + 60, {
+        width: 132,
+        align: "center",
+      });
+    doc
+      .fillColor(brand.white)
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .text(invoiceNumber, statusChipX, currentY + 73, {
+        width: 132,
+        align: "center",
+      });
+
+    currentY += headerHeight + 16;
+
+    const infoCardHeight = 128;
+    drawSectionCard(pageLeft, currentY, halfWidth, infoCardHeight, "Billed To");
+    drawSectionCard(
+      pageLeft + halfWidth + 12,
+      currentY,
+      halfWidth,
+      infoCardHeight,
+      "Provider",
+    );
+
+    let leftValueY = drawKeyValue(
+      pageLeft + 16,
+      currentY + 32,
+      "Customer",
+      user?.name || "Customer",
+      halfWidth - 32,
+    );
+    leftValueY = drawKeyValue(
+      pageLeft + 16,
+      leftValueY + 6,
+      "Email",
+      user?.email || "-",
+      halfWidth - 32,
+    );
+    drawKeyValue(
+      pageLeft + 16,
+      leftValueY + 6,
+      "Phone",
+      user?.phone || "-",
+      halfWidth - 32,
+    );
+
+    let rightValueY = drawKeyValue(
+      pageLeft + halfWidth + 28,
+      currentY + 32,
+      "Venue / Coach",
+      providerName,
+      halfWidth - 32,
+    );
+    rightValueY = drawKeyValue(
+      pageLeft + halfWidth + 28,
+      rightValueY + 6,
+      "Address",
+      providerAddress,
+      halfWidth - 32,
+    );
+    drawKeyValue(
+      pageLeft + halfWidth + 28,
+      rightValueY + 6,
+      "GST",
+      providerGst,
+      halfWidth - 32,
+    );
+
+    currentY += infoCardHeight + 16;
+
+    const summaryHeight = 164;
+    drawSectionCard(
+      pageLeft,
+      currentY,
+      pageWidth,
+      summaryHeight,
+      "Booking Summary",
+    );
+
+    const summaryItems = [
+      {
+        label: "Date",
+        value: formatInvoiceDate(bookingDate),
+      },
+      {
+        label: "Time",
+        value: `${booking.startTime} - ${booking.endTime}`,
+      },
+      {
+        label: "Sport",
+        value: booking.sport,
+      },
+      {
+        label: "Participant",
+        value: booking.participantName || user?.name || "-",
+      },
+      {
+        label: "Booking Type",
+        value: formatBookingTypeLabel(booking.bookingType),
+      },
+      {
+        label: "Payment Type",
+        value: formatPaymentLabel(booking.paymentType),
+      },
+    ];
+
+    const summaryColWidth = (pageWidth - 48) / 3;
+    summaryItems.forEach((item, index) => {
+      const column = index % 3;
+      const row = Math.floor(index / 3);
+      const x = pageLeft + 16 + column * (summaryColWidth + 8);
+      const y = currentY + 34 + row * 48;
+      doc
+        .fillColor(brand.muted)
+        .font("Helvetica")
+        .fontSize(8)
+        .text(item.label, x, y, { width: summaryColWidth - 8 });
+      doc
+        .fillColor(brand.text)
+        .font("Helvetica-Bold")
+        .fontSize(10)
+        .text(item.value, x, y + 13, { width: summaryColWidth - 8 });
+    });
+
+    currentY += summaryHeight + 16;
+
+    const pricingHeight = 150;
+    drawSectionCard(pageLeft, currentY, pageWidth, pricingHeight, "Pricing");
+
+    const pricingRows = [
+      { label: "Subtotal", value: formatCurrency(subtotal), muted: true },
+      { label: "Platform Fee", value: formatCurrency(serviceFee), muted: true },
+      { label: "Taxes", value: formatCurrency(taxAmount), muted: true },
+      { label: "Discount", value: discountLabel, muted: true },
+    ];
+
+    let pricingY = currentY + 36;
+    pricingRows.forEach((row) => {
+      doc
+        .fillColor(row.muted ? brand.muted : brand.text)
+        .font("Helvetica")
+        .fontSize(9)
+        .text(row.label, pageLeft + 16, pricingY, { width: pageWidth - 120 });
+      doc
+        .fillColor(brand.text)
+        .font(
+          row.label === "Discount" && discountAmount > 0
+            ? "Helvetica-Bold"
+            : "Helvetica",
+        )
+        .fontSize(9)
+        .text(row.value, pageLeft + 16, pricingY, {
+          width: pageWidth - 32,
+          align: "right",
+        });
+      pricingY += 22;
+    });
+
+    doc
+      .moveTo(pageLeft + 16, currentY + 122)
+      .lineTo(pageLeft + pageWidth - 16, currentY + 122)
+      .lineWidth(1)
+      .stroke(brand.line);
+
+    doc
+      .fillColor(brand.text)
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text("Total Paid", pageLeft + 16, currentY + 130, {
+        width: pageWidth - 120,
+      });
+    doc
+      .fillColor(brand.orange)
+      .font("Helvetica-Bold")
+      .fontSize(15)
+      .text(
+        formatCurrency(booking.totalAmount),
+        pageLeft + 16,
+        currentY + 126,
+        {
+          width: pageWidth - 32,
+          align: "right",
+        },
+      );
+
+    currentY += pricingHeight + 16;
+
+    doc
+      .fillColor(brand.muted)
+      .font("Helvetica")
+      .fontSize(8)
+      .text(
+        "This is a system generated invoice. For support, reach out to the PowerMySport team.",
+        pageLeft,
+        currentY,
+        { width: pageWidth },
+      );
+
+    const pdfBuffer = await collectPdfBuffer(doc);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${invoiceNumber}.pdf"`,
+    );
+    res.status(200).send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to generate invoice",
     });
   }
 };
@@ -456,7 +960,9 @@ export const cancelBookingById = async (
   try {
     const bookingId = (req.params as Record<string, unknown>)
       .bookingId as string;
-    const { cancellationReason } = req.body as { cancellationReason?: string };
+    const { cancellationReason } = (req.body ?? {}) as {
+      cancellationReason?: string;
+    };
 
     const result = await cancelBooking(bookingId, cancellationReason);
 
@@ -482,6 +988,87 @@ export const cancelBookingById = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to cancel booking",
+    });
+  }
+};
+
+/**
+ * Confirm booking by provider (coach/venue)
+ * POST /api/bookings/:bookingId/provider/confirm
+ */
+export const confirmBookingByProviderHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+
+    const booking = await confirmBookingByProvider(bookingId, req.user.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Booking confirmed successfully",
+      data: booking,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to confirm booking",
+    });
+  }
+};
+
+/**
+ * Reject booking by provider (coach/venue)
+ * POST /api/bookings/:bookingId/provider/reject
+ */
+export const rejectBookingByProviderHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+    const { reason } = (req.body ?? {}) as { reason?: string };
+
+    const result = await rejectBookingByProvider(
+      bookingId,
+      req.user.id,
+      reason,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Booking rejected successfully",
+      data: {
+        booking: result.booking,
+        refundAmount: result.refundAmount,
+        refundStatus: result.refundStatus,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to reject booking",
     });
   }
 };
@@ -558,6 +1145,338 @@ export const confirmMockPaymentSuccessById = async (
         error instanceof Error
           ? error.message
           : "Failed to confirm mock payment",
+    });
+  }
+};
+
+const getBookingPaymentAmount = (booking: any, userId: string): number => {
+  if (booking.payments && booking.payments.length > 0) {
+    const userPayment = booking.payments.find(
+      (payment: any) => payment.userId.toString() === userId,
+    );
+
+    if (!userPayment) {
+      throw new Error("No payment share found for this user");
+    }
+
+    if (userPayment.status === "PAID") {
+      throw new Error("Payment is already completed for this booking");
+    }
+
+    return userPayment.amount;
+  }
+
+  if (booking.paymentConfirmedAt) {
+    throw new Error("Payment is already completed for this booking");
+  }
+
+  return booking.totalAmount || 0;
+};
+
+/**
+ * Initiate PhonePe payment for a booking
+ * POST /api/bookings/:bookingId/phonepe/initiate
+ */
+export const initiatePhonePePaymentForBooking = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const authUser = req.user;
+    if (!authUser?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const userId = authUser.id;
+
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+    const booking = await Booking.findById(bookingId).select(
+      "userId totalAmount payments bookingType paymentType status paymentConfirmedAt",
+    );
+
+    if (!booking) {
+      res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+      return;
+    }
+
+    if (booking.status === "CANCELLED") {
+      res.status(400).json({
+        success: false,
+        message: "Cannot initiate payment for a cancelled booking",
+      });
+      return;
+    }
+
+    const isOrganizer = booking.userId.toString() === userId;
+    const isSplitPayer =
+      booking.paymentType === "SPLIT" &&
+      booking.payments?.some((payment) => payment.userId.toString() === userId);
+
+    if (!isOrganizer && !isSplitPayer) {
+      res.status(403).json({
+        success: false,
+        message: "You are not authorized to pay for this booking",
+      });
+      return;
+    }
+
+    const amount = getBookingPaymentAmount(booking, userId);
+    const amountInPaise = Math.round(amount * 100);
+
+    if (amountInPaise < 100) {
+      res.status(400).json({
+        success: false,
+        message: "Payment amount must be at least 1 INR",
+      });
+      return;
+    }
+
+    const merchantOrderId = `bk_${bookingId}_${Date.now()}`;
+    const redirectBase =
+      process.env.PHONEPE_REDIRECT_URL_BASE ||
+      process.env.CLIENT_URL ||
+      "http://localhost:3000";
+    const redirectUrl = new URL("/payment", redirectBase);
+    redirectUrl.searchParams.set("status", "pending");
+    redirectUrl.searchParams.set("bookingId", bookingId);
+    redirectUrl.searchParams.set("merchantOrderId", merchantOrderId);
+    if (req.body?.type === "coach" || req.body?.type === "venue") {
+      redirectUrl.searchParams.set("type", req.body.type);
+    }
+
+    const payer = await User.findById(userId).select("phone");
+
+    const transaction = await BookingPaymentTransaction.create({
+      bookingId: booking._id,
+      userId,
+      merchantOrderId,
+      amount: amountInPaise,
+      status: "PENDING",
+    });
+
+    const paymentPayload: {
+      merchantOrderId: string;
+      amount: number;
+      redirectUrl: string;
+      userPhone?: string;
+      metaInfo?: Record<string, string>;
+    } = {
+      merchantOrderId,
+      amount: amountInPaise,
+      redirectUrl: redirectUrl.toString(),
+      metaInfo: {
+        udf1: bookingId,
+        udf2: userId,
+      },
+    };
+
+    if (payer?.phone) {
+      paymentPayload.userPhone = payer.phone;
+    }
+
+    const initResult = await initiatePhonePePayment(paymentPayload);
+
+    if (initResult.orderId) {
+      transaction.phonepeOrderId = initResult.orderId;
+    }
+    transaction.redirectUrl = initResult.redirectUrl;
+    transaction.state = initResult.state || "PENDING";
+    await transaction.save();
+
+    res.status(200).json({
+      success: true,
+      message: "PhonePe payment initiated",
+      data: {
+        redirectUrl: initResult.redirectUrl,
+        merchantOrderId,
+        state: initResult.state,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to initiate PhonePe payment",
+    });
+  }
+};
+
+/**
+ * Handle PhonePe callback
+ * POST /api/bookings/phonepe/callback
+ */
+export const handlePhonePeCallback = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const authorizationHeader = req.headers["authorization"] as string;
+    if (!authorizationHeader) {
+      res.status(401).json({
+        success: false,
+        message: "Missing PhonePe authorization header",
+      });
+      return;
+    }
+
+    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
+    const callback = validatePhonePeCallback(authorizationHeader, rawBody);
+    const payload = callback.payload || {};
+
+    const merchantOrderId = payload.originalMerchantOrderId;
+    if (!merchantOrderId) {
+      res.status(400).json({
+        success: false,
+        message: "Missing merchant order id in callback",
+      });
+      return;
+    }
+
+    const transaction = await BookingPaymentTransaction.findOne({
+      merchantOrderId,
+    });
+    if (!transaction) {
+      res.status(404).json({
+        success: false,
+        message: "Payment transaction not found",
+      });
+      return;
+    }
+
+    transaction.callbackPayload = callback as any;
+    transaction.phonepeOrderId = payload.orderId || transaction.phonepeOrderId;
+    transaction.state = payload.state || transaction.state;
+
+    if (payload.state === "COMPLETED") {
+      transaction.status = "COMPLETED";
+      await updatePaymentStatus(
+        transaction.bookingId.toString(),
+        transaction.userId.toString(),
+        "PAID",
+      );
+    } else if (payload.state === "FAILED") {
+      transaction.status = "FAILED";
+      await updatePaymentStatus(
+        transaction.bookingId.toString(),
+        transaction.userId.toString(),
+        "FAILED",
+      );
+    }
+
+    await transaction.save();
+
+    res.status(200).json({
+      success: true,
+      message: "PhonePe callback processed",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to process PhonePe callback",
+    });
+  }
+};
+
+/**
+ * Verify PhonePe order status
+ * GET /api/bookings/phonepe/status/:merchantOrderId
+ */
+export const verifyPhonePeOrderStatus = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const merchantOrderIdParam = Array.isArray(req.params.merchantOrderId)
+      ? req.params.merchantOrderId[0]
+      : req.params.merchantOrderId;
+    if (!merchantOrderIdParam) {
+      res.status(400).json({
+        success: false,
+        message: "merchantOrderId is required",
+      });
+      return;
+    }
+
+    const merchantOrderId = merchantOrderIdParam;
+
+    const transaction = await BookingPaymentTransaction.findOne({
+      merchantOrderId,
+    });
+
+    if (!transaction) {
+      res.status(404).json({
+        success: false,
+        message: "Payment transaction not found",
+      });
+      return;
+    }
+
+    if (transaction.userId.toString() !== req.user.id) {
+      res.status(403).json({
+        success: false,
+        message: "You are not authorized to access this payment",
+      });
+      return;
+    }
+
+    const status = await getPhonePeOrderStatus(merchantOrderId);
+    transaction.lastStatusPayload = status.raw;
+    transaction.state = status.state || transaction.state || "PENDING";
+
+    if (status.state === "COMPLETED" && transaction.status !== "COMPLETED") {
+      transaction.status = "COMPLETED";
+      await updatePaymentStatus(
+        transaction.bookingId.toString(),
+        transaction.userId.toString(),
+        "PAID",
+      );
+    } else if (status.state === "FAILED" && transaction.status !== "FAILED") {
+      transaction.status = "FAILED";
+      await updatePaymentStatus(
+        transaction.bookingId.toString(),
+        transaction.userId.toString(),
+        "FAILED",
+      );
+    }
+
+    await transaction.save();
+
+    res.status(200).json({
+      success: true,
+      message: "PhonePe order status retrieved",
+      data: {
+        state: status.state,
+        merchantOrderId,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to verify PhonePe order status",
     });
   }
 };

@@ -137,7 +137,10 @@ export function PaymentTypeSelector({
           <p className="font-medium">How split payment works:</p>
           <ul className="mt-2 space-y-1 text-xs">
             <li>• Each participant pays their share separately</li>
-            <li>• Booking confirmed once all payments are complete</li>
+            <li>
+              • Booking confirmed once payments are complete and the provider
+              approves
+            </li>
             <li>• You can cover unpaid shares if needed</li>
           </ul>
         </div>

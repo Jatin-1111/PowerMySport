@@ -3,10 +3,8 @@
 import {
   Calendar,
   Clock,
-  CreditCard,
   MapPin,
   ShieldCheck,
-  Smartphone,
   TicketPercent,
   Trophy,
   User as UserIcon,
@@ -50,23 +48,11 @@ import { getDashboardPathByRole } from "@/utils/roleDashboard";
 
 const paymentOptions: PaymentMethodOption[] = [
   {
-    id: "card",
-    label: "Card",
-    description: "Visa, Mastercard, Amex",
-    icon: <CreditCard size={18} />,
-  },
-  {
-    id: "upi",
-    label: "UPI",
-    description: "Instant bank transfer",
-    icon: <Smartphone size={18} />,
-    badge: "Fast",
-  },
-  {
-    id: "wallet",
-    label: "Wallet",
-    description: "Paytm, PhonePe, Amazon Pay",
+    id: "phonepe",
+    label: "PhonePe",
+    description: "UPI, cards, and wallets",
     icon: <Wallet size={18} />,
+    badge: "Recommended",
   },
 ];
 
@@ -161,7 +147,7 @@ function CheckoutPageContent() {
   const [user, setUser] = useState<User | null>(null);
   const [selectedDependentId, setSelectedDependentId] = useState(dependentId);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentMethod, setPaymentMethod] = useState("phonepe");
   const [promoCode, setPromoCode] = useState("");
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
@@ -279,10 +265,17 @@ function CheckoutPageContent() {
   };
 
   const pricePerHour = getPricePerHour();
+  const serviceFeeRate = Number(process.env.NEXT_PUBLIC_SERVICE_FEE_RATE ?? 0);
+  const taxRate = Number(process.env.NEXT_PUBLIC_TAX_RATE ?? 0.05);
+  const safeServiceFeeRate = Number.isFinite(serviceFeeRate)
+    ? serviceFeeRate
+    : 0;
+  const safeTaxRate = Number.isFinite(taxRate) ? taxRate : 0;
   const subtotal = durationHours * pricePerHour;
-  const serviceFee = Math.round(subtotal * 0.02);
-  const taxes = Math.round(subtotal * 0.05);
+  const serviceFee = Math.round(subtotal * safeServiceFeeRate);
+  const taxes = serviceFee > 0 ? Math.round(serviceFee * safeTaxRate) : 0;
   const total = Math.max(0, subtotal + serviceFee + taxes - discount);
+  const isZeroCommission = safeServiceFeeRate === 0;
 
   // Booking details
   const bookingDetails: CheckoutDetailItem[] = [
@@ -338,9 +331,11 @@ function CheckoutPageContent() {
       hint: durationHours ? `${durationHours} hour(s)` : "",
     },
     {
-      label: "Service fee",
+      label: isZeroCommission ? "Platform fee" : "Service fee",
       value: formatCurrency(serviceFee),
-      hint: "Platform support and protection",
+      hint: isZeroCommission
+        ? "Limited-time zero commission"
+        : "Platform support and protection",
     },
     {
       label: "Taxes",
@@ -617,20 +612,53 @@ function CheckoutPageContent() {
         throw new Error("Booking could not be created");
       }
 
-      await bookingApi.confirmMockPaymentSuccess(bookingId);
+      const isDevPaymentBypass = process.env.NODE_ENV !== "production";
+      if (isDevPaymentBypass) {
+        await bookingApi.confirmMockPaymentSuccess(bookingId);
+
+        statsApi
+          .trackFunnelEvent({
+            eventName: "checkout_payment_bypassed",
+            entityType: "BOOKING",
+            entityId: bookingId,
+            metadata: {
+              total,
+              paymentMethod,
+              isGroupBooking,
+              paymentType,
+              mode: "mock",
+            },
+          })
+          .catch(() => {});
+
+        const paymentUrl = new URL("/payment", window.location.origin);
+        paymentUrl.searchParams.set("status", "success");
+        paymentUrl.searchParams.set("bookingId", bookingId);
+        paymentUrl.searchParams.set("type", type);
+        paymentUrl.searchParams.set("mode", "mock");
+        window.location.assign(paymentUrl.toString());
+        return;
+      }
+
+      const phonePeInit = await bookingApi.initiatePhonePePayment(bookingId, {
+        type,
+      });
+
+      if (!phonePeInit?.redirectUrl) {
+        throw new Error("PhonePe payment could not be initiated");
+      }
 
       statsApi
         .trackFunnelEvent({
-          eventName: "checkout_payment_success",
+          eventName: "checkout_payment_initiated",
           entityType: "BOOKING",
           entityId: bookingId,
           metadata: { total, paymentMethod, isGroupBooking, paymentType },
         })
         .catch(() => {});
 
-      router.push(
-        `/payment?status=success&bookingId=${encodeURIComponent(bookingId)}&type=${type}&mock=true`,
-      );
+      window.location.assign(phonePeInit.redirectUrl);
+      return;
     } catch (submitError: unknown) {
       console.error("Checkout failed:", submitError);
       const errorMessage =
@@ -776,6 +804,40 @@ function CheckoutPageContent() {
       <CheckoutShell
         aside={
           <div className="space-y-6">
+            {isZeroCommission && (
+              <Card className="relative overflow-hidden rounded-3xl border border-amber-100 bg-[linear-gradient(120deg,#fff7e7_0%,#fffdf4_40%,#f6fbff_100%)] p-5 shadow-sm">
+                <div className="absolute -right-10 -top-12 h-24 w-24 rounded-full bg-amber-200/40 blur-2xl" />
+                <div className="absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-sky-200/40 blur-2xl" />
+                <div className="relative flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-power-orange shadow-sm">
+                    <span className="text-lg font-bold">0%</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      Limited-time offer
+                    </p>
+                    <p className="mt-2 font-title text-lg font-semibold text-slate-900">
+                      Zero commission on every booking
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      We are waiving platform fees right now. You only pay the
+                      venue or coach rate plus taxes.
+                    </p>
+                  </div>
+                </div>
+                <div className="relative mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
+                  <span className="rounded-full bg-white/80 px-3 py-1">
+                    No platform fee
+                  </span>
+                  <span className="rounded-full bg-white/80 px-3 py-1">
+                    Auto-applied at checkout
+                  </span>
+                  <span className="rounded-full bg-white/80 px-3 py-1">
+                    Transparent totals
+                  </span>
+                </div>
+              </Card>
+            )}
             <CheckoutSummary
               items={summaryItems}
               totalValue={formatCurrency(total)}
