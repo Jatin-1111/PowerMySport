@@ -10,10 +10,10 @@ export const metadata = {
 
 const quickLinks = [
   {
-    href: "/contact?subject=Academy%20onboarding",
-    label: "Request onboarding",
+    href: "/academy/onboarding",
+    label: "Start onboarding",
     icon: BookOpen,
-    description: "Send your academy details to the admin team for setup.",
+    description: "Set up your academy profile directly on the platform.",
   },
   {
     href: "/academies",
@@ -45,9 +45,9 @@ export default function AcademyDashboardPage() {
             ready for players, parents, and coaches.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <Link href="/contact?subject=Academy%20onboarding">
+            <Link href="/academy/onboarding">
               <Button className="bg-white text-slate-900 hover:bg-slate-100">
-                Request onboarding
+                Start onboarding
               </Button>
             </Link>
             <Link href="/academies">

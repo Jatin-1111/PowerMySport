@@ -50,6 +50,7 @@ export const Navigation: React.FC<NavProps> = ({
     { href: "/", label: "Home" },
     { href: "/venues", label: "Venues" },
     { href: "/coaches", label: "Coaches" },
+    { href: "/academies", label: "Academies" },
     { href: "/services", label: "Services" },
     { href: "/how-it-works", label: "How It Works" },
     { href: "/contact", label: "Contact" },

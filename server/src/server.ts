@@ -16,7 +16,10 @@ import { setNotificationSocketInstance } from "./services/NotificationService";
 import { setCommunityRealtimeSocketInstance } from "./services/CommunityRealtimeService";
 import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
+import { startOutboxWorker } from "./services/OutboxService";
 const PORT = process.env.PORT || 5000;
+
+let stopOutboxWorker: (() => void) | null = null;
 
 const normalizeOrigin = (origin: string): string =>
   origin.trim().replace(/\/$/, "").toLowerCase();
@@ -92,108 +95,75 @@ const startServer = async () => {
     console.log("   - /presence (user presence tracking)");
     console.log("   - /notifications (real-time monitoring)");
 
-    const server = httpServer.listen(PORT, () => {
-      console.log(`\n✅ Server is running on http://localhost:${PORT}`);
-      console.log(`💬 Community socket ready`);
-      console.log(`👥 Friend socket ready`);
-      console.log(`📝 API Documentation:`);
-      // ... (keep existing logs if desired, or shorten them) ...
-      console.log(`   AUTH:`);
-      console.log(`   - POST   /api/auth/register`);
-      console.log(`   - POST   /api/auth/login`);
-      console.log(`   - POST   /api/auth/logout`);
-      console.log(`   - GET    /api/auth/profile`);
-      console.log(`   VENUES:`);
-      console.log(`   - POST   /api/venues`);
-      console.log(`   - GET    /api/venues/discover (NEW: venues + coaches)`);
-      console.log(`   - GET    /api/venues/search`);
-      console.log(`   - GET    /api/venues/my-venues`);
-      console.log(`   - GET    /api/venues/:venueId`);
-      console.log(`   - PUT    /api/venues/:venueId`);
-      console.log(`   - DELETE /api/venues/:venueId`);
-      console.log(`   VENUE ONBOARDING (NEW: 3-Step Process):`);
-      console.log(`   - POST   /api/venues/onboarding/step1 (Create venue)`);
-      console.log(
-        `   - POST   /api/venues/onboarding/step2/upload-urls (Get image upload URLs)`,
-      );
-      console.log(
-        `   - POST   /api/venues/onboarding/step2/confirm (Confirm images)`,
-      );
-      console.log(
-        `   - POST   /api/venues/onboarding/step3/upload-urls (Get document upload URLs)`,
-      );
-      console.log(
-        `   - POST   /api/venues/onboarding/step3/finalize (Finalize onboarding)`,
-      );
-      console.log(
-        `   - DELETE /api/venues/onboarding/:venueId (Cancel onboarding)`,
-      );
-      console.log(`   ADMIN VENUE MANAGEMENT (NEW):`);
-      console.log(
-        `   - GET    /api/venues/onboarding/admin/pending (List pending venues)`,
-      );
-      console.log(
-        `   - GET    /api/venues/onboarding/admin/:venueId (Get venue details)`,
-      );
-      console.log(
-        `   - POST   /api/venues/onboarding/admin/:venueId/approve (Approve venue)`,
-      );
-      console.log(
-        `   - POST   /api/venues/onboarding/admin/:venueId/reject (Reject venue)`,
-      );
-      console.log(
-        `   - POST   /api/venues/onboarding/admin/:venueId/mark-review (Mark for review)`,
-      );
-      console.log(`   COACHES:`);
-      console.log(`   - POST   /api/coaches`);
-      console.log(`   - GET    /api/coaches/my-profile`);
-      console.log(`   - GET    /api/coaches/:coachId`);
-      console.log(`   - PUT    /api/coaches/:coachId`);
-      console.log(`   - DELETE /api/coaches/:coachId`);
-      console.log(`   - GET    /api/coaches/availability/:coachId`);
-      console.log(`   BOOKINGS:`);
-      console.log(`   - POST   /api/bookings/initiate (NEW: split payments)`);
-      console.log(
-        `   - GET    /api/bookings/verify/:token (NEW: QR verification)`,
-      );
-      console.log(`   - GET    /api/bookings/my-bookings`);
-      console.log(`   - GET    /api/bookings/availability/:venueId`);
-      console.log(`   - DELETE /api/bookings/:bookingId`);
-      console.log(`   COMMUNITY:`);
-      console.log(`   - GET    /api/community/profile`);
-      console.log(`   - PATCH  /api/community/profile`);
-      console.log(`   - GET    /api/community/conversations`);
-      console.log(`   - POST   /api/community/messages\n`);
-      console.log(`   GEO:`);
-      console.log(`   - GET    /api/geo/autocomplete?q=...`);
-      console.log(`   - GET    /api/geo/geocode?address=...`);
-      console.log(`   - GET    /api/geo/reverse?lat=...&lon=...`);
+    let server: http.Server | null = null;
+    let attempts = 5;
 
-      // Start booking expiration job
-      startExpirationJob();
-      console.log(`⏰ Booking expiration job started`);
+    const startListening = (port: number) => {
+      server = httpServer.listen(port);
 
-      // Start reminder scheduler
-      initializeReminderScheduler();
-      console.log(`🔔 Booking reminder scheduler started\n`);
-    });
+      server.on("listening", () => {
+        console.log(`\n✅ Server is running on http://localhost:${port}`);
+        console.log(`💬 Community socket ready`);
+        console.log(`👥 Friend socket ready`);
+        console.log(`📝 API Documentation:`);
+
+        // Start booking expiration job
+        startExpirationJob();
+        console.log(`⏰ Booking expiration job started`);
+
+        // Start reminder scheduler
+        initializeReminderScheduler();
+        console.log(`🔔 Booking reminder scheduler started\n`);
+
+        // Start outbox worker to handle message notification delivery and retries
+        stopOutboxWorker = startOutboxWorker();
+        console.log("📨 Outbox worker started");
+      });
+
+      server.on("error", (err: any) => {
+        if (err && err.code === "EADDRINUSE" && attempts > 0) {
+          console.warn(`Port ${port} in use, trying ${port + 1}...`);
+          attempts -= 1;
+          setTimeout(() => startListening(port + 1), 500);
+          return;
+        }
+
+        console.error("❌ Failed to start server:", err);
+        process.exit(1);
+      });
+    };
 
     // Graceful shutdown
     const shutdown = async () => {
       console.log("\n🛑 Shutting down server...");
-      server.close(async () => {
-        console.log("🛑 HTTP server closed");
-        // process.exit(0); // database.ts handles mongo connection close on SIGINT, but we can double check or trigger it here if needed.
-        // Since database.ts has process.on('SIGINT'), it might catch it first or parallel.
-        // Ideally we coordinate. For now, we'll let existing listeners handle their parts.
-      });
+      try {
+        if (server) {
+          server.close(() => {
+            console.log("🛑 HTTP server closed");
+            try {
+              stopOutboxWorker?.();
+              console.log("📨 Outbox worker stopped");
+            } catch (err) {
+              console.error("Failed stopping outbox worker:", err);
+            }
+          });
+        } else {
+          try {
+            stopOutboxWorker?.();
+            console.log("📨 Outbox worker stopped");
+          } catch (err) {
+            console.error("Failed stopping outbox worker:", err);
+          }
+        }
+      } catch (err) {
+        console.error("Error during shutdown:", err);
+      }
     };
 
+    // Attempt to bind to configured port, with fallback retries
+    startListening(Number(PORT));
+
     process.on("SIGTERM", shutdown);
-    // SIGINT is already handled in database.ts which calls process.exit,
-    // so we might not need to duplicate it here unless we want to close server first within that handler.
-    // But since server.close takes a callback, asynchronous coordination is tricky with multiple listeners.
-    // For this step, I'll just keep the server variable assignment so we *could* close it.
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);

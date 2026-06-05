@@ -20,6 +20,7 @@ export const Footer: React.FC = () => {
       links: [
         { label: "Book Venues", href: "/venues" },
         { label: "List Your Venue", href: "/onboarding" },
+        { label: "List Your Academy", href: "/academy/onboarding" },
         { label: "Become a Coach", href: "/register?role=COACH" },
         { label: "Browse Coaches", href: "/coaches" },
       ],

@@ -16,6 +16,7 @@ import { CommunityAnswer } from "../models/CommunityAnswer";
 import { CommunityVote } from "../models/CommunityVote";
 import { CommunityReputation } from "../models/CommunityReputation";
 import { NotificationService } from "./NotificationService";
+import OutboxMessage from "../models/OutboxMessage";
 import { S3Service } from "./S3Service";
 import {
   canJoinGroupAudience,
@@ -2391,21 +2392,40 @@ export const CommunityService = {
       .map((participantId) => String(participantId))
       .filter((participantId) => participantId !== userId);
 
-    for (const participantId of otherParticipantIds) {
-      sendCommunityNotification(
-        participantId,
-        conversation.conversationType === "GROUP"
-          ? "New group message"
-          : "New message",
-        `${senderDisplayName} sent you a message in community chat.`,
-        {
-          event: "COMMUNITY_MESSAGE_RECEIVED",
+    // Enqueue a single outbox delivery job to handle multi-channel fanout
+    try {
+      await OutboxMessage.create({
+        type: "deliver_message",
+        payload: {
           conversationId: String(conversation._id),
           messageId: String(message._id),
           actorUserId: userId,
           conversationType: conversation.conversationType || "DM",
+          participantIds: otherParticipantIds,
+          summary: `${senderDisplayName} sent you a message in community chat.`,
         },
-      );
+        status: "PENDING",
+        attempts: 0,
+      });
+    } catch (err) {
+      console.error("Failed to enqueue outbox delivery:", err);
+      // Fallback to best-effort direct notifications if enqueue fails
+      for (const participantId of otherParticipantIds) {
+        sendCommunityNotification(
+          participantId,
+          conversation.conversationType === "GROUP"
+            ? "New group message"
+            : "New message",
+          `${senderDisplayName} sent you a message in community chat.`,
+          {
+            event: "COMMUNITY_MESSAGE_RECEIVED",
+            conversationId: String(conversation._id),
+            messageId: String(message._id),
+            actorUserId: userId,
+            conversationType: conversation.conversationType || "DM",
+          },
+        );
+      }
     }
 
     return {

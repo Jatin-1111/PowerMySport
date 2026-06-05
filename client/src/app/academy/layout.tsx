@@ -7,7 +7,7 @@ import {
   type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { toast } from "@/lib/toast";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Building2,
   Calendar,
@@ -24,14 +24,18 @@ export default function AcademyLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const isOnboardingRoute = pathname.startsWith("/academy/onboarding");
 
   useEffect(() => {
-    if (user && user.role !== "ACADEMY_OWNER") {
-      toast.error("Academy access is limited to academy owners.");
+    if (user && user.role !== "ACADEMY_OWNER" && !isOnboardingRoute) {
+      toast.error(
+        "Academy dashboard is limited to academy owners. Use onboarding to activate your academy.",
+      );
       router.replace("/");
     }
-  }, [router, user]);
+  }, [isOnboardingRoute, router, user]);
 
   const handleLogout = async () => {
     try {
@@ -45,6 +49,11 @@ export default function AcademyLayout({
   };
 
   const navItems: DashboardNavItem[] = [
+    {
+      href: "/academy/onboarding",
+      label: "Onboarding",
+      icon: LayoutDashboard,
+    },
     {
       href: "/academy",
       label: "Dashboard",

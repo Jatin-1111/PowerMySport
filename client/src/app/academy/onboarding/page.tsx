@@ -1,10 +1,10 @@
-import { redirect } from "next/navigation";
+import { AcademyOnboardingContainer } from "@/modules/onboarding/components/academy";
 
 export const metadata = {
   title: "Academy Onboarding - PowerMySport",
-  description: "Academy onboarding is now handled inside the admin panel.",
+  description: "Set up your academy profile, operations, pricing, and payouts.",
 };
 
 export default function AcademyOnboardingPage() {
-  redirect("/contact?subject=Academy%20onboarding");
+  return <AcademyOnboardingContainer />;
 }

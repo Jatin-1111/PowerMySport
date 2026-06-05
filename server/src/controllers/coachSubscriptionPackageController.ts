@@ -34,6 +34,21 @@ const SUBSCRIPTION_TAX_RATE = Number(
   process.env.SUBSCRIPTION_TAX_RATE ?? process.env.TAX_RATE ?? 0.05,
 );
 
+const buildSubscriptionMerchantOrderId = (params: {
+  coachId: string;
+  packageId: string;
+  userId: string;
+}): string => {
+  const ts = Date.now().toString(36);
+  const coachPart = params.coachId.slice(-6);
+  const packagePart = params.packageId.slice(-6);
+  const userPart = params.userId.slice(-6);
+  const rand = Math.random().toString(36).slice(2, 8);
+
+  // Keep well below PhonePe's 63 char max while preserving traceability.
+  return `sub_${ts}_${coachPart}_${packagePart}_${userPart}_${rand}`;
+};
+
 /**
  * Create a new subscription package (Coach endpoint)
  */
@@ -677,7 +692,11 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       return;
     }
 
-    const merchantOrderId = `sub_${coachId}_${packageId}_${Date.now()}`;
+    const merchantOrderId = buildSubscriptionMerchantOrderId({
+      coachId,
+      packageId,
+      userId: req.user.id,
+    });
     const redirectBase =
       process.env.FRONTEND_URL ||
       process.env.PHONEPE_REDIRECT_URL_BASE ||

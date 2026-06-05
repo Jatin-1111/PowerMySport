@@ -128,6 +128,9 @@ app.use("/api/coaches", coachRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/notifications", notificationRoutes);
+// PhonePe webhook route (use raw body captured above for HMAC verification)
+import phonepeWebhook from "./routes/phonepeWebhook";
+app.use("/api/payments/phonepe", phonepeWebhook);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/stats", statsRoutes);
