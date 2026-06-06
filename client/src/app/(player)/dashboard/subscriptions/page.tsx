@@ -20,7 +20,7 @@ import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { CalendarRange, RefreshCw, RotateCcw, Wallet } from "lucide-react";
 import type { CoachSubscription } from "@/types";
 import { CancelSubscriptionModal } from "@/components/ui/CancelSubscriptionModal";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 type SubscriptionFilter = "ALL" | "LIVE" | "ENDED";
 
@@ -38,7 +38,7 @@ const getStatusStyle = (status: string) =>
   STATUS_STYLES[status] || "bg-slate-100 text-slate-700 border-slate-200";
 
 // Animation Variants for Staggered Lists
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -46,7 +46,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 15 },
   show: {
     opacity: 1,

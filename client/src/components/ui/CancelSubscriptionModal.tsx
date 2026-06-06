@@ -65,7 +65,7 @@ export function CancelSubscriptionModal({
             Keep Subscription
           </Button>
           <Button
-            variant="destructive"
+            variant="danger"
             className="w-full sm:w-auto border-2 border-slate-100"
             onClick={handleConfirm}
             disabled={isLoading}
