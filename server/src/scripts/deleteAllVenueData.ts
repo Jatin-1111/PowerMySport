@@ -1,10 +1,10 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import { Booking } from "../models/Booking";
-import { BookingSlotLock } from "../models/BookingSlotLock";
-import { Review } from "../models/Review";
-import { Venue } from "../models/Venue";
-import VenueInquiry from "../models/VenueInquiry";
+import { Booking } from "../client/models/Booking";
+import { BookingSlotLock } from "../client/models/BookingSlotLock";
+import { Review } from "../client/models/Review";
+import { Venue } from "../client/models/Venue";
+import VenueInquiry from "../client/models/VenueInquiry";
 
 const run = async () => {
   const confirmation = process.env.CONFIRM_DELETE_ALL_VENUES;

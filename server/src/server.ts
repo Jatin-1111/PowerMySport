@@ -3,20 +3,20 @@ import http from "http";
 import { Server } from "socket.io";
 import app from "./app";
 import { connectDB } from "./config/database";
-import { setupCommunitySocket } from "./sockets/communitySocket";
+import { setupCommunitySocket } from "./community/sockets/communitySocket";
 import {
   setupFriendSocket,
   setFriendSocketInstance,
-} from "./sockets/friendSocket";
+} from "./client/sockets/friendSocket";
 import {
   setupNotificationSocket,
   setupPresenceSocket,
-} from "./sockets/notificationSocket";
-import { setNotificationSocketInstance } from "./services/NotificationService";
-import { setCommunityRealtimeSocketInstance } from "./services/CommunityRealtimeService";
+} from "./client/sockets/notificationSocket";
+import { setNotificationSocketInstance } from "./client/services/NotificationService";
+import { setCommunityRealtimeSocketInstance } from "./community/services/CommunityRealtimeService";
 import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
-import { startOutboxWorker } from "./services/OutboxService";
+import { startOutboxWorker } from "./shared/services/OutboxService";
 const PORT = process.env.PORT || 5000;
 
 let stopOutboxWorker: (() => void) | null = null;

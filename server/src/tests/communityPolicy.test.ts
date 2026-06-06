@@ -4,7 +4,7 @@ import {
   canJoinGroupAudience,
   getCommunityInteractionPolicy,
   isCrossRoleInteraction,
-} from "../services/communityPolicy";
+} from "../community/services/communityPolicy";
 
 test("community policy defaults to enabled cross-role interactions", () => {
   const policy = getCommunityInteractionPolicy({});

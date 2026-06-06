@@ -10,9 +10,9 @@
  */
 
 import mongoose from "mongoose";
-import { Coach, CoachDocument } from "../models/Coach";
-import { Venue } from "../models/Venue";
-import { User } from "../models/User";
+import { Coach, CoachDocument } from "../client/models/Coach";
+import { Venue } from "../client/models/Venue";
+import { User } from "../client/models/User";
 import dotenv from "dotenv";
 
 dotenv.config();

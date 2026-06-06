@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { connectDB } from "../config/database";
-import { Sport } from "../models/Sport";
+import { Sport } from "../shared/models/Sport";
 
 const INITIAL_SPORTS = [
   // Ball Sports

@@ -2,17 +2,17 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import path from "path";
 import { connectDB } from "../config/database";
-import { Booking } from "../models/Booking";
-import { BookingSlotLock } from "../models/BookingSlotLock";
-import { Coach } from "../models/Coach";
-import { User } from "../models/User";
-import { Venue } from "../models/Venue";
+import { Booking } from "../client/models/Booking";
+import { BookingSlotLock } from "../client/models/BookingSlotLock";
+import { Coach } from "../client/models/Coach";
+import { User } from "../client/models/User";
+import { Venue } from "../client/models/Venue";
 import {
   cancelBooking,
   checkInBookingByCode,
   confirmMockPaymentSuccess,
   initiateBooking,
-} from "../services/BookingService";
+} from "../client/services/BookingService";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 

@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
-import { BookingService } from "../services/BookingService";
-import { ReviewService } from "../services/ReviewService";
-import { EmailVerificationService } from "../services/EmailVerificationService";
-import { PromoCodeService } from "../services/PromoCodeService";
-import Venue from "../models/Venue";
-import Coach from "../models/Coach";
-import User from "../models/User";
-import Booking from "../models/Booking";
-import Review from "../models/Review";
+import { BookingService } from "../client/services/BookingService";
+import { ReviewService } from "../client/services/ReviewService";
+import { EmailVerificationService } from "../shared/services/EmailVerificationService";
+import { PromoCodeService } from "../client/services/PromoCodeService";
+import Venue from "../client/models/Venue";
+import Coach from "../client/models/Coach";
+import User from "../client/models/User";
+import Booking from "../client/models/Booking";
+import Review from "../client/models/Review";
 import PromoCode from "../models/PromoCode";
 import { isWithinOpeningHours } from "../utils/openingHours";
 

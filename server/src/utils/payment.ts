@@ -1,4 +1,4 @@
-import { IPayment } from "../types";
+import { IPayment } from "../types/index";
 
 /**
  * Calculate split payment amounts for venue and optional coach

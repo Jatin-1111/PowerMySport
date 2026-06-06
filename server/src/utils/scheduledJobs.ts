@@ -6,9 +6,9 @@
 import {
   cleanupExpiredBookings,
   cleanupStaleBookingLocks,
-} from "../services/BookingService";
-import { cleanupExpiredCodes } from "../services/EmailVerificationService";
-import { cleanupExpiredCoachSubscriptions } from "../services/CoachSubscriptionService";
+} from "../client/services/BookingService";
+import { cleanupExpiredCodes } from "../shared/services/EmailVerificationService";
+import { cleanupExpiredCoachSubscriptions } from "../client/services/CoachSubscriptionService";
 
 /**
  * Auto-release payments 24 hours after session completion
@@ -16,7 +16,7 @@ import { cleanupExpiredCoachSubscriptions } from "../services/CoachSubscriptionS
  */
 export const releaseCompletedBookingPayments = async (): Promise<void> => {
   try {
-    const { Booking } = await import("../models/Booking");
+    const { Booking } = await import("../client/models/Booking");
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -64,7 +64,7 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
 export const pollPendingRefunds = async (): Promise<void> => {
   try {
     const { updatePendingRefundStatuses } =
-      await import("../services/RefundService");
+      await import("../client/services/RefundService");
     const result = await updatePendingRefundStatuses();
 
     if (result.checked > 0) {

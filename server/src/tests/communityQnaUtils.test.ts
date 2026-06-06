@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   getVoteTransitionDeltas,
   normalizeTags,
-} from "../services/communityQnaUtils";
+} from "../community/services/communityQnaUtils";
 
 test("normalizeTags lowercases, dedupes, and caps to 8 tags", () => {
   const result = normalizeTags([

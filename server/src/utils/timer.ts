@@ -1,4 +1,4 @@
-import { Booking } from "../models/Booking";
+import { Booking } from "../client/models/Booking";
 
 /**
  * Set booking expiration time (10 minutes from now)

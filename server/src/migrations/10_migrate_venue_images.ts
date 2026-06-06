@@ -17,7 +17,7 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "../config/database";
-import { Venue } from "../models/Venue";
+import { Venue } from "../client/models/Venue";
 
 dotenv.config();
 

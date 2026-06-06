@@ -3,7 +3,7 @@
  */
 
 import "dotenv/config";
-import { S3Service } from "../services/S3Service";
+import { S3Service } from "../shared/services/S3Service";
 
 async function testProfilePictureUpload() {
   console.log("=".repeat(60));

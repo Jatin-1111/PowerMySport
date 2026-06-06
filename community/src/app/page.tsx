@@ -98,8 +98,7 @@ const isValidWorkspaceView = (
   value === "CHAT" || value === "DIRECTORY" || value === "PRIVACY";
 const isValidDirectoryView = (
   value: string | null,
-): value is "CONTACTS" | "GROUPS" =>
-  value === "CONTACTS" || value === "GROUPS";
+): value is "CONTACTS" | "GROUPS" => value === "CONTACTS" || value === "GROUPS";
 const isValidGroupToolsMode = (
   value: string | null,
 ): value is "DISCOVER" | "MANAGE" | "INVITE" =>
@@ -2721,7 +2720,16 @@ function CommunityPageContent() {
 
 export default function CommunityPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-pulse flex flex-col items-center"><div className="h-8 w-8 rounded-full border-4 border-slate-200 border-t-power-orange animate-spin"></div><p className="mt-4 text-sm text-slate-500">Loading Community...</p></div></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="h-8 w-8 rounded-full border-4 border-slate-200 border-t-power-orange animate-spin"></div>
+            <p className="mt-4 text-sm text-slate-500">Loading Community...</p>
+          </div>
+        </div>
+      }
+    >
       <CommunityPageContent />
     </Suspense>
   );

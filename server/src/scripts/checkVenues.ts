@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { connectDB } from "../config/database";
-import { Venue } from "../models/Venue";
+import { Venue } from "../client/models/Venue";
 
 async function checkVenues() {
   try {

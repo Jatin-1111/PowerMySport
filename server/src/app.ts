@@ -11,27 +11,28 @@ import {
 } from "./middleware/security";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
 
-import adminRoutes from "./routes/adminRoutes";
-import authRoutes from "./routes/authRoutes";
-import bookingRoutes from "./routes/bookingRoutes";
-import coachRoutes from "./routes/coachRoutes";
-import communityRoutes from "./routes/communityRoutes";
-import friendRoutes from "./routes/friendRoutes";
-import geoRoutes from "./routes/geoRoutes";
-import notificationRoutes from "./routes/notificationRoutes";
-import reminderRoutes from "./routes/reminderRoutes";
-import sportsRoutes from "./routes/sportsRoutes";
-import statsRoutes from "./routes/statsRoutes";
-import supportTicketRoutes from "./routes/supportTicketRoutes";
-import venueInquiryRoutes from "./routes/venueInquiryRoutes";
-import venueOnboardingRoutes from "./routes/venueOnboardingRoutes";
-import venueRoutes from "./routes/venueRoutes";
-import reviewRoutes from "./routes/reviewRoutes";
-import ecommerceRoutes from "./routes/ecommerceRoutes";
-import academyOnboardingRoutes from "./routes/academyOnboardingRoutes";
-import payoutRoutes from "./routes/payoutRoutes";
-import payoutMethodsRoutes from "./routes/payoutMethodsRoutes";
-import refundMethodRoutes from "./routes/refundMethodRoutes";
+import adminRoutes from "./admin/routes/adminRoutes";
+import authRoutes from "./shared/routes/authRoutes";
+import bookingRoutes from "./client/routes/bookingRoutes";
+import coachRoutes from "./client/routes/coachRoutes";
+import communityRoutes from "./community/routes/communityRoutes";
+import friendRoutes from "./client/routes/friendRoutes";
+import geoRoutes from "./shared/routes/geoRoutes";
+import notificationRoutes from "./client/routes/notificationRoutes";
+import reminderRoutes from "./client/routes/reminderRoutes";
+import sportsRoutes from "./shared/routes/sportsRoutes";
+import statsRoutes from "./admin/routes/statsRoutes";
+import supportTicketRoutes from "./client/routes/supportTicketRoutes";
+import venueInquiryRoutes from "./client/routes/venueInquiryRoutes";
+import venueOnboardingRoutes from "./client/routes/venueOnboardingRoutes";
+import venueRoutes from "./client/routes/venueRoutes";
+import reviewRoutes from "./client/routes/reviewRoutes";
+import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
+import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
+import payoutRoutes from "./admin/routes/payoutRoutes";
+import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
+import refundMethodRoutes from "./client/routes/refundMethodRoutes";
+import phonepeWebhook from "./shared/routes/phonepeWebhook";
 
 export const app: Express = express();
 
@@ -119,30 +120,38 @@ if (process.env.NODE_ENV === "development") {
   app.use(requestLogger);
 }
 
+// Shared Domain
 app.use("/api/auth", authRoutes);
-app.use("/api/venues", venueRoutes);
-app.use("/api/venues/onboarding", venueOnboardingRoutes);
-app.use("/api/academies", academyOnboardingRoutes);
-app.use("/api/bookings", bookingRoutes);
-app.use("/api/coaches", coachRoutes);
-app.use("/api/community", communityRoutes);
-app.use("/api/friends", friendRoutes);
-app.use("/api/notifications", notificationRoutes);
-// PhonePe webhook route (use raw body captured above for HMAC verification)
-import phonepeWebhook from "./routes/phonepeWebhook";
-app.use("/api/payments/phonepe", phonepeWebhook);
-app.use("/api/reminders", reminderRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/stats", statsRoutes);
 app.use("/api/geo", geoRoutes);
 app.use("/api/sports", sportsRoutes);
+// PhonePe webhook route (use raw body captured above for HMAC verification)
+app.use("/api/payments/phonepe", phonepeWebhook);
+
+// Client Domain
+app.use("/api/venues", venueRoutes);
+app.use("/api/venues/onboarding", venueOnboardingRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/coaches", coachRoutes);
+app.use("/api/friends", friendRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/reminders", reminderRoutes);
 app.use("/api/venue-inquiries", venueInquiryRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
-app.use("/api/v1", ecommerceRoutes);
+app.use("/api/refund-methods", refundMethodRoutes);
+
+// Community Domain
+app.use("/api/community", communityRoutes);
+
+// Admin Domain
+app.use("/api/admin", adminRoutes);
+app.use("/api/academies", academyOnboardingRoutes);
+app.use("/api/stats", statsRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/payout-methods", payoutMethodsRoutes);
-app.use("/api/refund-methods", refundMethodRoutes);
+
+// Shop Domain
+app.use("/api/v1", ecommerceRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({

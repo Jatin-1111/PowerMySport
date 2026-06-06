@@ -1,4 +1,4 @@
-import { OpeningHours } from "../types";
+import { OpeningHours } from "../types/index";
 
 /**
  * Validate if a booking time falls within venue opening hours

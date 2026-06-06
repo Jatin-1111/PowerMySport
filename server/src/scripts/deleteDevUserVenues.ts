@@ -1,6 +1,6 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import { Venue, VenueDocument } from "../models/Venue";
+import { Venue, VenueDocument } from "../client/models/Venue";
 
 const deleteDevUserVenues = async () => {
   try {

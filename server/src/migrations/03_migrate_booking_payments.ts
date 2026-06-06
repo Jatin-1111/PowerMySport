@@ -9,8 +9,8 @@
 
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { Booking } from "../models/Booking";
-import { Venue } from "../models/Venue";
+import { Booking } from "../client/models/Booking";
+import { Venue } from "../client/models/Venue";
 
 dotenv.config();
 

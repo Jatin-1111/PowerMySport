@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { Coach } from "../models/Coach";
-import { User } from "../models/User";
+import { Coach } from "../client/models/Coach";
+import { User } from "../client/models/User";
 import { verifyToken } from "../utils/jwt";
-import { IUserPayload } from "../types/index";
+import { IUserPayload } from "../types";
 import {
   hasPermission,
   hasAnyPermission,
@@ -10,7 +10,7 @@ import {
   isSystemAdminRole,
 } from "../utils/permissions";
 import { ADMIN_ROLES } from "../constants/adminPermissions";
-import Admin from "../models/Admin";
+import Admin from "../admin/models/Admin";
 
 declare global {
   namespace Express {

@@ -2,8 +2,8 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
-import { User } from '../models/User';
-import { Venue } from '../models/Venue';
+import { User } from '../client/models/User';
+import { Venue } from '../client/models/Venue';
 
 // Load environment variables
 // Adjust path to find .env in server root (two levels up from src/scripts)
