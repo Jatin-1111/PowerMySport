@@ -1,5 +1,6 @@
 import { Booking } from "../models/Booking";
 import { Review } from "../models/Review";
+import { Dispute } from "../models/Dispute";
 
 /**
  * Automatic dispute resolution based on predefined rules
@@ -57,6 +58,34 @@ export const analyzeDispute = async (
         requiresManualReview: true,
       };
   }
+};
+
+/**
+ * Open a new dispute and analyze it automatically
+ */
+export const openDispute = async (
+  bookingId: string,
+  userId: string,
+  disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER",
+  disputeDetails?: string,
+) => {
+  const analysis = await analyzeDispute(bookingId, disputeType, disputeDetails);
+
+  const dispute = await Dispute.create({
+    bookingId,
+    userId,
+    disputeType,
+    disputeDetails,
+    status: analysis.requiresManualReview ? "OPEN" : "RESOLVED",
+    resolutionMethod: "AUTO",
+    recommendedAction: analysis.recommendedAction,
+    refundPercentage: analysis.refundPercentage,
+    reasoning: analysis.reasoning,
+    confidence: analysis.confidence,
+    requiresManualReview: analysis.requiresManualReview,
+  });
+
+  return dispute;
 };
 
 /**
@@ -230,17 +259,33 @@ export const getDisputeStats = async (): Promise<{
     OTHER: number;
   };
 }> => {
-  // NOTE: This is a stub - in production, you'd track disputes in a separate collection
-  // For now, returning mock structure
+  const [
+    totalDisputes,
+    autoResolved,
+    manualReview,
+    noShowDisputes,
+    poorQualityDisputes,
+    paymentIssueDisputes,
+    otherDisputes,
+  ] = await Promise.all([
+    Dispute.countDocuments(),
+    Dispute.countDocuments({ resolutionMethod: "AUTO", status: "RESOLVED" }),
+    Dispute.countDocuments({ requiresManualReview: true }),
+    Dispute.countDocuments({ disputeType: "NO_SHOW" }),
+    Dispute.countDocuments({ disputeType: "POOR_QUALITY" }),
+    Dispute.countDocuments({ disputeType: "PAYMENT_ISSUE" }),
+    Dispute.countDocuments({ disputeType: "OTHER" }),
+  ]);
+
   return {
-    totalDisputes: 0,
-    autoResolved: 0,
-    manualReview: 0,
+    totalDisputes,
+    autoResolved,
+    manualReview,
     byType: {
-      NO_SHOW: 0,
-      POOR_QUALITY: 0,
-      PAYMENT_ISSUE: 0,
-      OTHER: 0,
+      NO_SHOW: noShowDisputes,
+      POOR_QUALITY: poorQualityDisputes,
+      PAYMENT_ISSUE: paymentIssueDisputes,
+      OTHER: otherDisputes,
     },
   };
 };

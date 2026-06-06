@@ -61,7 +61,7 @@ const NavItems = ({
   }, []);
 
   return (
-    <nav className="mt-1 space-y-3 px-4" aria-label="Main navigation">
+    <nav className="mt-1 flex-1 space-y-3 overflow-y-auto px-4 pb-4" aria-label="Main navigation">
       {sections.map((section, sectionIndex) => (
         <div key={`${section.title ?? "general"}-${sectionIndex}`}>
           {section.title && (
@@ -181,8 +181,8 @@ export const DashboardShell = ({
             aria-label="Close dashboard menu"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-[88vw] max-w-sm border-r border-white/60 bg-white/95 backdrop-blur-xl shadow-lg">
-            <div className="flex items-center justify-between border-b border-white/60 p-4">
+          <div className="absolute left-0 top-0 flex h-full w-[88vw] max-w-sm flex-col border-r border-white/60 bg-white/95 shadow-lg backdrop-blur-xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/60 p-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">
                   {dashboardLabel}
@@ -206,7 +206,7 @@ export const DashboardShell = ({
               onNavigate={() => setIsMobileMenuOpen(false)}
             />
 
-            <div className="border-t border-white/60 p-4">
+            <div className="mt-auto shrink-0 border-t border-white/60 p-4">
               <button
                 onClick={async () => {
                   await onLogout();
@@ -223,7 +223,7 @@ export const DashboardShell = ({
 
       <div className="flex min-h-screen lg:pt-0">
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/60 bg-white/80 backdrop-blur-md shadow-sm lg:flex lg:flex-col">
-          <div className="p-6">
+          <div className="shrink-0 p-6">
             <div className="rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-5 text-slate-900 shadow-sm">
               <p className="text-xs uppercase tracking-wide text-slate-500">
                 {dashboardLabel}
@@ -237,7 +237,7 @@ export const DashboardShell = ({
 
           <NavItems items={navItems} pathname={pathname} />
 
-          <div className="mt-auto border-t border-white/60 p-6">
+          <div className="mt-auto shrink-0 border-t border-white/60 p-6">
             <button
               onClick={onLogout}
               className="w-full rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"

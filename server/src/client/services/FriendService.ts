@@ -273,9 +273,14 @@ export class FriendService {
       status: "ACCEPTED",
     });
 
+    // Filter out connections where either user was deleted
+    const validConnections = connections.filter(
+      (conn: any) => conn.requesterId && conn.recipientId
+    );
+
     // Extract the friend user object (the one that's not the current user)
     const friends = await Promise.all(
-      connections.map(async (conn: any) => {
+      validConnections.map(async (conn: any) => {
         const friend =
           conn.requesterId._id.toString() === userId
             ? conn.recipientId
@@ -317,8 +322,12 @@ export class FriendService {
       .populate("recipientId", "name email photoUrl photoS3Key")
       .sort({ createdAt: -1 });
 
+    const validRequests = requests.filter(
+      (req: any) => req.requesterId && req.recipientId
+    );
+
     return await Promise.all(
-      requests.map(async (req: any) => ({
+      validRequests.map(async (req: any) => ({
         id: req._id,
         requester: {
           id: req.requesterId._id,
@@ -353,12 +362,14 @@ export class FriendService {
       .populate("requesterId", "name email photoUrl photoS3Key")
       .populate("recipientId", "name email photoUrl photoS3Key");
 
-    // Extract friend user objects
-    let friends = connections.map((conn: any) => {
-      return conn.requesterId._id.toString() === userId
-        ? conn.recipientId
-        : conn.requesterId;
-    });
+    // Extract friend user objects and filter out nulls
+    let friends = connections
+      .filter((conn: any) => conn.requesterId && conn.recipientId)
+      .map((conn: any) => {
+        return conn.requesterId._id.toString() === userId
+          ? conn.recipientId
+          : conn.requesterId;
+      });
 
     // Filter by query if provided
     if (query) {

@@ -1,11 +1,12 @@
-﻿"use client";
+"use client";
 
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
+import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion, Variants } from "framer-motion";
+import Image from "next/image";
 import {
   Facebook,
   Instagram,
@@ -15,8 +16,9 @@ import {
   Phone,
   Twitter,
 } from "lucide-react";
-import React, { useState } from "react";
-import { useEffect } from "react";
+import React, { useState, useEffect } from "react";
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const SUBJECT_OPTIONS = [
   "General enquiry",
@@ -25,12 +27,261 @@ const SUBJECT_OPTIONS = [
   "Technical support",
 ];
 
-const iconMotion = {
-  initial: { opacity: 0, y: 10, scale: 0.92 },
-  whileInView: { opacity: 1, y: 0, scale: 1 },
-  whileHover: { scale: 1.08, y: -2, rotate: 2 },
-  whileTap: { scale: 0.98 },
+// Unsplash image sources — sports/fitness/stadium themed
+const HERO_IMG =
+  "https://images.unsplash.com/photo-1556817411-31ae72fa3ea0?auto=format&fit=crop&w=1200&q=80";
+const SPORT_IMG_1 =
+  "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=800&q=80";
+const SPORT_IMG_2 =
+  "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&w=600&q=80";
+const SPORT_IMG_3 =
+  "https://images.unsplash.com/photo-1544216717-3bbf52512659?auto=format&fit=crop&w=600&q=80";
+
+// ─── Motion Variants ──────────────────────────────────────────────────────────
+
+const staggerContainer: Variants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.11,
+      delayChildren: 0.08,
+    },
+  },
 };
+
+const fadeSlideUp: Variants = {
+  hidden: { opacity: 0, y: 32 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 260, damping: 24 },
+  },
+};
+
+const fadeSlideLeft: Variants = {
+  hidden: { opacity: 0, x: 40 },
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: { type: "spring", stiffness: 240, damping: 26 },
+  },
+};
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.88 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: { type: "spring", stiffness: 220, damping: 22 },
+  },
+};
+
+const iconPop = {
+  initial: { opacity: 0, scale: 0.7, rotate: -12 },
+  whileInView: {
+    opacity: 1,
+    scale: 1,
+    rotate: 0,
+    transition: { type: "spring" as const, stiffness: 320, damping: 18 },
+  },
+  whileHover: { scale: 1.18, rotate: 6 },
+  whileTap: { scale: 0.94 },
+};
+
+// ─── Decorative Geometry SVG ──────────────────────────────────────────────────
+
+function FloatingDots() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="pointer-events-none absolute right-0 top-0 h-64 w-64 opacity-30"
+      viewBox="0 0 200 200"
+    >
+      {Array.from({ length: 36 }).map((_, i) => {
+        const x = (i % 6) * 34 + 10;
+        const y = Math.floor(i / 6) * 34 + 10;
+        return (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r="2.5"
+            fill="currentColor"
+            className="text-orange-400"
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+function WaveDivider() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 1440 60"
+      preserveAspectRatio="none"
+      className="h-12 w-full text-white"
+      fill="currentColor"
+    >
+      <path d="M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z" />
+    </svg>
+  );
+}
+
+function SkewedAccent() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute -left-12 top-1/4 h-80 w-[120%] -rotate-[6deg] rounded-3xl bg-gradient-to-r from-orange-500/8 via-amber-400/6 to-transparent"
+    />
+  );
+}
+
+// ─── Clipped Image Frame Component ───────────────────────────────────────────
+
+interface ClippedFrameProps {
+  src: string;
+  alt: string;
+  clipVariant?: "parallelogram" | "hexTilt" | "trapezoid";
+  className?: string;
+  width?: number;
+  height?: number;
+}
+
+function ClippedFrame({
+  src,
+  alt,
+  clipVariant = "parallelogram",
+  className = "",
+  width = 600,
+  height = 500,
+}: ClippedFrameProps) {
+  const clips: Record<string, string> = {
+    parallelogram: "polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)",
+    hexTilt: "polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%)",
+    trapezoid: "polygon(6% 0%, 100% 0%, 94% 100%, 0% 100%)",
+  };
+
+  return (
+    <div
+      className={`relative overflow-hidden ${className}`}
+      style={{ clipPath: clips[clipVariant] }}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className="h-full w-full object-cover"
+        priority={false}
+        unoptimized
+      />
+      {/* Colour-wash overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-transparent to-slate-900/30" />
+    </div>
+  );
+}
+
+// ─── Geometric Overlay Backdrop ───────────────────────────────────────────────
+
+function GeometricBackdrop({ className = "" }: { className?: string }) {
+  return (
+    <div className={`pointer-events-none ${className}`} aria-hidden="true">
+      {/* Outer ring */}
+      <div className="absolute inset-0 rounded-[2.5rem] border border-orange-300/30" />
+      {/* Inner glow */}
+      <div className="absolute inset-4 rounded-[2rem] bg-gradient-to-br from-orange-400/10 via-amber-300/5 to-transparent backdrop-blur-sm" />
+      {/* Corner accent — top-right */}
+      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-orange-400/20 blur-2xl" />
+      {/* Corner accent — bottom-left */}
+      <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-blue-400/15 blur-2xl" />
+    </div>
+  );
+}
+
+// ─── Info Card Component ───────────────────────────────────────────────────────
+
+interface InfoCardProps {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+}
+
+function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
+  return (
+    <motion.div
+      variants={fadeSlideUp}
+      whileHover={{ y: -5, scale: 1.015 }}
+      transition={{ type: "spring", stiffness: 280, damping: 20 }}
+      className="group flex items-start gap-5 rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md will-change-transform"
+      style={{
+        boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
+      }}
+    >
+      <motion.div
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-50 text-orange-500"
+        initial={iconPop.initial}
+        whileInView={iconPop.whileInView}
+        whileHover={iconPop.whileHover}
+        whileTap={iconPop.whileTap}
+        viewport={{ once: true }}
+      >
+        <Icon className="h-5 w-5" strokeWidth={2} />
+      </motion.div>
+      <div>
+        <h3 className="mb-1 text-base font-bold text-slate-900">{title}</h3>
+        {children}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Social Row ────────────────────────────────────────────────────────────────
+
+const SOCIALS = [
+  { Icon: Facebook, label: "Facebook", href: "#" },
+  { Icon: Instagram, label: "Instagram", href: "#" },
+  { Icon: Twitter, label: "Twitter / X", href: "#" },
+  { Icon: Linkedin, label: "LinkedIn", href: "#" },
+] as const;
+
+// ─── Form Field ────────────────────────────────────────────────────────────────
+
+interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  required?: boolean;
+}
+
+function Field({ label, id, required, ...props }: FieldProps) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="mb-2 block text-sm font-semibold text-slate-800"
+      >
+        {label} {required && <span className="text-orange-500">*</span>}
+      </label>
+      <input
+        id={id}
+        required={required}
+        className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
+        {...props}
+      />
+    </div>
+  );
+}
+
+// ─── Stats Strip ──────────────────────────────────────────────────────────────
+
+const STATS = [
+  { value: "24h", label: "Response time" },
+  { value: "10k+", label: "Happy players" },
+  { value: "500+", label: "Partner venues" },
+  { value: "4.9★", label: "Support rating" },
+];
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ContactPage() {
   const [initialSubject, setInitialSubject] = useState("");
@@ -59,10 +310,7 @@ export default function ContactPage() {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,398 +349,467 @@ export default function ContactPage() {
   };
 
   return (
-    <main>
-      {/* Hero Section */}
+    <main className="overflow-x-hidden">
+      {/* ── Hero Section ── */}
       <Hero
         variant="page"
         title="Contact Us"
         subtitle="Get in Touch"
         description="Have questions? We're here to help. Reach out to us anytime."
       />
+      {/* ── Main Contact Section ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-white py-20 sm:py-28 lg:py-32">
+        {/* ── Background ambient blobs ── */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-32 top-24 h-[500px] w-[500px] rounded-full bg-orange-100/40 blur-[100px]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-32 bottom-24 h-[400px] w-[400px] rounded-full bg-sky-100/30 blur-[80px]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-amber-100/20 blur-[60px]"
+        />
 
-      {/* Contact Form & Info Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Contact Form */}
-            <div className="shop-surface rounded-2xl p-8 premium-shadow">
-              <h2 className="font-title text-3xl font-bold text-deep-slate mb-6">
-                Send Us a Message
-              </h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                Fill out the form below and we&apos;ll get back to you within 24
-                hours.
-              </p>
+        {/* ── Dot grid pattern ── */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.025]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, #000 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
 
-              {submitStatus === "success" && (
-                <div className="mb-6 rounded-xl border border-green-200 bg-green-50 p-4">
-                  <p className="text-green-800 font-medium">
-                    Message sent successfully. We&apos;ll be in touch soon.
-                  </p>
-                </div>
-              )}
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 gap-16 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_460px]"
+          >
+            {/* ── LEFT COLUMN: Form ─────────────────────────────────────────── */}
+            <motion.div variants={fadeSlideUp} className="relative z-10">
+              {/* Floating geometric backdrop behind card */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-orange-50/80 via-white/20 to-transparent"
+              />
+              <SkewedAccent />
 
-              {submitStatus === "error" && (
-                <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
-                  <p className="text-red-800 font-medium">
-                    Something went wrong. Please try again.
-                  </p>
-                </div>
-              )}
+              <div
+                className="relative rounded-[2rem] border border-white/80 bg-white/85 px-8 py-10 shadow-sm backdrop-blur-md sm:px-10 sm:py-12"
+                style={{
+                  boxShadow:
+                    "0 4px 40px rgba(0,0,0,0.07), 0 1px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
+                }}
+              >
+                {/* Floating dots decorative element */}
+                <FloatingDots />
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Name */}
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-semibold text-deep-slate mb-2"
+                {/* Pill label */}
+                <motion.div variants={scaleIn} className="mb-4 inline-block">
+                  <SectionLabel label="Send a message" color="orange" />
+                </motion.div>
+
+                <motion.h2
+                  variants={fadeSlideUp}
+                  className="mb-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl"
+                >
+                  How can we{" "}
+                  <span className="relative inline-block">
+                    help?
+                    {/* Underline squiggle */}
+                    <svg
+                      aria-hidden="true"
+                      className="absolute -bottom-1.5 left-0 w-full"
+                      viewBox="0 0 100 8"
+                      preserveAspectRatio="none"
+                    >
+                      <path
+                        d="M0,5 Q25,0 50,5 Q75,10 100,5"
+                        fill="none"
+                        stroke="#f97316"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                </motion.h2>
+
+                <motion.p
+                  variants={fadeSlideUp}
+                  className="mb-8 text-base text-slate-500 leading-relaxed"
+                >
+                  Fill out the form below and we&apos;ll get back to you within
+                  24 hours.
+                </motion.p>
+
+                {/* Status banners */}
+                <AnimatePresence>
+                  {submitStatus === "success" && (
+                    <motion.div
+                      key="success"
+                      initial={{ opacity: 0, y: -12, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -8, height: 0 }}
+                      className="mb-6 overflow-hidden rounded-xl border border-green-200 bg-green-50 px-4 py-3"
+                    >
+                      <p className="text-sm font-semibold text-green-800">
+                        ✓ Message sent — we&apos;ll be in touch within 24 hours.
+                      </p>
+                    </motion.div>
+                  )}
+                  {submitStatus === "error" && (
+                    <motion.div
+                      key="error"
+                      initial={{ opacity: 0, y: -12, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -8, height: 0 }}
+                      className="mb-6 overflow-hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3"
+                    >
+                      <p className="text-sm font-semibold text-red-800">
+                        Something went wrong. Please try again.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Form */}
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Row: Name + Email */}
+                  <motion.div
+                    variants={fadeSlideUp}
+                    className="grid grid-cols-1 gap-5 sm:grid-cols-2"
                   >
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
-                    placeholder="Enter your name"
-                  />
-                </div>
+                    <Field
+                      label="Full Name"
+                      id="name"
+                      name="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      placeholder="Your name"
+                    />
+                    <Field
+                      label="Email Address"
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      placeholder="your@email.com"
+                    />
+                  </motion.div>
 
-                {/* Email */}
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-semibold text-deep-slate mb-2"
+                  {/* Row: Phone + User Type */}
+                  <motion.div
+                    variants={fadeSlideUp}
+                    className="grid grid-cols-1 gap-5 sm:grid-cols-2"
                   >
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
-                    placeholder="your.email@example.com"
-                  />
-                </div>
+                    <Field
+                      label="Phone Number"
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="+91 9876543210"
+                    />
 
-                {/* Phone */}
-                <div>
-                  <label
-                    htmlFor="phone"
-                    className="block text-sm font-semibold text-deep-slate mb-2"
-                  >
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
-                    placeholder="+91 9876543210"
-                  />
-                </div>
+                    <div>
+                      <label
+                        htmlFor="userType"
+                        className="mb-2 block text-sm font-semibold text-slate-800"
+                      >
+                        I am a <span className="text-orange-500">*</span>
+                      </label>
+                      <select
+                        id="userType"
+                        name="userType"
+                        value={formData.userType}
+                        onChange={handleChange}
+                        required
+                        className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
+                      >
+                        <option value="player">Player</option>
+                        <option value="venue_owner">Venue Owner</option>
+                        <option value="coach">Coach</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </motion.div>
 
-                {/* User Type */}
-                <div>
-                  <label
-                    htmlFor="userType"
-                    className="block text-sm font-semibold text-deep-slate mb-2"
-                  >
-                    I am a *
-                  </label>
-                  <select
-                    id="userType"
-                    name="userType"
-                    value={formData.userType}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
-                  >
-                    <option value="player">Player</option>
-                    <option value="venue_owner">Venue Owner</option>
-                    <option value="coach">Coach</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                {/* Subject */}
-                <div>
-                  <label
-                    htmlFor="subject"
-                    className="block text-sm font-semibold text-deep-slate mb-2"
-                  >
-                    Subject *
-                  </label>
-                  <select
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
-                  >
-                    <option value="" disabled>
-                      Select a subject
-                    </option>
-                    {SUBJECT_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
+                  {/* Subject */}
+                  <motion.div variants={fadeSlideUp}>
+                    <label
+                      htmlFor="subject"
+                      className="mb-2 block text-sm font-semibold text-slate-800"
+                    >
+                      Subject <span className="text-orange-500">*</span>
+                    </label>
+                    <select
+                      id="subject"
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      required
+                      className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
+                    >
+                      <option value="" disabled>
+                        Select a subject
                       </option>
-                    ))}
-                  </select>
-                </div>
+                      {SUBJECT_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </motion.div>
 
-                {/* Message */}
-                <div>
-                  <label
-                    htmlFor="message"
-                    className="block text-sm font-semibold text-deep-slate mb-2"
-                  >
-                    Message *
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                    rows={6}
-                    className="w-full resize-none rounded-xl border border-border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-power-orange"
-                    placeholder="Tell us more about your inquiry..."
-                  />
-                </div>
+                  {/* Message */}
+                  <motion.div variants={fadeSlideUp}>
+                    <label
+                      htmlFor="message"
+                      className="mb-2 block text-sm font-semibold text-slate-800"
+                    >
+                      Message <span className="text-orange-500">*</span>
+                    </label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      required
+                      rows={5}
+                      className="w-full resize-none rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
+                      placeholder="Tell us about your inquiry..."
+                    />
+                  </motion.div>
 
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  loading={isSubmitting}
-                >
-                  {isSubmitting ? "Sending..." : "Send Message"}
-                </Button>
-              </form>
-            </div>
-
-            {/* Contact Info */}
-            <div>
-              <h2 className="font-title text-3xl font-bold text-deep-slate mb-6">
-                Other Ways to Reach Us
-              </h2>
-
-              <div className="space-y-6">
-                {/* Email */}
-                <Card
-                  variant="elevated"
-                  className="shop-surface premium-shadow"
-                >
-                  <CardContent className="pt-6">
-                    <div className="flex items-start">
-                      <motion.div
-                        className="shrink-0 origin-center will-change-transform"
-                        initial={iconMotion.initial}
-                        whileInView={iconMotion.whileInView}
-                        whileHover={iconMotion.whileHover}
-                        whileTap={iconMotion.whileTap}
-                        viewport={{ once: true, amount: 0.4 }}
-                        transition={{
-                          duration: 0.45,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
+                  {/* Submit */}
+                  <motion.div variants={fadeSlideUp}>
+                    <motion.div
+                      whileHover={{ scale: 1.015 }}
+                      whileTap={{ scale: 0.975 }}
+                    >
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="lg"
+                        className="w-full rounded-xl"
+                        loading={isSubmitting}
                       >
-                        <Mail className="h-6 w-6 text-power-orange" />
-                      </motion.div>
-                      <div className="ml-4">
-                        <h3 className="mb-1 text-lg font-semibold text-slate-900">
-                          Email
-                        </h3>
-                        <p className="text-muted-foreground">
-                          Email:{" "}
-                          <a
-                            href="mailto:teams@powermysport.com"
-                            className="text-power-orange hover:underline"
-                          >
-                            teams@powermysport.com
-                          </a>
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Phone */}
-                <Card
-                  variant="elevated"
-                  className="shop-surface premium-shadow"
-                >
-                  <CardContent className="pt-6">
-                    <div className="flex items-start">
-                      <motion.div
-                        className="shrink-0 origin-center will-change-transform"
-                        initial={iconMotion.initial}
-                        whileInView={iconMotion.whileInView}
-                        whileHover={iconMotion.whileHover}
-                        whileTap={iconMotion.whileTap}
-                        viewport={{ once: true, amount: 0.4 }}
-                        transition={{
-                          duration: 0.45,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                      >
-                        <Phone className="h-6 w-6 text-power-orange" />
-                      </motion.div>
-                      <div className="ml-4">
-                        <h3 className="mb-1 text-lg font-semibold text-slate-900">
-                          Phone
-                        </h3>
-                        <p className="text-muted-foreground">
-                          Customer Support:{" "}
-                          <a
-                            href="tel:+918968582443"
-                            className="text-power-orange hover:underline"
-                          >
-                            +91 89685 82443
-                          </a>
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Mon-Sat: 9 AM - 8 PM IST
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Address */}
-                <Card
-                  variant="elevated"
-                  className="shop-surface premium-shadow"
-                >
-                  <CardContent className="pt-6">
-                    <div className="flex items-start">
-                      <motion.div
-                        className="shrink-0 origin-center will-change-transform"
-                        initial={iconMotion.initial}
-                        whileInView={iconMotion.whileInView}
-                        whileHover={iconMotion.whileHover}
-                        whileTap={iconMotion.whileTap}
-                        viewport={{ once: true, amount: 0.4 }}
-                        transition={{
-                          duration: 0.45,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                      >
-                        <MapPin className="h-6 w-6 text-power-orange" />
-                      </motion.div>
-                      <div className="ml-4">
-                        <h3 className="mb-1 text-lg font-semibold text-slate-900">
-                          Office Address
-                        </h3>
-                        <p className="text-muted-foreground">
-                          Powermysport PVT. LTD.
-                          <br />
-                          Mullanpur, Punjab.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Social Media */}
-                <Card
-                  variant="elevated"
-                  className="shop-surface premium-shadow"
-                >
-                  <CardContent className="pt-6">
-                    <h3 className="mb-4 text-lg font-semibold text-slate-900">
-                      Follow Us
-                    </h3>
-                    <div className="flex space-x-4">
-                      <motion.a
-                        href="#"
-                        className="text-power-orange transition-colors"
-                        aria-label="Facebook"
-                        whileHover={{ y: -2, scale: 1.08 }}
-                        whileTap={{ scale: 0.96 }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                      >
-                        <Facebook className="h-8 w-8" />
-                      </motion.a>
-                      <motion.a
-                        href="#"
-                        className="text-power-orange transition-colors"
-                        aria-label="Instagram"
-                        whileHover={{ y: -2, scale: 1.08 }}
-                        whileTap={{ scale: 0.96 }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                      >
-                        <Instagram className="h-8 w-8" />
-                      </motion.a>
-                      <motion.a
-                        href="#"
-                        className="text-power-orange transition-colors"
-                        aria-label="Twitter"
-                        whileHover={{ y: -2, scale: 1.08 }}
-                        whileTap={{ scale: 0.96 }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                      >
-                        <Twitter className="h-8 w-8" />
-                      </motion.a>
-                      <motion.a
-                        href="#"
-                        className="text-power-orange transition-colors"
-                        aria-label="LinkedIn"
-                        whileHover={{ y: -2, scale: 1.08 }}
-                        whileTap={{ scale: 0.96 }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                      >
-                        <Linkedin className="h-8 w-8" />
-                      </motion.a>
-                    </div>
-                  </CardContent>
-                </Card>
+                        {isSubmitting ? "Sending…" : "Send Message →"}
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                </form>
               </div>
-            </div>
-          </div>
+            </motion.div>
+
+            {/* ── RIGHT COLUMN: Info + Image ───────────────────────────────── */}
+            <motion.div
+              variants={staggerContainer}
+              className="flex flex-col gap-5 lg:pt-2"
+            >
+              {/* Section header */}
+              <motion.div variants={fadeSlideLeft}>
+                <SectionLabel label="Reach us directly" color="slate" />
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                  Other ways to reach us
+                </h2>
+              </motion.div>
+
+              {/* Clipped sport image with overlapping badge */}
+              <motion.div
+                variants={scaleIn}
+                className="relative h-44 w-full overflow-hidden rounded-2xl"
+              >
+                <ClippedFrame
+                  src={SPORT_IMG_3}
+                  alt="Outdoor sports court"
+                  clipVariant="parallelogram"
+                  className="h-full w-full"
+                  width={500}
+                  height={220}
+                />
+                {/* Floating glass badge */}
+                <div className="absolute bottom-4 left-5 flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-slate-900 shadow-lg backdrop-blur-md">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+                  Support team online
+                </div>
+                {/* Geo accent */}
+                <div
+                  aria-hidden="true"
+                  className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-orange-400/30 blur-2xl"
+                />
+              </motion.div>
+
+              {/* Email */}
+              <InfoCard icon={Mail} title="Email">
+                <a
+                  href="mailto:teams@powermysport.com"
+                  className="text-sm text-slate-600 transition-colors hover:text-orange-500"
+                >
+                  teams@powermysport.com
+                </a>
+              </InfoCard>
+
+              {/* Phone */}
+              <InfoCard icon={Phone} title="Phone">
+                <a
+                  href="tel:+918968582443"
+                  className="text-sm text-slate-600 transition-colors hover:text-orange-500"
+                >
+                  +91 89685 82443
+                </a>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Mon–Sat: 9 AM – 8 PM IST
+                </p>
+              </InfoCard>
+
+              {/* Address */}
+              <InfoCard icon={MapPin} title="Office Address">
+                <p className="text-sm leading-relaxed text-slate-600">
+                  Powermysport PVT. LTD.
+                  <br />
+                  Mullanpur, Punjab.
+                </p>
+              </InfoCard>
+
+              {/* Social */}
+              <motion.div
+                variants={fadeSlideUp}
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md"
+                style={{
+                  boxShadow:
+                    "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
+                }}
+              >
+                <h3 className="mb-4 text-base font-bold text-slate-900">
+                  Follow Us
+                </h3>
+                <div className="flex gap-3">
+                  {SOCIALS.map(({ Icon, label, href }) => (
+                    <motion.a
+                      key={label}
+                      href={href}
+                      aria-label={label}
+                      className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:bg-orange-500 hover:text-white"
+                      whileHover={{ scale: 1.12, rotate: 7 }}
+                      whileTap={{ scale: 0.93 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 16,
+                      }}
+                    >
+                      <Icon className="h-4.5 w-4.5" strokeWidth={2} />
+                    </motion.a>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Map or Additional Info Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="font-title text-3xl font-bold text-deep-slate mb-4">
-              We&apos;re Here to Help
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
-              Whether you&apos;re a player looking to book a venue, a venue
-              owner wanting to list your facility, or a coach seeking to expand
-              your practice, we&apos;re just a message away. Our team typically
-              responds within 24 hours.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
+      {/* ── Wave Divider into CTA ─────────────────────────────────────────────── */}
+      <div className="relative z-10 -mb-1 text-slate-900/4">
+        <WaveDivider />
+      </div>
+
+      {/* ── CTA Section ──────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-slate-950 py-20 sm:py-28">
+        {/* Background radial burst */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-orange-500/10 blur-[100px]"
+        />
+
+        {/* Diagonal stripe overlay */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(135deg, white 0px, white 1px, transparent 1px, transparent 40px)",
+          }}
+        />
+
+        <div className="relative mx-auto max-w-4xl px-6 text-center">
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+          >
+            <motion.div variants={scaleIn} className="mb-4 inline-flex">
+              <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
+                Ready to play?
+              </span>
+            </motion.div>
+
+            <motion.h2
+              variants={fadeSlideUp}
+              className="font-title mb-5 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl"
+            >
+              We&apos;re here to help
+            </motion.h2>
+
+            <motion.p
+              variants={fadeSlideUp}
+              className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg"
+            >
+              Whether you&apos;re a player booking a venue, a venue owner
+              listing your facility, or a coach expanding your practice —
+              we&apos;re just a message away. Our team typically responds within
+              24 hours.
+            </motion.p>
+
+            <motion.div
+              variants={fadeSlideUp}
+              className="flex flex-col items-center justify-center gap-4 sm:flex-row"
+            >
+              <motion.a
                 href="/register"
-                className="inline-block rounded-xl bg-power-orange px-8 py-4 text-lg font-semibold text-white premium-shadow transition-colors hover:bg-orange-600"
+                className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/30 hover:shadow-xl"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
               >
                 Get Started
-              </a>
-              <a
+                <svg
+                  viewBox="0 0 16 16"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 8h10M9 4l4 4-4 4" />
+                </svg>
+              </motion.a>
+
+              <motion.a
                 href="/help"
-                className="inline-block rounded-xl border-2 border-deep-slate bg-white px-8 py-4 text-lg font-semibold text-deep-slate premium-shadow transition-colors hover:bg-gray-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
               >
                 Visit Help Center
-              </a>
-            </div>
-          </div>
+              </motion.a>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
     </main>

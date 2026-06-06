@@ -14,9 +14,6 @@ import { Button } from "@/modules/shared/ui/Button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/modules/shared/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,6 +28,7 @@ import {
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { toast } from "sonner";
 import {
   Users,
@@ -40,6 +38,9 @@ import {
   MoreVertical,
   UserX,
   Ban,
+  CheckCircle,
+  XCircle,
+  Send,
 } from "lucide-react";
 
 const MIN_SEARCH_LENGTH = 2;
@@ -180,7 +181,6 @@ export default function FriendsPage() {
         setSearching(true);
         const results = await friendService.searchUsers(normalizedQuery);
 
-        // Ignore out-of-order responses so the UI reflects the latest query only.
         if (requestId !== latestSearchRequestIdRef.current) {
           return;
         }
@@ -242,7 +242,6 @@ export default function FriendsPage() {
     try {
       await friendService.sendFriendRequest(userId);
       toast.success("Friend request sent!");
-      // Refresh search results to update status
       handleSearch();
       loadSentRequests();
     } catch (error: unknown) {
@@ -274,6 +273,34 @@ export default function FriendsPage() {
         title="Friends"
         subtitle="Manage your friends and connect with other players to book together."
       />
+
+      {/* Stats strip */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Friends
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {friends.length}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Pending Requests
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {pendingRequests.length}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Sent
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {sentRequests.length}
+          </p>
+        </div>
+      </div>
 
       {loading ? (
         <ListSkeleton count={5} />
@@ -323,7 +350,7 @@ export default function FriendsPage() {
           {/* Friends List Tab */}
           <TabsContent value="friends" className="space-y-4">
             {friends.length === 0 ? (
-              <Card className="bg-white">
+              <Card className="shop-surface premium-shadow">
                 <EmptyState
                   icon={Users}
                   title="No friends yet"
@@ -337,11 +364,11 @@ export default function FriendsPage() {
                 {friends.map((friend) => (
                   <Card
                     key={friend.id}
-                    className="shop-surface premium-shadow hover:shadow-md transition-all duration-200 overflow-hidden"
+                    className="shop-surface premium-shadow overflow-hidden p-0 transition-all duration-200 hover:shadow-md"
                   >
-                    <CardContent className="p-6">
+                    <CardContent className="p-5">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1">
+                        <div className="flex items-center gap-3 flex-1">
                           {(() => {
                             const isPublic = friend.isIdentityPublic !== false;
                             const displayName = isPublic
@@ -349,19 +376,19 @@ export default function FriendsPage() {
                               : friend.anonymousAlias || "Anonymous Member";
                             return (
                               <>
-                                <Avatar className="h-12 w-12">
+                                <Avatar className="h-11 w-11 border border-white shadow-sm">
                                   <AvatarImage
                                     src={isPublic ? friend.photoUrl : undefined}
                                   />
-                                  <AvatarFallback>
+                                  <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
                                     {displayName.charAt(0).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div className="flex-1">
-                                  <h3 className="font-semibold text-slate-900">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="truncate font-semibold text-slate-900">
                                     {displayName}
                                   </h3>
-                                  <p className="text-sm text-slate-600">
+                                  <p className="text-xs text-slate-500">
                                     Friends since{" "}
                                     {new Date(
                                       friend.friendsSince,
@@ -381,18 +408,18 @@ export default function FriendsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() => handleRemoveFriend(friend.id)}
-                              className="text-slate-700 cursor-pointer"
+                              className="cursor-pointer text-slate-700"
                             >
-                              <UserX className="h-4 w-4 mr-2" />
+                              <UserX className="mr-2 h-4 w-4" />
                               Remove Friend
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() =>
                                 handleBlockUser(friend.id, friend.name)
                               }
-                              className="text-red-600 cursor-pointer"
+                              className="cursor-pointer text-red-600"
                             >
-                              <Ban className="h-4 w-4 mr-2" />
+                              <Ban className="mr-2 h-4 w-4" />
                               Block User
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -407,35 +434,29 @@ export default function FriendsPage() {
 
           {/* Pending Requests Tab */}
           <TabsContent value="requests" className="space-y-6">
-            <Card className="bg-white">
-              <CardHeader>
-                <CardTitle className="text-slate-800">
-                  Received Requests
-                </CardTitle>
-                <CardDescription className="text-slate-600">
-                  Friend requests waiting for your response
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {/* Received Requests */}
+            <Card className="shop-surface premium-shadow overflow-hidden p-0">
+              <ProfileSectionHeader
+                icon={Clock}
+                title="Received Requests"
+                description="Friend requests waiting for your response"
+              />
+              <CardContent className="px-6 py-5 space-y-3">
                 {pendingRequests.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Clock className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                    <h3 className="font-semibold text-lg mb-2 text-slate-900">
-                      No pending requests
-                    </h3>
-                    <p className="text-slate-600">
-                      Friend requests will appear here
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={Clock}
+                    title="No pending requests"
+                    description="Friend requests from other players will appear here."
+                  />
                 ) : (
                   pendingRequests.map((request) => (
                     <motion.div
                       key={request.id}
-                      className="flex items-center justify-between p-4 border border-white/70 rounded-xl bg-white/80 hover:bg-white transition-colors"
+                      className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 transition-colors hover:bg-white"
                       whileHover={{ y: -2 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         {(() => {
                           const isPublic =
                             request.requester.isIdentityPublic !== false;
@@ -445,7 +466,7 @@ export default function FriendsPage() {
                               "Anonymous Member";
                           return (
                             <>
-                              <Avatar>
+                              <Avatar className="h-10 w-10 border border-white shadow-sm">
                                 <AvatarImage
                                   src={
                                     isPublic
@@ -453,7 +474,7 @@ export default function FriendsPage() {
                                       : undefined
                                   }
                                 />
-                                <AvatarFallback>
+                                <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
                                   {displayName.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
@@ -461,8 +482,8 @@ export default function FriendsPage() {
                                 <h4 className="font-semibold text-slate-900">
                                   {displayName}
                                 </h4>
-                                <p className="text-sm text-slate-600">
-                                  Friend request
+                                <p className="text-xs text-slate-500">
+                                  Sent you a friend request
                                 </p>
                               </div>
                             </>
@@ -474,6 +495,7 @@ export default function FriendsPage() {
                           variant="primary"
                           size="sm"
                           onClick={() => handleAcceptRequest(request.id)}
+                          icon={<CheckCircle size={14} />}
                         >
                           Accept
                         </Button>
@@ -481,6 +503,7 @@ export default function FriendsPage() {
                           size="sm"
                           variant="secondary"
                           onClick={() => handleDeclineRequest(request.id)}
+                          icon={<XCircle size={14} />}
                         >
                           Decline
                         </Button>
@@ -491,36 +514,34 @@ export default function FriendsPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white">
-              <CardHeader>
-                <CardTitle className="text-slate-800">Sent Requests</CardTitle>
-                <CardDescription className="text-slate-600">
-                  Friend requests you&apos;ve sent
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {/* Sent Requests */}
+            <Card className="shop-surface premium-shadow overflow-hidden p-0">
+              <ProfileSectionHeader
+                icon={Send}
+                title="Sent Requests"
+                description="Friend requests you've sent that are still pending"
+              />
+              <CardContent className="px-6 py-5 space-y-3">
                 {sentRequests.length === 0 ? (
-                  <div className="text-center py-8">
-                    <UserPlus className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                    <h3 className="font-semibold text-lg mb-2 text-slate-900">
-                      No sent requests
-                    </h3>
-                    <p className="text-slate-600">
-                      Search for players to send friend requests
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={UserPlus}
+                    title="No sent requests"
+                    description="Search for players to send friend requests"
+                    actionLabel="Find Friends"
+                    onAction={() => setActiveTab("search")}
+                  />
                 ) : (
                   sentRequests.map((request) => (
                     <motion.div
                       key={request.id}
-                      className="flex items-center justify-between p-4 border border-white/70 rounded-xl bg-white/80 hover:bg-white transition-colors"
+                      className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 transition-colors hover:bg-white"
                       whileHover={{ y: -2 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
                     >
-                      <div className="flex items-center gap-4">
-                        <Avatar>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10 border border-white shadow-sm">
                           <AvatarImage src={request.recipient.photoUrl} />
-                          <AvatarFallback>
+                          <AvatarFallback className="bg-blue-100 text-sm font-bold text-blue-600">
                             {request.recipient.name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -528,9 +549,14 @@ export default function FriendsPage() {
                           <h4 className="font-semibold text-slate-900">
                             {request.recipient.name}
                           </h4>
-                          <p className="text-sm text-slate-600">Pending...</p>
+                          <p className="text-xs text-slate-500">
+                            Request pending...
+                          </p>
                         </div>
                       </div>
+                      <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
+                        Pending
+                      </Badge>
                     </motion.div>
                   ))
                 )}
@@ -540,14 +566,13 @@ export default function FriendsPage() {
 
           {/* Search Tab */}
           <TabsContent value="search" className="space-y-4">
-            <Card className="bg-white">
-              <CardHeader>
-                <CardTitle className="text-slate-700">Find Friends</CardTitle>
-                <CardDescription className="text-slate-600">
-                  Search for players by name or email to add as friends
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Card className="shop-surface premium-shadow overflow-hidden p-0">
+              <ProfileSectionHeader
+                icon={Search}
+                title="Find Friends"
+                description="Search for players by name or email to add as friends"
+              />
+              <CardContent className="px-6 py-5 space-y-4">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Search by name or email (min 2 characters)..."
@@ -564,12 +589,12 @@ export default function FriendsPage() {
                   >
                     {searching ? (
                       <>
-                        <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
                         Searching...
                       </>
                     ) : (
                       <>
-                        <Search className="h-4 w-4 mr-2" />
+                        <Search className="mr-2 h-4 w-4" />
                         Search
                       </>
                     )}
@@ -577,19 +602,19 @@ export default function FriendsPage() {
                 </div>
 
                 {searchResults.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <p className="text-sm text-slate-600 mb-2">
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-slate-600">
                       {searchResults.length} user
                       {searchResults.length !== 1 ? "s" : ""} found
                     </p>
                     {searchResults.map((user) => (
                       <motion.div
                         key={user.id}
-                        className="flex items-center justify-between p-4 border border-white/70 rounded-xl bg-white/80 hover:bg-white transition-colors"
+                        className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 transition-colors hover:bg-white"
                         whileHover={{ y: -2 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                           {(() => {
                             const isPublic = user.isIdentityPublic !== false;
                             const displayName = isPublic
@@ -597,11 +622,11 @@ export default function FriendsPage() {
                               : user.anonymousAlias || "Anonymous Member";
                             return (
                               <>
-                                <Avatar>
+                                <Avatar className="h-10 w-10 border border-white shadow-sm">
                                   <AvatarImage
                                     src={isPublic ? user.photoUrl : undefined}
                                   />
-                                  <AvatarFallback>
+                                  <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
                                     {displayName.charAt(0).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
@@ -616,21 +641,27 @@ export default function FriendsPage() {
                         </div>
                         <div>
                           {user.friendStatus === "FRIENDS" && (
-                            <Badge variant="secondary">Already Friends</Badge>
+                            <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                              Already Friends
+                            </Badge>
                           )}
                           {user.friendStatus === "PENDING_SENT" && (
-                            <Badge variant="outline">Request Sent</Badge>
+                            <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
+                              Request Sent
+                            </Badge>
                           )}
                           {user.friendStatus === "PENDING_RECEIVED" && (
-                            <Badge variant="outline">Pending Request</Badge>
+                            <Badge className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50">
+                              Pending Request
+                            </Badge>
                           )}
                           {user.friendStatus === "NONE" && (
                             <Button
                               variant="primary"
                               size="sm"
                               onClick={() => handleSendFriendRequest(user.id)}
+                              icon={<UserPlus size={14} />}
                             >
-                              <UserPlus className="h-4 w-4 mr-2" />
                               Add Friend
                             </Button>
                           )}
@@ -640,17 +671,15 @@ export default function FriendsPage() {
                   </div>
                 )}
 
-                {searchQuery && searchResults.length === 0 && !searching && (
-                  <div className="text-center py-8">
-                    <Search className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-                    <h3 className="font-semibold text-lg mb-2 text-slate-900">
-                      No users found
-                    </h3>
-                    <p className="text-slate-600">
-                      Try searching with a different name or email
-                    </p>
-                  </div>
-                )}
+                {searchQuery &&
+                  searchResults.length === 0 &&
+                  !searching && (
+                    <EmptyState
+                      icon={Search}
+                      title="No users found"
+                      description="Try searching with a different name or email"
+                    />
+                  )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,11 +1,21 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
+import {
+  DEFAULT_DEPENDENT_RELATION,
+  DEPENDENT_RELATIONS,
+  normalizeDependentRelation,
+} from "@/modules/player/constants/dependentRelations";
+import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
+import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
+import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { Modal } from "@/modules/shared/ui/Modal";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
-import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, UserRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 interface Dependent {
   _id?: string;
@@ -25,6 +35,30 @@ interface DependentManagementModalProps {
   mode: "add" | "edit";
 }
 
+const EMPTY_FORM: Dependent = {
+  name: "",
+  dob: "",
+  gender: "MALE",
+  relation: DEFAULT_DEPENDENT_RELATION,
+  sports: [],
+};
+
+function getDependentAge(dob: string | Date): number | null {
+  const birthDate = new Date(dob);
+  if (Number.isNaN(birthDate.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age -= 1;
+  }
+  return age;
+}
+
 export default function DependentManagementModal({
   isOpen,
   onClose,
@@ -33,51 +67,43 @@ export default function DependentManagementModal({
   isLoading = false,
   mode,
 }: DependentManagementModalProps) {
-  const [formData, setFormData] = useState<Dependent>(
-    initialDependent || {
-      name: "",
-      dob: "",
-      gender: "MALE",
-      relation: "CHILD",
-      sports: [],
-    },
-  );
+  const [formData, setFormData] = useState<Dependent>(EMPTY_FORM);
 
-  // Update form data when modal opens or initialDependent changes
+  const maxDob = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const minDob = useMemo(() => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 18);
+    return date.toISOString().split("T")[0];
+  }, []);
+
   useEffect(() => {
-    if (isOpen) {
-      if (initialDependent) {
-        // Convert date to YYYY-MM-DD format for input field
-        const dobValue = initialDependent.dob
-          ? new Date(initialDependent.dob).toISOString().split("T")[0]
-          : "";
+    if (!isOpen) return;
 
-        setFormData({
-          ...initialDependent,
-          dob: dobValue,
-        });
-      } else {
-        // Reset form for add mode
-        setFormData({
-          name: "",
-          dob: "",
-          gender: "MALE",
-          relation: "CHILD",
-          sports: [],
-        });
-      }
+    if (initialDependent) {
+      const dobValue = initialDependent.dob
+        ? new Date(initialDependent.dob).toISOString().split("T")[0]
+        : "";
+
+      setFormData({
+        ...initialDependent,
+        dob: dobValue,
+        relation: normalizeDependentRelation(initialDependent.relation),
+      });
+      return;
     }
+
+    setFormData(EMPTY_FORM);
   }, [isOpen, initialDependent]);
 
-  const handleChange = (field: keyof Dependent, value: any) => {
+  const handleChange = (field: keyof Dependent, value: unknown) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
     if (!formData.name.trim()) {
       toast.error("Name is required");
@@ -89,128 +115,163 @@ export default function DependentManagementModal({
       return;
     }
 
+    const age = getDependentAge(formData.dob);
+    if (age === null) {
+      toast.error("Please enter a valid date of birth");
+      return;
+    }
+
+    if (age >= 18) {
+      toast.error("Dependents must be under 18 years old");
+      return;
+    }
+
     try {
       await onSubmit(formData);
-      setFormData({
-        name: "",
-        dob: "",
-        gender: "MALE",
-        relation: "CHILD",
-        sports: [],
-      });
+      setFormData(EMPTY_FORM);
       onClose();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save dependent");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save dependent";
+      toast.error(message);
     }
   };
 
-  if (!isOpen) return null;
+  const previewAge = formData.dob ? getDependentAge(formData.dob) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-md bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 p-6">
-          <h3 className="text-xl font-bold text-slate-900">
-            {mode === "add" ? "Add Dependent" : "Edit Dependent"}
-          </h3>
-          <button
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={mode === "add" ? "Add Dependent" : "Edit Dependent"}
+      size="md"
+      footer={
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="secondary"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            disabled={isLoading}
+            className="w-full sm:w-auto"
           >
-            <X size={24} />
-          </button>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="dependent-form"
+            loading={isLoading}
+            className="w-full sm:min-w-[140px] sm:w-auto"
+          >
+            {mode === "add" ? "Add Dependent" : "Save Changes"}
+          </Button>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Name *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              placeholder="e.g., John Doe"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Date of Birth *
-            </label>
-            <input
-              type="date"
-              value={formData.dob as string}
-              onChange={(e) => handleChange("dob", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Gender
-              </label>
-              <select
-                value={formData.gender || "MALE"}
-                onChange={(e) => handleChange("gender", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white"
-              >
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Relation
-              </label>
-              <input
+      }
+    >
+      <form id="dependent-form" onSubmit={handleSubmit} className="space-y-5">
+        <ProfileEditPanel
+          title={mode === "add" ? "New dependent profile" : "Update profile"}
+          description={
+            mode === "add"
+              ? "Add a child or ward you manage bookings for. Dependents must be under 18."
+              : "Update this dependent's details and save when you're done."
+          }
+        >
+          <div className="space-y-4">
+            <ProfileEditField
+              label="Name"
+              htmlFor="dependent-name"
+              required
+              icon={UserRound}
+            >
+              <Input
+                id="dependent-name"
                 type="text"
-                value={formData.relation || ""}
-                onChange={(e) => handleChange("relation", e.target.value)}
-                placeholder="e.g., Son, Daughter"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                value={formData.name}
+                onChange={(event) => handleChange("name", event.target.value)}
+                placeholder="e.g., John Doe"
+                autoComplete="name"
               />
+            </ProfileEditField>
+
+            <ProfileEditField
+              label="Date of Birth"
+              htmlFor="dependent-dob"
+              required
+              icon={Calendar}
+              hint={
+                previewAge !== null
+                  ? `Age: ${previewAge} years · Must be under 18.`
+                  : "Must be under 18 years old."
+              }
+            >
+              <Input
+                id="dependent-dob"
+                type="date"
+                value={formData.dob as string}
+                onChange={(event) => handleChange("dob", event.target.value)}
+                min={minDob}
+                max={maxDob}
+              />
+            </ProfileEditField>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <ProfileEditField label="Gender" htmlFor="dependent-gender">
+                <ProfileFormSelect
+                  id="dependent-gender"
+                  value={formData.gender || "MALE"}
+                  onChange={(value) => handleChange("gender", value)}
+                  options={[
+                    { value: "MALE", label: "Male" },
+                    { value: "FEMALE", label: "Female" },
+                    { value: "OTHER", label: "Other" },
+                  ]}
+                />
+              </ProfileEditField>
+
+              <ProfileEditField
+                label="Relation"
+                htmlFor="dependent-relation"
+                required
+              >
+                <ProfileFormSelect
+                  id="dependent-relation"
+                  value={formData.relation || DEFAULT_DEPENDENT_RELATION}
+                  onChange={(value) => handleChange("relation", value)}
+                  options={DEPENDENT_RELATIONS.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                />
+              </ProfileEditField>
             </div>
           </div>
+        </ProfileEditPanel>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Sports
-            </label>
+        <ProfileEditPanel
+          title="Sports interests"
+          description="Optional. Helps personalize venue and coach recommendations."
+        >
+          <ProfileEditField label="Sports">
             <SportsMultiSelect
               value={formData.sports || []}
               onChange={(sports) => handleChange("sports", sports)}
             />
-          </div>
+          </ProfileEditField>
 
-          <div className="flex flex-col justify-end gap-3 border-t border-slate-200 pt-4 sm:flex-row">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={isLoading}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full sm:min-w-25 sm:w-auto"
-            >
-              {isLoading
-                ? "Saving..."
-                : mode === "add"
-                  ? "Add Dependent"
-                  : "Update"}
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+          {(formData.sports?.length ?? 0) > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {formData.sports?.map((sport) => (
+                <Badge
+                  key={sport}
+                  className="border-orange-200 bg-white text-orange-700 hover:bg-white"
+                >
+                  {sport}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </ProfileEditPanel>
+      </form>
+    </Modal>
   );
 }
