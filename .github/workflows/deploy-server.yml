@@ -3,7 +3,7 @@ name: Deploy Server to AWS Elastic Beanstalk (Docker)
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - "server/**"             # Only trigger when server code changes
       - ".github/workflows/deploy-server.yml"
