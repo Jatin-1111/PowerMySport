@@ -275,7 +275,7 @@ export default function HomePage() {
                 </motion.div>
                 <motion.h2
                   variants={itemVariants}
-                  className="font-title mt-3 text-3xl font-bold text-slate-900 sm:text-4xl"
+                  className="font-title mt-3 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl"
                 >
                   0% platform commission on coach and venue bookings
                 </motion.h2>
@@ -836,7 +836,7 @@ export default function HomePage() {
                 variants={cardVariants}
                 whileHover={{ y: -6, scale: 1.015 }}
                 transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                className="group relative flex flex-col rounded-2xl border-2 border-power-orange/60 bg-gradient-to-b from-orange-50/60 to-white/80 p-8 backdrop-blur-md shadow-[0_8px_40px_-8px_rgba(233,115,22,0.25)] will-change-transform md:scale-105"
+                className="group relative flex flex-col rounded-2xl border-2 border-power-orange/60 bg-gradient-to-b from-orange-50/60 to-white/80 p-8 backdrop-blur-md shadow-[0_8px_40px_-8px_rgba(233,115,22,0.25)] will-change-transform scale-100 md:scale-105"
               >
                 <div className="absolute right-0 top-0 rounded-bl-lg rounded-tr-xl bg-power-orange px-4 py-1 text-xs font-bold text-white">
                   FEATURED
@@ -990,7 +990,7 @@ export default function HomePage() {
               >
                 <Link
                   href={card.href}
-                  className="group relative block h-64 overflow-hidden rounded-2xl shadow-lg premium-shadow sm:h-72"
+                  className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg premium-shadow sm:h-64 md:h-72"
                 >
                   {/* Background image */}
                   <Image

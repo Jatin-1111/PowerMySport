@@ -89,14 +89,14 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
   return (
     <section
       ref={containerRef}
-      className="relative min-h-[88vh] overflow-hidden bg-[linear-gradient(135deg,#f8fbff_0%,#edf4ff_40%,#fff8ee_100%)]"
+      className="relative min-h-[60vh] overflow-hidden bg-[linear-gradient(135deg,#f8fbff_0%,#edf4ff_40%,#fff8ee_100%)] sm:min-h-[80vh] lg:min-h-[88vh]"
     >
       {/* Ambient blobs */}
       <div className="pointer-events-none absolute -right-32 -top-32 h-[480px] w-[480px] rounded-full bg-sky-300/20 blur-[120px]" />
       <div className="pointer-events-none absolute -bottom-40 left-0 h-[400px] w-[400px] rounded-full bg-amber-200/25 blur-[100px]" />
       <div className="pointer-events-none absolute left-1/2 top-1/3 h-56 w-56 -translate-x-1/2 rounded-full bg-orange-200/15 blur-[80px]" />
 
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:py-28 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 px-4 py-16 sm:gap-12 sm:px-6 sm:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:py-28 lg:px-8">
         {/* ── Left: Text column ── */}
         <motion.div
           variants={containerVariants}
@@ -112,7 +112,7 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
 
           <motion.h1
             variants={itemVariants}
-            className="font-title mb-6 text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[4.25rem]"
+            className="font-title mb-4 text-3xl font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:mb-6 sm:text-4xl lg:text-[4.25rem]"
           >
             {title}
           </motion.h1>
@@ -120,7 +120,7 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
           {description && (
             <motion.p
               variants={itemVariants}
-              className="mb-10 max-w-xl text-lg leading-relaxed text-slate-600 sm:text-xl"
+              className="mb-8 max-w-xl text-base leading-relaxed text-slate-600 sm:mb-10 sm:text-lg lg:text-xl"
             >
               {description}
             </motion.p>
@@ -235,7 +235,7 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
             initial={{ opacity: 0, y: 16, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 0.6, type: "spring", stiffness: 260, damping: 20 }}
-            className="absolute -bottom-4 -left-6 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-xl backdrop-blur-md"
+            className="absolute -bottom-4 -left-6 hidden items-center gap-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-xl backdrop-blur-md sm:flex"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-power-orange text-white">
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={2}>
@@ -253,7 +253,7 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.75, type: "spring", stiffness: 300, damping: 18 }}
-            className="absolute right-4 top-6 flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-sm"
+            className="absolute right-4 top-6 hidden items-center gap-1.5 rounded-full border border-emerald-200 bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-sm sm:flex"
           >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -292,7 +292,7 @@ function PageHero({ title, subtitle, description, primaryCTA, secondaryCTA }: He
           )}
           <motion.h1
             variants={itemVariants}
-            className="font-title mb-5 text-4xl font-bold leading-tight text-slate-900 sm:text-5xl lg:text-6xl"
+            className="font-title mb-5 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl"
           >
             {title}
           </motion.h1>
@@ -352,7 +352,7 @@ function SplitHero({ title, subtitle, description, primaryCTA, secondaryCTA, ima
           )}
           <motion.h1
             variants={itemVariants}
-            className="font-title mb-6 text-4xl font-extrabold leading-tight text-slate-900 sm:text-5xl lg:text-6xl"
+            className="font-title mb-6 text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl"
           >
             {title}
           </motion.h1>
@@ -385,7 +385,7 @@ function SplitHero({ title, subtitle, description, primaryCTA, secondaryCTA, ima
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-80px" }}
-            className="relative h-[460px] w-full"
+            className="relative h-[280px] w-full sm:h-[380px] lg:h-[460px]"
           >
             {/* Decorative glow */}
             <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-orange-400/15 via-transparent to-turf-green/10 blur-2xl" />

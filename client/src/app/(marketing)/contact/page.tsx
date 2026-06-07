@@ -358,7 +358,7 @@ export default function ContactPage() {
         description="Have questions? We're here to help. Reach out to us anytime."
       />
       {/* ── Main Contact Section ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white py-20 sm:py-28 lg:py-32">
+      <section className="relative overflow-hidden bg-white py-16 sm:py-24 lg:py-32">
         {/* ── Background ambient blobs ── */}
         <div
           aria-hidden="true"
@@ -390,7 +390,7 @@ export default function ContactPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-1 gap-16 lg:grid-cols-[1fr_420px] xl:grid-cols-[1fr_460px]"
+            className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px] lg:gap-16 xl:grid-cols-[1fr_460px]"
           >
             {/* ── LEFT COLUMN: Form ─────────────────────────────────────────── */}
             <motion.div variants={fadeSlideUp} className="relative z-10">
@@ -402,7 +402,7 @@ export default function ContactPage() {
               <SkewedAccent />
 
               <div
-                className="relative rounded-[2rem] border border-white/80 bg-white/85 px-8 py-10 shadow-sm backdrop-blur-md sm:px-10 sm:py-12"
+                className="relative rounded-[2rem] border border-white/80 bg-white/85 px-5 py-8 shadow-sm backdrop-blur-md sm:px-10 sm:py-12"
                 style={{
                   boxShadow:
                     "0 4px 40px rgba(0,0,0,0.07), 0 1px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
@@ -630,7 +630,7 @@ export default function ContactPage() {
               {/* Clipped sport image with overlapping badge */}
               <motion.div
                 variants={scaleIn}
-                className="relative h-44 w-full overflow-hidden rounded-2xl"
+                className="relative h-36 w-full overflow-hidden rounded-2xl sm:h-44"
               >
                 <ClippedFrame
                   src={SPORT_IMG_3}
@@ -729,7 +729,7 @@ export default function ContactPage() {
       </div>
 
       {/* ── CTA Section ──────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-slate-950 py-20 sm:py-28">
+      <section className="relative overflow-hidden bg-slate-950 py-16 sm:py-24">
         {/* Background radial burst */}
         <div
           aria-hidden="true"

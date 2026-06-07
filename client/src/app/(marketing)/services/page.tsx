@@ -81,7 +81,7 @@ function SectionHeader({
       </motion.div>
       <motion.h2
         variants={fadeSlideUp}
-        className="font-title mx-auto max-w-2xl text-4xl font-bold text-slate-900 sm:text-5xl"
+        className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
       >
         {highlight ? (
           <>
@@ -198,7 +198,7 @@ function ComboBanner() {
         <polygon points="0,0 500,0 300,400 0,400" fill="white" />
       </svg>
 
-      <div className="relative grid items-center gap-10 p-8 md:grid-cols-2 md:p-12 lg:p-16">
+      <div className="relative grid items-center gap-8 p-6 sm:p-8 md:grid-cols-2 md:p-12 lg:p-16">
         {/* Copy */}
         <motion.div
           variants={orchestratorVariants}
@@ -213,7 +213,7 @@ function ComboBanner() {
           </motion.div>
           <motion.h3
             variants={fadeSlideUp}
-            className="mb-4 text-3xl font-bold text-white sm:text-4xl"
+            className="mb-4 text-2xl font-bold text-white sm:text-3xl lg:text-4xl"
           >
             Premium Combo: Venue + Coach
           </motion.h3>
@@ -488,7 +488,7 @@ function VenueOwnerShowcase() {
         className="group"
       >
         <div
-          className="relative h-[440px] w-full overflow-hidden rounded-[2.5rem] shadow-2xl sm:h-[500px]"
+          className="relative h-[280px] w-full overflow-hidden rounded-[2.5rem] shadow-2xl sm:h-[440px] lg:h-[500px]"
           style={{
             clipPath: "polygon(0 0, 92% 0, 100% 8%, 100% 100%, 8% 100%, 0 92%)",
           }}
@@ -540,7 +540,7 @@ function VenueOwnerShowcase() {
         </motion.div>
         <motion.h2
           variants={fadeSlideUp}
-          className="font-title mb-4 text-4xl font-bold text-slate-900 sm:text-5xl"
+          className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
         >
           Streamline Your{" "}
           <span className="relative inline-block">
@@ -843,7 +843,7 @@ export default function ServicesPage() {
               </motion.div>
               <motion.h2
                 variants={fadeSlideUp}
-                className="font-title mb-4 text-4xl font-bold text-slate-900 sm:text-5xl"
+                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
               >
                 Grow Your{" "}
                 <span className="relative inline-block">
@@ -904,7 +904,7 @@ export default function ServicesPage() {
               className="group"
             >
               <div
-                className="relative h-[440px] w-full overflow-hidden rounded-[2.5rem] shadow-2xl sm:h-[500px]"
+                className="relative h-[280px] w-full overflow-hidden rounded-[2.5rem] shadow-2xl sm:h-[440px] lg:h-[500px]"
                 style={{
                   clipPath:
                     "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
@@ -950,7 +950,7 @@ export default function ServicesPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-80px" }}
-            className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2"
+            className="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2"
           >
             {coachFeatures.map((feature, i) => (
               <CoachFeatureCard

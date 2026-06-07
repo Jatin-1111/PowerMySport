@@ -117,7 +117,7 @@ function AssetFrame({
 
   return (
     <div
-      className="relative h-[420px] w-full overflow-hidden rounded-[2rem] shadow-2xl sm:h-[480px]"
+      className="relative h-[280px] w-full overflow-hidden rounded-[2rem] shadow-2xl sm:h-[420px] lg:h-[480px]"
       style={style}
     >
       {/* Main image */}
@@ -202,7 +202,7 @@ function StepRow({
         <StepBadge label={`Step ${step}`} color={badgeBg} />
         <motion.h3
           variants={fadeSlideUp}
-          className="mb-4 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl"
+          className="mb-4 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl lg:text-4xl"
         >
           {title}
         </motion.h3>
@@ -558,7 +558,7 @@ export default function HowItWorksPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-80px" }}
-            className="mb-20 text-center lg:mb-28"
+            className="mb-12 text-center lg:mb-28"
           >
             <motion.div
               variants={fadeSlideUp}
@@ -568,7 +568,7 @@ export default function HowItWorksPage() {
             </motion.div>
             <motion.h2
               variants={fadeSlideUp}
-              className="font-title mx-auto max-w-2xl text-4xl font-bold text-slate-900 sm:text-5xl"
+              className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
               Book Your Game in{" "}
               <span className="relative inline-block">
@@ -621,7 +621,7 @@ export default function HowItWorksPage() {
             </motion.div>
             <motion.h2
               variants={fadeSlideUp}
-              className="font-title mx-auto max-w-xl text-4xl font-bold text-slate-900 sm:text-5xl"
+              className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
               List Your Facility & Start Earning
             </motion.h2>
@@ -639,7 +639,7 @@ export default function HowItWorksPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-80px" }}
-            className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3"
+            className="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3"
           >
             {ownerSteps.map((step, i) => (
               <OwnerStepCard
@@ -689,7 +689,7 @@ export default function HowItWorksPage() {
             </motion.div>
             <motion.h2
               variants={fadeSlideUp}
-              className="font-title mx-auto max-w-xl text-4xl font-bold text-slate-900 sm:text-5xl"
+              className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
               Become a Certified Coach
             </motion.h2>
@@ -706,7 +706,7 @@ export default function HowItWorksPage() {
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: "-80px" }}
-              className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-4"
+              className="mx-auto grid max-w-6xl grid-cols-2 gap-6 sm:grid-cols-4"
             >
               {coachSteps.map((step, i) => (
                 <CoachStepCard
@@ -765,7 +765,7 @@ export default function HowItWorksPage() {
             </motion.div>
             <motion.h2
               variants={fadeSlideUp}
-              className="font-title text-4xl font-bold text-slate-900 sm:text-5xl"
+              className="font-title text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
               Frequently Asked Questions
             </motion.h2>
