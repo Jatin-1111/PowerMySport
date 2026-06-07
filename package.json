@@ -1,6 +1,7 @@
 {
     "name": "your-monorepo",
     "private": true,
+    "packageManager": "npm@11.14.1",
     "workspaces": [
         "admin",
         "client",
