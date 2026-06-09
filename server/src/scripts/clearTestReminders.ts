@@ -4,8 +4,8 @@
  */
 import "dotenv/config";
 import mongoose from "mongoose";
-import { ScheduledNotification } from "../models/ScheduledNotification";
-import { Booking } from "../models/Booking";
+import { ScheduledNotification } from "../client/models/ScheduledNotification";
+import { Booking } from "../client/models/Booking";
 
 async function clearTestReminders() {
   try {

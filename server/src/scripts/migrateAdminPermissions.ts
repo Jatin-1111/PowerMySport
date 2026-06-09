@@ -1,6 +1,6 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import Admin from "../models/Admin";
+import Admin from "../admin/models/Admin";
 import {
   ADMIN_ROLES,
   SUPPORT_ADMIN_PERMISSIONS,

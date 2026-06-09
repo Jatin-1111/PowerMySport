@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
@@ -11,6 +11,7 @@ import {
 } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { Testimonials } from "@/modules/marketing/components/marketing/Testimonials";
+import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
 import {
   Building2,
@@ -22,12 +23,42 @@ import {
   Users,
   Users2,
   Zap,
+  ArrowRight,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Script from "next/script";
 import Link from "next/link";
+import Image from "next/image";
+import { motion, Variants } from "framer-motion";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
+
+// ─── Motion variants ──────────────────────────────────────────────────────────
+
+const sectionVariants: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.08 } },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 270, damping: 22 },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 28, scale: 0.97 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 260, damping: 22 },
+  },
+};
+
 export default function HomePage() {
   const { user } = useAuthStore();
   const communityUrl = getCommunityAppUrl();
@@ -40,14 +71,10 @@ export default function HomePage() {
 
   useEffect(() => {
     let isActive = true;
-
     const loadPlatformUsers = async () => {
       try {
         const response = await api.get("/stats/public");
-        if (!isActive) {
-          return;
-        }
-
+        if (!isActive) return;
         setPlatformUsers(response.data?.data?.totalUsers ?? null);
         setRoleCounts({
           PLAYER: response.data?.data?.roleCounts?.PLAYER ?? 0,
@@ -61,19 +88,14 @@ export default function HomePage() {
         }
       }
     };
-
     void loadPlatformUsers();
-
     return () => {
       isActive = false;
     };
   }, []);
 
   const formattedPlatformUsers = useMemo(() => {
-    if (platformUsers === null) {
-      return "—";
-    }
-
+    if (platformUsers === null) return "—";
     return new Intl.NumberFormat(undefined, { notation: "compact" }).format(
       platformUsers,
     );
@@ -100,13 +122,12 @@ export default function HomePage() {
     },
   };
 
-  // Features data
   const features = [
     {
       title: "Zero commission launch",
       description:
         "0% platform commission on coach and venue bookings for a limited time. Subscription purchases are charged separately.",
-      icon: <TicketPercent className="h-10 w-10" />,
+      icon: <TicketPercent className="h-6 w-6" />,
     },
     {
       title: "Book Premium Venues",
@@ -167,7 +188,6 @@ export default function HomePage() {
     },
   ];
 
-  // Testimonials data
   const testimonials = [
     {
       quote:
@@ -212,7 +232,7 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
       />
 
-      {/* Hero Section */}
+      {/* ── Hero ── */}
       <Hero
         variant="home"
         title="One Stop Solution For All Your Sporting Needs"
@@ -224,10 +244,7 @@ export default function HomePage() {
         }}
         secondaryCTA={
           user?.role === "VENUE_LISTER"
-            ? {
-                label: "Manage Venues",
-                href: "/venue-lister/inventory",
-              }
+            ? { label: "Manage Venues", href: "/venue-lister/inventory" }
             : {
                 label: user ? "Browse Venues" : "List Your Venue or Academy",
                 href: user ? "/venues" : "/register",
@@ -236,140 +253,202 @@ export default function HomePage() {
         gradient
       />
 
+      {/* ── Zero Commission Banner (with image panel) ── */}
       <section className="relative py-10 sm:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-amber-100/80 bg-[linear-gradient(120deg,#fff7e7_0%,#fffdf4_35%,#f3f9ff_100%)] p-6 shadow-sm sm:p-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-3xl border border-amber-100/80 bg-[linear-gradient(120deg,#fff7e7_0%,#fffdf4_40%,#f3f9ff_100%)] shadow-sm">
             <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-amber-200/40 blur-3xl" />
             <div className="pointer-events-none absolute -bottom-20 left-10 h-44 w-44 rounded-full bg-sky-200/35 blur-3xl" />
-            <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Limited-time zero commission
-                </p>
-                <h2 className="font-title mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+
+            <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+              <motion.div
+                variants={sectionVariants}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-80px" }}
+              >
+                <motion.div variants={itemVariants} className="mb-3">
+                  <SectionLabel
+                    label="Limited-time zero commission"
+                    color="orange"
+                  />
+                </motion.div>
+                <motion.h2
+                  variants={itemVariants}
+                  className="font-title mt-3 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl"
+                >
                   0% platform commission on coach and venue bookings
-                </h2>
-                <p className="mt-3 text-base text-slate-700 sm:text-lg">
+                </motion.h2>
+                <motion.p
+                  variants={itemVariants}
+                  className="mt-3 text-base text-slate-700 sm:text-lg"
+                >
                   Pay only the venue or coach rate plus taxes on bookings.
                   Subscription plans are billed separately with platform fees
                   and applicable taxes.
-                </p>
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                </motion.p>
+                <motion.div
+                  variants={itemVariants}
+                  className="mt-6 flex flex-col gap-3 sm:flex-row"
+                >
                   <Link href={getDashboardLink()} className="w-full sm:w-auto">
-                    <Button variant="primary" size="lg" className="rounded-xl">
-                      Start booking now
-                    </Button>
+                    <motion.div
+                      whileHover={{ y: -2, scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 20,
+                      }}
+                    >
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full rounded-xl"
+                      >
+                        Start booking now
+                      </Button>
+                    </motion.div>
                   </Link>
                   <Link href="/venues" className="w-full sm:w-auto">
-                    <Button variant="outline" size="lg" className="rounded-xl">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full rounded-xl"
+                    >
                       Browse venues
                     </Button>
                   </Link>
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Platform fee
-                  </p>
-                  <p className="mt-2 text-3xl font-bold text-power-orange">
-                    ₹0
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    On coach and venue bookings
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Transparent totals
-                  </p>
-                  <p className="mt-2 text-3xl font-bold text-slate-900">100%</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Venue + coach rates
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Instant confirmation
-                  </p>
-                  <p className="mt-2 text-3xl font-bold text-slate-900">Live</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Real-time availability
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Trust & safety
-                  </p>
-                  <p className="mt-2 text-3xl font-bold text-slate-900">
-                    Secure
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Protected payments
-                  </p>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                variants={sectionVariants}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-80px" }}
+                className="grid gap-3 sm:grid-cols-2"
+              >
+                {[
+                  {
+                    label: "Platform fee",
+                    value: "₹0",
+                    sub: "On coach and venue bookings",
+                  },
+                  {
+                    label: "Transparent totals",
+                    value: "100%",
+                    sub: "Venue + coach rates",
+                  },
+                  {
+                    label: "Instant confirmation",
+                    value: "Live",
+                    sub: "Real-time availability",
+                  },
+                  {
+                    label: "Trust & safety",
+                    value: "Secure",
+                    sub: "Protected payments",
+                  },
+                ].map((item, i) => (
+                  <motion.div
+                    key={item.label}
+                    variants={cardVariants}
+                    whileHover={{ y: -3, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                    className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm will-change-transform"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-3xl font-bold text-power-orange">
+                      {item.value}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{item.sub}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
             </div>
           </div>
         </div>
       </section>
 
+      {/* ── Platform Snapshot ── */}
       <section className="relative py-12 sm:py-14">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-slate-200/70 bg-white/85 p-6 shadow-sm backdrop-blur-sm sm:p-8">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Platform Snapshot
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-80px" }}
+            >
+              <motion.div
+                variants={itemVariants}
+                className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+              >
+                <div>
+                  <SectionLabel label="Platform Snapshot" color="slate" />
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                    PowerMySport Community by Role
+                  </h2>
+                </div>
+                <p className="text-sm text-slate-600">
+                  Total users:{" "}
+                  <span className="font-bold text-slate-900">
+                    {formattedPlatformUsers}
+                  </span>
                 </p>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  PowerMySport Community by Role
-                </h2>
-              </div>
-              <p className="text-sm text-slate-600">
-                Total users: {formattedPlatformUsers}
-              </p>
-            </div>
+              </motion.div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  Players
-                </p>
-                <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {new Intl.NumberFormat(undefined, {
-                    notation: "compact",
-                  }).format(roleCounts.PLAYER)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  Coaches
-                </p>
-                <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {new Intl.NumberFormat(undefined, {
-                    notation: "compact",
-                  }).format(roleCounts.COACH)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  Venues
-                </p>
-                <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {new Intl.NumberFormat(undefined, {
-                    notation: "compact",
-                  }).format(roleCounts.VENUE_LISTER)}
-                </p>
-              </div>
-            </div>
+              <motion.div
+                variants={sectionVariants}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-80px" }}
+                className="mt-6 grid gap-4 sm:grid-cols-3"
+              >
+                {[
+                  {
+                    label: "Players",
+                    count: roleCounts.PLAYER,
+                    color: "text-power-orange",
+                  },
+                  {
+                    label: "Coaches",
+                    count: roleCounts.COACH,
+                    color: "text-turf-green",
+                  },
+                  {
+                    label: "Venues",
+                    count: roleCounts.VENUE_LISTER,
+                    color: "text-blue-600",
+                  },
+                ].map((item) => (
+                  <motion.div
+                    key={item.label}
+                    variants={cardVariants}
+                    whileHover={{ y: -4, scale: 1.015 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 will-change-transform"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      {item.label}
+                    </p>
+                    <p className={`mt-2 text-3xl font-bold ${item.color}`}>
+                      {new Intl.NumberFormat(undefined, {
+                        notation: "compact",
+                      }).format(item.count)}
+                    </p>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* ── Features ── */}
       <Features
         title="Everything You Need To Train, Play, and Improve"
         subtitle="Why Choose PowerMySport"
@@ -379,7 +458,7 @@ export default function HomePage() {
         variant="centered"
       />
 
-      {/* Community Section */}
+      {/* ── Community Features ── */}
       <Features
         title="A Community System That Helps You Decide Faster"
         subtitle="Community System"
@@ -393,360 +472,565 @@ export default function HomePage() {
         variant="gradient"
         title="Join the community before you book"
         description="Check what other players, parents, coaches, and venue owners are discussing, then move into booking with more confidence."
-        primaryCTA={{
-          label: "Open Community",
-          href: communityUrl,
-        }}
+        primaryCTA={{ label: "Open Community", href: communityUrl }}
         secondaryCTA={{
           label: user ? "Go to Dashboard" : "Start Booking Now",
           href: getDashboardLink(),
         }}
       />
 
-      {/* Parent-Child Management Highlight Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
-              For Parents & Guardians
-            </p>
-            <h2 className="font-title mb-4 text-3xl font-bold text-deep-slate sm:text-4xl lg:text-5xl">
-              Manage Your Kids&apos; Sports Journey
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Add multiple child profiles and handle bookings, training plans,
-              and progress tracking from one simple parent dashboard.
-            </p>
-          </div>
+      {/* ── Parent Section: Split with clipped image ── */}
+      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
+        <div className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-indigo-100/30 blur-3xl" />
+        <div className="pointer-events-none absolute -right-32 bottom-1/4 h-80 w-80 rounded-full bg-amber-100/25 blur-3xl" />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 transition-transform group-hover:scale-110">
-                <Users2 size={28} />
-              </div>
-              <h3 className="text-lg font-bold text-deep-slate mb-3">
-                Add Multiple Kids
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Add unlimited dependents to your account. Track each
-                child&apos;s age, sports interests, and training needs
-                separately.
-              </p>
-            </div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
+            {/* Left: Cards */}
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-100px" }}
+            >
+              <motion.div variants={itemVariants} className="mb-3">
+                <SectionLabel label="For Parents & Guardians" color="blue" />
+              </motion.div>
+              <motion.h2
+                variants={itemVariants}
+                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
+              >
+                Manage Your Kids&apos; Sports Journey
+              </motion.h2>
+              <motion.p
+                variants={itemVariants}
+                className="mb-10 text-lg text-slate-600"
+              >
+                Add multiple child profiles and handle bookings, training plans,
+                and progress tracking from one simple parent dashboard.
+              </motion.p>
 
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 transition-transform group-hover:scale-110">
-                <Trophy size={28} />
-              </div>
-              <h3 className="text-lg font-bold text-deep-slate mb-3">
-                Book Venues & Coaches
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Book premium venues for your kids and connect them with
-                professional coaches for specialized training.
-              </p>
-            </div>
+              <motion.div variants={sectionVariants} className="space-y-4">
+                {[
+                  {
+                    icon: <Users2 size={22} />,
+                    title: "Add Multiple Kids",
+                    desc: "Add unlimited dependents to your account. Track each child's age, sports interests, and training needs separately.",
+                    color: "bg-indigo-100 text-indigo-600",
+                  },
+                  {
+                    icon: <Trophy size={22} />,
+                    title: "Book Venues & Coaches",
+                    desc: "Book premium venues for your kids and connect them with professional coaches for specialized training.",
+                    color: "bg-orange-100 text-power-orange",
+                  },
+                  {
+                    icon: <Zap size={22} />,
+                    title: "Track Sessions",
+                    desc: "Monitor upcoming sessions, booking history, and review-ready completed bookings from one dashboard.",
+                    color: "bg-emerald-100 text-emerald-600",
+                  },
+                ].map((item) => (
+                  <motion.div
+                    key={item.title}
+                    variants={cardVariants}
+                    whileHover={{ y: -4, scale: 1.01 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                    className="flex items-start gap-4 rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow will-change-transform"
+                  >
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${item.color}`}
+                    >
+                      {item.icon}
+                    </div>
+                    <div>
+                      <h3 className="mb-1 font-bold text-slate-900">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-slate-600">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
 
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6 transition-transform group-hover:scale-110">
-                <Zap size={28} />
+            {/* Right: Clipped image */}
+            <motion.div
+              initial={{ opacity: 0, x: 40, scale: 0.96 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{
+                type: "spring",
+                stiffness: 200,
+                damping: 26,
+                delay: 0.15,
+              }}
+              className="relative hidden h-[520px] lg:block"
+            >
+              {/* Glow behind */}
+              <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-indigo-400/15 via-transparent to-orange-400/10 blur-2xl" />
+              {/* Geometric accent */}
+              <svg
+                viewBox="0 0 200 200"
+                className="pointer-events-none absolute -left-6 -top-6 h-40 w-40 opacity-50"
+                aria-hidden
+              >
+                <polygon
+                  points="8,0 200,0 200,192 192,200 0,200 0,8"
+                  fill="none"
+                  stroke="rgba(99,102,241,0.2)"
+                  strokeWidth="1.5"
+                />
+              </svg>
+
+              <div
+                className="relative h-full w-full overflow-hidden rounded-[2.5rem]"
+                style={{
+                  clipPath:
+                    "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
+                }}
+              >
+                <Image
+                  src="https://images.unsplash.com/photo-1484863137850-59afcfe05386?auto=format&fit=crop&w=900&q=80"
+                  alt="Parent managing kids sports activities"
+                  fill
+                  sizes="(max-width: 1280px) 50vw, 600px"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-transparent" />
               </div>
-              <h3 className="text-lg font-bold text-deep-slate mb-3">
-                Track Sessions
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Monitor upcoming sessions, booking history, and review-ready
-                completed bookings from one dashboard.
-              </p>
-            </div>
+
+              {/* Floating badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{
+                  delay: 0.6,
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20,
+                }}
+                className="absolute -right-4 bottom-8 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-xl backdrop-blur-md"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+                  <Users2 size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">
+                    Family Dashboard
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    Manage all profiles in one place
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-16 sm:py-20 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
-              Simple Process
-            </p>
-            <h2 className="font-title mb-4 text-3xl font-bold text-deep-slate sm:text-4xl lg:text-5xl">
+      {/* ── How It Works ── */}
+      <section className="relative py-16 sm:py-20 lg:py-24">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-0 h-72 w-full -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
+        </div>
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            className="mb-12 text-center sm:mb-16"
+          >
+            <motion.div
+              variants={itemVariants}
+              className="mb-4 flex justify-center"
+            >
+              <SectionLabel label="Simple Process" color="orange" />
+            </motion.div>
+            <motion.h2
+              variants={itemVariants}
+              className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
+            >
               How It Works
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            </motion.h2>
+            <motion.p
+              variants={itemVariants}
+              className="text-lg text-slate-600"
+            >
               Start in minutes with a simple three-step flow
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6 transition-transform group-hover:scale-110">
-                1
-              </div>
-              <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
-                Create Your Account
-              </h3>
-              <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Create your account as a player, coach, or venue partner in
-                under two minutes.
-              </p>
+          {/* Steps grid with SVG connecting line */}
+          <div className="relative">
+            {/* Dashed connector line (desktop only) */}
+            <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center">
+              <svg
+                viewBox="0 0 800 40"
+                className="w-full max-w-2xl"
+                aria-hidden
+              >
+                <motion.line
+                  x1="80"
+                  y1="20"
+                  x2="720"
+                  y2="20"
+                  stroke="rgba(233,115,22,0.3)"
+                  strokeWidth="2"
+                  strokeDasharray="6 6"
+                  initial={{ pathLength: 0 }}
+                  whileInView={{ pathLength: 1 }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{ duration: 1.2, ease: "easeInOut", delay: 0.3 }}
+                />
+              </svg>
             </div>
 
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6 transition-transform group-hover:scale-110">
-                2
-              </div>
-              <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
-                Search Venues & Coaches
-              </h3>
-              <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Filter by sport, location, availability, and pricing to find the
-                best match.
-              </p>
-            </div>
-
-            <div className="group rounded-2xl border border-white/60 bg-white/80 p-8 shadow-sm backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-              <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6 transition-transform group-hover:scale-110">
-                3
-              </div>
-              <h3 className="text-lg font-bold text-deep-slate mb-3 text-center">
-                Book & Start Playing
-              </h3>
-              <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Complete payment, get instant confirmation, and manage changes
-                from your booking dashboard.
-              </p>
-            </div>
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-80px" }}
+              className="grid grid-cols-1 gap-8 md:grid-cols-3"
+            >
+              {[
+                {
+                  step: 1,
+                  title: "Create Your Account",
+                  desc: "Create your account as a player, coach, or venue partner in under two minutes.",
+                },
+                {
+                  step: 2,
+                  title: "Search Venues & Coaches",
+                  desc: "Filter by sport, location, availability, and pricing to find the best match.",
+                },
+                {
+                  step: 3,
+                  title: "Book & Start Playing",
+                  desc: "Complete payment, get instant confirmation, and manage changes from your booking dashboard.",
+                },
+              ].map(({ step, title, desc }) => (
+                <motion.div
+                  key={step}
+                  variants={cardVariants}
+                  whileHover={{ y: -6, scale: 1.015 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                  className="group relative rounded-2xl border border-white/70 bg-white/80 p-8 text-center backdrop-blur-sm premium-shadow will-change-transform hover:border-white/90 hover:bg-white/90"
+                >
+                  <motion.div
+                    className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-2xl font-bold text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.45)]"
+                    whileHover={{ scale: 1.12, rotate: 3 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 16 }}
+                  >
+                    {step}
+                  </motion.div>
+                  <h3 className="mb-3 text-lg font-bold text-slate-900">
+                    {title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-slate-600">
+                    {desc}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* ── Testimonials ── */}
       <Testimonials
         title="What Our Users Say"
         subtitle="Testimonials"
         testimonials={testimonials}
       />
 
-      {/* Multi-Role CTA Section - Only show if user is NOT logged in */}
+      {/* ── Multi-Role Join Section ── */}
       {!user && (
-        <section className="py-16 sm:py-20 lg:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl">
+        <section className="relative py-16 sm:py-20 lg:py-24">
+          <div className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full bg-orange-100/25 blur-3xl" />
+          <div className="pointer-events-none absolute -left-32 bottom-0 h-96 w-96 rounded-full bg-blue-100/20 blur-3xl" />
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-80px" }}
+              className="mb-12 text-center"
+            >
+              <motion.div
+                variants={itemVariants}
+                className="mb-4 flex justify-center"
+              >
+                <SectionLabel label="Join the platform" color="slate" />
+              </motion.div>
+              <motion.h2
+                variants={itemVariants}
+                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl"
+              >
                 Join PowerMySport
-              </h2>
-              <p className="text-lg text-slate-600">
+              </motion.h2>
+              <motion.p
+                variants={itemVariants}
+                className="text-lg text-slate-600"
+              >
                 Choose your role and unlock better training and booking
                 experiences
-              </p>
-            </div>
+              </motion.p>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              {/* ... (Previous Player/Venue/Coach cards content kept same) ... */}
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-80px" }}
+              className="grid grid-cols-1 gap-6 md:grid-cols-3"
+            >
               {/* Player Card */}
-              <div className="group shop-surface rounded-2xl p-8 premium-shadow flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-                <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6 transition-transform group-hover:scale-110">
-                  <UserIcon size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
+              <motion.div
+                variants={cardVariants}
+                whileHover={{ y: -6, scale: 1.015 }}
+                transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                className="group flex flex-col rounded-2xl border border-white/60 bg-white/80 p-8 backdrop-blur-md premium-shadow will-change-transform"
+              >
+                <motion.div
+                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.4)]"
+                  whileHover={{ scale: 1.1, rotate: 4 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 16 }}
+                >
+                  <UserIcon size={30} />
+                </motion.div>
+                <h3 className="mb-4 text-center text-xl font-bold text-slate-900">
                   Players & Parents
                 </h3>
-                <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
-                  <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Book premium venues instantly</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Find & book professional coaches</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Manage kids&apos; sports activities</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Booking reminders & notifications</span>
-                  </li>
+                <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
+                  {[
+                    "Book premium venues instantly",
+                    "Find & book professional coaches",
+                    "Manage kids' sports activities",
+                    "Booking reminders & notifications",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-power-orange"
+                      />
+                      {item}
+                    </li>
+                  ))}
                 </ul>
-                <a
+                <Link
                   href="/register?role=PLAYER"
-                  className="inline-block w-full rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-slate-700"
+                  className="block w-full rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-slate-700"
                 >
                   Start Booking Now
-                </a>
-              </div>
+                </Link>
+              </motion.div>
 
-              {/* Venue Owner Card - Highlighted */}
-              <div className="group shop-surface relative flex flex-col rounded-2xl border-2 border-power-orange p-8 premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg md:scale-105">
-                <div className="absolute top-0 right-0 bg-power-orange text-white px-4 py-1 rounded-bl-lg rounded-tr-xl text-xs font-bold">
+              {/* Venue Owner Card — Featured */}
+              <motion.div
+                variants={cardVariants}
+                whileHover={{ y: -6, scale: 1.015 }}
+                transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                className="group relative flex flex-col rounded-2xl border-2 border-power-orange/60 bg-gradient-to-b from-orange-50/60 to-white/80 p-8 backdrop-blur-md shadow-[0_8px_40px_-8px_rgba(233,115,22,0.25)] will-change-transform scale-100 md:scale-105"
+              >
+                <div className="absolute right-0 top-0 rounded-bl-lg rounded-tr-xl bg-power-orange px-4 py-1 text-xs font-bold text-white">
                   FEATURED
                 </div>
-                <div className="w-16 h-16 bg-power-orange text-white rounded-full flex items-center justify-center mx-auto mb-6 transition-transform group-hover:scale-110">
-                  <Building2 size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
+                <motion.div
+                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-white shadow-[0_6px_28px_-4px_rgba(233,115,22,0.55)]"
+                  whileHover={{ scale: 1.1, rotate: 4 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 16 }}
+                >
+                  <Building2 size={30} />
+                </motion.div>
+                <h3 className="mb-4 text-center text-xl font-bold text-slate-900">
                   Venue Owners
                 </h3>
-                <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
-                  <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Reach players actively searching for venues</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Automated booking management</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Real-time availability tracking</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-power-orange font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Instant payouts & analytics</span>
-                  </li>
+                <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
+                  {[
+                    "Reach players actively searching for venues",
+                    "Automated booking management",
+                    "Real-time availability tracking",
+                    "Instant payouts & analytics",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-power-orange"
+                      />
+                      {item}
+                    </li>
+                  ))}
                 </ul>
-                <a
+                <Link
                   href="/register?role=VENUE_LISTER"
-                  className="inline-block w-full rounded-xl bg-power-orange px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-orange-600"
+                  className="block w-full rounded-xl bg-power-orange px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-orange-600"
                 >
                   List Your Venue
-                </a>
-              </div>
+                </Link>
+              </motion.div>
 
               {/* Coach Card */}
-              <div className="group shop-surface rounded-2xl p-8 premium-shadow flex flex-col transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
-                <div className="w-16 h-16 bg-turf-green text-white rounded-full flex items-center justify-center mx-auto mb-6 transition-transform group-hover:scale-110">
-                  <Trophy size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-deep-slate mb-4 text-center">
+              <motion.div
+                variants={cardVariants}
+                whileHover={{ y: -6, scale: 1.015 }}
+                transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                className="group flex flex-col rounded-2xl border border-white/60 bg-white/80 p-8 backdrop-blur-md premium-shadow will-change-transform"
+              >
+                <motion.div
+                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-turf-green text-white shadow-[0_6px_24px_-4px_rgba(34,197,94,0.4)]"
+                  whileHover={{ scale: 1.1, rotate: 4 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 16 }}
+                >
+                  <Trophy size={30} />
+                </motion.div>
+                <h3 className="mb-4 text-center text-xl font-bold text-slate-900">
                   Coaches & Trainers
                 </h3>
-                <ul className="text-sm text-muted-foreground mb-8 space-y-3 grow">
-                  <li className="flex items-start gap-3">
-                    <span className="text-turf-green font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Build your coaching profile</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-turf-green font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Connect with serious athletes</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-turf-green font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Set your own rates & schedule</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="text-turf-green font-bold shrink-0 mt-0.5">
-                      <Check size={14} />
-                    </span>
-                    <span>Grow your coaching business</span>
-                  </li>
+                <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
+                  {[
+                    "Build your coaching profile",
+                    "Connect with serious athletes",
+                    "Set your own rates & schedule",
+                    "Grow your coaching business",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2.5">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-turf-green"
+                      />
+                      {item}
+                    </li>
+                  ))}
                 </ul>
-                <a
+                <Link
                   href="/register?role=COACH"
-                  className="inline-block w-full rounded-xl bg-turf-green px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-green-700"
+                  className="block w-full rounded-xl bg-turf-green px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-green-700"
                 >
                   Become a Coach
-                </a>
-              </div>
-            </div>
+                </Link>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
       )}
 
-      {/* Final CTA */}
-      {/* Explore Section */}
-      <section className="py-12 px-4">
-        <div className="container mx-auto">
-          <h2 className="font-title text-3xl font-bold text-center mb-2 text-slate-900">
-            Start Exploring
-          </h2>
-          <p className="text-center text-slate-600 mb-8">
-            Browse venues, academies, and coaches to plan your next session with
-            confidence
-          </p>
-          <div className="grid gap-6 md:grid-cols-3">
-            <Link
-              href="/venues"
-              className="group rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#fff9ef_0%,#fff3db_100%)] p-6 text-center premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+      {/* ── Explore Section — photo-backed cards ── */}
+      <section className="py-12 sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            className="mb-10 text-center"
+          >
+            <motion.h2
+              variants={itemVariants}
+              className="font-title mb-2 text-3xl font-bold text-slate-900"
             >
-              <Building2
-                size={40}
-                className="mx-auto mb-3 text-power-orange transition-transform group-hover:scale-110"
-              />
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
-                Browse Venues
-              </h3>
-              <p className="text-slate-600 text-sm mb-4">
-                Explore premium sports venues in your area
-              </p>
-              <span className="text-power-orange font-semibold">
-                View All Venues →
-              </span>
-            </Link>
-            <Link
-              href="/academies"
-              className="group rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#eef4ff_0%,#dfe9ff_100%)] p-6 text-center premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-            >
-              <GraduationCap
-                size={40}
-                className="mx-auto mb-3 text-indigo-600 transition-transform group-hover:scale-110"
-              />
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
-                Browse Academies
-              </h3>
-              <p className="text-slate-600 text-sm mb-4">
-                Explore academies built for training, batches, and development
-              </p>
-              <span className="text-indigo-600 font-semibold">
-                View All Academies →
-              </span>
-            </Link>
-            <Link
-              href="/coaches"
-              className="group rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f2fff7_0%,#e5f8ef_100%)] p-6 text-center premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-            >
-              <Users
-                size={40}
-                className="mx-auto mb-3 text-turf-green transition-transform group-hover:scale-110"
-              />
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
-                Find Coaches
-              </h3>
-              <p className="text-slate-600 text-sm mb-4">
-                Discover expert coaches for professional training
-              </p>
-              <span className="text-turf-green font-semibold">
-                View All Coaches →
-              </span>
-            </Link>
-          </div>
+              Start Exploring
+            </motion.h2>
+            <motion.p variants={itemVariants} className="text-slate-600">
+              Browse venues, academies, and coaches to plan your next session
+              with confidence
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            className="grid gap-5 md:grid-cols-3"
+          >
+            {[
+              {
+                href: "/venues",
+                img: "https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=900&q=80",
+                icon: <Building2 size={22} />,
+                title: "Browse Venues",
+                sub: "Explore premium sports venues in your area",
+                cta: "View All Venues",
+                accent: "from-orange-900/70 via-orange-800/40 to-transparent",
+                badge: "bg-power-orange",
+              },
+              {
+                href: "/academies",
+                img: "https://images.unsplash.com/photo-1555597673-b21d5c935865?auto=format&fit=crop&w=900&q=80",
+                icon: <GraduationCap size={22} />,
+                title: "Browse Academies",
+                sub: "Explore academies built for training, batches, and development",
+                cta: "View All Academies",
+                accent: "from-indigo-900/70 via-indigo-800/40 to-transparent",
+                badge: "bg-indigo-600",
+              },
+              {
+                href: "/coaches",
+                img: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=900&q=80",
+                icon: <Users size={22} />,
+                title: "Find Coaches",
+                sub: "Discover expert coaches for professional training",
+                cta: "View All Coaches",
+                accent: "from-emerald-900/70 via-emerald-800/40 to-transparent",
+                badge: "bg-turf-green",
+              },
+            ].map((card) => (
+              <motion.div
+                key={card.href}
+                variants={cardVariants}
+                whileHover={{ y: -6, scale: 1.015 }}
+                transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                className="will-change-transform"
+              >
+                <Link
+                  href={card.href}
+                  className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg premium-shadow sm:h-64 md:h-72"
+                >
+                  {/* Background image */}
+                  <Image
+                    src={card.img}
+                    alt={card.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-106"
+                  />
+                  {/* Gradient overlay */}
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-t ${card.accent}`}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                  {/* Content */}
+                  <div className="absolute inset-0 flex flex-col justify-end p-5">
+                    <div
+                      className={`mb-3 inline-flex w-fit items-center gap-1.5 rounded-lg ${card.badge} px-2.5 py-1 text-xs font-bold text-white`}
+                    >
+                      {card.icon}
+                      {card.title}
+                    </div>
+                    <p className="mb-3 text-sm text-white/85">{card.sub}</p>
+                    <div className="flex items-center gap-1.5 text-sm font-semibold text-white">
+                      {card.cta}
+                      <ArrowRight
+                        size={14}
+                        className="transition-transform group-hover:translate-x-1"
+                      />
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
+      {/* ── Final CTA ── */}
       <CTA
         variant="gradient"
         title={
@@ -763,10 +1047,7 @@ export default function HomePage() {
           label: user ? "Go to Dashboard" : "Get Started Free",
           href: getDashboardLink(),
         }}
-        secondaryCTA={{
-          label: "Learn More",
-          href: "/how-it-works",
-        }}
+        secondaryCTA={{ label: "Learn More", href: "/how-it-works" }}
       />
     </main>
   );

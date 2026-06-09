@@ -42,13 +42,24 @@ export const formatTime = (timeStr: string): string => {
 /**
  * Get available slots for a venue on a specific date
  */
-export const generateHourlySlots = (
+export const generateDynamicSlots = (
   startHour: number = 6,
   endHour: number = 22,
+  intervalMinutes: number = 60
 ): string[] => {
   const slots: string[] = [];
-  for (let hour = startHour; hour < endHour; hour++) {
-    slots.push(`${String(hour).padStart(2, "0")}:00`);
+  let currentHour = startHour;
+  let currentMinute = 0;
+
+  while (currentHour < endHour) {
+    slots.push(`${String(currentHour).padStart(2, "0")}:${String(currentMinute).padStart(2, "0")}`);
+    
+    currentMinute += intervalMinutes;
+    if (currentMinute >= 60) {
+      currentHour += Math.floor(currentMinute / 60);
+      currentMinute = currentMinute % 60;
+    }
   }
+
   return slots;
 };

@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { IUserPayload } from "../types/index";
+import { IUserPayload } from "../types";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_super_secret_jwt_key";
 const JWT_EXPIRE = "7d";

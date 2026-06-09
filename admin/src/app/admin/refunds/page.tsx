@@ -60,10 +60,15 @@ export default function AdminRefundsPage() {
   const loadRefunds = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual admin API call
-      // const response = await adminApi.getPendingRefunds();
-      // Mock data for now
-      setRefunds([]);
+      // Fetch bookings that have been refunded or have pending refunds
+      // via the PhonePe refund status endpoint for each recent booking
+      // The refunds page aggregates from the booking list filtered by refund state
+      const response = await adminApi.getPendingRefundBookings();
+      if (response.success && Array.isArray(response.data)) {
+        setRefunds(response.data as RefundRequest[]);
+      } else {
+        setRefunds([]);
+      }
     } catch (error) {
       toast.error("Failed to load refund requests");
       console.error(error);
@@ -86,13 +91,10 @@ export default function AdminRefundsPage() {
 
     setProcessing(selectedRefund.id);
     try {
-      // TODO: Call API to process refund
-      // const response = await adminApi.processRefund({
-      //   bookingPaymentTransactionId: selectedRefund.id,
-      //   amount: selectedRefund.amount,
-      //   refundMethod,
-      //   bankDetails: refundMethod === "BANK_TRANSFER" ? bankDetails : undefined,
-      // });
+      await adminApi.processRefund(selectedRefund.bookingId, {
+        refundType: "FULL",
+        reason: `Admin-initiated refund via ${refundMethod.replace("_", " ").toLowerCase()}`,
+      });
 
       toast.success("Refund processed successfully!");
       setSelectedRefund(null);
@@ -108,9 +110,15 @@ export default function AdminRefundsPage() {
 
   const handlePolling = async (refundId: string) => {
     try {
-      // TODO: Call API to check refund status
-      // const status = await adminApi.getRefundStatus(refundId);
-      toast.info("Refund status updated");
+      const response = await adminApi.getPhonePeRefundStatus(refundId);
+      if (response.success && response.data) {
+        const { refundStatus, refundAmount } = response.data;
+        toast.info(
+          `Refund status: ${refundStatus} — ₹${refundAmount}`,
+        );
+      } else {
+        toast.info("Refund status updated");
+      }
       await loadRefunds();
     } catch (error) {
       toast.error("Failed to check refund status");

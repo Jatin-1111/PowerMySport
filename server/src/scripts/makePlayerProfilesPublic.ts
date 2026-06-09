@@ -1,7 +1,7 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import { CommunityProfile } from "../models/CommunityProfile";
-import { User } from "../models/User";
+import { CommunityProfile } from "../community/models/CommunityProfile";
+import { User } from "../client/models/User";
 
 const MONGODB_URI =
   process.env.MONGO_URI ||

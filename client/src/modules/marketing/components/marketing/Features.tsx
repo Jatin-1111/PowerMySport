@@ -1,11 +1,10 @@
-﻿import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardTitle,
-} from "@/modules/shared/ui/Card";
+"use client";
+
 import { cn } from "@/utils/cn";
-import { motion } from "framer-motion";
+import {
+  motion,
+  Variants,
+} from "framer-motion";
 import {
   BarChart3,
   Calendar,
@@ -15,8 +14,10 @@ import {
   Star,
   Users,
   Zap,
+  LucideIcon,
 } from "lucide-react";
 import React from "react";
+import { SectionLabel } from "./SectionLabel";
 
 export interface Feature {
   title: string;
@@ -33,10 +34,102 @@ export interface FeaturesProps {
   variant?: "default" | "centered";
 }
 
-/**
- * Features Section Component
- * Displays a grid of feature cards
- */
+// ─── Motion variants ───────────────────────────────────────────────────────────
+
+const sectionVariants: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
+};
+
+const headerItemVariants: Variants = {
+  hidden: { opacity: 0, y: 22 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 280, damping: 22 },
+  },
+};
+
+const gridVariants: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.18 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 32, scale: 0.97 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 260, damping: 22 },
+  },
+};
+
+// ─── Icon badge colors cycling ─────────────────────────────────────────────────
+
+const iconBgColors = [
+  "bg-orange-100 text-power-orange",
+  "bg-blue-100 text-blue-600",
+  "bg-emerald-100 text-emerald-600",
+  "bg-purple-100 text-purple-600",
+  "bg-amber-100 text-amber-600",
+  "bg-cyan-100 text-cyan-600",
+  "bg-rose-100 text-rose-600",
+];
+
+// ─── Feature Card ─────────────────────────────────────────────────────────────
+
+function FeatureCard({
+  feature,
+  index,
+}: {
+  feature: Feature;
+  index: number;
+}) {
+  const colorClass = iconBgColors[index % iconBgColors.length];
+
+  return (
+    <motion.div
+      variants={cardVariants}
+      whileHover={{ y: -8, scale: 1.015 }}
+      transition={{ type: "spring", stiffness: 280, damping: 20 }}
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md will-change-transform premium-shadow hover:border-white/90 hover:bg-white/90"
+    >
+      {/* Subtle corner accent */}
+      <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-[3rem] opacity-40 bg-gradient-to-bl from-slate-100/80 to-transparent" />
+
+      {/* Icon badge */}
+      {feature.icon && (
+        <motion.div
+          className={cn(
+            "mb-5 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl will-change-transform",
+            colorClass,
+          )}
+          whileHover={{ rotate: 8, scale: 1.18 }}
+          transition={{ type: "spring", stiffness: 300, damping: 16 }}
+        >
+          {feature.icon}
+        </motion.div>
+      )}
+
+      {/* Content */}
+      <h3 className="mb-2.5 text-lg font-bold text-slate-900">{feature.title}</h3>
+      <p className="text-sm leading-relaxed text-slate-600">{feature.description}</p>
+
+      {/* Bottom hover accent line */}
+      <motion.div
+        className="absolute bottom-0 left-6 right-6 h-0.5 rounded-full bg-gradient-to-r from-power-orange/60 to-turf-green/40 origin-left"
+        initial={{ scaleX: 0 }}
+        whileInView={{ scaleX: 0 }}
+        whileHover={{ scaleX: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      />
+    </motion.div>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
 export const Features: React.FC<FeaturesProps> = ({
   title,
   subtitle,
@@ -52,86 +145,74 @@ export const Features: React.FC<FeaturesProps> = ({
   };
 
   return (
-    <section className="py-16 sm:py-20 lg:py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
+    <section className="relative py-16 sm:py-20 lg:py-24">
+      {/* Section ambient blobs */}
+      <div className="pointer-events-none absolute left-1/4 top-0 h-64 w-64 -translate-x-1/2 rounded-full bg-blue-100/30 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-1/4 h-56 w-56 translate-x-1/2 rounded-full bg-orange-100/25 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* ── Section Header ── */}
         {(title || subtitle || description) && (
-          <div
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-100px" }}
             className={cn(
               "mb-12 sm:mb-16",
-              variant === "centered" ? "text-center max-w-3xl mx-auto" : "",
+              variant === "centered" ? "mx-auto max-w-3xl text-center" : "",
             )}
           >
             {subtitle && (
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600">
-                {subtitle}
-              </p>
+              <motion.div variants={headerItemVariants} className={cn("mb-4", variant === "centered" ? "flex justify-center" : "")}>
+                <SectionLabel label={subtitle} color="orange" />
+              </motion.div>
             )}
             {title && (
-              <h2 className="font-title mb-4 text-3xl font-bold text-deep-slate sm:text-4xl lg:text-5xl">
+              <motion.h2
+                variants={headerItemVariants}
+                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
+              >
                 {title}
-              </h2>
+              </motion.h2>
             )}
             {description && (
-              <p className="text-base leading-7 text-muted-foreground sm:text-lg">
+              <motion.p
+                variants={headerItemVariants}
+                className="text-base leading-relaxed text-slate-600 sm:text-lg"
+              >
                 {description}
-              </p>
+              </motion.p>
             )}
-          </div>
+          </motion.div>
         )}
 
-        {/* Features Grid */}
-        <div
-          className={cn("grid grid-cols-1 gap-6 sm:gap-8", gridCols[columns])}
+        {/* ── Features Grid ── */}
+        <motion.div
+          variants={gridVariants}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-100px" }}
+          className={cn("grid grid-cols-1 gap-5 sm:gap-6", gridCols[columns])}
         >
           {features.map((feature, index) => (
-            <Card
-              key={index}
-              variant="elevated"
-              className="group h-full rounded-2xl border border-white/60 bg-white/80 backdrop-blur-md premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-            >
-              <CardContent className="pt-6">
-                {/* Icon */}
-                {feature.icon && (
-                  <motion.div
-                    className="mb-4 origin-center text-power-orange will-change-transform"
-                    initial={{ opacity: 0, y: 10, scale: 0.94 }}
-                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                    whileHover={{ scale: 1.08, y: -2, rotate: 2 }}
-                    whileTap={{ scale: 0.98 }}
-                    viewport={{ once: true, amount: 0.4 }}
-                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    {feature.icon}
-                  </motion.div>
-                )}
-                {/* Title */}
-                <CardTitle className="mb-3 text-xl text-slate-900">
-                  {feature.title}
-                </CardTitle>
-                {/* Description */}
-                <CardDescription className="text-base">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
+            <FeatureCard key={index} feature={feature} index={index} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 };
 
-/**
- * Default feature icons using Lucide React
- */
+// ─── Default icons (sized for badge) ─────────────────────────────────────────
+
 export const FeatureIcons = {
-  Calendar: <Calendar className="h-10 w-10" />,
-  Location: <MapPin className="h-10 w-10" />,
-  Users: <Users className="h-10 w-10" />,
-  Shield: <ShieldCheck className="h-10 w-10" />,
-  Lightning: <Zap className="h-10 w-10" />,
-  CreditCard: <CreditCard className="h-10 w-10" />,
-  Star: <Star className="h-10 w-10" />,
-  Chart: <BarChart3 className="h-10 w-10" />,
+  Calendar: <Calendar className="h-6 w-6" />,
+  Location: <MapPin className="h-6 w-6" />,
+  Users: <Users className="h-6 w-6" />,
+  Shield: <ShieldCheck className="h-6 w-6" />,
+  Lightning: <Zap className="h-6 w-6" />,
+  CreditCard: <CreditCard className="h-6 w-6" />,
+  Star: <Star className="h-6 w-6" />,
+  Chart: <BarChart3 className="h-6 w-6" />,
 };

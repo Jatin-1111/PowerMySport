@@ -1,14 +1,16 @@
-﻿"use client";
+"use client";
 
 import { bookingApi } from "@/modules/booking/services/booking";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Booking, Coach, Venue } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import {
@@ -21,6 +23,7 @@ import {
   Award,
   CalendarX,
   CreditCard,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -36,6 +39,27 @@ type TabType = "venues" | "coaches";
 const canViewInvoice = (status: Booking["status"]): boolean => {
   return ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"].includes(status);
 };
+
+const STATUS_STYLES: Record<string, string> = {
+  CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  PENDING_CONFIRMATION: "bg-amber-50 text-amber-700 border-amber-200",
+  PENDING_INVITES: "bg-blue-50 text-blue-700 border-blue-200",
+  IN_PROGRESS: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  COMPLETED: "bg-slate-50 text-slate-600 border-slate-200",
+  CANCELLED: "bg-red-50 text-red-700 border-red-200",
+  NO_SHOW: "bg-red-50 text-red-700 border-red-200",
+};
+
+function getStatusStyle(status: string) {
+  return STATUS_STYLES[status] || "bg-slate-50 text-slate-700 border-slate-200";
+}
+
+function formatBookingStatus(status: string) {
+  return status
+    .charAt(0)
+    .toUpperCase()
+    .concat(status.slice(1).toLowerCase().replace(/_/g, " "));
+}
 
 export default function BookingsPage() {
   const { user } = useAuthStore();
@@ -130,6 +154,12 @@ export default function BookingsPage() {
   const filteredBookings =
     activeTab === "venues" ? venueBookings : coachBookings;
 
+  // Stats
+  const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length;
+  const upcomingCount = bookings.filter(
+    (b) => new Date(b.date) >= new Date(),
+  ).length;
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -175,6 +205,34 @@ export default function BookingsPage() {
         }
       />
 
+      {/* Stats strip */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Total
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {bookings.length}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Upcoming
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {upcomingCount}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Confirmed
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {confirmedCount}
+          </p>
+        </div>
+      </div>
+
       {bookings.length === 0 ? (
         <Card className="shop-surface premium-shadow">
           <EmptyState
@@ -190,23 +248,25 @@ export default function BookingsPage() {
       ) : (
         <div className="space-y-6">
           {/* Tabs */}
-          <Card className="shop-surface premium-shadow overflow-hidden">
-            <div className="flex flex-col sm:flex-row border-b border-slate-200/60">
+          <Card className="shop-surface premium-shadow overflow-hidden p-0">
+            <div className="flex flex-col border-b border-slate-200/60 sm:flex-row">
               <button
                 onClick={() => {
                   setActiveTab("venues");
                   setCurrentPage(1);
                 }}
-                className={`flex-1 px-3 sm:px-6 py-3 sm:py-4 font-semibold text-center transition-colors border-b-2 ${
+                className={`flex-1 border-b-2 px-3 py-4 font-semibold transition-colors sm:px-6 ${
                   activeTab === "venues"
-                    ? "border-power-orange text-power-orange"
+                    ? "border-power-orange bg-orange-50/50 text-power-orange"
                     : "border-transparent text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
-                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${activeTab === "venues" ? "bg-power-orange text-white" : "bg-slate-100 text-slate-500"}`}>
+                    <MapPin className="h-4 w-4" />
+                  </div>
                   <span className="text-sm sm:text-base">Venue Bookings</span>
-                  <span className="bg-blue-100/70 text-blue-700 text-[10px] sm:text-xs rounded-full px-2 py-0.5 font-semibold">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs ${activeTab === "venues" ? "bg-power-orange/10 text-power-orange" : "bg-slate-100 text-slate-600"}`}>
                     {venueBookings.length}
                   </span>
                 </div>
@@ -216,16 +276,18 @@ export default function BookingsPage() {
                   setActiveTab("coaches");
                   setCurrentPage(1);
                 }}
-                className={`flex-1 px-3 sm:px-6 py-3 sm:py-4 font-semibold text-center transition-colors border-b-2 sm:border-l sm:border-b-2 ${
+                className={`flex-1 border-b-2 px-3 py-4 font-semibold transition-colors sm:border-b-2 sm:border-l sm:px-6 ${
                   activeTab === "coaches"
-                    ? "border-power-orange text-power-orange"
+                    ? "border-power-orange bg-orange-50/50 text-power-orange"
                     : "border-transparent text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
-                  <Award className="h-4 w-4 sm:h-5 sm:w-5" />
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${activeTab === "coaches" ? "bg-power-orange text-white" : "bg-slate-100 text-slate-500"}`}>
+                    <Award className="h-4 w-4" />
+                  </div>
                   <span className="text-sm sm:text-base">Coach Bookings</span>
-                  <span className="bg-purple-100/70 text-purple-700 text-[10px] sm:text-xs rounded-full px-2 py-0.5 font-semibold">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs ${activeTab === "coaches" ? "bg-power-orange/10 text-power-orange" : "bg-purple-100/70 text-purple-700"}`}>
                     {coachBookings.length}
                   </span>
                 </div>
@@ -258,158 +320,170 @@ export default function BookingsPage() {
               {filteredBookings.map((booking) => (
                 <Card
                   key={booking.id}
-                  className="shop-surface premium-shadow hover:shadow-md hover:border-slate-200 transition-all duration-200 overflow-hidden"
+                  className="shop-surface premium-shadow overflow-hidden p-0 transition-all duration-200 hover:shadow-md"
                 >
-                  <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex-1">
-                      {/* Venue Booking */}
-                      {activeTab === "venues" &&
-                      typeof booking.venueId === "object" &&
-                      booking.venueId !== null ? (
-                        <>
-                          <Link
-                            href={`/venues/${(booking.venueId as any)._id || (booking.venueId as any).id}`}
-                            className="text-lg font-semibold mb-2 text-slate-900 hover:text-power-orange transition-colors inline-block"
-                          >
-                            {(booking.venueId as any).name || "Venue"}
-                          </Link>
-                          {(booking.venueId as any).address && (
-                            <p className="text-sm text-slate-500 flex items-center gap-2 mb-2">
-                              <MapPin className="h-4 w-4 text-slate-400" />
-                              {(booking.venueId as any).address}
+                  {/* Colored left stripe based on status */}
+                  <div className="flex">
+                    <div
+                      className={`w-1 shrink-0 ${
+                        booking.status === "CONFIRMED"
+                          ? "bg-emerald-400"
+                          : booking.status === "PENDING_CONFIRMATION" ||
+                              booking.status === "PENDING_INVITES"
+                            ? "bg-amber-400"
+                            : booking.status === "IN_PROGRESS"
+                              ? "bg-yellow-400"
+                              : "bg-slate-300"
+                      }`}
+                    />
+                    <div className="flex flex-1 flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
+                      <div className="flex-1">
+                        {/* Venue Booking */}
+                        {activeTab === "venues" &&
+                        typeof booking.venueId === "object" &&
+                        booking.venueId !== null ? (
+                          <>
+                            <Link
+                              href={`/venues/${(booking.venueId as any)._id || (booking.venueId as any).id}`}
+                              className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900 hover:text-power-orange transition-colors"
+                            >
+                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                                <MapPin className="h-4 w-4 text-blue-600" />
+                              </div>
+                              {(booking.venueId as any).name || "Venue"}
+                            </Link>
+                            {(booking.venueId as any).address && (
+                              <p className="mb-2 flex items-center gap-2 text-sm text-slate-500">
+                                <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                {(booking.venueId as any).address}
+                              </p>
+                            )}
+                          </>
+                        ) : activeTab === "venues" ? (
+                          <div className="mb-2">
+                            <h3 className="text-base font-bold text-slate-900">
+                              Venue details pending
+                            </h3>
+                            <p className="text-sm text-slate-500">
+                              We'll show the full location once the venue
+                              details are resolved.
                             </p>
-                          )}
-                        </>
-                      ) : activeTab === "venues" ? (
-                        <div className="mb-2">
-                          <h3 className="text-lg font-semibold text-slate-900">
-                            Venue details pending
-                          </h3>
-                          <p className="text-sm text-slate-500">
-                            We’ll show the full location once the venue details
-                            are resolved.
-                          </p>
-                        </div>
-                      ) : null}
-
-                      {/* Coach Booking */}
-                      {activeTab === "coaches" && booking.coach ? (
-                        <>
-                          <div className="text-lg font-semibold mb-2 text-slate-900 flex items-center gap-2">
-                            <Award className="h-5 w-5 text-power-orange" />
-                            {booking.coach.sports?.[0] || "Coach"} Coach
                           </div>
-                          <p className="text-sm text-slate-600 mb-2">
-                            Service Mode:{" "}
-                            <span className="font-medium">
-                              {booking.coach.serviceMode === "FREELANCE"
-                                ? "Freelance"
-                                : booking.coach.serviceMode === "OWN_VENUE"
-                                  ? "Own Venue"
-                                  : "Hybrid"}
-                            </span>
-                          </p>
-                        </>
-                      ) : null}
+                        ) : null}
 
-                      {/* Common Details */}
-                      <p className="text-slate-600 flex flex-wrap items-center gap-2">
-                        <Calendar className="h-4 w-4 text-slate-400" />
-                        <span>{formatDate(booking.date)}</span>
-                        <span className="text-slate-300">|</span>
-                        <Clock className="h-4 w-4 text-slate-400" />
-                        <span>
-                          {formatTime(booking.startTime)} -{" "}
-                          {formatTime(booking.endTime)}
-                        </span>
-                      </p>
+                        {/* Coach Booking */}
+                        {activeTab === "coaches" && booking.coach ? (
+                          <>
+                            <div className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900">
+                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100">
+                                <Award className="h-4 w-4 text-purple-600" />
+                              </div>
+                              {booking.coach.sports?.[0] || "Coach"} Coach
+                            </div>
+                            <p className="mb-2 text-sm text-slate-500">
+                              Service:{" "}
+                              <span className="font-medium text-slate-700">
+                                {booking.coach.serviceMode === "FREELANCE"
+                                  ? "Freelance"
+                                  : booking.coach.serviceMode === "OWN_VENUE"
+                                    ? "Own Venue"
+                                    : "Hybrid"}
+                              </span>
+                            </p>
+                          </>
+                        ) : null}
 
-                      {booking.sport && (
-                        <p className="text-sm text-slate-600 mt-2">
-                          Sport:{" "}
-                          <span className="font-medium">{booking.sport}</span>
-                        </p>
-                      )}
-
-                      {booking.participantName && (
-                        <p className="text-sm text-slate-600 mt-1">
-                          Participant:{" "}
-                          <span className="font-medium">
-                            {booking.participantName}
+                        {/* Common Details */}
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                            {formatDate(booking.date)}
                           </span>
-                        </p>
-                      )}
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-slate-400" />
+                            {formatTime(booking.startTime)} –{" "}
+                            {formatTime(booking.endTime)}
+                          </span>
+                        </div>
 
-                      {booking.status === "CONFIRMED" &&
-                        booking.checkInCode && (
-                          <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
-                              Check-in Code
-                            </span>
-                            <span className="font-mono text-sm font-bold text-emerald-900">
-                              {booking.checkInCode}
-                            </span>
-                          </div>
+                        {booking.sport && (
+                          <p className="mt-2 text-sm text-slate-600">
+                            Sport:{" "}
+                            <span className="font-medium">{booking.sport}</span>
+                          </p>
                         )}
 
-                      <p className="text-slate-900 font-semibold mt-3 flex items-center gap-1">
-                        <IndianRupee className="h-4 w-4 text-slate-700" />
-                        <span>{booking.totalAmount}</span>
-                      </p>
+                        {booking.participantName && (
+                          <p className="mt-1 text-sm text-slate-600">
+                            Participant:{" "}
+                            <span className="font-medium">
+                              {booking.participantName}
+                            </span>
+                          </p>
+                        )}
 
-                      <span
-                        className={`inline-block mt-2 px-3 py-1 rounded text-sm font-semibold ${
-                          booking.status === "CONFIRMED"
-                            ? "bg-green-100 text-green-700 border border-green-300"
-                            : booking.status === "PENDING_CONFIRMATION"
-                              ? "bg-amber-100 text-amber-700 border border-amber-300"
-                              : booking.status === "PENDING_INVITES"
-                                ? "bg-blue-100 text-blue-700 border border-blue-300"
-                                : booking.status === "IN_PROGRESS"
-                                  ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
-                                  : "bg-red-100 text-red-700 border border-red-300"
-                        }`}
-                      >
-                        {booking.status.charAt(0).toUpperCase() +
-                          booking.status
-                            .slice(1)
-                            .toLowerCase()
-                            .replace(/_/g, " ")}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-2 w-full sm:w-auto">
-                      {canViewInvoice(booking.status) && (
-                        <Link
-                          href={`/dashboard/my-bookings/${booking.id}/invoice`}
-                        >
-                          <Button variant="secondary">Invoice</Button>
-                        </Link>
-                      )}
-                      {booking.status === "CONFIRMED" &&
-                        booking.paymentType === "SPLIT" &&
-                        booking.organizerId === user?.id && (
-                          <Button
-                            onClick={() => handleCoverPayments(booking.id)}
-                            variant="secondary"
-                            disabled={isCoveringPaymentId === booking.id}
-                            className="flex items-center gap-2"
+                        {booking.status === "CONFIRMED" &&
+                          booking.checkInCode && (
+                            <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                                Check-in Code
+                              </span>
+                              <span className="font-mono text-sm font-bold text-emerald-900">
+                                {booking.checkInCode}
+                              </span>
+                            </div>
+                          )}
+
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          <span className="inline-flex items-center gap-1 font-semibold text-slate-900">
+                            <IndianRupee className="h-4 w-4 text-slate-600" />
+                            {booking.totalAmount}
+                          </span>
+                          <Badge
+                            className={`border text-xs font-semibold ${getStatusStyle(booking.status)}`}
                           >
-                            <CreditCard className="h-4 w-4" />
-                            {isCoveringPaymentId === booking.id
-                              ? "Processing..."
-                              : "Cover Unpaid"}
+                            {formatBookingStatus(booking.status)}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 sm:w-auto">
+                        {canViewInvoice(booking.status) && (
+                          <Link
+                            href={`/dashboard/my-bookings/${booking.id}/invoice`}
+                          >
+                            <Button variant="secondary" size="sm" icon={<FileText size={14} />}>
+                              Invoice
+                            </Button>
+                          </Link>
+                        )}
+                        {booking.status === "CONFIRMED" &&
+                          booking.paymentType === "SPLIT" &&
+                          booking.organizerId === user?.id && (
+                            <Button
+                              onClick={() => handleCoverPayments(booking.id)}
+                              variant="secondary"
+                              size="sm"
+                              disabled={isCoveringPaymentId === booking.id}
+                              icon={<CreditCard size={14} />}
+                            >
+                              {isCoveringPaymentId === booking.id
+                                ? "Processing..."
+                                : "Cover Unpaid"}
+                            </Button>
+                          )}
+                        {(booking.status === "CONFIRMED" ||
+                          booking.status === "PENDING_CONFIRMATION" ||
+                          booking.status === "PENDING_INVITES") && (
+                          <Button
+                            onClick={() => handleCancelClick(booking.id)}
+                            variant="danger"
+                            size="sm"
+                          >
+                            Cancel
                           </Button>
                         )}
-                      {(booking.status === "CONFIRMED" ||
-                        booking.status === "PENDING_CONFIRMATION" ||
-                        booking.status === "PENDING_INVITES") && (
-                        <Button
-                          onClick={() => handleCancelClick(booking.id)}
-                          variant="danger"
-                        >
-                          Cancel
-                        </Button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -428,15 +502,16 @@ export default function BookingsPage() {
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
+                    size="sm"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1 || isLoading}
-                    className="flex items-center gap-2"
+                    icon={<ChevronLeft className="h-4 w-4" />}
                   >
-                    <ChevronLeft className="h-4 w-4" />
                     Previous
                   </Button>
                   <Button
                     variant="secondary"
+                    size="sm"
                     onClick={() =>
                       setCurrentPage((p) =>
                         Math.min(pagination.totalPages, p + 1),
@@ -445,10 +520,9 @@ export default function BookingsPage() {
                     disabled={
                       currentPage === pagination.totalPages || isLoading
                     }
-                    className="flex items-center gap-2"
                   >
                     Next
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 </div>
               </div>

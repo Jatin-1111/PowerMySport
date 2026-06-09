@@ -1,4 +1,4 @@
-export type FollowKind = "coach" | "venue";
+export type FollowKind = "coach" | "venue" | "academy";
 
 export interface FollowItem {
   id: string;

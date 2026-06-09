@@ -6,7 +6,8 @@ export type UserRole =
   | "VENUE_LISTER"
   | "COACH"
   | "ACADEMY_OWNER"
-  | "ADMIN";
+  | "ADMIN"
+  | "VENUE_ONBOARDING";
 
 // Admin role types
 export type AdminRole =

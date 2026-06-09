@@ -1,6 +1,17 @@
+# ── Never needed by EB ────────────────────────────────────────────────
 node_modules/
-.env
-.env.*
+dist/
+coverage/
 *.log
 npm-debug.log*
-coverage/
+
+# ── Secrets — set these as EB Environment Variables ──────────────────
+.env
+.env.*
+*.env
+
+# ── Dev / OS junk ─────────────────────────────────────────────────────
+.DS_Store
+debug_output.txt
+docs/
+src/**/*.test.ts

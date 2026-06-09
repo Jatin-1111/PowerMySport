@@ -599,6 +599,25 @@ export const adminApi = {
     return response.data;
   },
 
+  /**
+   * Fetch bookings that have a pending or initiated refund status
+   * Used by the admin refunds management page to populate the refund queue
+   */
+  getPendingRefundBookings: async (params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<unknown[]>> => {
+    const query = new URLSearchParams();
+    query.append("refundStatus", "PENDING");
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+
+    const response = await axiosInstance.get(
+      `/admin/refunds?${query.toString()}`,
+    );
+    return response.data;
+  },
+
   getReviewModerationQueue: async (pagination?: {
     page?: number;
     limit?: number;

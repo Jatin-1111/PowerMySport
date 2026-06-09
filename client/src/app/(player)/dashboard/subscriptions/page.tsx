@@ -6,18 +6,13 @@ import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Button } from "@/modules/shared/ui/Button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/modules/shared/ui/Card";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import { CalendarRange, RefreshCw, RotateCcw, Wallet } from "lucide-react";
+import { CalendarRange, RefreshCw, RotateCcw, Wallet, TrendingUp } from "lucide-react";
 import type { CoachSubscription } from "@/types";
 import { CancelSubscriptionModal } from "@/components/ui/CancelSubscriptionModal";
 import { motion, AnimatePresence, Variants } from "framer-motion";
@@ -42,7 +37,7 @@ const containerVariants: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 },
+    transition: { staggerChildren: 0.08 },
   },
 };
 
@@ -171,7 +166,7 @@ export default function SubscriptionsPage() {
         }
       />
 
-      {/* Stats Cards with smooth entrance */}
+      {/* Stats strip */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -179,55 +174,71 @@ export default function SubscriptionsPage() {
         className="grid gap-3 sm:grid-cols-3"
       >
         <motion.div variants={itemVariants}>
-          <Card className="shop-surface premium-shadow h-full">
-            <CardContent className="pt-6">
-              <p className="text-sm text-slate-500">Total</p>
-              <p className="text-2xl font-bold text-slate-900">{counts.all}</p>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Total
+            </p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">
+              {counts.all}
+            </p>
+          </div>
         </motion.div>
         <motion.div variants={itemVariants}>
-          <Card className="shop-surface premium-shadow h-full">
-            <CardContent className="pt-6">
-              <p className="text-sm text-slate-500">Active / Past Due</p>
-              <p className="text-2xl font-bold text-slate-900">{counts.live}</p>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Active / Past Due
+            </p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">
+              {counts.live}
+            </p>
+          </div>
         </motion.div>
         <motion.div variants={itemVariants}>
-          <Card className="shop-surface premium-shadow h-full">
-            <CardContent className="pt-6">
-              <p className="text-sm text-slate-500">Ended</p>
-              <p className="text-2xl font-bold text-slate-900">
-                {counts.ended}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Ended
+            </p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">
+              {counts.ended}
+            </p>
+          </div>
         </motion.div>
       </motion.div>
 
-      <Card className="shop-surface premium-shadow">
-        <CardHeader>
-          <CardTitle className="text-slate-900">Manage Subscriptions</CardTitle>
-          <CardDescription className="text-slate-500">
-            Use filters to focus on live plans or completed ones.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+        <ProfileSectionHeader
+          icon={TrendingUp}
+          title="Manage Subscriptions"
+          description="Use filters to focus on live plans or completed ones."
+        />
+        <CardContent className="px-6 py-5 space-y-4">
+          {/* Filter buttons */}
           <div className="flex flex-wrap gap-2">
             {[
               { label: "All", value: "ALL", count: counts.all },
               { label: "Live", value: "LIVE", count: counts.live },
               { label: "Ended", value: "ENDED", count: counts.ended },
             ].map((item) => (
-              <Button
+              <button
                 key={item.value}
-                variant={filter === item.value ? "primary" : "outline"}
-                className="text-sm transition-all"
                 onClick={() => setFilter(item.value as SubscriptionFilter)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
+                  filter === item.value
+                    ? "border-power-orange bg-power-orange text-white shadow-sm"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                }`}
               >
-                {item.label} ({item.count})
-              </Button>
+                {item.label}
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
+                    filter === item.value
+                      ? "bg-white/20 text-white"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {item.count}
+                </span>
+              </button>
             ))}
           </div>
 
@@ -235,7 +246,7 @@ export default function SubscriptionsPage() {
             <ListSkeleton count={4} />
           ) : filteredSubscriptions.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Card className="border border-dashed border-slate-300 bg-white">
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60">
                 <EmptyState
                   icon={Wallet}
                   title="No subscriptions yet"
@@ -243,7 +254,7 @@ export default function SubscriptionsPage() {
                   actionLabel="Browse Coaches"
                   onAction={() => router.push("/coaches")}
                 />
-              </Card>
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -252,7 +263,6 @@ export default function SubscriptionsPage() {
               animate="show"
               className="space-y-3"
             >
-              {/* Added AnimatePresence so items slide out when filtered */}
               <AnimatePresence mode="popLayout">
                 {filteredSubscriptions.map((subscription) => {
                   const subscriptionId = subscription.id || subscription._id;
@@ -304,10 +314,11 @@ export default function SubscriptionsPage() {
 
                   const canManage =
                     subscriptionId && isLiveStatus(subscription.status);
+                  const isLive = isLiveStatus(subscription.status);
 
                   return (
                     <motion.div
-                      layout // Layout animation for smooth re-ordering on filter
+                      layout
                       variants={itemVariants}
                       exit={{
                         opacity: 0,
@@ -318,73 +329,83 @@ export default function SubscriptionsPage() {
                         subscriptionId ||
                         `${coachName}-${packageName}-${subscription.createdAt}`
                       }
-                      className="rounded-2xl border border-slate-200 bg-white/80 p-4 hover:shadow-sm transition-shadow"
                     >
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-2">
-                          <p className="text-base font-semibold text-slate-900">
-                            {packageName}
-                          </p>
-                          <p className="text-sm text-slate-600">{coachName}</p>
-                          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                            <span className="inline-flex items-center gap-1">
-                              <CalendarRange size={13} />
-                              Started{" "}
-                              {new Date(
-                                subscription.currentPeriodStart,
-                              ).toLocaleDateString("en-IN")}
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <RotateCcw size={13} />
-                              Expires{" "}
-                              {new Date(
-                                subscription.currentPeriodEnd,
-                              ).toLocaleDateString("en-IN")}
-                            </span>
+                      <div className="flex rounded-xl border border-slate-200/70 bg-slate-50/40 overflow-hidden">
+                        {/* Status accent stripe */}
+                        <div
+                          className={`w-1 shrink-0 ${isLive ? "bg-emerald-400" : "bg-slate-300"}`}
+                        />
+                        <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="space-y-2">
+                            <p className="text-base font-semibold text-slate-900">
+                              {packageName}
+                            </p>
+                            <p className="text-sm text-slate-600">{coachName}</p>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                              <span className="inline-flex items-center gap-1">
+                                <CalendarRange size={13} />
+                                Started{" "}
+                                {new Date(
+                                  subscription.currentPeriodStart,
+                                ).toLocaleDateString("en-IN")}
+                              </span>
+                              <span className="inline-flex items-center gap-1">
+                                <RotateCcw size={13} />
+                                Expires{" "}
+                                {new Date(
+                                  subscription.currentPeriodEnd,
+                                ).toLocaleDateString("en-IN")}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-start gap-3 sm:items-end">
+                            <Badge
+                              variant="outline"
+                              className={getStatusStyle(subscription.status)}
+                            >
+                              {subscription.status}
+                            </Badge>
+                            <div className="flex flex-wrap gap-2">
+                              {coachId && packageId ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-sm text-slate-800"
+                                  onClick={() =>
+                                    router.push(
+                                      `/dashboard/subscription-checkout?coachId=${encodeURIComponent(coachId)}&packageId=${encodeURIComponent(packageId)}`,
+                                    )
+                                  }
+                                >
+                                  Renew Plan
+                                </Button>
+                              ) : null}
+
+                              {canManage ? (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  disabled={
+                                    isCancelling &&
+                                    selectedSubId === subscriptionId
+                                  }
+                                  onClick={() => {
+                                    if (subscriptionId) {
+                                      openCancelModal(subscriptionId);
+                                    }
+                                  }}
+                                >
+                                  {isCancelling &&
+                                  selectedSubId === subscriptionId
+                                    ? "Cancelling..."
+                                    : "Cancel"}
+                                </Button>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
-
-                        <Badge
-                          variant="outline"
-                          className={getStatusStyle(subscription.status)}
-                        >
-                          {subscription.status}
-                        </Badge>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {coachId && packageId ? (
-                          <Button
-                            variant="outline"
-                            className="text-sm text-slate-800"
-                            onClick={() =>
-                              router.push(
-                                `/dashboard/subscription-checkout?coachId=${encodeURIComponent(coachId)}&packageId=${encodeURIComponent(packageId)}`,
-                              )
-                            }
-                          >
-                            Renew Plan
-                          </Button>
-                        ) : null}
-
-                        {canManage ? (
-                          <Button
-                            variant="outline"
-                            className="text-sm"
-                            disabled={
-                              isCancelling && selectedSubId === subscriptionId
-                            }
-                            onClick={() => {
-                              if (subscriptionId) {
-                                openCancelModal(subscriptionId);
-                              }
-                            }}
-                          >
-                            {isCancelling && selectedSubId === subscriptionId
-                              ? "Cancelling..."
-                              : "Cancel Subscription"}
-                          </Button>
-                        ) : null}
                       </div>
                     </motion.div>
                   );

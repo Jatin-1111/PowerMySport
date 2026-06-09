@@ -12,17 +12,21 @@ import {
   Users,
   TrendingUp,
   Clock,
+  ChevronRight,
+  Zap,
+  RefreshCw,
 } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+  CardDescription,
+} from "@/modules/shared/ui/Card";
+import { Button } from "@/modules/shared/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import { friendService } from "@/modules/shared/services/friend";
@@ -44,6 +48,22 @@ interface UpcomingBooking {
   startTime: string;
   endTime: string;
   status: string;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  PENDING_CONFIRMATION: "bg-amber-50 text-amber-700 border-amber-200",
+  PENDING_INVITES: "bg-blue-50 text-blue-700 border-blue-200",
+  IN_PROGRESS: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  CANCELLED: "bg-red-50 text-red-700 border-red-200",
+  COMPLETED: "bg-slate-50 text-slate-700 border-slate-200",
+};
+
+function formatBookingStatus(status: string) {
+  return status
+    .charAt(0)
+    .toUpperCase()
+    .concat(status.slice(1).toLowerCase().replace(/_/g, " "));
 }
 
 export default function DashboardPage() {
@@ -156,8 +176,18 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-100">
-        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-orange-600" />
+      <div className="space-y-6">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm sm:p-8">
+          <div className="h-8 w-48 animate-pulse rounded-lg bg-slate-200" />
+          <div className="mt-3 h-5 w-64 animate-pulse rounded-lg bg-slate-100" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-slate-100" />
+          ))}
+        </div>
+        <div className="h-48 animate-pulse rounded-2xl bg-slate-100" />
+        <div className="h-64 animate-pulse rounded-2xl bg-slate-100" />
       </div>
     );
   }
@@ -171,108 +201,135 @@ export default function DashboardPage() {
       <PlayerPageHeader
         title="Dashboard"
         subtitle="Welcome back! Here's what's happening with your activities."
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-slate-700"
+            onClick={() => void loadDashboardData()}
+            icon={<RefreshCw size={14} />}
+          >
+            Refresh
+          </Button>
+        }
       />
 
-      {/* Notifications Grid */}
+      {/* Notification Stats Strip */}
       <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Pending Friend Requests */}
         <StaggerItem className="h-full">
-          <Card
-            className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200 cursor-pointer h-full"
+          <motion.div
+            className="flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 shop-surface premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             onClick={() => router.push("/dashboard/friends")}
+            whileHover={{ scale: 1.01 }}
+            transition={{ duration: 0.15 }}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-900">
-                Friend Requests
-              </CardTitle>
-              <UserPlus className="h-4 w-4 text-slate-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {pendingFriendRequests}
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                <UserPlus className="h-5 w-5" />
               </div>
-              <p className="text-xs text-slate-500">
-                {pendingFriendRequests === 0
-                  ? "No pending requests"
-                  : "Pending requests"}
-              </p>
               {pendingFriendRequests > 0 && (
-                <Badge variant="destructive" className="mt-2">
+                <Badge className="border-red-200 bg-red-50 text-red-700 hover:bg-red-50">
                   Action needed
                 </Badge>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <p className="mt-3 text-2xl font-bold text-slate-900">
+              {pendingFriendRequests}
+            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Friend Requests
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {pendingFriendRequests === 0
+                ? "No pending requests"
+                : `${pendingFriendRequests} waiting for your response`}
+            </p>
+          </motion.div>
         </StaggerItem>
 
         {/* Pending Invitations */}
         <StaggerItem className="h-full">
-          <Card
-            className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200 cursor-pointer h-full"
+          <motion.div
+            className="flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 shop-surface premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             onClick={() => router.push("/dashboard/invitations")}
+            whileHover={{ scale: 1.01 }}
+            transition={{ duration: 0.15 }}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-900">
-                Booking Invitations
-              </CardTitle>
-              <Mail className="h-4 w-4 text-slate-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {pendingInvitations}
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-power-orange">
+                <Mail className="h-5 w-5" />
               </div>
-              <p className="text-xs text-slate-500">
-                {pendingInvitations === 0
-                  ? "No pending invitations"
-                  : "Pending invitations"}
-              </p>
               {pendingInvitations > 0 && (
-                <Badge variant="destructive" className="mt-2">
+                <Badge className="border-red-200 bg-red-50 text-red-700 hover:bg-red-50">
                   Action needed
                 </Badge>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            <p className="mt-3 text-2xl font-bold text-slate-900">
+              {pendingInvitations}
+            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Booking Invitations
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {pendingInvitations === 0
+                ? "No pending invitations"
+                : `${pendingInvitations} invitations awaiting`}
+            </p>
+          </motion.div>
         </StaggerItem>
 
         {/* Upcoming Bookings */}
         <StaggerItem className="h-full">
-          <Card
-            className="shop-surface premium-shadow hover:-translate-y-1 hover:shadow-lg transition-all duration-200 cursor-pointer h-full"
+          <motion.div
+            className="flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 shop-surface premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             onClick={() => router.push("/dashboard/my-bookings")}
+            whileHover={{ scale: 1.01 }}
+            transition={{ duration: 0.15 }}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-slate-900">
-                Upcoming Bookings
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-slate-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-slate-900">
-                {upcomingBookings.length}
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                <Calendar className="h-5 w-5" />
               </div>
-              <p className="text-xs text-slate-500">
-                {upcomingBookings.length === 0
-                  ? "No upcoming bookings"
-                  : "Sessions scheduled"}
-              </p>
-            </CardContent>
-          </Card>
+              {upcomingBookings.length > 0 && (
+                <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                  Scheduled
+                </Badge>
+              )}
+            </div>
+            <p className="mt-3 text-2xl font-bold text-slate-900">
+              {upcomingBookings.length}
+            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Upcoming Bookings
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {upcomingBookings.length === 0
+                ? "No upcoming sessions"
+                : `${upcomingBookings.length} sessions scheduled`}
+            </p>
+          </motion.div>
         </StaggerItem>
       </StaggerContainer>
 
+      {/* Active Subscriptions */}
       {liveSubscriptions.length > 0 && (
         <SlideUp delay={0.15} yOffset={18}>
-          <Card className="shop-surface premium-shadow">
-            <CardHeader>
-              <CardTitle className="text-slate-900">
-                Active Subscriptions
-              </CardTitle>
-              <CardDescription className="text-slate-500">
-                Plans you purchased from coaches and their expiry dates.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <Card className="shop-surface premium-shadow overflow-hidden p-0">
+            <ProfileSectionHeader
+              icon={TrendingUp}
+              title="Active Subscriptions"
+              description="Plans you purchased from coaches and their expiry dates."
+              action={
+                <Link href="/dashboard/subscriptions">
+                  <Button variant="outline" size="sm" icon={<ChevronRight size={14} />}>
+                    Manage all
+                  </Button>
+                </Link>
+              }
+            />
+            <CardContent className="px-6 py-5 space-y-3">
               {liveSubscriptions.slice(0, 3).map((subscription) => {
                 const subscriptionId = subscription.id || subscription._id;
                 const packageData = subscription.packageId as
@@ -320,7 +377,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={subscription.id || subscription._id}
-                    className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
                       <p className="font-semibold text-slate-900">
@@ -340,11 +397,19 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{subscription.status}</Badge>
+                      <Badge
+                        className={
+                          subscription.status === "ACTIVE"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
+                            : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50"
+                        }
+                      >
+                        {subscription.status}
+                      </Badge>
                       {coachId && packageId ? (
                         <Button
                           variant="outline"
-                          className="text-xs"
+                          size="sm"
                           onClick={() =>
                             router.push(
                               `/dashboard/subscription-checkout?coachId=${encodeURIComponent(coachId)}&packageId=${encodeURIComponent(packageId)}`,
@@ -356,8 +421,8 @@ export default function DashboardPage() {
                       ) : null}
                       {subscriptionId ? (
                         <Button
-                          variant="outline"
-                          className="text-xs"
+                          variant="secondary"
+                          size="sm"
                           disabled={cancellingSubscriptionId === subscriptionId}
                           onClick={() =>
                             void handleCancelSubscription(subscriptionId)
@@ -372,43 +437,42 @@ export default function DashboardPage() {
                   </div>
                 );
               })}
-              <div className="flex justify-end">
-                <Link href="/dashboard/subscriptions">
-                  <Button variant="outline" className="text-slate-800">
-                    Manage all subscriptions
-                  </Button>
-                </Link>
-              </div>
             </CardContent>
           </Card>
         </SlideUp>
       )}
 
       {/* Upcoming Bookings List */}
-      <SlideUp delay={0.2} yOffset={20}>
-        {upcomingBookings.length > 0 && (
-          <Card className="shop-surface premium-shadow">
-            <CardHeader>
-              <CardTitle className="text-slate-900">Next Sessions</CardTitle>
-              <CardDescription className="text-slate-500">
-                Your upcoming bookings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+      {upcomingBookings.length > 0 && (
+        <SlideUp delay={0.2} yOffset={20}>
+          <Card className="shop-surface premium-shadow overflow-hidden p-0">
+            <ProfileSectionHeader
+              icon={Calendar}
+              title="Next Sessions"
+              description="Your upcoming bookings at a glance."
+              action={
+                <Link href="/dashboard/my-bookings">
+                  <Button variant="outline" size="sm" icon={<ChevronRight size={14} />}>
+                    View all
+                  </Button>
+                </Link>
+              }
+            />
+            <CardContent className="px-6 py-5 space-y-3">
               {upcomingBookings.map((booking) => (
                 <motion.div
                   key={booking.id}
-                  className="flex items-center justify-between rounded-xl border border-white/70 bg-white/80 p-4 hover:bg-white transition-colors"
+                  className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 transition-colors hover:bg-white"
                   whileHover={{ y: -2 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
                 >
                   <div className="flex items-center gap-4">
                     <motion.div
-                      className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100"
                       whileHover={{ scale: 1.05, rotate: 3 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
                     >
-                      <Calendar className="h-6 w-6 text-orange-600" />
+                      <Calendar className="h-5 w-5 text-power-orange" />
                     </motion.div>
                     <div>
                       <p className="font-semibold text-slate-900">
@@ -421,68 +485,70 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant="outline">{booking.status}</Badge>
+                  <Badge
+                    className={`border ${STATUS_COLORS[booking.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}
+                  >
+                    {formatBookingStatus(booking.status)}
+                  </Badge>
                 </motion.div>
               ))}
-              <Link href="/dashboard/my-bookings">
-                <Button
-                  variant="outline"
-                  className="w-full mt-2 text-slate-800 hover:bg-slate-100 transition-colors"
-                >
-                  View All Bookings
-                </Button>
-              </Link>
             </CardContent>
           </Card>
-        )}
-      </SlideUp>
+        </SlideUp>
+      )}
 
       {/* Quick Actions */}
       <SlideUp delay={0.3} yOffset={20}>
-        <Card className="shop-surface premium-shadow">
-          <CardHeader>
-            <CardTitle className="text-slate-900">Quick Actions</CardTitle>
-            <CardDescription className="text-slate-500">
-              Get started with common activities
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Link href="/venues">
-              <Button
-                variant="outline"
-                className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
-              >
-                <MapPin className="h-6 w-6 text-orange-600" />
-                <span className="text-slate-900">Book Venue</span>
-              </Button>
-            </Link>
-            <Link href="/coaches">
-              <Button
-                variant="outline"
-                className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
-              >
-                <Users className="h-6 w-6 text-orange-600" />
-                <span className="text-slate-900">Find Coach</span>
-              </Button>
-            </Link>
-            <Link href="/dashboard/friends">
-              <Button
-                variant="outline"
-                className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
-              >
-                <UserPlus className="h-6 w-6 text-orange-600" />
-                <span className="text-slate-900">Manage Friends</span>
-              </Button>
-            </Link>
-            <Link href="/dashboard/my-profile">
-              <Button
-                variant="outline"
-                className="w-full h-auto py-6 flex flex-col gap-2 text-slate-900 hover:bg-slate-50"
-              >
-                <TrendingUp className="h-6 w-6 text-orange-600" />
-                <span className="text-slate-900">View Profile</span>
-              </Button>
-            </Link>
+        <Card className="shop-surface premium-shadow overflow-hidden p-0">
+          <ProfileSectionHeader
+            icon={Zap}
+            title="Quick Actions"
+            description="Get started with common activities"
+          />
+          <CardContent className="px-6 py-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  href: "/venues",
+                  icon: MapPin,
+                  label: "Book Venue",
+                  color: "bg-blue-100 text-blue-600",
+                },
+                {
+                  href: "/coaches",
+                  icon: Users,
+                  label: "Find Coach",
+                  color: "bg-purple-100 text-purple-600",
+                },
+                {
+                  href: "/dashboard/friends",
+                  icon: UserPlus,
+                  label: "Manage Friends",
+                  color: "bg-emerald-100 text-emerald-600",
+                },
+                {
+                  href: "/dashboard/my-profile",
+                  icon: TrendingUp,
+                  label: "View Profile",
+                  color: "bg-orange-100 text-power-orange",
+                },
+              ].map(({ href, icon: Icon, label, color }) => (
+                <Link key={href} href={href}>
+                  <motion.div
+                    className="flex flex-col items-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/40 px-4 py-5 text-center transition-all hover:border-slate-300 hover:bg-white hover:shadow-sm cursor-pointer"
+                    whileHover={{ y: -3, scale: 1.01 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-800">
+                      {label}
+                    </span>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </SlideUp>

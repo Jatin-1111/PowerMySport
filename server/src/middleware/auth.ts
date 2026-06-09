@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { Coach } from "../models/Coach";
-import { User } from "../models/User";
+import { Coach } from "../client/models/Coach";
+import { User } from "../client/models/User";
 import { verifyToken } from "../utils/jwt";
-import { IUserPayload } from "../types/index";
+import { IUserPayload } from "../types";
 import {
   hasPermission,
   hasAnyPermission,
@@ -10,7 +10,8 @@ import {
   isSystemAdminRole,
 } from "../utils/permissions";
 import { ADMIN_ROLES } from "../constants/adminPermissions";
-import Admin from "../models/Admin";
+import Admin from "../admin/models/Admin";
+import redis from "../config/redis";
 
 declare global {
   namespace Express {
@@ -21,23 +22,24 @@ declare global {
 }
 
 const AUTH_ACTIVITY_WRITE_THROTTLE_MS = 60 * 1000;
-const lastAuthActivityWriteAt = new Map<string, number>();
-
 const touchAuthActivity = (userId: string): void => {
-  const now = Date.now();
-  const previous = lastAuthActivityWriteAt.get(userId) || 0;
+  const redisKey = `user:activity:throttle:${userId}`;
 
-  if (now - previous < AUTH_ACTIVITY_WRITE_THROTTLE_MS) {
-    return;
-  }
-
-  lastAuthActivityWriteAt.set(userId, now);
-
-  User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date() } }).catch(
-    (error: unknown) => {
-      console.error("Failed to persist auth activity:", error);
-    },
-  );
+  redis
+    .set(redisKey, "1", "PX", AUTH_ACTIVITY_WRITE_THROTTLE_MS, "NX")
+    .then((result) => {
+      if (result) {
+        User.updateOne(
+          { _id: userId },
+          { $set: { lastActiveAt: new Date() } },
+        ).catch((error: unknown) => {
+          console.error("Failed to persist auth activity:", error);
+        });
+      }
+    })
+    .catch((error) => {
+      console.error("Redis error during touchAuthActivity:", error);
+    });
 };
 
 export const authMiddleware = async (
@@ -98,6 +100,58 @@ export const authMiddleware = async (
     if (decoded.id) {
       touchAuthActivity(decoded.id);
     }
+    next();
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Authentication failed",
+    });
+  }
+};
+
+export const onboardingAuthMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    const bearerToken =
+      typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+        ? authHeader.slice(7).trim()
+        : "";
+    const cookieToken = req.cookies?.token;
+    const token = bearerToken || cookieToken;
+
+    if (!token) {
+      res.status(401).json({
+        success: false,
+        message: "No token provided. Please start onboarding from Step 1.",
+      });
+      return;
+    }
+
+    const decoded = verifyToken(token);
+
+    if (decoded.role !== "VENUE_ONBOARDING") {
+      res.status(403).json({
+        success: false,
+        message: "Invalid token for venue onboarding.",
+      });
+      return;
+    }
+
+    // Enforce strict ownership verification
+    const requestedVenueId = req.body?.venueId || req.params?.venueId;
+    if (requestedVenueId && requestedVenueId !== decoded.id) {
+      res.status(403).json({
+        success: false,
+        message: "Unauthorized access to this venue.",
+      });
+      return;
+    }
+
+    req.user = decoded;
     next();
   } catch (error) {
     res.status(401).json({

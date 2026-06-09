@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import Notification from "../models/Notification";
-import { User } from "../models/User";
+import Notification from "../client/models/Notification";
+import { User } from "../client/models/User";
 import dotenv from "dotenv";
 
 dotenv.config();

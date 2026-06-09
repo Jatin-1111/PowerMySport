@@ -10,7 +10,7 @@
 
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { Venue } from "../models/Venue";
+import { Venue } from "../client/models/Venue";
 
 dotenv.config();
 

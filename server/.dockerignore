@@ -1,0 +1,33 @@
+# ── Dependencies ──────────────────────────────────────────
+node_modules
+
+# ── Build output (builder stage produces this; runner copies from builder) ──
+dist
+
+# ── Environment & Secrets ──────────────────────────────────
+.env
+.env.*
+*.env
+
+# ── AWS Elastic Beanstalk (not needed inside Docker) ──────
+.ebextensions/
+.elasticbeanstalk/
+.ebignore
+.platform/
+Procfile
+
+# ── Vercel (not needed inside Docker) ─────────────────────
+vercel.json
+api/
+
+# ── Dev / Test Artifacts ───────────────────────────────────
+*.log
+coverage
+src/**/*.test.ts
+debug_output.txt
+docs/
+
+# ── OS & Editor Junk ──────────────────────────────────────
+.DS_Store
+.gitignore
+*.md

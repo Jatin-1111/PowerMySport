@@ -1,4 +1,4 @@
-import { Booking } from "../models/Booking";
+import { Booking } from "../client/models/Booking";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 

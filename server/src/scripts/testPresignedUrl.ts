@@ -2,7 +2,7 @@
  * Test presigned URL generation
  */
 
-import { s3Service } from "../services/S3Service";
+import { s3Service } from "../shared/services/S3Service";
 import "dotenv/config";
 
 async function testPresignedUrl() {

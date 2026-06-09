@@ -16,7 +16,7 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
-import { s3Service } from "../services/S3Service";
+import { s3Service } from "../shared/services/S3Service";
 
 dotenv.config();
 

@@ -1,22 +1,48 @@
 ﻿"use client";
 
 import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
+import { formatDependentRelation } from "@/modules/player/constants/dependentRelations";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
+import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
+import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
+import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+} from "@/modules/shared/ui/Card";
+import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Modal } from "@/modules/shared/ui/Modal";
+import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { User } from "@/types";
-import { Edit2, Plus, Trash2 } from "lucide-react";
+import { cn } from "@/utils/cn";
+import {
+  Calendar,
+  Edit2,
+  GraduationCap,
+  Info,
+  Mail,
+  Phone,
+  Plus,
+  Trash2,
+  Trophy,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 type Dependent = NonNullable<User["dependents"]>[number];
 
-// Helper function to extract error message from axios errors
 const getErrorMessage = (error: unknown): string => {
   if (typeof error === "object" && error !== null && "response" in error) {
     const axiosError = error as { response?: { data?: { message?: string } } };
@@ -27,6 +53,51 @@ const getErrorMessage = (error: unknown): string => {
   }
   return "An error occurred";
 };
+
+const getDependentAge = (dob?: string | Date) => {
+  if (!dob) return null;
+
+  const birthDate = new Date(dob);
+  if (Number.isNaN(birthDate.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age -= 1;
+  }
+  return age;
+};
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+
+const formatGender = (gender?: string) => {
+  if (gender === "MALE") return "Male";
+  if (gender === "FEMALE") return "Female";
+  if (gender === "OTHER") return "Other";
+  return null;
+};
+
+function ProfilePageSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-4 w-48" />
+      <Skeleton className="h-36 w-full rounded-2xl" />
+      <Skeleton className="h-64 w-full rounded-xl" />
+      <Skeleton className="h-48 w-full rounded-xl" />
+      <Skeleton className="h-56 w-full rounded-xl" />
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -87,18 +158,6 @@ export default function ProfilePage() {
     }
   };
 
-  const getDependentAge = (dob?: string | Date) => {
-    if (!dob) {
-      return null;
-    }
-    const birthDate = new Date(dob);
-    if (Number.isNaN(birthDate.getTime())) {
-      return null;
-    }
-    const ageInMs = Date.now() - birthDate.getTime();
-    return Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 365.25));
-  };
-
   const handleStartGraduation = (dependent: Dependent) => {
     if (!dependent._id) {
       toast.error("Unable to graduate dependent without an id.");
@@ -142,12 +201,6 @@ export default function ProfilePage() {
     setGraduatingDependentId(graduationForm.dependentId);
 
     try {
-      console.log("Graduating dependent with data:", {
-        dependentId: graduationForm.dependentId,
-        email: graduationForm.email,
-        phone: graduationForm.phone,
-      });
-
       const response = await authApi.graduateDependent({
         dependentId: graduationForm.dependentId,
         email: graduationForm.email,
@@ -171,7 +224,6 @@ export default function ProfilePage() {
         toast.error(response.message || "Failed to graduate dependent");
       }
     } catch (error: unknown) {
-      console.error("Graduation error:", error);
       const errorMessage =
         getErrorMessage(error) || "Failed to graduate dependent";
       toast.error(errorMessage);
@@ -203,9 +255,11 @@ export default function ProfilePage() {
       if (dependentModalMode === "add") {
         setSavingDependentId("new");
         await authApi.addDependent(dependentData);
+        toast.success("Dependent added successfully");
       } else if (selectedDependent?._id) {
         setSavingDependentId(selectedDependent._id);
         await authApi.updateDependent(selectedDependent._id, dependentData);
+        toast.success("Dependent updated successfully");
       }
       await fetchProfile();
     } catch (error: unknown) {
@@ -225,6 +279,7 @@ export default function ProfilePage() {
       await authApi.deleteDependent(dependentId);
       await fetchProfile();
       setDependentToDelete(null);
+      toast.success("Dependent removed");
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || "Failed to delete dependent");
     } finally {
@@ -232,7 +287,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleEditProfileClick = () => {
+  const resetProfileForm = () => {
     if (!user) return;
     setProfileForm({
       name: user.name || "",
@@ -240,7 +295,17 @@ export default function ProfilePage() {
       phone: user.phone || "",
       dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : "",
     });
+  };
+
+  const handleEditProfileClick = () => {
+    if (!user) return;
+    resetProfileForm();
     setIsEditingProfile(true);
+  };
+
+  const handleCancelProfileEdit = () => {
+    resetProfileForm();
+    setIsEditingProfile(false);
   };
 
   const handleSaveProfile = async () => {
@@ -270,6 +335,7 @@ export default function ProfilePage() {
       await authApi.updateProfile(updateData);
       await fetchProfile();
       setIsEditingProfile(false);
+      toast.success("Profile updated successfully");
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || "Failed to update profile");
     } finally {
@@ -277,10 +343,20 @@ export default function ProfilePage() {
     }
   };
 
-  const handleEditSportsClick = () => {
+  const resetSportsForm = () => {
     if (!user) return;
     setSelectedSports(user.playerProfile?.sports || []);
+  };
+
+  const handleEditSportsClick = () => {
+    if (!user) return;
+    resetSportsForm();
     setIsEditingSports(true);
+  };
+
+  const handleCancelSportsEdit = () => {
+    resetSportsForm();
+    setIsEditingSports(false);
   };
 
   const handleSaveSports = async () => {
@@ -302,13 +378,54 @@ export default function ProfilePage() {
     }
   };
 
+  const closeGraduationModal = () => {
+    setShowGraduationModal(false);
+    setGraduationForm({
+      dependentId: "",
+      dependentName: "",
+      email: "",
+      password: "",
+      phone: "",
+    });
+  };
+
   if (isLoading) {
-    return <div className="text-center py-12">Loading profile...</div>;
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "My Profile" },
+          ]}
+        />
+        <ProfilePageSkeleton />
+      </div>
+    );
   }
 
   if (!user) {
-    return <div className="text-center py-12">Failed to load profile</div>;
+    return (
+      <div className="space-y-6">
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "My Profile" },
+          ]}
+        />
+        <Card className="shop-surface premium-shadow">
+          <EmptyState
+            icon={UserRound}
+            title="Unable to load profile"
+            description="We couldn't fetch your profile details. Please refresh the page or try again later."
+          />
+        </Card>
+      </div>
+    );
   }
+
+  const sportsCount = user.playerProfile?.sports?.length ?? 0;
+  const dependentsCount = user.dependents?.length ?? 0;
+  const userAge = user.dob ? getDependentAge(user.dob) : null;
 
   return (
     <div className="space-y-6">
@@ -322,431 +439,454 @@ export default function ProfilePage() {
       <PlayerPageHeader
         badge="Player"
         title="My Profile"
-        subtitle="Manage your account details and keep track of your dependents in one place."
+        subtitle="Manage your account details, sports preferences, and family dependents in one place."
       />
 
-      <Card className="shop-surface premium-shadow">
-        <div className="border-b border-slate-200/60 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
-              Account Details
-            </h2>
-            <p className="text-sm text-slate-500">
-              Your profile information and contact details.
-            </p>
-          </div>
-          {!isEditingProfile && (
-            <button
-              onClick={handleEditProfileClick}
-              className="px-4 py-2 bg-power-orange text-white text-sm font-medium rounded-lg hover:bg-power-orange/90 transition-colors"
-            >
-              Edit
-            </button>
-          )}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Sports
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{sportsCount}</p>
         </div>
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Dependents
+          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {dependentsCount}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Account
+          </p>
+          <p className="mt-1 text-lg font-bold capitalize text-slate-900">
+            {user.role.toLowerCase().replace("_", " ")}
+          </p>
+        </div>
+      </div>
 
-        {isEditingProfile ? (
-          <div className="px-6 py-6">
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Profile Picture Section */}
-              <div className="flex flex-col items-center lg:items-start space-y-3">
-                <ProfilePictureUpload
-                  currentPhotoUrl={user.photoUrl}
-                  onUploadSuccess={(updatedUser) => {
-                    setUser(updatedUser);
-                  }}
-                  size="xl"
-                />
-                <div className="text-center lg:text-left">
-                  <p className="text-sm font-medium text-slate-700">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-slate-500 capitalize">
-                    {user.role} Account
-                  </p>
-                </div>
-              </div>
-
-              {/* Profile Form */}
-              <div className="flex-1">
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      value={profileForm.name}
-                      onChange={(e) =>
-                        setProfileForm({ ...profileForm, name: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={profileForm.email}
-                      onChange={(e) =>
-                        setProfileForm({
-                          ...profileForm,
-                          email: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={profileForm.phone}
-                      onChange={(e) =>
-                        setProfileForm({
-                          ...profileForm,
-                          phone: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Date of Birth
-                    </label>
-                    <input
-                      type="date"
-                      value={profileForm.dob}
-                      onChange={(e) =>
-                        setProfileForm({ ...profileForm, dob: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Account Type
-                    </label>
-                    <div className="px-3 py-2 bg-white/50 rounded-lg border border-slate-200/60">
-                      <p className="text-slate-900 capitalize">{user.role}</p>
-                    </div>
-                  </div>
-
-                  <div className="sm:col-span-2 flex gap-3 pt-4 border-t border-slate-200/60">
-                    <button
-                      onClick={handleSaveProfile}
-                      disabled={isSavingProfile}
-                      className="px-6 py-2.5 bg-power-orange text-white text-sm font-medium rounded-lg hover:bg-power-orange/90 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
-                    >
-                      {isSavingProfile ? "Saving..." : "Save Changes"}
-                    </button>
-                    <button
-                      onClick={() => setIsEditingProfile(false)}
-                      disabled={isSavingProfile}
-                      className="px-6 py-2.5 bg-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-300 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="px-6 py-6">
-            <div className="flex flex-col lg:flex-row gap-8">
-              {/* Profile Picture Section */}
-              <div className="flex flex-col items-center lg:items-start space-y-3">
-                <ProfilePictureUpload
-                  currentPhotoUrl={user.photoUrl}
-                  onUploadSuccess={(updatedUser) => {
-                    setUser(updatedUser);
-                  }}
-                  size="xl"
-                />
-                <div className="text-center lg:text-left">
-                  <p className="text-sm font-medium text-slate-700">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-slate-500 capitalize">
-                    {user.role} Account
-                  </p>
-                </div>
-              </div>
-
-              {/* Profile Info */}
-              <div className="flex-1">
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Name
-                    </label>
-                    <p className="text-slate-900 text-lg font-medium">
-                      {user.name}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Email
-                    </label>
-                    <p className="text-slate-900 text-lg">{user.email}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Phone
-                    </label>
-                    <p className="text-slate-900 text-lg">{user.phone}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Age
-                    </label>
-                    <p className="text-slate-900 text-lg">
-                      {user.dob
-                        ? (getDependentAge(user.dob) ?? "Not provided")
-                        : "Not provided"}
-                    </p>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-slate-600 text-sm font-semibold mb-2">
-                      Account Type
-                    </label>
-                    <div className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
-                      <span className="capitalize font-medium">
-                        {user.role}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+      <Card
+        className={cn(
+          "shop-surface premium-shadow overflow-hidden p-0 transition-shadow",
+          isEditingProfile && "ring-2 ring-power-orange/20",
         )}
+      >
+        <ProfileSectionHeader
+          icon={UserRound}
+          title="Account Details"
+          description="Your profile information and contact details."
+          isEditing={isEditingProfile}
+          onEdit={handleEditProfileClick}
+          onCancel={handleCancelProfileEdit}
+          onSave={handleSaveProfile}
+          saving={isSavingProfile}
+        />
+
+        <CardContent className="px-6 py-6">
+          <div className="flex flex-col gap-8 lg:flex-row">
+            <div className="flex flex-col items-center gap-3 lg:items-start">
+              <ProfilePictureUpload
+                currentPhotoUrl={user.photoUrl}
+                onUploadSuccess={(updatedUser) => {
+                  setUser(updatedUser);
+                }}
+                size="xl"
+              />
+              <div className="text-center lg:text-left">
+                <p className="text-sm font-semibold text-slate-900">
+                  {isEditingProfile ? profileForm.name || user.name : user.name}
+                </p>
+                <Badge className="mt-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50">
+                  {user.role.replace("_", " ")}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="flex-1">
+              {isEditingProfile ? (
+                <ProfileEditPanel description="Update your contact details. Name and email are required.">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <ProfileEditField
+                      label="Name"
+                      htmlFor="profile-name"
+                      required
+                      icon={UserRound}
+                    >
+                      <Input
+                        id="profile-name"
+                        value={profileForm.name}
+                        onChange={(event) =>
+                          setProfileForm({
+                            ...profileForm,
+                            name: event.target.value,
+                          })
+                        }
+                        placeholder="Your full name"
+                      />
+                    </ProfileEditField>
+
+                    <ProfileEditField
+                      label="Email"
+                      htmlFor="profile-email"
+                      required
+                      icon={Mail}
+                      hint="Used for login and booking notifications."
+                    >
+                      <Input
+                        id="profile-email"
+                        type="email"
+                        value={profileForm.email}
+                        onChange={(event) =>
+                          setProfileForm({
+                            ...profileForm,
+                            email: event.target.value,
+                          })
+                        }
+                        placeholder="you@example.com"
+                      />
+                    </ProfileEditField>
+
+                    <ProfileEditField
+                      label="Phone"
+                      htmlFor="profile-phone"
+                      icon={Phone}
+                      hint="For booking confirmations and reminders."
+                    >
+                      <Input
+                        id="profile-phone"
+                        type="tel"
+                        value={profileForm.phone}
+                        onChange={(event) =>
+                          setProfileForm({
+                            ...profileForm,
+                            phone: event.target.value,
+                          })
+                        }
+                        placeholder="+91 98765 43210"
+                      />
+                    </ProfileEditField>
+
+                    <ProfileEditField
+                      label="Date of Birth"
+                      htmlFor="profile-dob"
+                      icon={Calendar}
+                      hint={
+                        profileForm.dob
+                          ? `Age: ${getDependentAge(profileForm.dob) ?? "—"} years`
+                          : "Optional. Helps with age-appropriate bookings."
+                      }
+                    >
+                      <Input
+                        id="profile-dob"
+                        type="date"
+                        value={profileForm.dob}
+                        onChange={(event) =>
+                          setProfileForm({
+                            ...profileForm,
+                            dob: event.target.value,
+                          })
+                        }
+                        max={new Date().toISOString().split("T")[0]}
+                      />
+                    </ProfileEditField>
+
+                    <div className="sm:col-span-2">
+                      <ProfileInfoField label="Account Type">
+                        <span className="capitalize">
+                          {user.role.toLowerCase().replace("_", " ")}
+                        </span>
+                      </ProfileInfoField>
+                    </div>
+                  </div>
+                </ProfileEditPanel>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <ProfileInfoField label="Name">{user.name}</ProfileInfoField>
+                  <ProfileInfoField label="Email">
+                    <span className="inline-flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      {user.email}
+                    </span>
+                  </ProfileInfoField>
+                  <ProfileInfoField label="Phone">
+                    <span className="inline-flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-slate-400" />
+                      {user.phone || "Not provided"}
+                    </span>
+                  </ProfileInfoField>
+                  <ProfileInfoField label="Age">
+                    <span className="inline-flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-slate-400" />
+                      {userAge ?? "Not provided"}
+                    </span>
+                  </ProfileInfoField>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* My Sports Section */}
-      <Card className="shop-surface premium-shadow">
-        <div className="border-b border-white/70 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
-              My Sports
-            </h2>
-            <p className="text-sm text-slate-500">
-              The sports you play. Helps coaches find you for relevant bookings.
-            </p>
-          </div>
-          {!isEditingSports && (
-            <button
-              onClick={handleEditSportsClick}
-              className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              Edit
-            </button>
-          )}
-        </div>
+      <Card
+        className={cn(
+          "shop-surface premium-shadow overflow-hidden p-0 transition-shadow",
+          isEditingSports && "ring-2 ring-power-orange/20",
+        )}
+      >
+        <ProfileSectionHeader
+          icon={Trophy}
+          title="My Sports"
+          description="The sports you play. Helps coaches find you for relevant bookings."
+          isEditing={isEditingSports}
+          onEdit={handleEditSportsClick}
+          onCancel={handleCancelSportsEdit}
+          onSave={handleSaveSports}
+          saving={isSavingSports}
+          saveLabel="Save Sports"
+        />
 
-        {isEditingSports ? (
-          <div className="px-6 py-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-slate-600 text-sm font-semibold mb-3">
-                  Select Your Sports
-                </label>
+        <CardContent className="px-6 py-6">
+          {isEditingSports ? (
+            <ProfileEditPanel description="Choose the sports you play or are interested in. You can select multiple.">
+              <ProfileEditField
+                label="Your sports"
+                hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
+              >
                 <SportsMultiSelect
                   value={selectedSports}
                   onChange={setSelectedSports}
                 />
-              </div>
+              </ProfileEditField>
 
-              <div className="flex gap-3 pt-4 border-t border-slate-200">
-                <button
-                  onClick={handleSaveSports}
-                  disabled={isSavingSports}
-                  className="px-6 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {isSavingSports ? "Saving..." : "Save Sports"}
-                </button>
-                <button
-                  onClick={() => setIsEditingSports(false)}
-                  disabled={isSavingSports}
-                  className="px-6 py-2.5 bg-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-300 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="px-6 py-6">
-            {user.playerProfile?.sports &&
-            user.playerProfile.sports.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {user.playerProfile.sports.map((sport) => (
-                  <span
-                    key={sport}
-                    className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700 border border-orange-200"
-                  >
-                    {sport}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                <p className="text-sm text-slate-500">
-                  No sports added yet. Click Edit to add your sports!
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/* Dependents Section */}
-      <div>
-        <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            My Dependents
-          </h2>
-          <Button
-            onClick={handleAddDependent}
-            className="inline-flex w-full items-center justify-center gap-2 sm:w-auto sm:whitespace-nowrap"
-          >
-            <Plus size={16} />
-            Add Dependent
-          </Button>
-        </div>
-
-        {user.dependents && user.dependents.length > 0 ? (
-          <div className="grid gap-4">
-            {user.dependents.map((dependent) => (
-              <Card key={dependent._id} className="shop-surface premium-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                      {dependent.name}
-                    </h3>
-                    <div className="mt-2 space-y-1 text-sm text-slate-600">
-                      {dependent.relation && (
-                        <p>Relation: {dependent.relation}</p>
-                      )}
-                      {dependent.gender && <p>Gender: {dependent.gender}</p>}
-                      {dependent.dob && (
-                        <p>
-                          Date of Birth:{" "}
-                          {new Date(dependent.dob).toLocaleDateString()}
-                        </p>
-                      )}
-                      {dependent.dob && (
-                        <p>
-                          Age: {getDependentAge(dependent.dob) ?? "Unknown"}
-                        </p>
-                      )}
-                      {dependent.sports && dependent.sports.length > 0 && (
-                        <p>Sports: {dependent.sports.join(", ")}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="ml-0 flex flex-wrap items-center justify-end gap-2 sm:ml-4">
-                    <Button
-                      onClick={() => handleEditDependent(dependent)}
-                      variant="secondary"
-                      size="sm"
-                      disabled={savingDependentId === dependent._id}
-                      className="inline-flex items-center gap-1"
-                    >
-                      <Edit2 size={14} />
-                      Edit
-                    </Button>
-
-                    <Button
-                      onClick={() => setDependentToDelete(dependent)}
-                      variant="secondary"
-                      size="sm"
-                      disabled={isDeletingDependentId === dependent._id}
-                      className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 size={14} />
-                      {isDeletingDependentId === dependent._id
-                        ? "Deleting..."
-                        : "Delete"}
-                    </Button>
+              {selectedSports.length > 0 ? (
+                <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Selected
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedSports.map((sport) => (
+                      <Badge
+                        key={sport}
+                        className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                      >
+                        {sport}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
+              ) : (
+                <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center">
+                  <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
+                  <p className="text-sm text-slate-500">
+                    No sports selected yet. Search above to add some.
+                  </p>
+                </div>
+              )}
+            </ProfileEditPanel>
+          ) : user.playerProfile?.sports &&
+            user.playerProfile.sports.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {user.playerProfile.sports.map((sport) => (
+                <Badge
+                  key={sport}
+                  className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                >
+                  {sport}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-10 text-center">
+              <Trophy className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+              <p className="text-sm font-medium text-slate-700">
+                No sports added yet
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Add the sports you play to get better recommendations.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={handleEditSportsClick}
+              >
+                Add Sports
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-                <div className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row">
-                  {(() => {
-                    const age = getDependentAge(dependent.dob);
-                    const isEligible = age !== null && age >= 18;
-                    return (
+      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+        <ProfileSectionHeader
+          icon={Users}
+          title="My Dependents"
+          description="Manage children or wards whose bookings you handle."
+          action={
+            <Button
+              onClick={handleAddDependent}
+              size="sm"
+              icon={<Plus size={14} />}
+              className="w-full sm:w-auto"
+            >
+              Add Dependent
+            </Button>
+          }
+        />
+
+        <CardContent className="px-6 py-6">
+          {user.dependents && user.dependents.length > 0 ? (
+            <div className="grid gap-4">
+              {user.dependents.map((dependent) => {
+                const age = getDependentAge(dependent.dob);
+                const isEligible = age !== null && age >= 18;
+                const genderLabel = formatGender(dependent.gender);
+
+                return (
+                  <div
+                    key={dependent._id}
+                    className="rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 sm:p-5"
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-12 w-12 border border-white shadow-sm">
+                          <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
+                            {getInitials(dependent.name)}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-base font-bold text-slate-900 sm:text-lg">
+                            {dependent.name}
+                          </h3>
+
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {dependent.relation && (
+                              <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
+                                {formatDependentRelation(dependent.relation)}
+                              </Badge>
+                            )}
+                            {genderLabel && (
+                              <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
+                                {genderLabel}
+                              </Badge>
+                            )}
+                            {age !== null && (
+                              <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
+                                {age} yrs
+                              </Badge>
+                            )}
+                          </div>
+
+                          {dependent.dob && (
+                            <p className="mt-2 text-sm text-slate-500">
+                              Born{" "}
+                              {new Date(dependent.dob).toLocaleDateString(
+                                undefined,
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )}
+                            </p>
+                          )}
+
+                          {dependent.sports && dependent.sports.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {dependent.sports.map((sport) => (
+                                <Badge
+                                  key={sport}
+                                  className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
+                                >
+                                  {sport}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 sm:justify-end">
+                        <Button
+                          onClick={() => handleEditDependent(dependent)}
+                          variant="secondary"
+                          size="sm"
+                          disabled={savingDependentId === dependent._id}
+                          icon={<Edit2 size={14} />}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => setDependentToDelete(dependent)}
+                          variant="secondary"
+                          size="sm"
+                          disabled={isDeletingDependentId === dependent._id}
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                          icon={<Trash2 size={14} />}
+                        >
+                          {isDeletingDependentId === dependent._id
+                            ? "Deleting..."
+                            : "Delete"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <CardFooter className="mt-4 border-slate-200/70 px-0 pb-0">
                       <Button
                         onClick={() => handleStartGraduation(dependent)}
                         disabled={
-                          !isEligible || graduatingDependentId === dependent._id
+                          !isEligible ||
+                          graduatingDependentId === dependent._id
                         }
                         variant={isEligible ? "primary" : "secondary"}
-                        className="w-full text-left sm:w-auto sm:text-center sm:whitespace-nowrap"
                         size="sm"
+                        icon={<GraduationCap size={14} />}
+                        className="w-full sm:w-auto"
                       >
                         {graduatingDependentId === dependent._id
                           ? "Graduating..."
                           : isEligible
                             ? "Graduate to Independent"
-                            : `Not eligible (${age} years old)`}
+                            : `Eligible at 18 (${age ?? "?"} yrs now)`}
                       </Button>
-                    );
-                  })()}
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="shop-surface premium-shadow border-dashed border-white/70">
-            <div className="text-center py-8">
-              <p className="text-slate-600 mb-4">
-                No dependents added yet. Add your first dependent to get
-                started!
-              </p>
-              <Button
-                onClick={handleAddDependent}
-                className="inline-flex items-center gap-2"
-              >
-                <Plus size={16} />
-                Add Dependent
-              </Button>
+                    </CardFooter>
+                  </div>
+                );
+              })}
             </div>
-          </Card>
-        )}
+          ) : (
+            <EmptyState
+              icon={Users}
+              title="No dependents yet"
+              description="Add a child or ward to manage their bookings, sports, and player profile from your account."
+              actionLabel="Add Dependent"
+              onAction={handleAddDependent}
+            />
+          )}
+        </CardContent>
 
-        <div className="bg-white/80 border border-white/70 text-slate-700 p-4 rounded-lg mt-4 text-sm premium-shadow">
-          <p className="font-semibold mb-2">What is a dependent?</p>
-          <p className="mb-2">
-            A dependent is a person (usually a child) whose bookings you manage.
-            You can:
-          </p>
-          <ul className="list-disc list-inside space-y-1 text-xs">
-            <li>Book venues and coaches on their behalf</li>
-            <li>Track their sports participation</li>
-            <li>Manage their player profile</li>
-            <li>Graduate them to an independent account once they turn 18</li>
-          </ul>
+        <div className="border-t border-slate-200/60 bg-blue-50/50 px-6 py-4">
+          <div className="flex gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+              <Info className="h-4 w-4" />
+            </div>
+            <div className="text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">
+                What is a dependent?
+              </p>
+              <p className="mt-1">
+                A dependent is someone whose bookings you manage. You can book
+                venues and coaches for them, track their sports, and graduate
+                them to an independent account once they turn 18.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Dependent Management Modal */}
       <DependentManagementModal
         isOpen={showDependentModal}
         onClose={() => setShowDependentModal(false)}
@@ -761,7 +901,7 @@ export default function ProfilePage() {
         onClose={() => setDependentToDelete(null)}
         title="Delete dependent"
         footer={
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button
               variant="secondary"
               onClick={() => setDependentToDelete(null)}
@@ -772,9 +912,10 @@ export default function ProfilePage() {
             <Button
               onClick={handleDeleteDependent}
               disabled={isDeletingDependentId !== null}
+              loading={isDeletingDependentId !== null}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isDeletingDependentId !== null ? "Deleting..." : "Delete"}
+              Delete
             </Button>
           </div>
         }
@@ -789,114 +930,106 @@ export default function ProfilePage() {
         </p>
       </Modal>
 
-      {showGraduationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md bg-white">
-            <div className="space-y-4 p-6">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  Graduate to Independent Account
-                </h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Create a new account for {graduationForm.dependentName}. They
-                  will use these credentials to book independently.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={graduationForm.email}
-                    onChange={(event) =>
-                      setGraduationForm((prev) => ({
-                        ...prev,
-                        email: event.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
-                    placeholder="newaccount@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    value={graduationForm.password}
-                    onChange={(event) =>
-                      setGraduationForm((prev) => ({
-                        ...prev,
-                        password: event.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
-                    placeholder="Create a password"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={graduationForm.phone}
-                    onChange={(event) =>
-                      setGraduationForm((prev) => ({
-                        ...prev,
-                        phone: event.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
-                    placeholder="Phone number"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-end gap-3 sm:flex-row">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowGraduationModal(false);
-                    setGraduationForm({
-                      dependentId: "",
-                      dependentName: "",
-                      email: "",
-                      password: "",
-                      phone: "",
-                    });
-                  }}
-                  className="w-full sm:w-auto sm:whitespace-nowrap"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleSubmitGraduation}
-                  disabled={
-                    graduatingDependentId === graduationForm.dependentId ||
-                    !graduationForm.email ||
-                    !graduationForm.password ||
-                    !graduationForm.phone
+      <Modal
+        isOpen={showGraduationModal}
+        onClose={closeGraduationModal}
+        title="Graduate to Independent Account"
+        footer={
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={closeGraduationModal}
+              disabled={graduatingDependentId === graduationForm.dependentId}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmitGraduation}
+              loading={graduatingDependentId === graduationForm.dependentId}
+              disabled={
+                !graduationForm.email ||
+                !graduationForm.password ||
+                !graduationForm.phone
+              }
+            >
+              Graduate
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          <ProfileEditPanel
+            title={`Account for ${graduationForm.dependentName}`}
+            description="They will use these credentials to sign in and book independently."
+          >
+            <div className="space-y-4">
+              <ProfileEditField
+                label="Email"
+                htmlFor="graduation-email"
+                required
+                icon={Mail}
+                hint="This becomes their login email."
+              >
+                <Input
+                  id="graduation-email"
+                  type="email"
+                  value={graduationForm.email}
+                  onChange={(event) =>
+                    setGraduationForm((prev) => ({
+                      ...prev,
+                      email: event.target.value,
+                    }))
                   }
-                  className="w-full sm:w-auto sm:whitespace-nowrap"
-                >
-                  {graduatingDependentId === graduationForm.dependentId
-                    ? "Graduating..."
-                    : "Graduate"}
-                </Button>
-              </div>
+                  placeholder="newaccount@example.com"
+                />
+              </ProfileEditField>
+
+              <ProfileEditField
+                label="Password"
+                htmlFor="graduation-password"
+                required
+                hint="Minimum 8 characters recommended."
+              >
+                <Input
+                  id="graduation-password"
+                  type="password"
+                  value={graduationForm.password}
+                  onChange={(event) =>
+                    setGraduationForm((prev) => ({
+                      ...prev,
+                      password: event.target.value,
+                    }))
+                  }
+                  placeholder="Create a password"
+                />
+              </ProfileEditField>
+
+              <ProfileEditField
+                label="Phone"
+                htmlFor="graduation-phone"
+                required
+                icon={Phone}
+                hint="Used for booking confirmations."
+              >
+                <Input
+                  id="graduation-phone"
+                  type="tel"
+                  value={graduationForm.phone}
+                  onChange={(event) =>
+                    setGraduationForm((prev) => ({
+                      ...prev,
+                      phone: event.target.value,
+                    }))
+                  }
+                  placeholder="Phone number"
+                />
+              </ProfileEditField>
             </div>
-          </Card>
+          </ProfileEditPanel>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

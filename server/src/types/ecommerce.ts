@@ -96,7 +96,7 @@ export enum FulfillmentStatus {
 }
 
 export enum PaymentGateway {
-  RAZORPAY = "RAZORPAY",
+  PHONEPE = "PHONEPE",
   STRIPE = "STRIPE",
 }
 
@@ -223,9 +223,9 @@ export interface CreateOrderFromCartRequest {
 }
 
 export interface VerifyPaymentRequest {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature: string;
+  phonepe_payment_id: string;
+  phonepe_order_id: string;
+  phonepe_signature: string;
 }
 
 export interface CancelOrderRequest {

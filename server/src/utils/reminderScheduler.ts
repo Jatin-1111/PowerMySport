@@ -1,10 +1,10 @@
 import cron, { ScheduledTask } from "node-cron";
-import { ScheduledNotificationService } from "../services/ScheduledNotificationService";
-import { ReminderMonitoringService } from "../services/ReminderMonitoringService";
+import { ScheduledNotificationService } from "../client/services/ScheduledNotificationService";
+import { ReminderMonitoringService } from "../client/services/ReminderMonitoringService";
 import {
   broadcastStatsUpdate,
   broadcastHealthUpdate,
-} from "../sockets/notificationSocket";
+} from "../client/sockets/notificationSocket";
 
 // Flag to prevent duplicate job execution
 let isProcessing = false;
