@@ -2315,7 +2315,64 @@ export const CommunityService = {
     };
   },
 
+  /**
+   * Validates that a user can send a message to a conversation without
+   * writing anything to the database. Used by the Kafka producer path so
+   * that the socket can return an optimistic ack immediately after validation.
+   *
+   * Throws the same errors as sendMessage() would for invalid requests.
+   */
+  async validateSendMessage(userId: string, conversationId: string) {
+    const conversation = await CommunityConversation.findById(conversationId);
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    const isParticipant = conversation.participants.some(
+      (participantId) => String(participantId) === userId,
+    );
+    if (!isParticipant) {
+      throw new Error("Access denied");
+    }
+
+    if (conversation.conversationType !== "GROUP") {
+      const otherParticipantId = String(
+        conversation.participants.find(
+          (participantId) => String(participantId) !== userId,
+        ),
+      );
+
+      const otherProfile = await ensureProfile(otherParticipantId);
+      if (otherProfile.messagePrivacy === "NONE") {
+        throw new Error("This player is not accepting new messages");
+      }
+
+      const blocked = await isBlockedBetween(userId, otherParticipantId);
+      if (blocked) {
+        throw new Error("Message blocked due to privacy settings");
+      }
+    }
+
+    if (
+      conversation.status === "PENDING" &&
+      conversation.conversationType !== "GROUP"
+    ) {
+      const requester = String(conversation.requestedBy);
+      if (requester !== userId) {
+        throw new Error("Please accept this message request first");
+      }
+    }
+
+    // Return the conversation type so the caller can attach it to the
+    // optimistic message without an extra round-trip.
+    return {
+      conversationType: conversation.conversationType || "DM",
+      participantIds: conversation.participants.map((p) => String(p)),
+    };
+  },
+
   async sendMessage(userId: string, conversationId: string, content: string) {
+
     const conversation = await CommunityConversation.findById(conversationId);
     if (!conversation) {
       throw new Error("Conversation not found");

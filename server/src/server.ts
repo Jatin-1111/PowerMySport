@@ -23,9 +23,12 @@ import { setCommunityRealtimeSocketInstance } from "./community/services/Communi
 import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
 import { startOutboxWorker } from "./shared/services/OutboxService";
+import { startMessageConsumer } from "./community/kafka/MessageConsumerWorker";
+import { disconnectProducer } from "./community/kafka/MessageProducerService";
 const PORT = process.env.PORT || 5000;
 
 let stopOutboxWorker: (() => void) | null = null;
+let stopMessageConsumer: (() => Promise<void>) | null = null;
 
 const normalizeOrigin = (origin: string): string =>
   origin.trim().replace(/\/$/, "").toLowerCase();
@@ -118,6 +121,10 @@ const startServer = async () => {
     setCommunityRealtimeSocketInstance(io);
     setBookingSocketInstance(io);
 
+    // Start Kafka consumer — reads community.messages topic and writes to DB.
+    // Falls back gracefully if Kafka is unavailable (direct write path used).
+    stopMessageConsumer = await startMessageConsumer(io);
+
     console.log("🔧 Socket.IO namespaces configured:");
     console.log("   - /community (requires community profile)");
     console.log("   - /friends (basic auth)");
@@ -191,6 +198,12 @@ const startServer = async () => {
           await Promise.allSettled([redisPub.quit(), redisSub.quit()]);
           console.log("🔴 Redis pub/sub disconnected");
         }
+
+        // Stop Kafka consumer + flush producer
+        await Promise.allSettled([
+          stopMessageConsumer?.(),
+          disconnectProducer(),
+        ]);
       } catch (err) {
         console.error("Error during shutdown:", err);
       }

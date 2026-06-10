@@ -6,6 +6,7 @@ import {
   touchUserLastActive,
 } from "../../shared/services/UserPresenceService";
 import { verifyToken } from "../../utils/jwt";
+import { produceMessage } from "../kafka/MessageProducerService";
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   if (!cookieHeader) {
@@ -258,6 +259,45 @@ export const setupCommunitySocket = (io: Server): void => {
           return;
         }
 
+        // ── Kafka path ────────────────────────────────────────────────────
+        // 1. Validate access synchronously (fast, read-only DB checks)
+        const { conversationType, participantIds } =
+          await CommunityService.validateSendMessage(userId, conversationId);
+
+        // 2. Build a temp ID so the sender's UI can swap the optimistic
+        //    message for the confirmed one once the consumer broadcasts.
+        const tempId = `temp:${Date.now()}:${userId}`;
+        const optimisticMessage = {
+          tempId,
+          id: tempId, // placeholder until consumer writes real DB id
+          conversationId,
+          conversationType,
+          senderId: userId,
+          content,
+          createdAt: new Date().toISOString(),
+          pending: true, // flag for UI to show a sending indicator
+          participantIds,
+        };
+
+        // 3. Try to produce to Kafka — returns false if broker unavailable
+        const produced = await produceMessage({
+          tempId,
+          conversationId,
+          senderId: userId,
+          content,
+          queuedAt: new Date().toISOString(),
+        });
+
+        if (produced) {
+          // Kafka path: ack sender immediately with optimistic message.
+          // Consumer will broadcast confirmed message to everyone.
+          if (typeof callback === "function") {
+            callback({ success: true, data: optimisticMessage });
+          }
+          return;
+        }
+
+        // ── Fallback: direct DB write (Kafka unavailable) ─────────────────
         const message = await CommunityService.sendMessage(
           userId,
           conversationId,
