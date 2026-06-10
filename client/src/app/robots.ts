@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           "/contact",
           "/coaches",
           "/venues",
+          "/academies",
         ],
         disallow: [
           "/dashboard/",

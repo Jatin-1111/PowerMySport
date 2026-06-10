@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, FileText, Flag } from "lucide-react";
+import { FileText, Flag } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
@@ -61,10 +61,7 @@ export default function ReportsPage() {
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap-narrow space-y-4">
-        <Link href="/" className="community-back-link">
-          <ChevronLeft size={14} />
-          Back to Community
-        </Link>
+
 
         <section className="community-card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

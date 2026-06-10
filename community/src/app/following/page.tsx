@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ExternalLink, Heart, Layers } from "lucide-react";
+import { ExternalLink, Heart, Layers } from "lucide-react";
 import {
   communityFollowStore,
   CommunityFollowItem,
@@ -37,11 +37,6 @@ export default function FollowingPage() {
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap-narrow space-y-4">
-        <Link href="/" className="community-back-link">
-          <ChevronLeft size={14} />
-          Back to Community
-        </Link>
-
         <section className="community-card">
           <div className="flex items-center gap-2">
             <Heart size={18} className="text-rose-600" />

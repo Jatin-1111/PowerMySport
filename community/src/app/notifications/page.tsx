@@ -339,7 +339,7 @@ export default function CommunityNotificationsPage() {
           <div className="space-y-5">
             {groupedItems.map((dateGroup) => (
               <div key={dateGroup.dateKey} className="space-y-3">
-                <div className="sticky top-16 z-10 -mx-1 rounded-lg bg-white/90 px-1 py-1 backdrop-blur">
+                <div className="py-1.5">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                     {dateGroup.heading}
                   </p>

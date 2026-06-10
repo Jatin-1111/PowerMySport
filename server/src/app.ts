@@ -11,28 +11,29 @@ import {
 } from "./middleware/security";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
 
+import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
-import authRoutes from "./shared/routes/authRoutes";
+import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
+import statsRoutes from "./admin/routes/statsRoutes";
 import bookingRoutes from "./client/routes/bookingRoutes";
 import coachRoutes from "./client/routes/coachRoutes";
-import communityRoutes from "./community/routes/communityRoutes";
 import friendRoutes from "./client/routes/friendRoutes";
-import geoRoutes from "./shared/routes/geoRoutes";
+import guidanceRoutes from "./client/routes/guidanceRoutes";
 import notificationRoutes from "./client/routes/notificationRoutes";
+import payoutRoutes from "./client/routes/payoutRoutes";
+import refundMethodRoutes from "./client/routes/refundMethodRoutes";
 import reminderRoutes from "./client/routes/reminderRoutes";
-import sportsRoutes from "./shared/routes/sportsRoutes";
-import statsRoutes from "./admin/routes/statsRoutes";
+import reviewRoutes from "./client/routes/reviewRoutes";
 import supportTicketRoutes from "./client/routes/supportTicketRoutes";
 import venueInquiryRoutes from "./client/routes/venueInquiryRoutes";
 import venueOnboardingRoutes from "./client/routes/venueOnboardingRoutes";
 import venueRoutes from "./client/routes/venueRoutes";
-import reviewRoutes from "./client/routes/reviewRoutes";
-import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
-import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
-import payoutRoutes from "./client/routes/payoutRoutes";
-import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
-import refundMethodRoutes from "./client/routes/refundMethodRoutes";
+import communityRoutes from "./community/routes/communityRoutes";
+import authRoutes from "./shared/routes/authRoutes";
+import geoRoutes from "./shared/routes/geoRoutes";
 import phonepeWebhook from "./shared/routes/phonepeWebhook";
+import sportsRoutes from "./shared/routes/sportsRoutes";
+import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
 
 export const app: Express = express();
 
@@ -141,7 +142,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/refund-methods", refundMethodRoutes);
 app.use("/api/payouts", payoutRoutes);
-
+app.use("/api/guidance", guidanceRoutes);
 // Community Domain
 app.use("/api/community", communityRoutes);
 

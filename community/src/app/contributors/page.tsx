@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { Award, ChevronLeft, Trophy, Users } from "lucide-react";
+import { Award, Trophy, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { communityService } from "@/modules/community/services/community";
 import { CommunityPost } from "@/modules/community/types";
@@ -117,11 +117,6 @@ function ContributorsPageContent() {
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap space-y-4">
-        <Link href="/q" className="community-back-link">
-          <ChevronLeft size={14} />
-          Back to Q&A
-        </Link>
-
         <section className="community-card">
           <div className="flex items-center gap-2">
             <Trophy size={18} className="text-amber-600" />
