@@ -27,9 +27,7 @@ export const getCommunityAppUrl = (
   const configured = process.env.NEXT_PUBLIC_COMMUNITY_APP_URL;
   const baseUrl = configured
     ? normalizeUrl(configured)
-    : process.env.NODE_ENV === "development"
-      ? "http://localhost:3002"
-      : "https://community.powermysport.com";
+    : "/community";
 
   return buildCommunityUrl(baseUrl, options);
 };

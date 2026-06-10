@@ -7,6 +7,7 @@ import {
   type NotificationChannelPreferences,
   type NotificationPreferences,
 } from "@/lib/api/notification";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import {
   Bell,
   Calendar,
@@ -95,10 +96,8 @@ const getNotificationAction = (notification: Notification) => {
     const postId = typeof data.postId === "string" ? data.postId : "";
     return {
       label: "Open Community",
-      href: postId
-        ? `https://community.powermysport.com/q/${postId}`
-        : "https://community.powermysport.com/q",
-      external: true,
+      href: getCommunityAppUrl({ path: postId ? `q/${postId}` : "q" }),
+      external: false,
     };
   }
   return { label: "Open Dashboard", href: "/dashboard" };
