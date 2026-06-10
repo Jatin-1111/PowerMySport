@@ -235,19 +235,19 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="One Stop Solution For All Your Sporting Needs"
-        subtitle="Zero Commission Launch"
-        description="Book venues and coaches with 0% platform commission for a limited time. Subscription purchases have separate platform fee and tax charges."
+        title="The Complete Sports Ecosystem for Your Kids"
+        subtitle="Community-First Approach"
+        description="Connect with other parents, discuss local coaches and venues, and build the perfect sports roadmap for your children before you book."
         primaryCTA={{
-          label: user ? "Go to Dashboard" : "Start Booking Now",
-          href: getDashboardLink(),
+          label: "Join the Community",
+          href: communityUrl,
         }}
         secondaryCTA={
           user?.role === "VENUE_LISTER"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
             : {
-                label: user ? "Browse Venues" : "List Your Venue or Academy",
-                href: user ? "/venues" : "/register",
+                label: user ? "Go to Dashboard" : "Start Booking Now",
+                href: getDashboardLink(),
               }
         }
         gradient
@@ -662,7 +662,7 @@ export default function HomePage() {
               variants={itemVariants}
               className="text-lg text-slate-600"
             >
-              Start in minutes with a simple three-step flow
+              Get personalized AI guidance and community support before you book
             </motion.p>
           </motion.div>
 
@@ -701,18 +701,18 @@ export default function HomePage() {
               {[
                 {
                   step: 1,
-                  title: "Create Your Account",
-                  desc: "Create your account as a player, coach, or venue partner in under two minutes.",
+                  title: "Add Child Profile",
+                  desc: "Provide basic details about your child like age, interests, and weekly commitment goals.",
                 },
                 {
                   step: 2,
-                  title: "Search Venues & Coaches",
-                  desc: "Filter by sport, location, availability, and pricing to find the best match.",
+                  title: "Get AI Sports Roadmap",
+                  desc: "Our AI generates a customized sports roadmap and actionable guidance based on your child's data.",
                 },
                 {
                   step: 3,
-                  title: "Book & Start Playing",
-                  desc: "Complete payment, get instant confirmation, and manage changes from your booking dashboard.",
+                  title: "Ask the Community",
+                  desc: "Have questions left? Talk to other parents and experienced coaches in our community forum.",
                 },
               ].map(({ step, title, desc }) => (
                 <motion.div

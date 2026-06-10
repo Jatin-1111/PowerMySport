@@ -19,6 +19,7 @@ const staticRoutes = [
   "/parental-consent",
   "/coaches",
   "/venues",
+  "/academies",
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -31,7 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority:
       route === ""
         ? 1
-        : route === "/coaches" || route === "/venues"
+        : route === "/coaches" || route === "/venues" || route === "/academies"
           ? 0.9
           : 0.7,
   }));

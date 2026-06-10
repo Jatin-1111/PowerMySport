@@ -9,7 +9,7 @@ import "./globals.css";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 const siteTitle = "PowerMySport";
 const siteDescription =
-  "Book sports venues, discover certified coaches, and manage your complete sports journey on PowerMySport.";
+  "PowerMySport is the ultimate sports venue booking platform. Book turfs, courts, discover certified coaches, and join top sports academies.";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -30,12 +30,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   manifest: "/site.webmanifest",
   title: {
-    default: `${siteTitle} | Sports Venue Booking & Coach Discovery`,
+    default: `${siteTitle} | Venue Booking Platform Sports, Coaches & Academies`,
     template: `%s | ${siteTitle}`,
   },
   description: siteDescription,
   applicationName: siteTitle,
   keywords: [
+    "venue booking platform sports",
+    "sports academy",
+    "sports coach booking",
+    "turf booking app",
     "sports venue booking",
     "book badminton court",
     "sports coaching",
@@ -62,7 +66,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: siteUrl,
     siteName: siteTitle,
-    title: `${siteTitle} | Sports Venue Booking & Coach Discovery`,
+    title: `${siteTitle} | Venue Booking Platform Sports, Coaches & Academies`,
     description: siteDescription,
     images: [
       {
@@ -75,7 +79,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteTitle} | Sports Venue Booking & Coach Discovery`,
+    title: `${siteTitle} | Venue Booking Platform Sports, Coaches & Academies`,
     description: siteDescription,
     images: ["/twitter-image.png"],
   },
