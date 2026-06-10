@@ -407,11 +407,8 @@ export const getPlayersUsers = async (
         .lean(),
     ]);
 
-    const data = users.map((user) => {
-      const sports = user.playerProfile?.sports || [];
-      const dependents = Array.isArray(user.dependents) ? user.dependents : [];
-
-      return {
+    const data = await Promise.all(
+      users.map(async (user) => ({
         id: user._id.toString(),
         name: user.name,
         email: user.email,
@@ -419,9 +416,9 @@ export const getPlayersUsers = async (
         role: "PLAYER",
         createdAt: user.createdAt,
         lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: isUserOnline(user._id.toString()),
-      };
-    });
+        isOnlineNow: await isUserOnline(user._id.toString()),
+      })),
+    );
 
     res.status(200).json({
       success: true,
@@ -474,28 +471,29 @@ export const getCoachUsers = async (
       coachProfiles.map((profile) => [profile.userId.toString(), profile]),
     );
 
-    const data = users.map((user) => {
-      const profile = coachByUserId.get(user._id.toString());
-
-      return {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: "COACH",
-        createdAt: user.createdAt,
-        lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: isUserOnline(user._id.toString()),
-        sports: profile?.sports || [],
-        hourlyRate: profile?.hourlyRate ?? null,
-        serviceMode: profile?.serviceMode ?? null,
-        verificationStatus: profile?.verificationStatus ?? "UNVERIFIED",
-        isVerified: profile?.isVerified ?? false,
-        rating: profile?.rating ?? 0,
-        reviewCount: profile?.reviewCount ?? 0,
-        profileIncomplete: !profile,
-      };
-    });
+    const data = await Promise.all(
+      users.map(async (user) => {
+        const profile = coachByUserId.get(user._id.toString());
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: "COACH",
+          createdAt: user.createdAt,
+          lastActiveAt: user.lastActiveAt || user.createdAt,
+          isOnlineNow: await isUserOnline(user._id.toString()),
+          sports: profile?.sports || [],
+          hourlyRate: profile?.hourlyRate ?? null,
+          serviceMode: profile?.serviceMode ?? null,
+          verificationStatus: profile?.verificationStatus ?? "UNVERIFIED",
+          isVerified: profile?.isVerified ?? false,
+          rating: profile?.rating ?? 0,
+          reviewCount: profile?.reviewCount ?? 0,
+          profileIncomplete: !profile,
+        };
+      }),
+    );
 
     res.status(200).json({
       success: true,
@@ -577,25 +575,26 @@ export const getVenueListerUsers = async (
       venueCounts.map((item) => [String(item._id), item]),
     );
 
-    const data = users.map((user) => {
-      const counts = venueCountByOwnerId.get(user._id.toString());
-
-      return {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: "VENUE_LISTER",
-        createdAt: user.createdAt,
-        lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: isUserOnline(user._id.toString()),
-        businessName: user.venueListerProfile?.businessDetails?.name ?? "",
-        canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues ?? false,
-        venueCount: counts?.venueCount ?? 0,
-        approvedVenueCount: counts?.approvedVenueCount ?? 0,
-        pendingVenueCount: counts?.pendingVenueCount ?? 0,
-      };
-    });
+    const data = await Promise.all(
+      users.map(async (user) => {
+        const counts = venueCountByOwnerId.get(user._id.toString());
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: "VENUE_LISTER",
+          createdAt: user.createdAt,
+          lastActiveAt: user.lastActiveAt || user.createdAt,
+          isOnlineNow: await isUserOnline(user._id.toString()),
+          businessName: user.venueListerProfile?.businessDetails?.name ?? "",
+          canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues ?? false,
+          venueCount: counts?.venueCount ?? 0,
+          approvedVenueCount: counts?.approvedVenueCount ?? 0,
+          pendingVenueCount: counts?.pendingVenueCount ?? 0,
+        };
+      }),
+    );
 
     res.status(200).json({
       success: true,

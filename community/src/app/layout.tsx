@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Geist_Mono, Space_Grotesk, Syne } from "next/font/google";
 import { Toaster } from "sonner";
@@ -37,7 +38,9 @@ export default function RootLayout({
     >
       <body className="h-dvh bg-app text-slate-900 overflow-y-auto">
         <div className="flex h-dvh flex-col">
-          <CommunityTopNav />
+          <Suspense fallback={<div className="h-16 w-full bg-white/90 border-b border-white/70" />}>
+            <CommunityTopNav />
+          </Suspense>
           <CommunityNotificationToastListener />
           <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
         </div>

@@ -1,7 +1,9 @@
 import "dotenv/config";
 import http from "http";
 import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
 import app from "./app";
+import { createRedisPubSub } from "./config/redis";
 import { connectDB } from "./config/database";
 import { setupCommunitySocket } from "./community/sockets/communitySocket";
 import {
@@ -84,6 +86,27 @@ const startServer = async () => {
       },
     });
 
+    // ── Redis adapter — makes Socket.IO rooms work across multiple instances ──
+    // Clients are created here (not at module level) so any connection error
+    // is fully caught by this try/catch and never crashes the process.
+    let redisPub: ReturnType<typeof createRedisPubSub>["pub"] | null = null;
+    let redisSub: ReturnType<typeof createRedisPubSub>["sub"] | null = null;
+    try {
+      const { pub, sub } = createRedisPubSub();
+      await Promise.all([pub.connect(), sub.connect()]);
+      io.adapter(createAdapter(pub, sub));
+      redisPub = pub;
+      redisSub = sub;
+      console.log("🔴 Redis adapter attached to Socket.IO (multi-instance mode)");
+    } catch {
+      console.warn("⚠️  Redis unavailable — running in single-instance mode (start Redis to enable horizontal scaling)");
+      // Stop ioredis retry loop — without this it floods the logs with
+      // connection errors indefinitely even though we've fallen back to
+      // single-instance mode.
+      try { redisPub?.disconnect(); } catch { /* ignore */ }
+      try { redisSub?.disconnect(); } catch { /* ignore */ }
+    }
+
     // Setup both socket handlers on the same instance
     setupCommunitySocket(io);
     setupFriendSocket(io);
@@ -161,6 +184,12 @@ const startServer = async () => {
           } catch (err) {
             console.error("Failed stopping outbox worker:", err);
           }
+        }
+
+        // Disconnect Redis pub/sub clients cleanly (only if Redis was available)
+        if (redisPub && redisSub) {
+          await Promise.allSettled([redisPub.quit(), redisSub.quit()]);
+          console.log("🔴 Redis pub/sub disconnected");
         }
       } catch (err) {
         console.error("Error during shutdown:", err);

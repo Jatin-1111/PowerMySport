@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, Shield, UserX } from "lucide-react";
+import { Shield, UserX } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import { BlockedUser } from "@/modules/community/types";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
@@ -69,10 +69,7 @@ export default function SafetyPage() {
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap space-y-4">
-        <Link href="/" className="community-back-link">
-          <ChevronLeft size={14} />
-          Back to Community
-        </Link>
+
 
         <section className="community-card">
           <div className="flex items-center gap-2">

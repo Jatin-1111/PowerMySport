@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Shield, ChevronLeft } from "lucide-react";
+import { Shield } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import {
   BlockedUser,
@@ -181,10 +181,7 @@ export default function PrivacyPage() {
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap-narrow space-y-4">
-        <Link href="/" className="community-back-link">
-          <ChevronLeft size={14} />
-          Back to Community
-        </Link>
+
 
         <section className="community-card">
           <div className="flex items-center gap-2">
