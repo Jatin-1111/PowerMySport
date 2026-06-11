@@ -36,7 +36,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-export function useCommunityPage() {
+export function useCommunityPage(options?: { forceView?: "community-overview" | "conversations" }) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const pathname = usePathname();
@@ -267,8 +267,9 @@ export function useCommunityPage() {
     !selectedConversationNeedsMyApproval &&
     !selectedConversationIsBlocked;
 
-  const isCommunityView = activeSidebarTab === "community-overview";
-  const isConversationsView = activeSidebarTab === "conversations";
+  const activeSidebarTabToUse = options?.forceView || activeSidebarTab;
+  const isCommunityView = activeSidebarTabToUse === "community-overview";
+  const isConversationsView = activeSidebarTabToUse === "conversations";
   const showGroupInsightsSidebar =
     isConversationsView &&
     showGroupMembersPanel &&

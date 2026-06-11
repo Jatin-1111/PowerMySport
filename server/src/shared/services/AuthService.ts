@@ -328,9 +328,23 @@ export const graduateDependent = async (
 
 export interface AddDependentPayload {
   name: string;
-  age: number;
+  age?: number;
+  dob?: string | Date;
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  relation?: string;
   sportsFocus?: string[];
+  sports?: string[];
   skillLevel?: string;
+  personalityTags?: string[];
+  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  weeklyTimeCommitment?: number;
+  budgetTier?: "Budget" | "Moderate" | "Premium";
+}
+
+function calculateAge(dob: Date): number {
+  const ageDifMs = Date.now() - dob.getTime();
+  const ageDate = new Date(ageDifMs);
+  return Math.abs(ageDate.getUTCFullYear() - 1970);
 }
 
 export const addDependent = async (
@@ -342,13 +356,30 @@ export const addDependent = async (
     throw new Error("User not found");
   }
 
+  let age = payload.age;
+  let parsedDob: Date | undefined;
+  
+  if (payload.dob) {
+    parsedDob = new Date(payload.dob);
+    if (!isNaN(parsedDob.getTime())) {
+      age = calculateAge(parsedDob);
+    }
+  }
+
   const newDependent = new Player({
     userId: user._id,
     type: "DEPENDENT",
     name: payload.name,
-    age: payload.age,
-    sportsFocus: payload.sportsFocus || [],
+    age: age,
+    dob: parsedDob,
+    gender: payload.gender,
+    relation: payload.relation,
+    sportsFocus: payload.sportsFocus || payload.sports || [],
     skillLevel: payload.skillLevel || "",
+    personalityTags: payload.personalityTags,
+    primaryObjective: payload.primaryObjective,
+    weeklyTimeCommitment: payload.weeklyTimeCommitment,
+    budgetTier: payload.budgetTier,
   });
 
   await newDependent.save();
@@ -366,9 +397,26 @@ export const updateDependent = async (
   }
 
   if (payload.name) dependent.name = payload.name;
-  if (payload.age !== undefined) dependent.age = payload.age;
+  
+  if (payload.dob) {
+    const parsedDob = new Date(payload.dob);
+    if (!isNaN(parsedDob.getTime())) {
+      dependent.dob = parsedDob;
+      dependent.age = calculateAge(parsedDob);
+    }
+  } else if (payload.age !== undefined) {
+    dependent.age = payload.age;
+  }
+  
+  if (payload.gender) dependent.gender = payload.gender;
+  if (payload.relation) dependent.relation = payload.relation;
   if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
+  if (payload.sports) dependent.sportsFocus = payload.sports;
   if (payload.skillLevel) dependent.skillLevel = payload.skillLevel;
+  if (payload.personalityTags) dependent.personalityTags = payload.personalityTags;
+  if (payload.primaryObjective) dependent.primaryObjective = payload.primaryObjective;
+  if (payload.weeklyTimeCommitment !== undefined) dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
+  if (payload.budgetTier) dependent.budgetTier = payload.budgetTier;
 
   await dependent.save();
   return dependent;
@@ -396,6 +444,10 @@ export const deleteDependent = async (
   await Player.deleteOne({ _id: dependentId });
 };
 
+export const getPlayersByUserId = async (userId: string): Promise<any[]> => {
+  return Player.find({ userId }).sort({ type: -1, name: 1 });
+};
+
 export interface UpdateProfilePayload {
   name?: string;
   email?: string;
@@ -403,6 +455,10 @@ export interface UpdateProfilePayload {
   dob?: string | Date;
   playerProfile?: {
     sports?: string[];
+    personalityTags?: string[];
+    primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+    weeklyTimeCommitment?: number;
+    budgetTier?: "Budget" | "Moderate" | "Premium";
   };
 }
 
@@ -447,8 +503,14 @@ export const updateProfile = async (
         sportsFocus: payload.playerProfile.sports,
       });
     } else {
-      selfPlayer.sportsFocus = payload.playerProfile.sports;
+      if (payload.playerProfile.sports) selfPlayer.sportsFocus = payload.playerProfile.sports;
     }
+    
+    if (payload.playerProfile.personalityTags) selfPlayer.personalityTags = payload.playerProfile.personalityTags;
+    if (payload.playerProfile.primaryObjective) selfPlayer.primaryObjective = payload.playerProfile.primaryObjective;
+    if (payload.playerProfile.weeklyTimeCommitment !== undefined) selfPlayer.weeklyTimeCommitment = payload.playerProfile.weeklyTimeCommitment;
+    if (payload.playerProfile.budgetTier) selfPlayer.budgetTier = payload.playerProfile.budgetTier;
+    
     await selfPlayer.save();
   }
 

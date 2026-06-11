@@ -15,6 +15,7 @@ import {
   resetPasswordHandler,
   updateDependentHandler,
   updateProfileHandler,
+  getMyPlayersHandler,
 } from "../controller/authController";
 import { authMiddleware } from "../../middleware/auth";
 import { loginSchema, registerSchema } from "../../middleware/schemas";
@@ -46,6 +47,7 @@ router.post(
 );
 
 // Dependent management endpoints
+router.get("/players", authMiddleware, getMyPlayersHandler);
 router.post("/dependents", authMiddleware, addDependentHandler);
 router.put("/dependents/:dependentId", authMiddleware, updateDependentHandler);
 router.delete(

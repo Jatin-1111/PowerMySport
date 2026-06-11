@@ -1022,3 +1022,12 @@ export const voteCommunityTarget = async (
     handleError(res, error, "Failed to update vote");
   }
 };
+
+export const getCommunityPulseStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const count = await CommunityService.getCommunityPulseStats();
+    res.status(200).json({ success: true, count });
+  } catch (error) {
+    handleError(res, error, "Failed to get community pulse stats");
+  }
+};

@@ -23,6 +23,7 @@ import {
   ChevronDown,
   ChevronLeft,
   MessagesSquare,
+  BrainCircuit,
 } from "lucide-react";
 
 // ─── Additional Settings dropdown items ────────────────────────────────────
@@ -42,8 +43,6 @@ export default function CommunityTopNav() {
   const [unreadCount, setUnreadCount]           = useState(0);
   const isMounted  = typeof document !== "undefined";
   const settingsRef = useRef<HTMLDivElement>(null);
-
-  const showBackButton = pathname !== "/" || sidebar === "conversations";
 
   // ── load / refresh unread badge ──────────────────────────────────────────
   useEffect(() => {
@@ -101,20 +100,10 @@ export default function CommunityTopNav() {
 
           {/* Left section: Back button & Logo */}
           <div className="flex items-center gap-3">
-            {/* ── Back to dashboard ───────────────── */}
-            {showBackButton && (
-              <Link
-                href="/?sidebar=community-overview"
-                className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white/85 px-2.5 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-white hover:text-slate-900"
-                aria-label="Back to dashboard"
-              >
-                <ChevronLeft size={14} />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Link>
-            )}
+
 
             {/* ── Logo ──────────────────────────────────────────────────────── */}
-            <Link href="/?sidebar=community-overview" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-sm font-black text-white shadow-[0_10px_24px_-12px_rgba(233,115,22,0.75)]">
                 PM
               </span>
@@ -134,11 +123,20 @@ export default function CommunityTopNav() {
 
             {/* Chats */}
             <Link
-              href="/?sidebar=conversations"
-              className={navLinkCls(pathname === "/" && sidebar === "conversations")}
+              href="/chats"
+              className={navLinkCls(pathname.startsWith("/chats"))}
             >
               <MessagesSquare size={13} />
               Chats
+            </Link>
+
+            {/* AI Guidance */}
+            <Link
+              href="/ai-guidance"
+              className={navLinkCls(pathname.startsWith("/ai-guidance"))}
+            >
+              <BrainCircuit size={13} />
+              AI Guidance
             </Link>
 
             {/* Knowledge */}
@@ -295,7 +293,7 @@ export default function CommunityTopNav() {
                   {/* Home shortcut */}
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
                     <Link
-                      href="/?sidebar=community-overview"
+                      href="/"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
                     >
@@ -326,7 +324,8 @@ export default function CommunityTopNav() {
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { href: "/?sidebar=conversations",  icon: MessagesSquare, label: "Chats"        },
+                      { href: "/chats",           icon: MessagesSquare, label: "Chats"        },
+                      { href: "/ai-guidance",     icon: BrainCircuit,   label: "AI Guidance"  },
                       { href: "/q",               icon: MessageSquare,  label: "Knowledge"    },
                       { href: "/contributors",    icon: Trophy,         label: "Contributors" },
                       { href: "/following",       icon: Heart,          label: "Following"    },

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import ProfilePictureUpload from "@/components/ui/ProfilePictureUpload";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -12,6 +12,7 @@ import { formatDependentRelation } from "@/modules/player/constants/dependentRel
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
+import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
@@ -140,6 +141,12 @@ export default function ProfilePage() {
   const [isEditingSports, setIsEditingSports] = useState(false);
   const [isSavingSports, setIsSavingSports] = useState(false);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  const [playerProfileForm, setPlayerProfileForm] = useState({
+    personalityTags: [] as string[],
+    primaryObjective: "Recreational" as "Recreational" | "Health" | "Social" | "Competitive",
+    weeklyTimeCommitment: 3,
+    budgetTier: "Moderate" as "Budget" | "Moderate" | "Premium"
+  });
 
   useEffect(() => {
     fetchProfile();
@@ -250,6 +257,10 @@ export default function ProfilePage() {
     gender?: "MALE" | "FEMALE" | "OTHER";
     relation?: string;
     sports?: string[];
+    personalityTags?: string[];
+    primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+    weeklyTimeCommitment?: number;
+    budgetTier?: "Budget" | "Moderate" | "Premium";
   }) => {
     try {
       if (dependentModalMode === "add") {
@@ -346,6 +357,12 @@ export default function ProfilePage() {
   const resetSportsForm = () => {
     if (!user) return;
     setSelectedSports(user.playerProfile?.sports || []);
+    setPlayerProfileForm({
+      personalityTags: user.playerProfile?.personalityTags || [],
+      primaryObjective: user.playerProfile?.primaryObjective || "Recreational",
+      weeklyTimeCommitment: user.playerProfile?.weeklyTimeCommitment || 3,
+      budgetTier: user.playerProfile?.budgetTier || "Moderate",
+    });
   };
 
   const handleEditSportsClick = () => {
@@ -366,6 +383,10 @@ export default function ProfilePage() {
       await authApi.updateProfile({
         playerProfile: {
           sports: selectedSports,
+          personalityTags: playerProfileForm.personalityTags,
+          primaryObjective: playerProfileForm.primaryObjective,
+          weeklyTimeCommitment: playerProfileForm.weeklyTimeCommitment,
+          budgetTier: playerProfileForm.budgetTier,
         },
       });
       await fetchProfile();
@@ -637,19 +658,20 @@ export default function ProfilePage() {
       >
         <ProfileSectionHeader
           icon={Trophy}
-          title="My Sports"
-          description="The sports you play. Helps coaches find you for relevant bookings."
+          title="Player Profile"
+          description="Your sports and AI guidance preferences."
           isEditing={isEditingSports}
           onEdit={handleEditSportsClick}
           onCancel={handleCancelSportsEdit}
           onSave={handleSaveSports}
           saving={isSavingSports}
-          saveLabel="Save Sports"
+          saveLabel="Save Profile"
         />
 
         <CardContent className="px-6 py-6">
           {isEditingSports ? (
-            <ProfileEditPanel description="Choose the sports you play or are interested in. You can select multiple.">
+            <div className="space-y-6">
+              <ProfileEditPanel description="Choose the sports you play or are interested in. You can select multiple.">
               <ProfileEditField
                 label="Your sports"
                 hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
@@ -685,35 +707,142 @@ export default function ProfilePage() {
                 </div>
               )}
             </ProfileEditPanel>
-          ) : user.playerProfile?.sports &&
-            user.playerProfile.sports.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {user.playerProfile.sports.map((sport) => (
-                <Badge
-                  key={sport}
-                  className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                >
-                  {sport}
-                </Badge>
-              ))}
+            
+            <ProfileEditPanel
+              title="AI Guidance Preferences"
+              description="Used to pre-fill AI recommendations for you."
+            >
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <ProfileEditField label="Primary Objective" htmlFor="primary-objective">
+                    <ProfileFormSelect
+                      id="primary-objective"
+                      value={playerProfileForm.primaryObjective}
+                      onChange={(value: any) => setPlayerProfileForm(f => ({ ...f, primaryObjective: value }))}
+                      options={[
+                        { value: "Recreational", label: "Recreational" },
+                        { value: "Health", label: "Health & Fitness" },
+                        { value: "Social", label: "Social & Fun" },
+                        { value: "Competitive", label: "Competitive" },
+                      ]}
+                    />
+                  </ProfileEditField>
+
+                  <ProfileEditField label="Budget Tier" htmlFor="budget-tier">
+                    <ProfileFormSelect
+                      id="budget-tier"
+                      value={playerProfileForm.budgetTier}
+                      onChange={(value: any) => setPlayerProfileForm(f => ({ ...f, budgetTier: value }))}
+                      options={[
+                        { value: "Budget", label: "Budget" },
+                        { value: "Moderate", label: "Moderate" },
+                        { value: "Premium", label: "Premium" },
+                      ]}
+                    />
+                  </ProfileEditField>
+                </div>
+
+                <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
+                  <Input
+                    id="weekly-time"
+                    type="number"
+                    min="1"
+                    max="40"
+                    value={playerProfileForm.weeklyTimeCommitment}
+                    onChange={(e) => setPlayerProfileForm(f => ({ ...f, weeklyTimeCommitment: parseInt(e.target.value) || 3 }))}
+                  />
+                </ProfileEditField>
+
+                <ProfileEditField label="Personality Tags">
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "Shy", "Energetic", "Competitive", "Social",
+                      "Focused", "Curious", "Patient", "Team-oriented"
+                    ].map((tag) => {
+                      const isSelected = playerProfileForm.personalityTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            const current = playerProfileForm.personalityTags;
+                            const next = isSelected
+                              ? current.filter((t) => t !== tag)
+                              : [...current, tag];
+                            setPlayerProfileForm(f => ({ ...f, personalityTags: next }));
+                          }}
+                          className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                            isSelected
+                              ? "border-blue-600 bg-blue-50 font-medium text-blue-700"
+                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ProfileEditField>
+              </div>
+            </ProfileEditPanel>
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-10 text-center">
-              <Trophy className="mx-auto mb-3 h-8 w-8 text-slate-400" />
-              <p className="text-sm font-medium text-slate-700">
-                No sports added yet
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Add the sports you play to get better recommendations.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={handleEditSportsClick}
-              >
-                Add Sports
-              </Button>
+            <div className="space-y-8">
+              <div>
+                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">My Sports</h4>
+                {user.playerProfile?.sports && user.playerProfile.sports.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {user.playerProfile.sports.map((sport) => (
+                      <Badge
+                        key={sport}
+                        className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                      >
+                        {sport}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center max-w-lg">
+                    <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
+                    <p className="text-sm font-medium text-slate-700">
+                      No sports added yet
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Add the sports you play to get better recommendations.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={handleEditSportsClick}
+                    >
+                      Add Sports
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              <div className="border-t border-slate-100 pt-6">
+                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">AI Guidance Preferences</h4>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <ProfileInfoField label="Primary Objective">{user.playerProfile?.primaryObjective || "Not specified"}</ProfileInfoField>
+                  <ProfileInfoField label="Budget">{user.playerProfile?.budgetTier || "Not specified"}</ProfileInfoField>
+                  <ProfileInfoField label="Weekly Time">
+                    {user.playerProfile?.weeklyTimeCommitment ? `${user.playerProfile.weeklyTimeCommitment} hours` : "Not specified"}
+                  </ProfileInfoField>
+                  <ProfileInfoField label="Personality">
+                    {user.playerProfile?.personalityTags && user.playerProfile.personalityTags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {user.playerProfile.personalityTags.map(tag => (
+                          <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      "Not specified"
+                    )}
+                  </ProfileInfoField>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
@@ -740,7 +869,7 @@ export default function ProfilePage() {
           {user.dependents && user.dependents.length > 0 ? (
             <div className="grid gap-4">
               {user.dependents.map((dependent) => {
-                const age = getDependentAge(dependent.dob);
+                const age = getDependentAge(dependent.dob) ?? dependent.age ?? null;
                 const isEligible = age !== null && age >= 18;
                 const genderLabel = formatGender(dependent.gender);
 

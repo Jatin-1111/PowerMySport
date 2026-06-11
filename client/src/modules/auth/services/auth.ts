@@ -41,6 +41,10 @@ export const authApi = {
     dob?: string | Date;
     playerProfile?: {
       sports?: string[];
+      personalityTags?: string[];
+      primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+      weeklyTimeCommitment?: number;
+      budgetTier?: "Budget" | "Moderate" | "Premium";
     };
   }): Promise<ApiResponse<User>> => {
     const response = await axiosInstance.put("/auth/profile", data);
@@ -102,6 +106,10 @@ export const authApi = {
     gender?: "MALE" | "FEMALE" | "OTHER";
     relation?: string;
     sports?: string[];
+    personalityTags?: string[];
+    primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+    weeklyTimeCommitment?: number;
+    budgetTier?: "Budget" | "Moderate" | "Premium";
   }): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.post("/auth/dependents", data);
     return response.data;
@@ -115,6 +123,10 @@ export const authApi = {
       gender?: "MALE" | "FEMALE" | "OTHER";
       relation?: string;
       sports?: string[];
+      personalityTags?: string[];
+      primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+      weeklyTimeCommitment?: number;
+      budgetTier?: "Budget" | "Moderate" | "Premium";
     },
   ): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.put(

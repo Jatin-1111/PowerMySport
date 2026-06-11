@@ -13,6 +13,7 @@ import {
   resetPassword,
   updateDependent,
   updateProfile,
+  getPlayersByUserId,
 } from "../services/AuthService";
 import { generateToken } from "../../utils/jwt";
 
@@ -139,6 +140,31 @@ export const getProfile = async (
       await user.refreshPhotoUrl();
     }
 
+    const allPlayers = await getPlayersByUserId(user._id.toString());
+    const dependents = allPlayers
+      .filter((p: any) => p.type === "DEPENDENT")
+      .map((p: any) => ({
+        _id: p._id,
+        name: p.name,
+        dob: p.dob || null,
+        age: p.age,
+        sports: p.sportsFocus || [],
+        skillLevel: p.skillLevel,
+        personalityTags: p.personalityTags,
+        primaryObjective: p.primaryObjective,
+        weeklyTimeCommitment: p.weeklyTimeCommitment,
+        budgetTier: p.budgetTier,
+      }));
+
+    const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
+    const playerProfile = selfPlayer ? {
+      sports: selfPlayer.sportsFocus || [],
+      personalityTags: selfPlayer.personalityTags,
+      primaryObjective: selfPlayer.primaryObjective,
+      weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
+      budgetTier: selfPlayer.budgetTier,
+    } : undefined;
+
     res.status(200).json({
       success: true,
       message: "Profile retrieved successfully",
@@ -152,6 +178,8 @@ export const getProfile = async (
         dob: user.dob,
         photoUrl: user.photoUrl,
         photoS3Key: user.photoS3Key,
+        playerProfile,
+        dependents,
       },
     });
   } catch (error) {
@@ -428,6 +456,34 @@ export const graduateDependentHandler = async (
     res.status(400).json({
       success: false,
       message: error instanceof Error ? error.message : "Graduation failed",
+    });
+  }
+};
+
+export const getMyPlayersHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const players = await getPlayersByUserId(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Players fetched successfully",
+      data: players,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch players",
     });
   }
 };

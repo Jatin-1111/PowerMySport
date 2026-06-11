@@ -6,8 +6,14 @@ export interface PlayerDocument extends Document {
   name: string;
   age?: number;
   dob?: Date;
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  relation?: string;
   sportsFocus: string[];
   skillLevel?: string;
+  personalityTags?: string[];
+  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  weeklyTimeCommitment?: number;
+  budgetTier?: "Budget" | "Moderate" | "Premium";
   paymentHistory?: Array<{
     bookingId: mongoose.Types.ObjectId;
     amount: number;
@@ -41,12 +47,33 @@ const playerSchema = new Schema<PlayerDocument>(
     dob: {
       type: Date,
     },
+    gender: {
+      type: String,
+      enum: ["MALE", "FEMALE", "OTHER"],
+    },
+    relation: {
+      type: String,
+    },
     sportsFocus: {
       type: [String],
       default: [],
     },
     skillLevel: {
       type: String,
+    },
+    personalityTags: {
+      type: [String],
+    },
+    primaryObjective: {
+      type: String,
+      enum: ["Recreational", "Health", "Social", "Competitive"],
+    },
+    weeklyTimeCommitment: {
+      type: Number,
+    },
+    budgetTier: {
+      type: String,
+      enum: ["Budget", "Moderate", "Premium"],
     },
     paymentHistory: [
       {

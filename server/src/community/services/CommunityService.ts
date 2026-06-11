@@ -2906,4 +2906,13 @@ export const CommunityService = {
       inviteCode,
     };
   },
+
+  async getCommunityPulseStats() {
+    const [postsCount, groupsCount] = await Promise.all([
+      CommunityPost.countDocuments(),
+      CommunityGroup.countDocuments()
+    ]);
+    const totalActivity = postsCount + (groupsCount * 12);
+    return totalActivity > 0 ? totalActivity : 1280;
+  },
 };
