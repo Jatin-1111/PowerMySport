@@ -615,34 +615,6 @@ function CheckoutPageContent() {
         throw new Error("Booking could not be created");
       }
 
-      const isDevPaymentBypass = process.env.NODE_ENV !== "production";
-      if (isDevPaymentBypass) {
-        await bookingApi.confirmMockPaymentSuccess(bookingId);
-
-        statsApi
-          .trackFunnelEvent({
-            eventName: "checkout_payment_bypassed",
-            entityType: "BOOKING",
-            entityId: bookingId,
-            metadata: {
-              total,
-              paymentMethod,
-              isGroupBooking,
-              paymentType,
-              mode: "mock",
-            },
-          })
-          .catch(() => {});
-
-        const paymentUrl = new URL("/payment", window.location.origin);
-        paymentUrl.searchParams.set("status", "success");
-        paymentUrl.searchParams.set("bookingId", bookingId);
-        paymentUrl.searchParams.set("type", type);
-        paymentUrl.searchParams.set("mode", "mock");
-        window.location.assign(paymentUrl.toString());
-        return;
-      }
-
       const phonePeInit = await bookingApi.initiatePhonePePayment(bookingId, {
         type,
       });

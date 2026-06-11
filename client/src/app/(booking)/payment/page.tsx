@@ -500,21 +500,33 @@ function PaymentPageContent() {
                       <div className="space-y-1.5">
                         {booking.payments
                           .filter((p) => p.userType === "PLAYER")
-                          .map((payment, idx) => (
-                            <div
-                              key={idx}
-                              className="flex justify-between items-center text-sm"
-                            >
-                              <span className="text-slate-700">
-                                {payment.userId === booking.userId
-                                  ? "Your share"
-                                  : "Friend's share"}
-                              </span>
-                              <span className="font-semibold text-slate-900">
-                                ₹{payment.amount}
-                              </span>
-                            </div>
-                          ))}
+                          .map((payment, idx) => {
+                            let nameStr = "Friend's share";
+                            if (payment.userId === booking.userId) {
+                              nameStr = "Your share";
+                            } else if (booking.participants) {
+                              const participant = booking.participants.find(
+                                (p) => p.userId === payment.userId,
+                              );
+                              if (participant) {
+                                nameStr = `${participant.name}'s share`;
+                              }
+                            }
+
+                            return (
+                              <div
+                                key={idx}
+                                className="flex justify-between items-center text-sm"
+                              >
+                                <span className="text-slate-700">
+                                  {nameStr}
+                                </span>
+                                <span className="font-semibold text-slate-900">
+                                  ₹{payment.amount}
+                                </span>
+                              </div>
+                            );
+                          })}
                       </div>
                     </div>
                   )}

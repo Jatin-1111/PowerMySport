@@ -526,9 +526,81 @@ venueSchema.methods.refreshImageUrls = async function () {
             .filter((key: string | null): key is string => Boolean(key))
         : [];
 
-  // Refresh gallery images
+  // Refresh gallery images (legacy)
   if (imageKeysToUse.length > 0) {
     this.images = await refreshFromKeys(imageKeysToUse);
+  }
+
+  // Refresh generalImages
+  const generalKeysToUse: string[] =
+    Array.isArray(this.generalImageKeys) && this.generalImageKeys.length > 0
+      ? this.generalImageKeys
+      : Array.isArray(this.generalImages)
+        ? this.generalImages
+            .map((url: string) => extractKeyFromUrl(url))
+            .filter((key: string | null): key is string => Boolean(key))
+        : [];
+
+  if (generalKeysToUse.length > 0) {
+    this.generalImages = await refreshFromKeys(generalKeysToUse);
+  }
+
+  // Refresh sportImages
+  if (this.sportImageKeys || this.sportImages) {
+    const newSportImages = new Map<string, string[]>();
+    
+    // First, collect all sports from either sportImageKeys or sportImages
+    const sportsSet = new Set<string>();
+    if (this.sportImageKeys && this.sportImageKeys instanceof Map) {
+      for (const key of Array.from(this.sportImageKeys.keys())) {
+        sportsSet.add(key);
+      }
+    } else if (this.sportImageKeys && typeof this.sportImageKeys === "object") {
+      for (const key of Object.keys(this.sportImageKeys)) {
+        sportsSet.add(key);
+      }
+    }
+    
+    if (this.sportImages && this.sportImages instanceof Map) {
+      for (const key of Array.from(this.sportImages.keys())) {
+        sportsSet.add(key);
+      }
+    } else if (this.sportImages && typeof this.sportImages === "object") {
+      for (const key of Object.keys(this.sportImages)) {
+        sportsSet.add(key);
+      }
+    }
+
+    for (const sport of Array.from(sportsSet)) {
+      let keysToUse: string[] = [];
+      
+      const sportKeys = this.sportImageKeys instanceof Map 
+        ? this.sportImageKeys.get(sport) 
+        : (this.sportImageKeys as any)?.[sport];
+        
+      const sportUrls = this.sportImages instanceof Map 
+        ? this.sportImages.get(sport) 
+        : (this.sportImages as any)?.[sport];
+
+      if (Array.isArray(sportKeys) && sportKeys.length > 0) {
+        keysToUse = sportKeys;
+      } else if (Array.isArray(sportUrls)) {
+        keysToUse = sportUrls
+          .map((url: string) => extractKeyFromUrl(url))
+          .filter((key: string | null): key is string => Boolean(key));
+      }
+
+      if (keysToUse.length > 0) {
+        const refreshed = await refreshFromKeys(keysToUse);
+        if (refreshed.length > 0) {
+          newSportImages.set(sport, refreshed);
+        }
+      }
+    }
+    
+    if (newSportImages.size > 0) {
+      this.sportImages = newSportImages as any;
+    }
   }
 
   // Refresh cover photo

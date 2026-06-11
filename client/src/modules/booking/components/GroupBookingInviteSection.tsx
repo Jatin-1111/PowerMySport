@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FriendSelector } from "./FriendSelector";
 import { PaymentTypeSelector, PaymentType } from "./PaymentTypeSelector";
+import { Friend } from "@/modules/shared/services/friend";
 import { Users, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -28,6 +29,7 @@ export function GroupBookingInviteSection({
   className,
 }: GroupBookingInviteSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedFriends, setSelectedFriends] = useState<Friend[]>([]);
 
   const participantCount = isGroupBooking ? selectedFriendIds.length + 1 : 1; // +1 for the organizer
 
@@ -69,9 +71,13 @@ export function GroupBookingInviteSection({
             <p className="font-semibold text-slate-900">
               Book with friends (Group Booking)
             </p>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 line-clamp-1">
               {isGroupBooking
-                ? `${selectedFriendIds.length} ${selectedFriendIds.length === 1 ? "friend" : "friends"} invited`
+                ? selectedFriends.length > 0
+                  ? selectedFriends
+                      .map((f) => f.name || f.anonymousAlias || "Friend")
+                      .join(", ")
+                  : `${selectedFriendIds.length} ${selectedFriendIds.length === 1 ? "friend" : "friends"} invited`
                 : "Invite friends to join this booking"}
             </p>
           </div>
@@ -101,6 +107,7 @@ export function GroupBookingInviteSection({
             <FriendSelector
               selectedFriendIds={selectedFriendIds}
               onSelectionChange={onFriendSelectionChange}
+              onSelectedFriendsChange={setSelectedFriends}
             />
             {selectedFriendIds.length === 0 && (
               <p className="mt-2 text-xs text-red-600">

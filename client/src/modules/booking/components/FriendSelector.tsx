@@ -10,12 +10,14 @@ import { cn } from "@/utils/cn";
 interface FriendSelectorProps {
   selectedFriendIds: string[];
   onSelectionChange: (friendIds: string[]) => void;
+  onSelectedFriendsChange?: (friends: Friend[]) => void;
   className?: string;
 }
 
 export function FriendSelector({
   selectedFriendIds,
   onSelectionChange,
+  onSelectedFriendsChange,
   className,
 }: FriendSelectorProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -25,6 +27,13 @@ export function FriendSelector({
   useEffect(() => {
     loadFriends();
   }, []);
+
+  useEffect(() => {
+    if (onSelectedFriendsChange) {
+      const selected = friends.filter((f) => selectedFriendIds.includes(f.id));
+      onSelectedFriendsChange(selected);
+    }
+  }, [selectedFriendIds, friends]);
 
   const loadFriends = async () => {
     try {

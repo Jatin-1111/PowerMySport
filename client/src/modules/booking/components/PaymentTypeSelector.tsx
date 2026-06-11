@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { CreditCard, Users2, IndianRupee } from "lucide-react";
+import { CreditCard, Users2 } from "lucide-react";
 import { formatCurrency } from "@/utils/format";
 
 export type PaymentType = "SINGLE" | "SPLIT";
@@ -56,7 +56,6 @@ export function PaymentTypeSelector({
               You cover the full amount now. Perfect for treating your friends!
             </p>
             <div className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-power-orange">
-              <IndianRupee size={14} />
               <span>{formatCurrency(totalAmount)}</span>
               <span className="text-xs font-normal text-slate-500">
                 (Full amount)
@@ -108,7 +107,6 @@ export function PaymentTypeSelector({
               Everyone pays their share. Fair and transparent for the group.
             </p>
             <div className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-power-orange">
-              <IndianRupee size={14} />
               <span>{formatCurrency(amountPerPerson)}</span>
               <span className="text-xs font-normal text-slate-500">
                 per person ({participantCount}{" "}

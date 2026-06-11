@@ -24,7 +24,8 @@ import {
 import { motion } from "framer-motion";
 
 interface BookingInvitation {
-  id: string;
+  id?: string;
+  _id?: string;
   bookingId: any;
   inviterId: {
     name: string;
@@ -152,7 +153,7 @@ export default function InvitationsPage() {
               ) : (
                 pendingInvitations.map((invitation) => (
                   <motion.div
-                    key={invitation.id}
+                    key={invitation.id || invitation._id}
                     className="flex rounded-xl border border-slate-200/70 overflow-hidden"
                     whileHover={{ y: -2 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
@@ -222,7 +223,7 @@ export default function InvitationsPage() {
                         <Button
                           variant="primary"
                           className="flex-1 sm:flex-none"
-                          onClick={() => handleRespond(invitation.id, true)}
+                          onClick={() => handleRespond(invitation.id || invitation._id || "", true)}
                           icon={<CheckCircle size={16} />}
                         >
                           Accept
@@ -230,7 +231,7 @@ export default function InvitationsPage() {
                         <Button
                           variant="secondary"
                           className="flex-1 sm:flex-none"
-                          onClick={() => handleRespond(invitation.id, false)}
+                          onClick={() => handleRespond(invitation.id || invitation._id || "", false)}
                           icon={<XCircle size={16} />}
                         >
                           Decline
@@ -254,7 +255,7 @@ export default function InvitationsPage() {
               <CardContent className="px-6 py-5 space-y-3">
                 {respondedInvitations.map((invitation) => (
                   <div
-                    key={invitation.id}
+                    key={invitation.id || invitation._id}
                     className="flex rounded-xl border border-slate-200/70 overflow-hidden opacity-75 transition-opacity hover:opacity-100"
                   >
                     <div
