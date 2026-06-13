@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 
@@ -40,6 +40,7 @@ const buildActionHref = (payload: IncomingNotification): string | null => {
 export default function CommunityNotificationToastListener() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const lastToastKeyRef = useRef("");
 
   useEffect(() => {
@@ -47,6 +48,20 @@ export default function CommunityNotificationToastListener() {
 
     const handleNotification = (payload: IncomingNotification) => {
       if (!payload || pathname === "/notifications") {
+        return;
+      }
+
+      // Suppress toast if we are already viewing this conversation/group in the UI
+      const activeConversation = searchParams?.get("conversation");
+      if (
+        activeConversation &&
+        payload.data?.conversationId === activeConversation
+      ) {
+        return;
+      }
+
+      const activeGroup = searchParams?.get("group");
+      if (activeGroup && payload.data?.groupId === activeGroup) {
         return;
       }
 
@@ -86,7 +101,7 @@ export default function CommunityNotificationToastListener() {
     return () => {
       socket.off("notification:new", handleNotification);
     };
-  }, [pathname, router]);
+  }, [pathname, searchParams, router]);
 
   return null;
 }
