@@ -390,7 +390,10 @@ export const communityService = {
     clearCacheByPrefixes(["conversations", buildMessagesKey(conversationId)]);
   },
 
-  async getMessages(conversationId: string): Promise<{
+  async getMessages(
+    conversationId: string,
+    page = 1
+  ): Promise<{
     conversation: {
       id: string;
       conversationType?: "DM" | "GROUP";
@@ -399,9 +402,14 @@ export const communityService = {
       group?: CommunityGroupSummary | null;
     };
     messages: ConversationMessage[];
+    pagination: {
+      total: number;
+      page: number;
+      totalPages: number;
+    };
   }> {
     return withRequestCache(
-      buildMessagesKey(conversationId),
+      `${buildMessagesKey(conversationId)}-page-${page}`,
       async () => {
         const response = await axiosInstance.get<
           ApiResponse<{
@@ -413,8 +421,13 @@ export const communityService = {
               group?: CommunityGroupSummary | null;
             };
             messages: ConversationMessage[];
+            pagination: {
+              total: number;
+              page: number;
+              totalPages: number;
+            };
           }>
-        >(`/community/conversations/${conversationId}/messages`);
+        >(`/community/conversations/${conversationId}/messages?page=${page}`);
         return response.data.data;
       },
       3000,

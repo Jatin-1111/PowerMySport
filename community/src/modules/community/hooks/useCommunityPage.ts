@@ -103,6 +103,9 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   });
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [messagePage, setMessagePage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
   const [playerSearchQuery, setPlayerSearchQuery] = useState("");
   const [playerSearchResults, setPlayerSearchResults] = useState<
     CommunityUserSearchResult[]
@@ -556,8 +559,14 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const loadMessages = useCallback(
     async (conversationId: string) => {
       try {
-        const response = await communityService.getMessages(conversationId);
+        const response = await communityService.getMessages(conversationId, 1);
         setMessages(Array.isArray(response.messages) ? response.messages : []);
+        setMessagePage(1);
+        if (response.pagination) {
+          setHasMoreMessages(response.pagination.page < response.pagination.totalPages);
+        } else {
+          setHasMoreMessages(false);
+        }
 
         // Mark related notifications as read
         await markNotificationsForConversationAsRead(conversationId);
@@ -576,6 +585,34 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     },
     [refreshConversationsNow, markNotificationsForConversationAsRead],
   );
+
+  const loadMoreMessages = useCallback(async () => {
+    if (!selectedConversationId || isLoadingMoreMessages || !hasMoreMessages) return;
+    setIsLoadingMoreMessages(true);
+    try {
+      const nextPage = messagePage + 1;
+      const response = await communityService.getMessages(selectedConversationId, nextPage);
+      
+      const newMessages = Array.isArray(response.messages) ? response.messages : [];
+      setMessages((current) => {
+        // Prepend new messages, filtering out any duplicates
+        const currentIds = new Set(current.map(m => m.id));
+        const filteredNew = newMessages.filter(m => !currentIds.has(m.id));
+        return [...filteredNew, ...current];
+      });
+      
+      setMessagePage(nextPage);
+      if (response.pagination) {
+        setHasMoreMessages(response.pagination.page < response.pagination.totalPages);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load older messages");
+    } finally {
+      setIsLoadingMoreMessages(false);
+    }
+  }, [selectedConversationId, messagePage, hasMoreMessages, isLoadingMoreMessages]);
 
   useEffect(() => {
     void loadBootstrap();
@@ -1907,6 +1944,9 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     memberProfileError,
     selectedMemberProfile,
     messagesEndRef,
+    hasMoreMessages,
+    isLoadingMoreMessages,
+    loadMoreMessages,
     selectedConversation,
     totalUnread,
     pendingRequestsCount,

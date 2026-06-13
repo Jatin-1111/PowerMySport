@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronLeft, ImagePlus, MessageSquare, PanelRightClose, PanelRightOpen, RotateCcw, X } from "lucide-react";
+import { ChevronLeft, ImagePlus, MessageSquare, PanelRightClose, PanelRightOpen, RotateCcw, X, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "@/modules/community/components/chat/MessageBubble";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
+import { useRef, useLayoutEffect } from "react";
 
 type Props = { page: CommunityPageViewModel };
 
@@ -48,7 +49,41 @@ export default function CommunityChatPanel({ page }: Props) {
     pendingImageFile,
     setPendingImageFile,
     imageInputRef,
+    hasMoreMessages,
+    isLoadingMoreMessages,
+    loadMoreMessages,
   } = page;
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const previousScrollHeightRef = useRef<number>(0);
+  const previousScrollTopRef = useRef<number>(0);
+
+  // Preserve scroll position when prepending older messages
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !isLoadingMoreMessages) return;
+    
+    // This effect runs right after render. If we were loading more, and now the height changed, adjust scroll.
+    const currentHeight = container.scrollHeight;
+    if (currentHeight > previousScrollHeightRef.current) {
+      const heightDifference = currentHeight - previousScrollHeightRef.current;
+      container.scrollTop = previousScrollTopRef.current + heightDifference;
+    }
+  }, [messages, isLoadingMoreMessages]);
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Track scroll metrics to restore position later
+    previousScrollHeightRef.current = container.scrollHeight;
+    previousScrollTopRef.current = container.scrollTop;
+
+    // Trigger load more when near the top (100px threshold)
+    if (container.scrollTop < 100 && hasMoreMessages && !isLoadingMoreMessages) {
+      void loadMoreMessages();
+    }
+  };
 
   const handleSend = () => {
     if (pendingImageFile) {
@@ -144,7 +179,16 @@ export default function CommunityChatPanel({ page }: Props) {
                     )}
                   </div>
 
-                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
+                  <div 
+                    ref={scrollContainerRef}
+                    onScroll={handleScroll}
+                    className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4"
+                  >
+                    {isLoadingMoreMessages && (
+                      <div className="flex justify-center py-2">
+                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                      </div>
+                    )}
                     {messages.map((message) => (
                       <MessageBubble
                         key={message.id}
