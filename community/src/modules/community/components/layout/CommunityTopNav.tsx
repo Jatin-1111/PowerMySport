@@ -17,13 +17,13 @@ import {
   House,
   Trophy,
   UserX,
-  Heart,
   ExternalLink,
   Settings2,
   ChevronDown,
   ChevronLeft,
   MessagesSquare,
   BrainCircuit,
+  Heart,
 } from "lucide-react";
 
 // ─── Additional Settings dropdown items ────────────────────────────────────
@@ -157,16 +157,6 @@ export default function CommunityTopNav() {
               Contributors
             </Link>
 
-            {/* Following */}
-            <Link
-              href="/following"
-              className={navLinkCls(pathname.startsWith("/following"))}
-            >
-              <Heart size={13} />
-              Following
-            </Link>
-
-            {/* Notifications */}
             <Link
               href="/notifications"
               className={navLinkCls(pathname.startsWith("/notifications"))}
@@ -355,30 +345,35 @@ export default function CommunityTopNav() {
                         </span>
                       )}
                     </Link>
-                  </div>
+                    <Link
+                      href="/reports"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <FileWarning size={15} />
+                      Reports
+                    </Link>
+                    <Link
+                      href="/contributors"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <Trophy size={15} />
+                      Contributors
+                    </Link>
 
-                  {/* Additional Settings group */}
-                  <p className="mt-5 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-1">
-                    Additional Settings
-                  </p>
-                  <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                    {SETTINGS_ITEMS.map(({ href, icon: Icon, label }, idx) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 ${
-                          idx < SETTINGS_ITEMS.length - 1
-                            ? "border-b border-slate-100"
-                            : ""
-                        }`}
-                      >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                          <Icon size={14} />
-                        </span>
-                        {label}
-                      </Link>
-                    ))}
+                    <Link
+                      href="/safety"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <UserX size={15} />
+                      Safety
+                    </Link>
+                    <Link
+                      href="/privacy"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <Shield size={15} />
+                      Privacy
+                    </Link>
                   </div>
 
                   {/* Tip */}

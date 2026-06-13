@@ -364,7 +364,7 @@ export default function FriendsPage() {
                 {friends.map((friend) => (
                   <Card
                     key={friend.id}
-                    className="shop-surface premium-shadow overflow-hidden p-0 transition-all duration-200 hover:shadow-md"
+                    className="shop-surface premium-shadow p-0 transition-all duration-200 hover:shadow-md"
                   >
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between">

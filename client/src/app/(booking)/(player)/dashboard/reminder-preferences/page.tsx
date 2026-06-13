@@ -170,7 +170,6 @@ export default function ReminderPreferencesPage() {
                 className="sr-only"
               />
               <div
-                onClick={() => toggleEnabled(!bookingReminders.enabled)}
                 className={`relative h-6 w-11 rounded-full transition-colors cursor-pointer ${
                   bookingReminders.enabled ? "bg-power-orange" : "bg-slate-200"
                 }`}

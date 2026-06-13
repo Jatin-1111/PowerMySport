@@ -481,14 +481,7 @@ export default function QnAFeedClient() {
   };
 
   const deletePost = async (post: CommunityPost) => {
-    const confirmed = window.confirm(
-      "Delete this question? This will hide it from the knowledge feed.",
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    await postMutations.mutate(post.id, { action: "delete" });
+    void postMutations.mutate(post.id, { action: "delete" });
   };
 
   const vote = async (post: CommunityPost, value: 1 | -1) => {
