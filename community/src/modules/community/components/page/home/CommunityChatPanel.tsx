@@ -4,7 +4,8 @@ import { ChevronLeft, ImagePlus, MessageSquare, PanelRightClose, PanelRightOpen,
 import { motion } from "framer-motion";
 import { MessageBubble } from "@/modules/community/components/chat/MessageBubble";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
-import { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useCallback } from "react";
+import { getCommunitySocket } from "@/lib/realtime/socket";
 
 type Props = { page: CommunityPageViewModel };
 
@@ -52,11 +53,13 @@ export default function CommunityChatPanel({ page }: Props) {
     hasMoreMessages,
     isLoadingMoreMessages,
     loadMoreMessages,
+    typingUsers,
   } = page;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const previousScrollHeightRef = useRef<number>(0);
   const previousScrollTopRef = useRef<number>(0);
+  const typingEmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Preserve scroll position when prepending older messages
   useLayoutEffect(() => {
@@ -86,6 +89,12 @@ export default function CommunityChatPanel({ page }: Props) {
   };
 
   const handleSend = () => {
+    if (typingEmitTimeoutRef.current) clearTimeout(typingEmitTimeoutRef.current);
+    const socket = getCommunitySocket();
+    if (selectedConversation) {
+      socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+    }
+
     if (pendingImageFile) {
       void handleSendImageMessage(pendingImageFile, newMessage.trim());
       setPendingImageFile(null);
@@ -93,6 +102,29 @@ export default function CommunityChatPanel({ page }: Props) {
       handleSendMessage();
     }
   };
+
+  const handleMessageChange = useCallback((val: string) => {
+    setNewMessage(val);
+    if (!selectedConversation) return;
+
+    const socket = getCommunitySocket();
+    if (val.trim().length > 0) {
+      socket.emit("community:typingStart", { conversationId: selectedConversation.id });
+
+      if (typingEmitTimeoutRef.current) clearTimeout(typingEmitTimeoutRef.current);
+      typingEmitTimeoutRef.current = setTimeout(() => {
+        socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+      }, 2000);
+    } else {
+      socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+    }
+  }, [setNewMessage, selectedConversation]);
+
+  // Determine if others are typing
+  const currentlyTypingUsers = selectedConversation 
+    ? (typingUsers[selectedConversation.id] || []) 
+    : [];
+  const isSomeoneTyping = currentlyTypingUsers.length > 0;
 
   return (
                 <motion.section
@@ -210,6 +242,18 @@ export default function CommunityChatPanel({ page }: Props) {
                         isMutating={isMutatingMessageId === message.id}
                       />
                     ))}
+                    {isSomeoneTyping && (
+                      <div className="flex items-center gap-2 py-1 text-xs text-slate-500 italic">
+                        <div className="flex gap-1">
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:0.2s]" />
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:0.4s]" />
+                        </div>
+                        {currentlyTypingUsers.length === 1 
+                          ? "Someone is typing..." 
+                          : "Multiple people are typing..."}
+                      </div>
+                    )}
                     <div ref={messagesEndRef} />
                   </div>
 
@@ -295,7 +339,7 @@ export default function CommunityChatPanel({ page }: Props) {
 
                       <textarea
                         value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
+                        onChange={(e) => handleMessageChange(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();

@@ -188,6 +188,7 @@ export default function CommunityNotificationsPage() {
         setItems(response.items || []);
         setPage(targetPage);
         setPages(Math.max(1, response.pagination.pages || 1));
+      } catch (error) {
         if (!isBackground) {
           setItems([]);
           setPage(targetPage);
