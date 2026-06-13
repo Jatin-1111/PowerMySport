@@ -6,6 +6,7 @@ import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
+import { uploadChatImage } from "@/modules/community/hooks/useChatImageUpload";
 import {
   CommunityUserSearchResult,
   CommunityGroupSummary,
@@ -158,6 +159,8 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   >(null);
   const [isTogglingBlockUser, setIsTogglingBlockUser] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] =
     useState(true);
@@ -173,6 +176,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const selectedConversationIdRef = useRef<string | null>(null);
   const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectedPollDelayRef = useRef(DISCONNECTED_POLL_BASE_MS);
   const isRefreshingConversationsRef = useRef(false);
@@ -837,6 +841,12 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     };
     const handleDisconnect = () => setIsSocketConnected(false);
     const handleNewMessage = (message: ConversationMessage) => {
+      if (message.senderId !== profile?.userId) {
+        socket.emit("community:markConversationAsDelivered", {
+          conversationId: message.conversationId,
+        });
+      }
+
       if (message.conversationId === selectedConversationIdRef.current) {
         appendMessage(message);
         socket.emit("community:markRead", {
@@ -857,6 +867,21 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
           const readBy = m.readBy || [];
           if (readBy.includes(payload.readerId)) return m;
           return { ...m, readBy: [...readBy, payload.readerId] };
+        }),
+      );
+    };
+    const handleMessagesDelivered = (payload: {
+      conversationId: string;
+      readerId: string;
+      messageIds: string[];
+    }) => {
+      if (payload.conversationId !== selectedConversationIdRef.current) return;
+      setMessages((current) =>
+        (Array.isArray(current) ? current : []).map((m) => {
+          if (!payload.messageIds.includes(m.id)) return m;
+          const deliveredTo = m.deliveredTo || [];
+          if (deliveredTo.includes(payload.readerId)) return m;
+          return { ...m, deliveredTo: [...deliveredTo, payload.readerId] };
         }),
       );
     };
@@ -898,6 +923,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     socket.on("disconnect", handleDisconnect);
     socket.on("community:newMessage", handleNewMessage);
     socket.on("community:messagesRead", handleMessagesRead);
+    socket.on("community:messagesDelivered", handleMessagesDelivered);
     socket.on("community:conversationUpdated", handleConversationUpdated);
     socket.on("community:messageEdited", handleMessageEdited);
     socket.on("community:messageDeleted", handleMessageDeleted);
@@ -912,6 +938,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
       socket.off("disconnect", handleDisconnect);
       socket.off("community:newMessage", handleNewMessage);
       socket.off("community:messagesRead", handleMessagesRead);
+      socket.off("community:messagesDelivered", handleMessagesDelivered);
       socket.off("community:conversationUpdated", handleConversationUpdated);
       socket.off("community:messageEdited", handleMessageEdited);
       socket.off("community:messageDeleted", handleMessageDeleted);
@@ -1683,6 +1710,117 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     }
   };
 
+  /**
+   * Send an image message. Flow:
+   * 1. Immediately show an optimistic bubble with a local blob preview
+   * 2. Upload the file to S3 via presigned POST
+   * 3. Send the IMAGE message record to the server (socket or HTTP fallback)
+   * 4. Swap in the confirmed message; revoke the blob URL
+   * 5. On any failure: mark the optimistic message as FAILED
+   */
+  const handleSendImageMessage = async (file: File, caption?: string) => {
+    if (!selectedConversation || isUploadingImage) return;
+
+    setNewMessage("");
+    
+    const optimisticId = `temp-img-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    // Create a local preview URL so the user sees the image immediately
+    const localPreviewUrl = URL.createObjectURL(file);
+
+    const optimisticMessage = {
+      id: optimisticId,
+      conversationId: selectedConversation.id,
+      conversationType: selectedConversation.conversationType,
+      senderId: profile?.userId || "me",
+      senderDisplayName: "You",
+      content: "", // real key arrives after upload
+      type: "IMAGE" as const,
+      metadata: caption ? { caption } : undefined,
+      localPreviewUrl,
+      createdAt: new Date().toISOString(),
+      messageStatus: "SENDING" as const,
+      readBy: profile?.userId ? [profile.userId] : [],
+      participantIds: [
+        profile?.userId || "me",
+        selectedConversation.otherParticipant.id,
+      ],
+    };
+
+    appendMessage(optimisticMessage);
+    setIsUploadingImage(true);
+
+    try {
+      const { s3Key, width, height } = await uploadChatImage(
+        file,
+        selectedConversation.id,
+      );
+
+      const socket = getCommunitySocket();
+      let confirmedMessage;
+      if (socket.connected) {
+        const ack = await new Promise<
+          | { success: true; data: import("@/modules/community/types").ConversationMessage }
+          | { success: false; message?: string }
+        >((resolve) => {
+          const timeoutId = setTimeout(
+            () => resolve({ success: false, message: "Image send timed out" }),
+            12000,
+          );
+          socket.emit(
+            "community:sendMessage",
+            {
+              conversationId: selectedConversation.id,
+              content: s3Key,
+              type: "IMAGE",
+              metadata: { width, height, caption },
+            },
+            (result: unknown) => {
+              clearTimeout(timeoutId);
+              resolve(
+                (result as any) || {
+                  success: false,
+                  message: "Invalid server response",
+                },
+              );
+            },
+          );
+        });
+        if (!ack.success) throw new Error(ack.message || "Failed to send image");
+        confirmedMessage = { ...ack.data, messageStatus: "SENT" as const };
+      } else {
+        const sent = await communityService.sendImageMessage(
+          selectedConversation.id,
+          s3Key,
+          { width, height, caption },
+        );
+        confirmedMessage = { ...sent, messageStatus: "SENT" as const };
+      }
+
+      // Swap out optimistic for confirmed; revoke the temporary blob URL
+      removeMessageById(optimisticId);
+      URL.revokeObjectURL(localPreviewUrl);
+      if (confirmedMessage.conversationId === selectedConversation.id) {
+        appendMessage(confirmedMessage);
+      }
+
+      const updatedConversations = await communityService.listConversations(
+        1,
+        CONVERSATION_PAGE_SIZE,
+      );
+      applyConversationPage(updatedConversations, { preserveSelection: true });
+    } catch (e) {
+      updateMessageById(optimisticId, (msg) => ({
+        ...msg,
+        messageStatus: "FAILED" as const,
+      }));
+      toast.error(
+        e instanceof Error ? e.message : "Failed to send image",
+      );
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   return {
     prefersReducedMotion,
     router,
@@ -1759,6 +1897,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     mobileActionMessage,
     isTogglingBlockUser,
     isSocketConnected,
+    isUploadingImage,
     isConversationSidebarOpen,
     setIsConversationSidebarOpen,
     showGroupMembersPanel,
@@ -1818,6 +1957,10 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     handleDeleteMessage,
     handleCopyMessage,
     handleSendMessage,
+    handleSendImageMessage,
+    pendingImageFile,
+    setPendingImageFile,
+    imageInputRef,
   };
 }
 

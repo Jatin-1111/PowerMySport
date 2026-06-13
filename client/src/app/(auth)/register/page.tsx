@@ -10,7 +10,7 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 
 function RegisterContent() {
   const router = useRouter();
@@ -22,7 +22,7 @@ function RegisterContent() {
     roleParam === "COACH"
       ? roleParam
       : "PLAYER";
-  const { setUser, setToken, setLoading } = useAuthStore();
+  const { user, setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -36,6 +36,22 @@ function RegisterContent() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === "PLAYER") {
+        router.push("/dashboard/my-bookings");
+      } else if (user.role === "VENUE_LISTER") {
+        router.push("/venue-lister/inventory");
+      } else if (user.role === "COACH") {
+        router.push("/coach/verification");
+      } else if (user.role === "ACADEMY_OWNER") {
+        router.push("/academy");
+      } else {
+        router.push("/dashboard/my-bookings");
+      }
+    }
+  }, [user, router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,

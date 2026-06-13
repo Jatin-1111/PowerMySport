@@ -22,10 +22,14 @@ export const submitGuidance = async (
     }
 
     const guidance = await generateYouthSportsGuidance(parsed.data);
-    const guidanceSubmission = await GuidanceSubmission.create({
+    const createPayload: any = {
       request: parsed.data,
       response: guidance,
-    });
+    };
+    if (req.user?.id) {
+      createPayload.userId = req.user.id;
+    }
+    const guidanceSubmission = await GuidanceSubmission.create(createPayload);
 
     res.status(201).json({
       success: true,
@@ -51,6 +55,38 @@ export const submitGuidance = async (
     res.status(isTemporarilyUnavailable ? 503 : 500).json({
       success: false,
       message: errorMessage,
+    });
+  }
+};
+
+export const getGuidanceHistory = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const history = await GuidanceSubmission.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: history.map((doc) => ({
+        id: doc._id.toString(),
+        query: doc.request,
+        response: doc.response,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch guidance history",
     });
   }
 };

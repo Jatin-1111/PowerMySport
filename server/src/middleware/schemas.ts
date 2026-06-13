@@ -94,6 +94,11 @@ export const communitySendMessageSchema = z.object({
     .max(2000, "Message cannot exceed 2000 characters"),
 });
 
+export const communityChatUploadUrlSchema = z.object({
+  conversationId: z.string().min(1, "Conversation ID is required"),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+
 export const communityUpdateMessageSchema = z.object({
   content: z
     .string()

@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(process.cwd(), ".."),
   },
+  images: {
+    remotePatterns: [
+      {
+        // Allow Next.js <Image> to load from the S3 chat bucket (public-read)
+        protocol: "https",
+        hostname: "*.amazonaws.com",
+        pathname: "/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

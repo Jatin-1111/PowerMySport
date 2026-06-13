@@ -1998,6 +1998,8 @@ export const CommunityService = {
             content: { $first: "$content" },
             createdAt: { $first: "$createdAt" },
             senderId: { $first: "$senderId" },
+            type: { $first: "$type" },
+            isDeleted: { $first: "$isDeleted" },
           },
         },
       ]),
@@ -2101,9 +2103,14 @@ export const CommunityService = {
               : null,
           latestMessage: latest
             ? {
-                content: latest.isDeleted ? "Message deleted" : latest.content,
+                content: latest.isDeleted
+                  ? "Message deleted"
+                  : latest.type === "IMAGE"
+                    ? "📷 Image"
+                    : latest.content,
                 createdAt: latest.createdAt,
                 senderId: String(latest.senderId),
+                type: latest.type || "TEXT",
               }
             : null,
           unreadCount: unreadMap.get(String(conversation._id)) || 0,
@@ -2227,6 +2234,57 @@ export const CommunityService = {
     };
   },
 
+  async markConversationDelivered(userId: string, conversationId: string) {
+    const conversation = await CommunityConversation.findById(conversationId);
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    const isParticipant = conversation.participants.some(
+      (participantId) => String(participantId) === userId,
+    );
+    if (!isParticipant) {
+      throw new Error("Access denied");
+    }
+
+    const undeliveredMessages = await CommunityMessage.find({
+      conversationId,
+      senderId: { $ne: new mongoose.Types.ObjectId(userId) },
+      deliveredTo: { $ne: new mongoose.Types.ObjectId(userId) },
+    })
+      .select("_id")
+      .lean();
+
+    if (!undeliveredMessages.length) {
+      return {
+        conversationId: String(conversation._id),
+        participantIds: conversation.participants.map((participantId) =>
+          String(participantId),
+        ),
+        readerId: userId,
+        messageIds: [] as string[],
+      };
+    }
+
+    await CommunityMessage.updateMany(
+      {
+        _id: { $in: undeliveredMessages.map((message) => message._id) },
+      },
+      {
+        $addToSet: { deliveredTo: new mongoose.Types.ObjectId(userId) },
+      },
+    );
+
+    return {
+      conversationId: String(conversation._id),
+      participantIds: conversation.participants.map((participantId) =>
+        String(participantId),
+      ),
+      readerId: userId,
+      messageIds: undeliveredMessages.map((message) => String(message._id)),
+    };
+  },
+
   async getMessages(
     userId: string,
     conversationId: string,
@@ -2293,12 +2351,14 @@ export const CommunityService = {
         conversationId: String(message.conversationId),
         conversationType: conversation.conversationType || "DM",
         senderId,
+        type: message.type || "TEXT",
         senderDisplayName: isSelf
           ? sender?.name || "Me"
           : senderProfile?.isIdentityPublic
             ? sender?.name || "Player"
             : senderProfile?.anonymousAlias || "Anonymous Player",
         content: message.isDeleted ? "Message deleted" : message.content,
+        metadata: message.metadata || null,
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
         editedAt: message.editedAt || null,
@@ -2345,7 +2405,15 @@ export const CommunityService = {
     };
   },
 
-  async sendMessage(userId: string, conversationId: string, content: string) {
+  async sendMessage(
+    userId: string,
+    conversationId: string,
+    content: string,
+    options?: {
+      type?: "TEXT" | "IMAGE";
+      metadata?: { width?: number; height?: number };
+    },
+  ) {
     const conversation = await CommunityConversation.findById(conversationId);
     if (!conversation) {
       throw new Error("Conversation not found");
@@ -2386,12 +2454,19 @@ export const CommunityService = {
       }
     }
 
-    const message = await CommunityMessage.create({
+    const messageType = options?.type || "TEXT";
+    const messageDoc: Record<string, unknown> = {
       conversationId,
       senderId: userId,
-      content: content.trim(),
+      type: messageType,
+      content: messageType === "TEXT" ? content.trim() : content,
       readBy: [new mongoose.Types.ObjectId(userId)],
-    });
+    };
+    if (messageType === "IMAGE" && options?.metadata) {
+      messageDoc.metadata = options.metadata;
+    }
+
+    const message = await CommunityMessage.create(messageDoc);
 
     conversation.lastMessageAt = new Date();
     await conversation.save();
@@ -2432,7 +2507,10 @@ export const CommunityService = {
           actorUserId: userId,
           conversationType: conversation.conversationType || "DM",
           participantIds: otherParticipantIds,
-          summary: `${senderDisplayName} sent you a message in community chat.`,
+          summary:
+            messageType === "IMAGE"
+              ? `${senderDisplayName} shared an image in community chat.`
+              : `${senderDisplayName} sent you a message in community chat.`,
         },
         status: "PENDING",
         attempts: 0,
@@ -2446,7 +2524,9 @@ export const CommunityService = {
           conversation.conversationType === "GROUP"
             ? "New group message"
             : "New message",
-          `${senderDisplayName} sent you a message in community chat.`,
+          messageType === "IMAGE"
+            ? `${senderDisplayName} shared an image in community chat.`
+            : `${senderDisplayName} sent you a message in community chat.`,
           {
             event: "COMMUNITY_MESSAGE_RECEIVED",
             conversationId: String(conversation._id),
@@ -2463,8 +2543,10 @@ export const CommunityService = {
       conversationId: String(message.conversationId),
       conversationType: conversation.conversationType || "DM",
       senderId: String(message.senderId),
+      type: message.type || "TEXT",
       senderDisplayName,
       content: message.content,
+      metadata: message.metadata || null,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: null,
@@ -2527,7 +2609,9 @@ export const CommunityService = {
       conversationId: String(message.conversationId),
       conversationType: conversation.conversationType || "DM",
       senderId,
+      type: message.type || "TEXT",
       content: message.content,
+      metadata: message.metadata || null,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: message.editedAt,
@@ -2585,7 +2669,9 @@ export const CommunityService = {
       conversationId: String(message.conversationId),
       conversationType: conversation.conversationType || "DM",
       senderId,
+      type: message.type || "TEXT",
       content: "Message deleted",
+      metadata: null,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: message.editedAt || null,

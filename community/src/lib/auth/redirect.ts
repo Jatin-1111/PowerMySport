@@ -6,11 +6,7 @@ export const getMainAppUrl = (): string => {
     return normalizeUrl(configured);
   }
 
-  if (typeof window !== "undefined") {
-    if (window.location.hostname.endsWith("powermysport.com")) {
-      return "https://powermysport.com";
-    }
-
+  if (process.env.NODE_ENV === "development") {
     return "http://localhost:3000";
   }
 

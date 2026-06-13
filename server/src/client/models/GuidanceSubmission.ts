@@ -5,6 +5,7 @@ import {
 } from "../../shared/services/guidanceAiService";
 
 export interface GuidanceSubmissionDocument extends Document {
+  userId?: mongoose.Types.ObjectId;
   request: GuidanceRequest;
   response: GuidanceResponse;
   createdAt: Date;
@@ -13,6 +14,7 @@ export interface GuidanceSubmissionDocument extends Document {
 
 const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
   {
+    userId: { type: Schema.Types.ObjectId, ref: "User", index: true },
     request: {
       child_age: { type: Number, required: true, min: 3, max: 21 },
       child_gender: {

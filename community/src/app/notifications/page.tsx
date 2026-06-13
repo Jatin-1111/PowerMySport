@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, CheckCheck, LoaderCircle, RefreshCw } from "lucide-react";
+import { Bell, CheckCheck, LoaderCircle } from "lucide-react";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { communityService } from "@/modules/community/services/community";
 import { CommunityActivityItem } from "@/modules/community/types";
@@ -271,13 +271,6 @@ export default function CommunityNotificationsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => void loadNotifications(page)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              <RefreshCw size={14} />
-              Refresh
-            </button>
             <button
               onClick={() => void handleMarkAllRead()}
               disabled={unreadCount === 0 || isMarkingAll}

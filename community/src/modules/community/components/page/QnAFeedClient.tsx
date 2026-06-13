@@ -1263,12 +1263,6 @@ export default function QnAFeedClient() {
                     </span>
                   ) : null}
                   <button
-                    onClick={() => void loadActivity()}
-                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
-                  >
-                    Refresh
-                  </button>
-                  <button
                     onClick={() => void handleMarkAllActivityRead()}
                     disabled={
                       activityUnreadCount === 0 || isMarkingActivityRead

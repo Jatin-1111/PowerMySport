@@ -5,6 +5,7 @@ import { communityService } from "../services/community";
 import { ChevronRight, Users, UserCircle2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { getCommunitySocket } from "@/lib/realtime/socket";
 
 export interface GroupMember {
   id: string;
@@ -45,6 +46,25 @@ export function GroupMembersList({
     }
   }, [data, onMembersCountChange]);
 
+  useEffect(() => {
+    const socket = getCommunitySocket();
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleUpdate = () => {
+      void execute();
+    };
+
+    socket.emit("community:joinGroupRoom", groupId);
+    socket.on("community:groupMembersUpdated", handleUpdate);
+
+    return () => {
+      socket.off("community:groupMembersUpdated", handleUpdate);
+      socket.emit("community:leaveGroupRoom", groupId);
+    };
+  }, [groupId, execute]);
+
   if (isLoading) {
     return (
       <div className="py-2">
@@ -67,15 +87,7 @@ export function GroupMembersList({
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="py-2"
     >
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={() => void execute()}
-          disabled={isLoading}
-          className="min-h-9 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:text-slate-700 transition disabled:opacity-50"
-        >
-          Refresh Members
-        </button>
-      </div>
+
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50/80 p-3">

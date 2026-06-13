@@ -162,6 +162,18 @@ export const setupCommunitySocket = (io: Server): void => {
       }
     });
 
+    socket.on("community:joinGroupRoom", (groupId) => {
+      if (groupId) {
+        socket.join(`group:${groupId}`);
+      }
+    });
+
+    socket.on("community:leaveGroupRoom", (groupId) => {
+      if (groupId) {
+        socket.leave(`group:${groupId}`);
+      }
+    });
+
     socket.on("community:markRead", async (payload, callback) => {
       try {
         const allowed = consumeRateLimit(
@@ -229,6 +241,64 @@ export const setupCommunitySocket = (io: Server): void => {
       }
     });
 
+    socket.on("community:markConversationAsDelivered", async (payload, callback) => {
+      try {
+        const allowed = consumeRateLimit(
+          socketRateLimit,
+          "community:markConversationAsDelivered",
+          60,
+          10_000,
+        );
+        if (!allowed) {
+          const message = "Too many read requests, please slow down";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
+          return;
+        }
+
+        const conversationId = String(payload?.conversationId || "");
+        if (!conversationId) {
+          const message = "conversationId is required";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
+          return;
+        }
+
+        const result = await CommunityService.markConversationDelivered(
+          userId,
+          conversationId,
+        );
+
+        if (result.messageIds.length) {
+          io.to(`conversation:${conversationId}`).emit(
+            "community:messagesDelivered",
+            {
+              conversationId,
+              readerId: userId,
+              messageIds: result.messageIds,
+            },
+          );
+        }
+
+        if (typeof callback === "function") {
+          callback({ success: true, data: result });
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to mark messages as delivered";
+        socket.emit("community:error", { message });
+        if (typeof callback === "function") {
+          callback({ success: false, message });
+        }
+      }
+    });
+
     socket.on("community:sendMessage", async (payload, callback) => {
       try {
         const allowed = consumeRateLimit(
@@ -248,6 +318,26 @@ export const setupCommunitySocket = (io: Server): void => {
 
         const conversationId = String(payload?.conversationId || "");
         const content = String(payload?.content || "").trim();
+        const rawType = payload?.type;
+        const messageType: "TEXT" | "IMAGE" =
+          rawType === "IMAGE" ? "IMAGE" : "TEXT";
+        const metadata: { width?: number; height?: number; caption?: string } | undefined =
+          messageType === "IMAGE" && payload?.metadata
+            ? {
+                width:
+                  typeof payload.metadata.width === "number"
+                    ? payload.metadata.width
+                    : undefined,
+                height:
+                  typeof payload.metadata.height === "number"
+                    ? payload.metadata.height
+                    : undefined,
+                caption:
+                  typeof payload.metadata.caption === "string"
+                    ? payload.metadata.caption.substring(0, 2000)
+                    : undefined,
+              }
+            : undefined;
 
         if (!conversationId || !content) {
           const message = "conversationId and content are required";
@@ -262,6 +352,7 @@ export const setupCommunitySocket = (io: Server): void => {
           userId,
           conversationId,
           content,
+          { type: messageType, ...(metadata ? { metadata } : {}) },
         );
 
         io.to(`conversation:${conversationId}`).emit(

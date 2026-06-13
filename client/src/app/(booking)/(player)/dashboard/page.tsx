@@ -38,6 +38,7 @@ import {
 } from "@/modules/shared/ui/motion/StaggerContainer";
 import { motion } from "framer-motion";
 import type { Booking, CoachSubscription } from "@/types";
+import { useFriendSocket } from "@/hooks/useFriendSocket";
 
 interface UpcomingBooking {
   id: string;
@@ -81,9 +82,25 @@ export default function DashboardPage() {
   >(null);
   const [loading, setLoading] = useState(true);
 
+  const { socket } = useFriendSocket();
+
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleUpdate = () => {
+      loadDashboardData();
+    };
+    socket.on("booking:updated", handleUpdate);
+    socket.on("subscription:updated", handleUpdate);
+    
+    return () => {
+      socket.off("booking:updated", handleUpdate);
+      socket.off("subscription:updated", handleUpdate);
+    };
+  }, [socket]);
 
   const loadDashboardData = async () => {
     try {
@@ -201,17 +218,6 @@ export default function DashboardPage() {
       <PlayerPageHeader
         title="Dashboard"
         subtitle="Welcome back! Here's what's happening with your activities."
-        action={
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-slate-700"
-            onClick={() => void loadDashboardData()}
-            icon={<RefreshCw size={14} />}
-          >
-            Refresh
-          </Button>
-        }
       />
 
       {/* Notification Stats Strip */}

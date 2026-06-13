@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { submitGuidance } from "../controllers/guidanceController";
+import { submitGuidance, getGuidanceHistory } from "../controllers/guidanceController";
+import { authMiddleware } from "../../middleware/auth";
 
 const guidanceRouter = Router();
 
-guidanceRouter.post("/", submitGuidance);
+guidanceRouter.post("/", authMiddleware, submitGuidance);
+guidanceRouter.get("/", authMiddleware, getGuidanceHistory);
 
 export default guidanceRouter;

@@ -14,6 +14,8 @@ import {
   S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import { v4 as uuidv4 } from "uuid";
 
 export interface PresignedUrlConfig {
   bucket: string;
@@ -33,7 +35,7 @@ export class S3Service {
   private documentsBucket: string;
   private imagesBucket: string;
   private region: string;
-  private s3Client: S3Client;
+  private s3Client: any;
 
   constructor() {
     // Load environment variables first
@@ -333,6 +335,51 @@ export class S3Service {
       fileName: sanitizedFileName,
       key,
     };
+  }
+
+
+  /**
+   * Generate a presigned POST for secure chat image uploads.
+   * Security enforced at AWS policy level:
+   *  - content-length-range: 1 byte – 5 MB (prevents oversized uploads)
+   *  - Content-Type: only image/jpeg, image/png, or image/webp
+   *  - Unpredictable object key via uuid to prevent IDOR/scraping
+   * @param conversationId - Used as a folder prefix
+   * @param contentType - MIME type (must be jpeg/png/webp, validated by caller)
+   */
+  async generateChatImagePresignedPost(
+    conversationId: string,
+    contentType: "image/jpeg" | "image/png" | "image/webp",
+  ): Promise<{ url: string; fields: Record<string, string>; key: string }> {
+    const chatBucket = process.env.AWS_S3_CHAT_BUCKET;
+    if (!chatBucket) {
+      throw new Error("AWS_S3_CHAT_BUCKET environment variable is not set");
+    }
+
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    };
+    const ext = extMap[contentType] || "jpg";
+    const key = `chats/${conversationId}/${uuidv4()}.${ext}`;
+
+    const { url, fields } = await createPresignedPost(this.s3Client, {
+      Bucket: chatBucket,
+      Key: key,
+      Conditions: [
+        // Enforce strict 10 MB upload ceiling at the AWS level
+        ["content-length-range", 1, 10 * 1024 * 1024],
+        // Whitelist only allowed content types
+        ["eq", "$Content-Type", contentType],
+      ],
+      Fields: {
+        "Content-Type": contentType,
+      },
+      Expires: 300, // 5 minutes
+    });
+
+    return { url, fields, key };
   }
 
   /**

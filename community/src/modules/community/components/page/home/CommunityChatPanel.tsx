@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, MessageSquare, PanelRightClose, PanelRightOpen, RotateCcw } from "lucide-react";
+import { ChevronLeft, ImagePlus, MessageSquare, PanelRightClose, PanelRightOpen, RotateCcw, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "@/modules/community/components/chat/MessageBubble";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
@@ -43,7 +43,21 @@ export default function CommunityChatPanel({ page }: Props) {
     canSendSelectedConversationMessage,
     isSending,
     handleSendMessage,
+    handleSendImageMessage,
+    isUploadingImage,
+    pendingImageFile,
+    setPendingImageFile,
+    imageInputRef,
   } = page;
+
+  const handleSend = () => {
+    if (pendingImageFile) {
+      void handleSendImageMessage(pendingImageFile, newMessage.trim());
+      setPendingImageFile(null);
+    } else {
+      handleSendMessage();
+    }
+  };
 
   return (
                 <motion.section
@@ -185,7 +199,56 @@ export default function CommunityChatPanel({ page }: Props) {
                   )}
 
                   <div className="sticky bottom-0 z-20 shrink-0 border-t border-slate-200/80 bg-[#f0f2f5] px-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:static">
-                    <div className="flex min-w-0 items-end gap-2.5">
+                    {/* Hidden file input — triggered programmatically */}
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      aria-hidden="true"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPendingImageFile(file);
+                        }
+                        // Reset so the same file can be re-selected if needed
+                        e.target.value = "";
+                      }}
+                    />
+
+                    {/* Pending Image Preview Box */}
+                    {pendingImageFile && (
+                      <div className="relative mb-2 inline-block rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                        <button
+                          onClick={() => setPendingImageFile(null)}
+                          className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-white shadow-md hover:bg-slate-700"
+                        >
+                          <X size={14} />
+                        </button>
+                        <img
+                          src={URL.createObjectURL(pendingImageFile)}
+                          alt="Preview"
+                          className="h-32 w-auto rounded-lg object-cover"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex min-w-0 items-end gap-2">
+                      {/* Image attach button */}
+                      <button
+                        type="button"
+                        disabled={!canSendSelectedConversationMessage || isSending || isUploadingImage}
+                        onClick={() => imageInputRef.current?.click()}
+                        aria-label="Attach image"
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-power-orange disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {isUploadingImage ? (
+                          <RotateCcw size={15} className="animate-spin text-power-orange" />
+                        ) : (
+                          <ImagePlus size={16} />
+                        )}
+                      </button>
+
                       <textarea
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
@@ -193,16 +256,18 @@ export default function CommunityChatPanel({ page }: Props) {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
                             if (canSendSelectedConversationMessage)
-                              handleSendMessage();
+                              handleSend();
                           }
                         }}
                         placeholder={
                           !selectedConversation
                             ? "Select a conversation"
+                            : pendingImageFile
+                            ? "Add a caption..."
                             : "Type a message..."
                         }
                         disabled={
-                          !canSendSelectedConversationMessage || isSending
+                          !canSendSelectedConversationMessage || isSending || isUploadingImage
                         }
                         rows={1}
                         className="max-h-28 flex-1 resize-none rounded-3xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:border-power-orange focus:outline-none disabled:cursor-not-allowed"
@@ -210,10 +275,11 @@ export default function CommunityChatPanel({ page }: Props) {
                       <button
                         disabled={
                           isSending ||
+                          isUploadingImage ||
                           !canSendSelectedConversationMessage ||
-                          !newMessage.trim()
+                          (!newMessage.trim() && !pendingImageFile)
                         }
-                        onClick={handleSendMessage}
+                        onClick={handleSend}
                         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-power-orange text-white disabled:opacity-50"
                       >
                         {isSending ? (

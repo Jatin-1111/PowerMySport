@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { BookingStatus } from "../../types/index";
+import { notifyUserDataUpdated } from "../sockets/friendSocket";
 
 export type BookingType = "INDIVIDUAL" | "GROUP";
 export type PaymentType = "SINGLE" | "SPLIT";
@@ -302,6 +303,32 @@ bookingSchema.index(
     partialFilterExpression: { coachId: { $exists: true } },
   },
 );
+
+// --- Real-time Auto Updates ---
+const notifyUsersOfBookingUpdate = (doc: any) => {
+  if (!doc) return;
+  if (doc.userId) {
+    notifyUserDataUpdated(doc.userId.toString(), "booking:updated");
+  }
+  if (doc.participants && Array.isArray(doc.participants)) {
+    doc.participants.forEach((p: any) => {
+      if (p.userId) {
+        notifyUserDataUpdated(p.userId.toString(), "booking:updated");
+      }
+    });
+  }
+};
+
+bookingSchema.post("save", function (doc) {
+  notifyUsersOfBookingUpdate(doc);
+});
+
+bookingSchema.post("findOneAndUpdate", function (doc) {
+  notifyUsersOfBookingUpdate(doc);
+});
+bookingSchema.post("updateMany", function () {
+  // Can't easily get docs here, but usually updateMany isn't used for single user dashboard triggers
+});
 
 export const Booking = mongoose.model<BookingDocument>(
   "Booking",

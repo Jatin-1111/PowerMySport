@@ -2,8 +2,9 @@
 
 import api from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
-import { BrainCircuit, Star, Trophy, Users, UserCircle2 } from "lucide-react";
-import { useState, useEffect, type FormEvent } from "react";
+import { BrainCircuit, Star, Trophy, Users, UserCircle2, Loader2, History, ChevronDown, Calendar } from "lucide-react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type GuidanceFormState = {
   child_age: number;
@@ -89,14 +90,141 @@ function SkeletonBlock({ className }: { className: string }) {
 
 function ResultSkeleton() {
   return (
-    <div className="space-y-4">
-      <SkeletonBlock className="h-24 w-full" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <SkeletonBlock className="h-32 w-full" />
-        <SkeletonBlock className="h-32 w-full" />
+    <div className="space-y-6 animate-pulse">
+      <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6">
+        <SkeletonBlock className="h-4 w-32 mb-4" />
+        <SkeletonBlock className="h-4 w-full mb-2" />
+        <SkeletonBlock className="h-4 w-5/6" />
       </div>
-      <SkeletonBlock className="h-28 w-full" />
-      <SkeletonBlock className="h-28 w-full" />
+
+      <div>
+        <div className="mb-3 flex items-center gap-2">
+          <SkeletonBlock className="h-5 w-5 rounded-full" />
+          <SkeletonBlock className="h-5 w-48" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+            <SkeletonBlock className="h-5 w-32 mb-3" />
+            <SkeletonBlock className="h-4 w-full mb-2" />
+            <SkeletonBlock className="h-4 w-4/5" />
+          </div>
+          <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+            <SkeletonBlock className="h-5 w-32 mb-3" />
+            <SkeletonBlock className="h-4 w-full mb-2" />
+            <SkeletonBlock className="h-4 w-4/5" />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+          <SkeletonBlock className="h-4 w-24 mb-3" />
+          <SkeletonBlock className="h-6 w-16" />
+        </div>
+        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+          <SkeletonBlock className="h-4 w-24 mb-3" />
+          <SkeletonBlock className="h-6 w-16" />
+        </div>
+        <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+          <SkeletonBlock className="h-4 w-24 mb-3" />
+          <SkeletonBlock className="h-6 w-16" />
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-100 bg-slate-50 p-5">
+        <SkeletonBlock className="h-5 w-40 mb-3" />
+        <SkeletonBlock className="h-4 w-full mb-2" />
+        <SkeletonBlock className="h-4 w-2/3" />
+      </div>
+    </div>
+  );
+}
+
+function PastRoadmapsDropdown({
+  history,
+  onSelect,
+}: {
+  history: GuidanceSubmission[];
+  onSelect: (past: GuidanceSubmission) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative z-20 ml-3 inline-flex items-center" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur transition hover:bg-white hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+      >
+        <History className="h-3.5 w-3.5 text-power-orange" />
+        View Past Roadmaps
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="absolute left-0 top-full mt-2 w-72 origin-top-left rounded-2xl border border-slate-100 bg-white p-2 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.1)] ring-1 ring-slate-900/5 focus:outline-none max-h-80 overflow-y-auto"
+          >
+            <div className="mb-2 flex items-center justify-between border-b border-slate-100 px-2 pb-2 pt-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                History
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                {history.length} Saved
+              </span>
+            </div>
+            {history.map((h) => (
+              <button
+                key={h.id}
+                onClick={() => {
+                  onSelect(h);
+                  setIsOpen(false);
+                }}
+                className="flex w-full flex-col items-start rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-700">
+                    {h.query.primary_objective} Focus
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(h.createdAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+                <div className="mt-1 flex gap-2">
+                  <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                    {h.query.child_age}yo
+                  </span>
+                  <span className="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                    {h.query.current_fitness_level}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -105,6 +233,7 @@ export default function GuidancePage() {
   const [form, setForm] = useState<GuidanceFormState>(initialForm);
   const [loading, setLoading] = useState(false);
   const [submission, setSubmission] = useState<GuidanceSubmission | null>(null);
+  const [history, setHistory] = useState<GuidanceSubmission[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
@@ -118,7 +247,22 @@ export default function GuidancePage() {
         }
       })
       .catch((err) => console.error("Failed to fetch players", err));
+
+    api
+      .get<{ success: boolean; data: GuidanceSubmission[] }>("/guidance")
+      .then((res) => {
+        if (res.data.success && Array.isArray(res.data.data)) {
+          setHistory(res.data.data);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch guidance history", err));
   }, []);
+
+  const loadPastSubmission = (past: GuidanceSubmission) => {
+    setSubmission(past);
+    setForm(past.query);
+    toast.success("Loaded past roadmap");
+  };
 
   const handleProfileSelect = (id: string) => {
     setSelectedProfileId(id);
@@ -190,6 +334,7 @@ export default function GuidancePage() {
         payload,
       );
       setSubmission(response.data.data);
+      setHistory((prev) => [response.data.data, ...prev]);
       toast.success("Guidance generated and saved successfully");
     } catch (submissionError) {
       const message =
@@ -204,15 +349,22 @@ export default function GuidancePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_50%,#fff8ee_100%)] text-slate-900">
-      <main className="flex-1">
-        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+    <div className="community-page-shell">
+      <div className="mx-auto w-full max-w-6xl">
+        <section className="pb-10 lg:pb-14">
           <div className="mb-8 max-w-3xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 shadow-sm backdrop-blur">
-              <BrainCircuit className="h-4 w-4 text-power-orange" />
-              AI guidance portal
+            <div className="flex flex-wrap items-center gap-y-3 mb-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 shadow-sm backdrop-blur">
+                <BrainCircuit className="h-4 w-4 text-power-orange" />
+                AI guidance portal
+              </div>
+              
+              {history.length > 0 && (
+                <PastRoadmapsDropdown history={history} onSelect={loadPastSubmission} />
+              )}
             </div>
-            <h1 className="font-title text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
+
+            <h1 className="font-title text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl mt-2">
               Get structured sports advice for the child you are supporting.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
@@ -222,8 +374,8 @@ export default function GuidancePage() {
             </p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-sm">
+          <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+            <div className="community-card p-6 sm:p-8">
               <form onSubmit={handleSubmit} className="space-y-5">
                 {players.length > 0 && (
                   <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-5">
@@ -418,12 +570,12 @@ export default function GuidancePage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-power-orange text-white hover:bg-orange-600 focus:ring-power-orange px-8 py-3 text-lg h-14 w-full rounded-2xl text-base shadow-[0_12px_30px_-10px_rgba(233,115,22,0.45)] ${loading ? "cursor-wait" : ""}`}
+                  className={`inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-power-orange text-white hover:bg-orange-600 focus:ring-power-orange px-8 py-3 text-lg h-14 w-full rounded-2xl shadow-[0_8px_20px_-6px_rgba(233,115,22,0.45)] ${loading ? "cursor-wait" : ""}`}
                 >
                   {loading ? (
                     <>
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                      <span>Loading...</span>
+                      <Loader2 className="animate-spin h-5 w-5" />
+                      <span>Analyzing Profile...</span>
                     </>
                   ) : (
                     "Generate Guidance"
@@ -432,14 +584,19 @@ export default function GuidancePage() {
               </form>
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/80 bg-white/90 p-6 shadow-sm">
-              {/* Intentionally left minimal: response-only view (no dashboard titles) */}
+            <div className="community-card p-6 sm:p-8 min-h-[600px] flex flex-col">
+              {/* Response View */}
 
               {loading ? (
                 <ResultSkeleton />
               ) : submission ? (
-                <div className="space-y-5">
-                  <div className="rounded-3xl border border-slate-100 bg-[linear-gradient(135deg,#fff8ee_0%,#f7fbff_100%)] p-5">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  className="space-y-6"
+                >
+                  <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#fff8ee_0%,#fdfbf7_100%)] p-6 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                       Profile Analysis
                     </p>
@@ -510,7 +667,7 @@ export default function GuidancePage() {
                     </p>
                   </div>
 
-                  <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-5">
+                  <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-6 shadow-sm">
                     <h3 className="font-semibold text-emerald-800">
                       Recommended Next Steps
                     </h3>
@@ -518,7 +675,7 @@ export default function GuidancePage() {
                       {submission.response.recommendedPlatformActions}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               ) : (
                 <div className="flex min-h-130 flex-col items-start justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/60 p-6 text-slate-600">
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-power-orange/10 text-power-orange">
@@ -541,7 +698,7 @@ export default function GuidancePage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 }

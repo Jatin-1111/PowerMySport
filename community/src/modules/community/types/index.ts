@@ -105,15 +105,27 @@ export interface ConversationMessage {
   conversationType?: ConversationType;
   senderId: string;
   senderDisplayName: string;
+  /** TEXT: the message text. IMAGE: the S3 object key (never the full URL). */
   content: string;
+  /** 'IMAGE' when the message is a shared image, 'TEXT' (default) otherwise. */
+  type?: "TEXT" | "IMAGE";
+  /** Present for IMAGE messages — pixel dimensions to prevent layout shift. */
+  metadata?: {
+    width?: number;
+    height?: number;
+    caption?: string;
+  } | null;
   createdAt: string;
   updatedAt?: string;
   editedAt?: string | null;
   isEdited?: boolean;
   isDeleted?: boolean;
   readBy?: string[];
+  deliveredTo?: string[];
   participantIds?: string[];
   messageStatus?: "SENDING" | "SENT" | "FAILED";
+  /** Local blob URL for optimistic IMAGE preview before S3 upload completes. */
+  localPreviewUrl?: string;
 }
 
 export type CommunityFeedSort = "NEW" | "TOP" | "UNANSWERED";

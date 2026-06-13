@@ -12,8 +12,9 @@ import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import { CalendarRange, RefreshCw, RotateCcw, Wallet, TrendingUp } from "lucide-react";
+import { CalendarRange, Wallet, TrendingUp, RotateCcw } from "lucide-react";
 import type { CoachSubscription } from "@/types";
+import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { CancelSubscriptionModal } from "@/components/ui/CancelSubscriptionModal";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 
@@ -59,6 +60,7 @@ export default function SubscriptionsPage() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const { socket } = useFriendSocket();
 
   const openCancelModal = (subscriptionId: string) => {
     setSelectedSubId(subscriptionId);
@@ -109,6 +111,20 @@ export default function SubscriptionsPage() {
     void loadSubscriptions();
   }, []);
 
+  useEffect(() => {
+    if (!socket) return;
+    const handleUpdate = () => {
+      void loadSubscriptions();
+    };
+    socket.on("subscription:updated", handleUpdate);
+    socket.on("wallet:updated", handleUpdate);
+    
+    return () => {
+      socket.off("subscription:updated", handleUpdate);
+      socket.off("wallet:updated", handleUpdate);
+    };
+  }, [socket]);
+
   const counts = useMemo(() => {
     const live = subscriptions.filter((subscription) =>
       isLiveStatus(subscription.status),
@@ -154,16 +170,6 @@ export default function SubscriptionsPage() {
         badge="Player"
         title="My Subscriptions"
         subtitle="Track all your coach subscriptions, renew active plans, and cancel when needed."
-        action={
-          <Button
-            variant="outline"
-            className="text-slate-800"
-            onClick={() => void loadSubscriptions()}
-            icon={<RefreshCw size={16} />}
-          >
-            Refresh
-          </Button>
-        }
       />
 
       {/* Stats strip */}

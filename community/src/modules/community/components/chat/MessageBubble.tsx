@@ -4,6 +4,7 @@ import {
   Check,
   CheckCheck,
   Copy,
+  ImageIcon,
   Pencil,
   RotateCcw,
   Trash2,
@@ -30,6 +31,83 @@ type MessageBubbleProps = {
   isMutating: boolean;
 };
 
+/** Build the public S3 URL for a chat image given its object key. */
+function buildChatImageUrl(s3Key: string): string {
+  const domain = process.env.NEXT_PUBLIC_CHAT_BUCKET_DOMAIN;
+  if (!domain || !s3Key) return "";
+  return `https://${domain}/${s3Key}`;
+}
+
+/** Skeleton shown while an image is uploading (optimistic state). */
+function ImageUploadingPlaceholder({ isOwn }: { isOwn: boolean }) {
+  return (
+    <div
+      className={`relative overflow-hidden rounded-xl ${isOwn ? "bg-orange-400/30" : "bg-slate-200"}`}
+      style={{ width: 220, height: 165 }}
+      aria-label="Uploading image…"
+    >
+      {/* shimmer wave */}
+      <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+        <ImageIcon
+          size={28}
+          className={isOwn ? "text-orange-100/70" : "text-slate-400"}
+        />
+        <span
+          className={`text-xs font-medium ${isOwn ? "text-orange-100/80" : "text-slate-500"}`}
+        >
+          Uploading…
+        </span>
+        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
+          <div className="h-full w-full origin-left animate-pulse rounded-full bg-white/60" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The image content — renders once the upload is complete. */
+function ImageMessageContent({
+  src,
+  width,
+  height,
+}: {
+  src: string;
+  width?: number | null;
+  height?: number | null;
+  isOwn: boolean;
+}) {
+  const aspectRatio =
+    width && height && width > 0 && height > 0 ? width / height : 4 / 3;
+  const displayWidth = Math.min(width ?? 280, 280);
+  const displayHeight = Math.round(displayWidth / aspectRatio);
+
+  if (!src) return null;
+
+  return (
+    <a
+      href={src}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block overflow-hidden rounded-xl"
+      style={{ width: displayWidth, height: displayHeight }}
+      aria-label="View full image"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt="Shared image"
+        width={displayWidth}
+        height={displayHeight}
+        loading="lazy"
+        decoding="async"
+        className="h-full w-full object-cover transition-opacity duration-300 hover:opacity-90"
+        style={{ display: "block" }}
+      />
+    </a>
+  );
+}
+
 export const MessageBubble = memo(function MessageBubble({
   message,
   isOwnMessage,
@@ -55,12 +133,21 @@ export const MessageBubble = memo(function MessageBubble({
     }
   }
 
+  const isImageMessage = message.type === "IMAGE";
+  const isUploading = isImageMessage && message.messageStatus === "SENDING";
+
   const hasBeenSeenByOther = Boolean(
     isOwnMessage &&
-    otherParticipantId &&
-    message.readBy?.includes(otherParticipantId),
+      otherParticipantId &&
+      message.readBy?.includes(otherParticipantId),
+  );
+  const hasBeenDeliveredToOther = Boolean(
+    isOwnMessage &&
+      otherParticipantId &&
+      message.deliveredTo?.includes(otherParticipantId),
   );
   const canMutateMessage =
+    !isImageMessage && // images are not editable
     isOwnMessage &&
     !message.isDeleted &&
     message.messageStatus !== "FAILED" &&
@@ -111,6 +198,15 @@ export const MessageBubble = memo(function MessageBubble({
     return () => clearLongPressTimeout();
   }, [clearLongPressTimeout]);
 
+  // Resolve image src:
+  //  - SENDING: localPreviewUrl (blob object URL for instant preview)
+  //  - Otherwise: public S3 URL constructed from bucket domain + object key
+  const imageSrc = isImageMessage
+    ? isUploading
+      ? (message.localPreviewUrl ?? "")
+      : buildChatImageUrl(message.content)
+    : "";
+
   return (
     <motion.div
       layout
@@ -126,7 +222,7 @@ export const MessageBubble = memo(function MessageBubble({
       )}
 
       <div
-        className={`max-w-[84%] ${bubbleShapeClass} px-3 py-1.5 text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.1)] sm:max-w-[78%] sm:px-3.5 sm:py-2 sm:text-sm lg:max-w-[65%] ${
+        className={`${isImageMessage ? "p-1.5" : "px-3 py-1.5 sm:px-3.5 sm:py-2"} max-w-[84%] ${bubbleShapeClass} text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.1)] sm:max-w-[78%] sm:text-sm lg:max-w-[65%] ${
           isOwnMessage
             ? "bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-white"
             : "border border-slate-200 bg-white text-slate-800"
@@ -149,19 +245,48 @@ export const MessageBubble = memo(function MessageBubble({
         }}
       >
         {isGroupConversation && !isOwnMessage && (
-          <div className="mb-0.5 text-[12px] font-600 text-power-orange">
+          <div
+            className={`mb-0.5 text-[12px] font-600 text-power-orange ${isImageMessage ? "px-1" : ""}`}
+          >
             {message.senderDisplayName}
           </div>
         )}
 
-        <div className="whitespace-pre-wrap wrap-break-word leading-5 sm:leading-6">
-          {message.content}
-        </div>
+        {/* ── Image message body ────────────────────────────────────── */}
+        {isImageMessage ? (
+          isUploading ? (
+            <ImageUploadingPlaceholder isOwn={isOwnMessage} />
+          ) : message.isDeleted ? (
+            <div className="px-2 py-1 italic opacity-70 leading-5">
+              Image deleted
+            </div>
+          ) : (
+            <>
+              <ImageMessageContent
+                src={imageSrc}
+                width={message.metadata?.width}
+                height={message.metadata?.height}
+                isOwn={isOwnMessage}
+              />
+              {message.metadata?.caption && !message.isDeleted && (
+                <div className="mt-1.5 px-1 pb-0.5 whitespace-pre-wrap wrap-break-word leading-5 sm:leading-6">
+                  {message.metadata.caption}
+                </div>
+              )}
+            </>
+          )
+        ) : (
+          /* ── Text message body ───────────────────────────────────── */
+          <div className="whitespace-pre-wrap wrap-break-word leading-5 sm:leading-6">
+            {message.content}
+          </div>
+        )}
 
+        {/* ── Timestamp + read receipts ──────────────────────────────── */}
         <div
           className={`mt-1 flex flex-wrap items-center gap-1.5 text-[11px] sm:gap-2 sm:text-xs ${
             isOwnMessage ? "justify-end" : "justify-start"
-          } ${isOwnMessage ? "text-orange-100/90" : "text-slate-500"}`}
+          } ${isOwnMessage ? "text-orange-100/90" : "text-slate-500"} ${isImageMessage ? "px-1" : ""}`}
         >
           {message.isDeleted && (
             <span className="italic opacity-75">Deleted</span>
@@ -178,7 +303,11 @@ export const MessageBubble = memo(function MessageBubble({
             ) : message.messageStatus === "SENDING" ? (
               <span className="font-medium opacity-80">...</span>
             ) : hasBeenSeenByOther ? (
-              <span className="inline-flex items-center text-sky-200">
+              <span className="inline-flex items-center text-sky-400">
+                <CheckCheck size={14} strokeWidth={2.2} />
+              </span>
+            ) : hasBeenDeliveredToOther ? (
+              <span className="inline-flex items-center opacity-85">
                 <CheckCheck size={14} strokeWidth={2.2} />
               </span>
             ) : (
@@ -188,10 +317,11 @@ export const MessageBubble = memo(function MessageBubble({
             ))}
         </div>
 
+        {/* ── Action buttons (desktop) ──────────────────────────────── */}
         <div
           className={`mt-1.5 hidden flex-wrap items-center gap-1 sm:mt-2 sm:flex sm:gap-1.5 ${
             isOwnMessage ? "justify-end" : "justify-start"
-          }`}
+          } ${isImageMessage ? "px-1" : ""}`}
         >
           {isOwnMessage && message.messageStatus === "FAILED" && (
             <button
@@ -204,7 +334,8 @@ export const MessageBubble = memo(function MessageBubble({
               <span>Retry</span>
             </button>
           )}
-          {!message.isDeleted && (
+          {/* Copy is not applicable for image messages */}
+          {!message.isDeleted && !isImageMessage && (
             <button
               onClick={() => onCopy(message)}
               className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold transition hover:opacity-80 ${
