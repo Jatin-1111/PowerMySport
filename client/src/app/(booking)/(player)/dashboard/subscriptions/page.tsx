@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import { CalendarRange, Wallet, TrendingUp } from "lucide-react";
+import { CalendarRange, Wallet, TrendingUp, RotateCcw } from "lucide-react";
 import type { CoachSubscription } from "@/types";
 import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { CancelSubscriptionModal } from "@/components/ui/CancelSubscriptionModal";
