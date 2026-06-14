@@ -144,7 +144,7 @@ export default function CommunityTopNav() {
 
             {/* Chats */}
             <Link
-              href="/chats"
+              href="/chats?sidebar=conversations"
               className={navLinkCls(pathname.startsWith("/chats"))}
             >
               <MessagesSquare size={13} />
@@ -335,7 +335,7 @@ export default function CommunityTopNav() {
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { href: "/chats",           icon: MessagesSquare, label: "Chats"        },
+                      { href: "/chats?sidebar=conversations",           icon: MessagesSquare, label: "Chats"        },
                       { href: "/ai-guidance",     icon: BrainCircuit,   label: "AI Guidance"  },
                       { href: "/q",               icon: MessageSquare,  label: "Knowledge"    },
                       { href: "/contributors",    icon: Trophy,         label: "Contributors" },

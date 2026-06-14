@@ -183,6 +183,8 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const isInitialMessageLoadRef = useRef<boolean>(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectedPollDelayRef = useRef(DISCONNECTED_POLL_BASE_MS);
   const isRefreshingConversationsRef = useRef(false);
@@ -574,6 +576,9 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const loadMessages = useCallback(
     async (conversationId: string) => {
       try {
+        // Signal that this is a fresh load — auto-scroll to bottom on first render
+        isInitialMessageLoadRef.current = true;
+
         // Optimistically load from IndexedDB
         const cached = await getCachedMessages(conversationId);
         if (cached && cached.length > 0) {
@@ -1128,10 +1133,24 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
 
   useEffect(() => {
     if (!selectedConversationId) return;
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
-    });
+
+    const container = scrollContainerRef.current;
+
+    // On initial load of a conversation, always jump to the bottom instantly
+    if (isInitialMessageLoadRef.current) {
+      isInitialMessageLoadRef.current = false;
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
+      return;
+    }
+
+    // On new messages: only auto-scroll if the user is already near the bottom (within 120px)
+    if (container) {
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceFromBottom < 120) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    }
   }, [messages, selectedConversationId]);
 
   const handleStartConversation = useCallback(
@@ -1995,6 +2014,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     memberProfileError,
     selectedMemberProfile,
     messagesEndRef,
+    scrollContainerRef,
     hasMoreMessages,
     isLoadingMoreMessages,
     loadMoreMessages,

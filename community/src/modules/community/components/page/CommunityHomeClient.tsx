@@ -23,7 +23,7 @@ export default function CommunityHomeClient({ forceView }: { forceView?: "commun
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.28 }}
-        className="flex-1 min-h-0 flex flex-col bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
+        className="flex-1 min-h-0 overflow-hidden flex flex-col bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
       >
         <motion.div
           variants={shellVariants}
