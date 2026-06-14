@@ -26,6 +26,7 @@ import { getCommunitySocket } from "@/lib/realtime/socket";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { toast } from "@/lib/toast";
 import { useMutationState } from "@/lib/hooks/useMutationState";
+import AskQuestionModal from "@/modules/community/components/page/AskQuestionModal";
 
 const SORT_OPTIONS: Array<{ value: CommunityFeedSort; label: string }> = [
   { value: "NEW", label: "New" },
@@ -157,11 +158,6 @@ export default function QnAFeedClient() {
   const [sportFilter, setSportFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [showAskForm, setShowAskForm] = useState(false);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [tags, setTags] = useState("");
-  const [sport, setSport] = useState("");
-  const [city, setCity] = useState("");
   const [isUrlHydrated, setIsUrlHydrated] = useState(false);
   const [followedTopics, setFollowedTopics] = useState<string[]>([]);
 
@@ -427,41 +423,10 @@ export default function QnAFeedClient() {
     viewMode,
   ]);
 
-  const handleCreatePost = async () => {
-    if (title.trim().length < 10 || body.trim().length < 20) {
-      toast.error("Title/body are too short for a quality question");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      await communityService.createPost({
-        title: title.trim(),
-        body: body.trim(),
-        tags: tags
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-        sport: sport.trim() || undefined,
-        city: city.trim() || undefined,
-      });
-
-      setTitle("");
-      setBody("");
-      setTags("");
-      setSport("");
-      setCity("");
-      setShowAskForm(false);
-      toast.success("Question posted");
-      await loadFeed(1, false);
-      await loadActivity();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to post question",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleQuestionSuccess = async () => {
+    toast.success("Question posted");
+    await loadFeed(1, false);
+    await loadActivity();
   };
 
   const loadMore = async () => {
@@ -647,111 +612,11 @@ export default function QnAFeedClient() {
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
           <div className="space-y-6">
-            <AnimatePresence initial={false}>
-              {showAskForm && (
-                <motion.section
-                  key="ask-form"
-                  initial={{ opacity: 0, height: 0, y: -8 }}
-                  animate={{ opacity: 1, height: "auto", y: 0 }}
-                  exit={{ opacity: 0, height: 0, y: -8 }}
-                  transition={{ duration: 0.28, ease: "easeOut" }}
-                  className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-5 sm:p-6 shadow-lg"
-                >
-                  <div className="relative">
-                    <h2 className="font-title text-xl font-bold text-slate-900">
-                      Start a New Question
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Be specific and clear so others can help you quickly.
-                      Include what you tried and what you want to achieve.
-                    </p>
-
-                    <div className="mt-5 space-y-4">
-                      <div>
-                        <label
-                          htmlFor="q-title"
-                          className="block text-xs font-semibold uppercase text-slate-500 mb-1.5"
-                        >
-                          Question Title
-                        </label>
-                        <input
-                          id="q-title"
-                          value={title}
-                          onChange={(event) => setTitle(event.target.value)}
-                          placeholder="What's your question? (min 10 characters)"
-                          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
-                        />
-                        <p className="mt-1 text-xs text-slate-500">
-                          {title.length} / 500 characters
-                        </p>
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="q-body"
-                          className="block text-xs font-semibold uppercase text-slate-500 mb-1.5"
-                        >
-                          Details & Context
-                        </label>
-                        <textarea
-                          id="q-body"
-                          value={body}
-                          onChange={(event) => setBody(event.target.value)}
-                          placeholder="Describe: what's your situation? What have you already tried? What result do you want? (min 20 characters)"
-                          rows={6}
-                          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
-                        />
-                        <p className="mt-1 text-xs text-slate-500">
-                          {body.length} / 2000 characters
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-2">
-                          Additional Info
-                        </label>
-                        <div className="grid gap-3 lg:grid-cols-3">
-                          <input
-                            value={tags}
-                            onChange={(event) => setTags(event.target.value)}
-                            placeholder="Tags (e.g., badminton, fitness)"
-                            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none"
-                          />
-                          <input
-                            value={sport}
-                            onChange={(event) => setSport(event.target.value)}
-                            placeholder="Sport (optional)"
-                            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none"
-                          />
-                          <input
-                            value={city}
-                            onChange={(event) => setCity(event.target.value)}
-                            placeholder="City (optional)"
-                            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-                        <button
-                          onClick={() => void handleCreatePost()}
-                          disabled={isSubmitting}
-                          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
-                        >
-                          {isSubmitting ? "Publishing..." : "Publish Question"}
-                        </button>
-                        <button
-                          onClick={() => setShowAskForm(false)}
-                          className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.section>
-              )}
-            </AnimatePresence>
+            <AskQuestionModal
+              isOpen={showAskForm}
+              onClose={() => setShowAskForm(false)}
+              onSuccess={() => void handleQuestionSuccess()}
+            />
 
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">

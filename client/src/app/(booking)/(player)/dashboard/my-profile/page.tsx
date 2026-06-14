@@ -458,7 +458,7 @@ export default function ProfilePage() {
       />
 
       <PlayerPageHeader
-        badge="Player"
+        badge={user.userType || "Player"}
         title="My Profile"
         subtitle="Manage your account details, sports preferences, and family dependents in one place."
       />
@@ -483,7 +483,7 @@ export default function ProfilePage() {
             Account
           </p>
           <p className="mt-1 text-lg font-bold capitalize text-slate-900">
-            {user.role.toLowerCase().replace("_", " ")}
+            {user.userType || user.role.toLowerCase().replace("_", " ")}
           </p>
         </div>
       </div>
@@ -520,7 +520,7 @@ export default function ProfilePage() {
                   {isEditingProfile ? profileForm.name || user.name : user.name}
                 </p>
                 <Badge className="mt-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50">
-                  {user.role.replace("_", " ")}
+                  {user.userType || user.role.replace("_", " ")}
                 </Badge>
               </div>
             </div>

@@ -15,6 +15,10 @@ export const registerSchema = z.object({
     .enum(["PLAYER", "VENUE_LISTER", "COACH"])
     .optional()
     .default("PLAYER"),
+  userType: z
+    .enum(["Parent", "Recreational", "Coach", "Academy", "VenueLister", "Admin"])
+    .optional()
+    .default("Recreational"),
 });
 
 export const loginSchema = z.object({

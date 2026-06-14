@@ -14,17 +14,12 @@ export const guidanceRequestSchema = z.object({
   ]),
   weekly_time_commitment: z.number().min(0).max(40),
   budget_tier: z.enum(["Budget", "Moderate", "Premium"]),
-  parent_specific_question: z.string().trim().min(1).max(1000),
+  parent_specific_question: z.string().trim().max(1000).optional(),
+  sport: z.string().trim().optional(),
 });
 
 export const guidanceResponseSchema = z.object({
   profileAnalysis: z.string(),
-  topSportRecommendations: z.array(
-    z.object({
-      sport: z.string(),
-      reasonWhy: z.string(),
-    }),
-  ),
   idealCoachingStyle: z.string(),
   weeklyBlueprint: z.object({
     trainingHours: z.string(),
@@ -37,12 +32,9 @@ export const guidanceResponseSchema = z.object({
 export type GuidanceRequest = z.infer<typeof guidanceRequestSchema>;
 export type GuidanceResponse = z.infer<typeof guidanceResponseSchema>;
 
-export const YOUTH_SPORTS_GUIDANCE_SYSTEM_PROMPT = `You are an expert Youth Sports Consultant. You will receive a child's profile strictly in JSON format. You must analyze this data and return your absolute final response strictly as a JSON object matching this schema blueprint, without any markdown wrappers or conversational preamble before or after the JSON structure:
+export const YOUTH_SPORTS_GUIDANCE_SYSTEM_PROMPT = `You are an expert Youth Sports Consultant. You will receive a child's profile strictly in JSON format. If the profile includes a specific "sport", you MUST focus your analysis on how to improve in that specific sport, or suggest highly complementary cross-training sports. You must analyze this data and return your absolute final response strictly as a JSON object matching this schema blueprint, without any markdown wrappers or conversational preamble before or after the JSON structure:
 {
   "profileAnalysis": "String summarizing how their profile attributes match up",
-  "topSportRecommendations": [
-    { "sport": "String", "reasonWhy": "String matching child personality/fitness" }
-  ],
   "idealCoachingStyle": "String describing what kind of coach profile to look for on our platform",
   "weeklyBlueprint": { "trainingHours": "String", "freePlayHours": "String", "restDays": "String" },
   "recommendedPlatformActions": "Specific actionable next steps on what to book first on our site"
@@ -53,6 +45,8 @@ const configuredModelName = process.env.GEMINI_MODEL_NAME?.trim();
 const guidanceModelCandidates = [
   configuredModelName,
   "gemini-3.5-flash",
+  "gemini-3.1-pro",
+  "gemini-3.5-flash-lite",
 ].filter((modelName): modelName is string => Boolean(modelName));
 
 const isModelUnavailableError = (errorMessage: string) =>

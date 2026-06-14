@@ -310,63 +310,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                     </button>
                   ))}
                 </div>
-                <button
-                  onClick={() =>
-                    setIsCreateGroupOpen(!isCreateGroupOpen)
-                  }
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold shadow-sm transition ${isCreateGroupOpen ? "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200" : "bg-slate-900 text-white hover:bg-slate-700"}`}
-                >
-                  {isCreateGroupOpen ? (
-                    <X size={12} />
-                  ) : (
-                    <Plus size={12} />
-                  )}
-                  {isCreateGroupOpen ? "Close" : "New Group"}
-                </button>
               </div>
-
-              <AnimatePresence>
-                {isCreateGroupOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden flex-none"
-                  >
-                    <div className="rounded-2xl border border-power-orange/20 bg-[linear-gradient(180deg,rgba(233,115,22,0.04),rgba(255,255,255,0.96))] p-4 shadow-sm mb-4">
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <input
-                          value={newGroupName}
-                          onChange={(e) =>
-                            setNewGroupName(e.target.value)
-                          }
-                          placeholder="Group name"
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
-                        />
-                        <input
-                          value={newGroupSport}
-                          onChange={(e) =>
-                            setNewGroupSport(e.target.value)
-                          }
-                          placeholder="Sport"
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
-                        />
-                      </div>
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          onClick={handleCreateGroup}
-                          disabled={isCreatingGroup}
-                          className="rounded-xl bg-linear-to-r from-power-orange to-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:opacity-90 disabled:opacity-60"
-                        >
-                          {isCreatingGroup
-                            ? "Creating..."
-                            : "Create Group"}
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               <div className="relative flex-none">
                 <Search

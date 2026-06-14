@@ -73,6 +73,7 @@ export interface User {
   isIdentityPublic?: boolean;
   dob?: string;
   role: UserRole;
+  userType?: "Parent" | "Recreational" | "Coach" | "VenueLister" | "Admin" | "Academy";
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
   playerProfile?: IPlayerProfile;

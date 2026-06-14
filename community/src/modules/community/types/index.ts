@@ -66,6 +66,7 @@ export interface CommunityUserSearchResult {
   displayName: string;
   isIdentityPublic: boolean;
   role?: CommunityUserRole;
+  userType?: string;
   photoUrl?: string | null;
   city?: string | null;
   age?: number | null;
@@ -75,6 +76,7 @@ export interface CommunityUserSearchResult {
 export interface CommunityMemberProfile {
   id: string;
   role: CommunityUserRole;
+  userType?: string;
   displayName: string;
   alias: string;
   isIdentityPublic: boolean;

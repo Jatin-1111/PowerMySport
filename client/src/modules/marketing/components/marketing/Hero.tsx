@@ -157,7 +157,7 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
                   <Button
                     variant="outline"
                     size="lg"
-                    className="h-auto w-full rounded-xl border-slate-300 bg-white/90 px-8 py-4 text-base text-slate-800 hover:border-slate-400 hover:bg-white"
+                    className="h-auto w-full rounded-xl border-slate-300 bg-white/90 px-8 py-4 text-base text-slate-800 hover:border-slate-400 hover:bg-white hover:text-slate-900"
                   >
                     {secondaryCTA.label}
                   </Button>

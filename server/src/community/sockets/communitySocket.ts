@@ -241,6 +241,54 @@ export const setupCommunitySocket = (io: Server): void => {
       }
     });
 
+    socket.on("community:typingStart", async (payload, callback) => {
+      try {
+        const allowed = consumeRateLimit(
+          socketRateLimit,
+          "community:typingStart",
+          10,
+          2000,
+        );
+        if (!allowed) return;
+
+        const conversationId = payload?.conversationId;
+        if (!conversationId) return;
+
+        communityNamespace.to(`conversation:${conversationId}`).emit(
+          "community:userTyping",
+          { conversationId, userId, isTyping: true },
+        );
+
+        if (typeof callback === "function") callback({ success: true });
+      } catch (error) {
+        // Silently ignore typing errors
+      }
+    });
+
+    socket.on("community:typingStop", async (payload, callback) => {
+      try {
+        const allowed = consumeRateLimit(
+          socketRateLimit,
+          "community:typingStop",
+          10,
+          2000,
+        );
+        if (!allowed) return;
+
+        const conversationId = payload?.conversationId;
+        if (!conversationId) return;
+
+        communityNamespace.to(`conversation:${conversationId}`).emit(
+          "community:userTyping",
+          { conversationId, userId, isTyping: false },
+        );
+
+        if (typeof callback === "function") callback({ success: true });
+      } catch (error) {
+        // Silently ignore typing errors
+      }
+    });
+
     socket.on("community:markConversationAsDelivered", async (payload, callback) => {
       try {
         const allowed = consumeRateLimit(

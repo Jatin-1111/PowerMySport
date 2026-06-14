@@ -47,23 +47,16 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       },
       parent_specific_question: {
         type: String,
-        required: true,
         trim: true,
         maxlength: 1000,
+      },
+      sport: {
+        type: String,
+        trim: true,
       },
     },
     response: {
       profileAnalysis: { type: String, required: true },
-      topSportRecommendations: {
-        type: [
-          {
-            sport: { type: String, required: true },
-            reasonWhy: { type: String, required: true },
-          },
-        ],
-        required: true,
-        default: [],
-      },
       idealCoachingStyle: { type: String, required: true },
       weeklyBlueprint: {
         trainingHours: { type: String, required: true },

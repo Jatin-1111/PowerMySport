@@ -79,10 +79,18 @@ export const searchPlayers = async (
       typeof rawLimit === "string" ? Number(rawLimit) : Number.NaN;
     const limit = Number.isFinite(parsedLimit) ? parsedLimit : 10;
 
+    const userTypeRaw = req.query.userType;
+    const userType = typeof userTypeRaw === "string" ? userTypeRaw : undefined;
+    
+    const roleRaw = req.query.role;
+    const role = typeof roleRaw === "string" ? roleRaw : undefined;
+
     const data = await CommunityService.searchPlayers(
       getUserId(req),
       query,
       limit,
+      userType,
+      role
     );
 
     res.status(200).json({

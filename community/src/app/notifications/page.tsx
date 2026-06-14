@@ -176,9 +176,9 @@ export default function CommunityNotificationsPage() {
   }, [sortedItems]);
 
   const loadNotifications = useCallback(
-    async (targetPage = 1) => {
+    async (targetPage = 1, isBackground = false) => {
       try {
-        setIsLoading(true);
+        if (!isBackground) setIsLoading(true);
         const response = await communityService.listCommunityNotifications(
           targetPage,
           PAGE_SIZE,
@@ -188,13 +188,15 @@ export default function CommunityNotificationsPage() {
         setItems(response.items || []);
         setPage(targetPage);
         setPages(Math.max(1, response.pagination.pages || 1));
-      } catch {
-        setItems([]);
-        setPage(targetPage);
-        setPages(1);
+      } catch (error) {
+        if (!isBackground) {
+          setItems([]);
+          setPage(targetPage);
+          setPages(1);
+        }
         toast.error("Failed to load notifications");
       } finally {
-        setIsLoading(false);
+        if (!isBackground) setIsLoading(false);
       }
     },
     [filter],
@@ -244,7 +246,8 @@ export default function CommunityNotificationsPage() {
     const socket = getCommunitySocket();
 
     const refresh = () => {
-      void loadNotifications(1);
+      void communityService.clearNotificationCache();
+      void loadNotifications(1, true);
     };
 
     socket.on("notification:new", refresh);

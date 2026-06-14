@@ -77,6 +77,7 @@ export const authApi = {
     name: string;
     photoUrl?: string;
     role?: "PLAYER" | "VENUE_LISTER" | "COACH" | "ACADEMY_OWNER";
+    userType?: string;
     action?: "login" | "register";
     acceptedTerms?: boolean;
     acceptedPrivacy?: boolean;

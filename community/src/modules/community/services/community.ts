@@ -186,6 +186,13 @@ const buildCommunityNotificationsKey = (
 const BLOCKED_USERS_CACHE_KEY = "blocked-users";
 
 export const communityService = {
+  async clearNotificationCache(): Promise<void> {
+    clearCacheByPrefixes([
+      "community-notifications",
+      "community-unread-count",
+    ]);
+  },
+
   async ensureSession(): Promise<AuthBridgeSession> {
     const response =
       await axiosInstance.get<ApiResponse<AuthBridgeSession>>("/auth/bridge");
@@ -194,15 +201,17 @@ export const communityService = {
 
   async searchCommunityUsers(
     query: string,
+    filters?: { userType?: string; role?: string }
   ): Promise<CommunityUserSearchResult[]> {
     const normalizedQuery = query.trim().toLowerCase();
+    const cacheKey = `players:${normalizedQuery}:${filters?.userType || ""}:${filters?.role || ""}`;
     return withRequestCache(
-      `players:${normalizedQuery}`,
+      cacheKey,
       async () => {
         const response = await axiosInstance.get<
           ApiResponse<CommunityUserSearchResult[]>
         >("/community/players/search", {
-          params: { q: query, limit: 8 },
+          params: { q: query, limit: 20, ...filters },
         });
 
         return response.data.data;
@@ -211,8 +220,8 @@ export const communityService = {
     );
   },
 
-  async searchPlayers(query: string): Promise<CommunityUserSearchResult[]> {
-    return this.searchCommunityUsers(query);
+  async searchPlayers(query: string, filters?: { userType?: string; role?: string }): Promise<CommunityUserSearchResult[]> {
+    return this.searchCommunityUsers(query, filters);
   },
 
   async getPlayerProfile(userId: string): Promise<CommunityMemberProfile> {
@@ -390,7 +399,10 @@ export const communityService = {
     clearCacheByPrefixes(["conversations", buildMessagesKey(conversationId)]);
   },
 
-  async getMessages(conversationId: string): Promise<{
+  async getMessages(
+    conversationId: string,
+    page = 1
+  ): Promise<{
     conversation: {
       id: string;
       conversationType?: "DM" | "GROUP";
@@ -399,9 +411,14 @@ export const communityService = {
       group?: CommunityGroupSummary | null;
     };
     messages: ConversationMessage[];
+    pagination: {
+      total: number;
+      page: number;
+      totalPages: number;
+    };
   }> {
     return withRequestCache(
-      buildMessagesKey(conversationId),
+      `${buildMessagesKey(conversationId)}-page-${page}`,
       async () => {
         const response = await axiosInstance.get<
           ApiResponse<{
@@ -413,8 +430,13 @@ export const communityService = {
               group?: CommunityGroupSummary | null;
             };
             messages: ConversationMessage[];
+            pagination: {
+              total: number;
+              page: number;
+              totalPages: number;
+            };
           }>
-        >(`/community/conversations/${conversationId}/messages`);
+        >(`/community/conversations/${conversationId}/messages?page=${page}`);
         return response.data.data;
       },
       3000,
@@ -906,6 +928,9 @@ export const communityService = {
       "community-notifications",
       "community-unread-count",
     ]);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("community:notificationsRead"));
+    }
   },
 
   async markAllCommunityNotificationsRead(): Promise<number> {
@@ -939,6 +964,10 @@ export const communityService = {
       "community-notifications",
       "community-unread-count",
     ]);
+
+    if (typeof window !== "undefined" && totalMarked > 0) {
+      window.dispatchEvent(new Event("community:notificationsRead"));
+    }
 
     return totalMarked;
   },

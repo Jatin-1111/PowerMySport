@@ -27,11 +27,11 @@ const buildActionHref = (payload: IncomingNotification): string | null => {
   }
 
   if (payload.data?.conversationId) {
-    return `/?sidebar=inbox&conversation=${encodeURIComponent(payload.data.conversationId)}`;
+    return `/chats?sidebar=inbox&conversation=${encodeURIComponent(payload.data.conversationId)}`;
   }
 
   if (payload.data?.groupId) {
-    return `/?group=${encodeURIComponent(payload.data.groupId)}`;
+    return `/chats?group=${encodeURIComponent(payload.data.groupId)}`;
   }
 
   return null;
