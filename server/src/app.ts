@@ -36,6 +36,7 @@ import authRoutes from "./shared/routes/authRoutes";
 import geoRoutes from "./shared/routes/geoRoutes";
 import phonepeWebhook from "./shared/routes/phonepeWebhook";
 import sportsRoutes from "./shared/routes/sportsRoutes";
+import pathwayRoutes from "./shared/routes/pathwayRoutes";
 import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
 
 export const app: Express = express();
@@ -137,6 +138,7 @@ if (process.env.NODE_ENV === "development") {
 app.use("/api/auth", authRoutes);
 app.use("/api/geo", geoRoutes);
 app.use("/api/sports", sportsRoutes);
+app.use("/api/pathways", pathwayRoutes);
 // PhonePe webhook route (use raw body captured above for HMAC verification)
 app.use("/api/payments/phonepe", phonepeWebhook);
 
