@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
 import {
@@ -22,19 +22,26 @@ import {
   MessageSquare,
   LogIn,
   Eye,
+  Filter,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function DiscoverPageClient() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const searchParams = useSearchParams();
+  
+  const initialQuery = searchParams.get("q") || "";
+  const initialSport = searchParams.get("sport") || "All";
+  const initialTab = (searchParams.get("tab") as any) || "COMMUNITIES";
+
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [communities, setCommunities] = useState<CommunityGroupSummary[]>([]);
   const [players, setPlayers] = useState<CommunityUserSearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
     "COMMUNITIES" | "PARENTS" | "PLAYERS" | "COACHES"
-  >("COMMUNITIES");
+  >(initialTab);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -45,6 +52,40 @@ export default function DiscoverPageClient() {
 
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedSport, setSelectedSport] = useState<string>(initialSport);
+  const [selectedCity, setSelectedCity] = useState<string>("All");
+
+  const isFirstRender = useRef(true);
+
+  // Reset filters when tab changes
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setSelectedSport("All");
+    setSelectedCity("All");
+  }, [activeTab]);
+
+  // Derive unique filter options
+  const availableSports = Array.from(
+    new Set([
+      ...(selectedSport !== "All" ? [selectedSport] : []),
+      ...(activeTab === "COMMUNITIES" 
+        ? (communities.map(c => c.sport).filter(Boolean) as string[])
+        : (players.flatMap(p => p.sports || []) as string[]))
+    ])
+  ).sort();
+
+  const availableCities = Array.from(
+    new Set(
+      activeTab === "COMMUNITIES"
+        ? (communities.map(c => c.city).filter(Boolean) as string[])
+        : (players.map(p => p.city).filter(Boolean) as string[])
+    )
+  ).sort();
 
   // Debounce search
   useEffect(() => {
@@ -120,8 +161,19 @@ export default function DiscoverPageClient() {
     }
   };
 
-  const handleCommunityChat = (groupId: string) => {
-    router.push("/chats?sidebar=conversations&directory=groups");
+  const handleCommunityChat = async (groupId: string) => {
+    try {
+      const convs = await communityService.listConversationsItems(1, 100, { type: "GROUPS" });
+      const groupConv = convs.find((c) => c.group?.id === groupId);
+      if (groupConv) {
+        router.push(`/chats?sidebar=conversations&directory=groups&conversation=${groupConv.id}`);
+      } else {
+        router.push("/chats?sidebar=conversations&directory=groups");
+      }
+    } catch (error) {
+      console.error("Failed to find group conversation:", error);
+      router.push("/chats?sidebar=conversations&directory=groups");
+    }
   };
 
   const handlePlayerChat = async (userId: string) => {
@@ -133,11 +185,21 @@ export default function DiscoverPageClient() {
     }
   };
 
+  const filteredCommunities = communities.filter(c => {
+    if (selectedSport !== "All" && c.sport !== selectedSport) return false;
+    if (selectedCity !== "All" && c.city !== selectedCity) return false;
+    return true;
+  });
+
   const filteredPlayers = players.filter((p) => {
-    if (activeTab === "PARENTS") return p.userType === "Parent";
-    if (activeTab === "PLAYERS") return p.userType === "Recreational";
-    if (activeTab === "COACHES") return p.role === "COACH";
-    return false;
+    if (activeTab === "PARENTS") { if (p.userType !== "Parent") return false; }
+    else if (activeTab === "PLAYERS") { if (p.userType !== "Recreational") return false; }
+    else if (activeTab === "COACHES") { if (p.role !== "COACH") return false; }
+    else return false;
+
+    if (selectedSport !== "All" && !(p.sports || []).includes(selectedSport)) return false;
+    if (selectedCity !== "All" && p.city !== selectedCity) return false;
+    return true;
   });
 
   return (
@@ -150,22 +212,92 @@ export default function DiscoverPageClient() {
         />
 
         <div className="mt-8 flex flex-col gap-6">
-          {/* Search Bar */}
-          <div className="relative mx-auto w-full max-w-2xl">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
-              <Search size={18} />
+          {/* Search Bar & Filters Toggle */}
+          <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
+            <div className="flex w-full gap-3">
+              <div className="relative flex-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                  <Search size={18} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search communities and parents..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white/80 py-3.5 pl-11 pr-4 text-sm font-medium text-slate-900 shadow-sm backdrop-blur transition-all focus:border-power-orange/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10"
+                />
+              </div>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`shrink-0 flex items-center gap-2 rounded-2xl border px-4 py-3.5 text-sm font-bold shadow-sm backdrop-blur transition-all ${
+                  showFilters || selectedSport !== "All" || selectedCity !== "All"
+                    ? "border-power-orange/30 bg-power-orange/10 text-power-orange"
+                    : "border-slate-200 bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900"
+                }`}
+              >
+                <Filter size={18} />
+                <span className="hidden sm:inline">Filters</span>
+                {(selectedSport !== "All" || selectedCity !== "All") && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-power-orange text-[10px] text-white">
+                    {(selectedSport !== "All" ? 1 : 0) + (selectedCity !== "All" ? 1 : 0)}
+                  </span>
+                )}
+              </button>
             </div>
-            <input
-              type="text"
-              placeholder="Search communities and parents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white/80 py-3.5 pl-11 pr-4 text-sm font-medium text-slate-900 shadow-sm backdrop-blur transition-all focus:border-power-orange/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10"
-            />
+            
+            <AnimatePresence>
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Sport</label>
+                        <select
+                          value={selectedSport}
+                          onChange={(e) => setSelectedSport(e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
+                        >
+                          <option value="All">All Sports</option>
+                          {availableSports.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">City</label>
+                        <select
+                          value={selectedCity}
+                          onChange={(e) => setSelectedCity(e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
+                        >
+                          <option value="All">All Cities</option>
+                          {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    {(selectedSport !== "All" || selectedCity !== "All") && (
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={() => { setSelectedSport("All"); setSelectedCity("All"); }}
+                          className="text-xs font-bold text-power-orange hover:text-orange-600 transition-colors"
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Tabs */}
-          <div className="mx-auto flex w-full max-w-2xl rounded-xl border border-slate-200 bg-white/50 p-1 shadow-sm backdrop-blur">
+          <div className="mx-auto grid w-full max-w-2xl grid-cols-2 gap-1 rounded-xl border border-slate-200 bg-white/50 p-1 shadow-sm backdrop-blur sm:flex sm:gap-0">
             <button
               onClick={() => setActiveTab("COMMUNITIES")}
               className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
@@ -226,7 +358,7 @@ export default function DiscoverPageClient() {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <div className="mb-4 flex items-center justify-between">
+                  <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="community-section-title">Communities</h2>
                       <div className="flex items-center gap-2 mt-1">
@@ -234,7 +366,7 @@ export default function DiscoverPageClient() {
                           Groups and squads for your favorite sports
                         </p>
                         <span className="inline-flex items-center justify-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
-                          {communities.length}
+                          {filteredCommunities.length}
                         </span>
                       </div>
                     </div>
@@ -248,20 +380,20 @@ export default function DiscoverPageClient() {
                     </button>
                   </div>
 
-                  {communities.length === 0 ? (
+                  {filteredCommunities.length === 0 ? (
                     <div className="community-card flex flex-col items-center justify-center py-12 text-center">
                       <Users size={32} className="text-slate-300" />
                       <p className="mt-3 text-sm font-medium text-slate-900">
                         No communities found
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Try a different search term.
+                        Try adjusting your search or filters.
                       </p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <AnimatePresence>
-                        {communities.map((group, idx) => (
+                        {filteredCommunities.map((group, idx) => (
                           <motion.div
                             key={group.id}
                             initial={{ opacity: 0, y: 10 }}

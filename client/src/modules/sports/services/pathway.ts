@@ -14,6 +14,39 @@ export interface PathwayLevel {
   governingBody?: string;
 }
 
+export interface Tournament {
+  name: string;
+  level: string;
+  description: string;
+  ageGroup: string;
+}
+
+export interface Scholarship {
+  name: string;
+  provider: string;
+  description: string;
+  eligibility: string;
+}
+
+export interface University {
+  name: string;
+  location: string;
+  admissionCriteria: string;
+  sportsQuotaDetails: string;
+}
+
+export interface Equipment {
+  level: string;
+  items: string[];
+  estimatedCost: string;
+}
+
+export interface Career {
+  role: string;
+  description: string;
+  demand: string;
+}
+
 export interface SportPathway {
   _id?: string;
   sportSlug: string;
@@ -21,6 +54,11 @@ export interface SportPathway {
   category?: string;
   overview: string;
   levels: PathwayLevel[];
+  tournaments: Tournament[];
+  scholarships: Scholarship[];
+  universities: University[];
+  equipment: Equipment[];
+  careers: Career[];
   isVerified: boolean;
   lookupCount: number;
   createdAt?: string;

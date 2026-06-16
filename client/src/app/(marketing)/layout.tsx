@@ -4,13 +4,13 @@ import { Navigation } from "@/components/layout/Navigation";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "PowerMySport | The #1 Sports Venue Booking Platform",
+  title: "PowerMySport | Organizing the Unorganized Sports Sector",
   description:
-    "PowerMySport is the ultimate venue booking platform sports enthusiasts use to find turfs, courts, professional coaches, and top academies.",
+    "PowerMySport is solving the biggest problem for parents by organizing the sports sector. Discover the right pathways, book venues, and find professional coaches for your child's sports journey.",
   openGraph: {
-    title: "PowerMySport | The #1 Sports Venue Booking Platform",
+    title: "PowerMySport | Organizing the Unorganized Sports Sector",
     description:
-      "Find and book the best sports venues, certified coaches, and sports academies near you.",
+      "Solving the biggest problem for parents by organizing the sports sector. Find and book the best sports venues, certified coaches, and academies.",
   },
 };
 

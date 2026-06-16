@@ -9,7 +9,7 @@ import "./globals.css";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 const siteTitle = "PowerMySport";
 const siteDescription =
-  "PowerMySport is the ultimate sports venue booking platform. Book turfs, courts, discover certified coaches, and join top sports academies.";
+  "PowerMySport is organizing the unorganized sports sector. We solve the biggest problem for parents by providing a unified platform to discover athletic pathways, book venues, and find certified coaches.";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -30,20 +30,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   manifest: "/site.webmanifest",
   title: {
-    default: `${siteTitle} | Venue Booking Platform Sports, Coaches & Academies`,
+    default: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
     template: `%s | ${siteTitle}`,
   },
   description: siteDescription,
   applicationName: siteTitle,
   keywords: [
-    "venue booking platform sports",
+    "unorganized sports sector",
+    "sports for parents",
+    "youth sports pathway",
     "sports academy",
     "sports coach booking",
-    "turf booking app",
+    "parent sports guide",
     "sports venue booking",
-    "book badminton court",
-    "sports coaching",
-    "coach booking",
     "book turf online",
     "PowerMySport",
   ],
@@ -66,7 +65,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: siteUrl,
     siteName: siteTitle,
-    title: `${siteTitle} | Venue Booking Platform Sports, Coaches & Academies`,
+    title: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
     description: siteDescription,
     images: [
       {
@@ -79,7 +78,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteTitle} | Venue Booking Platform Sports, Coaches & Academies`,
+    title: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
     description: siteDescription,
     images: ["/twitter-image.png"],
   },

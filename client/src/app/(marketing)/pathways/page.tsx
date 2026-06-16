@@ -5,6 +5,8 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { pathwayApi, SportPathway, PathwayLevel } from "@/modules/sports/services/pathway";
+import { sportsApi, Sport } from "@/modules/sports/services/sports";
+import Fuse from "fuse.js";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import {
   Trophy,
@@ -32,6 +34,15 @@ import {
   Sparkles,
   Database,
   X,
+  Wallet,
+  Clock,
+  Map,
+  HeartHandshake,
+  GraduationCap,
+  Landmark,
+  Compass,
+  ShoppingBag,
+  Briefcase,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -89,6 +100,12 @@ const pathwayLevels = [
     keyFocus: "Participation & Fundamentals",
     ageRange: "5 – 14 years",
     competitions: "School meets, local clubs, area leagues",
+    parentalCommitment: {
+      time: "2-3 days a week",
+      financial: "Low (Basic gear & club fees)",
+      travel: "Local neighbourhood only",
+      role: "Cheerleader & Chauffeur",
+    },
   },
   {
     id: "district",
@@ -113,6 +130,12 @@ const pathwayLevels = [
     keyFocus: "Technical Skills & Competition",
     ageRange: "12 – 18 years",
     competitions: "District championships, Zonal leagues, Sub-junior meets",
+    parentalCommitment: {
+      time: "4-6 days a week",
+      financial: "Moderate (Coaching fees, kit, district travel)",
+      travel: "Inter-district & regional",
+      role: "Schedule Manager & Motivator",
+    },
   },
   {
     id: "state",
@@ -137,6 +160,12 @@ const pathwayLevels = [
     keyFocus: "Performance & State Representation",
     ageRange: "14 – 22 years",
     competitions: "State championships, National-qualifying meets, SAF Games",
+    parentalCommitment: {
+      time: "Daily training, often twice a day",
+      financial: "High (Academy fees, specialized gear, state travel)",
+      travel: "State-wide & some national",
+      role: "Financial Sponsor & Emotional Anchor",
+    },
   },
   {
     id: "national",
@@ -161,6 +190,12 @@ const pathwayLevels = [
     keyFocus: "Elite Performance & National Ranking",
     ageRange: "16 – 30+ years",
     competitions: "National Games, Senior Nationals, Premier League",
+    parentalCommitment: {
+      time: "Full-time athletic commitment",
+      financial: "Very High (Nutrition, physio, elite camps)",
+      travel: "Extensive national travel",
+      role: "Support Team Coordinator",
+    },
   },
   {
     id: "international",
@@ -185,101 +220,12 @@ const pathwayLevels = [
     keyFocus: "World-Class Excellence & Olympic Pathway",
     ageRange: "18 – 35 years",
     competitions: "Asian Games, CWG, World Championships, Olympics",
-  },
-];
-
-// ─── Sports Data ──────────────────────────────────────────────────────────────
-
-const sports = [
-  {
-    id: "cricket",
-    name: "Cricket",
-    icon: <Swords className="h-5 w-5" />,
-    color: "bg-amber-500",
-    gradient: "from-amber-500 to-orange-500",
-    description: "India's most popular sport with a highly structured pathway from grassroots clubs to the Indian Premier League and national team.",
-    highlights: [
-      "BCCI-affiliated district & state boards",
-      "Under-14 / U-16 / U-19 / U-23 & Senior pathways",
-      "Ranji Trophy → IPL → India team",
-      "NCA training programmes in Bengaluru",
-    ],
-    tag: "Most Popular",
-  },
-  {
-    id: "badminton",
-    name: "Badminton",
-    icon: <Zap className="h-5 w-5" />,
-    color: "bg-indigo-500",
-    gradient: "from-indigo-500 to-blue-500",
-    description: "India's fastest-growing Olympic sport with a world-class pathway supported by the Badminton Association of India and Pullela Gopichand Academy.",
-    highlights: [
-      "BAI sub-junior → senior ranking tournaments",
-      "Gopichand Academy & Prakash Padukone Academy",
-      "BWF ranking system for global competition",
-      "Olympic & Commonwealth Games pathway",
-    ],
-    tag: "Olympic Sport",
-  },
-  {
-    id: "football",
-    name: "Football",
-    icon: <Target className="h-5 w-5" />,
-    color: "bg-emerald-600",
-    gradient: "from-emerald-500 to-teal-600",
-    description: "AIFF's 'Mission 11 Million' and I-League's developmental pyramid give aspiring footballers a clear route from academies to the national team.",
-    highlights: [
-      "AIFF Baby League → Subroto Cup → I-League",
-      "ISL Hero Young Player programme",
-      "NFC (National Football Camp) selections",
-      "AFC Asian Cup qualification pathway",
-    ],
-    tag: "Team Sport",
-  },
-  {
-    id: "athletics",
-    name: "Athletics",
-    icon: <Flame className="h-5 w-5" />,
-    color: "bg-red-500",
-    gradient: "from-red-500 to-rose-600",
-    description: "AFI's standardised qualification marks and SAI's Target Olympic Podium Scheme (TOPS) support track & field athletes aiming for global glory.",
-    highlights: [
-      "AFI qualification standards (100m, 200m, etc.)",
-      "National Inter-State Championships",
-      "TOPS scheme for medal-hopefuls",
-      "World Athletics ranking & Road to Paris",
-    ],
-    tag: "Individual Sport",
-  },
-  {
-    id: "swimming",
-    name: "Swimming",
-    icon: <Waves className="h-5 w-5" />,
-    color: "bg-cyan-500",
-    gradient: "from-cyan-500 to-blue-400",
-    description: "The Swimming Federation of India manages a structured pathway from aquatic club training to national records and Olympic qualification marks.",
-    highlights: [
-      "SFI age-group ranking system",
-      "National Aquatic Championships",
-      "FINA / World Aquatics qualifying marks",
-      "Paralympic swimming pathway via PCI",
-    ],
-    tag: "Olympic Sport",
-  },
-  {
-    id: "cycling",
-    name: "Cycling",
-    icon: <Bike className="h-5 w-5" />,
-    color: "bg-yellow-500",
-    gradient: "from-yellow-400 to-amber-500",
-    description: "Cycling Federation of India develops road, track, and mountain-bike athletes through progressive state-to-national competitions and UCI races.",
-    highlights: [
-      "CFI state federation ranking events",
-      "National Cycling Championship (Road & Track)",
-      "Tour de India & UCI Asia Tour qualifying",
-      "Asian Cycling Championship pathway",
-    ],
-    tag: "Olympic Sport",
+    parentalCommitment: {
+      time: "Life centers around the sport",
+      financial: "Sponsorships usually take over",
+      travel: "Global",
+      role: "Trusted Advisor & Biggest Fan",
+    },
   },
 ];
 
@@ -291,235 +237,6 @@ function AmbientBlob({ className }: { className: string }) {
       aria-hidden
       className={`pointer-events-none absolute rounded-full blur-3xl will-change-transform ${className}`}
     />
-  );
-}
-
-// ─── Pathway Level Card ───────────────────────────────────────────────────────
-
-function LevelCard({
-  level,
-  isActive,
-  onClick,
-}: {
-  level: (typeof pathwayLevels)[0];
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <motion.button
-      variants={cardReveal}
-      onClick={onClick}
-      whileHover={{ y: -4, scale: 1.02 }}
-      transition={SPRING_STIFF}
-      className={`group relative w-full overflow-hidden rounded-2xl border p-5 text-left transition-all duration-300 will-change-transform ${
-        isActive
-          ? `bg-gradient-to-br ${level.bgLight} ${level.border} shadow-lg`
-          : "border-white/70 bg-white/80 backdrop-blur-sm hover:border-white/90 hover:bg-white/90 premium-shadow"
-      }`}
-    >
-      {/* Active glow */}
-      {isActive && (
-        <div
-          aria-hidden
-          className={`absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl ${level.glowColor}`}
-        />
-      )}
-
-      <div className="relative flex items-center gap-4">
-        {/* Level number badge */}
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${level.color} text-white shadow-md transition-transform duration-300 group-hover:scale-110`}
-        >
-          {level.icon}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span
-              className={`text-[10px] font-bold uppercase tracking-widest ${level.accent}`}
-            >
-              Level {level.level}
-            </span>
-          </div>
-          <p className="font-bold text-slate-900 truncate">{level.label}</p>
-          <p className="text-xs text-slate-500 truncate">{level.keyFocus}</p>
-        </div>
-
-        <motion.div
-          animate={{ rotate: isActive ? 180 : 0 }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
-          className={`shrink-0 ${level.accent}`}
-        >
-          <ChevronDown className="h-4 w-4" />
-        </motion.div>
-      </div>
-    </motion.button>
-  );
-}
-
-// ─── Level Detail Panel ───────────────────────────────────────────────────────
-
-function LevelDetail({ level }: { level: (typeof pathwayLevels)[0] }) {
-  return (
-    <motion.div
-      key={level.id}
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.98 }}
-      transition={SPRING_STIFF}
-      className={`relative overflow-hidden rounded-3xl border bg-gradient-to-br ${level.bgLight} ${level.border} p-8 shadow-xl`}
-    >
-      {/* Decorative glow */}
-      <div
-        aria-hidden
-        className={`absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl ${level.glowColor}`}
-      />
-      <div
-        aria-hidden
-        className={`absolute -bottom-8 -left-8 h-32 w-32 rounded-full blur-2xl ${level.glowColor}`}
-      />
-
-      <div className="relative">
-        {/* Header */}
-        <div className="flex items-start gap-5 mb-6">
-          <div
-            className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${level.color} text-white shadow-lg`}
-          >
-            {level.icon}
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span
-                className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-widest ${level.badge}`}
-              >
-                Level {level.level}
-              </span>
-              <span
-                className={`inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-semibold ${level.badge}`}
-              >
-                {level.ageRange}
-              </span>
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-              {level.title}
-            </h3>
-          </div>
-        </div>
-
-        <p className="mb-8 text-base leading-relaxed text-slate-600">
-          {level.description}
-        </p>
-
-        {/* Two-column info */}
-        <div className="grid gap-6 sm:grid-cols-2 mb-6">
-          {/* Steps */}
-          <div>
-            <h4 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-500">
-              <TrendingUp className="h-4 w-4" />
-              Key Steps
-            </h4>
-            <ul className="space-y-2">
-              {level.steps.map((step, i) => (
-                <li key={i} className="flex items-start gap-2.5">
-                  <CheckCircle
-                    className={`mt-0.5 h-4 w-4 shrink-0 ${level.accent}`}
-                  />
-                  <span className="text-sm leading-relaxed text-slate-700">
-                    {step}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Meta info */}
-          <div className="space-y-4">
-            <div className={`rounded-xl border bg-white/60 p-4 ${level.border} backdrop-blur-sm`}>
-              <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">
-                Key Focus
-              </p>
-              <p className={`font-semibold ${level.accent}`}>
-                {level.keyFocus}
-              </p>
-            </div>
-            <div className={`rounded-xl border bg-white/60 p-4 ${level.border} backdrop-blur-sm`}>
-              <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">
-                Typical Age Range
-              </p>
-              <p className="font-semibold text-slate-800">{level.ageRange}</p>
-            </div>
-            <div className={`rounded-xl border bg-white/60 p-4 ${level.border} backdrop-blur-sm`}>
-              <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">
-                Competitions
-              </p>
-              <p className="text-sm text-slate-700">{level.competitions}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA */}
-        <Link
-          href="/register?role=PLAYER"
-          className={`inline-flex items-center gap-2 rounded-xl bg-gradient-to-r ${level.color} px-6 py-3 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg`}
-        >
-          Start Your Journey
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Sport Card ───────────────────────────────────────────────────────────────
-
-function SportCard({ sport }: { sport: (typeof sports)[0] }) {
-  return (
-    <motion.div
-      variants={cardReveal}
-      whileHover={{ y: -6, scale: 1.015 }}
-      transition={SPRING_STIFF}
-      className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm premium-shadow will-change-transform hover:border-white/90 hover:bg-white/90"
-    >
-      {/* Hover glow */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-gradient-to-br from-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-        style={{
-          background: `radial-gradient(circle at 90% 10%, ${sport.color.replace("bg-", "")}15 0%, transparent 70%)`,
-        }}
-      />
-
-      {/* Top row */}
-      <div className="relative mb-4 flex items-start justify-between">
-        <div
-          className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${sport.gradient} text-white shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}
-        >
-          {sport.icon}
-        </div>
-        <span
-          className={`rounded-full ${sport.color} px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm`}
-        >
-          {sport.tag}
-        </span>
-      </div>
-
-      <h3 className="relative mb-2 text-lg font-bold text-slate-900">
-        {sport.name}
-      </h3>
-      <p className="relative mb-5 text-sm leading-relaxed text-slate-600">
-        {sport.description}
-      </p>
-
-      {/* Highlights */}
-      <ul className="relative space-y-1.5">
-        {sport.highlights.map((item, i) => (
-          <li key={i} className="flex items-start gap-2">
-            <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-slate-600" />
-            <span className="text-xs leading-relaxed text-slate-600">{item}</span>
-          </li>
-        ))}
-      </ul>
-    </motion.div>
   );
 }
 
@@ -543,12 +260,12 @@ const levelColorMap: Record<number, { gradient: string; bg: string; border: stri
 
 // ─── Dynamic pathway level card ────────────────────────────────────────────────
 
-function DynamicLevelCard({
+function PathwayLevelCard({
   level,
   isActive,
   onClick,
 }: {
-  level: PathwayLevel;
+  level: any;
   isActive: boolean;
   onClick: () => void;
 }) {
@@ -584,8 +301,10 @@ function DynamicLevelCard({
 
 // ─── Dynamic pathway detail ────────────────────────────────────────────────────
 
-function DynamicLevelDetail({ level }: { level: PathwayLevel }) {
+function PathwayLevelDetail({ level, sportName }: { level: any; sportName?: string }) {
   const colors = levelColorMap[level.level] ?? levelColorMap[1];
+  const commitment = (level as any).parentalCommitment || pathwayLevels.find(l => l.level === level.level)?.parentalCommitment || { time: "Varies", financial: "Varies", travel: "Varies", role: "Supportive Parent" };
+
   return (
     <motion.div
       key={level.level}
@@ -593,7 +312,7 @@ function DynamicLevelDetail({ level }: { level: PathwayLevel }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.98 }}
       transition={SPRING_STIFF}
-      className={`relative overflow-hidden rounded-3xl border bg-gradient-to-br ${colors.bg} ${colors.border} p-8 shadow-xl`}
+      className={`relative flex-1 flex flex-col overflow-hidden rounded-3xl border bg-gradient-to-br ${colors.bg} ${colors.border} p-6 sm:p-8 shadow-xl`}
     >
       <div className="flex items-start gap-5 mb-6">
         <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${colors.gradient} text-white shadow-lg`}>
@@ -611,32 +330,81 @@ function DynamicLevelDetail({ level }: { level: PathwayLevel }) {
         </div>
       </div>
       <p className="mb-6 text-sm leading-relaxed text-slate-600">{level.description}</p>
-      <div className="grid gap-5 sm:grid-cols-2 mb-6">
-        <div>
-          <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500"><TrendingUp className="h-3.5 w-3.5" />Key Steps</h4>
-          <ul className="space-y-2">
-            {level.steps.map((step, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <CheckCircle className={`mt-0.5 h-4 w-4 shrink-0 ${colors.text}`} />
-                <span className="text-sm leading-relaxed text-slate-700">{step}</span>
-              </li>
-            ))}
-          </ul>
+      
+      {/* Parent's Corner */}
+      <div className={"mb-8 rounded-2xl border bg-white/90 p-6 " + colors.border + " shadow-sm backdrop-blur-md transition-all duration-300 hover:shadow-md"}>
+        <h4 className="mb-5 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-800">
+          <HeartHandshake className={"h-5 w-5 " + colors.text} />
+          Parent's Corner
+        </h4>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="flex items-start gap-3">
+            <div className={"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow " + colors.gradient}>
+              <Clock className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Time Investment</p>
+              <p className="text-sm font-semibold text-slate-800">{commitment.time}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className={"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow " + colors.gradient}>
+              <Wallet className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Financial Impact</p>
+              <p className="text-sm font-semibold text-slate-800">{commitment.financial}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className={"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow " + colors.gradient}>
+              <Map className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Travel</p>
+              <p className="text-sm font-semibold text-slate-800">{commitment.travel}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className={"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow " + colors.gradient}>
+              <Compass className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Your Role</p>
+              <p className="text-sm font-semibold text-slate-800">{commitment.role}</p>
+            </div>
+          </div>
         </div>
-        <div className="space-y-3">
-          <div className={`rounded-xl border bg-white/60 p-4 ${colors.border}`}>
-            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Key Focus</p>
-            <p className={`font-semibold text-sm ${colors.text}`}>{level.keyFocus}</p>
-          </div>
-          <div className={`rounded-xl border bg-white/60 p-4 ${colors.border}`}>
-            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Age Range</p>
-            <p className="font-semibold text-sm text-slate-800">{level.ageRange}</p>
-          </div>
-          <div className={`rounded-xl border bg-white/60 p-4 ${colors.border}`}>
-            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Competitions</p>
-            <p className="text-xs text-slate-700 leading-relaxed">{level.competitions}</p>
-          </div>
-        </div>
+      </div>
+
+      <div className="mb-6 mt-6 lg:mt-auto">
+        <h4 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500"><TrendingUp className="h-3.5 w-3.5" />Key Objectives</h4>
+        <ul className="space-y-2">
+          {level.steps.map((step: string, i: number) => (
+            <li key={i} className="flex items-start gap-2.5">
+              <CheckCircle className={"mt-0.5 h-4 w-4 shrink-0 " + colors.text} />
+              <span className="text-sm leading-relaxed text-slate-700">{step}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Actionable CTAs */}
+      <div className="mt-2 flex flex-col sm:flex-row gap-3">
+        <Link 
+          href={`${getCommunityAppUrl()}/discover?tab=COMMUNITIES`}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm transition-all hover:opacity-90 bg-gradient-to-r ${colors.gradient}`}
+        >
+          <Users className="h-4 w-4" />
+          Find Local Communities
+        </Link>
+        <Link 
+          href={`${getCommunityAppUrl()}/discover?tab=COACHES`}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
+        >
+          <Trophy className="h-4 w-4" />
+          Find Coaches
+        </Link>
       </div>
     </motion.div>
   );
@@ -644,30 +412,45 @@ function DynamicLevelDetail({ level }: { level: PathwayLevel }) {
 
 // ─── Sport search section ──────────────────────────────────────────────────────
 
-function SportSearchSection() {
+function PathwayExplorerSection() {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<import("@/modules/sports/services/pathway").SportPathway[]>([]);
+  const [allSports, setAllSports] = useState<Sport[]>([]);
+  const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
+  const [suggestions, setSuggestions] = useState<Sport[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [result, setResult] = useState<{ pathway: SportPathway; source: "db" | "generated" } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
+  const [activeTab, setActiveTab] = useState<"pathway" | "tournaments" | "scholarships" | "universities" | "equipment" | "careers">("pathway");
   const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Autocomplete
-  const fetchSuggestions = useCallback(async (q: string) => {
-    if (q.trim().length < 2) { setSuggestions([]); return; }
-    const data = await pathwayApi.searchPathways(q);
-    setSuggestions(data);
-    setShowSuggestions(data.length > 0);
+  // Fetch all sports on mount
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const sports = await sportsApi.getAllSports();
+        setAllSports(sports);
+        setFuse(new Fuse(sports, { keys: ["name"], threshold: 0.3 }));
+      } catch (error) {
+        console.error("Failed to fetch sports:", error);
+      }
+    };
+    fetchSports();
   }, []);
 
+  // Filter suggestions instantly
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchSuggestions(query), 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query, fetchSuggestions]);
+    if (!fuse || query.trim().length < 1) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setActiveTab("pathway");
+      return;
+    }
+    const results = fuse.search(query).map(r => r.item);
+    setSuggestions(results.slice(0, 5));
+    setShowSuggestions(results.length > 0);
+  }, [query, fuse]);
 
   const handleSearch = async (sportName: string) => {
     const name = sportName.trim();
@@ -678,10 +461,12 @@ function SportSearchSection() {
     setResult(null);
     setErrorMsg("");
     setActiveIdx(0);
+    setActiveTab("pathway");
     try {
       const res = await pathwayApi.getPathway(name);
       if (res) {
         setResult(res);
+        setQuery(res.pathway.sportName); // Update input field to match the properly formatted DB name
         setStatus("success");
       } else {
         setErrorMsg(`"${name}" doesn't appear to be a recognised sport. Please try a different name.`);
@@ -699,13 +484,15 @@ function SportSearchSection() {
     setStatus("idle");
     setErrorMsg("");
     setSuggestions([]);
+    setShowSuggestions(false);
     inputRef.current?.focus();
   };
 
-  const selectedLevel = result?.pathway.levels[activeIdx];
+  const currentLevels = result ? result.pathway.levels : pathwayLevels;
+  const selectedLevel = currentLevels[activeIdx] || currentLevels[0];
 
   return (
-    <section className="relative overflow-hidden py-14 sm:py-20">
+    <section className="relative overflow-hidden py-16 sm:py-20 lg:py-28">
       <AmbientBlob className="h-96 w-96 bg-orange-100/40 -left-40 top-10" />
       <AmbientBlob className="h-80 w-80 bg-indigo-100/30 -right-40 top-20" />
 
@@ -719,24 +506,24 @@ function SportSearchSection() {
           className="mb-10 text-center"
         >
           <motion.div variants={fadeUp} className="mb-4 flex justify-center">
-            <SectionLabel label="AI-Powered Pathway Finder" color="orange" />
+            <SectionLabel label="For Parents" color="orange" />
           </motion.div>
           <motion.h2 variants={fadeUp} className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
-            Search Any Sport.
+            Find the Right Pathway.
             <span className="relative ml-2 inline-block">
               Instantly.
               <span aria-hidden className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-orange-400 to-orange-200" />
             </span>
           </motion.h2>
           <motion.p variants={fadeUp} className="mx-auto mt-4 max-w-lg text-lg text-slate-600">
-            Type any sport — from Cricket to Kabaddi. If we have the pathway, we'll show it instantly. If not, our AI generates one on the spot.
+            Type any sport to see what it takes for your child to excel. We break down the timeline, requirements, and steps needed.
           </motion.p>
         </motion.div>
 
         {/* Search bar */}
         <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true }} className="mx-auto max-w-2xl relative">
-          <div className="relative flex items-center gap-3 rounded-2xl border border-white/70 bg-white/90 p-2 pr-3 shadow-xl backdrop-blur-sm">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white">
+          <div className="relative flex items-center gap-2 rounded-2xl border border-white/70 bg-white/90 p-1.5 sm:p-2 sm:pr-3 shadow-xl backdrop-blur-sm sm:gap-3">
+            <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white sm:flex">
               {status === "loading" ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
@@ -750,8 +537,8 @@ function SportSearchSection() {
               onChange={(e) => { setQuery(e.target.value); setStatus("idle"); }}
               onKeyDown={(e) => { if (e.key === "Enter") { handleSearch(query); } if (e.key === "Escape") setShowSuggestions(false); }}
               onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              placeholder="e.g. Cricket, Badminton, Kabaddi, Archery…"
-              className="flex-1 bg-transparent text-base font-medium text-slate-900 placeholder-slate-400 outline-none"
+              placeholder="e.g. Cricket, Badminton..."
+              className="flex-1 bg-transparent px-3 py-2 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none sm:px-0 sm:text-base"
               aria-label="Search sport pathway"
             />
             {query && (
@@ -762,7 +549,7 @@ function SportSearchSection() {
             <button
               onClick={() => handleSearch(query)}
               disabled={status === "loading" || !query.trim()}
-              className="shrink-0 rounded-xl bg-power-orange px-5 py-2.5 text-sm font-bold text-white shadow transition-all hover:bg-orange-600 disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-power-orange px-4 py-2.5 text-xs font-bold text-white shadow transition-all hover:bg-orange-600 disabled:opacity-50 sm:px-5 sm:text-sm"
             >
               Search
             </button>
@@ -770,7 +557,7 @@ function SportSearchSection() {
 
           {/* Autocomplete dropdown */}
           <AnimatePresence>
-            {showSuggestions && (
+            {showSuggestions && status === "idle" && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -782,12 +569,12 @@ function SportSearchSection() {
                 <div className="py-1.5">
                   {suggestions.map((s) => (
                     <button
-                      key={s.sportSlug}
-                      onClick={() => handleSearch(s.sportName)}
+                      key={s.slug || s.name}
+                      onClick={() => handleSearch(s.name)}
                       className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-orange-50"
                     >
                       <Database className="h-4 w-4 shrink-0 text-power-orange" />
-                      <span className="text-sm font-medium text-slate-800">{s.sportName}</span>
+                      <span className="text-sm font-medium text-slate-800">{s.name}</span>
                     </button>
                   ))}
                 </div>
@@ -829,7 +616,7 @@ function SportSearchSection() {
               </p>
               <div className="mt-6 flex items-center justify-center gap-1.5">
                 {[0, 1, 2].map((i) => (
-                  <span key={i} className="h-2 w-2 rounded-full bg-power-orange" style={{ animation: `bounce 1.2s ${i * 0.2}s infinite` }} />
+                  <span key={i} className="h-2 w-2 rounded-full bg-power-orange" style={{ animation: "bounce 1.2s " + (i * 0.2) + "s infinite" }} />
                 ))}
               </div>
             </motion.div>
@@ -854,27 +641,25 @@ function SportSearchSection() {
           )}
         </AnimatePresence>
 
-        {/* ── Result ── */}
-        <AnimatePresence>
-          {status === "success" && result && (
+        {/* ── Explorer View (Default or Result) ── */}
+        <AnimatePresence mode="wait">
+          {(status === "idle" || status === "success") && (
             <motion.div
+              key={result ? "result" : "default"}
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={SPRING_STIFF}
-              className="mt-12"
+              className="mt-16"
             >
-              {/* Result header */}
-              <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    {result.source === "generated" ? (
+              {/* Header logic */}
+              {result ? (
+                <div className="mb-8">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    {/* We no longer show "From Database" to keep the experience unified */}
+                    {result.source === "generated" && (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-power-orange border border-orange-200">
                         <Sparkles className="h-3 w-3" /> AI Generated
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
-                        <Database className="h-3 w-3" /> From Database
                       </span>
                     )}
                     {result.pathway.category && (
@@ -890,41 +675,336 @@ function SportSearchSection() {
                     <p className="mt-2 max-w-2xl text-slate-600">{result.pathway.overview}</p>
                   )}
                 </div>
-              </div>
+              ) : (
+                <div className="mb-8 text-center sm:text-left">
+                  <h2 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
+                    The General Sports Pathway
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-slate-600">
+                    Discover the five universal stages of athletic development in India. Search for a specific sport above to see tailored insights.
+                  </p>
+                </div>
+              )}
 
-              {/* Level grid */}
-              <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-                {/* Left: level pills */}
-                <div className="space-y-2.5">
-                  {result.pathway.levels.map((lv, i) => (
-                    <DynamicLevelCard
-                      key={lv.level}
-                      level={lv}
-                      isActive={i === activeIdx}
-                      onClick={() => setActiveIdx(i)}
-                    />
+              {/* Tabs */}
+              {result && (
+                <div className="mb-10 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-2 backdrop-blur-sm sm:grid-cols-3 lg:flex lg:flex-wrap">
+                  {[
+                    { id: "pathway", label: "Pathway", icon: <Flag className="h-4 w-4" /> },
+                    { id: "tournaments", label: "Tournaments", icon: <Trophy className="h-4 w-4" /> },
+                    { id: "scholarships", label: "Scholarships", icon: <Wallet className="h-4 w-4" /> },
+                    { id: "universities", label: "Universities", icon: <Landmark className="h-4 w-4" /> },
+                    { id: "equipment", label: "Equipment", icon: <ShoppingBag className="h-4 w-4" /> },
+                    { id: "careers", label: "Careers", icon: <Briefcase className="h-4 w-4" /> },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`relative flex items-center justify-center gap-2 rounded-xl px-2 py-2.5 text-[11px] font-semibold transition-all sm:text-sm lg:flex-1 lg:px-4 ${
+                        activeTab === tab.id
+                          ? "text-power-orange shadow-sm"
+                          : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
+                      }`}
+                    >
+                      {activeTab === tab.id && (
+                        <motion.div
+                          layoutId="activeTab"
+                          className="absolute inset-0 rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50"
+                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                        />
+                      )}
+                      <span className="relative z-10 flex items-center gap-2">
+                        {tab.icon}
+                        {tab.label}
+                      </span>
+                    </button>
                   ))}
                 </div>
-                {/* Right: detail */}
-                <div className="lg:sticky lg:top-24 lg:self-start">
-                  <AnimatePresence mode="wait">
-                    {selectedLevel && (
-                      <DynamicLevelDetail key={selectedLevel.level} level={selectedLevel} />
-                    )}
-                  </AnimatePresence>
+              )}
+
+              {/* Tab Content */}
+              <AnimatePresence mode="wait">
+                {(!result || activeTab === "pathway") && (
+                  <motion.div
+                    key="pathway"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid gap-8 lg:grid-cols-[380px_1fr]"
+                  >
+                    {/* Left: level pills */}
+                    <div className="space-y-3">
+                  {/* Visual Pyramid Indicator for Desktop */}
+                  <motion.div variants={scaleIn} className="mb-6 hidden lg:block">
+                    <svg viewBox="0 0 300 160" className="w-full" aria-hidden>
+                      {[
+                        { y: 130, width: 280, fill: "rgba(16,185,129,0.12)", stroke: "rgba(16,185,129,0.4)", label: "Grassroots" },
+                        { y: 104, width: 224, fill: "rgba(59,130,246,0.12)", stroke: "rgba(59,130,246,0.4)", label: "District" },
+                        { y: 78,  width: 168, fill: "rgba(139,92,246,0.12)", stroke: "rgba(139,92,246,0.4)", label: "State" },
+                        { y: 52,  width: 112, fill: "rgba(249,115,22,0.12)", stroke: "rgba(249,115,22,0.4)", label: "National" },
+                        { y: 26,  width: 56,  fill: "rgba(244,63,94,0.12)",  stroke: "rgba(244,63,94,0.4)", label: "International"  },
+                      ].map((tier, i) => (
+                        <g 
+                          key={i} 
+                          onClick={() => setActiveIdx(i)} 
+                          className="cursor-pointer transition-opacity hover:opacity-80"
+                        >
+                          <rect
+                            x={(300 - tier.width) / 2}
+                            y={tier.y - 22}
+                            width={tier.width}
+                            height={22}
+                            rx={4}
+                            fill={i === activeIdx ? tier.fill.replace("0.12", "0.3") : tier.fill}
+                            stroke={tier.stroke}
+                            strokeWidth={i === activeIdx ? 1.5 : 1}
+                            style={{ transition: "fill 0.3s" }}
+                          />
+                          <text
+                            x="150"
+                            y={130 - i * 26 - 8}
+                            textAnchor="middle"
+                            fontSize="8"
+                            fontWeight={i === activeIdx ? "700" : "500"}
+                            fill={i === activeIdx ? "#0f172a" : "#94a3b8"}
+                            style={{ transition: "fill 0.3s" }}
+                          >
+                            {tier.label}
+                          </text>
+                        </g>
+                      ))}
+                    </svg>
+                  </motion.div>
+
+                  {currentLevels.map((lv, i) => (
+                    <div key={lv.level} className="flex flex-col gap-3">
+                      <PathwayLevelCard
+                        level={lv}
+                        isActive={i === activeIdx}
+                        onClick={() => setActiveIdx(i)}
+                      />
+                      <AnimatePresence mode="wait">
+                        {i === activeIdx && (
+                          <div className="lg:hidden">
+                            <PathwayLevelDetail level={lv} sportName={result ? result.pathway.sportName : "General"} />
+                          </div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ))}
                 </div>
-              </div>
+
+                {/* Right: detail (Desktop Only) */}
+                <div className="hidden h-full lg:flex lg:flex-col">
+                  <AnimatePresence mode="wait">
+                      {selectedLevel && (
+                        <PathwayLevelDetail key={selectedLevel.level} level={selectedLevel} sportName={result ? result.pathway.sportName : "General"} />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  </motion.div>
+                )}
+
+                {result && activeTab === "tournaments" && (
+                  <motion.div
+                    key="tournaments"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  >
+                    {result.pathway.tournaments?.length > 0 ? (
+                      result.pathway.tournaments.map((t: any, i: number) => (
+                        <div key={i} className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-orange-200 group">
+                          <div>
+                            <div className="mb-3 flex items-start justify-between gap-2">
+                              <h3 className="font-title font-bold text-slate-800">{t.name}</h3>
+                              <span className="shrink-0 rounded-full bg-orange-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-power-orange">{t.level}</span>
+                            </div>
+                            <p className="mb-4 text-sm text-slate-600 line-clamp-3">{t.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500">
+                            <Users className="h-4 w-4 text-slate-400" />
+                            {t.ageGroup}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
+                        No specific tournaments found for this sport.
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {result && activeTab === "scholarships" && (
+                  <motion.div
+                    key="scholarships"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid gap-4 sm:grid-cols-2"
+                  >
+                    {result.pathway.scholarships?.length > 0 ? (
+                      result.pathway.scholarships.map((s: any, i: number) => (
+                        <div key={i} className="flex flex-col rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white/60 to-slate-50/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-emerald-200">
+                          <div className="mb-4 flex items-center gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-inner">
+                              <Wallet className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h3 className="font-title font-bold text-slate-800 text-lg leading-tight">{s.name}</h3>
+                              <p className="text-xs font-semibold text-emerald-600 mt-1">{s.provider}</p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-600 leading-relaxed mb-4 flex-1">{s.description}</p>
+                          <div className="mt-auto border-t border-slate-100 pt-4">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Eligibility</span>
+                            </div>
+                            <p className="text-sm font-medium text-slate-700 leading-relaxed">{s.eligibility}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
+                        No specific scholarships found for this sport.
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {result && activeTab === "universities" && (
+                  <motion.div
+                    key="universities"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  >
+                    {result.pathway.universities?.length > 0 ? (
+                      result.pathway.universities.map((u: any, i: number) => (
+                        <div key={i} className="flex flex-col rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-indigo-200">
+                          <div className="mb-4 flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                              <Landmark className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-title font-bold leading-tight text-slate-800">{u.name}</h3>
+                              <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-1"><MapPin className="h-3 w-3" /> {u.location}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-3 flex-1">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Admission Criteria</p>
+                              <p className="text-sm text-slate-700">{u.admissionCriteria}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sports Quota Details</p>
+                              <p className="text-sm text-slate-700">{u.sportsQuotaDetails}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
+                        No specific universities found for this sport.
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {result && activeTab === "equipment" && (
+                  <motion.div
+                    key="equipment"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  >
+                    {result.pathway.equipment?.length > 0 ? (
+                      result.pathway.equipment.map((e: any, i: number) => (
+                        <div key={i} className="flex flex-col rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-power-orange/30">
+                          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                            <span className="inline-block rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 border border-slate-200 text-left leading-snug max-w-full">
+                              {e.level}
+                            </span>
+                            <div className="flex shrink-0 items-center gap-1.5 text-power-orange bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100">
+                              <Wallet className="h-3.5 w-3.5 shrink-0" />
+                              <span className="text-xs font-bold whitespace-nowrap">{e.estimatedCost}</span>
+                            </div>
+                          </div>
+                          <h4 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">Essential Gear</h4>
+                          <ul className="space-y-2.5 flex-1 mt-1">
+                            {e.items.map((item: string, j: number) => (
+                              <li key={j} className="flex items-start gap-2.5">
+                                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
+                                <span className="text-sm font-medium text-slate-700 leading-relaxed">{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
+                        No equipment data found for this sport.
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {result && activeTab === "careers" && (
+                  <motion.div
+                    key="careers"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid gap-4 sm:grid-cols-2"
+                  >
+                    {result.pathway.careers?.length > 0 ? (
+                      result.pathway.careers.map((c: any, i: number) => (
+                        <div key={i} className="flex flex-col rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white/60 to-slate-50/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-blue-200 group">
+                          <div className="mb-4 flex items-center gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-inner">
+                              <Briefcase className="h-6 w-6" />
+                            </div>
+                            <div>
+                              <h3 className="font-title font-bold text-slate-800 text-lg leading-tight">{c.role}</h3>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-600 leading-relaxed mb-4 flex-1">{c.description}</p>
+                          <div className="mt-auto border-t border-slate-100 pt-4">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-500">Demand</span>
+                            </div>
+                            <p className="text-sm font-medium text-slate-700 leading-relaxed">{c.demand}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
+                        No alternative career paths found for this sport.
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      <style>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-8px); }
-        }
-      `}</style>
+      <style>
+</style>
     </section>
   );
 }
@@ -968,13 +1048,13 @@ export default function PathwaysPage() {
       {/* ── Hero ── */}
       <Hero
         variant="page"
-        title="Sport Pathways in India"
-        subtitle="Your Athletic Journey"
-        description="From your first kick in the neighbourhood park to standing on the Olympic podium — understand every level of India's sports development pyramid and chart your own path to glory."
+        title="Chart Your Child's Journey to Glory"
+        subtitle="The Ultimate Parent's Guide"
+        description="From their first kick in the neighbourhood park to standing on the Olympic podium. Discover what it takes in time, cost, and commitment to support your child's sporting dreams."
       />
 
       {/* ── AI Search Section ── */}
-      <SportSearchSection />
+      <PathwayExplorerSection />
 
       {/* ── Stats Banner ── */}
       <section className="relative py-12 sm:py-16">
@@ -1008,189 +1088,6 @@ export default function PathwaysPage() {
                 </p>
                 <p className="mt-1 text-xs text-slate-500">{stat.label}</p>
               </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Pathway Levels ── */}
-      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-28">
-        <AmbientBlob className="h-96 w-96 bg-orange-100/40 -left-48 top-24" />
-        <AmbientBlob className="h-80 w-80 bg-violet-100/30 -right-40 top-1/3" />
-        <AmbientBlob className="h-72 w-72 bg-blue-100/30 -left-32 bottom-1/4" />
-
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-14 text-center"
-          >
-            <motion.div variants={fadeUp} className="mb-4 flex justify-center">
-              <SectionLabel label="The Development Pyramid" color="orange" />
-            </motion.div>
-            <motion.h2
-              variants={fadeUp}
-              className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
-              Five Levels.{" "}
-              <span className="relative inline-block">
-                One Dream.
-                <span
-                  aria-hidden
-                  className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-orange-400 to-orange-200"
-                />
-              </span>
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="mx-auto mt-4 max-w-xl text-lg text-slate-600"
-            >
-              India's sports ecosystem is structured across five tiers — each
-              with its own competitions, coaching systems, and selection
-              processes. Select a level to explore in detail.
-            </motion.p>
-          </motion.div>
-
-          {/* Pyramid visual + interactive levels */}
-          <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
-            {/* Left: Level selector */}
-            <motion.div
-              variants={orchestrator}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-60px" }}
-              className="space-y-3"
-            >
-              {/* Pyramid SVG indicator */}
-              <motion.div
-                variants={scaleIn}
-                className="mb-6 hidden lg:block"
-              >
-                <svg
-                  viewBox="0 0 300 160"
-                  className="w-full"
-                  aria-hidden
-                >
-                  {/* Pyramid tiers */}
-                  {[
-                    { y: 130, width: 280, fill: "rgba(16,185,129,0.12)", stroke: "rgba(16,185,129,0.4)" },
-                    { y: 104, width: 224, fill: "rgba(59,130,246,0.12)", stroke: "rgba(59,130,246,0.4)" },
-                    { y: 78,  width: 168, fill: "rgba(139,92,246,0.12)", stroke: "rgba(139,92,246,0.4)" },
-                    { y: 52,  width: 112, fill: "rgba(249,115,22,0.12)", stroke: "rgba(249,115,22,0.4)" },
-                    { y: 26,  width: 56,  fill: "rgba(244,63,94,0.12)",  stroke: "rgba(244,63,94,0.4)"  },
-                  ].map((tier, i) => (
-                    <rect
-                      key={i}
-                      x={(300 - tier.width) / 2}
-                      y={tier.y - 22}
-                      width={tier.width}
-                      height={22}
-                      rx={4}
-                      fill={i === activeLevel ? tier.fill.replace("0.12", "0.3") : tier.fill}
-                      stroke={tier.stroke}
-                      strokeWidth={i === activeLevel ? 1.5 : 1}
-                      style={{ transition: "fill 0.3s" }}
-                    />
-                  ))}
-                  {/* Labels */}
-                  {["Grassroots", "District", "State", "National", "International"].map((label, i) => (
-                    <text
-                      key={i}
-                      x="150"
-                      y={130 - i * 26 - 8}
-                      textAnchor="middle"
-                      fontSize="8"
-                      fontWeight={i === activeLevel ? "700" : "500"}
-                      fill={i === activeLevel ? "#0f172a" : "#94a3b8"}
-                      style={{ transition: "fill 0.3s" }}
-                    >
-                      {label}
-                    </text>
-                  ))}
-                </svg>
-              </motion.div>
-
-              {pathwayLevels.map((level, i) => (
-                <LevelCard
-                  key={level.id}
-                  level={level}
-                  isActive={i === activeLevel}
-                  onClick={() => setActiveLevel(i)}
-                />
-              ))}
-            </motion.div>
-
-            {/* Right: Detail panel */}
-            <div className="lg:sticky lg:top-24 lg:self-start">
-              <AnimatePresence mode="wait">
-                <LevelDetail key={selected.id} level={selected} />
-              </AnimatePresence>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Sports Pathways ── */}
-      <section className="relative overflow-hidden bg-slate-50 py-16 sm:py-20 lg:py-28">
-        {/* Dot grid */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, #0f172a 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
-        <AmbientBlob className="h-96 w-96 bg-orange-100/50 -right-32 top-20" />
-        <AmbientBlob className="h-72 w-72 bg-sky-100/40 -left-24 bottom-16" />
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-14 text-center"
-          >
-            <motion.div variants={fadeUp} className="mb-4 flex justify-center">
-              <SectionLabel label="Sport-Specific Pathways" color="blue" />
-            </motion.div>
-            <motion.h2
-              variants={fadeUp}
-              className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
-              Choose Your Sport.{" "}
-              <span className="relative inline-block">
-                Own Your Path.
-                <span
-                  aria-hidden
-                  className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-blue-400 to-indigo-300"
-                />
-              </span>
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              className="mx-auto mt-4 max-w-xl text-lg text-slate-600"
-            >
-              Each sport has its own governing body, ranking system, and
-              competitive structure. Explore the pathway for your discipline
-              below.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            {sports.map((sport) => (
-              <SportCard key={sport.id} sport={sport} />
             ))}
           </motion.div>
         </div>
@@ -1292,14 +1189,14 @@ export default function PathwaysPage() {
       {/* ── CTA ── */}
       <CTA
         variant="gradient"
-        title="Ready to Climb the Pathway?"
-        description="Find the right coach, book the right venue, and get an AI-powered roadmap that shows exactly how your child can move from grassroots to glory."
+        title="Ready to Support Their Dream?"
+        description="Find the right coach, book the right venue, and get an AI-powered roadmap that shows exactly how you can help your child move from grassroots to glory."
         primaryCTA={{
-          label: "Get Your Sports Roadmap",
-          href: "/register?role=PLAYER",
+          label: "Get Your Parent's Roadmap",
+          href: "/register?role=PARENT",
         }}
         secondaryCTA={{
-          label: "Explore the Community",
+          label: "Join Parent Community",
           href: communityUrl,
         }}
       />

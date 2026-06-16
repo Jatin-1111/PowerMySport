@@ -2,12 +2,7 @@
 
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  Variants,
-} from "framer-motion";
+import { motion, useScroll, useTransform, Variants } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useRef } from "react";
@@ -71,8 +66,12 @@ function GeometricAccent({
     >
       <polygon
         points="0,60 60,0 200,0 200,140 140,200 0,200"
-        fill={color === "orange" ? "rgba(233,115,22,0.07)" : "rgba(34,197,94,0.07)"}
-        stroke={color === "orange" ? "rgba(233,115,22,0.15)" : "rgba(34,197,94,0.15)"}
+        fill={
+          color === "orange" ? "rgba(233,115,22,0.07)" : "rgba(34,197,94,0.07)"
+        }
+        stroke={
+          color === "orange" ? "rgba(233,115,22,0.15)" : "rgba(34,197,94,0.15)"
+        }
         strokeWidth="1"
       />
     </svg>
@@ -81,9 +80,19 @@ function GeometricAccent({
 
 // ─── HOME VARIANT ─────────────────────────────────────────────────────────────
 
-function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stats }: HeroProps) {
+function HomeHero({
+  title,
+  subtitle,
+  description,
+  primaryCTA,
+  secondaryCTA,
+  stats,
+}: HeroProps) {
   const containerRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] });
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
   const imageY = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
 
   return (
@@ -183,7 +192,9 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
                     {stat.value}
                   </p>
                   {stat.helper && (
-                    <p className="mt-0.5 text-xs text-slate-500">{stat.helper}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {stat.helper}
+                    </p>
                   )}
                 </div>
               ))}
@@ -215,12 +226,13 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
             className="relative h-[560px] w-full overflow-hidden rounded-[2rem]"
             style={{
               y: imageY,
-              clipPath: "polygon(0 0, 92% 0, 100% 8%, 100% 100%, 8% 100%, 0 92%)",
+              clipPath:
+                "polygon(0 0, 92% 0, 100% 8%, 100% 100%, 8% 100%, 0 92%)",
             }}
           >
             <Image
-              src="https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1400&q=80"
-              alt="Sports venue hosting a local match under floodlights"
+              src="https://images.unsplash.com/photo-1607962837359-5e7e89f86776?auto=format&fit=crop&w=1400&q=80"
+              alt="Parent running alongside their child during outdoor sports training"
               fill
               priority
               sizes="(max-width: 1280px) 50vw, 680px"
@@ -234,12 +246,27 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
           <motion.div
             initial={{ opacity: 0, y: 16, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.6, type: "spring", stiffness: 260, damping: 20 }}
+            transition={{
+              delay: 0.6,
+              type: "spring",
+              stiffness: 260,
+              damping: 20,
+            }}
             className="absolute -bottom-4 -left-6 hidden items-center gap-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-xl backdrop-blur-md sm:flex"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-power-orange text-white">
-              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth={2}>
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                className="h-5 w-5"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
             <div>
@@ -252,14 +279,21 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.75, type: "spring", stiffness: 300, damping: 18 }}
+            transition={{
+              delay: 0.75,
+              type: "spring",
+              stiffness: 300,
+              damping: 18,
+            }}
             className="absolute right-4 top-6 hidden items-center gap-1.5 rounded-full border border-emerald-200 bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-sm sm:flex"
           >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            <span className="text-xs font-semibold text-emerald-700">Live availability</span>
+            <span className="text-xs font-semibold text-emerald-700">
+              Live availability
+            </span>
           </motion.div>
         </motion.div>
       </div>
@@ -272,7 +306,13 @@ function HomeHero({ title, subtitle, description, primaryCTA, secondaryCTA, stat
 
 // ─── PAGE VARIANT ─────────────────────────────────────────────────────────────
 
-function PageHero({ title, subtitle, description, primaryCTA, secondaryCTA }: HeroProps) {
+function PageHero({
+  title,
+  subtitle,
+  description,
+  primaryCTA,
+  secondaryCTA,
+}: HeroProps) {
   return (
     <section className="relative overflow-hidden py-20 sm:py-24">
       <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
@@ -286,7 +326,10 @@ function PageHero({ title, subtitle, description, primaryCTA, secondaryCTA }: He
           className="text-center"
         >
           {subtitle && (
-            <motion.div variants={itemVariants} className="mb-5 flex justify-center">
+            <motion.div
+              variants={itemVariants}
+              className="mb-5 flex justify-center"
+            >
               <SectionLabel label={subtitle} color="slate" />
             </motion.div>
           )}
@@ -318,7 +361,11 @@ function PageHero({ title, subtitle, description, primaryCTA, secondaryCTA }: He
               )}
               {secondaryCTA && (
                 <Link href={secondaryCTA.href}>
-                  <Button variant="outline" size="lg" className="rounded-xl bg-white">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="rounded-xl bg-white"
+                  >
                     {secondaryCTA.label}
                   </Button>
                 </Link>
@@ -333,7 +380,15 @@ function PageHero({ title, subtitle, description, primaryCTA, secondaryCTA }: He
 
 // ─── SPLIT VARIANT ────────────────────────────────────────────────────────────
 
-function SplitHero({ title, subtitle, description, primaryCTA, secondaryCTA, imageSrc, imageAlt }: HeroProps) {
+function SplitHero({
+  title,
+  subtitle,
+  description,
+  primaryCTA,
+  secondaryCTA,
+  imageSrc,
+  imageAlt,
+}: HeroProps) {
   return (
     <section className="relative overflow-hidden bg-ghost-white py-20 sm:py-24 lg:py-28">
       <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-sky-200/20 blur-[100px]" />
@@ -357,11 +412,17 @@ function SplitHero({ title, subtitle, description, primaryCTA, secondaryCTA, ima
             {title}
           </motion.h1>
           {description && (
-            <motion.p variants={itemVariants} className="mb-8 text-lg leading-relaxed text-slate-600">
+            <motion.p
+              variants={itemVariants}
+              className="mb-8 text-lg leading-relaxed text-slate-600"
+            >
               {description}
             </motion.p>
           )}
-          <motion.div variants={itemVariants} className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+          <motion.div
+            variants={itemVariants}
+            className="flex flex-col gap-3 sm:flex-row sm:gap-4"
+          >
             {primaryCTA && (
               <Link href={primaryCTA.href}>
                 <Button variant="primary" size="lg" className="rounded-xl">
@@ -371,7 +432,11 @@ function SplitHero({ title, subtitle, description, primaryCTA, secondaryCTA, ima
             )}
             {secondaryCTA && (
               <Link href={secondaryCTA.href}>
-                <Button variant="outline" size="lg" className="rounded-xl bg-white">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-xl bg-white"
+                >
                   {secondaryCTA.label}
                 </Button>
               </Link>
@@ -391,7 +456,10 @@ function SplitHero({ title, subtitle, description, primaryCTA, secondaryCTA, ima
             <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-orange-400/15 via-transparent to-turf-green/10 blur-2xl" />
             <div
               className="relative h-full w-full overflow-hidden rounded-3xl"
-              style={{ clipPath: "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)" }}
+              style={{
+                clipPath:
+                  "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
+              }}
             >
               <Image
                 src={imageSrc}
