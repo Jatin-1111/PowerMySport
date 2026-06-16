@@ -446,6 +446,7 @@ venueSchema.index({ location: "2dsphere" });
 venueSchema.index({ ownerId: 1, createdAt: -1 });
 venueSchema.index({ ownerEmail: 1, approvalStatus: 1 });
 venueSchema.index({ approvalStatus: 1, createdAt: -1 });
+venueSchema.index({ sports: 1, approvalStatus: 1 });
 
 /**
  * Instance method to regenerate presigned URLs for documents

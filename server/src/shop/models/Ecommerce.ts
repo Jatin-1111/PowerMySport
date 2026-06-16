@@ -194,6 +194,8 @@ productSchema.pre("save", function () {
   this.totalStock = this.variants.reduce((sum, v) => sum + v.stock, 0);
 });
 
+productSchema.index({ isActive: 1, category: 1 });
+
 export const Product = mongoose.model<ProductDocument>(
   "Product",
   productSchema,

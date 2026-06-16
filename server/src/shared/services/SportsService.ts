@@ -24,7 +24,7 @@ export class SportsService {
    */
   async getAllSports(): Promise<SportDocument[]> {
     try {
-      return await Sport.find({ isVerified: true }).sort({ name: 1 });
+      return await Sport.find({ isVerified: true }).sort({ name: 1 }).lean();
     } catch (error) {
       console.error("Error fetching sports:", error);
       throw new Error("Failed to fetch sports");
@@ -42,7 +42,8 @@ export class SportsService {
         $or: [{ name: regex }, { slug: regex }],
       })
         .sort({ name: 1 })
-        .limit(20);
+        .limit(20)
+        .lean();
     } catch (error) {
       console.error("Error searching sports:", error);
       throw new Error("Failed to search sports");
@@ -152,7 +153,7 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
     try {
       return await Sport.findOne({
         slug: name.toLowerCase().replace(/\s+/g, "-"),
-      });
+      }).lean();
     } catch (error) {
       console.error("Error getting sport:", error);
       return null;

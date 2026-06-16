@@ -45,10 +45,12 @@ import {
 } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
 
+import { cacheResponse } from "../../middleware/cacheMiddleware";
+
 const router = Router();
 
 // Discovery endpoint (public) - returns coaches only
-router.get("/discover", discoverCoachesNearby);
+router.get("/discover", cacheResponse(60), discoverCoachesNearby);
 
 // Create coach profile (requires authentication and COACH role)
 router.post("/", authMiddleware, createNewCoach);

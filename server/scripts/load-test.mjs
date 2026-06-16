@@ -169,15 +169,15 @@ const stats = {
 };
 
 const envDetails = {
-  Environment: "powermysport-api-docker",
-  Instance: "t3.small  (2 vCPU, 2 GB RAM)",
-  AutoScaling: "Min 1 → Max 4 instances",
-  LoadBalancer: "Application LB (ALB) — internet-facing",
-  Region: "ap-south-1 (Mumbai)",
-  Health: "Green ✓",
-  Status: "Ready",
-  Platform: "Docker",
-  CNAME: "api.powermysport.com"
+  Environment: "Unknown",
+  Instance: "Unknown",
+  AutoScaling: "Unknown",
+  LoadBalancer: "Unknown",
+  Region: "Unknown",
+  Health: "Unknown",
+  Status: "Unknown",
+  Platform: "Unknown",
+  CNAME: "Unknown",
 };
 
 let activeRequests = 0;
@@ -444,29 +444,53 @@ async function main() {
   console.log(`  ${C.dim}Target : ${TARGET_URL}${C.reset}`);
   console.log(`  ${C.dim}Config : ${RPS} RPS × ${DURATION_SEC}s  |  concurrency: ${CONCURRENCY}  |  scenario: ${SCENARIO}${C.reset}\n`);
 
-  // Fetch EB Status
+  // Fetch EB Status and Config dynamically
   console.log(`${C.dim}  Fetching environment status from AWS Elastic Beanstalk...${C.reset}`);
   try {
-    const { stdout } = await execAsync("eb status", { cwd: ".." });
-    const extract = (key) => {
-      const match = stdout.match(new RegExp(`${key}: (.+)`));
+    const { stdout: statusOut } = await execAsync("eb status", { cwd: ".." });
+    const extractStatus = (key) => {
+      const match = statusOut.match(new RegExp(`${key}: (.+)`));
       return match ? match[1].trim() : null;
     };
     
-    const envNameMatch = stdout.match(/Environment details for: (.+)/);
+    const envNameMatch = statusOut.match(/Environment details for: (.+)/);
     if (envNameMatch) envDetails.Environment = envNameMatch[1].trim();
     
-    if (extract("Region")) envDetails.Region = extract("Region");
-    if (extract("Health")) envDetails.Health = extract("Health") + (extract("Health") === "Green" ? " ✓" : "");
-    if (extract("Status")) envDetails.Status = extract("Status");
-    if (extract("Platform")) {
-      const p = extract("Platform");
+    if (extractStatus("Region")) envDetails.Region = extractStatus("Region");
+    if (extractStatus("Health")) envDetails.Health = extractStatus("Health") + (extractStatus("Health") === "Green" ? " ✓" : "");
+    if (extractStatus("Status")) envDetails.Status = extractStatus("Status");
+    if (extractStatus("Platform")) {
+      const p = extractStatus("Platform");
       envDetails.Platform = p.includes('::platform/') ? p.split('::platform/')[1] : p;
     }
-    if (extract("CNAME")) envDetails.CNAME = extract("CNAME");
+    if (extractStatus("CNAME")) envDetails.CNAME = extractStatus("CNAME");
+
+    // Fetch deep config details
+    try {
+      const { stdout: configOut } = await execAsync(`eb config ${envDetails.Environment} --display`, { cwd: ".." });
+      
+      const extractConfig = (key) => {
+        const match = configOut.match(new RegExp(`${key}:\\s*(.+)`));
+        return match ? match[1].trim().replace(/^['"]|['"]$/g, "") : null;
+      };
+
+      const instanceType = extractConfig("InstanceType");
+      if (instanceType) envDetails.Instance = instanceType;
+
+      const minSize = extractConfig("MinSize");
+      const maxSize = extractConfig("MaxSize");
+      if (minSize && maxSize) envDetails.AutoScaling = `Min ${minSize} → Max ${maxSize} instances`;
+
+      const lbType = extractConfig("LoadBalancerType");
+      if (lbType) envDetails.LoadBalancer = lbType === "application" ? "Application LB (ALB)" : lbType;
+
+    } catch (configErr) {
+      // Ignore config error, status info is already fetched
+    }
+
     console.log(`${C.green}  ✓ Environment: ${envDetails.Environment} (${envDetails.Health})${C.reset}\n`);
   } catch (err) {
-    console.log(`${C.yellow}  ⚠️  Could not fetch live eb status. Using default info.${C.reset}\n`);
+    console.log(`${C.yellow}  ⚠️  Could not fetch live eb status. Using Unknown values.${C.reset}\n`);
   }
 
   // Validate URL first

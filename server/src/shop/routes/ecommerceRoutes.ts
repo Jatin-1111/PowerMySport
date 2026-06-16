@@ -6,6 +6,7 @@ import {
 import { WebhookController } from "../../shared/controllers/WebhookController";
 import { joinWaitlist } from "../controllers/WaitlistController";
 import { authMiddleware, requirePermission } from "../../middleware/auth";
+import { cacheResponse } from "../../middleware/cacheMiddleware";
 
 const router = Router();
 const controller = new EcommerceController();
@@ -18,7 +19,7 @@ const webhookController = new WebhookController();
  * GET /api/v1/products
  * List products
  */
-router.get("/products", (req: Request, res: Response) =>
+router.get("/products", cacheResponse(300), (req: Request, res: Response) =>
   controller.listProducts(req, res),
 );
 
@@ -32,7 +33,7 @@ router.post("/waitlist", joinWaitlist);
  * GET /api/v1/products/:id
  * Get product details
  */
-router.get("/products/:id", (req: Request, res: Response) =>
+router.get("/products/:id", cacheResponse(300), (req: Request, res: Response) =>
   controller.getProduct(req, res),
 );
 

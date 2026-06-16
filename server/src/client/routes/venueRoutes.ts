@@ -10,6 +10,7 @@ import {
   updateVenueDetails,
 } from "../controllers/venueController";
 import { authMiddleware, venueListerMiddleware } from "../../middleware/auth";
+import { cacheResponse } from "../../middleware/cacheMiddleware";
 import { venueImageUploadSchema, venueSchema } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
 
@@ -24,13 +25,13 @@ router.post(
 );
 
 // Get all venues
-router.get("/", searchVenues);
+router.get("/", cacheResponse(60), searchVenues);
 
 // Discovery endpoint (public) - returns venues AND coaches
-router.get("/discover", discoverNearby);
+router.get("/discover", cacheResponse(60), discoverNearby);
 
 // Legacy search endpoint (public)
-router.get("/search", searchVenues);
+router.get("/search", cacheResponse(60), searchVenues);
 
 router.get("/my-venues", authMiddleware, venueListerMiddleware, getMyVenues);
 router.post(
