@@ -1048,9 +1048,9 @@ export default function PathwaysPage() {
       {/* ── Hero ── */}
       <Hero
         variant="page"
-        title="Chart Your Child's Journey to Glory"
-        subtitle="The Ultimate Parent's Guide"
-        description="From their first kick in the neighbourhood park to standing on the Olympic podium. Discover what it takes in time, cost, and commitment to support your child's sporting dreams."
+        title="Plan Your Child's Sports Journey"
+        subtitle="A Simple Guide for Parents"
+        description="From playing in the local park to reaching the highest level in sports. Find out exactly how much time, money, and effort it takes to support your child's dream."
       />
 
       {/* ── AI Search Section ── */}
@@ -1107,20 +1107,20 @@ export default function PathwaysPage() {
             className="mb-14 text-center"
           >
             <motion.div variants={fadeUp} className="mb-4 flex justify-center">
-              <SectionLabel label="Your Partner at Every Level" color="green" />
+              <SectionLabel label="We Support You at Every Step" color="green" />
             </motion.div>
             <motion.h2
               variants={fadeUp}
               className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
-              PowerMySport Accelerates Your Pathway
+              PowerMySport Helps You Grow Faster
             </motion.h2>
             <motion.p
               variants={fadeUp}
               className="mx-auto mt-4 max-w-xl text-lg text-slate-600"
             >
-              No matter which level you are at today, we give you the tools,
-              coaches, and venues to reach the next one faster.
+              No matter where you start, we provide the tools,
+              coaches, and places you need to reach the next level.
             </motion.p>
           </motion.div>
 
@@ -1134,25 +1134,25 @@ export default function PathwaysPage() {
             {[
               {
                 icon: <Dumbbell className="h-7 w-7" />,
-                title: "Elite Coaching Network",
+                title: "Expert Coaches",
                 description:
-                  "Connect with verified coaches who have competed at district, state, and national levels. Learn from those who have walked the same path.",
+                  "Connect with verified coaches who have played at top levels. Learn from people who know exactly what it takes to succeed.",
                 color: "bg-orange-100 text-power-orange",
                 accent: "text-power-orange",
               },
               {
                 icon: <MapPin className="h-7 w-7" />,
-                title: "Premium Training Venues",
+                title: "Top Training Grounds",
                 description:
-                  "Book accredited training venues used by state and national athletes. Get access to the same facilities the pros use, on demand.",
+                  "Book the best training grounds used by top athletes. Get access to the same great facilities the pros use, whenever you need them.",
                 color: "bg-indigo-100 text-indigo-600",
                 accent: "text-indigo-600",
               },
               {
                 icon: <Award className="h-7 w-7" />,
-                title: "AI Sports Roadmap",
+                title: "Smart AI Planning",
                 description:
-                  "Our AI generates a personalised roadmap based on your child's age, sport preference, and current level — showing clear next steps up the pyramid.",
+                  "Our AI creates a custom plan based on your child's age, sport, and current skill level — showing you exactly what to do next.",
                 color: "bg-emerald-100 text-emerald-600",
                 accent: "text-emerald-600",
               },
@@ -1190,9 +1190,9 @@ export default function PathwaysPage() {
       <CTA
         variant="gradient"
         title="Ready to Support Their Dream?"
-        description="Find the right coach, book the right venue, and get an AI-powered roadmap that shows exactly how you can help your child move from grassroots to glory."
+        description="Find the right coach, book the right ground, and get a smart plan that shows exactly how to help your child grow in sports."
         primaryCTA={{
-          label: "Get Your Parent's Roadmap",
+          label: "Get Your Parent Guide",
           href: "/register?role=PARENT",
         }}
         secondaryCTA={{

@@ -231,8 +231,8 @@ function HomeHero({
             }}
           >
             <Image
-              src="https://images.unsplash.com/photo-1607962837359-5e7e89f86776?auto=format&fit=crop&w=1400&q=80"
-              alt="Parent running alongside their child during outdoor sports training"
+              src="https://images.unsplash.com/photo-1763639700393-40dce26b6eb4?auto=format&fit=crop&w=1400&q=80"
+              alt="Two women help a toddler walk across yellow hurdles"
               fill
               priority
               sizes="(max-width: 1280px) 50vw, 680px"
