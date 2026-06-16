@@ -23,6 +23,7 @@ export interface Feature {
   title: string;
   description: string;
   icon?: React.ReactNode;
+  label?: string;
 }
 
 export interface FeaturesProps {
@@ -113,6 +114,11 @@ function FeatureCard({
       )}
 
       {/* Content */}
+      {feature.label && (
+        <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+          {feature.label}
+        </p>
+      )}
       <h3 className="mb-2.5 text-lg font-bold text-slate-900">{feature.title}</h3>
       <p className="text-sm leading-relaxed text-slate-600">{feature.description}</p>
 

@@ -14,6 +14,7 @@ import {
   MapPin,
   Menu,
   Settings,
+  ShoppingBag,
   User,
   X,
 } from "lucide-react";
@@ -28,7 +29,7 @@ export interface NavProps {
   sticky?: boolean;
 }
 
-const bookingItems = [
+const servicesItems = [
   {
     href: "/venues",
     label: "Venues",
@@ -47,6 +48,12 @@ const bookingItems = [
     description: "Join top sports academies",
     icon: Building2,
   },
+  {
+    href: "/shop",
+    label: "Shop",
+    description: "Sports gear and equipment",
+    icon: ShoppingBag,
+  },
 ];
 
 /**
@@ -58,11 +65,11 @@ export const Navigation: React.FC<NavProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [bookingDropdownOpen, setBookingDropdownOpen] = useState(false);
-  const [mobileBookingOpen, setMobileBookingOpen] = useState(false);
+  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const bookingDropdownRef = useRef<HTMLDivElement>(null);
+  const servicesDropdownRef = useRef<HTMLDivElement>(null);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -78,10 +85,10 @@ export const Navigation: React.FC<NavProps> = ({
         setUserDropdownOpen(false);
       }
       if (
-        bookingDropdownRef.current &&
-        !bookingDropdownRef.current.contains(event.target as Node)
+        servicesDropdownRef.current &&
+        !servicesDropdownRef.current.contains(event.target as Node)
       ) {
-        setBookingDropdownOpen(false);
+        setServicesDropdownOpen(false);
       }
     };
 
@@ -89,17 +96,18 @@ export const Navigation: React.FC<NavProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const navigationLinks = [
-    { href: "/", label: "Home" },
-    { href: "/services", label: "Services" },
+  const navigationLinksLeft = [
+    { href: "/pathways", label: "Pathways" },
+    { href: "/community", label: "Community" },
+  ];
+
+  const navigationLinksRight = [
     { href: "/how-it-works", label: "How It Works" },
     { href: "/contact", label: "Contact" },
-    { href: "/community", label: "Community" },
-    { href: "/shop", label: "Shop" },
   ];
 
   const isActive = (path: string) => pathname === path;
-  const isBookingActive = bookingItems.some((item) => pathname === item.href);
+  const isServicesActive = servicesItems.some((item) => pathname === item.href);
 
   const handleLogout = async () => {
     try {
@@ -153,20 +161,35 @@ export const Navigation: React.FC<NavProps> = ({
               Home
             </Link>
 
-            {/* Booking Dropdown */}
-            <div className="relative" ref={bookingDropdownRef}>
+            {/* Left Nav Links */}
+            {navigationLinksLeft.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "shop-nav-link relative font-medium",
+                  isActive(link.href) &&
+                    "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            {/* Services Dropdown */}
+            <div className="relative" ref={servicesDropdownRef}>
               <button
-                onClick={() => setBookingDropdownOpen(!bookingDropdownOpen)}
-                onMouseEnter={() => setBookingDropdownOpen(true)}
+                onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
+                onMouseEnter={() => setServicesDropdownOpen(true)}
                 className={cn(
                   "shop-nav-link relative font-medium flex items-center gap-1 focus:outline-none",
-                  isBookingActive &&
+                  isServicesActive &&
                     "text-power-orange after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-power-orange/70",
                 )}
               >
-                Booking
+                Services
                 <motion.span
-                  animate={{ rotate: bookingDropdownOpen ? 180 : 0 }}
+                  animate={{ rotate: servicesDropdownOpen ? 180 : 0 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
                   className="inline-flex"
                 >
@@ -175,20 +198,20 @@ export const Navigation: React.FC<NavProps> = ({
               </button>
 
               <AnimatePresence>
-                {bookingDropdownOpen && (
+                {servicesDropdownOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: -8, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.97 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
-                    onMouseLeave={() => setBookingDropdownOpen(false)}
+                    onMouseLeave={() => setServicesDropdownOpen(false)}
                     className="absolute left-1/2 -translate-x-1/2 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden"
                   >
                     {/* subtle top accent */}
                     <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
 
                     <div className="py-2">
-                      {bookingItems.map((item, index) => {
+                      {servicesItems.map((item, index) => {
                         const Icon = item.icon;
                         return (
                           <motion.div
@@ -203,7 +226,7 @@ export const Navigation: React.FC<NavProps> = ({
                           >
                             <Link
                               href={item.href}
-                              onClick={() => setBookingDropdownOpen(false)}
+                              onClick={() => setServicesDropdownOpen(false)}
                               className={cn(
                                 "flex items-center gap-3 px-4 py-3 group transition-colors hover:bg-orange-50",
                                 pathname === item.href && "bg-orange-50",
@@ -244,8 +267,8 @@ export const Navigation: React.FC<NavProps> = ({
               </AnimatePresence>
             </div>
 
-            {/* Remaining nav links */}
-            {navigationLinks.slice(1).map((link) => (
+            {/* Right Nav Links */}
+            {navigationLinksRight.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -383,20 +406,37 @@ export const Navigation: React.FC<NavProps> = ({
                 Home
               </Link>
 
-              {/* Mobile Booking Accordion */}
+              {/* Left Nav Links */}
+              {navigationLinksLeft.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
+                    isActive(link.href)
+                      ? "text-power-orange bg-orange-50"
+                      : "text-slate-700",
+                  )}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              {/* Mobile Services Accordion */}
               <div>
                 <button
-                  onClick={() => setMobileBookingOpen(!mobileBookingOpen)}
+                  onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors",
-                    isBookingActive
+                    isServicesActive
                       ? "text-power-orange bg-orange-50"
                       : "text-slate-700 hover:bg-indigo-50",
                   )}
                 >
-                  Booking
+                  Services
                   <motion.span
-                    animate={{ rotate: mobileBookingOpen ? 180 : 0 }}
+                    animate={{ rotate: mobileServicesOpen ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                     className="inline-flex"
                   >
@@ -405,7 +445,7 @@ export const Navigation: React.FC<NavProps> = ({
                 </button>
 
                 <AnimatePresence>
-                  {mobileBookingOpen && (
+                  {mobileServicesOpen && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
@@ -414,14 +454,14 @@ export const Navigation: React.FC<NavProps> = ({
                       className="overflow-hidden"
                     >
                       <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
-                        {bookingItems.map((item) => {
+                        {servicesItems.map((item) => {
                           const Icon = item.icon;
                           return (
                             <Link
                               key={item.href}
                               href={item.href}
                               onClick={() => {
-                                setMobileBookingOpen(false);
+                                setMobileServicesOpen(false);
                                 setMobileMenuOpen(false);
                               }}
                               className={cn(
@@ -442,8 +482,8 @@ export const Navigation: React.FC<NavProps> = ({
                 </AnimatePresence>
               </div>
 
-              {/* Remaining links */}
-              {navigationLinks.slice(1).map((link) => (
+              {/* Right Nav Links */}
+              {navigationLinksRight.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

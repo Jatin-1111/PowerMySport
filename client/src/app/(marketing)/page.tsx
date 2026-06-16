@@ -2,7 +2,6 @@
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
-import api from "@/lib/api/client";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import {
@@ -25,7 +24,7 @@ import {
   Zap,
   ArrowRight,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+
 import Script from "next/script";
 import Link from "next/link";
 import Image from "next/image";
@@ -62,44 +61,6 @@ const cardVariants: Variants = {
 export default function HomePage() {
   const { user } = useAuthStore();
   const communityUrl = getCommunityAppUrl();
-  const [platformUsers, setPlatformUsers] = useState<number | null>(null);
-  const [roleCounts, setRoleCounts] = useState({
-    PLAYER: 0,
-    COACH: 0,
-    VENUE_LISTER: 0,
-  });
-
-  useEffect(() => {
-    let isActive = true;
-    const loadPlatformUsers = async () => {
-      try {
-        const response = await api.get("/stats/public");
-        if (!isActive) return;
-        setPlatformUsers(response.data?.data?.totalUsers ?? null);
-        setRoleCounts({
-          PLAYER: response.data?.data?.roleCounts?.PLAYER ?? 0,
-          COACH: response.data?.data?.roleCounts?.COACH ?? 0,
-          VENUE_LISTER: response.data?.data?.roleCounts?.VENUE_LISTER ?? 0,
-        });
-      } catch {
-        if (isActive) {
-          setPlatformUsers(null);
-          setRoleCounts({ PLAYER: 0, COACH: 0, VENUE_LISTER: 0 });
-        }
-      }
-    };
-    void loadPlatformUsers();
-    return () => {
-      isActive = false;
-    };
-  }, []);
-
-  const formattedPlatformUsers = useMemo(() => {
-    if (platformUsers === null) return "—";
-    return new Intl.NumberFormat(undefined, { notation: "compact" }).format(
-      platformUsers,
-    );
-  }, [platformUsers]);
 
   const organizationSchema = {
     "@context": "https://schema.org",
@@ -124,66 +85,66 @@ export default function HomePage() {
 
   const features = [
     {
-      title: "Zero commission launch",
+      label: "Scattered schedules",
+      title: "One Unified Family Dashboard",
       description:
-        "0% platform commission on coach and venue bookings for a limited time. Subscription purchases are charged separately.",
-      icon: <TicketPercent className="h-6 w-6" />,
+        "Manage all your children's sessions, coach communications, and venue bookings from a single, organised dashboard. No more switching between WhatsApp groups and calendar apps.",
+      icon: <Users2 className="h-6 w-6" />,
     },
     {
-      title: "Book Premium Venues",
+      label: "Unreliable coaches",
+      title: "Community-Vetted Professionals",
       description:
-        "Discover top-rated venues with live availability. From badminton courts to cricket grounds, book the right space near you in minutes.",
-      icon: FeatureIcons.Location,
+        "Don't guess who is training your child. Read real, verified feedback from other parents in your city before you book any coach  fully transparent and trustworthy.",
+      icon: <GraduationCap className="h-6 w-6" />,
     },
     {
-      title: "Professional Coach Booking",
+      label: "Endless phone calls",
+      title: "Live Availability & Instant Booking",
       description:
-        "Connect with certified coaches for personalized training plans. Book coaching and venue sessions together for a seamless routine.",
-      icon: FeatureIcons.Users,
+        "Discover and secure top-rated local sports venues instantly. No phone calls, no waiting for confirmations  real-time slots right at your fingertips.",
+      icon: <Zap className="h-6 w-6" />,
     },
     {
-      title: "Manage Your Kids' Sports",
+      label: "Hidden costs & surprise fees",
+      title: "100% Transparent Pricing",
       description:
-        "Keep every child profile in one dashboard. Manage dependents, schedules, and sessions without juggling multiple apps.",
-      icon: FeatureIcons.Users,
-    },
-    {
-      title: "Secure Payment System",
-      description:
-        "Pay securely with transparent pricing and no hidden charges. Get instant confirmations, booking summaries, and payment status updates.",
+        "Compare costs across different venues and coaches upfront. Pay securely through the platform with a full breakdown  zero hidden charges, ever.",
       icon: FeatureIcons.Shield,
     },
     {
+      label: "Missed sessions & last-minute changes",
       title: "Smart Alerts & Reminders",
       description:
-        "Stay on schedule with booking notifications, reminder preferences, and real-time updates when sessions change.",
+        "Never miss a practice again. Get real-time push notifications the moment a coach reschedules a session or a venue updates its availability.",
       icon: FeatureIcons.Lightning,
     },
     {
-      title: "Flexible & Transparent Pricing",
+      label: "Guessing the right sport",
+      title: "AI-Powered Sports Roadmaps",
       description:
-        "Compare pricing across venues and coaches before you book. Choose options that match your budget and schedule.",
-      icon: FeatureIcons.CreditCard,
+        "Not sure which sport fits your child best? Our AI generates a personalised roadmap based on your child's age, interests, and goals  so you can decide with confidence.",
+      icon: <Trophy className="h-6 w-6" />,
     },
   ];
 
   const communityFeatures = [
     {
-      title: "Ask before you book",
+      title: "Ask parents who've been there",
       description:
-        "Get recommendations from players and coaches who know the venue, sport, and training setup already.",
+        "Get recommendations from parents in your city who have already enrolled their kids at specific venues, worked with coaches, and can tell you exactly what to expect.",
       icon: FeatureIcons.Users,
     },
     {
-      title: "Read real feedback",
+      title: "Read honest parent reviews",
       description:
-        "See what local players are saying about venue quality, coaching style, and the overall experience.",
+        "See what other parents are saying about coach quality, training structure, how their kids responded, and whether a venue is safe and well-maintained.",
       icon: FeatureIcons.Star,
     },
     {
-      title: "Built for every role",
+      title: "Make confident decisions",
       description:
-        "Players, parents, coaches, and venue partners all participate in the same connected sports community.",
+        "Stop relying on word-of-mouth or guesswork. Use real community insights to pick the right sport, the right coach, and the right venue  before you spend a rupee.",
       icon: FeatureIcons.Calendar,
     },
   ];
@@ -191,23 +152,23 @@ export default function HomePage() {
   const testimonials = [
     {
       quote:
-        "PowerMySport made training logistics simple for our family. I manage both my son and daughter's schedules, and coach bookings happen in the same flow.",
+        "Before PowerMySport I was juggling three WhatsApp groups, two spreadsheets, and constant phone calls just to manage my kids' cricket and badminton training. Now I handle everything from one screen in minutes.",
       author: "Anjali Patel",
-      role: "Parent & Player",
+      role: "Mother of 2 · Cricket & Badminton",
       rating: 5,
     },
     {
       quote:
-        "As a venue owner, this platform transformed our operations. Real-time visibility and smoother bookings helped us grow revenue significantly.",
-      author: "Priya Sharma",
-      role: "Venue Owner",
+        "I was really nervous about hiring a coach online  you never know who you're trusting with your child. Reading detailed parent reviews on PowerMySport gave me the confidence to book. Best decision we made.",
+      author: "Meera Krishnan",
+      role: "Parent · Bengaluru",
       rating: 5,
     },
     {
       quote:
-        "I scaled from a few students to a full weekly roster through PowerMySport. Managing availability and connecting with committed athletes is now effortless.",
-      author: "Vikram Singh",
-      role: "Professional Coach",
+        "My son wanted to try four different sports before we figured out swimming was his thing. The AI roadmap actually helped me understand what suited his age and temperament. Saved us months of trial and error.",
+      author: "Rohit Malhotra",
+      role: "Father of 1 · Swimming",
       rating: 5,
     },
   ];
@@ -235,224 +196,29 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="The Complete Sports Ecosystem for Your Kids"
-        subtitle="Community-First Approach"
-        description="Connect with other parents, discuss local coaches and venues, and build the perfect sports roadmap for your children before you book."
-        primaryCTA={{
-          label: "Join the Community",
-          href: communityUrl,
-        }}
-        secondaryCTA={
+        title="Stop Juggling Apps. Manage Your Kids' Sports in One Place."
+        subtitle="Built for Busy Parents"
+        description="Tired of tracking down coaches, guessing which venues are safe, and managing scattered schedules? PowerMySport gives you a single dashboard to find vetted coaches, book premium venues, and plan your child's entire sports journey."
+        primaryCTA={
           user?.role === "VENUE_LISTER"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
             : {
-                label: user ? "Go to Dashboard" : "Start Booking Now",
+                label: user ? "Go to Dashboard" : "Find a Coach for My Child",
                 href: getDashboardLink(),
               }
         }
+        secondaryCTA={{
+          label: "Explore the Community",
+          href: communityUrl,
+        }}
         gradient
       />
 
-      {/* ── Zero Commission Banner (with image panel) ── */}
-      <section className="relative py-10 sm:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-amber-100/80 bg-[linear-gradient(120deg,#fff7e7_0%,#fffdf4_40%,#f3f9ff_100%)] shadow-sm">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-amber-200/40 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 left-10 h-44 w-44 rounded-full bg-sky-200/35 blur-3xl" />
-
-            <div className="relative grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-              <motion.div
-                variants={sectionVariants}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: "-80px" }}
-              >
-                <motion.div variants={itemVariants} className="mb-3">
-                  <SectionLabel
-                    label="Limited-time zero commission"
-                    color="orange"
-                  />
-                </motion.div>
-                <motion.h2
-                  variants={itemVariants}
-                  className="font-title mt-3 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl"
-                >
-                  0% platform commission on coach and venue bookings
-                </motion.h2>
-                <motion.p
-                  variants={itemVariants}
-                  className="mt-3 text-base text-slate-700 sm:text-lg"
-                >
-                  Pay only the venue or coach rate plus taxes on bookings.
-                  Subscription plans are billed separately with platform fees
-                  and applicable taxes.
-                </motion.p>
-                <motion.div
-                  variants={itemVariants}
-                  className="mt-6 flex flex-col gap-3 sm:flex-row"
-                >
-                  <Link href={getDashboardLink()} className="w-full sm:w-auto">
-                    <motion.div
-                      whileHover={{ y: -2, scale: 1.02 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 20,
-                      }}
-                    >
-                      <Button
-                        variant="primary"
-                        size="lg"
-                        className="w-full rounded-xl"
-                      >
-                        Start booking now
-                      </Button>
-                    </motion.div>
-                  </Link>
-                  <Link href="/venues" className="w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="w-full rounded-xl"
-                    >
-                      Browse venues
-                    </Button>
-                  </Link>
-                </motion.div>
-              </motion.div>
-
-              <motion.div
-                variants={sectionVariants}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: "-80px" }}
-                className="grid gap-3 sm:grid-cols-2"
-              >
-                {[
-                  {
-                    label: "Platform fee",
-                    value: "₹0",
-                    sub: "On coach and venue bookings",
-                  },
-                  {
-                    label: "Transparent totals",
-                    value: "100%",
-                    sub: "Venue + coach rates",
-                  },
-                  {
-                    label: "Instant confirmation",
-                    value: "Live",
-                    sub: "Real-time availability",
-                  },
-                  {
-                    label: "Trust & safety",
-                    value: "Secure",
-                    sub: "Protected payments",
-                  },
-                ].map((item, i) => (
-                  <motion.div
-                    key={item.label}
-                    variants={cardVariants}
-                    whileHover={{ y: -3, scale: 1.02 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                    className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-sm will-change-transform"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      {item.label}
-                    </p>
-                    <p className="mt-2 text-3xl font-bold text-power-orange">
-                      {item.value}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">{item.sub}</p>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Platform Snapshot ── */}
-      <section className="relative py-12 sm:py-14">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200/70 bg-white/85 p-6 shadow-sm backdrop-blur-sm sm:p-8">
-            <motion.div
-              variants={sectionVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-80px" }}
-            >
-              <motion.div
-                variants={itemVariants}
-                className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
-              >
-                <div>
-                  <SectionLabel label="Platform Snapshot" color="slate" />
-                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                    PowerMySport Community by Role
-                  </h2>
-                </div>
-                <p className="text-sm text-slate-600">
-                  Total users:{" "}
-                  <span className="font-bold text-slate-900">
-                    {formattedPlatformUsers}
-                  </span>
-                </p>
-              </motion.div>
-
-              <motion.div
-                variants={sectionVariants}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, margin: "-80px" }}
-                className="mt-6 grid gap-4 sm:grid-cols-3"
-              >
-                {[
-                  {
-                    label: "Players",
-                    count: roleCounts.PLAYER,
-                    color: "text-power-orange",
-                  },
-                  {
-                    label: "Coaches",
-                    count: roleCounts.COACH,
-                    color: "text-turf-green",
-                  },
-                  {
-                    label: "Venues",
-                    count: roleCounts.VENUE_LISTER,
-                    color: "text-blue-600",
-                  },
-                ].map((item) => (
-                  <motion.div
-                    key={item.label}
-                    variants={cardVariants}
-                    whileHover={{ y: -4, scale: 1.015 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 will-change-transform"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      {item.label}
-                    </p>
-                    <p className={`mt-2 text-3xl font-bold ${item.color}`}>
-                      {new Intl.NumberFormat(undefined, {
-                        notation: "compact",
-                      }).format(item.count)}
-                    </p>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* ── Features ── */}
       <Features
-        title="Everything You Need To Train, Play, and Improve"
-        subtitle="Why Choose PowerMySport"
-        description="Built for players, parents, coaches, and venue partners who want speed, clarity, and reliability in every booking."
+        title="Real Solutions for Real Parenting Frustrations"
+        subtitle="Why Parents Choose Us"
+        description="We know how hard it is to manage youth sports. We built PowerMySport to solve the exact problems that make sports logistics a headache."
         features={features}
         columns={3}
         variant="centered"
@@ -460,24 +226,123 @@ export default function HomePage() {
 
       {/* ── Community Features ── */}
       <Features
-        title="A Community System That Helps You Decide Faster"
-        subtitle="Community System"
-        description="PowerMySport connects discovery, reviews, and discussion so you can make better sporting decisions with local context instead of guesswork."
+        title="Don't Guess. Ask the Parents Who Know."
+        subtitle="Parent-to-Parent Support"
+        description="Connect with local parents who have already navigated the sports landscape. Get honest recommendations on the best coaches, safest venues, and right programs for your child's age group."
         features={communityFeatures}
         columns={3}
         variant="centered"
       />
 
-      <CTA
-        variant="gradient"
-        title="Join the community before you book"
-        description="Check what other players, parents, coaches, and venue owners are discussing, then move into booking with more confidence."
-        primaryCTA={{ label: "Open Community", href: communityUrl }}
-        secondaryCTA={{
-          label: user ? "Go to Dashboard" : "Start Booking Now",
-          href: getDashboardLink(),
-        }}
-      />
+      {/* ── How It Works ── */}
+      <section className="relative py-16 sm:py-20 lg:py-24">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-0 h-72 w-full -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
+        </div>
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            className="mb-12 text-center sm:mb-16"
+          >
+            <motion.div
+              variants={itemVariants}
+              className="mb-4 flex justify-center"
+            >
+              <SectionLabel label="Simple Process" color="orange" />
+            </motion.div>
+            <motion.h2
+              variants={itemVariants}
+              className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
+            >
+              Up and Running in 3 Steps
+            </motion.h2>
+            <motion.p
+              variants={itemVariants}
+              className="text-lg text-slate-600"
+            >
+              Get personalised AI guidance and community support before you book your child's first session
+            </motion.p>
+          </motion.div>
+
+          {/* Steps grid with SVG connecting line */}
+          <div className="relative">
+            {/* Dashed connector line (desktop only) */}
+            <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center">
+              <svg
+                viewBox="0 0 800 40"
+                className="w-full max-w-2xl"
+                aria-hidden
+              >
+                <motion.line
+                  x1="80"
+                  y1="20"
+                  x2="720"
+                  y2="20"
+                  stroke="rgba(233,115,22,0.3)"
+                  strokeWidth="2"
+                  strokeDasharray="6 6"
+                  initial={{ pathLength: 0 }}
+                  whileInView={{ pathLength: 1 }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{ duration: 1.2, ease: "easeInOut", delay: 0.3 }}
+                />
+              </svg>
+            </div>
+
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-80px" }}
+              className="grid grid-cols-1 gap-8 md:grid-cols-3"
+            >
+              {[
+                {
+                  step: 1,
+                  title: "Add Your Child's Profile",
+                  desc: "Tell us your child's age, sports interests, and how many hours a week they can commit. Takes 2 minutes.",
+                },
+                {
+                  step: 2,
+                  title: "Get an AI Sports Roadmap",
+                  desc: "Our AI generates a customised sports roadmap  which sports suit your child, which coaches to look for, and what to prioritise.",
+                },
+                {
+                  step: 3,
+                  title: "Ask & Book with Confidence",
+                  desc: "Validate your plan with other parents in the community, then book a vetted coach or venue in a few taps.",
+                },
+              ].map(({ step, title, desc }) => (
+                <motion.div
+                  key={step}
+                  variants={cardVariants}
+                  whileHover={{ y: -6, scale: 1.015 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                  className="group relative rounded-2xl border border-white/70 bg-white/80 p-8 text-center backdrop-blur-sm premium-shadow will-change-transform hover:border-white/90 hover:bg-white/90"
+                >
+                  <motion.div
+                    className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-2xl font-bold text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.45)]"
+                    whileHover={{ scale: 1.12, rotate: 3 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 16 }}
+                  >
+                    {step}
+                  </motion.div>
+                  <h3 className="mb-3 text-lg font-bold text-slate-900">
+                    {title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-slate-600">
+                    {desc}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
       {/* ── Parent Section: Split with clipped image ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
@@ -632,115 +497,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section className="relative py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-0 h-72 w-full -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
-        </div>
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={sectionVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-12 text-center sm:mb-16"
-          >
-            <motion.div
-              variants={itemVariants}
-              className="mb-4 flex justify-center"
-            >
-              <SectionLabel label="Simple Process" color="orange" />
-            </motion.div>
-            <motion.h2
-              variants={itemVariants}
-              className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
-              How It Works
-            </motion.h2>
-            <motion.p
-              variants={itemVariants}
-              className="text-lg text-slate-600"
-            >
-              Get personalized AI guidance and community support before you book
-            </motion.p>
-          </motion.div>
-
-          {/* Steps grid with SVG connecting line */}
-          <div className="relative">
-            {/* Dashed connector line (desktop only) */}
-            <div className="pointer-events-none absolute inset-0 hidden lg:flex items-center justify-center">
-              <svg
-                viewBox="0 0 800 40"
-                className="w-full max-w-2xl"
-                aria-hidden
-              >
-                <motion.line
-                  x1="80"
-                  y1="20"
-                  x2="720"
-                  y2="20"
-                  stroke="rgba(233,115,22,0.3)"
-                  strokeWidth="2"
-                  strokeDasharray="6 6"
-                  initial={{ pathLength: 0 }}
-                  whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{ duration: 1.2, ease: "easeInOut", delay: 0.3 }}
-                />
-              </svg>
-            </div>
-
-            <motion.div
-              variants={sectionVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-80px" }}
-              className="grid grid-cols-1 gap-8 md:grid-cols-3"
-            >
-              {[
-                {
-                  step: 1,
-                  title: "Add Child Profile",
-                  desc: "Provide basic details about your child like age, interests, and weekly commitment goals.",
-                },
-                {
-                  step: 2,
-                  title: "Get AI Sports Roadmap",
-                  desc: "Our AI generates a customized sports roadmap and actionable guidance based on your child's data.",
-                },
-                {
-                  step: 3,
-                  title: "Ask the Community",
-                  desc: "Have questions left? Talk to other parents and experienced coaches in our community forum.",
-                },
-              ].map(({ step, title, desc }) => (
-                <motion.div
-                  key={step}
-                  variants={cardVariants}
-                  whileHover={{ y: -6, scale: 1.015 }}
-                  transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                  className="group relative rounded-2xl border border-white/70 bg-white/80 p-8 text-center backdrop-blur-sm premium-shadow will-change-transform hover:border-white/90 hover:bg-white/90"
-                >
-                  <motion.div
-                    className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-2xl font-bold text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.45)]"
-                    whileHover={{ scale: 1.12, rotate: 3 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 16 }}
-                  >
-                    {step}
-                  </motion.div>
-                  <h3 className="mb-3 text-lg font-bold text-slate-900">
-                    {title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-slate-600">
-                    {desc}
-                  </p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </section>
 
       {/* ── Testimonials ── */}
       <Testimonials
@@ -772,14 +529,13 @@ export default function HomePage() {
                 variants={itemVariants}
                 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl"
               >
-                Join PowerMySport
+                Your Child Deserves the Best. Let&apos;s Make It Happen.
               </motion.h2>
               <motion.p
                 variants={itemVariants}
                 className="text-lg text-slate-600"
               >
-                Choose your role and unlock better training and booking
-                experiences
+                Whether you&apos;re a parent booking for your kids, a coach building your business, or a venue owner growing bookings  start today.
               </motion.p>
             </motion.div>
 
@@ -790,29 +546,32 @@ export default function HomePage() {
               viewport={{ once: true, margin: "-80px" }}
               className="grid grid-cols-1 gap-6 md:grid-cols-3"
             >
-              {/* Player Card */}
+              {/* Parent Card  Featured */}
               <motion.div
                 variants={cardVariants}
                 whileHover={{ y: -6, scale: 1.015 }}
                 transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                className="group flex flex-col rounded-2xl border border-white/60 bg-white/80 p-8 backdrop-blur-md premium-shadow will-change-transform"
+                className="group relative flex flex-col rounded-2xl border-2 border-power-orange/60 bg-gradient-to-b from-orange-50/60 to-white/80 p-8 backdrop-blur-md shadow-[0_8px_40px_-8px_rgba(233,115,22,0.25)] will-change-transform scale-100 md:scale-105"
               >
+                <div className="absolute right-0 top-0 rounded-bl-lg rounded-tr-xl bg-power-orange px-4 py-1 text-xs font-bold text-white">
+                  FOR PARENTS
+                </div>
                 <motion.div
-                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.4)]"
+                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.55)]"
                   whileHover={{ scale: 1.1, rotate: 4 }}
                   transition={{ type: "spring", stiffness: 300, damping: 16 }}
                 >
-                  <UserIcon size={30} />
+                  <Users2 size={30} />
                 </motion.div>
                 <h3 className="mb-4 text-center text-xl font-bold text-slate-900">
-                  Players & Parents
+                  Parents & Guardians
                 </h3>
                 <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
                   {[
-                    "Book premium venues instantly",
-                    "Find & book professional coaches",
-                    "Manage kids' sports activities",
-                    "Booking reminders & notifications",
+                    "Manage all your children's profiles",
+                    "Book vetted coaches & premium venues",
+                    "AI roadmap for your child's sport journey",
+                    "Get smart alerts for every session",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
                       <Check
@@ -825,24 +584,21 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href="/register?role=PLAYER"
-                  className="block w-full rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-slate-700"
+                  className="block w-full rounded-xl bg-power-orange px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-orange-600"
                 >
-                  Start Booking Now
+                  Create a Family Account
                 </Link>
               </motion.div>
 
-              {/* Venue Owner Card — Featured */}
+              {/* Venue Owner Card */}
               <motion.div
                 variants={cardVariants}
                 whileHover={{ y: -6, scale: 1.015 }}
                 transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                className="group relative flex flex-col rounded-2xl border-2 border-power-orange/60 bg-gradient-to-b from-orange-50/60 to-white/80 p-8 backdrop-blur-md shadow-[0_8px_40px_-8px_rgba(233,115,22,0.25)] will-change-transform scale-100 md:scale-105"
+                className="group flex flex-col rounded-2xl border border-white/60 bg-white/80 p-8 backdrop-blur-md premium-shadow will-change-transform"
               >
-                <div className="absolute right-0 top-0 rounded-bl-lg rounded-tr-xl bg-power-orange px-4 py-1 text-xs font-bold text-white">
-                  FEATURED
-                </div>
                 <motion.div
-                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-white shadow-[0_6px_28px_-4px_rgba(233,115,22,0.55)]"
+                  className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white shadow-[0_6px_28px_-4px_rgba(99,102,241,0.4)]"
                   whileHover={{ scale: 1.1, rotate: 4 }}
                   transition={{ type: "spring", stiffness: 300, damping: 16 }}
                 >
@@ -853,7 +609,7 @@ export default function HomePage() {
                 </h3>
                 <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
                   {[
-                    "Reach players actively searching for venues",
+                    "Reach families actively searching for venues",
                     "Automated booking management",
                     "Real-time availability tracking",
                     "Instant payouts & analytics",
@@ -861,7 +617,7 @@ export default function HomePage() {
                     <li key={item} className="flex items-start gap-2.5">
                       <Check
                         size={14}
-                        className="mt-0.5 shrink-0 text-power-orange"
+                        className="mt-0.5 shrink-0 text-indigo-600"
                       />
                       {item}
                     </li>
@@ -869,7 +625,7 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href="/register?role=VENUE_LISTER"
-                  className="block w-full rounded-xl bg-power-orange px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-orange-600"
+                  className="block w-full rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-slate-700"
                 >
                   List Your Venue
                 </Link>
@@ -920,7 +676,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── Explore Section — photo-backed cards ── */}
+      {/* ── Explore Section  photo-backed cards ── */}
       <section className="py-12 sm:py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -930,15 +686,20 @@ export default function HomePage() {
             viewport={{ once: true, margin: "-80px" }}
             className="mb-10 text-center"
           >
+            <motion.div
+              variants={itemVariants}
+              className="mb-4 flex justify-center"
+            >
+              <SectionLabel label="Ready to Explore?" color="orange" />
+            </motion.div>
             <motion.h2
               variants={itemVariants}
               className="font-title mb-2 text-3xl font-bold text-slate-900"
             >
-              Start Exploring
+              Your Child&apos;s Next Training Session Starts Here
             </motion.h2>
             <motion.p variants={itemVariants} className="text-slate-600">
-              Browse venues, academies, and coaches to plan your next session
-              with confidence
+              Browse venues, academies, and coaches to plan your child&apos;s next session with confidence
             </motion.p>
           </motion.div>
 
