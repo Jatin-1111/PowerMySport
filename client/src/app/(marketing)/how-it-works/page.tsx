@@ -335,21 +335,21 @@ export default function HowItWorksPage() {
 
   const communityFeatures = [
     {
-      title: "Ask before booking",
+      title: "Ask Before Booking",
       description:
-        "Check with other players and coaches to get practical advice on venues, timing, and setup.",
+        "Check with other parents to get real advice on which venues and coaches are best.",
       icon: FeatureIcons.Users,
     },
     {
-      title: "See what people learned",
+      title: "Learn from Others",
       description:
-        "Use community feedback to avoid surprises and choose options that fit your sport and skill level.",
+        "Read honest reviews to make sure the coach or venue is the right fit for your child.",
       icon: FeatureIcons.Star,
     },
     {
-      title: "Move from discovery to action",
+      title: "Book with Confidence",
       description:
-        "Turn community guidance into a booking path without leaving the PowerMySport experience.",
+        "Once you find the perfect match through the community, book it instantly in the app.",
       icon: FeatureIcons.Calendar,
     },
   ];
@@ -359,26 +359,26 @@ export default function HowItWorksPage() {
       step: 1,
       stepColor: "text-orange-500",
       badgeBg: "bg-gradient-to-r from-orange-500 to-orange-400",
-      title: "Create Your Account",
+      title: "Get an AI Sports Roadmap",
       description:
-        "Sign up with your email or Google account in under 2 minutes. Choose 'Player' as your role to start browsing venues and coaches.",
+        "Start by finding the right sport. Our AI generates a personalised roadmap based on your child's age, interests, and goals.",
       checkItems: [
         {
-          text: "Simple registration with email or Google",
+          text: "Discover the best sport for your child",
           iconColor: "text-orange-400",
         },
         {
-          text: "Complete your profile with basic information",
+          text: "Understand time and cost commitments",
           iconColor: "text-orange-400",
         },
-        { text: "Verify your account via email", iconColor: "text-orange-400" },
+        { text: "Get clear next steps for their journey", iconColor: "text-orange-400" },
       ],
       image: {
         src: "https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=800&q=80",
         alt: "Athlete ready to register",
         clip: "slash-right",
         overlayIcon: <UserPlus size={20} />,
-        overlayLabel: "Account Registration",
+        overlayLabel: "AI Pathways",
         accentColor: "from-orange-500/25",
       },
       imageRight: true,
@@ -387,30 +387,26 @@ export default function HowItWorksPage() {
       step: 2,
       stepColor: "text-blue-500",
       badgeBg: "bg-gradient-to-r from-blue-600 to-blue-500",
-      title: "Find Your Perfect Venue",
+      title: "Ask the Community & AI",
       description:
-        "Use our powerful search to find venues by sport type, location, date, and time. See photos, amenities, pricing, and user reviews.",
+        "Don't guess. Connect with local parents and our intelligent AI to validate your roadmap, read honest reviews, and get instant answers.",
       checkItems: [
         {
-          text: "Filter by sport, city, and neighborhood",
-          iconColor: "text-blue-400",
-        },
-        { text: "Check real-time availability", iconColor: "text-blue-400" },
-        {
-          text: "View venue details, photos, and amenities",
+          text: "Get instant answers from our sports AI",
           iconColor: "text-blue-400",
         },
         {
-          text: "See optional coach availability at venues",
+          text: "Read honest reviews from other parents",
           iconColor: "text-blue-400",
         },
+        { text: "Ask questions about local academies", iconColor: "text-blue-400" },
       ],
       image: {
         src: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
         alt: "Sports venue overview",
         clip: "slash-left",
         overlayIcon: <MapPin size={20} />,
-        overlayLabel: "Search & Discover",
+        overlayLabel: "Community Advice",
         accentColor: "from-blue-500/25",
       },
       imageRight: false,
@@ -419,21 +415,17 @@ export default function HowItWorksPage() {
       step: 3,
       stepColor: "text-emerald-500",
       badgeBg: "bg-gradient-to-r from-emerald-600 to-emerald-400",
-      title: "Book & Pay Securely",
+      title: "Book Coaches & Venues",
       description:
-        "Select your preferred date and time slot. Add optional coach booking if needed. Complete payment securely through our integrated payment system.",
+        "Once you know what you need, securely book verified coaches and premium training grounds directly on the platform.",
       checkItems: [
         {
-          text: "Choose date, time, and duration",
+          text: "Search by sport, location, and date",
           iconColor: "text-emerald-400",
         },
-        { text: "Optionally add coach booking", iconColor: "text-emerald-400" },
+        { text: "Compare 100% transparent pricing", iconColor: "text-emerald-400" },
         {
-          text: "See transparent pricing breakdown",
-          iconColor: "text-emerald-400",
-        },
-        {
-          text: "Secure payment with instant confirmation",
+          text: "Pay securely with instant confirmation",
           iconColor: "text-emerald-400",
         },
       ],
@@ -442,7 +434,7 @@ export default function HowItWorksPage() {
         alt: "Secure payment on mobile",
         clip: "arch",
         overlayIcon: <CreditCard size={20} />,
-        overlayLabel: "Secure Payment",
+        overlayLabel: "Book Securely",
         accentColor: "from-emerald-500/25",
       },
       imageRight: true,
@@ -451,32 +443,26 @@ export default function HowItWorksPage() {
       step: 4,
       stepColor: "text-indigo-500",
       badgeBg: "bg-gradient-to-r from-indigo-600 to-indigo-400",
-      title: "Check In & Play",
+      title: "Gear Up in Our Shop",
       description:
-        "Receive booking confirmation and reminder updates. Arrive at your venue or coach session on time and manage changes from your dashboard.",
+        "Coming Soon: Get ready for the game! Soon you'll be able to purchase authentic, high-quality sports gear directly from our store.",
       checkItems: [
         {
-          text: "Receive instant booking confirmation email",
+          text: "Find equipment recommended by coaches",
           iconColor: "text-indigo-400",
         },
         {
-          text: "Get reminder and status notifications",
+          text: "Get exclusive deals for members",
           iconColor: "text-indigo-400",
         },
-        {
-          text: "Manage bookings, reviews, and follow-up sessions",
-          iconColor: "text-indigo-400",
-        },
-        { text: "Enjoy your game!", iconColor: "text-indigo-400" },
+        { text: "Everything delivered to your door", iconColor: "text-indigo-400" },
       ],
       image: {
-        // Replaced: photo-1526676037777 was returning a blank placeholder.
-        // Using a verified Unsplash shot of footballers on a pitch at dusk.
         src: "https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=800&q=80",
         alt: "Athletes playing on a pitch",
         clip: "slash-left",
         overlayIcon: <Play size={20} className="fill-white" />,
-        overlayLabel: "Play & Enjoy",
+        overlayLabel: "Shop Gear",
         accentColor: "from-indigo-500/25",
       },
       imageRight: false,
@@ -531,14 +517,14 @@ export default function HowItWorksPage() {
         variant="page"
         title="How It Works"
         subtitle="Getting Started"
-        description="Simple, straightforward steps to start booking venues and coaches on PowerMySport"
+        description="See how easy it is to find and book sports activities for your child."
       />
 
       {/* ── Community Section ── */}
       <Features
-        title="Community Guidance Inside the Booking Journey"
-        subtitle="Community System"
-        description="You do not have to guess. Community context helps you decide faster before you move into booking and payment."
+        title="Get Help from Other Parents"
+        subtitle="Community Support"
+        description="Ask questions and read reviews from other parents before you spend a single rupee."
         features={communityFeatures}
         columns={3}
         variant="centered"
@@ -564,13 +550,13 @@ export default function HowItWorksPage() {
               variants={fadeSlideUp}
               className="mb-5 flex justify-center"
             >
-              <SectionLabel label="For Players" color="orange" />
+              <SectionLabel label="For Parents & Guardians" color="orange" />
             </motion.div>
             <motion.h2
               variants={fadeSlideUp}
               className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
-              Book Your Game in{" "}
+              Plan Their Journey in{" "}
               <span className="relative inline-block">
                 4 Easy Steps
                 <span

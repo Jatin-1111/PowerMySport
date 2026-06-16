@@ -86,65 +86,65 @@ export default function HomePage() {
   const features = [
     {
       label: "Scattered schedules",
-      title: "One Unified Family Dashboard",
+      title: "Everything in One Place",
       description:
-        "Manage all your children's sessions, coach communications, and venue bookings from a single, organised dashboard. No more switching between WhatsApp groups and calendar apps.",
+        "Manage all your kids' sessions, coach chats, and venue bookings from a single dashboard. No more switching between WhatsApp groups and calendar apps.",
       icon: <Users2 className="h-6 w-6" />,
     },
     {
       label: "Unreliable coaches",
-      title: "Community-Vetted Professionals",
+      title: "Tested & Trusted Coaches",
       description:
-        "Don't guess who is training your child. Read real, verified feedback from other parents in your city before you book any coach  fully transparent and trustworthy.",
+        "Don't guess who is training your child. Read real, verified feedback from other parents in your city before you book any coach.",
       icon: <GraduationCap className="h-6 w-6" />,
     },
     {
       label: "Endless phone calls",
-      title: "Live Availability & Instant Booking",
+      title: "Book Venues Instantly",
       description:
-        "Discover and secure top-rated local sports venues instantly. No phone calls, no waiting for confirmations  real-time slots right at your fingertips.",
+        "Find and secure top-rated local sports venues instantly. No phone calls, no waiting for confirmations.",
       icon: <Zap className="h-6 w-6" />,
     },
     {
       label: "Hidden costs & surprise fees",
       title: "100% Transparent Pricing",
       description:
-        "Compare costs across different venues and coaches upfront. Pay securely through the platform with a full breakdown  zero hidden charges, ever.",
+        "Compare costs upfront. Pay securely through the platform with a full breakdown—zero hidden charges.",
       icon: FeatureIcons.Shield,
     },
     {
       label: "Missed sessions & last-minute changes",
-      title: "Smart Alerts & Reminders",
+      title: "Never Miss a Session",
       description:
-        "Never miss a practice again. Get real-time push notifications the moment a coach reschedules a session or a venue updates its availability.",
+        "Get instant notifications the moment a coach reschedules a session or a venue updates its availability.",
       icon: FeatureIcons.Lightning,
     },
     {
       label: "Guessing the right sport",
-      title: "AI-Powered Sports Roadmaps",
+      title: "Smart Sports Plans",
       description:
-        "Not sure which sport fits your child best? Our AI generates a personalised roadmap based on your child's age, interests, and goals  so you can decide with confidence.",
+        "Not sure which sport fits your child best? Our AI creates a personalised plan based on your child's age, interests, and goals.",
       icon: <Trophy className="h-6 w-6" />,
     },
   ];
 
   const communityFeatures = [
     {
-      title: "Ask parents who've been there",
+      title: "Talk to Other Parents",
       description:
-        "Get recommendations from parents in your city who have already enrolled their kids at specific venues, worked with coaches, and can tell you exactly what to expect.",
+        "Get recommendations from parents in your city who have already sent their kids to specific venues and coaches.",
       icon: FeatureIcons.Users,
     },
     {
-      title: "Read honest parent reviews",
+      title: "Read Honest Reviews",
       description:
-        "See what other parents are saying about coach quality, training structure, how their kids responded, and whether a venue is safe and well-maintained.",
+        "See what other parents are saying about coach quality, training style, and whether a venue is safe.",
       icon: FeatureIcons.Star,
     },
     {
-      title: "Make confident decisions",
+      title: "Help from Real People",
       description:
-        "Stop relying on word-of-mouth or guesswork. Use real community insights to pick the right sport, the right coach, and the right venue  before you spend a rupee.",
+        "Stop relying on guesswork. Use real community advice to pick the right sport, coach, and venue.",
       icon: FeatureIcons.Calendar,
     },
   ];
@@ -365,14 +365,14 @@ export default function HomePage() {
                 variants={itemVariants}
                 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
               >
-                Manage Your Kids&apos; Sports Journey
+                Manage Their Sports Easily
               </motion.h2>
               <motion.p
                 variants={itemVariants}
                 className="mb-10 text-lg text-slate-600"
               >
-                Add multiple child profiles and handle bookings, training plans,
-                and progress tracking from one simple parent dashboard.
+                Keep track of all your kids' coaches, venues, and schedules
+                from one simple parent dashboard.
               </motion.p>
 
               <motion.div variants={sectionVariants} className="space-y-4">
@@ -380,19 +380,19 @@ export default function HomePage() {
                   {
                     icon: <Users2 size={22} />,
                     title: "Add Multiple Kids",
-                    desc: "Add unlimited dependents to your account. Track each child's age, sports interests, and training needs separately.",
+                    desc: "Add all your kids to one account. Track each child's sports and schedules separately.",
                     color: "bg-indigo-100 text-indigo-600",
                   },
                   {
                     icon: <Trophy size={22} />,
                     title: "Book Venues & Coaches",
-                    desc: "Book premium venues for your kids and connect them with professional coaches for specialized training.",
+                    desc: "Easily book the best venues and find great coaches for your kids to learn from.",
                     color: "bg-orange-100 text-power-orange",
                   },
                   {
                     icon: <Zap size={22} />,
                     title: "Track Sessions",
-                    desc: "Monitor upcoming sessions, booking history, and review-ready completed bookings from one dashboard.",
+                    desc: "See all upcoming games, past bookings, and coach reviews in one place.",
                     color: "bg-emerald-100 text-emerald-600",
                   },
                 ].map((item) => (
@@ -529,13 +529,13 @@ export default function HomePage() {
                 variants={itemVariants}
                 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl"
               >
-                Your Child Deserves the Best. Let&apos;s Make It Happen.
+                Join Other Parents Today
               </motion.h2>
               <motion.p
                 variants={itemVariants}
                 className="text-lg text-slate-600"
               >
-                Whether you&apos;re a parent booking for your kids, a coach building your business, or a venue owner growing bookings  start today.
+                Whether you&apos;re a parent booking for your kids, a coach finding students, or a venue owner growing bookings  start today.
               </motion.p>
             </motion.div>
 

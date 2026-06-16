@@ -32,27 +32,27 @@ export function AboutPageContent() {
   // Core values updated for Parent-Centric approach
   const values = [
     {
-      title: "Parent-Centric Clarity",
+      title: "Clear Answers for Parents",
       description:
-        "We put parents first by replacing confusion with clear, actionable roadmaps for their child's athletic journey.",
+        "We put parents first by replacing confusion with clear, easy-to-follow steps for your child's sports journey.",
       icon: FeatureIcons.Users,
     },
     {
-      title: "Unified Ecosystem",
+      title: "Everything in One Place",
       description:
-        "Bringing venues, coaches, and academies into one seamless platform, eliminating the fragmented booking struggle.",
+        "We bring venues, coaches, and sports academies into one simple platform, so you don't have to jump between apps.",
       icon: FeatureIcons.Lightning,
     },
     {
-      title: "Verified Quality",
+      title: "Quality You Can Trust",
       description:
-        "Every coach and academy is vetted, ensuring you only invest your time and money into trusted sports professionals.",
+        "Every coach and academy is checked by us, so you know you're getting the best for your child.",
       icon: FeatureIcons.Shield,
     },
     {
-      title: "Community Wisdom",
+      title: "Help from Other Parents",
       description:
-        "Leveraging the collective experience of other sports parents to help you make smarter, faster decisions.",
+        "We use the real experiences of other parents to help you make smarter, faster decisions for your kids.",
       icon: FeatureIcons.Star,
     },
   ];
@@ -85,7 +85,7 @@ export function AboutPageContent() {
         variant="page"
         title="About PowerMySport"
         subtitle="Our Story"
-        description="We're on a mission to organize the unorganized sports sector. We solve the biggest problem for parents by providing a clear, dependable pathway for their child's athletic journey."
+        description="We want to make sports simple for parents. We remove the confusion of finding coaches, booking venues, and planning your child's sports journey."
       />
 
       {/* Mission Section */}
@@ -109,13 +109,13 @@ export function AboutPageContent() {
               
               <motion.div variants={fadeUp} className="space-y-6 text-lg text-slate-600">
                 <p>
-                  PowerMySport was born from a simple observation: the sports sector is fundamentally unorganized, and <span className="font-semibold text-power-orange">parents bear the brunt of it</span>. We saw parents struggling to find credible coaches, navigating fragmented venue booking systems, and guessing what the correct pathway for their child should be.
+                  PowerMySport started because we noticed how hard it is for parents to manage their kids' sports. <span className="font-semibold text-power-orange">Parents were doing all the hard work</span>—trying to find good coaches, booking venues, and just guessing the right steps to take.
                 </p>
                 <p>
-                  We built PowerMySport to solve the biggest problem parents face by bringing the entire sports ecosystem into one <span className="font-semibold text-emerald-600">unified, transparent platform</span>. Whether you&apos;re looking to discover your child&apos;s first grassroots academy, or seeking elite professional coaching to take them to the national level, we provide the clarity and tools you need.
+                  We built PowerMySport to fix this problem. We put everything into one <span className="font-semibold text-emerald-600">simple, easy-to-use platform</span>. Whether your child is just starting out or aiming to play professionally, we give you the tools and answers you need.
                 </p>
                 <p>
-                  Today, we&apos;re focused on building a dependable sports platform where AI-powered pathway discovery, seamless bookings, and a trusted parent community work together so you can make the best decisions for your child&apos;s future in sports without the guesswork.
+                  Today, we focus on helping you find the right sports plans, easily book sessions, and connect with other parents—so you can make the best choices for your child without the stress.
                 </p>
               </motion.div>
             </div>
