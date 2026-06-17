@@ -26,7 +26,7 @@ export default function MarketingLayout({
       <Navigation variant="light" sticky />
 
       {/* Main Content */}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 flex flex-col">{children}</main>
 
       {/* Footer */}
       <Footer />

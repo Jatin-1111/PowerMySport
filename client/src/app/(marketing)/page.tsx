@@ -198,12 +198,12 @@ export default function HomePage() {
         variant="home"
         title="Stop Juggling Apps. Manage Your Kids' Sports in One Place."
         subtitle="Built for Busy Parents"
-        description="Tired of tracking down coaches, guessing which venues are safe, and managing scattered schedules? PowerMySport gives you a single dashboard to find vetted coaches, book premium venues, and plan your child's entire sports journey."
+        description="PowerMySport is a sports guidance platform for parents that helps you understand, plan, and execute your child's athletic journey. All this with the help of experts on call."
         primaryCTA={
           user?.role === "VENUE_LISTER"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
             : {
-                label: user ? "Go to Dashboard" : "Find a Coach for My Child",
+                label: user ? "Go to Dashboard" : "Build a Sports Plan",
                 href: getDashboardLink(),
               }
         }

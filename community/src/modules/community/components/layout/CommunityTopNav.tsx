@@ -126,7 +126,7 @@ export default function CommunityTopNav() {
           </div>
 
           {/* ── Desktop Center Nav ────────────────────────────────────────── */}
-          <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5 mx-2">
+          <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5 mx-2">
             <Link
               href="/discover"
               className={navLinkCls(pathname.startsWith("/discover"))}
@@ -169,7 +169,7 @@ export default function CommunityTopNav() {
           </div>
 
           {/* ── Desktop Right Actions ─────────────────────────────────────── */}
-          <div className="hidden lg:flex items-center justify-end gap-3 flex-shrink-0">
+          <div className="hidden xl:flex items-center justify-end gap-3 flex-shrink-0">
             {/* Notifications */}
             <Link
               href="/notifications"
@@ -247,7 +247,7 @@ export default function CommunityTopNav() {
           </div>
 
           {/* ── Mobile hamburger ──────────────────────────────────────────── */}
-          <div className="flex lg:hidden items-center gap-2">
+          <div className="flex xl:hidden items-center gap-2">
             <Link
               href="/notifications"
               className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-600 transition hover:bg-slate-100"
@@ -282,7 +282,7 @@ export default function CommunityTopNav() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm lg:hidden"
+                className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm xl:hidden"
                 style={{ zIndex: 2147483000 }}
                 onClick={() => setIsMobileMenuOpen(false)}
               >

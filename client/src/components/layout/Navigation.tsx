@@ -16,6 +16,7 @@ import {
   Settings,
   ShoppingBag,
   User,
+  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -30,6 +31,12 @@ export interface NavProps {
 }
 
 const servicesItems = [
+  {
+    href: "/experts",
+    label: "Experts",
+    description: "Guidance for your sports plan",
+    icon: Users,
+  },
   {
     href: "/venues",
     label: "Venues",

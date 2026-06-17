@@ -688,7 +688,7 @@ function PathwayExplorerSection() {
 
               {/* Tabs */}
               {result && (
-                <div className="mb-10 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-2 backdrop-blur-sm sm:grid-cols-3 lg:flex lg:flex-wrap">
+                <div className="mb-10 flex w-full overflow-x-auto gap-2 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-2 backdrop-blur-sm scrollbar-hide lg:flex-wrap">
                   {[
                     { id: "pathway", label: "Pathway", icon: <Flag className="h-4 w-4" /> },
                     { id: "tournaments", label: "Tournaments", icon: <Trophy className="h-4 w-4" /> },
@@ -700,7 +700,7 @@ function PathwayExplorerSection() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as any)}
-                      className={`relative flex items-center justify-center gap-2 rounded-xl px-2 py-2.5 text-[11px] font-semibold transition-all sm:text-sm lg:flex-1 lg:px-4 ${
+                      className={`relative flex shrink-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all sm:text-sm lg:flex-1 lg:px-4 ${
                         activeTab === tab.id
                           ? "text-power-orange shadow-sm"
                           : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
@@ -713,7 +713,7 @@ function PathwayExplorerSection() {
                           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                         />
                       )}
-                      <span className="relative z-10 flex items-center gap-2">
+                      <span className="relative z-10 flex items-center gap-2 whitespace-nowrap">
                         {tab.icon}
                         {tab.label}
                       </span>
