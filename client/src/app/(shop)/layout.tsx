@@ -16,13 +16,11 @@ export default function ShopLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden">
-      {/* Navigation Header */}
-      <Navigation variant="light" sticky />
-
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-[#f7f9fc]">
+      <ShopChrome />
       {/* Main Content */}
-      <main className="flex-1 flex flex-col">
-        <ShopChrome>{children}</ShopChrome>
+      <main className="flex-1 flex flex-col pt-20">
+        {children}
       </main>
 
       {/* Footer */}

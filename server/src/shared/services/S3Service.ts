@@ -163,6 +163,47 @@ export class S3Service {
   }
 
   /**
+   * Generate presigned upload URL for product images
+   * @param fileName - Original file name
+   * @param contentType - MIME type for image
+   * @returns Presigned URL and metadata
+   */
+  async generateProductImageUploadUrl(
+    fileName: string,
+    contentType: string,
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = fileName.split(".").pop();
+    const sanitizedFileName = `product_${Date.now()}_${uuidv4().substring(0, 8)}.${fileExtension}`;
+    const key = `products/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600, // 1 hour
+    });
+
+    const getCommand = new GetObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800, // 7 days
+    });
+
+    return {
+      uploadUrl,
+      downloadUrl,
+      fileName: sanitizedFileName,
+      key,
+    };
+  }
+
+  /**
    * Generate presigned upload URL for user profile pictures
    * @param fileName - Original file name
    * @param contentType - MIME type for image

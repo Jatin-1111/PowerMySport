@@ -1,6 +1,9 @@
 import { ArrowLeft, ShieldCheck, Truck } from "lucide-react";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/shop/AddToCartButton";
+import { WishlistButton } from "@/components/shop/WishlistButton";
+import { ProductReviews } from "@/components/shop/ProductReviews";
+import { RelatedProducts } from "@/components/shop/RelatedProducts";
 import { getProductById } from "@/lib/shop/ecommerce-api";
 import { formatInr, getProductPrice } from "@/lib/shop/format";
 
@@ -56,7 +59,10 @@ export default async function ProductDetailPage({
       </Link>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_0.9fr]">
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="absolute right-4 top-4 z-20">
+            <WishlistButton productId={product.id} className="h-12 w-12 border border-slate-200" />
+          </div>
           <div className="aspect-square bg-linear-to-br from-blue-50 via-white to-orange-50">
             {image ? (
               <img
@@ -155,6 +161,11 @@ export default async function ProductDetailPage({
           </div>
         </section>
       </div>
+
+      <section className="mt-8">
+        <ProductReviews productId={product.id} />
+        <RelatedProducts productId={product.id} />
+      </section>
     </main>
   );
 }

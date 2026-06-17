@@ -72,10 +72,21 @@ export function CheckoutClient() {
         paymentMethod: "PHONEPE",
       });
       clearShopCart();
-      setStatus("placed");
-      setMessage(
-        `Order ${result.order.orderNumber} created. Continue with PhonePe from the payment handoff.`,
-      );
+
+      const paymentConfig = result.paymentConfig as any;
+      const paymentUrl =
+        paymentConfig?.instrumentResponse?.redirectInfo?.url ||
+        paymentConfig?.url ||
+        paymentConfig?.data?.instrumentResponse?.redirectInfo?.url;
+
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        setStatus("placed");
+        setMessage(
+          `Order ${result.order.orderNumber} created. Please check your orders page.`,
+        );
+      }
     } catch (error) {
       setStatus("error");
       setMessage(

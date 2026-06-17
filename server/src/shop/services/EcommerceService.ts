@@ -95,6 +95,22 @@ export class InventoryService {
     inventoryDoc.quantityReserved -= quantity;
     inventoryDoc.quantityOnHand -= quantity;
     await inventoryDoc.save();
+
+    // Sync back to Product.variants[].stock
+    const product = await ProductModel.findOne({
+      "variants._id": new mongoose.Types.ObjectId(productVariantId),
+    });
+
+    if (product) {
+      const variant = product.variants.find(
+        (v) => v._id.toString() === productVariantId,
+      );
+      if (variant) {
+        variant.stock = inventoryDoc.quantityOnHand;
+        await product.save();
+      }
+    }
+
     return true;
   }
 
@@ -792,6 +808,9 @@ export class ProductService {
    * Get product by ID
    */
   async getProductById(productId: string): Promise<ProductDocument | null> {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return null;
+    }
     return ProductModel.findById(productId);
   }
 
@@ -811,6 +830,10 @@ export class ProductService {
     category?: string,
     search?: string,
     sortBy: string = "newest",
+    brand?: string,
+    rating?: number,
+    minPrice?: number,
+    maxPrice?: number,
   ) {
     const query: any = {
       isActive: true,
@@ -818,6 +841,20 @@ export class ProductService {
 
     if (category) {
       query.category = category;
+    }
+
+    if (brand) {
+      query.brand = { $regex: new RegExp(`^${brand}$`, "i") };
+    }
+
+    if (rating !== undefined) {
+      query.averageRating = { $gte: rating };
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      query.basePrice = {};
+      if (minPrice !== undefined) query.basePrice.$gte = minPrice;
+      if (maxPrice !== undefined) query.basePrice.$lte = maxPrice;
     }
 
     if (search) {
@@ -846,12 +883,58 @@ export class ProductService {
 
     const total = await ProductModel.countDocuments(query);
 
+    // Get facets (available brands and price range) for the current filtered (or unfiltered) set
+    // This allows dynamic filter sidebars
+    const facets = await ProductModel.aggregate([
+      { $match: { isActive: true, ...(category ? { category } : {}) } },
+      {
+        $group: {
+          _id: null,
+          brands: { $addToSet: "$brand" },
+          minPrice: { $min: "$basePrice" },
+          maxPrice: { $max: "$basePrice" },
+        }
+      }
+    ]);
+
+    const availableFacets = facets.length > 0 ? {
+      brands: facets[0].brands.filter(Boolean).sort(),
+      minPrice: facets[0].minPrice || 0,
+      maxPrice: facets[0].maxPrice || 10000,
+    } : { brands: [], minPrice: 0, maxPrice: 10000 };
+
     return {
       products,
       total,
       page,
       pages: Math.ceil(total / limit),
+      facets: availableFacets,
     };
+  }
+
+  /**
+   * Get related products based on category and tags
+   */
+  async getRelatedProducts(productId: string, limit: number = 4): Promise<ProductDocument[]> {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return [];
+    }
+    const product = await ProductModel.findById(productId);
+    if (!product) return [];
+
+    // Find products in the same category or with intersecting tags, excluding the current product
+    const related = await ProductModel.find({
+      _id: { $ne: product._id },
+      isActive: true,
+      $or: [
+        { category: product.category },
+        { tags: { $in: product.tags } }
+      ]
+    })
+      .sort({ averageRating: -1, totalReviews: -1 }) // Show best rated first
+      .limit(limit);
+
+    return related;
   }
 
   /**
@@ -860,6 +943,19 @@ export class ProductService {
   async createProduct(productData: any): Promise<ProductDocument> {
     const product = new ProductModel(productData);
     await product.save();
+
+    // Create inventory records for each variant
+    for (const variant of product.variants) {
+      const inventory = new InventoryModel({
+        productVariantId: variant._id,
+        quantityOnHand: variant.stock,
+        quantityReserved: 0,
+        quantityAvailable: variant.stock,
+        reorderLevel: variant.reorderLevel,
+      });
+      await inventory.save();
+    }
+
     return product;
   }
 
@@ -870,10 +966,32 @@ export class ProductService {
     productId: string,
     updateData: any,
   ): Promise<ProductDocument | null> {
-    return ProductModel.findByIdAndUpdate(productId, updateData, {
+    const product = await ProductModel.findByIdAndUpdate(productId, updateData, {
       new: true,
       runValidators: true,
     });
+
+    if (product) {
+      for (const variant of product.variants) {
+        let inventory = await InventoryModel.findOne({ productVariantId: variant._id });
+        if (inventory) {
+          inventory.quantityOnHand = variant.stock;
+          inventory.reorderLevel = variant.reorderLevel;
+          await inventory.save();
+        } else {
+          inventory = new InventoryModel({
+            productVariantId: variant._id,
+            quantityOnHand: variant.stock,
+            quantityReserved: 0,
+            quantityAvailable: variant.stock,
+            reorderLevel: variant.reorderLevel,
+          });
+          await inventory.save();
+        }
+      }
+    }
+
+    return product;
   }
 
   /**

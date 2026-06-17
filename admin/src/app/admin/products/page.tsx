@@ -6,6 +6,7 @@ import {
   adminEcommerceApi,
 } from "@/modules/admin/services/ecommerce";
 import { Card } from "@/modules/shared/ui/Card";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 function formatInr(paise: number): string {
@@ -20,8 +21,6 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProductRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
@@ -45,42 +44,6 @@ export default function AdminProductsPage() {
     loadProducts();
   }, [loadProducts]);
 
-  const createSampleProduct = async () => {
-    try {
-      setCreating(true);
-      await adminEcommerceApi.createProduct({
-        sku: `DEMO-${Date.now()}`,
-        name: "PowerMySport Match Tee",
-        description: "Breathable t-shirt for high-intensity sessions.",
-        category: "APPAREL",
-        basePrice: 129900,
-        salePrice: 99900,
-        weight: 220,
-        dimensions: { length: 30, width: 20, height: 3 },
-        taxable: true,
-        taxRate: 0.18,
-        isActive: true,
-        images: ["https://example.com/demo-tee.jpg"],
-        variants: [
-          {
-            sku: `DEMO-${Date.now()}-M-BLK`,
-            attributes: { size: "M", color: "Black" },
-            price: 99900,
-            stock: 35,
-            reorderLevel: 8,
-          },
-        ],
-      });
-
-      await loadProducts();
-    } catch (e) {
-      console.error(e);
-      setError("Failed to create product.");
-    } finally {
-      setCreating(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -98,13 +61,12 @@ export default function AdminProductsPage() {
             </p>
           </div>
 
-          <button
-            onClick={createSampleProduct}
-            disabled={creating}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          <Link
+            href="/admin/products/new"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
-            {creating ? "Creating..." : "Add Sample Product"}
-          </button>
+            Add New Product
+          </Link>
         </div>
       </Card>
 

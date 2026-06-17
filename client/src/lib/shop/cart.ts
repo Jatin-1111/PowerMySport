@@ -41,19 +41,32 @@ function sanitizeCart(items: ShopCartItem[]): ShopCartItem[] {
     }));
 }
 
+const EMPTY_CART: ShopCartItem[] = [];
+let cachedCartString: string | null = null;
+let cachedCartItems: ShopCartItem[] = EMPTY_CART;
+
 export function readShopCart(): ShopCartItem[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_CART;
 
   try {
     const raw = window.localStorage.getItem(CART_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      cachedCartString = null;
+      return EMPTY_CART;
+    }
+
+    if (raw === cachedCartString) {
+      return cachedCartItems;
+    }
 
     const parsed = JSON.parse(raw) as ShopCartItem[];
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) return EMPTY_CART;
 
-    return sanitizeCart(parsed);
+    cachedCartString = raw;
+    cachedCartItems = sanitizeCart(parsed);
+    return cachedCartItems;
   } catch {
-    return [];
+    return EMPTY_CART;
   }
 }
 
@@ -64,7 +77,7 @@ export function writeShopCart(items: ShopCartItem[]): void {
 }
 
 export function addShopCartItem(item: ShopCartItem): ShopCartItem[] {
-  const current = readShopCart();
+  const current = [...readShopCart()];
   const existing = current.find((entry) => entry.variantId === item.variantId);
 
   if (existing) {
@@ -144,5 +157,5 @@ function subscribe(callback: () => void) {
 }
 
 export function useShopCart() {
-  return useSyncExternalStore(subscribe, readShopCart, () => []);
+  return useSyncExternalStore(subscribe, readShopCart, () => EMPTY_CART);
 }

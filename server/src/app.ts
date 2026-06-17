@@ -110,6 +110,7 @@ const corsOptions: CorsOptions = {
     "X-Requested-With",
     "Accept",
     "Origin",
+    "Idempotency-Key",
   ],
   maxAge: 86400,
   optionsSuccessStatus: 204,

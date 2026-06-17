@@ -56,13 +56,32 @@ export interface ShippingAddress {
   country: string;
 }
 
+export interface OrderItem {
+  id: string;
+  productVariantId: string;
+  productName: string;
+  variantLabel: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
   status: string;
+  subtotal: number;
+  taxAmount: number;
+  shippingAmount: number;
+  discountAmount: number;
   totalAmount: number;
+  items: OrderItem[];
+  shippingAddress: ShippingAddress;
+  paymentMethod: string;
   paymentStatus?: string;
   fulfillmentStatus?: string;
+  estimatedDeliveryDate?: string;
+  trackingNumber?: string;
   createdAt: string;
 }
 
@@ -123,17 +142,31 @@ export async function listProducts(params?: {
   category?: string;
   search?: string;
   sortBy?: string;
+  brand?: string;
+  rating?: number;
+  minPrice?: number;
+  maxPrice?: number;
 }): Promise<{
   products: Product[];
   total: number;
   page: number;
   pages: number;
+  facets?: {
+    brands: string[];
+    minPrice: number;
+    maxPrice: number;
+  };
 }> {
   return apiFetch(`/v1/products${toQuery(params)}`);
 }
 
 export async function getProductById(id: string): Promise<Product> {
   return apiFetch<Product>(`/v1/products/${id}`);
+}
+
+export async function getRelatedProducts(id: string, limit?: number): Promise<Product[]> {
+  const query = limit ? `?limit=${limit}` : "";
+  return apiFetch<Product[]>(`/v1/products/${id}/related${query}`);
 }
 
 export async function addBackendCartItem(
@@ -171,5 +204,10 @@ export async function listOrders(params?: {
   const response = await axios.get<ApiEnvelope<OrdersResponse>>(
     `/v1/orders${toQuery(params)}`,
   );
+  return response.data.data;
+}
+
+export async function getOrderById(id: string): Promise<Order> {
+  const response = await axios.get<ApiEnvelope<Order>>(`/v1/orders/${id}`);
   return response.data.data;
 }
