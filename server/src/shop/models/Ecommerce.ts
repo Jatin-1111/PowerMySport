@@ -25,7 +25,15 @@ export interface ProductVariantDocument extends Document {
 export interface ProductDocument extends Document {
   sku: string;
   name: string;
+  shortDescription?: string;
   description: string;
+  brand?: string;
+  material?: string;
+  warranty?: string;
+  tags: string[];
+  ageGroup?: string;
+  skillLevel?: string;
+  gender?: string;
   category: ProductCategory;
   images: string[];
   basePrice: number;
@@ -41,6 +49,8 @@ export interface ProductDocument extends Document {
   variants: ProductVariantDocument[];
   totalStock: number;
   isActive: boolean;
+  averageRating: number;
+  totalReviews: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +95,16 @@ const productVariantSchema = new Schema<ProductVariantDocument>({
     type: Date,
     default: Date.now,
   },
+}, {
+  toJSON: {
+    virtuals: true,
+    transform: (doc, ret: any) => {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    },
+  },
 });
 
 const productSchema = new Schema<ProductDocument>(
@@ -101,10 +121,45 @@ const productSchema = new Schema<ProductDocument>(
       required: [true, "Product name is required"],
       trim: true,
     },
+    shortDescription: {
+      type: String,
+      trim: true,
+    },
     description: {
       type: String,
       required: [true, "Product description is required"],
       trim: true,
+    },
+    brand: {
+      type: String,
+      trim: true,
+      enum: ["SG", "SS", "KOOKABURRA", "MRF", "CEAT", "NIKE", "ADIDAS", "PUMA", "UNDER_ARMOUR", "ASICS", "WILSON", "YONEX", "BABOLAT", "HEAD", "GENERIC", "OTHER"],
+    },
+    material: {
+      type: String,
+      trim: true,
+      enum: ["ENGLISH_WILLOW", "KASHMIR_WILLOW", "CARBON_FIBER", "FIBERGLASS", "ALUMINUM", "LEATHER", "SYNTHETIC_LEATHER", "RUBBER", "COTTON", "POLYESTER", "NYLON", "BLENDED", "OTHER"],
+    },
+    warranty: {
+      type: String,
+      trim: true,
+    },
+    tags: [{
+      type: String,
+      trim: true,
+      lowercase: true,
+    }],
+    ageGroup: {
+      type: String,
+      enum: ["KIDS", "YOUTH", "ADULT", "ALL"],
+    },
+    skillLevel: {
+      type: String,
+      enum: ["BEGINNER", "INTERMEDIATE", "ADVANCED", "ALL"],
+    },
+    gender: {
+      type: String,
+      enum: ["UNISEX", "BOYS", "GIRLS", "MEN", "WOMEN"],
     },
     category: {
       type: String,
@@ -185,8 +240,28 @@ const productSchema = new Schema<ProductDocument>(
       default: true,
       index: true,
     },
+    averageRating: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret: any) => {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  },
 );
 
 // Update totalStock on variant change
@@ -420,7 +495,6 @@ const orderItemSchema = new Schema<OrderItemDocument>({
   orderId: {
     type: Schema.Types.ObjectId,
     ref: "Order",
-    required: true,
   },
   productVariantId: {
     type: Schema.Types.ObjectId,
@@ -522,7 +596,6 @@ const orderSchema = new Schema<OrderDocument>(
     },
     paymentGatewayOrderId: {
       type: String,
-      required: true,
       trim: true,
     },
     paymentGatewayPaymentId: {
@@ -623,6 +696,46 @@ const orderSchema = new Schema<OrderDocument>(
 orderSchema.index({ userId: 1, createdAt: -1 });
 
 export const Order = mongoose.model<OrderDocument>("Order", orderSchema);
+
+// ============ WISHLIST MODEL ============
+
+export interface WishlistDocument extends Document {
+  userId: mongoose.Types.ObjectId;
+  products: Array<{
+    productId: mongoose.Types.ObjectId;
+    addedAt: Date;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const wishlistSchema = new Schema<WishlistDocument>(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+      index: true,
+    },
+    products: [
+      {
+        productId: {
+          type: Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+  },
+  { timestamps: true }
+);
+
+export const Wishlist = mongoose.model<WishlistDocument>("Wishlist", wishlistSchema);
 
 // ============ PAYMENT TRANSACTION MODEL ============
 

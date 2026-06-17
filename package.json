@@ -1,5 +1,5 @@
 {
-    "name": "your-monorepo",
+    "name": "Powermysport",
     "private": true,
     "packageManager": "npm@11.14.1",
     "workspaces": [

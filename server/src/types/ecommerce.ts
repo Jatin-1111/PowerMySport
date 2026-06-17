@@ -5,6 +5,13 @@ export type ProductCategory =
   | "ACCESSORIES"
   | "EQUIPMENT";
 
+export type AgeGroup = "KIDS" | "YOUTH" | "ADULT" | "ALL";
+export type SkillLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "ALL";
+export type Gender = "UNISEX" | "BOYS" | "GIRLS" | "MEN" | "WOMEN";
+
+export type ProductBrand = "SG" | "SS" | "KOOKABURRA" | "MRF" | "CEAT" | "NIKE" | "ADIDAS" | "PUMA" | "UNDER_ARMOUR" | "ASICS" | "WILSON" | "YONEX" | "BABOLAT" | "HEAD" | "GENERIC" | "OTHER";
+export type ProductMaterial = "ENGLISH_WILLOW" | "KASHMIR_WILLOW" | "CARBON_FIBER" | "FIBERGLASS" | "ALUMINUM" | "LEATHER" | "SYNTHETIC_LEATHER" | "RUBBER" | "COTTON" | "POLYESTER" | "NYLON" | "BLENDED" | "OTHER";
+
 export interface IProductVariant {
   id: string;
   productId: string;
@@ -22,7 +29,15 @@ export interface IProduct {
   id: string;
   sku: string;
   name: string;
+  shortDescription?: string;
   description: string;
+  brand?: ProductBrand;
+  material?: ProductMaterial;
+  warranty?: string;
+  tags: string[];
+  ageGroup?: AgeGroup;
+  skillLevel?: SkillLevel;
+  gender?: Gender;
   category: ProductCategory;
   images: string[];
   basePrice: number;
@@ -236,7 +251,15 @@ export interface CancelOrderRequest {
 export interface CreateProductRequest {
   sku: string;
   name: string;
+  shortDescription?: string;
   description: string;
+  brand?: ProductBrand;
+  material?: ProductMaterial;
+  warranty?: string;
+  tags?: string[];
+  ageGroup?: AgeGroup;
+  skillLevel?: SkillLevel;
+  gender?: Gender;
   category: ProductCategory;
   basePrice: number;
   salePrice?: number;

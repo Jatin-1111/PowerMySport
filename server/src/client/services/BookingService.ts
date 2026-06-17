@@ -1246,7 +1246,7 @@ const initiateBookingRefunds = async (
     const refundResponse = await initiatePhonePeRefund({
       merchantRefundId: refundMerchantId,
       originalMerchantOrderId: transaction.merchantOrderId,
-      amount: target.amountPaise,
+      amount: target.amountPaise / 100, // initiatePhonePeRefund expects rupees, but amountPaise is in paise
     });
     const refundState = refundResponse.state || "PENDING";
     const refundId = refundResponse.refundId ?? transaction.refundId;

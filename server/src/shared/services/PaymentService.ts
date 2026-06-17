@@ -6,6 +6,11 @@ import {
   Order as OrderModel,
 } from "../../shop/models/Ecommerce";
 import mongoose from "mongoose";
+import {
+  initiatePhonePePayment,
+  getPhonePeOrderStatus,
+  initiatePhonePeRefund,
+} from "./PhonePeService";
 
 // ============ PAYMENT GATEWAY SERVICE INTERFACE ============
 
@@ -40,25 +45,12 @@ export interface IPaymentGatewayService {
 // ============ PHONEPE PAYMENT GATEWAY ============
 
 export class PhonePeGatewayService implements IPaymentGatewayService {
-  private clientId: string;
-  private clientSecret: string;
-  private baseUrl = "https://api.phonepe.com/apis/hermes";
-
   constructor() {
-    this.clientId = process.env.PHONEPE_CLIENT_ID || "";
-    this.clientSecret = process.env.PHONEPE_CLIENT_SECRET || "";
-  }
-
-  private validateCredentials() {
-    if (!this.clientId || !this.clientSecret) {
-      throw new Error(
-        "PhonePe credentials not configured (PHONEPE_CLIENT_ID and PHONEPE_CLIENT_SECRET required)",
-      );
-    }
+    // Configuration validation is handled dynamically inside PhonePeService
   }
 
   /**
-   * Create order in PhonePe
+   * Create order in PhonePe using the robust PhonePeService SDK
    */
   async createOrder(
     orderId: string,
@@ -71,87 +63,80 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
       phone: string;
     },
   ): Promise<any> {
-    this.validateCredentials();
-    // This is a mock implementation - in production, call PhonePe API
-    // For now, return a mock response
-    const mockOrderId = `order_${Date.now()}`;
+    const merchantOrderId = `O_${orderId}_${Date.now()}`;
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+    const result = await initiatePhonePePayment({
+      merchantOrderId,
+      amount: Math.round(amount), // amount is already in paise from Ecommerce system
+      redirectUrl: `${frontendUrl}/shop/orders/${orderId}`,
+      userPhone: customer.phone,
+    });
 
     return {
-      id: mockOrderId,
-      entity: "order",
-      amount: amount,
-      amount_paid: 0,
-      amount_due: amount,
-      currency: currency,
-      receipt: orderId,
-      offer_id: null,
-      status: "created",
-      attempts: 0,
-      notes: {
-        orderId: orderId,
-      },
-      created_at: Math.floor(Date.now() / 1000),
+      success: true,
+      data: {
+        merchantTransactionId: result.merchantOrderId,
+        instrumentResponse: {
+          redirectInfo: {
+            url: result.redirectUrl
+          }
+        }
+      }
     };
   }
 
-  /**
-   * Verify payment signature (HMAC-SHA256)
-   */
   verifyPaymentSignature(
     orderId: string,
     paymentId: string,
     signature: string,
   ): boolean {
-    const message = `${orderId}|${paymentId}`;
-    const expectedSignature = crypto
-      .createHmac("sha256", this.clientSecret)
-      .update(message)
-      .digest("hex");
-
-    return expectedSignature === signature;
+    return true; // We rely on getPaymentStatus polling for definitive truth
   }
 
   /**
-   * Verify payment from gateway
+   * Verify payment from gateway by fetching actual order status via SDK
    */
   async verifyPayment(
-    paymentId: string,
+    paymentId: string, // This is actually gatewayOrderId
     orderId: string,
     signature: string,
   ): Promise<boolean> {
-    this.validateCredentials();
-    // Verify signature
-    if (!this.verifyPaymentSignature(orderId, paymentId, signature)) {
-      throw new Error("Invalid payment signature");
-    }
-
-    // In production: call PhonePe API to verify payment status
-    // For MVP, signature verification is sufficient
-    return true;
+    const status = await this.getPaymentStatus(paymentId);
+    return status === PaymentStatus.CAPTURED;
   }
 
   /**
-   * Initiate refund
+   * Initiate refund using PhonePeService SDK
    */
   async initiateRefund(
     paymentId: string,
     amount: number,
     reason: string,
   ): Promise<string> {
-    this.validateCredentials();
-    // Mock implementation - in production, call PhonePe refund API
-    // https://api.phonepe.com/apis/hermes/v2/refund
-    const mockRefundId = `rfnd_${Date.now()}`;
+    const result = await initiatePhonePeRefund({
+      merchantRefundId: `R_${paymentId}_${Date.now()}`,
+      originalMerchantOrderId: paymentId,
+      amount: amount / 100, // initiatePhonePeRefund expects rupees, but Ecommerce amount is in paise
+    });
 
-    return mockRefundId;
+    return result.refundId || "";
   }
 
   /**
-   * Get payment status
+   * Get payment status via PhonePeService SDK
    */
   async getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
-    // Mock implementation - in production, call PhonePe API
-    return PaymentStatus.CAPTURED;
+    try {
+      const result = await getPhonePeOrderStatus(paymentId);
+      
+      if (result.state === "COMPLETED") return PaymentStatus.CAPTURED;
+      if (result.state === "PENDING") return PaymentStatus.PENDING;
+      return PaymentStatus.FAILED;
+    } catch (error: any) {
+      console.error("PhonePe status error:", error.message);
+      return PaymentStatus.FAILED;
+    }
   }
 }
 
@@ -282,7 +267,7 @@ export class PaymentService {
     const transaction = new PaymentTransactionModel({
       orderId: new mongoose.Types.ObjectId(orderId),
       paymentGateway,
-      gatewayOrderId: gatewayOrder.id,
+      gatewayOrderId: gatewayOrder.id || gatewayOrder.data?.merchantTransactionId,
       amount,
       currency,
       status: PaymentStatus.PENDING,
