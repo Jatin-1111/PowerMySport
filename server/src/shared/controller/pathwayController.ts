@@ -43,6 +43,7 @@ export const getPathway = async (
       success: true,
       source: result.source, // "db" | "generated"
       data: result.pathway,
+      warnings: result.warnings,
     });
   } catch (error) {
     console.error("Error fetching pathway:", error);

@@ -12,6 +12,7 @@ export function initializeScraperScheduler() {
       console.log(`\n🔔 [${new Date().toISOString()}] Running scheduled scraper bots...`);
       
       const aitaScriptPath = path.join(__dirname, "../scripts/scrapeTournaments.ts");
+      const scholarshipScriptPath = path.join(__dirname, "../scripts/scrapeScholarships.ts");
       const uniScriptPath = path.join(__dirname, "../scripts/scrapeUniversities.ts");
       
       // Execute the Tournament scraper script via ts-node
@@ -24,6 +25,18 @@ export function initializeScraperScheduler() {
           console.error(`⚠️ Tournament Scraper Bot Stderr: ${stderr}`);
         }
         console.log(`✅ Tournament Scraper Bot Output:\n${stdout}`);
+      });
+
+      // Execute the Scholarship scraper script via ts-node
+      exec(`npx ts-node "${scholarshipScriptPath}"`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`❌ Scholarship Scraper Bot Error: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`⚠️ Scholarship Scraper Bot Stderr: ${stderr}`);
+        }
+        console.log(`✅ Scholarship Scraper Bot Output:\n${stdout}`);
       });
 
       // Execute the University scraper script via ts-node
