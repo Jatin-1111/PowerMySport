@@ -14,6 +14,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Modal } from "@/modules/shared/ui/Modal";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -24,6 +25,10 @@ interface Dependent {
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   sports?: string[];
+  personalityTags?: string[];
+  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  weeklyTimeCommitment?: number;
+  budgetTier?: "Budget" | "Moderate" | "Premium";
 }
 
 interface DependentManagementModalProps {
@@ -41,7 +46,22 @@ const EMPTY_FORM: Dependent = {
   gender: "MALE",
   relation: DEFAULT_DEPENDENT_RELATION,
   sports: [],
+  personalityTags: [],
+  primaryObjective: "Recreational",
+  weeklyTimeCommitment: 3,
+  budgetTier: "Moderate",
 };
+
+const PERSONALITY_OPTIONS = [
+  "Shy",
+  "Energetic",
+  "Competitive",
+  "Social",
+  "Focused",
+  "Curious",
+  "Patient",
+  "Team-oriented",
+];
 
 function getDependentAge(dob: string | Date): number | null {
   const birthDate = new Date(dob);
@@ -167,8 +187,16 @@ export default function DependentManagementModal({
         </div>
       }
     >
-      <form id="dependent-form" onSubmit={handleSubmit} className="space-y-5">
-        <ProfileEditPanel
+      <form id="dependent-form" onSubmit={handleSubmit}>
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="basic">Basic Info</TabsTrigger>
+            <TabsTrigger value="sports">Sports</TabsTrigger>
+            <TabsTrigger value="ai">AI Guidance</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="basic" className="space-y-5">
+            <ProfileEditPanel
           title={mode === "add" ? "New dependent profile" : "Update profile"}
           description={
             mode === "add"
@@ -244,10 +272,12 @@ export default function DependentManagementModal({
                 />
               </ProfileEditField>
             </div>
-          </div>
-        </ProfileEditPanel>
+            </div>
+          </ProfileEditPanel>
+        </TabsContent>
 
-        <ProfileEditPanel
+        <TabsContent value="sports" className="space-y-5">
+          <ProfileEditPanel
           title="Sports interests"
           description="Optional. Helps personalize venue and coach recommendations."
         >
@@ -270,7 +300,86 @@ export default function DependentManagementModal({
               ))}
             </div>
           )}
+          </ProfileEditPanel>
+        </TabsContent>
+
+        <TabsContent value="ai" className="space-y-5">
+          <ProfileEditPanel
+          title="AI Guidance Preferences"
+          description="Optional. Used to pre-fill AI recommendations."
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <ProfileEditField label="Primary Objective" htmlFor="primary-objective">
+                <ProfileFormSelect
+                  id="primary-objective"
+                  value={formData.primaryObjective || "Recreational"}
+                  onChange={(value) => handleChange("primaryObjective", value)}
+                  options={[
+                    { value: "Recreational", label: "Recreational" },
+                    { value: "Health", label: "Health & Fitness" },
+                    { value: "Social", label: "Social & Fun" },
+                    { value: "Competitive", label: "Competitive" },
+                  ]}
+                />
+              </ProfileEditField>
+
+              <ProfileEditField label="Budget Tier" htmlFor="budget-tier">
+                <ProfileFormSelect
+                  id="budget-tier"
+                  value={formData.budgetTier || "Moderate"}
+                  onChange={(value) => handleChange("budgetTier", value)}
+                  options={[
+                    { value: "Budget", label: "Budget" },
+                    { value: "Moderate", label: "Moderate" },
+                    { value: "Premium", label: "Premium" },
+                  ]}
+                />
+              </ProfileEditField>
+            </div>
+
+            <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
+              <Input
+                id="weekly-time"
+                type="number"
+                min="1"
+                max="40"
+                value={formData.weeklyTimeCommitment || 3}
+                onChange={(e) => handleChange("weeklyTimeCommitment", parseInt(e.target.value) || 3)}
+              />
+            </ProfileEditField>
+
+            <ProfileEditField label="Personality Tags">
+              <div className="flex flex-wrap gap-2">
+                {PERSONALITY_OPTIONS.map((tag) => {
+                  const isSelected = formData.personalityTags?.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        const current = formData.personalityTags || [];
+                        const next = isSelected
+                          ? current.filter((t) => t !== tag)
+                          : [...current, tag];
+                        handleChange("personalityTags", next);
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                        isSelected
+                          ? "border-blue-600 bg-blue-50 font-medium text-blue-700"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </ProfileEditField>
+          </div>
         </ProfileEditPanel>
+        </TabsContent>
+        </Tabs>
       </form>
     </Modal>
   );

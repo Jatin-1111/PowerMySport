@@ -214,6 +214,11 @@ export default function AdminLayout({
             icon: LifeBuoy,
           },
           {
+            href: "/admin/concierge-requests",
+            label: "Concierge Requests",
+            icon: BookOpen,
+          },
+          {
             href: "/admin/webhook-recovery",
             label: "Webhook Recovery",
             icon: Webhook,

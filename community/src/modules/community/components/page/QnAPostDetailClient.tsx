@@ -307,13 +307,6 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Delete this question and hide it from the community knowledge feed?",
-    );
-    if (!confirmed) {
-      return;
-    }
-
     try {
       setIsMutatingPost(true);
       await communityService.deletePost(post.id);
@@ -396,13 +389,6 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
   };
 
   const removeAnswer = async (answer: CommunityAnswer) => {
-    const confirmed = window.confirm(
-      "Delete this answer? This cannot be undone.",
-    );
-    if (!confirmed) {
-      return;
-    }
-
     try {
       setIsMutatingAnswerId(answer.id);
       await communityService.deleteAnswer(answer.id);
@@ -429,20 +415,28 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
     targetType: "POST" | "ANSWER",
     targetId: string,
   ) => {
-    const reason = window.prompt(
-      "Reason for reporting this content (3-120 chars)",
-      "Spam or abuse",
-    );
-    if (!reason) return;
-
-    try {
-      await communityService.reportContent({ targetType, targetId, reason });
-      toast.success("Report submitted");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to submit report",
-      );
-    }
+    toast("Report this content for spam or abuse?", {
+      action: {
+        label: "Report",
+        onClick: () => {
+          const proceed = async () => {
+            try {
+              await communityService.reportContent({
+                targetType,
+                targetId,
+                reason: "Spam or abuse",
+              });
+              toast.success("Report submitted");
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : "Failed to submit report",
+              );
+            }
+          };
+          void proceed();
+        },
+      },
+    });
   };
 
   if (isLoading) {

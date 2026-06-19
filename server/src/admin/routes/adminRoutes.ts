@@ -37,6 +37,11 @@ import {
   updateAdminRoleHandler,
 } from "../controllers/adminController";
 import {
+  getAllConciergeRequests,
+  updateConciergeRequestStatus,
+  getConciergeDocumentDownloadUrl,
+} from "../controllers/adminConciergeController";
+import {
   adminMiddleware,
   authMiddleware,
   superAdminMiddleware,
@@ -375,6 +380,29 @@ router.put(
   adminMiddleware,
   requirePermission("admins:manage"),
   updateAdminRoleHandler,
+);
+
+// Concierge Requests management
+router.get(
+  "/concierge-requests",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:view"),
+  getAllConciergeRequests,
+);
+router.patch(
+  "/concierge-requests/:id/status",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:manage"),
+  updateConciergeRequestStatus,
+);
+router.get(
+  "/concierge-requests/:id/document",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:view"),
+  getConciergeDocumentDownloadUrl,
 );
 
 export default router;

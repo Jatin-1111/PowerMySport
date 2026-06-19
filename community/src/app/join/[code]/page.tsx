@@ -57,7 +57,7 @@ export default function JoinCommunityPage() {
 
         // Navigate to the community page with a stable inbox/conversations context.
         router.push(
-          `/?sidebar=inbox&conversation=${encodeURIComponent(result.conversationId)}`,
+          `/chats?sidebar=conversations&conversation=${encodeURIComponent(result.conversationId)}`,
         );
       } catch (joinError) {
         if (!isActive) {

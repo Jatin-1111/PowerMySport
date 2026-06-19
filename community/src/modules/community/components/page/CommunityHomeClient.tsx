@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import { shellVariants } from "@/modules/community/constants/communityPage";
@@ -8,8 +8,8 @@ import CommunityOverviewPanel from "@/modules/community/components/page/home/Com
 import CommunityConversationsWorkspace from "@/modules/community/components/page/home/CommunityConversationsWorkspace";
 import CommunityPageModals from "@/modules/community/components/page/home/CommunityPageModals";
 
-export default function CommunityHomeClient() {
-  const page = useCommunityPage();
+export default function CommunityHomeClient({ forceView }: { forceView?: "community-overview" | "conversations" } = {}) {
+  const page = useCommunityPage(forceView ? { forceView } : undefined);
 
   if (page.isLoading) {
     return <CommunityPageLoading page={page} />;
@@ -23,7 +23,7 @@ export default function CommunityHomeClient() {
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.28 }}
-        className="h-full min-h-0 bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
+        className="absolute inset-0 overflow-hidden flex flex-col bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
       >
         <motion.div
           variants={shellVariants}

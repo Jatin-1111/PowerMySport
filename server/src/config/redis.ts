@@ -4,8 +4,11 @@ const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
 // ── General-purpose client (caching, presence, etc.) ─────────────────────────
 const redis = new Redis(REDIS_URL, {
-  lazyConnect: true, // Only connect when a query is made
   maxRetriesPerRequest: 3,
+});
+
+redis.on("connect", () => {
+  console.log("✅ Redis connected successfully");
 });
 
 redis.on("error", (err) => {

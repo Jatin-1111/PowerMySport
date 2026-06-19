@@ -50,7 +50,15 @@ export const adminEcommerceApi = {
   async createProduct(payload: {
     sku: string;
     name: string;
+    shortDescription?: string;
     description: string;
+    brand?: string;
+    material?: string;
+    warranty?: string;
+    tags?: string[];
+    ageGroup?: string;
+    skillLevel?: string;
+    gender?: string;
     category: string;
     basePrice: number;
     salePrice?: number;
@@ -71,6 +79,14 @@ export const adminEcommerceApi = {
     const response = await axiosInstance.post<
       ApiResponse<{ product: AdminProductRecord }>
     >("/v1/admin/products", payload);
+
+    return response.data;
+  },
+
+  async generateProductImageUploadUrl(fileName: string, contentType: string) {
+    const response = await axiosInstance.post<
+      ApiResponse<{ uploadUrl: string; downloadUrl: string; fileName: string; key: string }>
+    >("/v1/admin/products/upload-url", { fileName, contentType });
 
     return response.data;
   },

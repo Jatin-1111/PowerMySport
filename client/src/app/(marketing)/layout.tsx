@@ -1,8 +1,18 @@
-﻿"use client";
-
 import React from "react";
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "PowerMySport | Organizing the Unorganized Sports Sector",
+  description:
+    "PowerMySport is solving the biggest problem for parents by organizing the sports sector. Discover the right pathways, book venues, and find professional coaches for your child's sports journey.",
+  openGraph: {
+    title: "PowerMySport | Organizing the Unorganized Sports Sector",
+    description:
+      "Solving the biggest problem for parents by organizing the sports sector. Find and book the best sports venues, certified coaches, and academies.",
+  },
+};
 
 
 export default function MarketingLayout({
@@ -16,7 +26,7 @@ export default function MarketingLayout({
       <Navigation variant="light" sticky />
 
       {/* Main Content */}
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 flex flex-col">{children}</main>
 
       {/* Footer */}
       <Footer />

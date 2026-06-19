@@ -13,6 +13,7 @@ import {
   resetPassword,
   updateDependent,
   updateProfile,
+  getPlayersByUserId,
 } from "../services/AuthService";
 import { generateToken } from "../../utils/jwt";
 
@@ -23,7 +24,9 @@ const authCookieOptions = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
-  ...(authCookieDomain ? { domain: authCookieDomain } : {}),
+  // Only set domain in production to allow cross-subdomain auth (e.g. .powermysport.com)
+  // In development, omit it so localhost handles it gracefully across ports
+  ...(authCookieDomain && process.env.NODE_ENV === "production" ? { domain: authCookieDomain } : {}),
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
@@ -31,12 +34,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const user = await registerUser({
       ...req.body,
       role: req.body.role || "PLAYER",
+      userType: req.body.userType || "Recreational",
     });
 
     const token = generateToken({
       id: user._id.toString(),
       email: user.email,
       role: user.role,
+      userType: user.userType,
     });
 
     res.cookie("token", token, authCookieOptions);
@@ -51,7 +56,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           name: user.name,
           email: user.email,
           role: user.role,
-          venueListerProfile: user.venueListerProfile,
+          userType: user.userType,
         },
       },
     });
@@ -71,6 +76,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       id: user._id.toString(),
       email: user.email,
       role: user.role,
+      userType: user.userType,
     });
 
     res.cookie("token", token, authCookieOptions);
@@ -85,7 +91,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           name: user.name,
           email: user.email,
           role: user.role,
-          venueListerProfile: user.venueListerProfile,
+          userType: user.userType,
         },
       },
     });
@@ -134,6 +140,31 @@ export const getProfile = async (
       await user.refreshPhotoUrl();
     }
 
+    const allPlayers = await getPlayersByUserId(user._id.toString());
+    const dependents = allPlayers
+      .filter((p: any) => p.type === "DEPENDENT")
+      .map((p: any) => ({
+        _id: p._id,
+        name: p.name,
+        dob: p.dob || null,
+        age: p.age,
+        sports: p.sportsFocus || [],
+        skillLevel: p.skillLevel,
+        personalityTags: p.personalityTags,
+        primaryObjective: p.primaryObjective,
+        weeklyTimeCommitment: p.weeklyTimeCommitment,
+        budgetTier: p.budgetTier,
+      }));
+
+    const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
+    const playerProfile = selfPlayer ? {
+      sports: selfPlayer.sportsFocus || [],
+      personalityTags: selfPlayer.personalityTags,
+      primaryObjective: selfPlayer.primaryObjective,
+      weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
+      budgetTier: selfPlayer.budgetTier,
+    } : undefined;
+
     res.status(200).json({
       success: true,
       message: "Profile retrieved successfully",
@@ -143,12 +174,12 @@ export const getProfile = async (
         email: user.email,
         phone: user.phone,
         role: user.role,
+        userType: user.userType,
         dob: user.dob,
         photoUrl: user.photoUrl,
         photoS3Key: user.photoS3Key,
-        playerProfile: user.playerProfile,
-        venueListerProfile: user.venueListerProfile,
-        dependents: user.dependents,
+        playerProfile,
+        dependents,
       },
     });
   } catch (error) {
@@ -190,6 +221,7 @@ export const getAuthBridge = async (
       data: {
         id: user._id,
         role: user.role,
+        userType: user.userType,
         name: user.name,
         email: user.email,
       },
@@ -235,12 +267,10 @@ export const updateProfileHandler = async (
         email: updatedUser.email,
         phone: updatedUser.phone,
         role: updatedUser.role,
+        userType: updatedUser.userType,
         dob: updatedUser.dob,
         photoUrl: updatedUser.photoUrl,
         photoS3Key: updatedUser.photoS3Key,
-        playerProfile: updatedUser.playerProfile,
-        venueListerProfile: updatedUser.venueListerProfile,
-        dependents: updatedUser.dependents,
       },
     });
   } catch (error) {
@@ -303,6 +333,7 @@ export const googleAuth = async (
       name,
       photoUrl,
       role,
+      userType,
       action,
       acceptedTerms,
       acceptedPrivacy,
@@ -314,6 +345,7 @@ export const googleAuth = async (
       name,
       photoUrl,
       role,
+      userType,
       action,
       acceptedTerms,
       acceptedPrivacy,
@@ -323,6 +355,7 @@ export const googleAuth = async (
       id: user._id.toString(),
       email: user.email,
       role: user.role,
+      userType: user.userType,
     });
 
     res.cookie("token", token, authCookieOptions);
@@ -337,8 +370,8 @@ export const googleAuth = async (
           name: user.name,
           email: user.email,
           role: user.role,
+          userType: user.userType,
           photoUrl: user.photoUrl,
-          venueListerProfile: user.venueListerProfile,
         },
       },
     });
@@ -416,6 +449,7 @@ export const graduateDependentHandler = async (
           email: newUser.email,
           phone: newUser.phone,
           role: newUser.role,
+          userType: newUser.userType,
         },
       },
     });
@@ -424,6 +458,34 @@ export const graduateDependentHandler = async (
     res.status(400).json({
       success: false,
       message: error instanceof Error ? error.message : "Graduation failed",
+    });
+  }
+};
+
+export const getMyPlayersHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const players = await getPlayersByUserId(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Players fetched successfully",
+      data: players,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch players",
     });
   }
 };

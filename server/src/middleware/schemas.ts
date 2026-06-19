@@ -15,6 +15,10 @@ export const registerSchema = z.object({
     .enum(["PLAYER", "VENUE_LISTER", "COACH"])
     .optional()
     .default("PLAYER"),
+  userType: z
+    .enum(["Parent", "Recreational", "Coach", "Academy", "VenueLister", "Admin"])
+    .optional()
+    .default("Recreational"),
 });
 
 export const loginSchema = z.object({
@@ -92,6 +96,11 @@ export const communitySendMessageSchema = z.object({
     .trim()
     .min(1, "Message content is required")
     .max(2000, "Message cannot exceed 2000 characters"),
+});
+
+export const communityChatUploadUrlSchema = z.object({
+  conversationId: z.string().min(1, "Conversation ID is required"),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
 });
 
 export const communityUpdateMessageSchema = z.object({

@@ -1718,19 +1718,6 @@ export const updateVenueAdminHandler = async (
           }
 
           existingUser.role = "VENUE_LISTER";
-          existingUser.venueListerProfile = existingUser.venueListerProfile || {
-            businessDetails: {
-              name: venue.ownerName,
-              address: venue.address || "",
-            },
-            payoutInfo: {
-              accountNumber: "",
-              ifsc: "",
-              bankName: "",
-            },
-            canAddMoreVenues: false,
-          };
-          existingUser.venueListerProfile.canAddMoreVenues = false;
           await existingUser.save();
           ownerUser = existingUser._id;
         } else {
@@ -1758,21 +1745,6 @@ export const updateVenueAdminHandler = async (
           phone: ownerPhone,
           password: tempPassword,
           role: "VENUE_LISTER",
-          venueListerProfile: {
-            businessDetails: {
-              name: ownerName,
-              address:
-                (updatePayload.address as string | undefined) ||
-                venue.address ||
-                "",
-            },
-            payoutInfo: {
-              accountNumber: "",
-              ifsc: "",
-              bankName: "",
-            },
-            canAddMoreVenues: false,
-          },
         });
 
         const savedUser = await newUser.save();

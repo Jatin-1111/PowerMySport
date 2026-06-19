@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { emitCommunityGroupEvent } from "../services/CommunityRealtimeService";
 
 export type CommunityGroupVisibility = "PUBLIC";
 export type CommunityGroupMemberAddPolicy = "ADMIN_ONLY" | "ANY_MEMBER";
@@ -100,6 +101,19 @@ const communityGroupSchema = new Schema<CommunityGroupDocument>(
 communityGroupSchema.index({ visibility: 1, updatedAt: -1 });
 communityGroupSchema.index({ members: 1, updatedAt: -1 });
 communityGroupSchema.index({ inviteCode: 1 });
+
+const notifyGroupMembersUpdated = (doc: any) => {
+  if (!doc || !doc._id) return;
+  emitCommunityGroupEvent(doc._id.toString(), "community:groupMembersUpdated", { groupId: doc._id.toString() });
+};
+
+communityGroupSchema.post("save", function (doc) {
+  notifyGroupMembersUpdated(doc);
+});
+
+communityGroupSchema.post("findOneAndUpdate", function (doc) {
+  notifyGroupMembersUpdated(doc);
+});
 
 export const CommunityGroup = mongoose.model<CommunityGroupDocument>(
   "CommunityGroup",

@@ -68,6 +68,7 @@ export interface IUser {
   email: string;
   phone: string;
   role: UserRole;
+  userType?: string;
   password: string;
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
@@ -82,6 +83,7 @@ export interface IUserPayload {
   id: string;
   email: string;
   role: UserRole | AdminRole;
+  userType?: string;
 }
 
 // ============================================

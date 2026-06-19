@@ -1,10 +1,31 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      // Base community route
+      {
+        source: "/community",
+        destination:
+          process.env.NODE_ENV === "development"
+            ? "http://localhost:3002/community"
+            : "https://community.powermysport.com/community",
+      },
+      // All nested community routes (e.g., /community/qna/123)
+      {
+        source: "/community/:path*",
+        destination:
+          process.env.NODE_ENV === "development"
+            ? "http://localhost:3002/community/:path*"
+            : "https://community.powermysport.com/community/:path*",
+      },
+    ];
+  },
   /* config options here */
   reactCompiler: true,
   turbopack: {
-    root: process.cwd(),
+    root: path.join(process.cwd(), ".."),
   },
   images: {
     dangerouslyAllowLocalIP: true,

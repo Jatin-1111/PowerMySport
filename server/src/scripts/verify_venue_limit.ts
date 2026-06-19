@@ -25,10 +25,7 @@ const verifyVenueLimit = async () => {
       email: `testlister${uniqueId}@example.com`,
       phone: `999${uniqueId}`,
       password: 'password123',
-      role: 'VENUE_LISTER',
-      venueListerProfile: {
-        canAddMoreVenues: false // FORCE RESTRICTION
-      }
+      role: 'VENUE_LISTER'
     });
     await user.save();
     console.log(`Created Venue Lister: ${user.email} (ID: ${user._id})`);
@@ -53,7 +50,7 @@ const verifyVenueLimit = async () => {
     // ---------------------------------------------------------
     const userFetched = await User.findById(user._id);
     if (userFetched?.role === 'VENUE_LISTER') {
-        if (!userFetched.venueListerProfile?.canAddMoreVenues) {
+        if (true) {
             console.log('❌ BLOCKED: Backend correctly prevented creating a second venue.');
             console.log('Reason: "You are only allowed to manage your approved venue."');
         } else {

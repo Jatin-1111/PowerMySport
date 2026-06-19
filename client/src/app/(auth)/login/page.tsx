@@ -10,11 +10,11 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setUser, setToken, setLoading } = useAuthStore();
+  const { user, setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -22,6 +22,22 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === "PLAYER") {
+        router.push("/dashboard/my-bookings");
+      } else if (user.role === "VENUE_LISTER") {
+        router.push("/venue-lister/inventory");
+      } else if (user.role === "COACH") {
+        router.push("/coach/verification");
+      } else if (user.role === "ACADEMY_OWNER") {
+        router.push("/academy");
+      } else {
+        router.push("/dashboard/my-bookings");
+      }
+    }
+  }, [user, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

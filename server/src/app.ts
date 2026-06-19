@@ -2,6 +2,9 @@ import cookieParser from "cookie-parser";
 import cors, { CorsOptions } from "cors";
 import "dotenv/config";
 import express, { Express } from "express";
+import { hostname as osHostname } from "os";
+import mongoose from "mongoose";
+import redis from "./config/redis";
 import { errorHandler } from "./middleware/errorHandler";
 import { errorLogger, requestLogger } from "./middleware/logger";
 import { observabilityMiddleware } from "./middleware/observability";
@@ -11,30 +14,41 @@ import {
 } from "./middleware/security";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
 
+import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
-import authRoutes from "./shared/routes/authRoutes";
+import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
+import statsRoutes from "./admin/routes/statsRoutes";
 import bookingRoutes from "./client/routes/bookingRoutes";
 import coachRoutes from "./client/routes/coachRoutes";
-import communityRoutes from "./community/routes/communityRoutes";
 import friendRoutes from "./client/routes/friendRoutes";
-import geoRoutes from "./shared/routes/geoRoutes";
+import guidanceRoutes from "./client/routes/guidanceRoutes";
 import notificationRoutes from "./client/routes/notificationRoutes";
+import payoutRoutes from "./client/routes/payoutRoutes";
+import refundMethodRoutes from "./client/routes/refundMethodRoutes";
 import reminderRoutes from "./client/routes/reminderRoutes";
-import sportsRoutes from "./shared/routes/sportsRoutes";
-import statsRoutes from "./admin/routes/statsRoutes";
+import reviewRoutes from "./client/routes/reviewRoutes";
 import supportTicketRoutes from "./client/routes/supportTicketRoutes";
 import venueInquiryRoutes from "./client/routes/venueInquiryRoutes";
 import venueOnboardingRoutes from "./client/routes/venueOnboardingRoutes";
 import venueRoutes from "./client/routes/venueRoutes";
-import reviewRoutes from "./client/routes/reviewRoutes";
-import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
-import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
-import payoutRoutes from "./client/routes/payoutRoutes";
-import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
-import refundMethodRoutes from "./client/routes/refundMethodRoutes";
+import communityRoutes from "./community/routes/communityRoutes";
+import authRoutes from "./shared/routes/authRoutes";
+import geoRoutes from "./shared/routes/geoRoutes";
 import phonepeWebhook from "./shared/routes/phonepeWebhook";
+import sportsRoutes from "./shared/routes/sportsRoutes";
+import pathwayRoutes from "./shared/routes/pathwayRoutes";
+import conciergeRoutes from "./shared/routes/conciergeRoutes";
+import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
 
 export const app: Express = express();
+
+/**
+ * Trust the first proxy hop (the ALB) so that req.ip returns the real
+ * client IP from the X-Forwarded-For header instead of the ALB's internal
+ * IP. Without this, the Redis-backed rate limiter would see all traffic
+ * as coming from a single IP and block legitimate users.
+ */
+app.set("trust proxy", 1);
 
 // Initialize scheduled cleanup jobs
 initializeScheduledJobs();
@@ -97,6 +111,7 @@ const corsOptions: CorsOptions = {
     "X-Requested-With",
     "Accept",
     "Origin",
+    "Idempotency-Key",
   ],
   maxAge: 86400,
   optionsSuccessStatus: 204,
@@ -125,6 +140,8 @@ if (process.env.NODE_ENV === "development") {
 app.use("/api/auth", authRoutes);
 app.use("/api/geo", geoRoutes);
 app.use("/api/sports", sportsRoutes);
+app.use("/api/pathways", pathwayRoutes);
+app.use("/api/concierge", conciergeRoutes);
 // PhonePe webhook route (use raw body captured above for HMAC verification)
 app.use("/api/payments/phonepe", phonepeWebhook);
 
@@ -141,7 +158,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/refund-methods", refundMethodRoutes);
 app.use("/api/payouts", payoutRoutes);
-
+app.use("/api/guidance", guidanceRoutes);
 // Community Domain
 app.use("/api/community", communityRoutes);
 
@@ -154,10 +171,85 @@ app.use("/api/payout-methods", payoutMethodsRoutes);
 // Shop Domain
 app.use("/api/v1", ecommerceRoutes);
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (_req, res) => {
+  const dbReadyState = mongoose.connection.readyState;
+  const dbStateMap: Record<number, string> = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting",
+  };
+  const dbStatus = dbStateMap[dbReadyState] ?? "unknown";
+
+  // Live Redis ping with a 500ms timeout so a busy Redis under load
+  // never blocks the ALB health check and causes a false-positive Severe state.
+  let redisStatus = "disconnected";
+  let redisPingMs: number | null = null;
+  try {
+    const t0 = Date.now();
+    await Promise.race([
+      redis.ping(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("ping timeout")), 500),
+      ),
+    ]);
+    redisPingMs = Date.now() - t0;
+    redisStatus = "connected";
+  } catch (err: any) {
+    redisStatus = err?.message === "ping timeout" ? "timeout" : "error";
+  }
+
+  const memoryUsage = process.memoryUsage();
+  const uptimeSec = Math.round(process.uptime());
+  const dbHealthy = dbStatus === "connected";
+  const redisHealthy = redisStatus === "connected";
+  const allHealthy = dbHealthy && redisHealthy;
+
+  /**
+   * IMPORTANT: Always return HTTP 200.
+   *
+   * If we return 503, the ALB marks the instance as unhealthy → EB goes
+   * Severe. A transient Redis ping timeout under load is NOT a reason to
+   * pull the instance out of rotation. Service degradation is surfaced in
+   * the JSON body (status / services fields) for monitoring dashboards
+   * and alerting tools.
+   */
   res.status(200).json({
-    success: true,
-    message: "Server is running",
+    success: allHealthy,
+    status: allHealthy ? "healthy" : "degraded",
+    message: allHealthy
+      ? "All systems operational"
+      : `Degraded: ${[!dbHealthy && "database", !redisHealthy && "redis"].filter(Boolean).join(", ")}`,
+    timestamp: new Date().toISOString(),
+    uptime: `${uptimeSec}s`,
+    environment: process.env.NODE_ENV || "development",
+    services: {
+      database: {
+        status: dbStatus,
+        provider: "MongoDB Atlas",
+      },
+      redis: {
+        status: redisStatus,
+        pingMs: redisPingMs,
+        provider: "AWS ElastiCache",
+      },
+      rateLimiter: {
+        backend: "redis",
+        sharedAcrossInstances: true,
+      },
+    },
+    system: {
+      memory: {
+        rss: `${Math.round(memoryUsage.rss / 1024 / 1024)} MB`,
+        heapUsed: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)} MB`,
+        heapTotal: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)} MB`,
+        external: `${Math.round(memoryUsage.external / 1024 / 1024)} MB`,
+      },
+      nodeVersion: process.version,
+      platform: process.platform,
+      pid: process.pid,
+      hostname: osHostname(), // identifies which EB instance served this request
+    },
   });
 });
 

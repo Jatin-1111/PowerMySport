@@ -1012,29 +1012,40 @@ export const CommunityService = {
     };
   },
 
-  async searchPlayers(userId: string, query: string, limit = 10) {
+  async searchPlayers(userId: string, query: string, limit = 10, userTypeFilter?: string, roleFilter?: string) {
     const normalizedQuery = query.trim();
-    if (!normalizedQuery) {
+    if (!normalizedQuery && !userTypeFilter && !roleFilter) {
       return [];
     }
 
     const safeLimit = Math.min(20, Math.max(1, limit));
     const profile = await ensureProfile(userId);
-    const regex = new RegExp(escapeRegex(normalizedQuery), "i");
+    
+    const userMatchCriteria: any = {
+      _id: { $ne: userId },
+      role: roleFilter ? roleFilter : { $in: COMMUNITY_ALLOWED_ROLES },
+    };
+    if (userTypeFilter) {
+      userMatchCriteria.userType = userTypeFilter;
+    }
+    if (normalizedQuery) {
+      userMatchCriteria.name = new RegExp(escapeRegex(normalizedQuery), "i");
+    }
+
+    const profileMatchCriteria: any = { userId: { $ne: userId } };
+    if (normalizedQuery) {
+      profileMatchCriteria.anonymousAlias = new RegExp(escapeRegex(normalizedQuery), "i");
+    }
 
     const [nameMatches, aliasMatches] = await Promise.all([
-      User.find({
-        role: { $in: COMMUNITY_ALLOWED_ROLES },
-        name: regex,
-        _id: { $ne: userId },
-      })
+      User.find(userMatchCriteria)
         .select("_id name photoUrl photoS3Key")
         .limit(safeLimit * 3)
         .lean(),
-      CommunityProfile.find({ anonymousAlias: regex, userId: { $ne: userId } })
+      normalizedQuery ? CommunityProfile.find(profileMatchCriteria)
         .select("userId")
         .limit(safeLimit * 3)
-        .lean(),
+        .lean() : Promise.resolve([]),
     ]);
 
     const candidateIds = new Set<string>();
@@ -1053,7 +1064,7 @@ export const CommunityService = {
     const [users, profiles] = await Promise.all([
       User.find({ _id: { $in: ids }, role: { $in: COMMUNITY_ALLOWED_ROLES } })
         .select(
-          "_id name photoUrl photoS3Key role city dob playerProfile.sports",
+          "_id name photoUrl photoS3Key role userType city dob",
         )
         .lean(),
       CommunityProfile.find({ userId: { $in: ids } })
@@ -1088,15 +1099,14 @@ export const CommunityService = {
           const displayName = isIdentityPublic
             ? user.name
             : candidateProfile?.anonymousAlias || "Anonymous Member";
-          const sports = Array.isArray(user.playerProfile?.sports)
-            ? user.playerProfile.sports.filter(Boolean)
-            : [];
+          const sports: string[] = [];
 
           return {
             id: candidateId,
             displayName,
             isIdentityPublic,
             role: user.role,
+            userType: (user as any).userType || "Recreational",
             photoUrl: null,
             city: typeof user.city === "string" ? user.city.trim() : null,
             age: calculateAge(user.dob),
@@ -1131,7 +1141,7 @@ export const CommunityService = {
     const [targetUser, targetProfile] = await Promise.all([
       User.findById(targetUserId)
         .select(
-          "_id name photoUrl photoS3Key role playerProfile dob city createdAt lastActiveAt",
+          "_id name photoUrl photoS3Key role userType dob city createdAt lastActiveAt",
         )
         .lean(),
       CommunityProfile.findOne({ userId: targetUserId })
@@ -1175,15 +1185,14 @@ export const CommunityService = {
     return {
       id: String(targetUser._id),
       role: targetUser.role,
+      userType: (targetUser as any).userType || "Recreational",
       displayName: isIdentityPublic
         ? targetUser.name
         : profile.anonymousAlias || "Anonymous Member",
       alias: profile.anonymousAlias || "Anonymous Member",
       isIdentityPublic,
       photoUrl: await resolveUserPhotoUrl(targetUser),
-      sports: Array.isArray(targetUser.playerProfile?.sports)
-        ? targetUser.playerProfile.sports
-        : [],
+      sports: [],
       city: typeof targetUser.city === "string" ? targetUser.city.trim() : null,
       age: calculateAge(targetUser.dob),
       dob: isIdentityPublic ? targetUser.dob || null : null,
@@ -1502,6 +1511,40 @@ export const CommunityService = {
       conversationId: String(conversation?._id || ""),
       memberCount: group.members.length,
     };
+  },
+
+  async deleteGroup(userId: string, groupId: string) {
+    await ensureProfile(userId);
+
+    const group = await CommunityGroup.findById(groupId);
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const isCreator = String(group.createdBy) === userId;
+    const isAdmin = group.admins.some((adminId) => String(adminId) === userId);
+
+    if (!isCreator && !isAdmin) {
+      throw new Error("Only group admins can delete the group");
+    }
+
+    const groupConversation = await CommunityConversation.findOne({
+      conversationType: "GROUP",
+      groupId: group._id,
+    });
+
+    if (groupConversation) {
+      await Promise.all([
+        CommunityMessage.deleteMany({
+          conversationId: groupConversation._id,
+        }),
+        CommunityConversation.deleteOne({ _id: groupConversation._id }),
+      ]);
+    }
+
+    await CommunityGroup.deleteOne({ _id: group._id });
+
+    return { groupId: String(group._id), deletedGroup: true };
   },
 
   async leaveGroup(userId: string, groupId: string) {
@@ -1968,6 +2011,8 @@ export const CommunityService = {
             content: { $first: "$content" },
             createdAt: { $first: "$createdAt" },
             senderId: { $first: "$senderId" },
+            type: { $first: "$type" },
+            isDeleted: { $first: "$isDeleted" },
           },
         },
       ]),
@@ -2071,9 +2116,14 @@ export const CommunityService = {
               : null,
           latestMessage: latest
             ? {
-                content: latest.isDeleted ? "Message deleted" : latest.content,
+                content: latest.isDeleted
+                  ? "Message deleted"
+                  : latest.type === "IMAGE"
+                    ? "📷 Image"
+                    : latest.content,
                 createdAt: latest.createdAt,
                 senderId: String(latest.senderId),
+                type: latest.type || "TEXT",
               }
             : null,
           unreadCount: unreadMap.get(String(conversation._id)) || 0,
@@ -2197,6 +2247,57 @@ export const CommunityService = {
     };
   },
 
+  async markConversationDelivered(userId: string, conversationId: string) {
+    const conversation = await CommunityConversation.findById(conversationId);
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    const isParticipant = conversation.participants.some(
+      (participantId) => String(participantId) === userId,
+    );
+    if (!isParticipant) {
+      throw new Error("Access denied");
+    }
+
+    const undeliveredMessages = await CommunityMessage.find({
+      conversationId,
+      senderId: { $ne: new mongoose.Types.ObjectId(userId) },
+      deliveredTo: { $ne: new mongoose.Types.ObjectId(userId) },
+    })
+      .select("_id")
+      .lean();
+
+    if (!undeliveredMessages.length) {
+      return {
+        conversationId: String(conversation._id),
+        participantIds: conversation.participants.map((participantId) =>
+          String(participantId),
+        ),
+        readerId: userId,
+        messageIds: [] as string[],
+      };
+    }
+
+    await CommunityMessage.updateMany(
+      {
+        _id: { $in: undeliveredMessages.map((message) => message._id) },
+      },
+      {
+        $addToSet: { deliveredTo: new mongoose.Types.ObjectId(userId) },
+      },
+    );
+
+    return {
+      conversationId: String(conversation._id),
+      participantIds: conversation.participants.map((participantId) =>
+        String(participantId),
+      ),
+      readerId: userId,
+      messageIds: undeliveredMessages.map((message) => String(message._id)),
+    };
+  },
+
   async getMessages(
     userId: string,
     conversationId: string,
@@ -2263,12 +2364,14 @@ export const CommunityService = {
         conversationId: String(message.conversationId),
         conversationType: conversation.conversationType || "DM",
         senderId,
+        type: message.type || "TEXT",
         senderDisplayName: isSelf
           ? sender?.name || "Me"
           : senderProfile?.isIdentityPublic
             ? sender?.name || "Player"
             : senderProfile?.anonymousAlias || "Anonymous Player",
         content: message.isDeleted ? "Message deleted" : message.content,
+        metadata: message.metadata || null,
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
         editedAt: message.editedAt || null,
@@ -2371,8 +2474,15 @@ export const CommunityService = {
     };
   },
 
-  async sendMessage(userId: string, conversationId: string, content: string) {
-
+  async sendMessage(
+    userId: string,
+    conversationId: string,
+    content: string,
+    options?: {
+      type?: "TEXT" | "IMAGE";
+      metadata?: { width?: number; height?: number };
+    },
+  ) {
     const conversation = await CommunityConversation.findById(conversationId);
     if (!conversation) {
       throw new Error("Conversation not found");
@@ -2413,12 +2523,19 @@ export const CommunityService = {
       }
     }
 
-    const message = await CommunityMessage.create({
+    const messageType = options?.type || "TEXT";
+    const messageDoc: Record<string, unknown> = {
       conversationId,
       senderId: userId,
-      content: content.trim(),
+      type: messageType,
+      content: messageType === "TEXT" ? content.trim() : content,
       readBy: [new mongoose.Types.ObjectId(userId)],
-    });
+    };
+    if (messageType === "IMAGE" && options?.metadata) {
+      messageDoc.metadata = options.metadata;
+    }
+
+    const message = await CommunityMessage.create(messageDoc);
 
     conversation.lastMessageAt = new Date();
     await conversation.save();
@@ -2459,7 +2576,10 @@ export const CommunityService = {
           actorUserId: userId,
           conversationType: conversation.conversationType || "DM",
           participantIds: otherParticipantIds,
-          summary: `${senderDisplayName} sent you a message in community chat.`,
+          summary:
+            messageType === "IMAGE"
+              ? `${senderDisplayName} shared an image in community chat.`
+              : `${senderDisplayName} sent you a message in community chat.`,
         },
         status: "PENDING",
         attempts: 0,
@@ -2473,7 +2593,9 @@ export const CommunityService = {
           conversation.conversationType === "GROUP"
             ? "New group message"
             : "New message",
-          `${senderDisplayName} sent you a message in community chat.`,
+          messageType === "IMAGE"
+            ? `${senderDisplayName} shared an image in community chat.`
+            : `${senderDisplayName} sent you a message in community chat.`,
           {
             event: "COMMUNITY_MESSAGE_RECEIVED",
             conversationId: String(conversation._id),
@@ -2490,8 +2612,10 @@ export const CommunityService = {
       conversationId: String(message.conversationId),
       conversationType: conversation.conversationType || "DM",
       senderId: String(message.senderId),
+      type: message.type || "TEXT",
       senderDisplayName,
       content: message.content,
+      metadata: message.metadata || null,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: null,
@@ -2554,7 +2678,9 @@ export const CommunityService = {
       conversationId: String(message.conversationId),
       conversationType: conversation.conversationType || "DM",
       senderId,
+      type: message.type || "TEXT",
       content: message.content,
+      metadata: message.metadata || null,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: message.editedAt,
@@ -2612,7 +2738,9 @@ export const CommunityService = {
       conversationId: String(message.conversationId),
       conversationType: conversation.conversationType || "DM",
       senderId,
+      type: message.type || "TEXT",
       content: "Message deleted",
+      metadata: null,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       editedAt: message.editedAt || null,
@@ -2966,5 +3094,14 @@ export const CommunityService = {
       groupId: String(group._id),
       inviteCode,
     };
+  },
+
+  async getCommunityPulseStats() {
+    const [postsCount, groupsCount] = await Promise.all([
+      CommunityPost.countDocuments(),
+      CommunityGroup.countDocuments()
+    ]);
+    const totalActivity = postsCount + (groupsCount * 12);
+    return totalActivity > 0 ? totalActivity : 1280;
   },
 };

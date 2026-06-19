@@ -26,6 +26,13 @@ export const metadata: Metadata = {
   description: "Anonymous-first player community chat",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  interactiveWidget: "resizes-content",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,13 +43,15 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-dvh bg-app text-slate-900 overflow-y-auto">
+      <body className="bg-app text-slate-900 overflow-hidden">
         <div className="flex h-dvh flex-col">
           <Suspense fallback={<div className="h-16 w-full bg-white/90 border-b border-white/70" />}>
             <CommunityTopNav />
           </Suspense>
-          <CommunityNotificationToastListener />
-          <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+          <Suspense fallback={null}>
+            <CommunityNotificationToastListener />
+          </Suspense>
+          <main className="min-h-0 flex-1 relative overflow-y-auto">{children}</main>
         </div>
         <Toaster richColors closeButton position="top-right" />
       </body>

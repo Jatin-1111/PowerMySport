@@ -186,6 +186,13 @@ const buildCommunityNotificationsKey = (
 const BLOCKED_USERS_CACHE_KEY = "blocked-users";
 
 export const communityService = {
+  async clearNotificationCache(): Promise<void> {
+    clearCacheByPrefixes([
+      "community-notifications",
+      "community-unread-count",
+    ]);
+  },
+
   async ensureSession(): Promise<AuthBridgeSession> {
     const response =
       await axiosInstance.get<ApiResponse<AuthBridgeSession>>("/auth/bridge");
@@ -194,15 +201,17 @@ export const communityService = {
 
   async searchCommunityUsers(
     query: string,
+    filters?: { userType?: string; role?: string }
   ): Promise<CommunityUserSearchResult[]> {
     const normalizedQuery = query.trim().toLowerCase();
+    const cacheKey = `players:${normalizedQuery}:${filters?.userType || ""}:${filters?.role || ""}`;
     return withRequestCache(
-      `players:${normalizedQuery}`,
+      cacheKey,
       async () => {
         const response = await axiosInstance.get<
           ApiResponse<CommunityUserSearchResult[]>
         >("/community/players/search", {
-          params: { q: query, limit: 8 },
+          params: { q: query, limit: 20, ...filters },
         });
 
         return response.data.data;
@@ -211,8 +220,8 @@ export const communityService = {
     );
   },
 
-  async searchPlayers(query: string): Promise<CommunityUserSearchResult[]> {
-    return this.searchCommunityUsers(query);
+  async searchPlayers(query: string, filters?: { userType?: string; role?: string }): Promise<CommunityUserSearchResult[]> {
+    return this.searchCommunityUsers(query, filters);
   },
 
   async getPlayerProfile(userId: string): Promise<CommunityMemberProfile> {
@@ -390,7 +399,10 @@ export const communityService = {
     clearCacheByPrefixes(["conversations", buildMessagesKey(conversationId)]);
   },
 
-  async getMessages(conversationId: string): Promise<{
+  async getMessages(
+    conversationId: string,
+    page = 1
+  ): Promise<{
     conversation: {
       id: string;
       conversationType?: "DM" | "GROUP";
@@ -399,9 +411,14 @@ export const communityService = {
       group?: CommunityGroupSummary | null;
     };
     messages: ConversationMessage[];
+    pagination: {
+      total: number;
+      page: number;
+      totalPages: number;
+    };
   }> {
     return withRequestCache(
-      buildMessagesKey(conversationId),
+      `${buildMessagesKey(conversationId)}-page-${page}`,
       async () => {
         const response = await axiosInstance.get<
           ApiResponse<{
@@ -413,8 +430,13 @@ export const communityService = {
               group?: CommunityGroupSummary | null;
             };
             messages: ConversationMessage[];
+            pagination: {
+              total: number;
+              page: number;
+              totalPages: number;
+            };
           }>
-        >(`/community/conversations/${conversationId}/messages`);
+        >(`/community/conversations/${conversationId}/messages?page=${page}`);
         return response.data.data;
       },
       3000,
@@ -430,6 +452,42 @@ export const communityService = {
       {
         conversationId,
         content,
+      },
+    );
+    clearCacheByPrefixes(["conversations", buildMessagesKey(conversationId)]);
+    return response.data.data;
+  },
+
+  /**
+   * Request a presigned S3 POST for uploading a chat image.
+   * The caller posts directly to S3 using the returned url+fields.
+   */
+  async getImageUploadUrl(
+    conversationId: string,
+    contentType: string,
+  ): Promise<{ url: string; fields: Record<string, string>; key: string }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{ url: string; fields: Record<string, string>; key: string }>
+    >("/community/chat/upload-url", { conversationId, contentType });
+    return response.data.data;
+  },
+
+  /**
+   * Persist an IMAGE message after the file is already uploaded to S3.
+   * content = S3 object key. metadata = pixel dimensions for layout stability.
+   */
+  async sendImageMessage(
+    conversationId: string,
+    s3Key: string,
+    metadata?: { width: number; height: number; caption?: string },
+  ): Promise<ConversationMessage> {
+    const response = await axiosInstance.post<ApiResponse<ConversationMessage>>(
+      "/community/messages",
+      {
+        conversationId,
+        content: s3Key,
+        type: "IMAGE",
+        metadata,
       },
     );
     clearCacheByPrefixes(["conversations", buildMessagesKey(conversationId)]);
@@ -496,6 +554,20 @@ export const communityService = {
         memberCount: number;
       }>
     >(`/community/groups/${groupId}/join`);
+    clearCacheByPrefixes(["groups", "conversations"]);
+    return response.data.data;
+  },
+
+  async deleteGroup(groupId: string): Promise<{
+    groupId: string;
+    deletedGroup: boolean;
+  }> {
+    const response = await axiosInstance.delete<
+      ApiResponse<{
+        groupId: string;
+        deletedGroup: boolean;
+      }>
+    >(`/community/groups/${groupId}`);
     clearCacheByPrefixes(["groups", "conversations"]);
     return response.data.data;
   },
@@ -856,6 +928,9 @@ export const communityService = {
       "community-notifications",
       "community-unread-count",
     ]);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("community:notificationsRead"));
+    }
   },
 
   async markAllCommunityNotificationsRead(): Promise<number> {
@@ -889,6 +964,10 @@ export const communityService = {
       "community-notifications",
       "community-unread-count",
     ]);
+
+    if (typeof window !== "undefined" && totalMarked > 0) {
+      window.dispatchEvent(new Event("community:notificationsRead"));
+    }
 
     return totalMarked;
   },

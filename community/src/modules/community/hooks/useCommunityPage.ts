@@ -6,6 +6,8 @@ import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
+import { uploadChatImage } from "@/modules/community/hooks/useChatImageUpload";
+import { getCachedMessages, setCachedMessages, upsertCachedMessage, deleteCachedMessage } from "@/lib/db/chatDB";
 import {
   CommunityUserSearchResult,
   CommunityGroupSummary,
@@ -36,7 +38,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-export function useCommunityPage() {
+export function useCommunityPage(options?: { forceView?: "community-overview" | "conversations" }) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const pathname = usePathname();
@@ -94,14 +96,12 @@ export function useCommunityPage() {
   const [hasMoreConversations, setHasMoreConversations] = useState(false);
   const [isLoadingMoreConversations, setIsLoadingMoreConversations] =
     useState(false);
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(() => {
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem(COMMUNITY_SELECTED_CONVERSATION_KEY);
-  });
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [messagePage, setMessagePage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
   const [playerSearchQuery, setPlayerSearchQuery] = useState("");
   const [playerSearchResults, setPlayerSearchResults] = useState<
     CommunityUserSearchResult[]
@@ -136,6 +136,7 @@ export function useCommunityPage() {
     string | null
   >(null);
   const [isLeavingGroupId, setIsLeavingGroupId] = useState<string | null>(null);
+  const [isDeletingGroupId, setIsDeletingGroupId] = useState<string | null>(null);
 
   const [reportModal, setReportModal] = useState<{
     targetType: "MESSAGE" | "GROUP";
@@ -157,6 +158,8 @@ export function useCommunityPage() {
   >(null);
   const [isTogglingBlockUser, setIsTogglingBlockUser] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] =
     useState(true);
@@ -168,10 +171,15 @@ export function useCommunityPage() {
   );
   const [selectedMemberProfile, setSelectedMemberProfile] =
     useState<CommunityMemberProfile | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<string, string[]>>({});
 
   const selectedConversationIdRef = useRef<string | null>(null);
+  const typingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const isInitialMessageLoadRef = useRef<boolean>(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectedPollDelayRef = useRef(DISCONNECTED_POLL_BASE_MS);
   const isRefreshingConversationsRef = useRef(false);
@@ -214,25 +222,37 @@ export function useCommunityPage() {
     setMessages((current) => {
       const safeCurrent = Array.isArray(current) ? current : [];
       if (safeCurrent.some((m) => m.id === incoming.id)) return safeCurrent;
-      return [...safeCurrent, incoming];
+      const newMessages = [...safeCurrent, incoming];
+      void setCachedMessages(incoming.conversationId, newMessages);
+      return newMessages;
     });
   };
 
   const removeMessageById = (messageId: string) => {
-    setMessages((current) =>
-      (Array.isArray(current) ? current : []).filter((m) => m.id !== messageId),
-    );
+    setMessages((current) => {
+      const safeCurrent = Array.isArray(current) ? current : [];
+      const updated = safeCurrent.filter((m) => m.id !== messageId);
+      if (selectedConversationIdRef.current) {
+        void setCachedMessages(selectedConversationIdRef.current, updated);
+      }
+      return updated;
+    });
   };
 
   const updateMessageById = (
     messageId: string,
     updater: (m: ConversationMessage) => ConversationMessage,
   ) => {
-    setMessages((current) =>
-      (Array.isArray(current) ? current : []).map((m) =>
+    setMessages((current) => {
+      const safeCurrent = Array.isArray(current) ? current : [];
+      const updated = safeCurrent.map((m) =>
         m.id === messageId ? updater(m) : m,
-      ),
-    );
+      );
+      if (selectedConversationIdRef.current) {
+        void setCachedMessages(selectedConversationIdRef.current, updated);
+      }
+      return updated;
+    });
   };
 
   const totalUnread = useMemo(
@@ -267,8 +287,9 @@ export function useCommunityPage() {
     !selectedConversationNeedsMyApproval &&
     !selectedConversationIsBlocked;
 
-  const isCommunityView = activeSidebarTab === "community-overview";
-  const isConversationsView = activeSidebarTab === "conversations";
+  const activeSidebarTabToUse = options?.forceView || activeSidebarTab;
+  const isCommunityView = activeSidebarTabToUse === "community-overview";
+  const isConversationsView = activeSidebarTabToUse === "conversations";
   const showGroupInsightsSidebar =
     isConversationsView &&
     showGroupMembersPanel &&
@@ -442,7 +463,7 @@ export function useCommunityPage() {
             safeItems.some((c) => c.id === current)
           )
             return current;
-          return safeItems[0].id;
+          return null;
         });
       }
     },
@@ -550,17 +571,46 @@ export function useCommunityPage() {
   const loadMessages = useCallback(
     async (conversationId: string) => {
       try {
-        const response = await communityService.getMessages(conversationId);
-        setMessages(Array.isArray(response.messages) ? response.messages : []);
+        // Signal that this is a fresh load — auto-scroll to bottom on first render
+        isInitialMessageLoadRef.current = true;
+
+        // Optimistically load from IndexedDB
+        const cached = await getCachedMessages(conversationId);
+        if (cached && cached.length > 0) {
+          setMessages(cached);
+        }
+
+        const response = await communityService.getMessages(conversationId, 1);
+        const serverMessages = Array.isArray(response.messages) ? response.messages : [];
+        setMessages(serverMessages);
+        void setCachedMessages(conversationId, serverMessages);
+        
+        setMessagePage(1);
+        if (response.pagination) {
+          setHasMoreMessages(response.pagination.page < response.pagination.totalPages);
+        } else {
+          setHasMoreMessages(false);
+        }
 
         // Mark related notifications as read
         await markNotificationsForConversationAsRead(conversationId);
 
-        await refreshConversationsNow();
+        // Optimistically clear unread count for immediate sidebar UI update
+        setConversations((current) =>
+          Array.isArray(current)
+            ? current.map((c) =>
+                c.id === conversationId ? { ...c, unreadCount: 0 } : c
+              )
+            : current
+        );
+
         const socket = getCommunitySocket();
         if (socket.connected) {
           socket.emit("community:markRead", { conversationId });
         }
+
+        // Defer refresh to allow backend to process markRead
+        setTimeout(() => refreshConversationsNow(), 500);
       } catch (e) {
         const message =
           e instanceof Error ? e.message : "Failed to load messages";
@@ -570,6 +620,36 @@ export function useCommunityPage() {
     },
     [refreshConversationsNow, markNotificationsForConversationAsRead],
   );
+
+  const loadMoreMessages = useCallback(async () => {
+    if (!selectedConversationId || isLoadingMoreMessages || !hasMoreMessages) return;
+    setIsLoadingMoreMessages(true);
+    try {
+      const nextPage = messagePage + 1;
+      const response = await communityService.getMessages(selectedConversationId, nextPage);
+      
+      const newMessages = Array.isArray(response.messages) ? response.messages : [];
+      setMessages((current) => {
+        // Prepend new messages, filtering out any duplicates
+        const currentIds = new Set(current.map(m => m.id));
+        const filteredNew = newMessages.filter(m => !currentIds.has(m.id));
+        const updated = [...filteredNew, ...current];
+        void setCachedMessages(selectedConversationId, updated);
+        return updated;
+      });
+      
+      setMessagePage(nextPage);
+      if (response.pagination) {
+        setHasMoreMessages(response.pagination.page < response.pagination.totalPages);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load older messages");
+    } finally {
+      setIsLoadingMoreMessages(false);
+    }
+  }, [selectedConversationId, messagePage, hasMoreMessages, isLoadingMoreMessages]);
 
   useEffect(() => {
     void loadBootstrap();
@@ -642,10 +722,13 @@ export function useCommunityPage() {
       setGroupToolsMode((c) =>
         c === urlGroupToolsMode ? c : urlGroupToolsMode,
       );
-    if (typeof urlConversationId === "string" && urlConversationId.trim())
+    if (typeof urlConversationId === "string" && urlConversationId.trim()) {
       setSelectedConversationId((c) =>
         c === urlConversationId ? c : urlConversationId,
       );
+      setActiveSidebarTab("conversations");
+      setWorkspaceView("CHAT");
+    }
     if (typeof urlQuery === "string" && urlQuery.trim())
       setGroupSearchQuery((c) => (c === urlQuery.trim() ? c : urlQuery.trim()));
 
@@ -756,6 +839,13 @@ export function useCommunityPage() {
   }, [selectedConversation?.conversationType]);
 
   useEffect(() => {
+    if (selectedConversation) {
+      const isGroup = selectedConversation.conversationType === "GROUP";
+      setDirectoryView(isGroup ? "GROUPS" : "CONTACTS");
+    }
+  }, [selectedConversation]);
+
+  useEffect(() => {
     const query = playerSearchQuery.trim();
     if (query.length < 2) {
       setPlayerSearchResults([]);
@@ -835,6 +925,12 @@ export function useCommunityPage() {
     };
     const handleDisconnect = () => setIsSocketConnected(false);
     const handleNewMessage = (message: ConversationMessage) => {
+      if (message.senderId !== profile?.userId) {
+        socket.emit("community:markConversationAsDelivered", {
+          conversationId: message.conversationId,
+        });
+      }
+
       if (message.conversationId === selectedConversationIdRef.current) {
         appendMessage(message);
         socket.emit("community:markRead", {
@@ -849,14 +945,33 @@ export function useCommunityPage() {
       messageIds: string[];
     }) => {
       if (payload.conversationId !== selectedConversationIdRef.current) return;
-      setMessages((current) =>
-        (Array.isArray(current) ? current : []).map((m) => {
+      setMessages((current) => {
+        const updated = (Array.isArray(current) ? current : []).map((m) => {
           if (!payload.messageIds.includes(m.id)) return m;
           const readBy = m.readBy || [];
           if (readBy.includes(payload.readerId)) return m;
           return { ...m, readBy: [...readBy, payload.readerId] };
-        }),
-      );
+        });
+        void setCachedMessages(payload.conversationId, updated);
+        return updated;
+      });
+    };
+    const handleMessagesDelivered = (payload: {
+      conversationId: string;
+      readerId: string;
+      messageIds: string[];
+    }) => {
+      if (payload.conversationId !== selectedConversationIdRef.current) return;
+      setMessages((current) => {
+        const updated = (Array.isArray(current) ? current : []).map((m) => {
+          if (!payload.messageIds.includes(m.id)) return m;
+          const deliveredTo = m.deliveredTo || [];
+          if (deliveredTo.includes(payload.readerId)) return m;
+          return { ...m, deliveredTo: [...deliveredTo, payload.readerId] };
+        });
+        void setCachedMessages(payload.conversationId, updated);
+        return updated;
+      });
     };
     const handleConversationUpdated = (payload?: {
       conversationId?: string;
@@ -892,15 +1007,47 @@ export function useCommunityPage() {
         redirectToMainLogin();
     };
 
+    const handleUserTyping = (payload: { conversationId: string; userId: string; isTyping: boolean }) => {
+      const { conversationId, userId, isTyping } = payload;
+      if (userId === profile?.userId) return;
+
+      setTypingUsers((current) => {
+        const users = current[conversationId] || [];
+        const newUsers = isTyping 
+          ? Array.from(new Set([...users, userId]))
+          : users.filter((id) => id !== userId);
+        return { ...current, [conversationId]: newUsers };
+      });
+
+      const timeoutKey = `${conversationId}_${userId}`;
+      if (typingTimeoutsRef.current[timeoutKey]) {
+        clearTimeout(typingTimeoutsRef.current[timeoutKey]);
+      }
+
+      if (isTyping) {
+        typingTimeoutsRef.current[timeoutKey] = setTimeout(() => {
+          setTypingUsers((current) => {
+            const users = current[conversationId] || [];
+            return {
+              ...current,
+              [conversationId]: users.filter((id) => id !== userId),
+            };
+          });
+        }, 5000);
+      }
+    };
+
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("community:newMessage", handleNewMessage);
     socket.on("community:messagesRead", handleMessagesRead);
+    socket.on("community:messagesDelivered", handleMessagesDelivered);
     socket.on("community:conversationUpdated", handleConversationUpdated);
     socket.on("community:messageEdited", handleMessageEdited);
     socket.on("community:messageDeleted", handleMessageDeleted);
     socket.on("community:error", handleCommunityError);
     socket.on("connect_error", handleConnectError);
+    socket.on("community:userTyping", handleUserTyping);
 
     if (socket.connected) handleConnect();
     else socket.connect();
@@ -910,11 +1057,13 @@ export function useCommunityPage() {
       socket.off("disconnect", handleDisconnect);
       socket.off("community:newMessage", handleNewMessage);
       socket.off("community:messagesRead", handleMessagesRead);
+      socket.off("community:messagesDelivered", handleMessagesDelivered);
       socket.off("community:conversationUpdated", handleConversationUpdated);
       socket.off("community:messageEdited", handleMessageEdited);
       socket.off("community:messageDeleted", handleMessageDeleted);
       socket.off("community:error", handleCommunityError);
       socket.off("connect_error", handleConnectError);
+      socket.off("community:userTyping", handleUserTyping);
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
         refreshTimeoutRef.current = null;
@@ -989,10 +1138,24 @@ export function useCommunityPage() {
 
   useEffect(() => {
     if (!selectedConversationId) return;
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
-    });
+
+    const container = scrollContainerRef.current;
+
+    // On initial load of a conversation, always jump to the bottom instantly
+    if (isInitialMessageLoadRef.current) {
+      isInitialMessageLoadRef.current = false;
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
+      return;
+    }
+
+    // On new messages: only auto-scroll if the user is already near the bottom (within 120px)
+    if (container) {
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceFromBottom < 120) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    }
   }, [messages, selectedConversationId]);
 
   const handleStartConversation = useCallback(
@@ -1111,6 +1274,23 @@ export function useCommunityPage() {
       toast.error(e instanceof Error ? e.message : "Failed to leave group");
     } finally {
       setIsLeavingGroupId(null);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      setIsDeletingGroupId(groupId);
+      await communityService.deleteGroup(groupId);
+      await refreshGroupDirectoryState();
+      if (selectedConversation?.group?.id === groupId) {
+        setSelectedConversationId(null);
+        setWorkspaceView("DIRECTORY");
+      }
+      toast.success("Group deleted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete group");
+    } finally {
+      setIsDeletingGroupId(null);
     }
   };
 
@@ -1502,13 +1682,7 @@ export function useCommunityPage() {
           ...current,
           ...confirmedMessage,
         }));
-        const updatedConversations = await communityService.listConversations(
-          1,
-          CONVERSATION_PAGE_SIZE,
-        );
-        applyConversationPage(updatedConversations, {
-          preserveSelection: true,
-        });
+        queueConversationRefresh();
       } catch (e) {
         updateMessageById(message.id, (current) => ({
           ...current,
@@ -1556,11 +1730,7 @@ export function useCommunityPage() {
       }));
       setEditingMessageId(null);
       setEditingMessageDraft("");
-      const updatedConversations = await communityService.listConversations(
-        1,
-        CONVERSATION_PAGE_SIZE,
-      );
-      applyConversationPage(updatedConversations, { preserveSelection: true });
+      queueConversationRefresh();
       toast.success("Message updated");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update message");
@@ -1589,11 +1759,7 @@ export function useCommunityPage() {
         setEditingMessageId(null);
         setEditingMessageDraft("");
       }
-      const updatedConversations = await communityService.listConversations(
-        1,
-        CONVERSATION_PAGE_SIZE,
-      );
-      applyConversationPage(updatedConversations, { preserveSelection: true });
+      queueConversationRefresh();
       toast.success("Message deleted");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to delete message");
@@ -1648,11 +1814,7 @@ export function useCommunityPage() {
       removeMessageById(optimisticMessageId);
       if (confirmedMessage.conversationId === selectedConversation.id)
         appendMessage(confirmedMessage);
-      const updatedConversations = await communityService.listConversations(
-        1,
-        CONVERSATION_PAGE_SIZE,
-      );
-      applyConversationPage(updatedConversations, { preserveSelection: true });
+      queueConversationRefresh();
     } catch (e) {
       updateMessageById(optimisticMessageId, (message) => ({
         ...message,
@@ -1661,6 +1823,113 @@ export function useCommunityPage() {
       toast.error(e instanceof Error ? e.message : "Failed to send message");
     } finally {
       setIsSending(false);
+    }
+  };
+
+  /**
+   * Send an image message. Flow:
+   * 1. Immediately show an optimistic bubble with a local blob preview
+   * 2. Upload the file to S3 via presigned POST
+   * 3. Send the IMAGE message record to the server (socket or HTTP fallback)
+   * 4. Swap in the confirmed message; revoke the blob URL
+   * 5. On any failure: mark the optimistic message as FAILED
+   */
+  const handleSendImageMessage = async (file: File, caption?: string) => {
+    if (!selectedConversation || isUploadingImage) return;
+
+    setNewMessage("");
+    
+    const optimisticId = `temp-img-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    // Create a local preview URL so the user sees the image immediately
+    const localPreviewUrl = URL.createObjectURL(file);
+
+    const optimisticMessage = {
+      id: optimisticId,
+      conversationId: selectedConversation.id,
+      conversationType: selectedConversation.conversationType,
+      senderId: profile?.userId || "me",
+      senderDisplayName: "You",
+      content: "", // real key arrives after upload
+      type: "IMAGE" as const,
+      metadata: caption ? { caption } : undefined,
+      localPreviewUrl,
+      createdAt: new Date().toISOString(),
+      messageStatus: "SENDING" as const,
+      readBy: profile?.userId ? [profile.userId] : [],
+      participantIds: [
+        profile?.userId || "me",
+        selectedConversation.otherParticipant.id,
+      ],
+    };
+
+    appendMessage(optimisticMessage);
+    setIsUploadingImage(true);
+
+    try {
+      const { s3Key, width, height } = await uploadChatImage(
+        file,
+        selectedConversation.id,
+      );
+
+      const socket = getCommunitySocket();
+      let confirmedMessage;
+      if (socket.connected) {
+        const ack = await new Promise<
+          | { success: true; data: import("@/modules/community/types").ConversationMessage }
+          | { success: false; message?: string }
+        >((resolve) => {
+          const timeoutId = setTimeout(
+            () => resolve({ success: false, message: "Image send timed out" }),
+            12000,
+          );
+          socket.emit(
+            "community:sendMessage",
+            {
+              conversationId: selectedConversation.id,
+              content: s3Key,
+              type: "IMAGE",
+              metadata: { width, height, caption },
+            },
+            (result: unknown) => {
+              clearTimeout(timeoutId);
+              resolve(
+                (result as any) || {
+                  success: false,
+                  message: "Invalid server response",
+                },
+              );
+            },
+          );
+        });
+        if (!ack.success) throw new Error(ack.message || "Failed to send image");
+        confirmedMessage = { ...ack.data, messageStatus: "SENT" as const };
+      } else {
+        const sent = await communityService.sendImageMessage(
+          selectedConversation.id,
+          s3Key,
+          { width, height, caption },
+        );
+        confirmedMessage = { ...sent, messageStatus: "SENT" as const };
+      }
+
+      // Swap out optimistic for confirmed; revoke the temporary blob URL
+      removeMessageById(optimisticId);
+      URL.revokeObjectURL(localPreviewUrl);
+      if (confirmedMessage.conversationId === selectedConversation.id) {
+        appendMessage(confirmedMessage);
+      }
+
+      queueConversationRefresh();
+    } catch (e) {
+      updateMessageById(optimisticId, (msg) => ({
+        ...msg,
+        messageStatus: "FAILED" as const,
+      }));
+      toast.error(
+        e instanceof Error ? e.message : "Failed to send image",
+      );
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -1740,6 +2009,7 @@ export function useCommunityPage() {
     mobileActionMessage,
     isTogglingBlockUser,
     isSocketConnected,
+    isUploadingImage,
     isConversationSidebarOpen,
     setIsConversationSidebarOpen,
     showGroupMembersPanel,
@@ -1749,7 +2019,12 @@ export function useCommunityPage() {
     memberProfileError,
     selectedMemberProfile,
     messagesEndRef,
+    scrollContainerRef,
+    hasMoreMessages,
+    isLoadingMoreMessages,
+    loadMoreMessages,
     selectedConversation,
+    typingUsers,
     totalUnread,
     pendingRequestsCount,
     selectedConversationIsPending,
@@ -1777,6 +2052,8 @@ export function useCommunityPage() {
     handleCreateGroup,
     handleJoinGroup,
     handleLeaveGroup,
+    isDeletingGroupId,
+    handleDeleteGroup,
     handleOpenReportModal,
     handleSubmitReportWrapper,
     handleAddMemberToGroup,
@@ -1797,6 +2074,10 @@ export function useCommunityPage() {
     handleDeleteMessage,
     handleCopyMessage,
     handleSendMessage,
+    handleSendImageMessage,
+    pendingImageFile,
+    setPendingImageFile,
+    imageInputRef,
   };
 }
 

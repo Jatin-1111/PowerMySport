@@ -7,6 +7,7 @@ import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
+import { getCommunitySocket } from "@/lib/realtime/socket";
 
 type ReportItem = {
   id: string;
@@ -58,6 +59,23 @@ export default function ReportsPage() {
     void loadReports();
   }, [loadReports]);
 
+  useEffect(() => {
+    const socket = getCommunitySocket();
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleUpdate = () => {
+      void loadReports();
+    };
+
+    socket.on("community:reportUpdated", handleUpdate);
+
+    return () => {
+      socket.off("community:reportUpdated", handleUpdate);
+    };
+  }, [loadReports]);
+
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap-narrow space-y-4">
@@ -69,13 +87,6 @@ export default function ReportsPage() {
               <FileText size={17} className="text-slate-600" />
               <h1 className="community-section-title">My Reports</h1>
             </div>
-            <button
-              onClick={() => void loadReports()}
-              disabled={isLoading}
-              className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-60 sm:px-3"
-            >
-              {isLoading ? "Loading..." : "Refresh"}
-            </button>
           </div>
           <p className="community-section-copy">
             Track moderation status for reports you submitted.

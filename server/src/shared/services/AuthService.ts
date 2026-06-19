@@ -2,6 +2,7 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import { Booking } from "../../client/models/Booking";
 import { User, UserDocument } from "../../client/models/User";
+import { Player } from "../../client/models/Player";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "../../utils/email";
 import { S3Service } from "./S3Service";
 
@@ -11,6 +12,7 @@ export interface RegisterPayload {
   phone: string;
   password: string;
   role: "PLAYER" | "VENUE_LISTER" | "COACH";
+  userType?: "Parent" | "Recreational" | "Coach" | "Academy" | "Admin";
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
 }
@@ -33,7 +35,7 @@ export const registerUser = async (
     throw new Error("User with this email or phone already exists");
   }
 
-  const user = new User(payload);
+  const user = new User({ ...payload });
   const now = new Date();
   user.legalConsents = {
     terms: {
@@ -144,6 +146,7 @@ export interface GoogleLoginPayload {
   name: string;
   photoUrl?: string;
   role?: "PLAYER" | "VENUE_LISTER" | "COACH";
+  userType?: "Parent" | "Recreational" | "Coach" | "Academy" | "Admin";
   action?: "login" | "register";
   acceptedTerms?: boolean;
   acceptedPrivacy?: boolean;
@@ -191,6 +194,7 @@ export const googleLogin = async (
         photoUrl: payload.photoUrl,
         phone: uniquePhoneId, // Unique ID instead of fake phone number
         role: payload.role || "PLAYER",
+        userType: payload.userType || "Recreational",
         legalConsents: {
           terms: {
             accepted: true,
@@ -246,18 +250,18 @@ export const graduateDependent = async (
       throw new Error("Parent user not found");
     }
 
-    // Find the specific dependent
-    const dependent = parent.dependents.find(
-      (d) => d._id?.toString() === payload.dependentId,
-    );
-    if (!dependent || !dependent._id) {
+    const dependent = await Player.findOne({
+      _id: payload.dependentId,
+      userId: payload.parentId,
+      type: "DEPENDENT",
+    }).session(session);
+
+    if (!dependent) {
       throw new Error("Dependent not found");
     }
 
     // Check if dependent is at least 18 years old
-    const ageInMs = Date.now() - dependent.dob.getTime();
-    const age = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 365.25));
-    if (age < 18) {
+    if (dependent.age && dependent.age < 18) {
       throw new Error("Dependent must be at least 18 years old to graduate");
     }
 
@@ -276,11 +280,11 @@ export const graduateDependent = async (
       phone: payload.phone,
       password: payload.password,
       role: "PLAYER",
+      userType: "Recreational",
     });
     await newUser.save({ session });
 
     // Transfer all bookings where this dependent was the participant
-    // Use the dependent's ID directly (now guaranteed to exist)
     const dependentObjectId = dependent._id;
     const result = await Booking.updateMany(
       { participantId: dependentObjectId },
@@ -297,11 +301,8 @@ export const graduateDependent = async (
 
     console.log(`Transferred ${result.modifiedCount} bookings to new user`);
 
-    // Remove the dependent from parent's dependents array
-    parent.dependents = parent.dependents.filter(
-      (d) => d._id?.toString() !== payload.dependentId,
-    );
-    await parent.save({ session });
+    // Remove the dependent from Player collection
+    await Player.deleteOne({ _id: dependent._id }).session(session);
 
     // Commit the transaction
     await session.commitTransaction();
@@ -327,10 +328,23 @@ export const graduateDependent = async (
 
 export interface AddDependentPayload {
   name: string;
-  dob: Date;
+  age?: number;
+  dob?: string | Date;
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
+  sportsFocus?: string[];
   sports?: string[];
+  skillLevel?: string;
+  personalityTags?: string[];
+  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  weeklyTimeCommitment?: number;
+  budgetTier?: "Budget" | "Moderate" | "Premium";
+}
+
+function calculateAge(dob: Date): number {
+  const ageDifMs = Date.now() - dob.getTime();
+  const ageDate = new Date(ageDifMs);
+  return Math.abs(ageDate.getUTCFullYear() - 1970);
 }
 
 export const addDependent = async (
@@ -342,24 +356,34 @@ export const addDependent = async (
     throw new Error("User not found");
   }
 
-  // Add new dependent to array
-  const newDependent: any = {
-    name: payload.name,
-    dob: new Date(payload.dob),
-    relation: payload.relation || "CHILD",
-    sports: payload.sports || [],
-  };
-
-  if (payload.gender) {
-    newDependent.gender = payload.gender;
+  let age = payload.age;
+  let parsedDob: Date | undefined;
+  
+  if (payload.dob) {
+    parsedDob = new Date(payload.dob);
+    if (!isNaN(parsedDob.getTime())) {
+      age = calculateAge(parsedDob);
+    }
   }
 
-  user.dependents.push(newDependent);
+  const newDependent = new Player({
+    userId: user._id,
+    type: "DEPENDENT",
+    name: payload.name,
+    age: age,
+    dob: parsedDob,
+    gender: payload.gender,
+    relation: payload.relation,
+    sportsFocus: payload.sportsFocus || payload.sports || [],
+    skillLevel: payload.skillLevel || "",
+    personalityTags: payload.personalityTags,
+    primaryObjective: payload.primaryObjective,
+    weeklyTimeCommitment: payload.weeklyTimeCommitment,
+    budgetTier: payload.budgetTier,
+  });
 
-  await user.save();
-
-  // Return the newly added dependent (last item in array)
-  return user.dependents[user.dependents.length - 1];
+  await newDependent.save();
+  return newDependent;
 };
 
 export const updateDependent = async (
@@ -367,26 +391,34 @@ export const updateDependent = async (
   dependentId: string,
   payload: Partial<AddDependentPayload>,
 ): Promise<any> => {
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const dependent = user.dependents.find(
-    (d) => d._id?.toString() === dependentId,
-  );
+  const dependent = await Player.findOne({ _id: dependentId, userId, type: "DEPENDENT" });
   if (!dependent) {
     throw new Error("Dependent not found");
   }
 
-  // Update dependent fields
   if (payload.name) dependent.name = payload.name;
-  if (payload.dob) dependent.dob = new Date(payload.dob);
+  
+  if (payload.dob) {
+    const parsedDob = new Date(payload.dob);
+    if (!isNaN(parsedDob.getTime())) {
+      dependent.dob = parsedDob;
+      dependent.age = calculateAge(parsedDob);
+    }
+  } else if (payload.age !== undefined) {
+    dependent.age = payload.age;
+  }
+  
   if (payload.gender) dependent.gender = payload.gender;
   if (payload.relation) dependent.relation = payload.relation;
-  if (payload.sports) dependent.sports = payload.sports;
+  if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
+  if (payload.sports) dependent.sportsFocus = payload.sports;
+  if (payload.skillLevel) dependent.skillLevel = payload.skillLevel;
+  if (payload.personalityTags) dependent.personalityTags = payload.personalityTags;
+  if (payload.primaryObjective) dependent.primaryObjective = payload.primaryObjective;
+  if (payload.weeklyTimeCommitment !== undefined) dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
+  if (payload.budgetTier) dependent.budgetTier = payload.budgetTier;
 
-  await user.save();
+  await dependent.save();
   return dependent;
 };
 
@@ -394,12 +426,11 @@ export const deleteDependent = async (
   userId: string,
   dependentId: string,
 ): Promise<void> => {
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new Error("User not found");
+  const dependent = await Player.findOne({ _id: dependentId, userId, type: "DEPENDENT" });
+  if (!dependent) {
+    throw new Error("Dependent not found");
   }
 
-  // Check if any bookings exist for this dependent as participant
   const bookingCount = await Booking.countDocuments({
     participantId: dependentId,
   });
@@ -410,11 +441,11 @@ export const deleteDependent = async (
     );
   }
 
-  // Remove dependent from array
-  user.dependents = user.dependents.filter(
-    (d) => d._id?.toString() !== dependentId,
-  );
-  await user.save();
+  await Player.deleteOne({ _id: dependentId });
+};
+
+export const getPlayersByUserId = async (userId: string): Promise<any[]> => {
+  return Player.find({ userId }).sort({ type: -1, name: 1 });
 };
 
 export interface UpdateProfilePayload {
@@ -424,6 +455,16 @@ export interface UpdateProfilePayload {
   dob?: string | Date;
   playerProfile?: {
     sports?: string[];
+    personalityTags?: string[];
+    primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+    weeklyTimeCommitment?: number;
+    budgetTier?: "Budget" | "Moderate" | "Premium";
+    pathwayState?: {
+      satisfiedPrerequisites?: string[];
+      currentGpa?: string;
+      targetDivision?: string;
+      graduationYear?: number;
+    };
   };
 }
 
@@ -458,13 +499,30 @@ export const updateProfile = async (
   if (payload.dob) user.dob = new Date(payload.dob);
 
   // Update player profile if provided
-  if (payload.playerProfile) {
-    if (!user.playerProfile) {
-      user.playerProfile = {};
+  if (payload.playerProfile && Array.isArray(payload.playerProfile.sports)) {
+    let selfPlayer = await Player.findOne({ userId, type: "SELF" });
+    if (!selfPlayer) {
+      selfPlayer = new Player({
+        userId: user._id,
+        type: "SELF",
+        name: user.name,
+        sportsFocus: payload.playerProfile.sports,
+      });
+    } else {
+      if (payload.playerProfile.sports) selfPlayer.sportsFocus = payload.playerProfile.sports;
     }
-    if (Array.isArray(payload.playerProfile.sports)) {
-      user.playerProfile.sports = payload.playerProfile.sports;
+    
+    if (payload.playerProfile.personalityTags) selfPlayer.personalityTags = payload.playerProfile.personalityTags;
+    if (payload.playerProfile.primaryObjective) selfPlayer.primaryObjective = payload.playerProfile.primaryObjective;
+    if (payload.playerProfile.weeklyTimeCommitment !== undefined) selfPlayer.weeklyTimeCommitment = payload.playerProfile.weeklyTimeCommitment;
+    if (payload.playerProfile.budgetTier) selfPlayer.budgetTier = payload.playerProfile.budgetTier;
+    
+    if (payload.playerProfile.pathwayState) {
+      if (!selfPlayer.pathwayState) selfPlayer.pathwayState = {};
+      Object.assign(selfPlayer.pathwayState, payload.playerProfile.pathwayState);
     }
+    
+    await selfPlayer.save();
   }
 
   await user.save();

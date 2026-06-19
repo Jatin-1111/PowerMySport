@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, CheckCheck, LoaderCircle, RefreshCw } from "lucide-react";
+import { Bell, CheckCheck, LoaderCircle } from "lucide-react";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { communityService } from "@/modules/community/services/community";
 import { CommunityActivityItem } from "@/modules/community/types";
@@ -176,9 +176,9 @@ export default function CommunityNotificationsPage() {
   }, [sortedItems]);
 
   const loadNotifications = useCallback(
-    async (targetPage = 1) => {
+    async (targetPage = 1, isBackground = false) => {
       try {
-        setIsLoading(true);
+        if (!isBackground) setIsLoading(true);
         const response = await communityService.listCommunityNotifications(
           targetPage,
           PAGE_SIZE,
@@ -188,13 +188,15 @@ export default function CommunityNotificationsPage() {
         setItems(response.items || []);
         setPage(targetPage);
         setPages(Math.max(1, response.pagination.pages || 1));
-      } catch {
-        setItems([]);
-        setPage(targetPage);
-        setPages(1);
+      } catch (error) {
+        if (!isBackground) {
+          setItems([]);
+          setPage(targetPage);
+          setPages(1);
+        }
         toast.error("Failed to load notifications");
       } finally {
-        setIsLoading(false);
+        if (!isBackground) setIsLoading(false);
       }
     },
     [filter],
@@ -244,7 +246,8 @@ export default function CommunityNotificationsPage() {
     const socket = getCommunitySocket();
 
     const refresh = () => {
-      void loadNotifications(1);
+      void communityService.clearNotificationCache();
+      void loadNotifications(1, true);
     };
 
     socket.on("notification:new", refresh);
@@ -271,13 +274,6 @@ export default function CommunityNotificationsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => void loadNotifications(page)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              <RefreshCw size={14} />
-              Refresh
-            </button>
             <button
               onClick={() => void handleMarkAllRead()}
               disabled={unreadCount === 0 || isMarkingAll}

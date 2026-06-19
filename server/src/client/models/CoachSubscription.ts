@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { notifyUserDataUpdated } from "../sockets/friendSocket";
 
 export type CoachSubscriptionStatus =
   | "ACTIVE"
@@ -109,6 +110,25 @@ coachSubscriptionSchema.virtual("id").get(function (
 
 coachSubscriptionSchema.index({ coachId: 1, status: 1 });
 coachSubscriptionSchema.index({ userId: 1, status: 1 });
+
+// --- Real-time Auto Updates ---
+const notifyUsersOfSubscriptionUpdate = (doc: any) => {
+  if (!doc) return;
+  if (doc.userId) {
+    notifyUserDataUpdated(doc.userId.toString(), "subscription:updated");
+  }
+  if (doc.coachId) {
+    notifyUserDataUpdated(doc.coachId.toString(), "subscription:updated");
+  }
+};
+
+coachSubscriptionSchema.post("save", function (doc) {
+  notifyUsersOfSubscriptionUpdate(doc);
+});
+
+coachSubscriptionSchema.post("findOneAndUpdate", function (doc) {
+  notifyUsersOfSubscriptionUpdate(doc);
+});
 
 export const CoachSubscription = mongoose.model<CoachSubscriptionDocument>(
   "CoachSubscription",

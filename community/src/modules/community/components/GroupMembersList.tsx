@@ -5,6 +5,7 @@ import { communityService } from "../services/community";
 import { ChevronRight, Users, UserCircle2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useAsync } from "@/lib/hooks/useAsync";
+import { getCommunitySocket } from "@/lib/realtime/socket";
 
 export interface GroupMember {
   id: string;
@@ -45,6 +46,25 @@ export function GroupMembersList({
     }
   }, [data, onMembersCountChange]);
 
+  useEffect(() => {
+    const socket = getCommunitySocket();
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleUpdate = () => {
+      void execute();
+    };
+
+    socket.emit("community:joinGroupRoom", groupId);
+    socket.on("community:groupMembersUpdated", handleUpdate);
+
+    return () => {
+      socket.off("community:groupMembersUpdated", handleUpdate);
+      socket.emit("community:leaveGroupRoom", groupId);
+    };
+  }, [groupId, execute]);
+
   if (isLoading) {
     return (
       <div className="py-2">
@@ -67,15 +87,7 @@ export function GroupMembersList({
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="py-2"
     >
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={() => void execute()}
-          disabled={isLoading}
-          className="min-h-9 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:text-slate-700 transition disabled:opacity-50"
-        >
-          Refresh Members
-        </button>
-      </div>
+
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50/80 p-3">
@@ -95,7 +107,7 @@ export function GroupMembersList({
                 prefersReducedMotion ? undefined : { y: -2, scale: 1.01 }
               }
               whileTap={prefersReducedMotion ? undefined : { scale: 0.99 }}
-              className="w-full rounded-2xl border border-border bg-white p-3 text-left transition hover:border-power-orange/30 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-power-orange sm:p-3.5"
+              className="w-full rounded-2xl border border-white/60 bg-white/70 backdrop-blur-md p-3 text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:-translate-y-0.5 hover:border-power-orange/30 hover:bg-white/90 hover:shadow-[0_8px_20px_rgba(233,115,22,0.06)] focus:outline-none focus:ring-2 focus:ring-power-orange sm:p-3.5"
               aria-label={`View ${member.displayName} profile`}
             >
               <div className="flex items-center gap-3">

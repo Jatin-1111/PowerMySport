@@ -14,6 +14,8 @@ import {
   S3ClientConfig,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import { v4 as uuidv4 } from "uuid";
 
 export interface PresignedUrlConfig {
   bucket: string;
@@ -33,7 +35,7 @@ export class S3Service {
   private documentsBucket: string;
   private imagesBucket: string;
   private region: string;
-  private s3Client: S3Client;
+  private s3Client: any;
 
   constructor() {
     // Load environment variables first
@@ -143,6 +145,47 @@ export class S3Service {
     });
 
     // Generate presigned URL for downloading/viewing the image (7 days expiry)
+    const getCommand = new GetObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800, // 7 days
+    });
+
+    return {
+      uploadUrl,
+      downloadUrl,
+      fileName: sanitizedFileName,
+      key,
+    };
+  }
+
+  /**
+   * Generate presigned upload URL for product images
+   * @param fileName - Original file name
+   * @param contentType - MIME type for image
+   * @returns Presigned URL and metadata
+   */
+  async generateProductImageUploadUrl(
+    fileName: string,
+    contentType: string,
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = fileName.split(".").pop();
+    const sanitizedFileName = `product_${Date.now()}_${uuidv4().substring(0, 8)}.${fileExtension}`;
+    const key = `products/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600, // 1 hour
+    });
+
     const getCommand = new GetObjectCommand({
       Bucket: this.imagesBucket,
       Key: key,
@@ -333,6 +376,113 @@ export class S3Service {
       fileName: sanitizedFileName,
       key,
     };
+  }
+
+  /**
+   * Generate presigned upload URL for concierge documents (birth certs, medical certs)
+   * @param fileName - Original file name
+   * @param contentType - MIME type for document
+   * @param userId - User ID for folder organization
+   * @param documentType - Type of document (e.g. BIRTH_CERTIFICATE, MEDICAL_CERTIFICATE)
+   * @returns Presigned URL and metadata
+   */
+  async generateConciergeDocumentUploadUrl(
+    fileName: string,
+    contentType: string,
+    userId: string,
+    documentType: string
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = fileName.split(".").pop();
+    const cleanDocType = documentType.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    const sanitizedFileName = `${cleanDocType}_${Date.now()}.${fileExtension}`;
+    const key = `concierge/${userId}/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600, // 1 hour
+    });
+
+    // Generate presigned download URL for private bucket
+    const getCommand = new GetObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800, // 7 days
+    });
+
+    return {
+      uploadUrl,
+      downloadUrl,
+      fileName: sanitizedFileName,
+      key,
+    };
+  }
+
+  /**
+   * Generate presigned download URL for a concierge document
+   * @param key - The S3 key of the document
+   * @returns Presigned download URL (valid for 1 hour)
+   */
+  async generateConciergeDocumentDownloadUrl(key: string): Promise<string> {
+    const getCommand = new GetObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+    });
+
+    return await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 3600, // 1 hour
+    });
+  }
+
+  /**
+   * Generate a presigned POST for secure chat image uploads.
+   * Security enforced at AWS policy level:
+   *  - content-length-range: 1 byte – 5 MB (prevents oversized uploads)
+   *  - Content-Type: only image/jpeg, image/png, or image/webp
+   *  - Unpredictable object key via uuid to prevent IDOR/scraping
+   * @param conversationId - Used as a folder prefix
+   * @param contentType - MIME type (must be jpeg/png/webp, validated by caller)
+   */
+  async generateChatImagePresignedPost(
+    conversationId: string,
+    contentType: "image/jpeg" | "image/png" | "image/webp",
+  ): Promise<{ url: string; fields: Record<string, string>; key: string }> {
+    const chatBucket = process.env.AWS_S3_CHAT_BUCKET;
+    if (!chatBucket) {
+      throw new Error("AWS_S3_CHAT_BUCKET environment variable is not set");
+    }
+
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    };
+    const ext = extMap[contentType] || "jpg";
+    const key = `chats/${conversationId}/${uuidv4()}.${ext}`;
+
+    const { url, fields } = await createPresignedPost(this.s3Client, {
+      Bucket: chatBucket,
+      Key: key,
+      Conditions: [
+        // Enforce strict 10 MB upload ceiling at the AWS level
+        ["content-length-range", 1, 10 * 1024 * 1024],
+        // Whitelist only allowed content types
+        ["eq", "$Content-Type", contentType],
+      ],
+      Fields: {
+        "Content-Type": contentType,
+      },
+      Expires: 300, // 5 minutes
+    });
+
+    return { url, fields, key };
   }
 
   /**

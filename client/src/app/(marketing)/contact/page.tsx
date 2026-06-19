@@ -6,7 +6,6 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
 import { AnimatePresence, motion, Variants } from "framer-motion";
-import Image from "next/image";
 import {
   Facebook,
   Instagram,
@@ -16,7 +15,8 @@ import {
   Phone,
   Twitter,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import React, { useEffect, useState } from "react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -504,7 +504,7 @@ export default function ContactPage() {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      placeholder="your@email.com"
+                      placeholder="your@gmail.com"
                     />
                   </motion.div>
 

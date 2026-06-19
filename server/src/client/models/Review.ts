@@ -1,9 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ReviewDocument extends Document {
-  bookingId: mongoose.Types.ObjectId;
+  bookingId?: mongoose.Types.ObjectId; // For venues/coaches
+  orderId?: mongoose.Types.ObjectId; // For products
   userId: mongoose.Types.ObjectId; // Reviewer (player)
-  targetType: "VENUE" | "COACH";
+  targetType: "VENUE" | "COACH" | "PRODUCT";
   targetId: mongoose.Types.ObjectId;
 
   // Ratings (1-5)
@@ -34,7 +35,10 @@ const reviewSchema = new Schema<ReviewDocument>(
     bookingId: {
       type: Schema.Types.ObjectId,
       ref: "Booking",
-      required: true,
+    },
+    orderId: {
+      type: Schema.Types.ObjectId,
+      ref: "Order",
     },
     userId: {
       type: Schema.Types.ObjectId,
@@ -43,7 +47,7 @@ const reviewSchema = new Schema<ReviewDocument>(
     },
     targetType: {
       type: String,
-      enum: ["VENUE", "COACH"],
+      enum: ["VENUE", "COACH", "PRODUCT"],
       required: true,
     },
     targetId: {
@@ -113,7 +117,12 @@ reviewSchema.index({ moderationStatus: 1, reportCount: -1 });
 // Allow multiple reviews per booking (one for venue, one for coach)
 reviewSchema.index(
   { bookingId: 1, targetType: 1, userId: 1 },
-  { unique: true },
+  { unique: true, sparse: true },
+);
+// Allow one review per product per order
+reviewSchema.index(
+  { orderId: 1, targetType: 1, targetId: 1, userId: 1 },
+  { unique: true, sparse: true },
 );
 
 export const Review = mongoose.model<ReviewDocument>("Review", reviewSchema);

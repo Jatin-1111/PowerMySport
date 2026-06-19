@@ -1,44 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-
-type RateLimitStoreEntry = {
-  count: number;
-  resetAt: number;
-};
+import redis from "../config/redis";
 
 const ONE_MINUTE_MS = 60 * 1000;
-const MAX_RATE_LIMIT_ENTRIES = parseInt(
-  process.env.API_RATE_LIMIT_MAX_ENTRIES || "50000",
-  10,
-);
-
-const defaultRateLimitStore = new Map<string, RateLimitStoreEntry>();
-
-const pruneRateLimitStore = (now: number) => {
-  for (const [key, value] of defaultRateLimitStore.entries()) {
-    if (value.resetAt <= now) {
-      defaultRateLimitStore.delete(key);
-    }
-  }
-
-  if (defaultRateLimitStore.size <= MAX_RATE_LIMIT_ENTRIES) {
-    return;
-  }
-
-  // Map iteration order is insertion order; evict oldest entries to stay bounded.
-  const overflowCount = defaultRateLimitStore.size - MAX_RATE_LIMIT_ENTRIES;
-  let deleted = 0;
-  for (const key of defaultRateLimitStore.keys()) {
-    defaultRateLimitStore.delete(key);
-    deleted += 1;
-    if (deleted >= overflowCount) {
-      break;
-    }
-  }
-};
-
-setInterval(() => {
-  pruneRateLimitStore(Date.now());
-}, ONE_MINUTE_MS).unref();
 
 export const securityHeadersMiddleware = (
   _req: Request,
@@ -64,6 +27,17 @@ export const securityHeadersMiddleware = (
   next();
 };
 
+/**
+ * Redis-backed rate limiter — shared across all auto-scaled instances.
+ *
+ * Uses atomic INCR + EXPIRE so there are no race conditions.
+ * Falls back to allowing the request if Redis is unavailable,
+ * so a Redis hiccup never takes down the API.
+ *
+ * Fix: replaced the local in-memory Map (defaultRateLimitStore) that caused
+ * "amnesia scaling" — each EB instance had its own counter, so the ALB
+ * routing a user to a different instance would reset their rate-limit window.
+ */
 export const apiRateLimitMiddleware = (
   req: Request,
   res: Response,
@@ -78,41 +52,38 @@ export const apiRateLimitMiddleware = (
     process.env.API_RATE_LIMIT_MAX_REQUESTS || "120",
     10,
   );
-  const windowMs = parseInt(
-    process.env.API_RATE_LIMIT_WINDOW_MS || String(ONE_MINUTE_MS),
-    10,
+  const windowSec = Math.ceil(
+    parseInt(process.env.API_RATE_LIMIT_WINDOW_MS || String(ONE_MINUTE_MS), 10) / 1000,
   );
 
+  // req.ip is now the real user IP because app.set("trust proxy", 1) is set in app.ts
   const ip = req.ip || "unknown";
-  const now = Date.now();
-  const key = `${ip}:${Math.floor(now / windowMs)}`;
+  const key = `rl:${ip}`;
 
-  const existing = defaultRateLimitStore.get(key);
+  redis
+    .incr(key)
+    .then((count) => {
+      // Set the TTL only on the first request in this window
+      if (count === 1) {
+        redis.expire(key, windowSec).catch(() => {});
+      }
 
-  if (!existing) {
-    pruneRateLimitStore(now);
-    defaultRateLimitStore.set(key, {
-      count: 1,
-      resetAt: now + windowMs,
+      res.setHeader("X-RateLimit-Limit", String(maxRequestsPerWindow));
+      res.setHeader("X-RateLimit-Remaining", String(Math.max(0, maxRequestsPerWindow - count)));
+
+      if (count > maxRequestsPerWindow) {
+        res.setHeader("Retry-After", String(windowSec));
+        res.status(429).json({
+          success: false,
+          message: "Too many requests. Please try again shortly.",
+        });
+        return;
+      }
+
+      next();
+    })
+    .catch(() => {
+      // Redis unavailable — fail open so the API stays alive
+      next();
     });
-    next();
-    return;
-  }
-
-  existing.count += 1;
-
-  if (existing.count > maxRequestsPerWindow) {
-    const retryAfterSeconds = Math.max(
-      1,
-      Math.ceil((existing.resetAt - now) / 1000),
-    );
-    res.setHeader("Retry-After", String(retryAfterSeconds));
-    res.status(429).json({
-      success: false,
-      message: "Too many requests. Please try again shortly.",
-    });
-    return;
-  }
-
-  next();
 };

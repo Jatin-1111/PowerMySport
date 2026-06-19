@@ -60,20 +60,6 @@ export const linkVenuesToOwners = async () => {
           // Update user role to VENUE_LISTER if not already
           if (user.role !== "VENUE_LISTER") {
             user.role = "VENUE_LISTER";
-            if (!user.venueListerProfile) {
-              user.venueListerProfile = {
-                businessDetails: {
-                  name: venue.ownerName,
-                  address: venue.address || "",
-                },
-                payoutInfo: {
-                  accountNumber: "",
-                  ifsc: "",
-                  bankName: "",
-                },
-                canAddMoreVenues: false,
-              };
-            }
             await user.save();
             console.log(`   ✓ Updated user role to VENUE_LISTER`);
           }
@@ -87,18 +73,6 @@ export const linkVenuesToOwners = async () => {
             phone: venue.ownerPhone,
             password: tempPassword, // User model will hash this
             role: "VENUE_LISTER",
-            venueListerProfile: {
-              businessDetails: {
-                name: venue.ownerName,
-                address: venue.address || "",
-              },
-              payoutInfo: {
-                accountNumber: "",
-                ifsc: "",
-                bankName: "",
-              },
-              canAddMoreVenues: false,
-            },
           });
 
           await user.save();

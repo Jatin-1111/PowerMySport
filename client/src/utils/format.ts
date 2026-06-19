@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Format time string for display
  */
 export const formatTime = (timeStr: string): string => {
@@ -50,7 +50,7 @@ export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: Number.isInteger(amount) ? 0 : 2,
   }).format(amount);
 };
 

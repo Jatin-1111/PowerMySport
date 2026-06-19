@@ -10,7 +10,7 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 
 function RegisterContent() {
   const router = useRouter();
@@ -22,13 +22,13 @@ function RegisterContent() {
     roleParam === "COACH"
       ? roleParam
       : "PLAYER";
-  const { setUser, setToken, setLoading } = useAuthStore();
+  const { user, setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    role: initialRole as "PLAYER" | "VENUE_LISTER" | "COACH",
+    userType: "Recreational" as "Parent" | "Recreational" | "Coach",
     serviceMode: "OWN_VENUE" as "OWN_VENUE" | "FREELANCE" | "HYBRID",
     acceptedTerms: false,
     acceptedPrivacy: false,
@@ -36,6 +36,24 @@ function RegisterContent() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if ((user as any).userType === "Parent") {
+        router.push("/parent-onboarding");
+      } else if (user.role === "PLAYER") {
+        router.push("/dashboard/my-bookings");
+      } else if (user.role === "VENUE_LISTER") {
+        router.push("/venue-lister/inventory");
+      } else if (user.role === "COACH") {
+        router.push("/coach/verification");
+      } else if (user.role === "ACADEMY_OWNER") {
+        router.push("/academy");
+      } else {
+        router.push("/dashboard/my-bookings");
+      }
+    }
+  }, [user, router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -90,31 +108,32 @@ function RegisterContent() {
     setIsSubmitting(true);
     setLoading(true);
     try {
-      const response = await authApi.register(formData);
+      const payload = {
+        ...formData,
+        role: formData.userType === "Coach" ? "COACH" : "PLAYER",
+      };
+      // @ts-ignore - The API expects role, we derived it from userType
+      const response = await authApi.register(payload);
       if (response.success && response.data) {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
 
         // Store serviceMode for coaches to pre-fill on profile page
-        if (formData.role === "COACH") {
+        if (formData.userType === "Coach") {
           localStorage.setItem("coachServiceMode", formData.serviceMode);
         }
 
-        // Route based on role
-        const roleRoutes: Record<"PLAYER" | "VENUE_LISTER" | "COACH", string> =
-          {
-            PLAYER: "/dashboard/my-bookings",
-            VENUE_LISTER: "/venue-lister/inventory",
-            COACH: "/coach/verification",
-          };
-        const role = response.data.user.role;
-        const destination =
-          role === "PLAYER" || role === "VENUE_LISTER" || role === "COACH"
-            ? roleRoutes[role]
-            : "/dashboard/my-bookings";
-
-        router.push(destination);
+        // Route based on userType
+        if (formData.userType === "Parent") {
+          router.push("/parent-onboarding");
+        } else if (response.data.user.role === "COACH") {
+          router.push("/coach/verification");
+        } else if (response.data.user.role === "VENUE_LISTER") {
+          router.push("/venue-lister/inventory");
+        } else {
+          router.push("/dashboard/my-bookings");
+        }
       } else {
         toast.error(response.message || "Registration failed");
       }
@@ -160,7 +179,8 @@ function RegisterContent() {
         email: decoded.email,
         name: decoded.name,
         photoUrl: decoded.picture,
-        role: formData.role,
+        role: formData.userType === "Coach" ? "COACH" : "PLAYER",
+        userType: formData.userType,
         action: "register",
         acceptedTerms: formData.acceptedTerms,
         acceptedPrivacy: formData.acceptedPrivacy,
@@ -172,17 +192,17 @@ function RegisterContent() {
         localStorage.setItem("user", JSON.stringify(response.data.user));
 
         // Store serviceMode for coaches to pre-fill on profile page
-        if (formData.role === "COACH") {
+        if (formData.userType === "Coach") {
           localStorage.setItem("coachServiceMode", formData.serviceMode);
         }
 
-        // Redirect based on role
-        if (response.data.user.role === "PLAYER") {
-          router.push("/dashboard/my-bookings");
-        } else if (response.data.user.role === "VENUE_LISTER") {
-          router.push("/venue-lister/inventory");
+        // Redirect based on userType/role
+        if (formData.userType === "Parent") {
+          router.push("/parent-onboarding");
         } else if (response.data.user.role === "COACH") {
           router.push("/coach/verification");
+        } else if (response.data.user.role === "VENUE_LISTER") {
+          router.push("/venue-lister/inventory");
         } else {
           router.push("/dashboard/my-bookings");
         }
@@ -314,13 +334,14 @@ function RegisterContent() {
                   Account Type
                 </label>
                 <select
-                  name="role"
-                  value={formData.role}
+                  name="userType"
+                  value={formData.userType}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all"
                 >
-                  <option value="PLAYER">Player (Book Venues & Coaches)</option>
-                  <option value="COACH">Coach (Offer Coaching Services)</option>
+                  <option value="Parent">I am a Parent (Managing my child&apos;s sports journey)</option>
+                  <option value="Recreational">I am an Athlete (Booking venues & playing)</option>
+                  <option value="Coach">I am a Coach (Offering training services)</option>
                 </select>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
                   Want to list your venue or start academy onboarding?{" "}
@@ -333,7 +354,7 @@ function RegisterContent() {
                 </p>
               </div>
 
-              {formData.role === "COACH" && (
+              {formData.userType === "Coach" && (
                 <SlideUp duration={0.4} yOffset={10}>
                   <div>
                     <label className="block text-sm font-medium text-slate-900 dark:text-white mb-2">

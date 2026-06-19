@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { CommunityService } from "../services/CommunityService";
 import { emitCommunityQnaEvent } from "../services/CommunityRealtimeService";
+import { s3Service } from "../../shared/services/S3Service";
 
 const getUserId = (req: Request): string => {
   if (!req.user?.id) {
@@ -78,10 +79,18 @@ export const searchPlayers = async (
       typeof rawLimit === "string" ? Number(rawLimit) : Number.NaN;
     const limit = Number.isFinite(parsedLimit) ? parsedLimit : 10;
 
+    const userTypeRaw = req.query.userType;
+    const userType = typeof userTypeRaw === "string" ? userTypeRaw : undefined;
+    
+    const roleRaw = req.query.role;
+    const role = typeof roleRaw === "string" ? roleRaw : undefined;
+
     const data = await CommunityService.searchPlayers(
       getUserId(req),
       query,
       limit,
+      userType,
+      role
     );
 
     res.status(200).json({
@@ -469,6 +478,27 @@ export const joinGroup = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     handleError(res, error, "Failed to join group");
+  }
+};
+
+export const deleteGroup = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const groupId = String(req.params.groupId || "");
+    if (!groupId) {
+      throw new Error("groupId is required");
+    }
+
+    const data = await CommunityService.deleteGroup(getUserId(req), groupId);
+    res.status(200).json({
+      success: true,
+      message: "Group deleted successfully",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to delete group");
   }
 };
 
@@ -1020,5 +1050,52 @@ export const voteCommunityTarget = async (
     });
   } catch (error) {
     handleError(res, error, "Failed to update vote");
+  }
+};
+
+export const getCommunityPulseStats = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const count = await CommunityService.getCommunityPulseStats();
+    res.status(200).json({ success: true, count });
+  } catch (error) {
+    handleError(res, error, "Failed to get community pulse stats");
+  }
+};
+
+/**
+ * POST /community/chat/upload-url
+ * Returns a presigned S3 POST URL for uploading a chat image.
+ * Security:
+ *  - Caller must be a participant in the target conversation
+ *  - Content-type whitelisted server-side (jpeg/png/webp only)
+ *  - 5MB limit enforced in S3 policy (via createPresignedPost conditions)
+ *  - Rate-limited at the route level (5 requests / 60 s)
+ */
+export const getChatImageUploadUrl = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = getUserId(req);
+    const { conversationId, contentType } = req.body as {
+      conversationId: string;
+      contentType: "image/jpeg" | "image/png" | "image/webp";
+    };
+
+    // Verify the caller is a participant in the conversation
+    await CommunityService.assertConversationAccess(userId, conversationId);
+
+    const { url, fields, key } = await s3Service.generateChatImagePresignedPost(
+      conversationId,
+      contentType,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Presigned upload URL generated",
+      data: { url, fields, key },
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to generate upload URL");
   }
 };

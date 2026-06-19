@@ -3,6 +3,10 @@
 // ============================================
 export interface IPlayerProfile {
   sports?: string[];
+  personalityTags?: string[];
+  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  weeklyTimeCommitment?: number;
+  budgetTier?: "Budget" | "Moderate" | "Premium";
 }
 
 export type UserRole =
@@ -51,9 +55,14 @@ export interface Dependent {
   _id?: string;
   name: string;
   dob: string; // ISO date string
+  age?: number;
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   sports?: string[];
+  personalityTags?: string[];
+  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  weeklyTimeCommitment?: number;
+  budgetTier?: "Budget" | "Moderate" | "Premium";
 }
 
 export interface User {
@@ -64,6 +73,7 @@ export interface User {
   isIdentityPublic?: boolean;
   dob?: string;
   role: UserRole;
+  userType?: "Parent" | "Recreational" | "Coach" | "VenueLister" | "Admin" | "Academy";
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
   playerProfile?: IPlayerProfile;

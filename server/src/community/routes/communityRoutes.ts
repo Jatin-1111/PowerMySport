@@ -1,4 +1,5 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
+import rateLimit from "express-rate-limit";
 import {
   acceptConversationRequest,
   addGroupMember,
@@ -9,6 +10,7 @@ import {
   deleteMessage,
   deleteCommunityAnswer,
   deleteCommunityPost,
+  deleteGroup,
   getCommunityPostDetails,
   getMyCommunityReputation,
   editMessage,
@@ -18,6 +20,7 @@ import {
   getConversationMessages,
   getGroupInviteCode,
   getGroupMembers,
+  getChatImageUploadUrl,
   joinGroup,
   joinGroupByCode,
   leaveGroup,
@@ -49,6 +52,7 @@ import {
   communityUpdateMessageSchema,
   communityUpdatePostSchema,
   communitySendMessageSchema,
+  communityChatUploadUrlSchema,
   communityStartConversationSchema,
   communityUpdateProfileSchema,
   communityVoteSchema,
@@ -114,6 +118,7 @@ router.post("/groups/join-by-code/:inviteCode", joinGroupByCode);
 router.get("/groups/:groupId/members", getGroupMembers);
 router.get("/groups/:groupId/invite-code", getGroupInviteCode);
 router.post("/groups/:groupId/leave", leaveGroup);
+router.delete("/groups/:groupId", deleteGroup);
 router.post(
   "/reports",
   validateRequest(communityReportSchema),
@@ -150,6 +155,32 @@ router.post(
   "/votes",
   validateRequest(communityVoteSchema),
   voteCommunityTarget,
+);
+
+/**
+ * Rate limiter for chat image upload URL generation.
+ * Keyed per user ID (extracted from req.user after authMiddleware).
+ * Allows 5 presigned URL requests per 60 seconds per user.
+ */
+const chatUploadRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5,
+  keyGenerator: (req: Request) => req.user?.id || "anonymous",
+  handler: (_req: Request, res: Response, _next: NextFunction) => {
+    res.status(429).json({
+      success: false,
+      message: "Too many upload requests. Please wait a moment before uploading another image.",
+    });
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post(
+  "/chat/upload-url",
+  chatUploadRateLimit,
+  validateRequest(communityChatUploadUrlSchema),
+  getChatImageUploadUrl,
 );
 
 export default router;

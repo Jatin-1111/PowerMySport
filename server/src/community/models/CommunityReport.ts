@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { emitCommunityUserEvent } from "../services/CommunityRealtimeService";
 
 export type CommunityReportTargetType = "MESSAGE" | "GROUP" | "POST" | "ANSWER";
 export type CommunityReportStatus =
@@ -70,6 +71,21 @@ const communityReportSchema = new Schema<CommunityReportDocument>(
 );
 
 communityReportSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
+
+communityReportSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
+
+const notifyReportUpdated = (doc: any) => {
+  if (!doc || !doc.reporterUserId) return;
+  emitCommunityUserEvent(doc.reporterUserId.toString(), "community:reportUpdated", { reportId: doc._id?.toString() });
+};
+
+communityReportSchema.post("save", function (doc) {
+  notifyReportUpdated(doc);
+});
+
+communityReportSchema.post("findOneAndUpdate", function (doc) {
+  notifyReportUpdated(doc);
+});
 
 export const CommunityReport = mongoose.model<CommunityReportDocument>(
   "CommunityReport",

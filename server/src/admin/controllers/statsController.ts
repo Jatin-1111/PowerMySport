@@ -225,7 +225,7 @@ export const getAllUsers = async (
       User.countDocuments(query),
       User.find(query)
         .select(
-          "name email phone role createdAt lastActiveAt playerProfile.sports dependents venueListerProfile.businessDetails.name venueListerProfile.canAddMoreVenues",
+          "name email phone role createdAt lastActiveAt",
         )
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -399,7 +399,7 @@ export const getPlayersUsers = async (
       User.countDocuments(query),
       User.find(query)
         .select(
-          "name email phone createdAt lastActiveAt playerProfile.sports dependents",
+          "name email phone createdAt lastActiveAt",
         )
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -408,16 +408,23 @@ export const getPlayersUsers = async (
     ]);
 
     const data = await Promise.all(
-      users.map(async (user) => ({
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: "PLAYER",
-        createdAt: user.createdAt,
-        lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: await isUserOnline(user._id.toString()),
-      })),
+      users.map(async (user) => {
+        const sports: string[] = [];
+        const dependents: any[] = [];
+
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: "PLAYER",
+          createdAt: user.createdAt,
+          lastActiveAt: user.lastActiveAt || user.createdAt,
+          isOnlineNow: await isUserOnline(user._id.toString()),
+          sports,
+          dependents,
+        };
+      })
     );
 
     res.status(200).json({
@@ -530,7 +537,7 @@ export const getVenueListerUsers = async (
     const total = await User.countDocuments(query);
     const users = await User.find(query)
       .select(
-        "name email phone createdAt lastActiveAt venueListerProfile.businessDetails.name venueListerProfile.canAddMoreVenues",
+        "name email phone createdAt lastActiveAt",
       )
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -587,8 +594,8 @@ export const getVenueListerUsers = async (
           createdAt: user.createdAt,
           lastActiveAt: user.lastActiveAt || user.createdAt,
           isOnlineNow: await isUserOnline(user._id.toString()),
-          businessName: user.venueListerProfile?.businessDetails?.name ?? "",
-          canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues ?? false,
+          businessName: "",
+          canAddMoreVenues: false,
           venueCount: counts?.venueCount ?? 0,
           approvedVenueCount: counts?.approvedVenueCount ?? 0,
           pendingVenueCount: counts?.pendingVenueCount ?? 0,

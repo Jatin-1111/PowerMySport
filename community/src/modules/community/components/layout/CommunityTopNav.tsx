@@ -17,12 +17,14 @@ import {
   House,
   Trophy,
   UserX,
-  Heart,
   ExternalLink,
   Settings2,
   ChevronDown,
   ChevronLeft,
   MessagesSquare,
+  BrainCircuit,
+  Heart,
+  Compass,
 } from "lucide-react";
 
 // ─── Additional Settings dropdown items ────────────────────────────────────
@@ -43,8 +45,6 @@ export default function CommunityTopNav() {
   const isMounted  = typeof document !== "undefined";
   const settingsRef = useRef<HTMLDivElement>(null);
 
-  const showBackButton = pathname !== "/" || sidebar === "conversations";
-
   // ── load / refresh unread badge ──────────────────────────────────────────
   useEffect(() => {
     const loadUnreadCount = async () => {
@@ -59,11 +59,23 @@ export default function CommunityTopNav() {
     void loadUnreadCount();
 
     const socket = getCommunitySocket();
-    socket.on("notification:new", loadUnreadCount);
+    const handleNewNotification = () => {
+      void communityService.clearNotificationCache();
+      void loadUnreadCount();
+    };
+
+    socket.on("notification:new", handleNewNotification);
     if (!socket.connected) socket.connect();
+    
+    // Also update badge when notifications are marked read locally
+    const handleLocalRead = () => {
+      void loadUnreadCount();
+    };
+    window.addEventListener("community:notificationsRead", handleLocalRead);
 
     return () => {
-      socket.off("notification:new", loadUnreadCount);
+      socket.off("notification:new", handleNewNotification);
+      window.removeEventListener("community:notificationsRead", handleLocalRead);
     };
   }, []);
 
@@ -86,12 +98,12 @@ export default function CommunityTopNav() {
     pathname.startsWith(item.href),
   );
 
-  // ── shared nav-link style helper ─────────────────────────────────────────
+  // ── primary nav-link style helper (center) ───────────────────────────────
   const navLinkCls = (active: boolean) =>
-    `inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold shadow-sm transition ${
+    `inline-flex min-h-10 items-center gap-1.5 rounded-2xl px-2 lg:px-3 py-2 text-[13px] font-bold whitespace-nowrap transition-all duration-200 ${
       active
-        ? "border-power-orange/40 bg-power-orange/8 text-power-orange"
-        : "border-slate-200 bg-white/85 text-slate-700 hover:bg-white"
+        ? "bg-power-orange/10 text-power-orange"
+        : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900"
     }`;
 
   return (
@@ -100,83 +112,65 @@ export default function CommunityTopNav() {
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/75 px-3 py-2.5 shadow-sm shadow-slate-900/5 backdrop-blur sm:px-4">
 
           {/* Left section: Back button & Logo */}
-          <div className="flex items-center gap-3">
-            {/* ── Back to dashboard ───────────────── */}
-            {showBackButton && (
-              <Link
-                href="/?sidebar=community-overview"
-                className="inline-flex min-h-10 shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white/85 px-2.5 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-white hover:text-slate-900"
-                aria-label="Back to dashboard"
-              >
-                <ChevronLeft size={14} />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Link>
-            )}
-
+          <div className="flex items-center flex-shrink-0">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
-            <Link href="/?sidebar=community-overview" className="flex items-center gap-2">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#E97316,#F59E0B)] text-sm font-black text-white shadow-[0_10px_24px_-12px_rgba(233,115,22,0.75)]">
-                PM
+            <Link href="/" className="flex flex-col items-start justify-center">
+              <span className="font-title inline-block origin-left scale-x-[0.92] text-[1.1rem] font-extrabold leading-none tracking-tighter lg:text-[1.25rem]">
+                <span className="text-power-orange">Power</span>
+                <span className="text-slate-900">MySport</span>
               </span>
-              <div>
-                <p className="font-title text-base tracking-tight text-slate-900 sm:text-lg">
-                  PowerMySport
-                </p>
-                <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500 sm:text-[11px]">
-                  Community
-                </p>
-              </div>
+              <span className="mt-0.5 pl-[1px] text-[9px] font-black uppercase tracking-[0.3em] text-slate-400/80 leading-none">
+                Community
+              </span>
             </Link>
           </div>
 
-          {/* ── Desktop nav ───────────────────────────────────────────────── */}
-          <div className="hidden items-center gap-1.5 md:flex">
-
-            {/* Chats */}
+          {/* ── Desktop Center Nav ────────────────────────────────────────── */}
+          <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5 mx-2">
             <Link
-              href="/?sidebar=conversations"
-              className={navLinkCls(pathname === "/" && sidebar === "conversations")}
+              href="/discover"
+              className={navLinkCls(pathname.startsWith("/discover"))}
             >
-              <MessagesSquare size={13} />
+              <Compass size={16} />
+              Discover
+            </Link>
+
+            <Link
+              href="/chats?sidebar=conversations"
+              className={navLinkCls(pathname.startsWith("/chats"))}
+            >
+              <MessagesSquare size={16} />
               Chats
             </Link>
 
-            {/* Knowledge */}
             <Link
               href="/q"
               className={navLinkCls(pathname.startsWith("/q"))}
             >
-              <MessageSquare size={13} />
+              <MessageSquare size={16} />
               Knowledge
             </Link>
 
-            {/* Contributors */}
+
             <Link
               href="/contributors"
               className={navLinkCls(pathname.startsWith("/contributors"))}
             >
-              <Trophy size={13} />
+              <Trophy size={16} />
               Contributors
             </Link>
+          </div>
 
-            {/* Following */}
-            <Link
-              href="/following"
-              className={navLinkCls(pathname.startsWith("/following"))}
-            >
-              <Heart size={13} />
-              Following
-            </Link>
-
+          {/* ── Desktop Right Actions ─────────────────────────────────────── */}
+          <div className="hidden xl:flex items-center justify-end gap-3 flex-shrink-0">
             {/* Notifications */}
             <Link
               href="/notifications"
-              className={navLinkCls(pathname.startsWith("/notifications"))}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
-              <Bell size={13} />
-              Notifications
+              <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-power-orange px-1.5 py-0.5 text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-power-orange px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -187,16 +181,15 @@ export default function CommunityTopNav() {
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen((prev) => !prev)}
-                className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-semibold shadow-sm transition ${
+                className={`inline-flex min-h-10 items-center gap-1 rounded-xl px-3 py-2 text-[13px] font-bold transition ${
                   isSettingsActive
-                    ? "border-power-orange/40 bg-power-orange/8 text-power-orange"
-                    : "border-slate-200 bg-white/85 text-slate-700 hover:bg-white"
+                    ? "bg-power-orange/10 text-power-orange"
+                    : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900"
                 }`}
               >
-                <Settings2 size={13} />
                 More
                 <ChevronDown
-                  size={11}
+                  size={14}
                   className={`transition-transform duration-200 ${isSettingsOpen ? "rotate-180" : ""}`}
                 />
               </button>
@@ -226,7 +219,7 @@ export default function CommunityTopNav() {
                             : "text-slate-700"
                         }`}
                       >
-                        <Icon size={14} />
+                        <Icon size={16} />
                         {label}
                       </Link>
                     ))}
@@ -235,19 +228,40 @@ export default function CommunityTopNav() {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Main App */}
+            <a
+              href={mainAppUrl}
+              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-power-orange to-[#d96610] px-4 py-2 text-[13px] font-bold text-white shadow-[0_8px_16px_-6px_rgba(233,115,22,0.4)] transition hover:opacity-90 hover:shadow-[0_8px_20px_-6px_rgba(233,115,22,0.6)]"
+            >
+              Main App
+              <ExternalLink size={14} />
+            </a>
           </div>
 
           {/* ── Mobile hamburger ──────────────────────────────────────────── */}
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(true)}
-            aria-label="Open navigation menu"
-            aria-expanded={isMobileMenuOpen}
-            className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 md:hidden"
-          >
-            <Menu size={18} />
-            Menu
-          </button>
+          <div className="flex xl:hidden items-center gap-2">
+            <Link
+              href="/notifications"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-600 transition hover:bg-slate-100"
+            >
+              <Bell size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-power-orange px-1 text-[9px] font-bold text-white ring-2 ring-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open navigation menu"
+              aria-expanded={isMobileMenuOpen}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -260,7 +274,7 @@ export default function CommunityTopNav() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm md:hidden"
+                className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm xl:hidden"
                 style={{ zIndex: 2147483000 }}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -295,7 +309,7 @@ export default function CommunityTopNav() {
                   {/* Home shortcut */}
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
                     <Link
-                      href="/?sidebar=community-overview"
+                      href="/"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
                     >
@@ -326,7 +340,8 @@ export default function CommunityTopNav() {
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { href: "/?sidebar=conversations",  icon: MessagesSquare, label: "Chats"        },
+                      { href: "/chats?sidebar=conversations",           icon: MessagesSquare, label: "Chats"        },
+                      { href: "/discover",        icon: Compass,        label: "Discover"     },
                       { href: "/q",               icon: MessageSquare,  label: "Knowledge"    },
                       { href: "/contributors",    icon: Trophy,         label: "Contributors" },
                       { href: "/following",       icon: Heart,          label: "Following"    },
@@ -356,30 +371,35 @@ export default function CommunityTopNav() {
                         </span>
                       )}
                     </Link>
-                  </div>
+                    <Link
+                      href="/reports"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <FileWarning size={15} />
+                      Reports
+                    </Link>
+                    <Link
+                      href="/contributors"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <Trophy size={15} />
+                      Contributors
+                    </Link>
 
-                  {/* Additional Settings group */}
-                  <p className="mt-5 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-1">
-                    Additional Settings
-                  </p>
-                  <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                    {SETTINGS_ITEMS.map(({ href, icon: Icon, label }, idx) => (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 ${
-                          idx < SETTINGS_ITEMS.length - 1
-                            ? "border-b border-slate-100"
-                            : ""
-                        }`}
-                      >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                          <Icon size={14} />
-                        </span>
-                        {label}
-                      </Link>
-                    ))}
+                    <Link
+                      href="/safety"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <UserX size={15} />
+                      Safety
+                    </Link>
+                    <Link
+                      href="/privacy"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                      <Shield size={15} />
+                      Privacy
+                    </Link>
                   </div>
 
                   {/* Tip */}

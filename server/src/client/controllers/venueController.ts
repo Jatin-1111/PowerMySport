@@ -117,18 +117,7 @@ export const createNewVenue = async (
     console.log("Venue Lister user:", {
       id: user._id,
       role: user.role,
-      canAddMoreVenues: user.venueListerProfile?.canAddMoreVenues,
     });
-
-    // Check if venue lister can add more venues (defaults to false for approved venue listers)
-    if (!user.venueListerProfile?.canAddMoreVenues) {
-      res.status(403).json({
-        success: false,
-        message:
-          "You are only allowed to manage your approved venue. Contact admin to add more venues.",
-      });
-      return;
-    }
 
     const venue = await createVenue({
       ...req.body,

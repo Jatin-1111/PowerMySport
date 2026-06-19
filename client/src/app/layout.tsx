@@ -9,7 +9,7 @@ import "./globals.css";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 const siteTitle = "PowerMySport";
 const siteDescription =
-  "Book sports venues, discover certified coaches, and manage your complete sports journey on PowerMySport.";
+  "PowerMySport is organizing the unorganized sports sector. We solve the biggest problem for parents by providing a unified platform to discover athletic pathways, book venues, and find certified coaches.";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -30,16 +30,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   manifest: "/site.webmanifest",
   title: {
-    default: `${siteTitle} | Sports Venue Booking & Coach Discovery`,
+    default: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
     template: `%s | ${siteTitle}`,
   },
   description: siteDescription,
   applicationName: siteTitle,
   keywords: [
+    "unorganized sports sector",
+    "sports for parents",
+    "youth sports pathway",
+    "sports academy",
+    "sports coach booking",
+    "parent sports guide",
     "sports venue booking",
-    "book badminton court",
-    "sports coaching",
-    "coach booking",
     "book turf online",
     "PowerMySport",
   ],
@@ -62,7 +65,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: siteUrl,
     siteName: siteTitle,
-    title: `${siteTitle} | Sports Venue Booking & Coach Discovery`,
+    title: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
     description: siteDescription,
     images: [
       {
@@ -75,7 +78,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteTitle} | Sports Venue Booking & Coach Discovery`,
+    title: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
     description: siteDescription,
     images: ["/twitter-image.png"],
   },

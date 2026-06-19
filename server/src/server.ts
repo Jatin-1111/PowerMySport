@@ -25,6 +25,7 @@ import { initializeReminderScheduler } from "./utils/reminderScheduler";
 import { startOutboxWorker } from "./shared/services/OutboxService";
 import { startMessageConsumer } from "./community/kafka/MessageConsumerWorker";
 import { disconnectProducer } from "./community/kafka/MessageProducerService";
+import { initializeScraperScheduler } from "./utils/scraperScheduler";
 const PORT = process.env.PORT || 5000;
 
 let stopOutboxWorker: (() => void) | null = null;
@@ -155,6 +156,10 @@ const startServer = async () => {
         // Start outbox worker to handle message notification delivery and retries
         stopOutboxWorker = startOutboxWorker();
         console.log("📨 Outbox worker started");
+
+        // Start scraper bots (Disabled temporarily)
+        // initializeScraperScheduler();
+        // console.log("🤖 Scraper bot scheduler started\n");
       });
 
       server.on("error", (err: any) => {

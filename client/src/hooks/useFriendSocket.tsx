@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 type FriendSocketContextType = {
   connected: boolean;
+  socket: Socket | null;
   pendingRequestCount: number;
   pendingBookingInvitationsCount: number;
   refreshFriends: () => void;
@@ -39,6 +40,7 @@ type NotificationData = {
 
 const FriendSocketContext = createContext<FriendSocketContextType>({
   connected: false,
+  socket: null,
   pendingRequestCount: 0,
   pendingBookingInvitationsCount: 0,
   refreshFriends: () => {},
@@ -438,6 +440,7 @@ export function FriendSocketProvider({
     <FriendSocketContext.Provider
       value={{
         connected,
+        socket,
         pendingRequestCount,
         pendingBookingInvitationsCount,
         refreshFriends,

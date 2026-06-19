@@ -197,3 +197,8 @@ export const notifyFriendRemoved = (
       timestamp: new Date().toISOString(),
     });
 };
+
+export const notifyUserDataUpdated = (userId: string, event: string, payload?: any) => {
+  if (!friendSocketInstance) return;
+  friendSocketInstance.of("/friends").to(`user:${userId}`).emit(event, payload);
+};

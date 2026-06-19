@@ -4,7 +4,9 @@ import {
   AdminEcommerceController,
 } from "../controllers/EcommerceController";
 import { WebhookController } from "../../shared/controllers/WebhookController";
+import { joinWaitlist } from "../controllers/WaitlistController";
 import { authMiddleware, requirePermission } from "../../middleware/auth";
+import { cacheResponse } from "../../middleware/cacheMiddleware";
 
 const router = Router();
 const controller = new EcommerceController();
@@ -17,16 +19,30 @@ const webhookController = new WebhookController();
  * GET /api/v1/products
  * List products
  */
-router.get("/products", (req: Request, res: Response) =>
+router.get("/products", cacheResponse(300), (req: Request, res: Response) =>
   controller.listProducts(req, res),
 );
+
+/**
+ * POST /api/v1/waitlist
+ * Join waitlist for shop
+ */
+router.post("/waitlist", joinWaitlist);
 
 /**
  * GET /api/v1/products/:id
  * Get product details
  */
-router.get("/products/:id", (req: Request, res: Response) =>
+router.get("/products/:id", cacheResponse(300), (req: Request, res: Response) =>
   controller.getProduct(req, res),
+);
+
+/**
+ * GET /api/v1/products/:id/related
+ * Get related products
+ */
+router.get("/products/:id/related", cacheResponse(300), (req: Request, res: Response) =>
+  controller.getRelatedProducts(req, res),
 );
 
 // ============ AUTHENTICATED CUSTOMER ROUTES ============
@@ -107,6 +123,26 @@ router.get("/orders/:orderId", authMiddleware, (req: Request, res: Response) =>
   controller.getOrder(req, res),
 );
 
+// ============ REVIEWS ROUTES ============
+
+router.get("/products/:id/reviews", cacheResponse(300), (req: Request, res: Response) =>
+  controller.getProductReviews(req, res),
+);
+
+router.post("/products/:id/reviews", authMiddleware, (req: Request, res: Response) =>
+  controller.submitProductReview(req, res),
+);
+
+// ============ WISHLIST ROUTES ============
+
+router.get("/wishlist", authMiddleware, (req: Request, res: Response) =>
+  controller.getWishlist(req, res),
+);
+
+router.post("/wishlist/toggle", authMiddleware, (req: Request, res: Response) =>
+  controller.toggleWishlist(req, res),
+);
+
 /**
  * GET /api/v1/orders
  * List user's orders
@@ -126,6 +162,17 @@ router.post(
 );
 
 // ============ ADMIN PRODUCT MANAGEMENT ROUTES ============
+
+/**
+ * POST /api/v1/admin/products/upload-url
+ * Generate presigned URL for image upload
+ */
+router.post(
+  "/admin/products/upload-url",
+  authMiddleware,
+  requirePermission("products:create"),
+  (req: Request, res: Response) => adminController.generateImageUploadUrl(req, res),
+);
 
 /**
  * POST /api/v1/admin/products

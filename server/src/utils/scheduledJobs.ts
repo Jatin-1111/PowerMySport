@@ -9,6 +9,7 @@ import {
 } from "../client/services/BookingService";
 import { cleanupExpiredCodes } from "../shared/services/EmailVerificationService";
 import { cleanupExpiredCoachSubscriptions } from "../client/services/CoachSubscriptionService";
+import { processWaitlistNotifications } from "../shop/services/shopScheduledJobs";
 
 /**
  * Auto-release payments 24 hours after session completion
@@ -106,6 +107,9 @@ export const runScheduledCleanup = async (): Promise<void> => {
     // Cleanup expired coach subscriptions
     const expiredSubscriptions = await cleanupExpiredCoachSubscriptions();
     console.log(`✅ Expired ${expiredSubscriptions} coach subscription(s)`);
+
+    // Process Shop Waitlist Notifications
+    await processWaitlistNotifications();
 
     console.log("✅ Scheduled cleanup completed successfully");
   } catch (error) {

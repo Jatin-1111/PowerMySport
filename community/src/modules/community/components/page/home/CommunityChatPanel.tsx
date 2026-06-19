@@ -1,9 +1,27 @@
 "use client";
 
-import { ChevronLeft, MessageSquare, PanelRightClose, PanelRightOpen, RotateCcw } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  ChevronLeft,
+  ImagePlus,
+  MessageSquare,
+  PanelRightClose,
+  PanelRightOpen,
+  RotateCcw,
+  X,
+  Loader2,
+  Send,
+  Phone,
+  Video,
+  MoreVertical,
+  Check,
+  Pencil,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { MessageBubble } from "@/modules/community/components/chat/MessageBubble";
+import CommunityChatEmptyState from "@/modules/community/components/page/home/CommunityChatEmptyState";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
+import { useRef, useLayoutEffect, useCallback, useState } from "react";
+import { getCommunitySocket } from "@/lib/realtime/socket";
 
 type Props = { page: CommunityPageViewModel };
 
@@ -43,187 +61,494 @@ export default function CommunityChatPanel({ page }: Props) {
     canSendSelectedConversationMessage,
     isSending,
     handleSendMessage,
+    handleSendImageMessage,
+    isUploadingImage,
+    pendingImageFile,
+    setPendingImageFile,
+    imageInputRef,
+    hasMoreMessages,
+    isLoadingMoreMessages,
+    loadMoreMessages,
+    typingUsers,
+    scrollContainerRef,
   } = page;
 
+  const previousScrollHeightRef = useRef<number>(0);
+  const previousScrollTopRef = useRef<number>(0);
+  const typingEmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [textareaRows, setTextareaRows] = useState(1);
+
+  const currentConversationIdRef = useRef<string | null>(null);
+  const lastMessageIdRef = useRef<string | null>(null);
+
+  // Preserve scroll position when prepending older messages, and auto-scroll to bottom
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    if (isLoadingMoreMessages) {
+      const currentHeight = container.scrollHeight;
+      if (currentHeight > previousScrollHeightRef.current) {
+        const heightDifference = currentHeight - previousScrollHeightRef.current;
+        container.scrollTop = previousScrollTopRef.current + heightDifference;
+      }
+      return;
+    }
+
+    const messagesMatchConversation = messages.length === 0 || messages[0].conversationId === selectedConversation?.id;
+    if (!messagesMatchConversation) return;
+
+    const isNewConversation = currentConversationIdRef.current !== selectedConversation?.id;
+    const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+    const isNewMessage = lastMessageId !== lastMessageIdRef.current;
+
+    // Only evaluate auto-scrolling if this is a newly opened chat OR a new message just arrived
+    if (isNewConversation || isNewMessage) {
+      // If user is within 250px of the bottom, we consider them "at the bottom"
+      const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 250;
+      const isMyMessage = messages.length > 0 && messages[messages.length - 1].senderId === profile?.userId;
+
+      // Auto-scroll if it's a new chat, or they are already at the bottom, or they just sent a message
+      if (isNewConversation || isAtBottom || isMyMessage) {
+        container.scrollTop = container.scrollHeight;
+      }
+
+      currentConversationIdRef.current = selectedConversation?.id || null;
+      lastMessageIdRef.current = lastMessageId;
+    }
+  }, [messages, isLoadingMoreMessages, selectedConversation?.id, profile?.userId]);
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    previousScrollHeightRef.current = container.scrollHeight;
+    previousScrollTopRef.current = container.scrollTop;
+    if (container.scrollTop < 100 && hasMoreMessages && !isLoadingMoreMessages) {
+      void loadMoreMessages();
+    }
+  };
+
+  const handleSend = () => {
+    if (typingEmitTimeoutRef.current) clearTimeout(typingEmitTimeoutRef.current);
+    const socket = getCommunitySocket();
+    if (selectedConversation) {
+      socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+    }
+    if (pendingImageFile) {
+      void handleSendImageMessage(pendingImageFile, newMessage.trim());
+      setPendingImageFile(null);
+    } else {
+      handleSendMessage();
+    }
+    // Reset textarea height after send
+    setTextareaRows(1);
+    // Refocus the textarea
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
+  const handleMessageChange = useCallback(
+    (val: string) => {
+      setNewMessage(val);
+
+      // Auto-resize textarea
+      const lineCount = (val.match(/\n/g) || []).length + 1;
+      setTextareaRows(Math.min(lineCount, 5));
+
+      if (!selectedConversation) return;
+      const socket = getCommunitySocket();
+      if (val.trim().length > 0) {
+        socket.emit("community:typingStart", { conversationId: selectedConversation.id });
+        if (typingEmitTimeoutRef.current) clearTimeout(typingEmitTimeoutRef.current);
+        typingEmitTimeoutRef.current = setTimeout(() => {
+          socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+        }, 2000);
+      } else {
+        socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+      }
+    },
+    [setNewMessage, selectedConversation],
+  );
+
+  const currentlyTypingUsers = selectedConversation
+    ? (typingUsers[selectedConversation.id] || [])
+    : [];
+  const isSomeoneTyping = currentlyTypingUsers.length > 0;
+  const isGroup = selectedConversation?.conversationType === "GROUP";
+  const hasContent = newMessage.trim().length > 0 || !!pendingImageFile;
+
+  // Empty state — no conversation selected
+  if (!selectedConversation) {
+    return (
+      <div className={`h-full min-h-0 min-w-0 flex-col overflow-hidden ${workspaceView === "CHAT" ? "flex" : "hidden md:flex"}`}>
+        <CommunityChatEmptyState 
+          onBack={() => {
+            setIsConversationSidebarOpen(true);
+            setSidebarMode("INBOX");
+            setWorkspaceView("DIRECTORY");
+          }} 
+        />
+      </div>
+    );
+  }
+
   return (
-                <motion.section
-                  className={`h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-position-[0_0,11px_11px] bg-size-[22px_22px] ${workspaceView === "CHAT" ? "flex" : "hidden lg:flex"}`}
-                >
-                  <div className="sticky top-0 z-20 border-b border-slate-200 bg-white px-3 py-2 sm:px-4 sm:py-2.5 lg:min-h-15 lg:px-4 lg:py-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-slate-200 to-slate-300 text-sm font-bold uppercase text-slate-700">
-                          {selectedConversationPhotoUrl ? (
-                            <img
-                              src={selectedConversationPhotoUrl}
-                              alt={selectedConversationDisplayName}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            selectedConversationAvatarChar
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <h2 className="truncate text-[15px] font-500 text-slate-900">
-                            {selectedConversationDisplayName}
-                          </h2>
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            {selectedConversation?.conversationType === "GROUP"
-                              ? "Group"
-                              : "Direct message"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
-                        <button
-                          onClick={() => {
-                            setIsConversationSidebarOpen(true);
-                            setSidebarMode("TOOLS");
-                            setWorkspaceView("DIRECTORY");
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 lg:hidden"
-                        >
-                          <ChevronLeft size={13} /> Back
-                        </button>
-                        {selectedConversation?.conversationType === "GROUP" && (
-                          <button
-                            onClick={() =>
-                              setShowGroupMembersPanel(!showGroupMembersPanel)
-                            }
-                            className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700"
-                          >
-                            {showGroupMembersPanel ? (
-                              <PanelRightClose size={13} />
-                            ) : (
-                              <PanelRightOpen size={13} />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {selectedConversationIsPending && (
-                      <div className="mt-3 rounded-lg border border-power-orange/30 bg-power-orange/8 p-2.5 text-sm text-slate-700">
-                        {selectedConversationNeedsMyApproval ? (
-                          <>
-                            <p className="font-500">Message request pending</p>
-                            <div className="mt-2 flex gap-2">
-                              <button
-                                onClick={handleAcceptRequest}
-                                className="rounded-md bg-power-orange px-3 py-1 text-xs font-semibold text-white"
-                              >
-                                Accept
-                              </button>
-                              <button
-                                onClick={handleRejectRequest}
-                                className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <p className="text-xs">
-                            Request sent. Message while waiting.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
+    <motion.section
+      className={`h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)] bg-position-[0_0,11px_11px] bg-size-[22px_22px] ${workspaceView === "CHAT" ? "flex" : "hidden md:flex"}`}
+    >
+      {/* ── Header ── (shrink-0, stays at top as flex item) */}
+      <div className="z-20 shrink-0 border-b border-slate-200/50 bg-white/70 backdrop-blur-xl px-3 py-3 sm:px-4 shadow-[0_1px_15px_rgba(0,0,0,0.03)] supports-[backdrop-filter]:bg-white/60">
+        <div className="flex items-center gap-3">
+          {/* Back button (mobile only) */}
+          <button
+            onClick={() => {
+              setIsConversationSidebarOpen(true);
+              setSidebarMode("INBOX");
+              setWorkspaceView("DIRECTORY");
+            }}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition md:hidden"
+            aria-label="Back"
+          >
+            <ChevronLeft size={22} strokeWidth={2.5} />
+          </button>
 
-                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
-                    {messages.map((message) => (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        isOwnMessage={message.senderId === profile?.userId}
-                        isGroupConversation={
-                          selectedConversation?.conversationType === "GROUP"
-                        }
-                        profileUserId={profile?.userId}
-                        onOpenMobileActions={(m) =>
-                          setMobileActionMessageId(m.id)
-                        }
-                        onRetry={retryFailedMessage}
-                        onEdit={handleBeginEditMessage}
-                        onDelete={handleDeleteMessage}
-                        onCopy={handleCopyMessage}
-                        isCopied={copiedMessageId === message.id}
-                        isEditing={editingMessageId === message.id}
-                        isMutating={isMutatingMessageId === message.id}
-                      />
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
+          {/* Avatar */}
+          <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-bold uppercase text-slate-700 ring-2 ring-white shadow-sm sm:h-11 sm:w-11">
+            {selectedConversationPhotoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={selectedConversationPhotoUrl}
+                alt={selectedConversationDisplayName}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              selectedConversationAvatarChar
+            )}
+          </div>
 
-                  {editingMessageId && (
-                    <div className="mt-2 shrink-0 border border-power-orange/30 bg-power-orange/8 p-3">
-                      <p className="text-xs font-semibold text-power-orange">
-                        Editing message
-                      </p>
-                      <textarea
-                        value={editingMessageDraft}
-                        onChange={(e) => setEditingMessageDraft(e.target.value)}
-                        rows={2}
-                        className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-power-orange focus:outline-none"
-                      />
-                      <div className="mt-2 flex gap-2">
-                        <button
-                          onClick={handleSaveEditedMessage}
-                          disabled={isMutatingMessageId === editingMessageId}
-                          className="rounded-md bg-power-orange px-3 py-1.5 text-xs text-white"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleCancelEditMessage}
-                          className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
+          {/* Name + type */}
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-[16px] font-600 text-slate-900 leading-tight tracking-tight sm:text-[17px]">
+              {selectedConversationDisplayName}
+            </h2>
+            <p className="text-[12px] font-medium text-slate-500 mt-0.5">
+              {isGroup ? "Group chat" : "Direct message"}
+            </p>
+          </div>
 
-                  <div className="sticky bottom-0 z-20 shrink-0 border-t border-slate-200/80 bg-[#f0f2f5] px-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:static">
-                    <div className="flex min-w-0 items-end gap-2.5">
-                      <textarea
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            if (canSendSelectedConversationMessage)
-                              handleSendMessage();
-                          }
-                        }}
-                        placeholder={
-                          !selectedConversation
-                            ? "Select a conversation"
-                            : "Type a message..."
-                        }
-                        disabled={
-                          !canSendSelectedConversationMessage || isSending
-                        }
-                        rows={1}
-                        className="max-h-28 flex-1 resize-none rounded-3xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:border-power-orange focus:outline-none disabled:cursor-not-allowed"
-                      />
+          {/* Right actions */}
+          <div className="flex shrink-0 items-center gap-1">
+            {isGroup && (
+              <button
+                onClick={() => setShowGroupMembersPanel(!showGroupMembersPanel)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition"
+                aria-label={showGroupMembersPanel ? "Hide members" : "Show members"}
+              >
+                {showGroupMembersPanel ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Pending request banner */}
+        <AnimatePresence>
+          {selectedConversationIsPending && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mt-3 overflow-hidden"
+            >
+              <div className="rounded-[16px] border border-orange-200/60 bg-gradient-to-r from-orange-50/80 to-amber-50/80 px-4 py-3 shadow-sm backdrop-blur-md">
+                {selectedConversationNeedsMyApproval ? (
+                  <>
+                    <p className="font-600 text-orange-900">Message request</p>
+                    <p className="mt-0.5 text-[13px] text-orange-800/80">Do you want to accept this conversation request?</p>
+                    <div className="mt-3 flex gap-2">
                       <button
-                        disabled={
-                          isSending ||
-                          !canSendSelectedConversationMessage ||
-                          !newMessage.trim()
-                        }
-                        onClick={handleSendMessage}
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-power-orange text-white disabled:opacity-50"
+                        onClick={handleAcceptRequest}
+                        className="rounded-xl bg-gradient-to-b from-power-orange to-orange-600 px-5 py-2 text-[13px] font-semibold text-white shadow-md shadow-orange-500/20 hover:from-orange-500 hover:to-orange-700 transition active:scale-95"
                       >
-                        {isSending ? (
-                          <RotateCcw size={16} className="animate-spin" />
-                        ) : (
-                          <MessageSquare size={16} />
-                        )}
+                        Accept
+                      </button>
+                      <button
+                        onClick={handleRejectRequest}
+                        className="rounded-xl border border-slate-200 bg-white px-5 py-2 text-[13px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition active:scale-95"
+                      >
+                        Decline
                       </button>
                     </div>
-                  </div>
-                </motion.section>
+                  </>
+                ) : (
+                  <p className="text-[13px] font-medium text-orange-800/80">
+                    Request sent. You can still message while waiting for a reply.
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── Messages area ────────────────────────────────────────── */}
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="min-h-0 flex-1 overflow-y-auto px-3 pt-4 pb-4 sm:px-4 sm:pt-6 space-y-1.5"
+      >
+        {/* Load more spinner */}
+        <AnimatePresence>
+          {isLoadingMoreMessages && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="flex justify-center py-3"
+            >
+              <div className="flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 backdrop-blur-md px-4 py-1.5 shadow-sm text-xs font-medium text-slate-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-power-orange" />
+                Loading older messages…
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Message list */}
+        {messages.map((message, index) => {
+          const prevMessage = messages[index - 1];
+          const showDateSeparator =
+            !prevMessage ||
+            new Date(message.createdAt).toDateString() !==
+              new Date(prevMessage.createdAt).toDateString();
+
+          return (
+            <div key={message.id}>
+              {showDateSeparator && (
+                <div className="flex items-center gap-3 py-4">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-slate-200" />
+                  <span className="shrink-0 rounded-full border border-slate-200/50 bg-white/60 backdrop-blur-md px-3.5 py-1 text-[11px] font-semibold tracking-wide text-slate-500 shadow-sm">
+                    {new Date(message.createdAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "long",
+                      year:
+                        new Date(message.createdAt).getFullYear() !==
+                        new Date().getFullYear()
+                          ? "numeric"
+                          : undefined,
+                    })}
+                  </span>
+                  <div className="h-px flex-1 bg-gradient-to-l from-transparent via-slate-200 to-slate-200" />
+                </div>
+              )}
+              <MessageBubble
+                message={message}
+                isOwnMessage={message.senderId === profile?.userId}
+                isGroupConversation={isGroup}
+                profileUserId={profile?.userId}
+                onOpenMobileActions={(m) => setMobileActionMessageId(m.id)}
+                onRetry={retryFailedMessage}
+                onEdit={handleBeginEditMessage}
+                onDelete={handleDeleteMessage}
+                onCopy={handleCopyMessage}
+                isCopied={copiedMessageId === message.id}
+                isEditing={editingMessageId === message.id}
+                isMutating={isMutatingMessageId === message.id}
+              />
+            </div>
+          );
+        })}
+
+        {/* Typing indicator */}
+        <AnimatePresence>
+          {isSomeoneTyping && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-end gap-2 justify-start mt-2"
+            >
+              <div className="inline-flex items-center gap-2 rounded-[20px] rounded-bl-[6px] border border-slate-200/60 bg-white/90 backdrop-blur-sm px-4 py-3 shadow-sm">
+                <div className="flex gap-1.5 items-center">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div ref={messagesEndRef} className="h-2" />
+      </div>
+
+      {/* ── Edit banner ──────────────────────────────────────────── */}
+      <AnimatePresence>
+        {editingMessageId && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden border-t border-orange-200/50 bg-gradient-to-b from-orange-50/50 to-white/50 backdrop-blur-xl shrink-0"
+          >
+            <div className="px-4 py-3 sm:px-5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-[13px] font-semibold text-power-orange">
+                  <Pencil size={14} />
+                  Editing message
+                </div>
+                <button
+                  onClick={handleCancelEditMessage}
+                  className="rounded-full p-1 text-slate-400 hover:bg-slate-200/50 hover:text-slate-600 transition"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <textarea
+                value={editingMessageDraft}
+                onChange={(e) => setEditingMessageDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleSaveEditedMessage();
+                  }
+                  if (e.key === "Escape") handleCancelEditMessage();
+                }}
+                rows={2}
+                className="w-full resize-none rounded-[16px] border border-slate-200 bg-white/80 px-4 py-2.5 text-sm focus:border-power-orange focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10 transition shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+              />
+              <div className="mt-2.5 flex gap-2 justify-end">
+                <button
+                  onClick={handleCancelEditMessage}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:scale-95 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEditedMessage}
+                  disabled={isMutatingMessageId === editingMessageId}
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-power-orange to-orange-600 px-4 py-2 text-[13px] font-semibold text-white shadow-md shadow-orange-500/20 hover:from-orange-500 hover:to-orange-700 disabled:opacity-50 active:scale-95 transition"
+                >
+                  <Check size={14} /> Save changes
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Composer ── (shrink-0, stays at bottom as flex item) */}
+      <div className="z-20 shrink-0 border-t border-slate-200/60 bg-white/80 backdrop-blur-2xl px-3 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-4 sm:pt-4 shadow-[0_-4px_24px_rgba(0,0,0,0.02)] supports-[backdrop-filter]:bg-white/60">
+        {/* Hidden file input */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          aria-hidden="true"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) setPendingImageFile(file);
+            e.target.value = "";
+          }}
+        />
+
+        {/* Pending image preview */}
+        <AnimatePresence>
+          {pendingImageFile && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              className="mb-3"
+            >
+              <div className="relative inline-block rounded-[20px] border border-slate-200/80 bg-white/50 p-1.5 shadow-sm backdrop-blur-md">
+                <button
+                  onClick={() => setPendingImageFile(null)}
+                  className="absolute -right-2.5 -top-2.5 flex h-7 w-7 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-md hover:bg-slate-700 transition active:scale-90"
+                >
+                  <X size={14} />
+                </button>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={URL.createObjectURL(pendingImageFile)}
+                  alt="Preview"
+                  className="h-28 w-auto max-w-[200px] rounded-[14px] object-cover sm:h-32 shadow-sm"
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Input row */}
+        <div className="flex items-end gap-2.5">
+          {/* Attach image button */}
+          <button
+            type="button"
+            disabled={!canSendSelectedConversationMessage || isSending || isUploadingImage}
+            onClick={() => imageInputRef.current?.click()}
+            aria-label="Attach image"
+            className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-power-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 sm:h-11 sm:w-11"
+          >
+            {isUploadingImage ? (
+              <RotateCcw size={18} className="animate-spin text-power-orange" />
+            ) : (
+              <ImagePlus size={20} strokeWidth={2.5} />
+            )}
+          </button>
+
+          {/* Textarea */}
+          <div className="relative flex-1 min-w-0">
+            <textarea
+              ref={textareaRef}
+              value={newMessage}
+              onChange={(e) => handleMessageChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (canSendSelectedConversationMessage && hasContent) handleSend();
+                }
+              }}
+              placeholder={
+                !selectedConversation
+                  ? "Select a conversation"
+                  : pendingImageFile
+                  ? "Add a caption…"
+                  : "Message…"
+              }
+              disabled={!canSendSelectedConversationMessage || isUploadingImage}
+              rows={textareaRows}
+              className="w-full resize-none rounded-[24px] border border-slate-200/80 bg-slate-100/50 px-4 py-2.5 text-[15px] leading-relaxed focus:border-power-orange/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10 disabled:cursor-not-allowed disabled:opacity-60 transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] sm:py-3"
+              style={{ maxHeight: "9rem", overflowY: textareaRows >= 5 ? "auto" : "hidden" }}
+            />
+          </div>
+
+          {/* Send button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            disabled={
+              isSending ||
+              isUploadingImage ||
+              !canSendSelectedConversationMessage ||
+              !hasContent
+            }
+            onClick={handleSend}
+            className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-power-orange to-orange-500 text-white shadow-[0_2px_8px_rgba(233,115,22,0.3)] hover:from-orange-500 hover:to-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 transition-all sm:h-11 sm:w-11"
+            aria-label="Send message"
+          >
+            {isSending ? (
+              <RotateCcw size={18} className="animate-spin" />
+            ) : (
+              <Send size={18} className="translate-x-[1px]" strokeWidth={2.5} />
+            )}
+          </motion.button>
+        </div>
+
+        {/* Keyboard hint */}
+        <p className="mt-2 hidden text-center text-[12px] font-medium text-slate-400 sm:block">
+          <kbd className="font-sans rounded bg-slate-100 px-1 py-0.5 text-slate-500 border border-slate-200">Enter</kbd> to send · <kbd className="font-sans rounded bg-slate-100 px-1 py-0.5 text-slate-500 border border-slate-200">Shift+Enter</kbd> for new line
+        </p>
+      </div>
+    </motion.section>
   );
 }

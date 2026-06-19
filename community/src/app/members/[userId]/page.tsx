@@ -144,7 +144,7 @@ export default function MemberProfilePage() {
         conversation.id,
       );
       toast.success("Conversation opened");
-      router.push("/");
+      router.push(`/chats?conversation=${conversation.id}`);
     } catch (messageError) {
       const message =
         messageError instanceof Error
