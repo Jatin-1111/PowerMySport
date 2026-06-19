@@ -91,7 +91,8 @@ export const requestPasswordReset = async (email: string): Promise<string> => {
   );
 
   if (!user) {
-    throw new Error("No user found with this email");
+    // Return the same message as success — never reveal whether the email exists
+    return "If this email is registered, you will receive a reset link shortly.";
   }
 
   // Generate reset token
@@ -115,7 +116,7 @@ export const requestPasswordReset = async (email: string): Promise<string> => {
     console.error("Failed to send password reset email:", error);
   });
 
-  return resetToken;
+  return "If this email is registered, you will receive a reset link shortly.";
 };
 
 export const resetPassword = async (
@@ -358,7 +359,7 @@ export const addDependent = async (
 
   let age = payload.age;
   let parsedDob: Date | undefined;
-  
+
   if (payload.dob) {
     parsedDob = new Date(payload.dob);
     if (!isNaN(parsedDob.getTime())) {
@@ -391,13 +392,17 @@ export const updateDependent = async (
   dependentId: string,
   payload: Partial<AddDependentPayload>,
 ): Promise<any> => {
-  const dependent = await Player.findOne({ _id: dependentId, userId, type: "DEPENDENT" });
+  const dependent = await Player.findOne({
+    _id: dependentId,
+    userId,
+    type: "DEPENDENT",
+  });
   if (!dependent) {
     throw new Error("Dependent not found");
   }
 
   if (payload.name) dependent.name = payload.name;
-  
+
   if (payload.dob) {
     const parsedDob = new Date(payload.dob);
     if (!isNaN(parsedDob.getTime())) {
@@ -407,15 +412,18 @@ export const updateDependent = async (
   } else if (payload.age !== undefined) {
     dependent.age = payload.age;
   }
-  
+
   if (payload.gender) dependent.gender = payload.gender;
   if (payload.relation) dependent.relation = payload.relation;
   if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
   if (payload.sports) dependent.sportsFocus = payload.sports;
   if (payload.skillLevel) dependent.skillLevel = payload.skillLevel;
-  if (payload.personalityTags) dependent.personalityTags = payload.personalityTags;
-  if (payload.primaryObjective) dependent.primaryObjective = payload.primaryObjective;
-  if (payload.weeklyTimeCommitment !== undefined) dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
+  if (payload.personalityTags)
+    dependent.personalityTags = payload.personalityTags;
+  if (payload.primaryObjective)
+    dependent.primaryObjective = payload.primaryObjective;
+  if (payload.weeklyTimeCommitment !== undefined)
+    dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
   if (payload.budgetTier) dependent.budgetTier = payload.budgetTier;
 
   await dependent.save();
@@ -426,7 +434,11 @@ export const deleteDependent = async (
   userId: string,
   dependentId: string,
 ): Promise<void> => {
-  const dependent = await Player.findOne({ _id: dependentId, userId, type: "DEPENDENT" });
+  const dependent = await Player.findOne({
+    _id: dependentId,
+    userId,
+    type: "DEPENDENT",
+  });
   if (!dependent) {
     throw new Error("Dependent not found");
   }
@@ -509,19 +521,28 @@ export const updateProfile = async (
         sportsFocus: payload.playerProfile.sports,
       });
     } else {
-      if (payload.playerProfile.sports) selfPlayer.sportsFocus = payload.playerProfile.sports;
+      if (payload.playerProfile.sports)
+        selfPlayer.sportsFocus = payload.playerProfile.sports;
     }
-    
-    if (payload.playerProfile.personalityTags) selfPlayer.personalityTags = payload.playerProfile.personalityTags;
-    if (payload.playerProfile.primaryObjective) selfPlayer.primaryObjective = payload.playerProfile.primaryObjective;
-    if (payload.playerProfile.weeklyTimeCommitment !== undefined) selfPlayer.weeklyTimeCommitment = payload.playerProfile.weeklyTimeCommitment;
-    if (payload.playerProfile.budgetTier) selfPlayer.budgetTier = payload.playerProfile.budgetTier;
-    
+
+    if (payload.playerProfile.personalityTags)
+      selfPlayer.personalityTags = payload.playerProfile.personalityTags;
+    if (payload.playerProfile.primaryObjective)
+      selfPlayer.primaryObjective = payload.playerProfile.primaryObjective;
+    if (payload.playerProfile.weeklyTimeCommitment !== undefined)
+      selfPlayer.weeklyTimeCommitment =
+        payload.playerProfile.weeklyTimeCommitment;
+    if (payload.playerProfile.budgetTier)
+      selfPlayer.budgetTier = payload.playerProfile.budgetTier;
+
     if (payload.playerProfile.pathwayState) {
       if (!selfPlayer.pathwayState) selfPlayer.pathwayState = {};
-      Object.assign(selfPlayer.pathwayState, payload.playerProfile.pathwayState);
+      Object.assign(
+        selfPlayer.pathwayState,
+        payload.playerProfile.pathwayState,
+      );
     }
-    
+
     await selfPlayer.save();
   }
 

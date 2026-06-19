@@ -22,6 +22,7 @@ const scraperModelCandidates = [
   process.env.GEMINI_SCRAPER_MODEL,
   "gemini-3.5-flash",
   "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
 ].filter(Boolean) as string[];
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────

@@ -6,6 +6,15 @@ import { Scholarship } from "../models/Scholarship";
 import { University } from "../models/University";
 import { realDataScraperService } from "./RealDataScraperService";
 
+const isDev = process.env.NODE_ENV !== "production";
+const log = {
+  info: (...args: unknown[]) => {
+    if (isDev) console.log(...args);
+  },
+  warn: (...args: unknown[]) => console.warn(...args),
+  error: (...args: unknown[]) => console.error(...args),
+};
+
 type CanonicalAttachResult = {
   pathway: SportPathwayDocument;
   warnings: string[];
@@ -156,7 +165,7 @@ export class PathwayService {
 
     // ── 1. Validate with existing Sport collection FIRST ───────────────────
     const knownSport = await Sport.findOne({ slug });
-    console.log(
+    log.info(
       `[PathwayService] getOrGeneratePathway for ${sportName} - slug: ${slug}, knownSport:`,
       knownSport ? knownSport.name : "null",
     );
@@ -170,7 +179,7 @@ export class PathwayService {
     // ── 3. Check cache by cacheKey ─────────────────────────────────────────
     const existing = await SportPathway.findOne({ cacheKey });
     if (existing) {
-      console.log(`[PathwayService] Cache hit for ${cacheKey}`);
+      log.info(`[PathwayService] Cache hit for ${cacheKey}`);
       SportPathway.updateOne({ cacheKey }, { $inc: { lookupCount: 1 } }).exec();
       const enriched = await this.attachCanonicalEntities(
         existing,
@@ -186,11 +195,11 @@ export class PathwayService {
 
     // ── 3. Validate unknown sports via Gemini ──────────────────────────────
     if (!knownSport) {
-      console.log(
+      log.info(
         `[PathwayService] Validating unknown sport ${finalSportName} via Gemini...`,
       );
       const isValid = await this.validateSport(finalSportName);
-      console.log(`[PathwayService] Validation result:`, isValid);
+      log.info(`[PathwayService] Validation result:`, isValid);
       if (!isValid) {
         return {
           pathway: null,
@@ -283,7 +292,7 @@ export class PathwayService {
 
     if (needsRefresh && sportName && allowScrapeFallback) {
       try {
-        console.log(
+        log.info(
           `[PathwayService] Missing canonical data for ${sportSlug}; running scraper fallback.`,
         );
         await realDataScraperService.scrapeSport({
@@ -384,6 +393,7 @@ export class PathwayService {
       process.env.GEMINI_MODEL_NAME,
       "gemini-3.5-flash",
       "gemini-2.5-flash",
+      "gemini-2.5-flash-lite",
       "gemini-3.1-flash-lite",
     ].filter(Boolean) as string[];
 

@@ -1,6 +1,7 @@
 import cron from "node-cron";
-import { exec } from "child_process";
-import path from "path";
+import { scrapeScholarships } from "../scripts/scrapeScholarships";
+import { scrapeTournaments } from "../scripts/scrapeTournaments";
+import { scrapeUniversities } from "../scripts/scrapeUniversities";
 
 export function initializeScraperScheduler() {
   console.log("📅 Initializing scraper scheduler...");
@@ -9,51 +10,29 @@ export function initializeScraperScheduler() {
   const job = cron.schedule(
     "0 2 * * 0",
     async () => {
-      console.log(`\n🔔 [${new Date().toISOString()}] Running scheduled scraper bots...`);
-      
-      const aitaScriptPath = path.join(__dirname, "../scripts/scrapeTournaments.ts");
-      const scholarshipScriptPath = path.join(__dirname, "../scripts/scrapeScholarships.ts");
-      const uniScriptPath = path.join(__dirname, "../scripts/scrapeUniversities.ts");
-      
-      // Execute the Tournament scraper script via ts-node
-      exec(`npx ts-node "${aitaScriptPath}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`❌ Tournament Scraper Bot Error: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          console.error(`⚠️ Tournament Scraper Bot Stderr: ${stderr}`);
-        }
-        console.log(`✅ Tournament Scraper Bot Output:\n${stdout}`);
-      });
+      console.log(
+        `\n🔔 [${new Date().toISOString()}] Running scheduled scraper bots...`,
+      );
 
-      // Execute the Scholarship scraper script via ts-node
-      exec(`npx ts-node "${scholarshipScriptPath}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`❌ Scholarship Scraper Bot Error: ${error.message}`);
-          return;
-        }
-        if (stderr) {
-          console.error(`⚠️ Scholarship Scraper Bot Stderr: ${stderr}`);
-        }
-        console.log(`✅ Scholarship Scraper Bot Output:\n${stdout}`);
-      });
+      const scrapers: Array<{ name: string; fn: () => Promise<void> }> = [
+        { name: "Tournament", fn: scrapeTournaments },
+        { name: "Scholarship", fn: scrapeScholarships },
+        { name: "University", fn: scrapeUniversities },
+      ];
 
-      // Execute the University scraper script via ts-node
-      exec(`npx ts-node "${uniScriptPath}"`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`❌ University Scraper Bot Error: ${error.message}`);
-          return;
+      for (const { name, fn } of scrapers) {
+        try {
+          console.log(`▶ Running ${name} scraper...`);
+          await fn();
+          console.log(`✅ ${name} scraper complete.`);
+        } catch (error) {
+          console.error(`❌ ${name} scraper failed:`, error);
         }
-        if (stderr) {
-          console.error(`⚠️ University Scraper Bot Stderr: ${stderr}`);
-        }
-        console.log(`✅ University Scraper Bot Output:\n${stdout}`);
-      });
+      }
     },
     {
       timezone: "Asia/Kolkata",
-    }
+    },
   );
 
   console.log("✅ Scraper scheduler initialized (cron: 0 2 * * 0)");

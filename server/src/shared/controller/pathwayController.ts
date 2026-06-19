@@ -20,14 +20,21 @@ export const getPathway = async (
       return;
     }
 
+    const rawAge = age && typeof age === "string" ? parseInt(age, 10) : NaN;
     const childAge =
-      age && typeof age === "string" ? parseInt(age, 10) : undefined;
+      !isNaN(rawAge) && rawAge >= 4 && rawAge <= 25 ? rawAge : undefined;
+    const rawCity = city && typeof city === "string" ? city.trim() : "";
+    // Strip everything except letters, spaces, hyphens, commas and dots.
+    // Caps at 80 characters to prevent oversized injections.
     const childCity =
-      city && typeof city === "string" ? city.trim() : undefined;
+      rawCity
+        .replace(/[^a-zA-Z\u0900-\u097F\s,.\-]/g, "")
+        .slice(0, 80)
+        .trim() || undefined;
 
     const result = await pathwayService.getOrGeneratePathway(
       sport.trim(),
-      !isNaN(childAge as number) ? childAge : undefined,
+      childAge,
       childCity,
     );
 

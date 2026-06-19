@@ -49,8 +49,11 @@ export async function runForEverySport(
     process.env.MONGODB_URI ||
     "mongodb://localhost:27017/powermysport";
 
-  await mongoose.connect(dbUri);
-  console.log("✅ Connected to MongoDB");
+  const weConnected = mongoose.connection.readyState === 0;
+  if (weConnected) {
+    await mongoose.connect(dbUri);
+    console.log("✅ Connected to MongoDB");
+  }
 
   const sports = await Sport.find({}).select("slug name").lean();
 
@@ -58,7 +61,9 @@ export async function runForEverySport(
     console.warn(
       "⚠️ No sports found in the Sport collection. Nothing to scrape.",
     );
-    await mongoose.disconnect();
+    if (weConnected && mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
     return;
   }
 
@@ -74,7 +79,9 @@ export async function runForEverySport(
     console.warn(
       `⚠️ No sport matched "${sportFilter}". Use a sport slug or exact sport name.`,
     );
-    await mongoose.disconnect();
+    if (weConnected && mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
     return;
   }
 
@@ -95,5 +102,7 @@ export async function runForEverySport(
     `\n🏁 ${label} complete. ${totalFound} total result(s) across ${filteredSports.length} sport(s).`,
   );
 
-  await mongoose.disconnect();
+  if (weConnected && mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
 }
