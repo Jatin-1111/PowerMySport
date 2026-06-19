@@ -5,6 +5,7 @@ import express, { Express } from "express";
 import { hostname as osHostname } from "os";
 import mongoose from "mongoose";
 import redis from "./config/redis";
+import { authMiddleware, adminMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 import { errorLogger, requestLogger } from "./middleware/logger";
 import { observabilityMiddleware } from "./middleware/observability";
@@ -171,7 +172,7 @@ app.use("/api/payout-methods", payoutMethodsRoutes);
 // Shop Domain
 app.use("/api/v1", ecommerceRoutes);
 
-app.get("/api/health", async (_req, res) => {
+const getDetailedHealthPayload = async () => {
   const dbReadyState = mongoose.connection.readyState;
   const dbStateMap: Record<number, string> = {
     0: "disconnected",
@@ -205,16 +206,7 @@ app.get("/api/health", async (_req, res) => {
   const redisHealthy = redisStatus === "connected";
   const allHealthy = dbHealthy && redisHealthy;
 
-  /**
-   * IMPORTANT: Always return HTTP 200.
-   *
-   * If we return 503, the ALB marks the instance as unhealthy → EB goes
-   * Severe. A transient Redis ping timeout under load is NOT a reason to
-   * pull the instance out of rotation. Service degradation is surfaced in
-   * the JSON body (status / services fields) for monitoring dashboards
-   * and alerting tools.
-   */
-  res.status(200).json({
+  return {
     success: allHealthy,
     status: allHealthy ? "healthy" : "degraded",
     message: allHealthy
@@ -248,10 +240,39 @@ app.get("/api/health", async (_req, res) => {
       nodeVersion: process.version,
       platform: process.platform,
       pid: process.pid,
-      hostname: osHostname(), // identifies which EB instance served this request
+      hostname: osHostname(),
     },
+  };
+};
+
+app.get("/api/health", async (_req, res) => {
+  const detailed = await getDetailedHealthPayload();
+
+  /**
+   * IMPORTANT: Always return HTTP 200.
+   *
+   * If we return 503, the ALB marks the instance as unhealthy → EB goes
+   * Severe. A transient Redis ping timeout under load is NOT a reason to
+   * pull the instance out of rotation. Service degradation is surfaced in
+   * the JSON body (status / services fields) for monitoring dashboards
+   * and alerting tools.
+   */
+  res.status(200).json({
+    success: detailed.success,
+    status: detailed.status,
+    timestamp: detailed.timestamp,
   });
 });
+
+app.get(
+  "/api/admin/health/detail",
+  authMiddleware,
+  adminMiddleware,
+  async (_req, res) => {
+    const detailed = await getDetailedHealthPayload();
+    res.status(200).json(detailed);
+  },
+);
 
 if (process.env.NODE_ENV === "development") {
   app.use(errorLogger);

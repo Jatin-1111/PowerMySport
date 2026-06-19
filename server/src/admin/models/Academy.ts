@@ -1,5 +1,53 @@
+import crypto from "crypto";
 import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation, OpeningHours } from "../../types/index";
+
+const rawEncryptionKey = process.env.BANK_ENCRYPTION_KEY || "";
+const ENCRYPTION_KEY = Buffer.from(rawEncryptionKey, "hex");
+if (!rawEncryptionKey || ENCRYPTION_KEY.length !== 32) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("FATAL: BANK_ENCRYPTION_KEY must be a 32-byte hex string.");
+  }
+  console.warn(
+    "WARNING: BANK_ENCRYPTION_KEY is missing or invalid. Academy bank fields will not be encrypted correctly.",
+  );
+}
+
+const isEncryptedValue = (value: string): boolean =>
+  value.split(":").length === 3;
+const encryptValue = (plaintext: string): string => {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return [
+    iv.toString("hex"),
+    tag.toString("hex"),
+    encrypted.toString("hex"),
+  ].join(":");
+};
+const decryptValue = (ciphertext: string): string => {
+  if (!ciphertext || !isEncryptedValue(ciphertext)) {
+    return ciphertext;
+  }
+
+  try {
+    const [ivHex, tagHex, encHex] = ciphertext.split(":");
+    const iv = Buffer.from(ivHex, "hex");
+    const tag = Buffer.from(tagHex, "hex");
+    const enc = Buffer.from(encHex, "hex");
+    const decipher = crypto.createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(enc), decipher.final()]).toString(
+      "utf8",
+    );
+  } catch {
+    return ciphertext;
+  }
+};
 
 export interface AcademyOwnedVenue {
   name: string;
@@ -489,11 +537,12 @@ const academySchema = new Schema<AcademyDocument>(
     bankAccountNumber: {
       type: String,
       default: "",
-      // Note: Should be encrypted at rest using application logic
+      get: (value: string) => decryptValue(value),
     },
     bankIfsc: {
       type: String,
       default: "",
+      get: (value: string) => decryptValue(value),
       validate: {
         validator(v: string) {
           if (!v) return true; // Optional field
@@ -510,6 +559,7 @@ const academySchema = new Schema<AcademyDocument>(
     upiId: {
       type: String,
       default: "",
+      get: (value: string) => decryptValue(value),
       validate: {
         validator(v: string) {
           if (!v) return true; // Optional field
@@ -576,6 +626,32 @@ const academySchema = new Schema<AcademyDocument>(
   },
   { timestamps: true },
 );
+
+academySchema.set("toJSON", { getters: true });
+academySchema.set("toObject", { getters: true });
+
+academySchema.pre("save", function () {
+  if (this.isModified("bankAccountNumber") && this.bankAccountNumber) {
+    const value = String(this.bankAccountNumber);
+    if (!isEncryptedValue(value)) {
+      this.bankAccountNumber = encryptValue(value);
+    }
+  }
+
+  if (this.isModified("bankIfsc") && this.bankIfsc) {
+    const value = String(this.bankIfsc);
+    if (!isEncryptedValue(value)) {
+      this.bankIfsc = encryptValue(value);
+    }
+  }
+
+  if (this.isModified("upiId") && this.upiId) {
+    const value = String(this.upiId);
+    if (!isEncryptedValue(value)) {
+      this.upiId = encryptValue(value);
+    }
+  }
+});
 
 // Create index for slug (used in /academies/[slug] route)
 academySchema.index({ slug: 1 });

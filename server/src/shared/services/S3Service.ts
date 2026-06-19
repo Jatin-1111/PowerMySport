@@ -45,9 +45,11 @@ export class S3Service {
     this.imagesBucket =
       process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
 
-    console.log(`[S3Service] Initializing with region: ${this.region}`);
-    console.log(`[S3Service] Images bucket: ${this.imagesBucket}`);
-    console.log(`[S3Service] Documents bucket: ${this.documentsBucket}`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[S3Service] Initializing with region: ${this.region}`);
+      console.log(`[S3Service] Images bucket: ${this.imagesBucket}`);
+      console.log(`[S3Service] Documents bucket: ${this.documentsBucket}`);
+    }
 
     const clientConfig: S3ClientConfig = {
       region: this.region,
@@ -390,7 +392,7 @@ export class S3Service {
     fileName: string,
     contentType: string,
     userId: string,
-    documentType: string
+    documentType: string,
   ): Promise<UploadUrlResponse> {
     const fileExtension = fileName.split(".").pop();
     const cleanDocType = documentType.toLowerCase().replace(/[^a-z0-9]/g, "_");

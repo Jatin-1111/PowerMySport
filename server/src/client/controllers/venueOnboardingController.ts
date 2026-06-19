@@ -215,6 +215,15 @@ export const getCoachPhotoUploadUrl = async (
       return;
     }
 
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(contentType)) {
+      res.status(400).json({
+        success: false,
+        message: `Invalid content type. Allowed: ${allowedTypes.join(", ")}`,
+      });
+      return;
+    }
+
     // Verify venue exists
     const venue = await Venue.findById(venueId);
     if (!venue) {

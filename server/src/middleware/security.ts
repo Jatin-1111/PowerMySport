@@ -12,6 +12,19 @@ export const securityHeadersMiddleware = (
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https://*.amazonaws.com https://*.powermysport.com",
+      "connect-src 'self' https://api.phonepe.com https://*.amazonaws.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  );
+  res.setHeader(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()",
   );
@@ -53,7 +66,10 @@ export const apiRateLimitMiddleware = (
     10,
   );
   const windowSec = Math.ceil(
-    parseInt(process.env.API_RATE_LIMIT_WINDOW_MS || String(ONE_MINUTE_MS), 10) / 1000,
+    parseInt(
+      process.env.API_RATE_LIMIT_WINDOW_MS || String(ONE_MINUTE_MS),
+      10,
+    ) / 1000,
   );
 
   // req.ip is now the real user IP because app.set("trust proxy", 1) is set in app.ts
@@ -69,7 +85,10 @@ export const apiRateLimitMiddleware = (
       }
 
       res.setHeader("X-RateLimit-Limit", String(maxRequestsPerWindow));
-      res.setHeader("X-RateLimit-Remaining", String(Math.max(0, maxRequestsPerWindow - count)));
+      res.setHeader(
+        "X-RateLimit-Remaining",
+        String(Math.max(0, maxRequestsPerWindow - count)),
+      );
 
       if (count > maxRequestsPerWindow) {
         res.setHeader("Retry-After", String(windowSec));

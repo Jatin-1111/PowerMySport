@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { Coach } from "../client/models/Coach";
 import { User } from "../client/models/User";
-import { verifyToken } from "../utils/jwt";
+import { isTokenRevoked, verifyToken } from "../utils/jwt";
 import { IUserPayload } from "../types";
 import {
   hasPermission,
@@ -65,6 +65,13 @@ export const authMiddleware = async (
     }
 
     const decoded = verifyToken(token);
+    if (await isTokenRevoked(decoded.jti)) {
+      res.status(401).json({
+        success: false,
+        message: "Token revoked",
+      });
+      return;
+    }
 
     const userRolesNeedingStatusCheck: Array<IUserPayload["role"]> = [
       "PLAYER",
@@ -132,6 +139,13 @@ export const onboardingAuthMiddleware = async (
     }
 
     const decoded = verifyToken(token);
+    if (await isTokenRevoked(decoded.jti)) {
+      res.status(401).json({
+        success: false,
+        message: "Token revoked",
+      });
+      return;
+    }
 
     if (decoded.role !== "VENUE_ONBOARDING") {
       res.status(403).json({
