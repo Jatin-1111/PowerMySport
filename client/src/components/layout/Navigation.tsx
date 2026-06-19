@@ -191,18 +191,6 @@ export const Navigation: React.FC<NavProps> = ({
               Home
             </Link>
 
-            {/* Community Link */}
-            <Link
-              href="/community"
-              className={cn(
-                "shop-nav-link relative font-medium",
-                isActive("/community") &&
-                  "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
-              )}
-            >
-              Community
-            </Link>
-
             {/* Explore Dropdown (Roadmap + Guidance) */}
             <div className="relative" ref={exploreDropdownRef}>
               <button
@@ -293,6 +281,18 @@ export const Navigation: React.FC<NavProps> = ({
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Community Link */}
+            <Link
+              href="/community"
+              className={cn(
+                "shop-nav-link relative font-medium",
+                isActive("/community") &&
+                  "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
+              )}
+            >
+              Community
+            </Link>
 
             {/* Services Dropdown */}
             <div className="relative" ref={servicesDropdownRef}>
@@ -524,20 +524,6 @@ export const Navigation: React.FC<NavProps> = ({
                 Home
               </Link>
 
-              {/* Community Link */}
-              <Link
-                href="/community"
-                className={cn(
-                  "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
-                  isActive("/community")
-                    ? "text-power-orange bg-orange-50"
-                    : "text-slate-700",
-                )}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Community
-              </Link>
-
               {/* Mobile Explore Accordion (Roadmap + Guidance) */}
               <div>
                 <button
@@ -596,6 +582,20 @@ export const Navigation: React.FC<NavProps> = ({
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* Community Link */}
+              <Link
+                href="/community"
+                className={cn(
+                  "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
+                  isActive("/community")
+                    ? "text-power-orange bg-orange-50"
+                    : "text-slate-700",
+                )}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Community
+              </Link>
 
               {/* Mobile Services Accordion */}
               <div>
