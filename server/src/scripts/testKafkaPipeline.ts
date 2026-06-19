@@ -68,7 +68,7 @@ const GROUP_ID = `kafka-pipeline-test-${Date.now()}`;
       }, TIMEOUT_MS);
 
       consumer.run({
-        eachMessage: async ({ message }) => {
+        eachMessage: async ({ message }: any) => {
           if (!message.value) return;
           try {
             const event = JSON.parse(
