@@ -151,13 +151,6 @@ export default function CommunityTopNav() {
               Knowledge
             </Link>
 
-            <Link
-              href="/ai-guidance"
-              className={navLinkCls(pathname.startsWith("/ai-guidance"))}
-            >
-              <BrainCircuit size={16} />
-              AI Guidance
-            </Link>
 
             <Link
               href="/contributors"
@@ -348,7 +341,6 @@ export default function CommunityTopNav() {
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { href: "/chats?sidebar=conversations",           icon: MessagesSquare, label: "Chats"        },
-                      { href: "/ai-guidance",     icon: BrainCircuit,   label: "AI Guidance"  },
                       { href: "/discover",        icon: Compass,        label: "Discover"     },
                       { href: "/q",               icon: MessageSquare,  label: "Knowledge"    },
                       { href: "/contributors",    icon: Trophy,         label: "Contributors" },

@@ -13,7 +13,6 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { getMainAppUrl } from "@/lib/auth/redirect";
 import DynamicCommunityPosts from "@/modules/community/components/page/home/DynamicCommunityPosts";
 import DynamicCommunityPulse from "@/modules/community/components/page/home/DynamicCommunityPulse";
@@ -236,12 +235,12 @@ export default function CommunityLandingPage() {
                 </div>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <Link
-                    href="/ai-guidance"
+                  <a
+                    href={`${getMainAppUrl()}/guidance`}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                   >
                     Get Guidance <BrainCircuit className="h-4 w-4" />
-                  </Link>
+                  </a>
                   <a
                     href={`${getMainAppUrl()}/coaches`}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"

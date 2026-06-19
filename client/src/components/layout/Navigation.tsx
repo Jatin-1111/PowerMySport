@@ -6,11 +6,13 @@ import { cn } from "@/utils/cn";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  BrainCircuit,
   Building2,
   ChevronDown,
   GraduationCap,
   LayoutDashboard,
   LogOut,
+  Map,
   MapPin,
   Menu,
   Settings,
@@ -63,6 +65,21 @@ const servicesItems = [
   },
 ];
 
+const exploreItems = [
+  {
+    href: "/roadmap",
+    label: "Roadmap",
+    description: "Discover sports pathways & plans",
+    icon: Map,
+  },
+  {
+    href: "/guidance",
+    label: "Guidance",
+    description: "AI-powered sports guidance portal",
+    icon: BrainCircuit,
+  },
+];
+
 /**
  * Global Navigation Bar for marketing pages
  */
@@ -74,9 +91,12 @@ export const Navigation: React.FC<NavProps> = ({
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+  const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
+  const [mobileExploreOpen, setMobileExploreOpen] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const servicesDropdownRef = useRef<HTMLDivElement>(null);
+  const exploreDropdownRef = useRef<HTMLDivElement>(null);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -97,21 +117,24 @@ export const Navigation: React.FC<NavProps> = ({
       ) {
         setServicesDropdownOpen(false);
       }
+      if (
+        exploreDropdownRef.current &&
+        !exploreDropdownRef.current.contains(event.target as Node)
+      ) {
+        setExploreDropdownOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const navigationLinksLeft = [
-    { href: "/pathways", label: "Pathways" },
-    { href: "/community", label: "Community" },
-  ];
-
   const navigationLinksRight = [
     { href: "/how-it-works", label: "How It Works" },
     { href: "/contact", label: "Contact" },
   ];
+
+  const isExploreActive = exploreItems.some((item) => pathname === item.href);
 
   const isActive = (path: string) => pathname === path;
   const isServicesActive = servicesItems.some((item) => pathname === item.href);
@@ -168,26 +191,114 @@ export const Navigation: React.FC<NavProps> = ({
               Home
             </Link>
 
-            {/* Left Nav Links */}
-            {navigationLinksLeft.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
+            {/* Explore Dropdown (Roadmap + Guidance) */}
+            <div className="relative" ref={exploreDropdownRef}>
+              <button
+                onClick={() => setExploreDropdownOpen(!exploreDropdownOpen)}
+                onMouseEnter={() => { setExploreDropdownOpen(true); setServicesDropdownOpen(false); }}
                 className={cn(
-                  "shop-nav-link relative font-medium",
-                  isActive(link.href) &&
-                    "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
+                  "shop-nav-link relative font-medium flex items-center gap-1 focus:outline-none",
+                  isExploreActive &&
+                    "text-power-orange after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-power-orange/70",
                 )}
               >
-                {link.label}
-              </Link>
-            ))}
+                Explore
+                <motion.span
+                  animate={{ rotate: exploreDropdownOpen ? 180 : 0 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className="inline-flex"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </motion.span>
+              </button>
+
+              <AnimatePresence>
+                {exploreDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    onMouseLeave={() => setExploreDropdownOpen(false)}
+                    className="absolute left-1/2 -translate-x-1/2 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden"
+                  >
+                    {/* subtle top accent */}
+                    <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
+
+                    <div className="py-2">
+                      {exploreItems.map((item, index) => {
+                        const Icon = item.icon;
+                        return (
+                          <motion.div
+                            key={item.href}
+                            initial={{ opacity: 0, x: -6 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{
+                              delay: index * 0.05,
+                              duration: 0.15,
+                              ease: "easeOut",
+                            }}
+                          >
+                            <Link
+                              href={item.href}
+                              onClick={() => setExploreDropdownOpen(false)}
+                              className={cn(
+                                "flex items-center gap-3 px-4 py-3 group transition-colors hover:bg-orange-50",
+                                pathname === item.href && "bg-orange-50",
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
+                                  pathname === item.href
+                                    ? "bg-power-orange text-white"
+                                    : "bg-slate-100 text-slate-500 group-hover:bg-power-orange/10 group-hover:text-power-orange",
+                                )}
+                              >
+                                <Icon className="w-4 h-4" />
+                              </span>
+                              <div>
+                                <p
+                                  className={cn(
+                                    "text-sm font-medium leading-none mb-0.5",
+                                    pathname === item.href
+                                      ? "text-power-orange"
+                                      : "text-slate-800 group-hover:text-power-orange",
+                                  )}
+                                >
+                                  {item.label}
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                  {item.description}
+                                </p>
+                              </div>
+                            </Link>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Community Link */}
+            <Link
+              href="/community"
+              className={cn(
+                "shop-nav-link relative font-medium",
+                isActive("/community") &&
+                  "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
+              )}
+            >
+              Community
+            </Link>
 
             {/* Services Dropdown */}
             <div className="relative" ref={servicesDropdownRef}>
               <button
                 onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
-                onMouseEnter={() => setServicesDropdownOpen(true)}
+                onMouseEnter={() => { setServicesDropdownOpen(true); setExploreDropdownOpen(false); }}
                 className={cn(
                   "shop-nav-link relative font-medium flex items-center gap-1 focus:outline-none",
                   isServicesActive &&
@@ -413,22 +524,78 @@ export const Navigation: React.FC<NavProps> = ({
                 Home
               </Link>
 
-              {/* Left Nav Links */}
-              {navigationLinksLeft.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
+              {/* Mobile Explore Accordion (Roadmap + Guidance) */}
+              <div>
+                <button
+                  onClick={() => setMobileExploreOpen(!mobileExploreOpen)}
                   className={cn(
-                    "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
-                    isActive(link.href)
+                    "w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors",
+                    isExploreActive
                       ? "text-power-orange bg-orange-50"
-                      : "text-slate-700",
+                      : "text-slate-700 hover:bg-indigo-50",
                   )}
-                  onClick={() => setMobileMenuOpen(false)}
                 >
-                  {link.label}
-                </Link>
-              ))}
+                  Explore
+                  <motion.span
+                    animate={{ rotate: mobileExploreOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="inline-flex"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </motion.span>
+                </button>
+
+                <AnimatePresence>
+                  {mobileExploreOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
+                        {exploreItems.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => {
+                                setMobileExploreOpen(false);
+                                setMobileMenuOpen(false);
+                              }}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                pathname === item.href
+                                  ? "text-power-orange bg-orange-50"
+                                  : "text-slate-600 hover:bg-orange-50 hover:text-power-orange",
+                              )}
+                            >
+                              <Icon className="w-4 h-4 shrink-0" />
+                              {item.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Community Link */}
+              <Link
+                href="/community"
+                className={cn(
+                  "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
+                  isActive("/community")
+                    ? "text-power-orange bg-orange-50"
+                    : "text-slate-700",
+                )}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Community
+              </Link>
 
               {/* Mobile Services Accordion */}
               <div>
