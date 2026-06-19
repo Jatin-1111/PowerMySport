@@ -35,7 +35,12 @@ const decryptValue = (ciphertext: string): string => {
   }
 
   try {
-    const [ivHex, tagHex, encHex] = ciphertext.split(":");
+    const parts = ciphertext.split(":");
+    if (parts.length !== 3) {
+      return ciphertext;
+    }
+
+    const [ivHex, tagHex, encHex] = parts as [string, string, string];
     const iv = Buffer.from(ivHex, "hex");
     const tag = Buffer.from(tagHex, "hex");
     const enc = Buffer.from(encHex, "hex");
