@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type ReminderType = "BOOKING_REMINDER";
-export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES";
+export type ReminderType = "BOOKING_REMINDER" | "PATHWAY_DOCUMENT_REMINDER";
+export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS";
 export type ScheduledNotificationStatus =
   | "PENDING"
   | "SENT"
@@ -50,13 +50,13 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
     },
     type: {
       type: String,
-      enum: ["BOOKING_REMINDER"],
+      enum: ["BOOKING_REMINDER", "PATHWAY_DOCUMENT_REMINDER"],
       required: true,
       default: "BOOKING_REMINDER",
     },
     interval: {
       type: String,
-      enum: ["24_HOURS", "1_HOUR", "15_MINUTES"],
+      enum: ["24_HOURS", "1_HOUR", "15_MINUTES", "7_DAYS"],
       required: true,
     },
     scheduledFor: {

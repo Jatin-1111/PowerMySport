@@ -12,6 +12,11 @@ export interface PathwayLevel {
   competitions: string;
   steps: string[];
   governingBody?: string;
+  localResources?: {
+    academies?: string[];
+    facilities?: string[];
+    governingBodies?: string[];
+  };
 }
 
 export interface Tournament {

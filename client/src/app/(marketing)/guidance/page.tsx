@@ -63,6 +63,7 @@ type GuidanceResponse = {
     restDays: string;
   };
   recommendedPlatformActions: string;
+  recommendedSports?: string[];
 };
 
 type GuidanceSubmission = {
@@ -506,8 +507,8 @@ function Step1Profile({
               type="number"
               min={3}
               max={21}
-              value={form.child_age}
-              onChange={(e) => update("child_age", Number(e.target.value))}
+              value={form.child_age || ""}
+              onChange={(e) => update("child_age", e.target.value ? Number(e.target.value) : ("" as any))}
               className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pr-10 text-lg font-bold text-slate-900 outline-none transition focus:border-power-orange focus:ring-4 focus:ring-power-orange/10"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">
@@ -948,9 +949,31 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
         </div>
       </motion.div>
 
+      {/* Recommended Sports */}
+      {submission.response.recommendedSports && submission.response.recommendedSports.length > 0 && (
+        <motion.div custom={2} variants={fadeUp} className="mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-4 w-4 text-power-orange" />
+            <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
+              Top Recommended Sports
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {submission.response.recommendedSports.map((sport, idx) => (
+              <div key={idx} className="flex items-center gap-3 rounded-xl border border-power-orange/20 bg-power-orange/5 p-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-power-orange font-bold shadow-sm">
+                  #{idx + 1}
+                </div>
+                <p className="font-semibold text-slate-800 leading-tight">{sport}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Coaching style */}
       <motion.div
-        custom={2}
+        custom={3}
         variants={fadeUp}
         className="rounded-2xl border border-slate-200 bg-white p-5"
       >
@@ -969,7 +992,7 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
 
       {/* Next objectives */}
       <motion.div
-        custom={3}
+        custom={4}
         variants={fadeUp}
         className="rounded-2xl border-2 border-emerald-400 bg-emerald-50/50 p-5 relative overflow-hidden"
       >

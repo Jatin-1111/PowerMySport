@@ -11,6 +11,7 @@ type EntityType = "tournament" | "scholarship" | "university";
 interface ScrapeContext {
   sportSlug: string;
   sportName: string;
+  city?: string;
 }
 
 interface GroundedExtractionResult {
@@ -33,6 +34,7 @@ function schemaBullets(type: EntityType): string {
 - level (string: "Grassroots" | "District" | "State" | "National" | "International")
 - description (string — what it is and where it's held)
 - ageGroup (string, e.g. "Under-14", "Open")
+- city (string, e.g. "Mumbai" or "National")
 - prerequisiteId (string — registration ID required, e.g. "<FEDERATION_ACRONYM>_ID")
 - prerequisiteName (string — human-readable name of that ID/registration)
 - prerequisiteGuide (array of 2-4 short steps to obtain that registration)
@@ -44,6 +46,7 @@ function schemaBullets(type: EntityType): string {
 - provider (string, e.g. "Sports Authority of India", "Khelo India", a real corporate sponsor)
 - description (string — what financial/training support it gives)
 - eligibility (string — real eligibility criteria)
+- city (string, e.g. "Mumbai" or "National")
 - prerequisiteId (string — application form ID, e.g. "SAI_FORM_A")
 - prerequisiteName (string — human-readable form name)
 - prerequisiteGuide (array of 2-4 short steps to apply)
@@ -54,6 +57,7 @@ function schemaBullets(type: EntityType): string {
 - location (string — "City, State")
 - admissionCriteria (string — real sports-quota admission criteria)
 - sportsQuotaDetails (string — what the quota provides, e.g. fee waiver, marks relaxation)
+- city (string, e.g. "Mumbai")
 - prerequisiteId (string — application ID, e.g. "SPORTS_QUOTA_APP")
 - prerequisiteName (string — human-readable application name)
 - prerequisiteGuide (array of 2-4 short steps to apply)
@@ -78,9 +82,11 @@ function entityLabel(type: EntityType): string {
  * step 2 below does the strict-JSON conversion in a tool-free call.
  */
 function buildGroundingPrompt(type: EntityType, ctx: ScrapeContext): string {
+  const cityClause = ctx.city ? ` specifically located in or highly relevant to players from ${ctx.city}` : "";
+
   if (type === "tournament") {
     return `Use Google Search to research REAL, CURRENTLY ACTIVE tennis tournaments in
-India for the sport "${ctx.sportName}". I need at least 6 DIFFERENT tournament series or
+India for the sport "${ctx.sportName}"${cityClause}. I need at least 6 DIFFERENT tournament series or
 events, not 6 city editions of the same series.
 
 Rules:
@@ -100,7 +106,7 @@ actually found through search, not something you're recalling from memory or gue
   }
 
   return `Use Google Search to research REAL, CURRENTLY ACTIVE ${entityLabel(type)} in
-India for the sport "${ctx.sportName}". Only report things you actually find via search —
+India for the sport "${ctx.sportName}"${cityClause}. Only report things you actually find via search —
 do not invent anything. If you genuinely find nothing relevant, say so plainly.
 
 For each real item you find, report:
@@ -275,6 +281,7 @@ async function upsertTournaments(
           level: item.level || "National",
           description: item.description || "",
           ageGroup: item.ageGroup || "Open",
+          city: item.city,
           prerequisiteId: item.prerequisiteId,
           prerequisiteName: item.prerequisiteName,
           prerequisiteGuide: item.prerequisiteGuide || [],
@@ -302,6 +309,7 @@ async function upsertScholarships(
           provider: item.provider || "",
           description: item.description || "",
           eligibility: item.eligibility || "",
+          city: item.city,
           prerequisiteId: item.prerequisiteId,
           prerequisiteName: item.prerequisiteName,
           prerequisiteGuide: item.prerequisiteGuide || [],
@@ -329,6 +337,7 @@ async function upsertUniversities(
           location: item.location || "",
           admissionCriteria: item.admissionCriteria || "",
           sportsQuotaDetails: item.sportsQuotaDetails || "",
+          city: item.city,
           prerequisiteId: item.prerequisiteId,
           prerequisiteName: item.prerequisiteName,
           prerequisiteGuide: item.prerequisiteGuide || [],

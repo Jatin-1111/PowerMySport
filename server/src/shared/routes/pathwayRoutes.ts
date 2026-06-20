@@ -6,6 +6,7 @@ import {
   refreshPathway,
   refreshStalePathways,
   getPathwayStats,
+  getPathwayStories,
 } from "../controller/pathwayController";
 
 const router = Router();
@@ -25,6 +26,9 @@ const pathwayRateLimiter = rateLimit({
 
 // GET /api/pathways/search?q=bad  (must come before / to avoid route conflict)
 router.get("/search", pathwayRateLimiter, searchPathways);
+
+// GET /api/pathways/stories?sport=cricket&level=2
+router.get("/stories", pathwayRateLimiter, getPathwayStories);
 
 // GET /api/pathways?sport=cricket&age=12&city=Mumbai
 router.get("/", pathwayRateLimiter, getPathway);

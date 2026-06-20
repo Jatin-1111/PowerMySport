@@ -27,17 +27,25 @@ export const guidanceResponseSchema = z.object({
     restDays: z.string(),
   }),
   recommendedPlatformActions: z.string(),
+  recommendedSports: z.array(z.string()).optional(),
 });
 
 export type GuidanceRequest = z.infer<typeof guidanceRequestSchema>;
 export type GuidanceResponse = z.infer<typeof guidanceResponseSchema>;
 
-export const YOUTH_SPORTS_GUIDANCE_SYSTEM_PROMPT = `You are an expert Youth Sports Consultant. You will receive a child's profile strictly in JSON format. If the profile includes a specific "sport", you MUST focus your analysis on how to improve in that specific sport, or suggest highly complementary cross-training sports. You must analyze this data and return your absolute final response strictly as a JSON object matching this schema blueprint, without any markdown wrappers or conversational preamble before or after the JSON structure:
+export const getYouthSportsGuidanceSystemPrompt = (hasSport: boolean) => `You are an expert Youth Sports Consultant. You will receive a child's profile strictly in JSON format. ${
+  hasSport
+    ? 'The profile includes a specific "sport", you MUST focus your analysis on how to improve in that specific sport, or suggest highly complementary cross-training sports. DO NOT include the "recommendedSports" field in your response.'
+    : "The profile does NOT include a specific sport. You MUST recommend the top 3 sports that best fit the child's profile based on their personality, goals, age, and fitness level. Include these in the \\\"recommendedSports\\\" array."
+}
+You must analyze this data and return your absolute final response strictly as a JSON object matching this schema blueprint, without any markdown wrappers or conversational preamble before or after the JSON structure:
 {
   "profileAnalysis": "String summarizing how their profile attributes match up",
   "idealCoachingStyle": "String describing what kind of coach profile to look for on our platform",
   "weeklyBlueprint": { "trainingHours": "String", "freePlayHours": "String", "restDays": "String" },
-  "recommendedPlatformActions": "Specific actionable next steps on what to book first on our site"
+  "recommendedPlatformActions": "Specific actionable next steps on what to book first on our site"${
+    hasSport ? "" : ',\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"]'
+  }
 }`;
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const configuredModelName = process.env.GEMINI_MODEL_NAME?.trim();
@@ -80,7 +88,7 @@ export const generateYouthSportsGuidance = async (
         model: modelName,
         contents: JSON.stringify(payload),
         config: {
-          systemInstruction: YOUTH_SPORTS_GUIDANCE_SYSTEM_PROMPT,
+          systemInstruction: getYouthSportsGuidanceSystemPrompt(!!payload.sport),
           responseMimeType: "application/json",
           temperature: 0.4,
         },

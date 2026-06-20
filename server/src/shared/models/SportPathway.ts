@@ -11,6 +11,11 @@ export interface PathwayLevel {
   competitions: string;
   steps: string[];
   governingBody?: string; // e.g. "BCCI", "BAI"
+  localResources?: {
+    academies?: string[];
+    facilities?: string[];
+    governingBodies?: string[];
+  };
 }
 
 export interface Tournament {
@@ -98,7 +103,12 @@ const pathwayLevelSchema = new Schema<PathwayLevel>(
     ageRange: { type: String, required: true },
     competitions: { type: String, required: true },
     steps: [{ type: String }],
-    governingBody: { type: String, default: "" },
+    governingBody: { type: String },
+    localResources: {
+      academies: [{ type: String }],
+      facilities: [{ type: String }],
+      governingBodies: [{ type: String }],
+    },
   },
   { _id: false },
 );

@@ -64,6 +64,7 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
         restDays: { type: String, required: true },
       },
       recommendedPlatformActions: { type: String, required: true },
+      recommendedSports: { type: [String] },
     },
   },
   { timestamps: true },

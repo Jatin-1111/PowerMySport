@@ -6,6 +6,7 @@ import mongoose, { Document, Schema } from "mongoose";
  */
 export interface ScholarshipDocument extends Document {
   sportSlug: string;
+  city?: string;
   name: string;
   provider: string;
   description: string;
@@ -24,6 +25,7 @@ export interface ScholarshipDocument extends Document {
 const scholarshipSchema = new Schema<ScholarshipDocument>(
   {
     sportSlug: { type: String, required: true, lowercase: true, index: true },
+    city: { type: String, index: true },
     name: { type: String, required: true, trim: true },
     provider: { type: String, required: true },
     description: { type: String, required: true },

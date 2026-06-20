@@ -15,7 +15,7 @@ export default function ConciergeRequestsPage() {
 
   const fetchRequests = async () => {
     try {
-      const res = await axiosInstance.get("/api/concierge/requests");
+      const res = await axiosInstance.get("/concierge/requests");
       setRequests(res.data.requests || []);
     } catch (error) {
       console.error("Failed to fetch concierge requests:", error);

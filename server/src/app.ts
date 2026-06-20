@@ -23,6 +23,7 @@ import bookingRoutes from "./client/routes/bookingRoutes";
 import coachRoutes from "./client/routes/coachRoutes";
 import friendRoutes from "./client/routes/friendRoutes";
 import guidanceRoutes from "./client/routes/guidanceRoutes";
+import pathwayProfileRoutes from "./client/routes/pathwayProfileRoutes";
 import notificationRoutes from "./client/routes/notificationRoutes";
 import payoutRoutes from "./client/routes/payoutRoutes";
 import refundMethodRoutes from "./client/routes/refundMethodRoutes";
@@ -160,6 +161,7 @@ app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/refund-methods", refundMethodRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/guidance", guidanceRoutes);
+app.use("/api/pathway-profile", pathwayProfileRoutes);
 // Community Domain
 app.use("/api/community", communityRoutes);
 

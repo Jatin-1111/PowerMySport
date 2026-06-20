@@ -11,6 +11,8 @@ import {
 } from "@/modules/sports/services/pathway";
 import { sportsApi, Sport } from "@/modules/sports/services/sports";
 import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
+import { pathwayProfileApi, AthleteStory } from "@/modules/sports/services/pathwayProfileApi";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import Fuse from "fuse.js";
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import {
@@ -75,6 +77,7 @@ import {
   ClipboardList,
   Quote,
   BadgeCheck,
+  PartyPopper,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -370,76 +373,7 @@ function saveApplications(items: ApplicationRecord[]) { lsSet("pms_applications"
 function loadReminders(): ReminderRecord[] { return lsGet("pms_reminders", []); }
 function saveReminders(items: ReminderRecord[]) { lsSet("pms_reminders", items); }
 
-// ─── P8: Athlete Success Stories ──────────────────────────────────────────────
-
-const ATHLETE_STORIES = [
-  {
-    id: "s1",
-    level: 1,
-    name: "Priya Sharma",
-    sport: "Badminton",
-    location: "Pune",
-    achievement: "State Sub-Junior Champion",
-    quote: "She started at 7 in a local academy. The coach noticed her footwork in the first week. Two years later she won her first district title. It all started with showing up.",
-    parentNote: "We spent ₹800/month. That's it. The biggest investment was time — dropping and picking up three days a week.",
-    tags: ["Grassroots", "Academy"],
-  },
-  {
-    id: "s2",
-    level: 2,
-    name: "Arjun Nair",
-    sport: "Swimming",
-    location: "Kochi",
-    achievement: "District Gold, South Zone Qualifier",
-    quote: "The transition from school pool to district meets felt huge. But our coach at the SAI centre broke it down level by level. My parents never missed a meet.",
-    parentNote: "We didn't know anything about swimming pathways. The selection trial dates were the hardest part to track. Wish I'd had something like this earlier.",
-    tags: ["District", "SAI"],
-  },
-  {
-    id: "s3",
-    level: 2,
-    name: "Fatima Ansari",
-    sport: "Kabaddi",
-    location: "Aurangabad",
-    achievement: "Maharashtra State Team, Under-17",
-    quote: "Girls' Kabaddi doesn't get much attention but our state has a strong programme. I found out about the trials through a friend. Parents need to know these opportunities exist.",
-    parentNote: "No one told us there was a state programme. She almost missed the trials entirely. Now she represents the state — it changed everything for her confidence.",
-    tags: ["District", "State"],
-  },
-  {
-    id: "s4",
-    level: 3,
-    name: "Vikram Reddy",
-    sport: "Athletics",
-    location: "Hyderabad",
-    achievement: "National School Games Silver — 400m",
-    quote: "State academy life is a different world. 6AM runs, physio on Tuesdays, nutrition tracking. It's demanding but I've never been more focused.",
-    parentNote: "The scholarship from the Sports Authority covered 60% of academy fees. Without that, we could not have sustained it. Parents need to explore every scholarship early.",
-    tags: ["State", "Academy", "Scholarship"],
-  },
-  {
-    id: "s5",
-    level: 4,
-    name: "Meera Joshi",
-    sport: "Wrestling",
-    location: "Delhi",
-    achievement: "Senior Nationals Bronze, National Camp Selection",
-    quote: "At the national level you stop counting medals and start counting percentages. Every drill, every gram of food, every hour of sleep gets optimised. My parents became my logistics team.",
-    parentNote: "At this stage, the sport is the family's life. But watching her compete nationally — nothing compares to that pride.",
-    tags: ["National", "Camp"],
-  },
-  {
-    id: "s6",
-    level: 5,
-    name: "Rohan Gupta",
-    sport: "Shooting",
-    location: "Bhopal",
-    achievement: "ISSF World Cup Team India",
-    quote: "Representing India is the outcome of 10 years of small decisions. The right club at 9. The right coach at 14. The right scholarship at 17. Every step mattered.",
-    parentNote: "Sponsorships now cover everything. But the early years were our investment. This platform is exactly what we needed when we started.",
-    tags: ["International", "Sponsored"],
-  },
-];
+// Stories are now fetched from the backend
 
 // ─── P9: Deep-link helper ──────────────────────────────────────────────────────
 
@@ -1010,12 +944,12 @@ function CalendarTab({
 
 // ─── P8: Stories Tab ──────────────────────────────────────────────────────────
 
-function StoriesTab({ sportName, levels }: { sportName: string; levels: any[] }) {
+function StoriesTab({ sportName, levels, stories }: { sportName: string; levels: any[], stories: AthleteStory[] }) {
   const [filterLevel, setFilterLevel] = useState<number | null>(null);
 
-  const stories = filterLevel
-    ? ATHLETE_STORIES.filter((s) => s.level === filterLevel)
-    : ATHLETE_STORIES;
+  const displayStories = filterLevel
+    ? stories.filter((s) => s.level === filterLevel)
+    : stories;
 
   return (
     <motion.div
@@ -1056,53 +990,56 @@ function StoriesTab({ sportName, levels }: { sportName: string; levels: any[] })
 
       {/* Story cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {stories.map((story) => {
-          const c = levelColorMap[story.level];
-          return (
-            <div key={story.id} className={`relative flex flex-col rounded-2xl border ${c.border} bg-gradient-to-br ${c.bg} p-5 shadow-sm overflow-hidden`}>
-              {/* Level badge */}
-              <div className={`absolute top-4 right-4 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${c.badge}`}>
-                {levels.find((l) => l.level === story.level)?.label}
-              </div>
-
-              {/* Quote */}
-              <Quote className={`h-5 w-5 mb-3 opacity-30 ${c.text}`} />
-              <p className="text-sm leading-relaxed text-slate-700 italic mb-4 flex-1">
-                "{story.quote}"
-              </p>
-
-              {/* Divider */}
-              <div className={`border-t ${c.border} pt-4 space-y-3`}>
-                <div>
-                  <p className={`font-bold text-slate-900 text-sm`}>{story.name}</p>
-                  <p className="text-xs text-slate-500">{story.sport} · {story.location}</p>
+        {displayStories.length === 0 ? (
+          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-slate-500">
+            <MessageSquareQuote className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+            <p>No stories verified for this level yet.</p>
+          </div>
+        ) : (
+          displayStories.map((story) => {
+            const c = levelColorMap[story.level];
+            return (
+              <div key={story._id || story.name} className={`relative flex flex-col rounded-2xl border ${c.border} bg-gradient-to-br ${c.bg} p-5 shadow-sm overflow-hidden`}>
+                {/* Level badge */}
+                <div className={`absolute top-4 right-4 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${c.badge}`}>
+                  {levels.find((l) => l.level === story.level)?.label}
                 </div>
-                <div className={`flex items-center gap-1.5 rounded-xl border ${c.badge} px-3 py-1.5 w-fit`}>
-                  <Trophy className={`h-3 w-3 shrink-0 ${c.text}`} />
-                  <span className={`text-[10px] font-bold ${c.text}`}>{story.achievement}</span>
-                </div>
-                {story.parentNote && (
-                  <div className="rounded-xl bg-white/70 border border-white px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                      <HeartHandshake className="h-3 w-3" /> Parent's Note
-                    </p>
-                    <p className="text-xs text-slate-600 leading-relaxed italic">"{story.parentNote}"</p>
+
+                {/* Quote */}
+                <Quote className={`h-5 w-5 mb-3 opacity-30 ${c.text}`} />
+                <p className="text-sm leading-relaxed text-slate-700 italic mb-4 flex-1">
+                  "{story.quote}"
+                </p>
+
+                {/* Divider */}
+                <div className={`border-t ${c.border} pt-4 space-y-3`}>
+                  <div>
+                    <p className={`font-bold text-slate-900 text-sm`}>{story.name}</p>
+                    <p className="text-xs text-slate-500">{sportName} · {story.location}</p>
                   </div>
-                )}
+                  <div className={`flex items-center gap-1.5 rounded-xl border ${c.badge} px-3 py-1.5 w-fit`}>
+                    <Trophy className={`h-3 w-3 shrink-0 ${c.text}`} />
+                    <span className={`text-[10px] font-bold ${c.text}`}>{story.achievement}</span>
+                  </div>
+                  {story.parentNote && (
+                    <div className="rounded-xl bg-white/70 border border-white px-3 py-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                        <HeartHandshake className="h-3 w-3" /> Parent's Note
+                      </p>
+                      <p className="text-xs text-slate-600 leading-relaxed italic">"{story.parentNote}"</p>
+                    </div>
+                  )}
+                </div>
+                {/* Verified badge */}
+                <div className="mt-3 flex items-center gap-1.5">
+                  <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="text-[10px] font-bold text-emerald-600">Verified Story</span>
+                </div>
               </div>
-              {/* Verified badge */}
-              <div className="mt-3 flex items-center gap-1.5">
-                <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-[10px] font-bold text-emerald-600">Verified Story</span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
-
-      {stories.length === 0 && (
-        <div className="py-10 text-center text-slate-400 text-sm">No stories found for this level.</div>
-      )}
     </motion.div>
   );
 }
@@ -1188,12 +1125,13 @@ function ProgressTracker({
       : null;
 
   const toggleStep = (levelNum: number, stepIdx: number) => {
-    const existing = progress.completedSteps[levelNum] || [];
+    const safeCompletedSteps = progress.completedSteps || {};
+    const existing = safeCompletedSteps[levelNum] || [];
     const updated = [...existing];
     updated[stepIdx] = !updated[stepIdx];
     const next: ProgressState = {
       ...progress,
-      completedSteps: { ...progress.completedSteps, [levelNum]: updated },
+      completedSteps: { ...safeCompletedSteps, [levelNum]: updated },
     };
     onChange(next);
   };
@@ -1204,7 +1142,8 @@ function ProgressTracker({
   };
 
   const stepsForCurrentLevel = currentLevelData?.steps || [];
-  const completedForLevel = progress.completedSteps[progress.currentLevel] || [];
+  const safeCompletedSteps = progress.completedSteps || {};
+  const completedForLevel = safeCompletedSteps[progress.currentLevel] || [];
   const completedCount = completedForLevel.filter(Boolean).length;
   const totalSteps = stepsForCurrentLevel.length;
   const remainingCount = totalSteps - completedCount;
@@ -1346,16 +1285,16 @@ function ProgressTracker({
                   ) : remainingCount === 0 && nextLevel ? (
                     <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                      <p className="text-xs font-bold text-emerald-700">
+                      <p className="text-xs font-bold text-emerald-700 flex flex-wrap items-center gap-1">
                         All objectives complete! Ready to step up to{" "}
-                        <span>{nextLevel.label} level 🎉</span>
+                        <span className="flex items-center gap-1">{nextLevel.label} level <PartyPopper className="h-3.5 w-3.5 text-emerald-600 mb-0.5" /></span>
                       </p>
                     </div>
                   ) : remainingCount === 0 && !nextLevel ? (
                     <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 flex items-center gap-2">
                       <Trophy className="h-4 w-4 text-rose-500 shrink-0" />
-                      <p className="text-xs font-bold text-rose-700">
-                        Peak achieved — International level! 🏆
+                      <p className="text-xs font-bold text-rose-700 flex items-center gap-1">
+                        Peak achieved — International level! <Trophy className="h-3.5 w-3.5 text-rose-600 mb-0.5" />
                       </p>
                     </div>
                   ) : null}
@@ -1619,6 +1558,72 @@ function PathwayLevelDetail({
         </ul>
       </div>
 
+      {/* Local Resources Section */}
+      {level.localResources &&
+        (level.localResources.academies?.length ||
+          level.localResources.facilities?.length ||
+          level.localResources.governingBodies?.length) ? (
+        <div className="mb-6 rounded-xl bg-slate-50 border border-slate-100 p-4">
+          <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+            <MapPin className="h-3.5 w-3.5" />
+            Local Resources
+          </h4>
+          <div className="space-y-4">
+            {level.localResources.academies && level.localResources.academies.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Academies
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {level.localResources.academies.map((item: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm"
+                    >
+                      <Star className="h-3 w-3 text-amber-500" /> {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {level.localResources.facilities && level.localResources.facilities.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Facilities
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {level.localResources.facilities.map((item: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm"
+                    >
+                      <Pin className="h-3 w-3 text-emerald-500" /> {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {level.localResources.governingBodies && level.localResources.governingBodies.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Governing Bodies
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {level.localResources.governingBodies.map((item: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm"
+                    >
+                      <Shield className="h-3 w-3 text-blue-500" /> {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {/* Stories teaser */}
       {sName && onSelectTab && (
         <div className="mt-4 mb-2 flex items-center justify-center">
@@ -1626,8 +1631,8 @@ function PathwayLevelDetail({
             onClick={() => onSelectTab("stories")}
             className={`flex items-center gap-1.5 text-xs font-semibold ${colors.text} hover:opacity-85 transition`}
           >
-            <MessageSquareQuote className="h-3.5 w-3.5" />
-            💬 Success story at this level
+            <MessageSquareQuote className="h-4 w-4" />
+            <span>Success story at this level</span>
           </button>
         </div>
       )}
@@ -2178,41 +2183,72 @@ function PathwayExplorerSection() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load from localStorage
+  const { user } = useAuthStore();
+  const [dbStories, setDbStories] = useState<AthleteStory[]>([]);
+
+  // Load from DB or fallback to localStorage
   useEffect(() => {
-    setProgress(loadProgress());
-    setSelectedState(loadState());
-    setSavedItems(loadSaved());
-    setApplications(loadApplications());
-    setReminders(loadReminders());
-  }, []);
+    const initProfile = async () => {
+      setSelectedState(loadState());
+      if (user) {
+        const dbProfile = await pathwayProfileApi.getProfile();
+        if (dbProfile) {
+          setProgress(dbProfile.progress || DEFAULT_PROGRESS);
+          setSavedItems(dbProfile.savedItems || []);
+          setApplications(dbProfile.applications || []);
+          setReminders(dbProfile.reminders || []);
+          return;
+        }
+      }
+      setProgress(loadProgress());
+      setSavedItems(loadSaved());
+      setApplications(loadApplications());
+      setReminders(loadReminders());
+    };
+    initProfile();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchStories = async () => {
+      if (result && activeTab === "stories") {
+        const currentLevels = result.pathway.levels;
+        const selectedLevel = currentLevels[activeIdx] || currentLevels[0];
+        const fetchedStories = await pathwayProfileApi.getStories(result.pathway.sportSlug, selectedLevel.level);
+        setDbStories(fetchedStories);
+      }
+    };
+    fetchStories();
+  }, [result, activeTab, activeIdx]);
 
   const handleSavedChange = (items: SavedItem[]) => {
     setSavedItems(items);
     saveSaved(items);
+    if (user) pathwayProfileApi.updateProfile({ savedItems: items });
   };
 
   const handleApplicationsChange = (items: ApplicationRecord[]) => {
     setApplications(items);
     saveApplications(items);
+    if (user) pathwayProfileApi.updateProfile({ applications: items });
   };
 
   const handleRemindersChange = (items: ReminderRecord[]) => {
     setReminders(items);
     saveReminders(items);
+    if (user) pathwayProfileApi.updateProfile({ reminders: items });
   };
 
   const handleUpdateApplicationStatus = (id: string, status: ApplicationRecord["status"]) => {
     const updated = applications.map((app) =>
       app.id === id ? { ...app, status } : app
     );
-    setApplications(updated);
-    saveApplications(updated);
+    handleApplicationsChange(updated);
   };
 
   const handleProgressChange = (p: ProgressState) => {
     setProgress(p);
     saveProgress(p);
+    if (user) pathwayProfileApi.updateProfile({ progress: p });
   };
 
   const handleStateChange = (s: string) => {
@@ -2624,7 +2660,8 @@ function PathwayExplorerSection() {
 
               {/* Tabs */}
               {(result || savedItems.length > 0 || applications.length > 0) && (
-                <div className="mb-10 grid grid-cols-2 gap-1.5 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1.5 backdrop-blur-sm sm:grid-cols-4 sm:gap-2 sm:p-2 lg:flex lg:flex-wrap">
+                <div className="mb-8 flex w-full overflow-x-auto hide-scrollbar rounded-2xl bg-slate-100/70 p-1.5 backdrop-blur-md border border-slate-200/60 shadow-inner">
+                  <div className="flex gap-1.5">
                   {[
                     {
                       id: "pathway",
@@ -2676,13 +2713,15 @@ function PathwayExplorerSection() {
                     },
                     {
                       id: "saved",
-                      label: `Saved (${savedItems.length})`,
+                      label: "Saved",
+                      badge: savedItems.length,
                       icon: <Heart className="h-4 w-4" />,
                       show: savedItems.length > 0,
                     },
                     {
                       id: "applications",
-                      label: `Applications (${applications.length})`,
+                      label: "Applications",
+                      badge: applications.length,
                       icon: <ClipboardList className="h-4 w-4" />,
                       show: applications.length > 0,
                     },
@@ -2704,29 +2743,41 @@ function PathwayExplorerSection() {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`relative flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-[11px] font-semibold transition-all sm:gap-2 sm:text-sm lg:flex-1 lg:px-4 ${
+                        className={`relative flex shrink-0 items-center justify-center rounded-xl px-4 py-2 text-[13px] font-semibold transition-colors duration-200 z-10 ${
                           activeTab === tab.id
-                            ? "text-power-orange shadow-sm"
-                            : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
+                            ? "text-slate-900"
+                            : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
                         }`}
                       >
                         {activeTab === tab.id && (
                           <motion.div
-                            layoutId="activeTab"
-                            className="absolute inset-0 rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50"
+                            layoutId="activeTabPill"
+                            className="absolute inset-0 -z-10 rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50"
                             transition={{
                               type: "spring",
-                              bounce: 0.2,
-                              duration: 0.6,
+                              bounce: 0.15,
+                              duration: 0.5,
                             }}
                           />
                         )}
-                        <span className="relative z-10 flex items-center gap-1.5 sm:gap-2">
-                          {tab.icon}
-                          <span className="truncate">{tab.label}</span>
+                        <span className="flex items-center gap-2">
+                          <span className={`transition-colors ${activeTab === tab.id ? "text-power-orange" : ""}`}>
+                            {tab.icon}
+                          </span>
+                          <span className="whitespace-nowrap">{tab.label}</span>
+                          {tab.badge !== undefined && tab.badge > 0 && (
+                            <span className={`ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold transition-colors ${
+                              activeTab === tab.id
+                                ? "bg-power-orange text-white shadow-sm"
+                                : "bg-slate-200 text-slate-500"
+                            }`}>
+                              {tab.badge}
+                            </span>
+                          )}
                         </span>
                       </button>
                     ))}
+                  </div>
                 </div>
               )}
 
@@ -3266,6 +3317,7 @@ function PathwayExplorerSection() {
                   <StoriesTab
                     sportName={result.pathway.sportName}
                     levels={currentLevels}
+                    stories={dbStories}
                   />
                 )}
               </AnimatePresence>

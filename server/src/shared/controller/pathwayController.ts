@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { pathwayService } from "../services/PathwayService";
+import { AthleteStory } from "../models/AthleteStory";
 
 /**
  * GET /api/pathways?sport=cricket&age=12&city=Mumbai
@@ -58,8 +59,26 @@ export const getPathway = async (
     console.error("Error fetching pathway:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to generate pathway. Please try again.",
+      message: "An error occurred while generating the pathway.",
     });
+  }
+};
+
+export const getPathwayStories = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sport, level } = req.query;
+    if (!sport || typeof sport !== "string") {
+      res.status(400).json({ success: false, message: "Provide a sport parameter" });
+      return;
+    }
+    const query: any = { sportSlug: sport.toLowerCase() };
+    if (level && !isNaN(Number(level))) {
+      query.level = Number(level);
+    }
+    const stories = await AthleteStory.find(query).lean();
+    res.json({ success: true, data: stories });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to fetch stories" });
   }
 };
 

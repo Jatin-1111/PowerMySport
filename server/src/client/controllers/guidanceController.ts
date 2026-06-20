@@ -43,8 +43,21 @@ export const submitGuidance = async (
       },
     });
   } catch (error) {
-    const errorMessage =
+    let errorMessage =
       error instanceof Error ? error.message : "Failed to generate guidance";
+
+    // Attempt to parse Gemini's raw JSON error array
+    try {
+      const parsedError = JSON.parse(errorMessage);
+      if (Array.isArray(parsedError) && parsedError[0]?.error?.message) {
+        errorMessage = parsedError[0].error.message;
+      } else if (parsedError?.error?.message) {
+        errorMessage = parsedError.error.message;
+      }
+    } catch {
+      // Not a JSON string, ignore and use as is
+    }
+
     const normalizedMessage = errorMessage.toLowerCase();
     const isTemporarilyUnavailable =
       normalizedMessage.includes("quota") ||

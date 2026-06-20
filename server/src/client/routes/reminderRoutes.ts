@@ -13,6 +13,7 @@ import {
   sendDailySummary,
   retryFailedReminder,
   retryMultipleReminders,
+  createReminder,
 } from "../controllers/reminderController";
 
 const router = express.Router();
@@ -23,6 +24,9 @@ router.use(authMiddleware);
 // Reminder preference routes
 router.get("/preferences", getReminderPreferences);
 router.patch("/preferences", updateReminderPreferences);
+
+// Create reminder
+router.post("/", createReminder);
 
 // Reminder query routes
 router.get("/upcoming", getUpcomingReminders);

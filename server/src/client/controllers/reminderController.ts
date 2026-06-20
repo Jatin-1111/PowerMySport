@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ScheduledNotificationService } from "../services/ScheduledNotificationService";
+import { ScheduledNotification } from "../models/ScheduledNotification";
 import { ReminderMonitoringService } from "../services/ReminderMonitoringService";
 import { z } from "zod";
 import { User } from "../models/User";
@@ -398,6 +399,45 @@ export const retryMultipleReminders = async (
       data: result.results,
       message: `${result.results.filter((r) => r.success).length} of ${reminderIds.length} reminders queued for retry`,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Create a new reminder
+ * POST /api/reminders
+ */
+export const createReminder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const { type, itemName, itemType, daysFromNow } = req.body;
+
+    if (type === "PATHWAY_DOCUMENT_REMINDER") {
+      const scheduledFor = new Date();
+      scheduledFor.setDate(scheduledFor.getDate() + (daysFromNow || 7));
+
+      await ScheduledNotification.create({
+        userId,
+        type,
+        interval: "7_DAYS",
+        scheduledFor,
+        status: "PENDING",
+        title: "Document Reminder",
+        body: `It's time to gather your documents for ${itemName}!`,
+        data: { itemName, itemType },
+        channels: { inApp: true, email: true },
+      });
+
+      res.json({ success: true, message: "Reminder created successfully" });
+      return;
+    }
+
+    res.status(400).json({ success: false, message: "Invalid type" });
   } catch (error) {
     next(error);
   }

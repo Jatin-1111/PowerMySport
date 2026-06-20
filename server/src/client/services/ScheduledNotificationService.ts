@@ -200,16 +200,18 @@ export class ScheduledNotificationService {
 
       for (const reminder of pendingReminders) {
         try {
-          // Check if booking still exists and is still valid
-          const booking = reminder.bookingId as any;
-          if (!booking || booking.status === "CANCELLED") {
-            await ScheduledNotification.findByIdAndUpdate(reminder._id, {
-              status: "CANCELLED",
-            });
-            console.log(
-              `Cancelled reminder ${reminder._id} - booking no longer valid`,
-            );
-            continue;
+          let booking: any = null;
+          if (reminder.type === "BOOKING_REMINDER") {
+            booking = reminder.bookingId as any;
+            if (!booking || booking.status === "CANCELLED") {
+              await ScheduledNotification.findByIdAndUpdate(reminder._id, {
+                status: "CANCELLED",
+              });
+              console.log(
+                `Cancelled reminder ${reminder._id} - booking no longer valid`,
+              );
+              continue;
+            }
           }
 
           const user = reminder.userId as any;
@@ -262,23 +264,25 @@ export class ScheduledNotificationService {
 
           // Email notification
           if (reminder.channels.email) {
-            sendPromises.push(
-              sendBookingReminderEmail({
-                email: user.email,
-                name: user.name,
-                venueName: booking.venue?.name || "the venue",
-                sport: booking.sport,
-                date: booking.date,
-                startTime: booking.startTime,
-                endTime: booking.endTime,
-                interval: reminder.interval,
-                bookingId: reminder.bookingId?.toString() || "",
-              }).catch((err) => {
-                console.error("Failed to send reminder email:", err);
-                // Return rejected promise to count as failure
-                return Promise.reject(err);
-              }),
-            );
+            if (reminder.type === "BOOKING_REMINDER" && booking) {
+              sendPromises.push(
+                sendBookingReminderEmail({
+                  email: user.email,
+                  name: user.name,
+                  venueName: booking.venue?.name || "the venue",
+                  sport: booking.sport,
+                  date: booking.date,
+                  startTime: booking.startTime,
+                  endTime: booking.endTime,
+                  interval: reminder.interval as "24_HOURS" | "1_HOUR" | "15_MINUTES",
+                  bookingId: reminder.bookingId?.toString() || "",
+                }).catch((err) => {
+                  console.error("Failed to send reminder email:", err);
+                  // Return rejected promise to count as failure
+                  return Promise.reject(err);
+                }),
+              );
+            }
           }
 
           await Promise.allSettled(sendPromises);

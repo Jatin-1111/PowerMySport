@@ -52,6 +52,7 @@ export function PathwayConciergeModal({
   const [reminderLoading, setReminderLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
   const [pastDocs, setPastDocs] = useState<string[]>([]);
+  const [applyTarget, setApplyTarget] = useState<"prerequisite" | "direct">("prerequisite");
 
   // FIX 7: auto-skip question if prerequisite already satisfied
   useEffect(() => {
@@ -185,8 +186,8 @@ export function PathwayConciergeModal({
         itemType: type,
         itemId: item._id || "unknown",
         itemName: item.name,
-        prerequisiteId: item.prerequisiteId,
-        prerequisiteName: item.prerequisiteName,
+        prerequisiteId: applyTarget === "prerequisite" ? item.prerequisiteId : undefined,
+        prerequisiteName: applyTarget === "prerequisite" ? item.prerequisiteName : undefined,
         documents,
       });
 
@@ -303,12 +304,23 @@ export function PathwayConciergeModal({
         </p>
       )}
 
-      <button
-        onClick={onClose}
-        className="w-full rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white shadow-md hover:bg-slate-800 transition-colors"
-      >
-        Got it, I'm ready!
-      </button>
+      <div className="flex gap-3 mt-2">
+        <button
+          onClick={onClose}
+          className="flex-1 rounded-xl border-2 border-slate-200 bg-white py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          I will apply myself
+        </button>
+        <button
+          onClick={() => {
+            setApplyTarget("direct");
+            setStep("doc_check");
+          }}
+          className="flex-1 rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white shadow-md hover:bg-slate-800 transition-colors"
+        >
+          Apply on my behalf
+        </button>
+      </div>
     </div>
   ) : (
     <div className="space-y-4">
@@ -364,12 +376,23 @@ export function PathwayConciergeModal({
         </div>
       )}
 
-      <button
-        onClick={onClose}
-        className="w-full rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white shadow-md hover:bg-slate-800 transition-colors"
-      >
-        Got it, thanks!
-      </button>
+      <div className="flex gap-3 mt-2">
+        <button
+          onClick={onClose}
+          className="flex-1 rounded-xl border-2 border-slate-200 bg-white py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          I will apply myself
+        </button>
+        <button
+          onClick={() => {
+            setApplyTarget("direct");
+            setStep("doc_check");
+          }}
+          className="flex-1 rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white shadow-md hover:bg-slate-800 transition-colors"
+        >
+          Apply on my behalf
+        </button>
+      </div>
     </div>
   );
 
@@ -479,7 +502,7 @@ export function PathwayConciergeModal({
           I have these, proceed
         </button>
         <button
-          onClick={onClose}
+          onClick={() => setStep("no_docs")}
           className="flex-1 rounded-xl border-2 border-slate-200 bg-white py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
         >
           I need to collect them
@@ -492,7 +515,7 @@ export function PathwayConciergeModal({
     <div className="space-y-6">
       {/* Back navigation */}
       <button
-        onClick={() => setStep("question")}
+        onClick={() => setStep(applyTarget === "prerequisite" ? "question" : "unlocked")}
         className="text-sm text-slate-500 hover:text-slate-700 transition-colors flex items-center gap-1"
       >
         ← Go back
@@ -503,12 +526,20 @@ export function PathwayConciergeModal({
           <Sparkles className="h-5 w-5 text-power-orange" />
         </div>
         <div className="flex-1 rounded-2xl rounded-tl-none bg-slate-100 p-4 text-slate-800 text-sm leading-relaxed">
-          No problem, we can help you get one for free! To{" "}
-          {type === "tournament" ? "generate" : "process"} the{" "}
-          {prerequisiteName},{" "}
-          {type === "tournament"
-            ? "the federation requires"
-            : "the application requires"}{" "}
+          {applyTarget === "prerequisite" ? (
+            <>
+              No problem, we can help you get one for free! To{" "}
+              {type === "tournament" ? "generate" : "process"} the{" "}
+              {prerequisiteName},{" "}
+              {type === "tournament"
+                ? "the federation requires"
+                : "the application requires"}{" "}
+            </>
+          ) : (
+            <>
+              Great, we can apply on your behalf! To process the {item.name} application, we require{" "}
+            </>
+          )}
           the following documents:{" "}
           <strong>{documentChecklist.join(", ")}</strong>. Do you have these
           documents ready?
@@ -517,7 +548,10 @@ export function PathwayConciergeModal({
 
       <div className="flex gap-3">
         <button
-          onClick={() => setStep("upload")}
+          onClick={() => {
+            setApplyTarget("prerequisite");
+            setStep("upload");
+          }}
           className="flex-1 rounded-xl bg-power-orange py-3.5 text-sm font-bold text-white shadow-md hover:bg-orange-600 transition-colors"
         >
           Yes, I do
@@ -536,7 +570,7 @@ export function PathwayConciergeModal({
     <div className="space-y-4">
       {/* Back navigation */}
       <button
-        onClick={() => setStep(hasPrerequisite ? "doc_check" : "question")}
+        onClick={() => setStep("doc_check")}
         className="text-sm text-slate-500 hover:text-slate-700 transition-colors flex items-center gap-1"
       >
         ← Go back
@@ -626,8 +660,8 @@ export function PathwayConciergeModal({
         </div>
         <div className="flex-1 rounded-2xl rounded-tl-none bg-slate-100 p-4 text-slate-800 text-sm leading-relaxed">
           Excellent. Please upload the documents below, and our team will
-          process the {prerequisiteName}{" "}
-          {type === "tournament" ? "registration " : ""}for you—completely free
+          process the {applyTarget === "prerequisite" && prerequisiteName ? prerequisiteName : item.name}{" "}
+          {applyTarget === "prerequisite" && type === "tournament" ? "registration " : "application "}for you—completely free
           of charge.
         </div>
       </div>

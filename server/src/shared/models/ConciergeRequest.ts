@@ -8,8 +8,8 @@ export interface IConciergeRequest extends Document {
   itemName?: string;
   tournamentId?: string; // Kept for backwards compatibility
   tournamentName?: string;
-  prerequisiteId: string;
-  prerequisiteName: string;
+  prerequisiteId?: string;
+  prerequisiteName?: string;
   documents: Array<{
     documentName: string;
     s3Key: string;
@@ -28,8 +28,8 @@ const ConciergeRequestSchema = new Schema<IConciergeRequest>(
     itemName: { type: String },
     tournamentId: { type: String },
     tournamentName: { type: String },
-    prerequisiteId: { type: String, required: true },
-    prerequisiteName: { type: String, required: true },
+    prerequisiteId: { type: String },
+    prerequisiteName: { type: String },
     documents: [
       {
         documentName: { type: String, required: true },

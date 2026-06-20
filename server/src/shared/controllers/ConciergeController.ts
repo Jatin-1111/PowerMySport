@@ -103,8 +103,6 @@ export const submitConciergeRequest = async (
 
     if (
       !sportSlug ||
-      !prerequisiteId ||
-      !prerequisiteName ||
       !documents ||
       !Array.isArray(documents)
     ) {
@@ -160,7 +158,7 @@ export const submitConciergeRequest = async (
         <h2>New Registration Request</h2>
         <p><strong>Parent Name:</strong> ${escHtml(user?.name) || "Unknown"}</p>
         <p><strong>Sport:</strong> ${escHtml(sportSlug)}</p>
-        <p><strong>Requested ID:</strong> ${escHtml(prerequisiteName)} (${escHtml(prerequisiteId)})</p>
+        ${prerequisiteName ? `<p><strong>Requested ID:</strong> ${escHtml(prerequisiteName)} (${escHtml(prerequisiteId)})</p>` : ""}
         ${finalItemName ? `<p><strong>For ${escHtml(itemLabel)}:</strong> ${escHtml(finalItemName)}</p>` : ""}
         <br />
         <h3>Documents Uploaded:</h3>

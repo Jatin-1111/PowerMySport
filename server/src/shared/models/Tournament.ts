@@ -7,6 +7,7 @@ import mongoose, { Document, Schema } from "mongoose";
  */
 export interface TournamentDocument extends Document {
   sportSlug: string;
+  city?: string;
   name: string;
   level: string;
   description: string;
@@ -27,6 +28,7 @@ export interface TournamentDocument extends Document {
 const tournamentSchema = new Schema<TournamentDocument>(
   {
     sportSlug: { type: String, required: true, lowercase: true, index: true },
+    city: { type: String, index: true },
     name: { type: String, required: true, trim: true },
     level: { type: String, required: true },
     description: { type: String, required: true },
