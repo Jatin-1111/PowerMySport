@@ -62,6 +62,19 @@ import {
   SlidersHorizontal,
   GitCompare,
   Pin,
+  // P5-P9 icons
+  Heart,
+  Bookmark,
+  CalendarDays,
+  Bell,
+  MessageSquareQuote,
+  ExternalLink,
+  CheckCheck,
+  RotateCcw,
+  FileText,
+  ClipboardList,
+  Quote,
+  BadgeCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -305,6 +318,793 @@ function loadState(): string {
 function saveState(s: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem("pms_selected_state", s);
+}
+
+// ─── P5-P9 Types & Helpers ────────────────────────────────────────────────────
+
+type SavedItem = {
+  id: string;
+  type: "tournament" | "scholarship" | "university" | "career";
+  name: string;
+  sport: string;
+  data: any;
+  savedAt: string;
+};
+
+type ApplicationRecord = {
+  id: string;
+  itemName: string;
+  itemType: "tournament" | "scholarship" | "university";
+  sport: string;
+  status: "Submitted" | "In Review" | "Approved";
+  documents: { name: string }[];
+  submittedAt: string;
+};
+
+type ReminderRecord = {
+  id: string;
+  label: string;
+  date: string; // ISO
+  sport: string;
+  type: "tournament" | "scholarship";
+};
+
+function lsGet<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+function lsSet(key: string, val: any) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+function loadSaved(): SavedItem[] { return lsGet("pms_saved_items", []); }
+function saveSaved(items: SavedItem[]) { lsSet("pms_saved_items", items); }
+
+function loadApplications(): ApplicationRecord[] { return lsGet("pms_applications", []); }
+function saveApplications(items: ApplicationRecord[]) { lsSet("pms_applications", items); }
+
+function loadReminders(): ReminderRecord[] { return lsGet("pms_reminders", []); }
+function saveReminders(items: ReminderRecord[]) { lsSet("pms_reminders", items); }
+
+// ─── P8: Athlete Success Stories ──────────────────────────────────────────────
+
+const ATHLETE_STORIES = [
+  {
+    id: "s1",
+    level: 1,
+    name: "Priya Sharma",
+    sport: "Badminton",
+    location: "Pune",
+    achievement: "State Sub-Junior Champion",
+    quote: "She started at 7 in a local academy. The coach noticed her footwork in the first week. Two years later she won her first district title. It all started with showing up.",
+    parentNote: "We spent ₹800/month. That's it. The biggest investment was time — dropping and picking up three days a week.",
+    tags: ["Grassroots", "Academy"],
+  },
+  {
+    id: "s2",
+    level: 2,
+    name: "Arjun Nair",
+    sport: "Swimming",
+    location: "Kochi",
+    achievement: "District Gold, South Zone Qualifier",
+    quote: "The transition from school pool to district meets felt huge. But our coach at the SAI centre broke it down level by level. My parents never missed a meet.",
+    parentNote: "We didn't know anything about swimming pathways. The selection trial dates were the hardest part to track. Wish I'd had something like this earlier.",
+    tags: ["District", "SAI"],
+  },
+  {
+    id: "s3",
+    level: 2,
+    name: "Fatima Ansari",
+    sport: "Kabaddi",
+    location: "Aurangabad",
+    achievement: "Maharashtra State Team, Under-17",
+    quote: "Girls' Kabaddi doesn't get much attention but our state has a strong programme. I found out about the trials through a friend. Parents need to know these opportunities exist.",
+    parentNote: "No one told us there was a state programme. She almost missed the trials entirely. Now she represents the state — it changed everything for her confidence.",
+    tags: ["District", "State"],
+  },
+  {
+    id: "s4",
+    level: 3,
+    name: "Vikram Reddy",
+    sport: "Athletics",
+    location: "Hyderabad",
+    achievement: "National School Games Silver — 400m",
+    quote: "State academy life is a different world. 6AM runs, physio on Tuesdays, nutrition tracking. It's demanding but I've never been more focused.",
+    parentNote: "The scholarship from the Sports Authority covered 60% of academy fees. Without that, we could not have sustained it. Parents need to explore every scholarship early.",
+    tags: ["State", "Academy", "Scholarship"],
+  },
+  {
+    id: "s5",
+    level: 4,
+    name: "Meera Joshi",
+    sport: "Wrestling",
+    location: "Delhi",
+    achievement: "Senior Nationals Bronze, National Camp Selection",
+    quote: "At the national level you stop counting medals and start counting percentages. Every drill, every gram of food, every hour of sleep gets optimised. My parents became my logistics team.",
+    parentNote: "At this stage, the sport is the family's life. But watching her compete nationally — nothing compares to that pride.",
+    tags: ["National", "Camp"],
+  },
+  {
+    id: "s6",
+    level: 5,
+    name: "Rohan Gupta",
+    sport: "Shooting",
+    location: "Bhopal",
+    achievement: "ISSF World Cup Team India",
+    quote: "Representing India is the outcome of 10 years of small decisions. The right club at 9. The right coach at 14. The right scholarship at 17. Every step mattered.",
+    parentNote: "Sponsorships now cover everything. But the early years were our investment. This platform is exactly what we needed when we started.",
+    tags: ["International", "Sponsored"],
+  },
+];
+
+// ─── P9: Deep-link helper ──────────────────────────────────────────────────────
+
+function buildDiscoveryUrl(objective: string, sportName: string, levelLabel: string): string {
+  const base = "/discover";
+  const lower = objective.toLowerCase();
+  let tab = "VENUES";
+  if (lower.includes("coach") || lower.includes("training")) tab = "COACHES";
+  else if (lower.includes("club") || lower.includes("community") || lower.includes("school")) tab = "VENUES";
+  else if (lower.includes("tournament") || lower.includes("compet") || lower.includes("trial")) tab = "EVENTS";
+  const params = new URLSearchParams({ tab, sport: sportName, level: levelLabel });
+  return `${base}?${params.toString()}`;
+}
+
+// ─── P5: Save Button ──────────────────────────────────────────────────────────
+
+function SaveButton({
+  item,
+  type,
+  sport,
+  savedItems,
+  onToggle,
+}: {
+  item: any;
+  type: SavedItem["type"];
+  sport: string;
+  savedItems: SavedItem[];
+  onToggle: (items: SavedItem[]) => void;
+}) {
+  const id = `${type}:${item.name || item.role}:${sport}`;
+  const isSaved = savedItems.some((s) => s.id === id);
+
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    let updated: SavedItem[];
+    if (isSaved) {
+      updated = savedItems.filter((s) => s.id !== id);
+    } else {
+      updated = [
+        ...savedItems,
+        { id, type, name: item.name || item.role, sport, data: item, savedAt: new Date().toISOString() },
+      ];
+    }
+    onToggle(updated);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      title={isSaved ? "Remove from saved" : "Save for later"}
+      className={`flex h-7 w-7 items-center justify-center rounded-full border transition-all shrink-0 ${
+        isSaved
+          ? "border-rose-200 bg-rose-50 text-rose-500 shadow-sm"
+          : "border-slate-200 bg-white/80 text-slate-300 hover:border-rose-200 hover:text-rose-400"
+      }`}
+    >
+      <Heart className={`h-3.5 w-3.5 ${isSaved ? "fill-rose-500" : ""}`} />
+    </button>
+  );
+}
+
+// ─── P5: Saved Tab ────────────────────────────────────────────────────────────
+
+function SavedTab({
+  savedItems,
+  onUnsave,
+  onOpenModal,
+}: {
+  savedItems: SavedItem[];
+  onUnsave: (id: string) => void;
+  onOpenModal: (item: any, type: any) => void;
+}) {
+  const grouped = {
+    tournament: savedItems.filter((s) => s.type === "tournament"),
+    scholarship: savedItems.filter((s) => s.type === "scholarship"),
+    university: savedItems.filter((s) => s.type === "university"),
+    career: savedItems.filter((s) => s.type === "career"),
+  };
+
+  const typeConfig = {
+    tournament: { label: "Tournaments", icon: <Trophy className="h-4 w-4" />, color: "text-power-orange", bg: "bg-orange-50 border-orange-100" },
+    scholarship: { label: "Scholarships", icon: <Wallet className="h-4 w-4" />, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
+    university: { label: "Universities", icon: <Landmark className="h-4 w-4" />, color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-100" },
+    career: { label: "Careers", icon: <Briefcase className="h-4 w-4" />, color: "text-blue-600", bg: "bg-blue-50 border-blue-100" },
+  } as const;
+
+  if (savedItems.length === 0) {
+    return (
+      <motion.div
+        key="saved-empty"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center py-20 text-center gap-4"
+      >
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-100">
+          <Heart className="h-7 w-7 text-rose-300" />
+        </div>
+        <div>
+          <p className="font-bold text-slate-700 text-lg">No saved items yet</p>
+          <p className="text-sm text-slate-500 mt-1 max-w-xs">
+            Tap the <Heart className="inline h-3.5 w-3.5 text-rose-400" /> on any tournament, scholarship, university, or career card to shortlist it here.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      key="saved"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-8"
+    >
+      {(["tournament", "scholarship", "university", "career"] as const).map((type) => {
+        const items = grouped[type];
+        if (items.length === 0) return null;
+        const cfg = typeConfig[type];
+        return (
+          <div key={type}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className={cfg.color}>{cfg.icon}</span>
+              <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">{cfg.label}</h3>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{items.length}</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {items.map((saved) => (
+                <div
+                  key={saved.id}
+                  className={`relative flex flex-col rounded-2xl border ${cfg.bg} p-4 shadow-sm`}
+                >
+                  <button
+                    onClick={() => onUnsave(saved.id)}
+                    className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 border border-rose-100 text-rose-400 hover:bg-rose-50 transition"
+                    title="Remove from saved"
+                  >
+                    <Heart className="h-3 w-3 fill-rose-400" />
+                  </button>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    {saved.sport} · Saved {new Date(saved.savedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  </p>
+                  <p className="font-bold text-slate-900 text-sm mb-3 pr-8 break-words">{saved.name}</p>
+                  {type !== "career" && (
+                    <button
+                      onClick={() => onOpenModal(saved.data, type)}
+                      className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Open Guide
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
+// ─── P6: Applications Tab ─────────────────────────────────────────────────────
+
+function ApplicationsTab({
+  applications,
+  onUpdateStatus,
+}: {
+  applications: ApplicationRecord[];
+  onUpdateStatus: (id: string, status: ApplicationRecord["status"]) => void;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const statusConfig: Record<ApplicationRecord["status"], { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+    Submitted: { label: "Submitted", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: <FileText className="h-3.5 w-3.5" /> },
+    "In Review": { label: "In Review", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: <RotateCcw className="h-3.5 w-3.5 animate-spin-slow" /> },
+    Approved: { label: "Approved", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: <CheckCheck className="h-3.5 w-3.5" /> },
+  };
+
+  if (applications.length === 0) {
+    return (
+      <motion.div
+        key="apps-empty"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center justify-center py-20 text-center gap-4"
+      >
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 border border-slate-100">
+          <ClipboardList className="h-7 w-7 text-slate-300" />
+        </div>
+        <div>
+          <p className="font-bold text-slate-700 text-lg">No applications yet</p>
+          <p className="text-sm text-slate-500 mt-1 max-w-xs">
+            Submit documents through the Sports Pathway Guide on any tournament, scholarship, or university card — they'll appear here.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      key="applications"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-4"
+    >
+      <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+        <Bell className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+        <span>Status updates will appear here as our team reviews your submission. Documents already uploaded can be reused on new applications.</span>
+      </div>
+
+      {applications.map((app) => {
+        const sc = statusConfig[app.status];
+        const isOpen = expanded === app.id;
+        const nextStatus: ApplicationRecord["status"] =
+          app.status === "Submitted" ? "In Review" : app.status === "In Review" ? "Approved" : "Approved";
+
+        return (
+          <div key={app.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setExpanded(isOpen ? null : app.id)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+            >
+              <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shrink-0 ${sc.bg} ${sc.color}`}>
+                {sc.icon} {sc.label}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-slate-900 truncate text-sm">{app.itemName}</p>
+                <p className="text-[10px] text-slate-400">{app.sport} · {app.itemType} · {new Date(app.submittedAt).toLocaleDateString("en-IN")}</p>
+              </div>
+              <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-slate-400 shrink-0">
+                <ChevronDown className="h-4 w-4" />
+              </motion.div>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {isOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ height: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.15 } }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-slate-100 px-4 py-4 space-y-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Documents Submitted</p>
+                      <ul className="space-y-1.5">
+                        {app.documents.map((doc, i) => (
+                          <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
+                            <FileText className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            {doc.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {app.status !== "Approved" && (
+                      <button
+                        onClick={() => onUpdateStatus(app.id, nextStatus)}
+                        className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-2 transition"
+                      >
+                        Demo: Mark as "{nextStatus}"
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
+// ─── P7: Deadline Calendar Tab ────────────────────────────────────────────────
+
+type DeadlineEvent = {
+  id: string;
+  label: string;
+  date: Date;
+  type: "tournament" | "scholarship";
+  sport: string;
+};
+
+function extractDeadlines(pathway: SportPathway, sport: string): DeadlineEvent[] {
+  const events: DeadlineEvent[] = [];
+  const datePatterns = [
+    /deadline[:\s]+([A-Za-z]+\s+\d{1,2},?\s+\d{4})/gi,
+    /apply\s+by[:\s]+([A-Za-z]+\s+\d{1,2},?\s+\d{4})/gi,
+    /(\d{1,2}\s+[A-Za-z]+\s+\d{4})/g,
+    /([A-Za-z]+\s+\d{1,2},\s+\d{4})/g,
+  ];
+
+  const tryParse = (str: string): Date | null => {
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const scan = (text: string, label: string, type: "tournament" | "scholarship") => {
+    if (!text) return;
+    for (const pat of datePatterns) {
+      const matches = [...text.matchAll(pat)];
+      for (const m of matches) {
+        const parsed = tryParse(m[1] || m[0]);
+        if (parsed && parsed > new Date()) {
+          events.push({ id: `${label}-${parsed.toISOString()}`, label, date: parsed, type, sport });
+          break;
+        }
+      }
+    }
+  };
+
+  pathway.tournaments?.forEach((t: any) => scan(t.description, t.name, "tournament"));
+  pathway.scholarships?.forEach((s: any) => scan(s.description, s.name, "scholarship"));
+
+  return events.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+function CalendarTab({
+  pathway,
+  reminders,
+  onRemindersChange,
+}: {
+  pathway: SportPathway;
+  reminders: ReminderRecord[];
+  onRemindersChange: (r: ReminderRecord[]) => void;
+}) {
+  const [view, setView] = useState<"list" | "month">("list");
+  const [manualLabel, setManualLabel] = useState("");
+  const [manualDate, setManualDate] = useState("");
+  const [manualType, setManualType] = useState<"tournament" | "scholarship">("tournament");
+  const [manualEvents, setManualEvents] = useState<DeadlineEvent[]>([]);
+
+  const extracted = extractDeadlines(pathway, pathway.sportName);
+  const all = [...extracted, ...manualEvents].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  const addManual = () => {
+    if (!manualLabel.trim() || !manualDate) return;
+    const d = new Date(manualDate);
+    if (isNaN(d.getTime())) return;
+    setManualEvents((prev) => [
+      ...prev,
+      { id: `manual-${Date.now()}`, label: manualLabel.trim(), date: d, type: manualType, sport: pathway.sportName },
+    ]);
+    setManualLabel("");
+    setManualDate("");
+  };
+
+  const isReminded = (event: DeadlineEvent) => reminders.some((r) => r.id === event.id);
+  const toggleReminder = (event: DeadlineEvent) => {
+    let updated: ReminderRecord[];
+    if (isReminded(event)) {
+      updated = reminders.filter((r) => r.id !== event.id);
+    } else {
+      updated = [...reminders, { id: event.id, label: event.label, date: event.date.toISOString(), sport: event.sport, type: event.type }];
+    }
+    onRemindersChange(updated);
+  };
+
+  const exportICS = (event: DeadlineEvent) => {
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const content = [
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//PowerMySport//EN",
+      "BEGIN:VEVENT",
+      `UID:${event.id}@powermysport`,
+      `DTSTART:${fmt(event.date)}`,
+      `DTEND:${fmt(new Date(event.date.getTime() + 3600000))}`,
+      `SUMMARY:${event.label} Deadline — ${event.sport}`,
+      `DESCRIPTION:Pathway deadline tracked via PowerMySport`,
+      "END:VEVENT", "END:VCALENDAR",
+    ].join("\r\n");
+    const blob = new Blob([content], { type: "text/calendar" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `${event.label.replace(/\s+/g, "_")}_deadline.ics`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  const typeColor = { tournament: "text-power-orange bg-orange-50 border-orange-200", scholarship: "text-emerald-700 bg-emerald-50 border-emerald-200" };
+  const daysUntil = (d: Date) => Math.ceil((d.getTime() - Date.now()) / 86400000);
+
+  return (
+    <motion.div
+      key="calendar"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1">
+          <h3 className="font-title font-bold text-slate-900 text-lg">{pathway.sportName} — Deadlines</h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {all.length > 0 ? `${all.length} upcoming deadline${all.length > 1 ? "s" : ""} detected` : "No deadlines detected from pathway text — add them manually below"}
+          </p>
+        </div>
+        <div className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1">
+          {(["list", "month"] as const).map((v) => (
+            <button key={v} onClick={() => setView(v)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition ${view === v ? "bg-power-orange text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Deadline list */}
+      {view === "list" && (
+        <div className="space-y-3">
+          {all.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-400 text-sm">
+              No deadlines detected. Add one manually below.
+            </div>
+          ) : (
+            all.map((ev) => {
+              const days = daysUntil(ev.date);
+              const reminded = isReminded(ev);
+              return (
+                <div key={ev.id} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className={`flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl border text-center ${days <= 14 ? "bg-rose-50 border-rose-200" : "bg-slate-50 border-slate-200"}`}>
+                    <span className={`text-[10px] font-bold uppercase ${days <= 14 ? "text-rose-500" : "text-slate-400"}`}>
+                      {ev.date.toLocaleString("en-IN", { month: "short" })}
+                    </span>
+                    <span className={`text-base font-extrabold leading-none ${days <= 14 ? "text-rose-700" : "text-slate-800"}`}>
+                      {ev.date.getDate()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-slate-900 text-sm break-words">{ev.label}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold capitalize ${typeColor[ev.type]}`}>{ev.type}</span>
+                      <span className={`text-[10px] font-semibold ${days <= 7 ? "text-rose-600" : days <= 30 ? "text-amber-600" : "text-slate-400"}`}>
+                        {days <= 0 ? "Today!" : `${days} day${days > 1 ? "s" : ""} away`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button onClick={() => toggleReminder(ev)}
+                      title={reminded ? "Reminder set" : "Set reminder"}
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border transition ${reminded ? "border-amber-200 bg-amber-50 text-amber-500" : "border-slate-200 bg-white text-slate-300 hover:text-amber-400"}`}>
+                      <Bell className={`h-3.5 w-3.5 ${reminded ? "fill-amber-400" : ""}`} />
+                    </button>
+                    <button onClick={() => exportICS(ev)}
+                      title="Add to calendar"
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-300 hover:text-indigo-500 transition">
+                      <CalendarDays className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Month view — compact grid */}
+      {view === "month" && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          {(() => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDay = new Date(year, month, 1).getDay();
+            const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+            const eventsOnDay = (day: number) => all.filter((e) => e.date.getFullYear() === year && e.date.getMonth() === month && e.date.getDate() === day);
+            return (
+              <>
+                <p className="text-sm font-bold text-slate-700 mb-3 text-center">
+                  {now.toLocaleString("en-IN", { month: "long", year: "numeric" })}
+                </p>
+                <div className="grid grid-cols-7 text-center text-[10px] font-bold uppercase text-slate-400 mb-1">
+                  {["S","M","T","W","T","F","S"].map((d, i) => <div key={i}>{d}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-0.5">
+                  {cells.map((day, i) => {
+                    const evs = day ? eventsOnDay(day) : [];
+                    const isToday = day === now.getDate();
+                    return (
+                      <div key={i} className={`relative flex flex-col items-center justify-start rounded-lg py-1.5 min-h-[36px] ${isToday ? "bg-orange-50" : ""}`}>
+                        {day && <span className={`text-xs font-semibold ${isToday ? "text-power-orange font-bold" : "text-slate-700"}`}>{day}</span>}
+                        {evs.length > 0 && (
+                          <div className="flex gap-0.5 mt-0.5">
+                            {evs.slice(0, 2).map((_, idx) => <div key={idx} className="h-1.5 w-1.5 rounded-full bg-power-orange" />)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
+          {all.length > 0 && (
+            <p className="mt-3 text-center text-[10px] text-slate-400">
+              Orange dots = deadlines. Switch to List view for details.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Active reminders */}
+      {reminders.length > 0 && (
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Your Reminders</p>
+          <div className="space-y-2">
+            {reminders.map((r) => (
+              <div key={r.id} className="flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
+                <Bell className="h-4 w-4 text-amber-500 shrink-0 fill-amber-300" />
+                <p className="flex-1 text-sm font-semibold text-slate-800 truncate">{r.label}</p>
+                <p className="text-[10px] text-slate-400 shrink-0">
+                  {new Date(r.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                </p>
+                <button onClick={() => onRemindersChange(reminders.filter((x) => x.id !== r.id))}
+                  className="text-slate-300 hover:text-rose-500 transition shrink-0">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Manual add */}
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Add a deadline manually</p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            value={manualLabel}
+            onChange={(e) => setManualLabel(e.target.value)}
+            placeholder="e.g. District Trial Registration"
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-power-orange transition"
+          />
+          <input
+            type="date"
+            value={manualDate}
+            onChange={(e) => setManualDate(e.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-power-orange transition"
+          />
+          <select
+            value={manualType}
+            onChange={(e) => setManualType(e.target.value as any)}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-power-orange transition"
+          >
+            <option value="tournament">Tournament</option>
+            <option value="scholarship">Scholarship</option>
+          </select>
+          <button
+            onClick={addManual}
+            disabled={!manualLabel.trim() || !manualDate}
+            className="rounded-xl bg-power-orange px-4 py-2 text-sm font-bold text-white shadow transition hover:bg-orange-600 disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── P8: Stories Tab ──────────────────────────────────────────────────────────
+
+function StoriesTab({ sportName, levels }: { sportName: string; levels: any[] }) {
+  const [filterLevel, setFilterLevel] = useState<number | null>(null);
+
+  const stories = filterLevel
+    ? ATHLETE_STORIES.filter((s) => s.level === filterLevel)
+    : ATHLETE_STORIES;
+
+  return (
+    <motion.div
+      key="stories"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <div>
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700">
+            <BadgeCheck className="h-3.5 w-3.5" /> Verified Stories
+          </span>
+          <span className="text-xs text-slate-400">Illustrative family accounts based on real journeys</span>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <button
+            onClick={() => setFilterLevel(null)}
+            className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${!filterLevel ? "bg-slate-800 text-white border-transparent" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+          >
+            All Levels
+          </button>
+          {levels.map((lv) => {
+            const c = levelColorMap[lv.level];
+            const active = filterLevel === lv.level;
+            return (
+              <button key={lv.level} onClick={() => setFilterLevel(active ? null : lv.level)}
+                className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${active ? `bg-gradient-to-r ${c.gradient} text-white border-transparent shadow` : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>
+                {lv.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Story cards */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {stories.map((story) => {
+          const c = levelColorMap[story.level];
+          return (
+            <div key={story.id} className={`relative flex flex-col rounded-2xl border ${c.border} bg-gradient-to-br ${c.bg} p-5 shadow-sm overflow-hidden`}>
+              {/* Level badge */}
+              <div className={`absolute top-4 right-4 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${c.badge}`}>
+                {levels.find((l) => l.level === story.level)?.label}
+              </div>
+
+              {/* Quote */}
+              <Quote className={`h-5 w-5 mb-3 opacity-30 ${c.text}`} />
+              <p className="text-sm leading-relaxed text-slate-700 italic mb-4 flex-1">
+                "{story.quote}"
+              </p>
+
+              {/* Divider */}
+              <div className={`border-t ${c.border} pt-4 space-y-3`}>
+                <div>
+                  <p className={`font-bold text-slate-900 text-sm`}>{story.name}</p>
+                  <p className="text-xs text-slate-500">{story.sport} · {story.location}</p>
+                </div>
+                <div className={`flex items-center gap-1.5 rounded-xl border ${c.badge} px-3 py-1.5 w-fit`}>
+                  <Trophy className={`h-3 w-3 shrink-0 ${c.text}`} />
+                  <span className={`text-[10px] font-bold ${c.text}`}>{story.achievement}</span>
+                </div>
+                {story.parentNote && (
+                  <div className="rounded-xl bg-white/70 border border-white px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                      <HeartHandshake className="h-3 w-3" /> Parent's Note
+                    </p>
+                    <p className="text-xs text-slate-600 leading-relaxed italic">"{story.parentNote}"</p>
+                  </div>
+                )}
+              </div>
+              {/* Verified badge */}
+              <div className="mt-3 flex items-center gap-1.5">
+                <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-[10px] font-bold text-emerald-600">Verified Story</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {stories.length === 0 && (
+        <div className="py-10 text-center text-slate-400 text-sm">No stories found for this level.</div>
+      )}
+    </motion.div>
+  );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -636,9 +1436,11 @@ function PathwayLevelCard({
 function PathwayLevelDetail({
   level,
   sportName,
+  onSelectTab,
 }: {
   level: any;
   sportName?: string;
+  onSelectTab?: (tab: any) => void;
 }) {
   const colors = levelColorMap[level.level] ?? levelColorMap[1];
   const commitment = (level as any).parentalCommitment ||
@@ -648,6 +1450,9 @@ function PathwayLevelDetail({
       travel: "Varies",
       role: "Supportive Parent",
     };
+  const sName = sportName && sportName !== "General" ? sportName : "";
+  const lLabel = level.label || `Level ${level.level}`;
+  const communityUrl = getCommunityAppUrl();
 
   return (
     <motion.div
@@ -784,31 +1589,60 @@ function PathwayLevelDetail({
           <TrendingUp className="h-3.5 w-3.5" />
           Key Objectives
         </h4>
-        <ul className="space-y-2">
-          {level.steps.map((step: string, i: number) => (
-            <li key={i} className="flex items-start gap-2.5">
-              <CheckCircle
-                className={"mt-0.5 h-4 w-4 shrink-0 " + colors.text}
-              />
-              <span className="flex-1 min-w-0 text-sm leading-relaxed text-slate-700">
-                {step}
-              </span>
-            </li>
-          ))}
+        {/* P9: each objective has an inline deep-link chip */}
+        <ul className="space-y-2.5">
+          {level.steps.map((step: string, i: number) => {
+            const discUrl = sName ? buildDiscoveryUrl(step, sName, lLabel) : null;
+            return (
+              <li key={i} className="flex items-start gap-2.5 group">
+                <CheckCircle
+                  className={"mt-0.5 h-4 w-4 shrink-0 " + colors.text}
+                />
+                <span className="flex-1 min-w-0 text-sm leading-relaxed text-slate-700">
+                  {step}
+                </span>
+                {discUrl && (
+                  <Link
+                    href={discUrl}
+                    onClick={(e) => e.stopPropagation()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Find nearby venues/coaches for this step"
+                    className={`shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center gap-1 rounded-lg border ${colors.badge} px-2 py-0.5 text-[10px] font-bold whitespace-nowrap`}
+                  >
+                    <ExternalLink className="h-2.5 w-2.5" /> Go
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </div>
 
-      {/* Actionable CTAs */}
+      {/* Stories teaser */}
+      {sName && onSelectTab && (
+        <div className="mt-4 mb-2 flex items-center justify-center">
+          <button
+            onClick={() => onSelectTab("stories")}
+            className={`flex items-center gap-1.5 text-xs font-semibold ${colors.text} hover:opacity-85 transition`}
+          >
+            <MessageSquareQuote className="h-3.5 w-3.5" />
+            💬 Success story at this level
+          </button>
+        </div>
+      )}
+
+      {/* Actionable CTAs — P9: include sport + level params */}
       <div className="mt-2 flex flex-col sm:flex-row gap-3">
         <Link
-          href={`${getCommunityAppUrl()}/discover?tab=COMMUNITIES`}
+          href={`${communityUrl}/discover?tab=COMMUNITIES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
           className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm transition-all hover:opacity-90 bg-gradient-to-r ${colors.gradient}`}
         >
           <Users className="h-4 w-4" />
           Find Local Communities
         </Link>
         <Link
-          href={`${getCommunityAppUrl()}/discover?tab=COACHES`}
+          href={`${communityUrl}/discover?tab=COACHES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
         >
           <Trophy className="h-4 w-4" />
@@ -1323,6 +2157,10 @@ function PathwayExplorerSection() {
     | "careers"
     | "compare"
     | "budget"
+    | "saved"
+    | "applications"
+    | "calendar"
+    | "stories"
   >("pathway");
   const [modalData, setModalData] = useState<{ item: any; type: "tournament" | "scholarship" | "university" } | null>(null);
 
@@ -1333,13 +2171,44 @@ function PathwayExplorerSection() {
   const [selectedState, setSelectedState] = useState<string>("");
   const [stateOpen, setStateOpen] = useState(false);
 
+  // P5-P8 states
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
+  const [applications, setApplications] = useState<ApplicationRecord[]>([]);
+  const [reminders, setReminders] = useState<ReminderRecord[]>([]);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Load from localStorage
   useEffect(() => {
     setProgress(loadProgress());
     setSelectedState(loadState());
+    setSavedItems(loadSaved());
+    setApplications(loadApplications());
+    setReminders(loadReminders());
   }, []);
+
+  const handleSavedChange = (items: SavedItem[]) => {
+    setSavedItems(items);
+    saveSaved(items);
+  };
+
+  const handleApplicationsChange = (items: ApplicationRecord[]) => {
+    setApplications(items);
+    saveApplications(items);
+  };
+
+  const handleRemindersChange = (items: ReminderRecord[]) => {
+    setReminders(items);
+    saveReminders(items);
+  };
+
+  const handleUpdateApplicationStatus = (id: string, status: ApplicationRecord["status"]) => {
+    const updated = applications.map((app) =>
+      app.id === id ? { ...app, status } : app
+    );
+    setApplications(updated);
+    saveApplications(updated);
+  };
 
   const handleProgressChange = (p: ProgressState) => {
     setProgress(p);
@@ -1754,82 +2623,116 @@ function PathwayExplorerSection() {
               )}
 
               {/* Tabs */}
-              {result && (
+              {(result || savedItems.length > 0 || applications.length > 0) && (
                 <div className="mb-10 grid grid-cols-2 gap-1.5 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1.5 backdrop-blur-sm sm:grid-cols-4 sm:gap-2 sm:p-2 lg:flex lg:flex-wrap">
                   {[
                     {
                       id: "pathway",
                       label: "Pathway",
                       icon: <Flag className="h-4 w-4" />,
+                      show: true,
                     },
                     {
                       id: "tournaments",
                       label: "Tournaments",
                       icon: <Trophy className="h-4 w-4" />,
+                      show: !!result,
                     },
                     {
                       id: "scholarships",
                       label: "Scholarships",
                       icon: <Wallet className="h-4 w-4" />,
+                      show: !!result,
                     },
                     {
                       id: "universities",
                       label: "Universities",
                       icon: <Landmark className="h-4 w-4" />,
+                      show: !!result,
                     },
                     {
                       id: "equipment",
                       label: "Equipment",
                       icon: <ShoppingBag className="h-4 w-4" />,
+                      show: !!result,
                     },
                     {
                       id: "careers",
                       label: "Careers",
                       icon: <Briefcase className="h-4 w-4" />,
+                      show: !!result,
                     },
                     {
                       id: "compare",
                       label: "Compare",
                       icon: <GitCompare className="h-4 w-4" />,
+                      show: !!result,
                     },
                     {
                       id: "budget",
                       label: "Budget",
                       icon: <Calculator className="h-4 w-4" />,
+                      show: !!result,
                     },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
-                      className={`relative flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-[11px] font-semibold transition-all sm:gap-2 sm:text-sm lg:flex-1 lg:px-4 ${
-                        activeTab === tab.id
-                          ? "text-power-orange shadow-sm"
-                          : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
-                      }`}
-                    >
-                      {activeTab === tab.id && (
-                        <motion.div
-                          layoutId="activeTab"
-                          className="absolute inset-0 rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50"
-                          transition={{
-                            type: "spring",
-                            bounce: 0.2,
-                            duration: 0.6,
-                          }}
-                        />
-                      )}
-                      <span className="relative z-10 flex items-center gap-1.5 sm:gap-2">
-                        {tab.icon}
-                        <span className="truncate">{tab.label}</span>
-                      </span>
-                    </button>
-                  ))}
+                    {
+                      id: "saved",
+                      label: `Saved (${savedItems.length})`,
+                      icon: <Heart className="h-4 w-4" />,
+                      show: savedItems.length > 0,
+                    },
+                    {
+                      id: "applications",
+                      label: `Applications (${applications.length})`,
+                      icon: <ClipboardList className="h-4 w-4" />,
+                      show: applications.length > 0,
+                    },
+                    {
+                      id: "calendar",
+                      label: "Calendar",
+                      icon: <CalendarDays className="h-4 w-4" />,
+                      show: !!result,
+                    },
+                    {
+                      id: "stories",
+                      label: "Stories",
+                      icon: <MessageSquareQuote className="h-4 w-4" />,
+                      show: !!result,
+                    },
+                  ]
+                    .filter((t) => t.show)
+                    .map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`relative flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-[11px] font-semibold transition-all sm:gap-2 sm:text-sm lg:flex-1 lg:px-4 ${
+                          activeTab === tab.id
+                            ? "text-power-orange shadow-sm"
+                            : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
+                        }`}
+                      >
+                        {activeTab === tab.id && (
+                          <motion.div
+                            layoutId="activeTab"
+                            className="absolute inset-0 rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50"
+                            transition={{
+                              type: "spring",
+                              bounce: 0.2,
+                              duration: 0.6,
+                            }}
+                          />
+                        )}
+                        <span className="relative z-10 flex items-center gap-1.5 sm:gap-2">
+                          {tab.icon}
+                          <span className="truncate">{tab.label}</span>
+                        </span>
+                      </button>
+                    ))}
                 </div>
               )}
 
               {/* Tab Content */}
               <AnimatePresence mode="wait">
-                {(!result || activeTab === "pathway") && (
+                {activeTab === "pathway" && (
                   <motion.div
                     key="pathway"
                     initial={{ opacity: 0, y: 10 }}
@@ -1957,32 +2860,11 @@ function PathwayExplorerSection() {
                                         repeatCount="indefinite"
                                       />
                                     </circle>
-                                    <text
-                                      x={(300 - tier.width) / 2 - 10}
-                                      y={130 - i * 26 + 2}
-                                      textAnchor="middle"
-                                      fontSize="5"
-                                      fontWeight="700"
-                                      fill="#fff"
-                                    >
-                                      ●
-                                    </text>
                                   </>
                                 )}
                               </g>
                             );
                           })}
-                          {/* Legend */}
-                          {progress.currentLevel > 0 && (
-                            <g>
-                              <circle cx="12" cy="155" r="4" fill="#f97316">
-                                <animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite" />
-                              </circle>
-                              <text x="20" y="158" fontSize="7" fill="#64748b" fontWeight="600">
-                                Your child is here
-                              </text>
-                            </g>
-                          )}
                         </svg>
                       </motion.div>
 
@@ -2060,16 +2942,25 @@ function PathwayExplorerSection() {
                         <div
                           key={i}
                           onClick={() => setModalData({ item: t, type: "tournament" })}
-                          className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-power-orange hover:ring-1 hover:ring-power-orange group cursor-pointer"
+                          className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-power-orange hover:ring-1 hover:ring-power-orange group cursor-pointer relative"
                         >
                           <div>
                             <div className="mb-3 flex items-start justify-between gap-2">
-                              <h3 className="font-title font-bold text-slate-800 break-words group-hover:text-power-orange transition-colors">
+                              <h3 className="font-title font-bold text-slate-800 break-words group-hover:text-power-orange transition-colors pr-8">
                                 {t.name}
                               </h3>
-                              <span className="shrink-0 max-w-[50%] truncate rounded-full bg-orange-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-power-orange">
-                                {t.level}
-                              </span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="shrink-0 rounded-full bg-orange-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-power-orange">
+                                  {t.level}
+                                </span>
+                                <SaveButton
+                                  item={t}
+                                  type="tournament"
+                                  sport={result.pathway.sportName}
+                                  savedItems={savedItems}
+                                  onToggle={handleSavedChange}
+                                />
+                              </div>
                             </div>
                             <p className="mb-4 text-sm text-slate-600 line-clamp-3">
                               {t.description}
@@ -2108,20 +2999,29 @@ function PathwayExplorerSection() {
                         <div
                           key={i}
                           onClick={() => setModalData({ item: s, type: "scholarship" })}
-                          className="flex flex-col rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white/60 to-slate-50/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-emerald-200 group cursor-pointer"
+                          className="flex flex-col rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white/60 to-slate-50/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-emerald-200 group cursor-pointer relative"
                         >
-                          <div className="mb-4 flex items-center gap-3">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-inner">
-                              <Wallet className="h-6 w-6" />
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-inner">
+                                <Wallet className="h-6 w-6" />
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="font-title font-bold text-slate-800 text-lg leading-tight break-words pr-8">
+                                  {s.name}
+                                </h3>
+                                <p className="text-xs font-semibold text-emerald-600 mt-1">
+                                  {s.provider}
+                                </p>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <h3 className="font-title font-bold text-slate-800 text-lg leading-tight break-words">
-                                {s.name}
-                              </h3>
-                              <p className="text-xs font-semibold text-emerald-600 mt-1">
-                                {s.provider}
-                              </p>
-                            </div>
+                            <SaveButton
+                              item={s}
+                              type="scholarship"
+                              sport={result.pathway.sportName}
+                              savedItems={savedItems}
+                              onToggle={handleSavedChange}
+                            />
                           </div>
                           <p className="text-sm text-slate-600 leading-relaxed mb-4 flex-1">
                             {s.description}
@@ -2277,17 +3177,26 @@ function PathwayExplorerSection() {
                       result.pathway.careers.map((c: any, i: number) => (
                         <div
                           key={i}
-                          className="flex flex-col rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white/60 to-slate-50/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-blue-200 group"
+                          className="flex flex-col rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white/60 to-slate-50/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-blue-200 group relative"
                         >
-                          <div className="mb-4 flex items-center gap-3">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-inner">
-                              <Briefcase className="h-6 w-6" />
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-inner">
+                                <Briefcase className="h-6 w-6" />
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="font-title font-bold text-slate-800 text-lg leading-tight break-words pr-8">
+                                  {c.role}
+                                </h3>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <h3 className="font-title font-bold text-slate-800 text-lg leading-tight break-words">
-                                {c.role}
-                              </h3>
-                            </div>
+                            <SaveButton
+                              item={c}
+                              type="career"
+                              sport={result.pathway.sportName}
+                              savedItems={savedItems}
+                              onToggle={handleSavedChange}
+                            />
                           </div>
                           <p className="text-sm text-slate-600 leading-relaxed mb-4 flex-1">
                             {c.description}
@@ -2325,6 +3234,40 @@ function PathwayExplorerSection() {
                 {result && activeTab === "budget" && (
                   <BudgetCalculator pathway={result.pathway} />
                 )}
+
+                {/* P5: Saved Tab */}
+                {activeTab === "saved" && (
+                  <SavedTab
+                    savedItems={savedItems}
+                    onUnsave={(id) => handleSavedChange(savedItems.filter((s) => s.id !== id))}
+                    onOpenModal={(item, type) => setModalData({ item, type })}
+                  />
+                )}
+
+                {/* P6: Applications Tab */}
+                {activeTab === "applications" && (
+                  <ApplicationsTab
+                    applications={applications}
+                    onUpdateStatus={handleUpdateApplicationStatus}
+                  />
+                )}
+
+                {/* P7: Calendar Tab */}
+                {result && activeTab === "calendar" && (
+                  <CalendarTab
+                    pathway={result.pathway}
+                    reminders={reminders}
+                    onRemindersChange={handleRemindersChange}
+                  />
+                )}
+
+                {/* P8: Stories Tab */}
+                {result && activeTab === "stories" && (
+                  <StoriesTab
+                    sportName={result.pathway.sportName}
+                    levels={currentLevels}
+                  />
+                )}
               </AnimatePresence>
             </motion.div>
           )}
@@ -2336,6 +3279,9 @@ function PathwayExplorerSection() {
             onClose={() => setModalData(null)}
             item={modalData.item}
             type={modalData.type}
+            onSubmitSuccess={(record) => {
+              handleApplicationsChange([...applications, record]);
+            }}
           />
         )}
       </div>
