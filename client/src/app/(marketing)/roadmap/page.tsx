@@ -48,6 +48,20 @@ import {
   Compass,
   ShoppingBag,
   Briefcase,
+  CheckCircle2,
+  Circle,
+  ChevronRight,
+  ChevronUp,
+  BarChart3,
+  Download,
+  Copy,
+  Check,
+  Plus,
+  Minus,
+  Calculator,
+  SlidersHorizontal,
+  GitCompare,
+  Pin,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -77,6 +91,27 @@ const cardReveal: Variants = {
 const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.88 },
   show: { opacity: 1, scale: 1, transition: SPRING_SOFT },
+};
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman & Nicobar", "Chandigarh", "Dadra & Nagar Haveli", "Daman & Diu",
+  "Delhi", "Jammu & Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+];
+
+// Coaching fee tiers derived from parentalCommitment.financial text
+const COACHING_FEE_TIERS: Record<number, { label: string; low: number; high: number }> = {
+  1: { label: "₹1,000–₹3,000/mo", low: 1000, high: 3000 },
+  2: { label: "₹3,000–₹10,000/mo", low: 3000, high: 10000 },
+  3: { label: "₹10,000–₹30,000/mo", low: 10000, high: 30000 },
+  4: { label: "₹30,000–₹80,000/mo", low: 30000, high: 80000 },
+  5: { label: "Sponsorship / ₹80,000+", low: 80000, high: 150000 },
 };
 
 // ─── Pathway Levels ───────────────────────────────────────────────────────────
@@ -234,6 +269,44 @@ const pathwayLevels = [
   },
 ];
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ProgressState = {
+  currentLevel: number; // 1-5, 0 = not set
+  completedSteps: Record<number, boolean[]>; // level -> step index -> done
+};
+
+const DEFAULT_PROGRESS: ProgressState = {
+  currentLevel: 0,
+  completedSteps: {},
+};
+
+// ─── localStorage helpers ─────────────────────────────────────────────────────
+
+function loadProgress(): ProgressState {
+  if (typeof window === "undefined") return DEFAULT_PROGRESS;
+  try {
+    const raw = localStorage.getItem("pms_pathway_progress");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return DEFAULT_PROGRESS;
+}
+
+function saveProgress(p: ProgressState) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("pms_pathway_progress", JSON.stringify(p));
+}
+
+function loadState(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem("pms_selected_state") || "";
+}
+
+function saveState(s: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("pms_selected_state", s);
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function AmbientBlob({ className }: { className: string }) {
@@ -296,16 +369,218 @@ const levelColorMap: Record<
   },
 };
 
+// ─── P1: Progress Tracker ─────────────────────────────────────────────────────
+
+function ProgressTracker({
+  progress,
+  onChange,
+  levels,
+}: {
+  progress: ProgressState;
+  onChange: (p: ProgressState) => void;
+  levels: typeof pathwayLevels;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const currentLevelData =
+    progress.currentLevel > 0
+      ? levels.find((l) => l.level === progress.currentLevel)
+      : null;
+
+  const toggleStep = (levelNum: number, stepIdx: number) => {
+    const existing = progress.completedSteps[levelNum] || [];
+    const updated = [...existing];
+    updated[stepIdx] = !updated[stepIdx];
+    const next: ProgressState = {
+      ...progress,
+      completedSteps: { ...progress.completedSteps, [levelNum]: updated },
+    };
+    onChange(next);
+  };
+
+  const setLevel = (lvl: number) => {
+    const next: ProgressState = { ...progress, currentLevel: lvl };
+    onChange(next);
+  };
+
+  const stepsForCurrentLevel = currentLevelData?.steps || [];
+  const completedForLevel = progress.completedSteps[progress.currentLevel] || [];
+  const completedCount = completedForLevel.filter(Boolean).length;
+  const totalSteps = stepsForCurrentLevel.length;
+  const remainingCount = totalSteps - completedCount;
+
+  const nextLevel =
+    progress.currentLevel > 0 && progress.currentLevel < 5
+      ? levels.find((l) => l.level === progress.currentLevel + 1)
+      : null;
+
+  const colors = currentLevelData
+    ? levelColorMap[currentLevelData.level]
+    : levelColorMap[1];
+
+  return (
+    <div className="mb-5 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden shadow-sm">
+      {/* Header */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+      >
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100">
+          <Pin className="h-4 w-4 text-amber-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
+            Where Is My Child Now?
+          </p>
+          {progress.currentLevel > 0 ? (
+            <p className="text-sm font-bold text-slate-900 truncate">
+              Level {progress.currentLevel} · {currentLevelData?.label} —{" "}
+              {completedCount}/{totalSteps} objectives done
+            </p>
+          ) : (
+            <p className="text-sm font-semibold text-slate-500">
+              Tap to mark your child's current level
+            </p>
+          )}
+        </div>
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="shrink-0 text-amber-500"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </motion.div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ height: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.18 } }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-4 border-t border-amber-100 pt-3">
+              {/* Level selector */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  Current Level
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {levels.map((lv) => {
+                    const c = levelColorMap[lv.level];
+                    const active = progress.currentLevel === lv.level;
+                    return (
+                      <button
+                        key={lv.level}
+                        type="button"
+                        onClick={() => setLevel(lv.level)}
+                        className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                          active
+                            ? `bg-gradient-to-r ${c.gradient} text-white border-transparent shadow-md`
+                            : `border-slate-200 bg-white text-slate-600 hover:border-slate-300`
+                        }`}
+                      >
+                        {active && <CheckCircle2 className="h-3 w-3 shrink-0" />}
+                        {lv.label}
+                      </button>
+                    );
+                  })}
+                  {progress.currentLevel > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setLevel(0)}
+                      className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-400 hover:bg-slate-50 transition"
+                    >
+                      <X className="h-3 w-3" /> Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Objectives for current level */}
+              {currentLevelData && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    Objectives at this level
+                  </p>
+                  <ul className="space-y-2">
+                    {stepsForCurrentLevel.map((step, idx) => {
+                      const done = !!completedForLevel[idx];
+                      return (
+                        <li key={idx}>
+                          <button
+                            type="button"
+                            onClick={() => toggleStep(progress.currentLevel, idx)}
+                            className={`w-full flex items-start gap-2.5 rounded-xl border p-2.5 text-left text-sm transition-all ${
+                              done
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                            }`}
+                          >
+                            {done ? (
+                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                            ) : (
+                              <Circle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
+                            )}
+                            <span className={done ? "line-through opacity-70" : ""}>
+                              {step}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {/* Gap / progress summary */}
+                  {remainingCount > 0 && nextLevel ? (
+                    <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 text-blue-500 shrink-0" />
+                      <p className="text-xs font-semibold text-blue-700">
+                        <span className="font-bold">{remainingCount} objective{remainingCount > 1 ? "s" : ""}</span> remaining before you're ready for{" "}
+                        <span className="font-bold">{nextLevel.label} level</span>
+                      </p>
+                    </div>
+                  ) : remainingCount === 0 && nextLevel ? (
+                    <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                      <p className="text-xs font-bold text-emerald-700">
+                        All objectives complete! Ready to step up to{" "}
+                        <span>{nextLevel.label} level 🎉</span>
+                      </p>
+                    </div>
+                  ) : remainingCount === 0 && !nextLevel ? (
+                    <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-rose-500 shrink-0" />
+                      <p className="text-xs font-bold text-rose-700">
+                        Peak achieved — International level! 🏆
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── Dynamic pathway level card ────────────────────────────────────────────────
 
 function PathwayLevelCard({
   level,
   isActive,
   onClick,
+  isCurrentLevel,
 }: {
   level: any;
   isActive: boolean;
   onClick: () => void;
+  isCurrentLevel?: boolean;
 }) {
   const colors = levelColorMap[level.level] ?? levelColorMap[1];
   return (
@@ -337,13 +612,20 @@ function PathwayLevelCard({
           </p>
           <p className="text-xs text-slate-500 truncate">{level.keyFocus}</p>
         </div>
-        <motion.div
-          animate={{ rotate: isActive ? 180 : 0 }}
-          transition={{ duration: 0.22 }}
-          className={`shrink-0 lg:hidden ${colors.text}`}
-        >
-          <ChevronDown className="h-4 w-4" />
-        </motion.div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isCurrentLevel && (
+            <span className="hidden sm:flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+              <Pin className="h-2.5 w-2.5" /> HERE
+            </span>
+          )}
+          <motion.div
+            animate={{ rotate: isActive ? 180 : 0 }}
+            transition={{ duration: 0.22 }}
+            className={`lg:hidden ${colors.text}`}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </motion.div>
+        </div>
       </div>
     </motion.button>
   );
@@ -537,6 +819,484 @@ function PathwayLevelDetail({
   );
 }
 
+// ─── P3: Compare Panel ────────────────────────────────────────────────────────
+
+function ComparePanel({
+  primaryPathway,
+  allSports,
+}: {
+  primaryPathway: SportPathway;
+  allSports: Sport[];
+}) {
+  const [compareList, setCompareList] = useState<SportPathway[]>([primaryPathway]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
+  const [suggestions, setSuggestions] = useState<Sport[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (allSports.length > 0)
+      setFuse(new Fuse(allSports, { keys: ["name"], threshold: 0.3 }));
+  }, [allSports]);
+
+  useEffect(() => {
+    if (!fuse || searchQuery.trim().length < 1) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const res = fuse.search(searchQuery).map((r) => r.item);
+    setSuggestions(res.slice(0, 5));
+    setShowSuggestions(res.length > 0);
+  }, [searchQuery, fuse]);
+
+  const addSport = async (name: string) => {
+    if (compareList.length >= 3) return;
+    if (compareList.some((p) => p.sportSlug === name.toLowerCase().replace(/\s+/g, "-"))) return;
+    setShowSuggestions(false);
+    setSearchQuery("");
+    const idx = compareList.length;
+    setLoadingIdx(idx);
+    try {
+      const res = await pathwayApi.getPathway(name);
+      if (res) setCompareList((prev) => [...prev, res.pathway]);
+    } catch {}
+    setLoadingIdx(null);
+  };
+
+  const removeSport = (idx: number) => {
+    if (idx === 0) return; // keep primary
+    setCompareList((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Extract cost midpoint from string like "₹2,000–₹5,000"
+  const parseCost = (cost: string): number => {
+    const nums = cost.replace(/[₹,]/g, "").match(/\d+/g);
+    if (!nums) return 0;
+    if (nums.length >= 2) return (Number(nums[0]) + Number(nums[nums.length - 1])) / 2;
+    return Number(nums[0]);
+  };
+
+  const getEquipmentCost = (pathway: SportPathway): { total: number; label: string } => {
+    if (!pathway.equipment?.length) return { total: 0, label: "N/A" };
+    const total = pathway.equipment.reduce((sum, e) => sum + parseCost(e.estimatedCost), 0);
+    return {
+      total,
+      label: total > 0 ? `₹${Math.round(total).toLocaleString("en-IN")}` : "Varies",
+    };
+  };
+
+  const getScholarshipCount = (pathway: SportPathway) =>
+    pathway.scholarships?.length || 0;
+
+  const getCareerCount = (pathway: SportPathway) =>
+    pathway.careers?.length || 0;
+
+  const getTimeCommitment = (pathway: SportPathway): string => {
+    const lvl = pathwayLevels.find((l) => l.level === 3);
+    return lvl?.parentalCommitment.time || "Daily";
+  };
+
+  const colBg = ["bg-orange-50 border-orange-200", "bg-blue-50 border-blue-200", "bg-violet-50 border-violet-200"];
+  const colAccent = ["text-power-orange", "text-blue-600", "text-violet-600"];
+
+  return (
+    <motion.div
+      key="compare"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-6"
+    >
+      {/* Add sport */}
+      {compareList.length < 3 && (
+        <div className="relative">
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+            <Plus className="h-4 w-4 text-slate-400 shrink-0" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && suggestions.length > 0) addSport(suggestions[0].name);
+                if (e.key === "Escape") setShowSuggestions(false);
+              }}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              placeholder={`Add sport ${compareList.length + 1} of 3 to compare…`}
+              className="flex-1 bg-transparent text-sm font-medium text-slate-800 placeholder-slate-400 outline-none"
+            />
+            {loadingIdx !== null && (
+              <Loader2 className="h-4 w-4 animate-spin text-power-orange shrink-0" />
+            )}
+          </div>
+          <AnimatePresence>
+            {showSuggestions && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="absolute left-0 right-0 top-full z-20 mt-1.5 rounded-2xl border border-slate-100 bg-white shadow-xl overflow-hidden"
+              >
+                {suggestions.map((s) => (
+                  <button
+                    key={s.slug || s.name}
+                    onClick={() => addSport(s.name)}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-800 hover:bg-orange-50 transition"
+                  >
+                    <Database className="h-4 w-4 shrink-0 text-power-orange" />
+                    {s.name}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Comparison grid */}
+      <div className={`grid gap-4 ${compareList.length === 1 ? "grid-cols-1" : compareList.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+        {compareList.map((pathway, idx) => {
+          const equipCost = getEquipmentCost(pathway);
+          const scholarships = getScholarshipCount(pathway);
+          const careers = getCareerCount(pathway);
+          const fees = COACHING_FEE_TIERS;
+          return (
+            <div
+              key={pathway.sportSlug || idx}
+              className={`relative rounded-2xl border ${colBg[idx]} p-5 shadow-sm`}
+            >
+              {idx > 0 && (
+                <button
+                  onClick={() => removeSport(idx)}
+                  className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 border border-slate-200 text-slate-400 hover:text-rose-500 transition"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+              {idx === 0 && (
+                <span className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-widest ${colAccent[idx]} bg-white/80 border border-slate-200 rounded-full px-2 py-0.5`}>
+                  Primary
+                </span>
+              )}
+
+              <h3 className={`font-title text-lg font-bold mb-4 pr-16 break-words ${colAccent[idx]}`}>
+                {pathway.sportName}
+              </h3>
+
+              <div className="space-y-3">
+                {/* Equipment cost */}
+                <div className="rounded-xl bg-white/70 border border-white p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                    <ShoppingBag className="h-3 w-3" /> Equipment Cost
+                  </p>
+                  <p className="text-sm font-bold text-slate-900">
+                    {equipCost.label}
+                    {equipCost.total > 0 && (
+                      <span className="text-[10px] font-normal text-slate-400 ml-1">total across levels</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Coaching */}
+                <div className="rounded-xl bg-white/70 border border-white p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> Weekly Commitment
+                  </p>
+                  <p className="text-sm font-bold text-slate-900">
+                    {getTimeCommitment(pathway)}
+                  </p>
+                </div>
+
+                {/* Scholarships */}
+                <div className="rounded-xl bg-white/70 border border-white p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                    <Wallet className="h-3 w-3" /> Scholarships
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xl font-extrabold ${colAccent[idx]}`}>{scholarships}</span>
+                    <span className="text-xs text-slate-500">available</span>
+                  </div>
+                </div>
+
+                {/* Careers */}
+                <div className="rounded-xl bg-white/70 border border-white p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                    <Briefcase className="h-3 w-3" /> Career Paths
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xl font-extrabold ${colAccent[idx]}`}>{careers}</span>
+                    <span className="text-xs text-slate-500">options</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Empty slot */}
+        {compareList.length < 3 && (
+          <button
+            onClick={() => inputRef.current?.focus()}
+            className="rounded-2xl border-2 border-dashed border-slate-200 p-5 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-slate-300 hover:text-slate-500 transition min-h-[200px]"
+          >
+            <Plus className="h-6 w-6" />
+            <span className="text-xs font-semibold">Add sport</span>
+          </button>
+        )}
+      </div>
+
+      {compareList.length > 1 && (
+        <p className="text-center text-xs text-slate-400">
+          Showing data for {compareList.map((p) => p.sportName).join(", ")}. Data sourced from pathway analysis.
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+// ─── P4: Budget Calculator ────────────────────────────────────────────────────
+
+function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
+  const [selectedLevels, setSelectedLevels] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [copied, setCopied] = useState(false);
+
+  const toggleLevel = (lvl: number) => {
+    setSelectedLevels((prev) =>
+      prev.includes(lvl) ? prev.filter((l) => l !== lvl) : [...prev, lvl].sort()
+    );
+  };
+
+  // Parse a cost string like "₹2,000 – ₹5,000" → midpoint
+  const parseCostMid = (cost: string): number => {
+    const nums = cost.replace(/[₹,\s]/g, "").match(/\d+/g);
+    if (!nums || nums.length === 0) return 0;
+    if (nums.length >= 2) return (Number(nums[0]) + Number(nums[nums.length - 1])) / 2;
+    return Number(nums[0]);
+  };
+
+  const levelData = pathwayLevels.filter((l) => selectedLevels.includes(l.level));
+
+  type RowData = {
+    level: number;
+    label: string;
+    equipment: string;
+    equipmentMid: number;
+    coaching: string;
+    coachingMid: number;
+    travel: string;
+    financial: string;
+  };
+
+  const rows: RowData[] = levelData.map((lv) => {
+    const equip = pathway.equipment?.find((e) =>
+      e.level.toLowerCase().includes(lv.label.toLowerCase())
+    ) || pathway.equipment?.[lv.level - 1];
+    const fees = COACHING_FEE_TIERS[lv.level];
+    return {
+      level: lv.level,
+      label: lv.label,
+      equipment: equip?.estimatedCost || "Varies",
+      equipmentMid: equip ? parseCostMid(equip.estimatedCost) : 0,
+      coaching: fees.label,
+      coachingMid: (fees.low + fees.high) / 2,
+      travel: lv.parentalCommitment.travel,
+      financial: lv.parentalCommitment.financial,
+    };
+  });
+
+  const totalEquip = rows.reduce((s, r) => s + r.equipmentMid, 0);
+  // Coaching: annual midpoint per level (assume 10 months active)
+  const totalCoaching = rows.reduce((s, r) => s + r.coachingMid * 10, 0);
+  const grandTotal = totalEquip + totalCoaching;
+
+  const fmt = (n: number) =>
+    n > 0 ? `₹${Math.round(n).toLocaleString("en-IN")}` : "Varies";
+
+  const handleExport = async () => {
+    const lines: string[] = [
+      `Cost-of-the-Journey Estimate — ${pathway.sportName}`,
+      `Generated by PowerMySport on ${new Date().toLocaleDateString("en-IN")}`,
+      "",
+      "Level-by-Level Breakdown:",
+      "─".repeat(50),
+    ];
+    rows.forEach((r) => {
+      lines.push(`\n[Level ${r.level}] ${r.label}`);
+      lines.push(`  Equipment : ${r.equipment}`);
+      lines.push(`  Coaching  : ${r.coaching} (est. 10 active months)`);
+      lines.push(`  Travel    : ${r.travel}`);
+    });
+    lines.push("");
+    lines.push("─".repeat(50));
+    lines.push(`Equipment Total  : ${fmt(totalEquip)}`);
+    lines.push(`Coaching Total   : ${fmt(totalCoaching)} (10 months/level)`);
+    lines.push(`GRAND ESTIMATE   : ${fmt(grandTotal)}`);
+    lines.push("");
+    lines.push("Note: All figures are indicative estimates. Actual costs vary by location, academy, and individual progression.");
+
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch {}
+  };
+
+  const colColors = ["emerald", "blue", "violet", "orange", "rose"] as const;
+  const colBgs: Record<number, string> = {
+    1: "bg-emerald-50 border-emerald-100",
+    2: "bg-blue-50 border-blue-100",
+    3: "bg-violet-50 border-violet-100",
+    4: "bg-orange-50 border-orange-100",
+    5: "bg-rose-50 border-rose-100",
+  };
+  const colTexts: Record<number, string> = {
+    1: "text-emerald-600",
+    2: "text-blue-600",
+    3: "text-violet-600",
+    4: "text-orange-600",
+    5: "text-rose-600",
+  };
+
+  return (
+    <motion.div
+      key="budget"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-6"
+    >
+      {/* Header & level toggles */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-title font-bold text-slate-900 text-lg">
+            {pathway.sportName} — Cost Journey
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Toggle levels to include / exclude from the estimate
+          </p>
+        </div>
+        <button
+          onClick={handleExport}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95"
+        >
+          {copied ? (
+            <>
+              <Check className="h-4 w-4 text-emerald-500" /> Copied!
+            </>
+          ) : (
+            <>
+              <Copy className="h-4 w-4" /> Export
+            </>
+          )}
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {pathwayLevels.map((lv) => {
+          const active = selectedLevels.includes(lv.level);
+          const c = levelColorMap[lv.level];
+          return (
+            <button
+              key={lv.level}
+              onClick={() => toggleLevel(lv.level)}
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
+                active
+                  ? `bg-gradient-to-r ${c.gradient} text-white border-transparent shadow`
+                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+              }`}
+            >
+              {active ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+              {lv.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Level cards */}
+      <div className="space-y-3">
+        {rows.map((row) => (
+          <div
+            key={row.level}
+            className={`rounded-2xl border ${colBgs[row.level]} p-4`}
+          >
+            <div className="flex flex-wrap items-start gap-3 mb-3">
+              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${levelColorMap[row.level].badge}`}>
+                {levelIconMap[row.level]}
+                Level {row.level} · {row.label}
+              </div>
+              <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {row.financial}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl bg-white/70 p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                  <ShoppingBag className="h-3 w-3" /> Equipment
+                </p>
+                <p className={`text-sm font-bold ${colTexts[row.level]}`}>
+                  {row.equipment}
+                </p>
+                {row.equipmentMid > 0 && (
+                  <p className="text-[10px] text-slate-400 mt-0.5">≈ {fmt(row.equipmentMid)} mid-est.</p>
+                )}
+              </div>
+              <div className="rounded-xl bg-white/70 p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                  <Wallet className="h-3 w-3" /> Coaching Fees
+                </p>
+                <p className={`text-sm font-bold ${colTexts[row.level]}`}>
+                  {row.coaching}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">≈ {fmt(row.coachingMid * 10)} / 10 mo.</p>
+              </div>
+              <div className="rounded-xl bg-white/70 p-3">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                  <Map className="h-3 w-3" /> Travel
+                </p>
+                <p className="text-sm font-semibold text-slate-700">{row.travel}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Grand total */}
+      <div className="rounded-2xl border-2 border-power-orange/30 bg-gradient-to-br from-orange-50 to-amber-50 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-power-orange/10">
+            <Calculator className="h-4 w-4 text-power-orange" />
+          </div>
+          <h4 className="font-title font-bold text-slate-900">
+            Journey Total Estimate
+          </h4>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <div className="rounded-xl bg-white/80 p-3 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Equipment</p>
+            <p className="text-lg font-extrabold text-slate-900">{fmt(totalEquip)}</p>
+          </div>
+          <div className="rounded-xl bg-white/80 p-3 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Coaching (10 mo/lvl)</p>
+            <p className="text-lg font-extrabold text-slate-900">{fmt(totalCoaching)}</p>
+          </div>
+          <div className="rounded-xl bg-power-orange/10 border border-power-orange/20 p-3 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-power-orange mb-1">Grand Estimate</p>
+            <p className="text-xl font-extrabold text-power-orange">{fmt(grandTotal)}</p>
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-500 leading-relaxed">
+          ⚠️ These are indicative estimates only. Actual costs vary significantly by city, academy, coaching level, and individual progression speed. Use this as a planning guide, not a quote.
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Sport search section ──────────────────────────────────────────────────────
 
 function PathwayExplorerSection() {
@@ -561,9 +1321,36 @@ function PathwayExplorerSection() {
     | "universities"
     | "equipment"
     | "careers"
+    | "compare"
+    | "budget"
   >("pathway");
   const [modalData, setModalData] = useState<{ item: any; type: "tournament" | "scholarship" | "university" } | null>(null);
+
+  // P1: progress tracker state
+  const [progress, setProgress] = useState<ProgressState>(DEFAULT_PROGRESS);
+
+  // P2: state/city selector
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [stateOpen, setStateOpen] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load from localStorage
+  useEffect(() => {
+    setProgress(loadProgress());
+    setSelectedState(loadState());
+  }, []);
+
+  const handleProgressChange = (p: ProgressState) => {
+    setProgress(p);
+    saveProgress(p);
+  };
+
+  const handleStateChange = (s: string) => {
+    setSelectedState(s);
+    saveState(s);
+    setStateOpen(false);
+  };
 
   // Fetch all sports on mount
   useEffect(() => {
@@ -603,10 +1390,10 @@ function PathwayExplorerSection() {
     setActiveIdx(0);
     setActiveTab("pathway");
     try {
-      const res = await pathwayApi.getPathway(name);
+      const res = await pathwayApi.getPathway(name, undefined, selectedState || undefined);
       if (res) {
         setResult(res);
-        setQuery(res.pathway.sportName); // Update input field to match the properly formatted DB name
+        setQuery(res.pathway.sportName);
         setStatus("success");
       } else {
         setErrorMsg(
@@ -672,57 +1459,127 @@ function PathwayExplorerSection() {
           </motion.p>
         </motion.div>
 
-        {/* Search bar */}
+        {/* Search bar + P2 State selector */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          className="mx-auto max-w-2xl relative"
+          className="mx-auto max-w-3xl relative"
         >
-          <div className="relative flex items-center gap-1.5 rounded-2xl border border-white/70 bg-white/90 p-1.5 sm:gap-3 sm:p-2 sm:pr-3 shadow-xl backdrop-blur-sm">
-            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white sm:flex sm:h-12 sm:w-12">
-              {status === "loading" ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Search className="h-5 w-5" />
-              )}
-            </div>
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setStatus("idle");
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch(query);
-                }
-                if (e.key === "Escape") setShowSuggestions(false);
-              }}
-              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              placeholder="e.g. Cricket, Badminton..."
-              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none sm:px-0 sm:text-base"
-              aria-label="Search sport pathway"
-            />
-            {query && (
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* P2: State selector */}
+            <div className="relative">
               <button
-                onClick={clearSearch}
-                className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+                type="button"
+                onClick={() => setStateOpen((o) => !o)}
+                className="flex h-full min-h-[52px] items-center gap-2 rounded-2xl border border-white/70 bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 shadow-xl backdrop-blur-sm whitespace-nowrap transition hover:bg-white sm:min-w-[140px]"
               >
-                <X className="h-4 w-4 text-slate-400" />
+                <MapPin className="h-4 w-4 text-power-orange shrink-0" />
+                <span className="truncate max-w-[100px]">
+                  {selectedState || "All India"}
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform shrink-0 ${stateOpen ? "rotate-180" : ""}`} />
               </button>
-            )}
-            <button
-              onClick={() => handleSearch(query)}
-              disabled={status === "loading" || !query.trim()}
-              className="shrink-0 rounded-xl bg-power-orange px-3 py-2.5 text-xs font-bold text-white shadow transition-all hover:bg-orange-600 disabled:opacity-50 sm:px-5 sm:text-sm"
-            >
-              Search
-            </button>
+              <AnimatePresence>
+                {stateOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.13 }}
+                    className="absolute left-0 top-full z-30 mt-1.5 w-52 rounded-2xl border border-slate-100 bg-white shadow-2xl overflow-hidden"
+                  >
+                    <div className="max-h-60 overflow-y-auto py-1">
+                      <button
+                        onClick={() => handleStateChange("")}
+                        className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold transition hover:bg-orange-50 ${!selectedState ? "text-power-orange" : "text-slate-700"}`}
+                      >
+                        <Globe className="h-4 w-4 shrink-0" />
+                        All India
+                      </button>
+                      {INDIAN_STATES.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => handleStateChange(s)}
+                          className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition hover:bg-orange-50 ${selectedState === s ? "font-bold text-power-orange" : "font-medium text-slate-700"}`}
+                        >
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Search input */}
+            <div className="relative flex flex-1 items-center gap-1.5 rounded-2xl border border-white/70 bg-white/90 p-1.5 sm:gap-3 sm:p-2 sm:pr-3 shadow-xl backdrop-blur-sm">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white sm:flex sm:h-12 sm:w-12">
+                {status === "loading" ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Search className="h-5 w-5" />
+                )}
+              </div>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setStatus("idle");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch(query);
+                  }
+                  if (e.key === "Escape") setShowSuggestions(false);
+                }}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="e.g. Cricket, Badminton..."
+                className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none sm:px-0 sm:text-base"
+                aria-label="Search sport pathway"
+              />
+              {query && (
+                <button
+                  onClick={clearSearch}
+                  className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+                >
+                  <X className="h-4 w-4 text-slate-400" />
+                </button>
+              )}
+              <button
+                onClick={() => handleSearch(query)}
+                disabled={status === "loading" || !query.trim()}
+                className="shrink-0 rounded-xl bg-power-orange px-3 py-2.5 text-xs font-bold text-white shadow transition-all hover:bg-orange-600 disabled:opacity-50 sm:px-5 sm:text-sm"
+              >
+                Search
+              </button>
+            </div>
           </div>
+
+          {/* State filter indicator */}
+          {selectedState && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 flex items-center gap-2"
+            >
+              <span className="flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-power-orange">
+                <MapPin className="h-3 w-3" />
+                Localised for {selectedState}
+                <button
+                  onClick={() => handleStateChange("")}
+                  className="ml-1 hover:text-orange-800 transition"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+              <span className="text-xs text-slate-400">Results will include {selectedState}-specific data</span>
+            </motion.div>
+          )}
 
           {/* Autocomplete dropdown */}
           <AnimatePresence>
@@ -733,6 +1590,7 @@ function PathwayExplorerSection() {
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.15 }}
                 className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl"
+                style={{ top: "100%", marginTop: "8px" }}
               >
                 <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
                 <div className="py-1.5">
@@ -802,7 +1660,7 @@ function PathwayExplorerSection() {
               <p className="mt-2 text-sm text-slate-500 break-words">
                 Our AI is researching the{" "}
                 <span className="font-semibold text-power-orange">{query}</span>{" "}
-                development pathway in India.
+                development pathway{selectedState ? ` in ${selectedState}` : " in India"}.
               </p>
               <div className="mt-6 flex items-center justify-center gap-1.5">
                 {[0, 1, 2].map((i) => (
@@ -857,10 +1715,14 @@ function PathwayExplorerSection() {
               {result ? (
                 <div className="mb-8">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
-                    {/* We no longer show "From Database" to keep the experience unified */}
                     {result.source === "generated" && (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-power-orange border border-orange-200">
                         <Sparkles className="h-3 w-3" /> AI Generated
+                      </span>
+                    )}
+                    {selectedState && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 border border-blue-100">
+                        <MapPin className="h-3 w-3" /> {selectedState}
                       </span>
                     )}
                     {result.pathway.category && (
@@ -893,7 +1755,7 @@ function PathwayExplorerSection() {
 
               {/* Tabs */}
               {result && (
-                <div className="mb-10 grid grid-cols-2 gap-1.5 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1.5 backdrop-blur-sm sm:grid-cols-3 sm:gap-2 sm:p-2 lg:flex lg:flex-wrap">
+                <div className="mb-10 grid grid-cols-2 gap-1.5 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1.5 backdrop-blur-sm sm:grid-cols-4 sm:gap-2 sm:p-2 lg:flex lg:flex-wrap">
                   {[
                     {
                       id: "pathway",
@@ -924,6 +1786,16 @@ function PathwayExplorerSection() {
                       id: "careers",
                       label: "Careers",
                       icon: <Briefcase className="h-4 w-4" />,
+                    },
+                    {
+                      id: "compare",
+                      label: "Compare",
+                      icon: <GitCompare className="h-4 w-4" />,
+                    },
+                    {
+                      id: "budget",
+                      label: "Budget",
+                      icon: <Calculator className="h-4 w-4" />,
                     },
                   ].map((tab) => (
                     <button
@@ -968,13 +1840,20 @@ function PathwayExplorerSection() {
                   >
                     {/* Left: level pills */}
                     <div className="space-y-3">
+                      {/* P1: Progress Tracker */}
+                      <ProgressTracker
+                        progress={progress}
+                        onChange={handleProgressChange}
+                        levels={pathwayLevels}
+                      />
+
                       {/* Visual Pyramid Indicator for Desktop */}
                       <motion.div
                         variants={scaleIn}
                         className="mb-6 hidden lg:block"
                       >
                         <svg
-                          viewBox="0 0 300 160"
+                          viewBox="0 0 300 170"
                           className="w-full"
                           aria-hidden
                         >
@@ -985,6 +1864,7 @@ function PathwayExplorerSection() {
                               fill: "rgba(16,185,129,0.12)",
                               stroke: "rgba(16,185,129,0.4)",
                               label: "Grassroots",
+                              level: 1,
                             },
                             {
                               y: 104,
@@ -992,6 +1872,7 @@ function PathwayExplorerSection() {
                               fill: "rgba(59,130,246,0.12)",
                               stroke: "rgba(59,130,246,0.4)",
                               label: "District",
+                              level: 2,
                             },
                             {
                               y: 78,
@@ -999,6 +1880,7 @@ function PathwayExplorerSection() {
                               fill: "rgba(139,92,246,0.12)",
                               stroke: "rgba(139,92,246,0.4)",
                               label: "State",
+                              level: 3,
                             },
                             {
                               y: 52,
@@ -1006,6 +1888,7 @@ function PathwayExplorerSection() {
                               fill: "rgba(249,115,22,0.12)",
                               stroke: "rgba(249,115,22,0.4)",
                               label: "National",
+                              level: 4,
                             },
                             {
                               y: 26,
@@ -1013,41 +1896,93 @@ function PathwayExplorerSection() {
                               fill: "rgba(244,63,94,0.12)",
                               stroke: "rgba(244,63,94,0.4)",
                               label: "International",
+                              level: 5,
                             },
-                          ].map((tier, i) => (
-                            <g
-                              key={i}
-                              onClick={() => setActiveIdx(i)}
-                              className="cursor-pointer transition-opacity hover:opacity-80"
-                            >
-                              <rect
-                                x={(300 - tier.width) / 2}
-                                y={tier.y - 22}
-                                width={tier.width}
-                                height={22}
-                                rx={4}
-                                fill={
-                                  i === activeIdx
-                                    ? tier.fill.replace("0.12", "0.3")
-                                    : tier.fill
-                                }
-                                stroke={tier.stroke}
-                                strokeWidth={i === activeIdx ? 1.5 : 1}
-                                style={{ transition: "fill 0.3s" }}
-                              />
-                              <text
-                                x="150"
-                                y={130 - i * 26 - 8}
-                                textAnchor="middle"
-                                fontSize="8"
-                                fontWeight={i === activeIdx ? "700" : "500"}
-                                fill={i === activeIdx ? "#0f172a" : "#94a3b8"}
-                                style={{ transition: "fill 0.3s" }}
+                          ].map((tier, i) => {
+                            const isCurrentLevel = progress.currentLevel === tier.level;
+                            return (
+                              <g
+                                key={i}
+                                onClick={() => setActiveIdx(i)}
+                                className="cursor-pointer transition-opacity hover:opacity-80"
                               >
-                                {tier.label}
+                                <rect
+                                  x={(300 - tier.width) / 2}
+                                  y={tier.y - 22}
+                                  width={tier.width}
+                                  height={22}
+                                  rx={4}
+                                  fill={
+                                    i === activeIdx
+                                      ? tier.fill.replace("0.12", "0.3")
+                                      : isCurrentLevel
+                                      ? tier.fill.replace("0.12", "0.25")
+                                      : tier.fill
+                                  }
+                                  stroke={isCurrentLevel ? tier.stroke.replace("0.4", "0.9") : tier.stroke}
+                                  strokeWidth={isCurrentLevel ? 2 : i === activeIdx ? 1.5 : 1}
+                                  style={{ transition: "fill 0.3s, stroke 0.3s" }}
+                                />
+                                <text
+                                  x="150"
+                                  y={130 - i * 26 - 8}
+                                  textAnchor="middle"
+                                  fontSize="8"
+                                  fontWeight={i === activeIdx || isCurrentLevel ? "700" : "500"}
+                                  fill={i === activeIdx ? "#0f172a" : isCurrentLevel ? "#0f172a" : "#94a3b8"}
+                                  style={{ transition: "fill 0.3s" }}
+                                >
+                                  {tier.label}
+                                </text>
+                                {/* "You Are Here" animated dot */}
+                                {isCurrentLevel && (
+                                  <>
+                                    <circle
+                                      cx={(300 - tier.width) / 2 - 10}
+                                      cy={130 - i * 26 - 11}
+                                      r={4}
+                                      fill={tier.stroke.replace("0.4", "1")}
+                                      style={{ filter: "drop-shadow(0 0 3px rgba(0,0,0,0.3))" }}
+                                    >
+                                      <animate
+                                        attributeName="r"
+                                        values="3;5;3"
+                                        dur="1.5s"
+                                        repeatCount="indefinite"
+                                      />
+                                      <animate
+                                        attributeName="opacity"
+                                        values="1;0.6;1"
+                                        dur="1.5s"
+                                        repeatCount="indefinite"
+                                      />
+                                    </circle>
+                                    <text
+                                      x={(300 - tier.width) / 2 - 10}
+                                      y={130 - i * 26 + 2}
+                                      textAnchor="middle"
+                                      fontSize="5"
+                                      fontWeight="700"
+                                      fill="#fff"
+                                    >
+                                      ●
+                                    </text>
+                                  </>
+                                )}
+                              </g>
+                            );
+                          })}
+                          {/* Legend */}
+                          {progress.currentLevel > 0 && (
+                            <g>
+                              <circle cx="12" cy="155" r="4" fill="#f97316">
+                                <animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite" />
+                              </circle>
+                              <text x="20" y="158" fontSize="7" fill="#64748b" fontWeight="600">
+                                Your child is here
                               </text>
                             </g>
-                          ))}
+                          )}
                         </svg>
                       </motion.div>
 
@@ -1056,6 +1991,7 @@ function PathwayExplorerSection() {
                           <PathwayLevelCard
                             level={lv}
                             isActive={i === activeIdx}
+                            isCurrentLevel={progress.currentLevel === lv.level}
                             onClick={() => {
                               if (typeof window !== "undefined" && window.innerWidth < 1024) {
                                 setActiveIdx(activeIdx === i ? -1 : i);
@@ -1376,17 +2312,30 @@ function PathwayExplorerSection() {
                     )}
                   </motion.div>
                 )}
+
+                {/* P3: Compare Tab */}
+                {result && activeTab === "compare" && (
+                  <ComparePanel
+                    primaryPathway={result.pathway}
+                    allSports={allSports}
+                  />
+                )}
+
+                {/* P4: Budget Tab */}
+                {result && activeTab === "budget" && (
+                  <BudgetCalculator pathway={result.pathway} />
+                )}
               </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
-        
+
         {modalData && (
-          <PathwayConciergeModal 
-            isOpen={!!modalData} 
-            onClose={() => setModalData(null)} 
-            item={modalData.item} 
-            type={modalData.type} 
+          <PathwayConciergeModal
+            isOpen={!!modalData}
+            onClose={() => setModalData(null)}
+            item={modalData.item}
+            type={modalData.type}
           />
         )}
       </div>
