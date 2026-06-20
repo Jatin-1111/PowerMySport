@@ -80,6 +80,10 @@ export interface SportPathwayDocument extends Document {
   isVerified: boolean;
   /** Number of times this pathway has been looked up */
   lookupCount: number;
+  /** Timestamp of last Gemini-powered refresh (distinct from updatedAt which fires on lookupCount increments) */
+  lastRefreshedAt?: Date;
+  /** Whether a background refresh is currently in-progress (prevents duplicate refresh jobs) */
+  refreshInProgress?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -182,6 +186,8 @@ const sportPathwaySchema = new Schema<SportPathwayDocument>(
     careers: { type: [careerSchema], default: [] },
     isVerified: { type: Boolean, default: false },
     lookupCount: { type: Number, default: 1 },
+    lastRefreshedAt: { type: Date, default: null },
+    refreshInProgress: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

@@ -20,7 +20,7 @@ type CanonicalAttachResult = {
   warnings: string[];
 };
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toSlug(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, "-");
@@ -30,6 +30,26 @@ function normalizeCity(city?: string): string {
   if (!city) return "";
   return city.trim().toLowerCase().replace(/\s+/g, "-");
 }
+
+/** Top Indian sports to pre-warm at startup so the first user always gets an instant response */
+const POPULAR_SPORTS = [
+  "Cricket",
+  "Badminton",
+  "Football",
+  "Kabaddi",
+  "Hockey",
+  "Tennis",
+  "Athletics",
+  "Wrestling",
+  "Shooting",
+  "Swimming",
+];
+
+/** Days before a pathway is considered stale and eligible for background refresh */
+const DEFAULT_STALE_DAYS = parseInt(
+  process.env.PATHWAY_STALE_DAYS || "30",
+  10,
+);
 
 // ─── Prompt ───────────────────────────────────────────────────────────────────
 
@@ -139,6 +159,10 @@ Do NOT include "tournaments", "scholarships", or "universities" arrays in your r
 
 export class PathwayService {
   private genAI: GoogleGenAI | null = null;
+
+  /** Set of cacheKeys currently being refreshed — prevents duplicate Gemini calls */
+  private refreshInProgressSet = new Set<string>();
+
   constructor() {
     const apiKey =
       process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
@@ -150,6 +174,10 @@ export class PathwayService {
 
   /**
    * Main entry point: get pathway from DB or generate + cache it.
+   * Tournaments/scholarships/universities are loaded from the canonical
+   * collections (not Gemini) via attachCanonicalEntities().
+   * If the cached pathway is stale, a background refresh is triggered
+   * (serve-stale-while-revalidating pattern).
    */
   async getOrGeneratePathway(
     sportName: string,
@@ -158,6 +186,7 @@ export class PathwayService {
   ): Promise<{
     pathway: SportPathwayDocument | null;
     source: "db" | "generated" | "not_a_sport";
+    isStale?: boolean;
     message?: string;
     warnings?: string[];
   }> {
@@ -181,6 +210,22 @@ export class PathwayService {
     if (existing) {
       log.info(`[PathwayService] Cache hit for ${cacheKey}`);
       SportPathway.updateOne({ cacheKey }, { $inc: { lookupCount: 1 } }).exec();
+
+      // ── Stale-while-revalidate: return cached, refresh in background ───
+      const isStale = this.isPathwayStale(existing);
+      if (isStale && !this.refreshInProgressSet.has(cacheKey)) {
+        log.info(
+          `[PathwayService] Pathway ${cacheKey} is stale — triggering background refresh`,
+        );
+        this.refreshPathway(cacheKey).catch((err) =>
+          log.error(
+            `[PathwayService] Background refresh failed for ${cacheKey}:`,
+            err,
+          ),
+        );
+      }
+
+      // Attach live canonical data (tournaments/scholarships/universities)
       const enriched = await this.attachCanonicalEntities(
         existing,
         slug,
@@ -189,11 +234,12 @@ export class PathwayService {
       return {
         pathway: enriched.pathway,
         source: "db",
+        isStale,
         warnings: enriched.warnings,
       };
     }
 
-    // ── 3. Validate unknown sports via Gemini ──────────────────────────────
+    // ── 4. Validate unknown sports via Gemini ──────────────────────────────
     if (!knownSport) {
       log.info(
         `[PathwayService] Validating unknown sport ${finalSportName} via Gemini...`,
@@ -209,7 +255,7 @@ export class PathwayService {
       }
     }
 
-    // ── 4. Generate pathway with Gemini ────────────────────────────────────
+    // ── 5. Generate pathway with Gemini (levels, equipment, careers only) ──
     const generated = await this.generatePathway(
       finalSportName,
       childAge,
@@ -223,7 +269,7 @@ export class PathwayService {
       };
     }
 
-    // ── 5. Store in DB ─────────────────────────────────────────────────────
+    // ── 6. Store in DB ─────────────────────────────────────────────────────
     if (knownSport) {
       generated.sportName = knownSport.name;
       if (knownSport.category && knownSport.category !== "Other") {
@@ -232,6 +278,8 @@ export class PathwayService {
     }
 
     const saved = await this.savePathway(slug, cacheKey, generated);
+
+    // Attach canonical entities for the freshly generated pathway
     const enriched = await this.attachCanonicalEntities(
       saved,
       slug,
@@ -258,12 +306,224 @@ export class PathwayService {
   }
 
   /**
+   * Force-refresh the Gemini-generated skeleton of a pathway (levels/equipment/careers).
+   * Tournaments/scholarships/universities continue to be served from canonical collections.
+   * Safe to call fire-and-forget — duplicate calls for the same cacheKey are no-ops.
+   */
+  async refreshPathway(
+    cacheKey: string,
+  ): Promise<SportPathwayDocument | null> {
+    if (this.refreshInProgressSet.has(cacheKey)) {
+      log.info(
+        `[PathwayService] Refresh already in-progress for ${cacheKey}, skipping.`,
+      );
+      return null;
+    }
+
+    this.refreshInProgressSet.add(cacheKey);
+    log.info(`[PathwayService] 🔄 Refreshing pathway: ${cacheKey}`);
+
+    try {
+      // Mark in DB for multi-instance safety
+      await SportPathway.updateOne(
+        { cacheKey },
+        { $set: { refreshInProgress: true } },
+      );
+
+      // Parse slug / age / city back from cacheKey e.g. "cricket_12_ludhiana"
+      const parts = cacheKey.split("_");
+      const sportSlug: string = parts[0] ?? cacheKey;
+      const rawAge = parts[1];
+      const rawCity = parts.slice(2).join("-");
+      const childAge =
+        rawAge && rawAge !== "any" ? parseInt(rawAge, 10) : undefined;
+      const childCity = rawCity && rawCity !== "" ? rawCity : undefined;
+
+      // Prefer sportName from existing doc
+      const existingDoc = await SportPathway.findOne({ cacheKey })
+        .select("sportName")
+        .lean();
+      const sportName: string = String((existingDoc as any)?.sportName || sportSlug);
+
+      const generated = await this.generatePathway(sportName, childAge, childCity);
+
+      if (!generated) {
+        log.warn(
+          `[PathwayService] Refresh generation returned null for ${cacheKey}`,
+        );
+        await SportPathway.updateOne(
+          { cacheKey },
+          { $set: { refreshInProgress: false } },
+        );
+        return null;
+      }
+
+      const refreshed = await SportPathway.findOneAndUpdate(
+        { cacheKey },
+        {
+          $set: {
+            ...generated,
+            // Ensure canonical fields are never overwritten by Gemini output
+            tournaments: [],
+            scholarships: [],
+            universities: [],
+            sportSlug,
+            cacheKey,
+            lastRefreshedAt: new Date(),
+            refreshInProgress: false,
+          },
+        },
+        { upsert: true, new: true },
+      );
+
+      log.info(`[PathwayService] ✅ Pathway refreshed: ${cacheKey}`);
+
+      // Also trigger a scraper refresh for the canonical data
+      try {
+        await realDataScraperService.scrapeSport({ sportSlug, sportName: String(sportName) });
+      } catch (scraperErr) {
+        log.warn(
+          `[PathwayService] Scraper refresh after pathway refresh failed for ${sportSlug}:`,
+          scraperErr,
+        );
+      }
+
+      return refreshed as SportPathwayDocument;
+    } catch (err) {
+      log.error(`[PathwayService] ❌ Refresh error for ${cacheKey}:`, err);
+      await SportPathway.updateOne(
+        { cacheKey },
+        { $set: { refreshInProgress: false } },
+      ).catch(() => {});
+      return null;
+    } finally {
+      this.refreshInProgressSet.delete(cacheKey);
+    }
+  }
+
+  /**
+   * Returns cacheKeys of pathways that haven't been refreshed within thresholdDays.
+   * Capped at 50 results per call to avoid hammering Gemini in a single run.
+   */
+  async getStalePathways(
+    thresholdDays: number = DEFAULT_STALE_DAYS,
+  ): Promise<string[]> {
+    const cutoff = new Date(
+      Date.now() - thresholdDays * 24 * 60 * 60 * 1000,
+    );
+
+    const staleDocs = await SportPathway.find({
+      $or: [
+        { lastRefreshedAt: { $exists: false } },
+        { lastRefreshedAt: null },
+        { lastRefreshedAt: { $lt: cutoff } },
+      ],
+      refreshInProgress: { $ne: true },
+    })
+      .select("cacheKey")
+      .sort({ lastRefreshedAt: 1 }) // oldest first
+      .limit(50)
+      .lean();
+
+    return staleDocs.map((doc: any) => doc.cacheKey as string).filter(Boolean);
+  }
+
+  /**
+   * Pre-warm pathways for the top popular Indian sports.
+   * Only generates if a generic (age=any, city=any) pathway doesn't already exist.
+   * Called once at server startup with a delay.
+   */
+  async preWarmPopularSports(): Promise<void> {
+    log.info("[PathwayService] 🔥 Pre-warming popular sports...");
+
+    for (const sportName of POPULAR_SPORTS) {
+      try {
+        const slug = toSlug(sportName);
+        const cacheKey = `${slug}_any_`;
+
+        const exists = await SportPathway.findOne({ cacheKey })
+          .select("_id")
+          .lean();
+
+        if (exists) {
+          log.info(
+            `[PathwayService] Pre-warm skipped (cached): ${cacheKey}`,
+          );
+          continue;
+        }
+
+        log.info(`[PathwayService] Pre-warming: ${sportName}`);
+        const generated = await this.generatePathway(sportName);
+        if (generated) {
+          await this.savePathway(slug, cacheKey, generated);
+          // Also kick off a canonical data scrape for freshly pre-warmed sports
+          realDataScraperService
+            .scrapeSport({ sportSlug: slug, sportName })
+            .catch((err) =>
+              log.warn(`[PathwayService] Pre-warm scrape failed for ${sportName}:`, err),
+            );
+          log.info(`[PathwayService] ✅ Pre-warmed: ${sportName}`);
+        }
+
+        // Stagger to respect Gemini rate limits
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } catch (err) {
+        log.warn(`[PathwayService] Pre-warm failed for ${sportName}:`, err);
+      }
+    }
+
+    log.info("[PathwayService] ✅ Pre-warming complete.");
+  }
+
+  /**
+   * Returns basic stats about the pathway collection for admin dashboards.
+   */
+  async getStats(): Promise<{
+    total: number;
+    verified: number;
+    stale: number;
+    topSports: Array<{ sportName: string; lookupCount: number }>;
+  }> {
+    const cutoff = new Date(
+      Date.now() - DEFAULT_STALE_DAYS * 24 * 60 * 60 * 1000,
+    );
+
+    const [total, verified, stale, topSports] = await Promise.all([
+      SportPathway.countDocuments(),
+      SportPathway.countDocuments({ isVerified: true }),
+      SportPathway.countDocuments({
+        $or: [
+          { lastRefreshedAt: { $exists: false } },
+          { lastRefreshedAt: null },
+          { lastRefreshedAt: { $lt: cutoff } },
+        ],
+      }),
+      SportPathway.find()
+        .sort({ lookupCount: -1 })
+        .limit(10)
+        .select("sportName lookupCount")
+        .lean(),
+    ]);
+
+    return {
+      total,
+      verified,
+      stale,
+      topSports: (topSports as any[]).map((d) => ({
+        sportName: d.sportName,
+        lookupCount: d.lookupCount,
+      })),
+    };
+  }
+
+  // ── Private helpers ────────────────────────────────────────────────────────
+
+  /**
    * Overlays live data from the canonical Tournament/Scholarship/University
    * collections onto a pathway response. This is intentionally NOT persisted
    * back onto the SportPathway document — it's resolved fresh on every read,
    * so re-running the scraper updates what parents see immediately, without
-   * needing to delete/regenerate the pathway (which is what caused the
-   * inconsistent counts before).
+   * needing to delete/regenerate the pathway.
    */
   private async attachCanonicalEntities(
     pathway: SportPathwayDocument,
@@ -284,13 +544,10 @@ export class PathwayService {
       scholarships.length === 0 ||
       universities.length === 0;
 
-    if (needsRefresh) {
+    if (needsRefresh && sportName && allowScrapeFallback) {
       warnings.push(
         `Some live data was missing for ${sportSlug}; using scraper fallback to refresh it.`,
       );
-    }
-
-    if (needsRefresh && sportName && allowScrapeFallback) {
       try {
         log.info(
           `[PathwayService] Missing canonical data for ${sportSlug}; running scraper fallback.`,
@@ -304,10 +561,10 @@ export class PathwayService {
           pathway,
           sportSlug,
           sportName,
-          false,
+          false, // prevent infinite recursion
         );
       } catch (error) {
-        console.error(
+        log.error(
           `[PathwayService] Scraper fallback failed for ${sportSlug}:`,
           error,
         );
@@ -333,7 +590,13 @@ export class PathwayService {
     };
   }
 
-  // ── Private helpers ────────────────────────────────────────────────────────
+  private isPathwayStale(doc: SportPathwayDocument): boolean {
+    const staleCutoff = new Date(
+      Date.now() - DEFAULT_STALE_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const referenceDate = (doc as any).lastRefreshedAt ?? doc.createdAt;
+    return referenceDate < staleCutoff;
+  }
 
   private async validateSport(sportName: string): Promise<boolean> {
     const prompt = `Is "${sportName}" a real sport or athletic activity? Reply with only "yes" or "no".`;
@@ -341,20 +604,20 @@ export class PathwayService {
     if (this.genAI) {
       try {
         const result = await this.genAI.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-2.5-flash-lite",
           contents: prompt,
         });
         const answer = (result.text ?? "").trim().toLowerCase();
         return answer.startsWith("yes");
       } catch (err) {
-        console.warn(
+        log.warn(
           "[PathwayService] Gemini validation failed, falling back.",
           err,
         );
       }
     }
 
-    return true; // Fail open — generate anyway if API fails
+    return true; // Fail open — generate anyway if API unavailable
   }
 
   private async generatePathway(
@@ -391,10 +654,9 @@ export class PathwayService {
 
     const modelCandidates = [
       process.env.GEMINI_MODEL_NAME,
-      "gemini-3.5-flash",
       "gemini-2.5-flash",
       "gemini-2.5-flash-lite",
-      "gemini-3.1-flash-lite",
+      "gemini-2.0-flash",
     ].filter(Boolean) as string[];
 
     for (const modelName of modelCandidates) {
@@ -425,15 +687,19 @@ export class PathwayService {
         ) {
           return parsed;
         }
+
+        log.warn(
+          `[PathwayService] Model ${modelName} returned incomplete data — trying next.`,
+        );
       } catch (error) {
-        console.error(`[PathwayService] Error with model ${modelName}:`, error);
-        // Try next model if available
+        log.error(
+          `[PathwayService] Error with model ${modelName}:`,
+          error,
+        );
       }
     }
 
-    console.error(
-      `[PathwayService] All Gemini models failed to generate pathway.`,
-    );
+    log.error("[PathwayService] All Gemini models failed to generate pathway.");
     return null;
   }
 
@@ -468,14 +734,15 @@ export class PathwayService {
       levels: data.levels,
       // Tournaments/scholarships/universities are NEVER written here — they
       // live exclusively in the canonical collections and get attached at
-      // read time via attachCanonicalEntities(). Storing [] keeps the schema
-      // field harmless if anything reads it directly.
+      // read time via attachCanonicalEntities().
       tournaments: [],
       scholarships: [],
       universities: [],
       equipment: data.equipment || [],
       careers: data.careers || [],
       isVerified: false,
+      lastRefreshedAt: new Date(),
+      refreshInProgress: false,
     };
 
     const saved = await SportPathway.findOneAndUpdate(

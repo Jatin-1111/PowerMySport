@@ -10,6 +10,7 @@ import {
 import { cleanupExpiredCodes } from "../shared/services/EmailVerificationService";
 import { cleanupExpiredCoachSubscriptions } from "../client/services/CoachSubscriptionService";
 import { processWaitlistNotifications } from "../shop/services/shopScheduledJobs";
+import { pathwayService } from "../shared/services/PathwayService";
 
 /**
  * Auto-release payments 24 hours after session completion
@@ -21,10 +22,6 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // Find all COMPLETED bookings where:
-    // 1. Session status is COMPLETED (session happened)
-    // 2. Payment is still PENDING (not yet released)
-    // 3. Booking was updated 24+ hours ago
     const completedBookings = await Booking.find({
       status: "COMPLETED",
       updatedAt: { $lte: twentyFourHoursAgo },
@@ -34,7 +31,6 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
     let releasedCount = 0;
 
     for (const booking of completedBookings) {
-      // Update all pending payments to PAID with paidAt timestamp
       booking.payments = booking.payments.map((payment: any) => {
         if (payment.status === "PENDING") {
           payment.status = "PAID";
@@ -60,7 +56,6 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
 /**
  * Poll pending refunds and update their status
  * REQUIREMENT 4: Track refund progress via PhonePe polling
- * Runs periodically to check refund completion status
  */
 export const pollPendingRefunds = async (): Promise<void> => {
   try {
@@ -79,36 +74,63 @@ export const pollPendingRefunds = async (): Promise<void> => {
 };
 
 /**
- * Run all cleanup tasks
- * Should be scheduled to run every 15-30 minutes
+ * Refresh stale sport pathways via Gemini scraper.
+ * Finds pathways that haven't been refreshed in PATHWAY_STALE_DAYS (default: 30)
+ * and regenerates them sequentially to respect Gemini rate limits.
+ */
+export const refreshStalePathways = async (): Promise<void> => {
+  try {
+    console.log("[PathwayScheduler] 🔍 Checking for stale pathways...");
+    const staleCacheKeys = await pathwayService.getStalePathways();
+
+    if (staleCacheKeys.length === 0) {
+      console.log("[PathwayScheduler] ✅ No stale pathways found.");
+      return;
+    }
+
+    console.log(
+      `[PathwayScheduler] 🔄 Refreshing ${staleCacheKeys.length} stale pathway(s)...`,
+    );
+
+    let refreshed = 0;
+    for (const cacheKey of staleCacheKeys) {
+      const result = await pathwayService.refreshPathway(cacheKey);
+      if (result) refreshed++;
+      // 2-second stagger to respect Gemini API rate limits
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    console.log(
+      `[PathwayScheduler] ✅ Stale refresh complete: ${refreshed}/${staleCacheKeys.length} refreshed.`,
+    );
+  } catch (error) {
+    console.error("❌ Error refreshing stale pathways:", error);
+  }
+};
+
+/**
+ * Run all cleanup tasks.
+ * Scheduled to run every 15–60 minutes depending on environment.
  */
 export const runScheduledCleanup = async (): Promise<void> => {
   console.log("🔄 Starting scheduled cleanup tasks...");
 
   try {
-    // Poll refunds (every cleanup cycle)
     await pollPendingRefunds();
-
-    // Release payments for completed bookings (24+ hours old)
     await releaseCompletedBookingPayments();
 
-    // Cleanup expired bookings (not paid within 2 hours)
     const expiredBookingsCount = await cleanupExpiredBookings();
     console.log(`✅ Cancelled ${expiredBookingsCount} expired booking(s)`);
 
-    // Cleanup stale booking locks (past dates)
     const staleLocks = await cleanupStaleBookingLocks();
     console.log(`✅ Cleaned up ${staleLocks} stale booking lock(s)`);
 
-    // Cleanup expired email verification codes and rate limits
     await cleanupExpiredCodes();
     console.log(`✅ Cleaned up expired email verification codes`);
 
-    // Cleanup expired coach subscriptions
     const expiredSubscriptions = await cleanupExpiredCoachSubscriptions();
     console.log(`✅ Expired ${expiredSubscriptions} coach subscription(s)`);
 
-    // Process Shop Waitlist Notifications
     await processWaitlistNotifications();
 
     console.log("✅ Scheduled cleanup completed successfully");
@@ -119,12 +141,13 @@ export const runScheduledCleanup = async (): Promise<void> => {
 };
 
 /**
- * Initialize scheduled jobs
- * Call this once when server starts
+ * Initialize scheduled jobs.
+ * Call this once when the server starts.
  */
 export const initializeScheduledJobs = (): void => {
-  console.log("⏰ Initializing scheduled cleanup jobs...");
+  console.log("⏰ Initializing scheduled jobs...");
 
+  // ── General cleanup ──────────────────────────────────────────────────────
   const defaultCleanupIntervalMinutes =
     process.env.NODE_ENV === "production" ? 60 : 15;
   const configuredCleanupIntervalMinutes = parseInt(
@@ -144,17 +167,51 @@ export const initializeScheduledJobs = (): void => {
   }, CLEANUP_INTERVAL);
   cleanupIntervalHandle.unref();
 
-  // Run initial cleanup on startup
-  const initialCleanupTimeoutHandle = setTimeout(async () => {
+  // Initial cleanup run 5 seconds after startup
+  const initialCleanupHandle = setTimeout(async () => {
     try {
       await runScheduledCleanup();
     } catch (error) {
       console.error("❌ Initial cleanup failed:", error);
     }
-  }, 5000); // 5 seconds after startup
-  initialCleanupTimeoutHandle.unref();
+  }, 5_000);
+  initialCleanupHandle.unref();
 
   console.log(
-    `⏰ Cleanup jobs scheduled to run every ${CLEANUP_INTERVAL / 60000} minutes`,
+    `⏰ Cleanup jobs scheduled every ${CLEANUP_INTERVAL / 60_000} minutes`,
+  );
+
+  // ── Pathway pre-warm (once at startup) ───────────────────────────────────
+  // Runs 15s after startup so the DB connection is ready.
+  // Only generates pathways for sports that don't have a cached entry yet.
+  const preWarmHandle = setTimeout(async () => {
+    try {
+      await pathwayService.preWarmPopularSports();
+    } catch (error) {
+      console.error("❌ Pathway pre-warm failed:", error);
+    }
+  }, 15_000);
+  preWarmHandle.unref();
+
+  // ── Pathway stale-refresh (periodic) ─────────────────────────────────────
+  // Configurable via PATHWAY_REFRESH_INTERVAL_HOURS (default: 24h).
+  const pathwayRefreshIntervalHours = parseInt(
+    process.env.PATHWAY_REFRESH_INTERVAL_HOURS || "24",
+    10,
+  );
+  const PATHWAY_REFRESH_INTERVAL =
+    Math.max(1, pathwayRefreshIntervalHours) * 60 * 60 * 1000;
+
+  const pathwayRefreshHandle = setInterval(async () => {
+    try {
+      await refreshStalePathways();
+    } catch (error) {
+      console.error("❌ Pathway stale refresh job failed:", error);
+    }
+  }, PATHWAY_REFRESH_INTERVAL);
+  pathwayRefreshHandle.unref();
+
+  console.log(
+    `⏰ Pathway scraper: pre-warm at startup + stale refresh every ${pathwayRefreshIntervalHours}h`,
   );
 };

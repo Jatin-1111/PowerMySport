@@ -19,6 +19,10 @@ export interface Tournament {
   level: string;
   description: string;
   ageGroup: string;
+  prerequisiteId?: string;
+  prerequisiteName?: string;
+  prerequisiteGuide?: string[];
+  documentChecklist?: string[];
 }
 
 export interface Scholarship {
@@ -26,6 +30,10 @@ export interface Scholarship {
   provider: string;
   description: string;
   eligibility: string;
+  prerequisiteId?: string;
+  prerequisiteName?: string;
+  prerequisiteGuide?: string[];
+  documentChecklist?: string[];
 }
 
 export interface University {
@@ -33,6 +41,10 @@ export interface University {
   location: string;
   admissionCriteria: string;
   sportsQuotaDetails: string;
+  prerequisiteId?: string;
+  prerequisiteName?: string;
+  prerequisiteGuide?: string[];
+  documentChecklist?: string[];
 }
 
 export interface Equipment {
@@ -61,6 +73,7 @@ export interface SportPathway {
   careers: Career[];
   isVerified: boolean;
   lookupCount: number;
+  lastRefreshedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -69,6 +82,7 @@ interface ApiResponse<T> {
   success: boolean;
   message?: string;
   source?: "db" | "generated";
+  isStale?: boolean;
   data?: T;
 }
 
@@ -78,12 +92,14 @@ export const pathwayApi = {
   /**
    * Fetch (or generate) a pathway for a sport name.
    * Returns null when the input is not a valid sport.
+   * If the cached pathway is stale, the server refreshes it in the background
+   * and returns the cached version immediately (serve-stale-while-revalidating).
    */
   getPathway: async (
     sportName: string,
     childAge?: number,
     childCity?: string,
-  ): Promise<{ pathway: SportPathway; source: "db" | "generated" } | null> => {
+  ): Promise<{ pathway: SportPathway; source: "db" | "generated"; isStale?: boolean } | null> => {
     try {
       const params = new URLSearchParams({ sport: sportName });
       if (childAge) params.append("age", String(childAge));
@@ -95,6 +111,7 @@ export const pathwayApi = {
         return {
           pathway: resp.data.data,
           source: resp.data.source ?? "db",
+          isStale: resp.data.isStale,
         };
       }
       return null;
@@ -117,6 +134,36 @@ export const pathwayApi = {
       return resp.data.data ?? [];
     } catch {
       return [];
+    }
+  },
+
+  /**
+   * Admin: manually trigger refresh of a specific pathway cache key.
+   */
+  refreshPathway: async (cacheKey: string): Promise<SportPathway | null> => {
+    try {
+      const resp = await axiosInstance.post<ApiResponse<SportPathway>>(
+        `/pathways/refresh`,
+        { cacheKey },
+      );
+      return resp.data.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Admin: trigger a background refresh of all stale pathways.
+   * Returns the number of pathways refreshed.
+   */
+  refreshStale: async (): Promise<{ refreshed: number }> => {
+    try {
+      const resp = await axiosInstance.post<{ success: boolean; refreshed: number }>(
+        `/pathways/refresh-stale`,
+      );
+      return { refreshed: resp.data.refreshed ?? 0 };
+    } catch {
+      return { refreshed: 0 };
     }
   },
 };

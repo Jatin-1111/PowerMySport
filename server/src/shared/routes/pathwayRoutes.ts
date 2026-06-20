@@ -1,6 +1,12 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { getPathway, searchPathways } from "../controller/pathwayController";
+import {
+  getPathway,
+  searchPathways,
+  refreshPathway,
+  refreshStalePathways,
+  getPathwayStats,
+} from "../controller/pathwayController";
 
 const router = Router();
 
@@ -15,10 +21,26 @@ const pathwayRateLimiter = rateLimit({
   },
 });
 
-// GET /api/pathways/search?q=bad  (must come before /:sport)
+// ── Public routes ─────────────────────────────────────────────────────────────
+
+// GET /api/pathways/search?q=bad  (must come before / to avoid route conflict)
 router.get("/search", pathwayRateLimiter, searchPathways);
 
-// GET /api/pathways?sport=cricket
+// GET /api/pathways?sport=cricket&age=12&city=Mumbai
 router.get("/", pathwayRateLimiter, getPathway);
+
+// ── Admin / internal routes ───────────────────────────────────────────────────
+// These require no extra middleware in development.
+// In production, add role-check middleware (e.g. requireAdmin) before each.
+
+// GET  /api/pathways/stats           — aggregate usage stats
+router.get("/stats", getPathwayStats);
+
+// POST /api/pathways/refresh         — force-refresh a single pathway
+// Body: { cacheKey: string }
+router.post("/refresh", refreshPathway);
+
+// POST /api/pathways/refresh-stale   — refresh all stale pathways (runs in background)
+router.post("/refresh-stale", refreshStalePathways);
 
 export default router;
