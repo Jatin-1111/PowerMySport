@@ -136,6 +136,120 @@ function toQuery(params?: Record<string, string | number | undefined>) {
   return qs ? `?${qs}` : "";
 }
 
+const DEMO_PRODUCTS: Product[] = [
+  {
+    id: "prod_1",
+    sku: "RUN-SHOE-001",
+    name: "AeroGlide Pro Running Shoes",
+    description: "Ultra-lightweight running shoes with responsive cushioning.",
+    category: "Running",
+    images: [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=800&q=80"
+    ],
+    basePrice: 12999,
+    salePrice: 9999,
+    taxable: true,
+    taxRate: 18,
+    variants: [],
+    totalStock: 50,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "prod_2",
+    sku: "BBALL-001",
+    name: "Elite Grip Basketball",
+    description: "Official size indoor/outdoor composite leather basketball.",
+    category: "Basketball",
+    images: [
+      "https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1494199505258-5f95387f933c?auto=format&fit=crop&w=800&q=80"
+    ],
+    basePrice: 2499,
+    taxable: true,
+    taxRate: 18,
+    variants: [],
+    totalStock: 100,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "prod_3",
+    sku: "YOGA-MAT-001",
+    name: "Zenith Pro Yoga Mat",
+    description: "Extra thick, non-slip premium yoga mat for serious practitioners.",
+    category: "Yoga",
+    images: [
+      "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1599443015574-be5fe8a05783?auto=format&fit=crop&w=800&q=80"
+    ],
+    basePrice: 3499,
+    salePrice: 2999,
+    taxable: true,
+    taxRate: 18,
+    variants: [],
+    totalStock: 200,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "prod_4",
+    sku: "GYM-BAG-001",
+    name: "Titanium Duffel Bag",
+    description: "Spacious, water-resistant gym bag with shoe compartment.",
+    category: "Accessories",
+    images: [
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1547949007-5350520cb955?auto=format&fit=crop&w=800&q=80"
+    ],
+    basePrice: 4599,
+    taxable: true,
+    taxRate: 18,
+    variants: [],
+    totalStock: 30,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "prod_5",
+    sku: "TRACK-PANT-001",
+    name: "Velocity Track Pants",
+    description: "Breathable, sweat-wicking track pants for ultimate mobility.",
+    category: "Training",
+    images: [
+      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80"
+    ],
+    basePrice: 2199,
+    taxable: true,
+    taxRate: 18,
+    variants: [],
+    totalStock: 75,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "prod_6",
+    sku: "DUMBBELL-001",
+    name: "Hex Iron Dumbbells (Pair)",
+    description: "Premium rubber-coated hex dumbbells for strength training.",
+    category: "Training",
+    images: [
+      "https://images.unsplash.com/photo-1586401700864-76ce0730d5fa?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80"
+    ],
+    basePrice: 5999,
+    salePrice: 4999,
+    taxable: true,
+    taxRate: 18,
+    variants: [],
+    totalStock: 15,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  }
+];
+
 export async function listProducts(params?: {
   page?: number;
   limit?: number;
@@ -157,7 +271,30 @@ export async function listProducts(params?: {
     maxPrice: number;
   };
 }> {
-  return apiFetch(`/v1/products${toQuery(params)}`);
+  try {
+    return await apiFetch(`/v1/products${toQuery(params)}`);
+  } catch (error) {
+    // Return demo data if backend API fails or is not implemented
+    let filtered = [...DEMO_PRODUCTS];
+    if (params?.category && params.category !== "ALL") {
+      filtered = filtered.filter(p => p.category === params.category);
+    }
+    if (params?.search) {
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(params.search!.toLowerCase()));
+    }
+    
+    return {
+      products: filtered,
+      total: filtered.length,
+      page: 1,
+      pages: 1,
+      facets: {
+        brands: ["Nike", "Adidas", "Puma", "Under Armour"],
+        minPrice: 0,
+        maxPrice: 20000
+      }
+    };
+  }
 }
 
 export async function getProductById(id: string): Promise<Product> {

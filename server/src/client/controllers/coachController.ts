@@ -1314,6 +1314,19 @@ export const getCoachVerificationUploadUrlHandler = async (
       return;
     }
 
+    const allowedDocumentTypes = ["application/pdf", "image/jpeg", "image/png"];
+    const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    const allowedTypes =
+      purpose === "VENUE_IMAGE" ? allowedImageTypes : allowedDocumentTypes;
+    if (!allowedTypes.includes(contentType)) {
+      res.status(400).json({
+        success: false,
+        message: `Invalid content type. Allowed: ${allowedTypes.join(", ")}`,
+      });
+      return;
+    }
+
     const coach = await getCoachByUserId(req.user.id);
     if (!coach) {
       res.status(404).json({

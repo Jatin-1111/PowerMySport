@@ -84,6 +84,9 @@ export interface IUserPayload {
   email: string;
   role: UserRole | AdminRole;
   userType?: string;
+  jti?: string;
+  exp?: number;
+  iat?: number;
 }
 
 // ============================================

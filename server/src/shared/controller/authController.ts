@@ -15,7 +15,7 @@ import {
   updateProfile,
   getPlayersByUserId,
 } from "../services/AuthService";
-import { generateToken } from "../../utils/jwt";
+import { generateToken, revokeToken } from "../../utils/jwt";
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
 
@@ -26,7 +26,9 @@ const authCookieOptions = {
   path: "/",
   // Only set domain in production to allow cross-subdomain auth (e.g. .powermysport.com)
   // In development, omit it so localhost handles it gracefully across ports
-  ...(authCookieDomain && process.env.NODE_ENV === "production" ? { domain: authCookieDomain } : {}),
+  ...(authCookieDomain && process.env.NODE_ENV === "production"
+    ? { domain: authCookieDomain }
+    : {}),
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
@@ -104,6 +106,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const logout = async (req: Request, res: Response): Promise<void> => {
+  const token =
+    req.cookies?.token || req.headers.authorization?.slice(7).trim();
+  if (token) {
+    await revokeToken(token);
+  }
+
   res.clearCookie("token", authCookieOptions);
   res.status(200).json({
     success: true,
@@ -157,13 +165,15 @@ export const getProfile = async (
       }));
 
     const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
-    const playerProfile = selfPlayer ? {
-      sports: selfPlayer.sportsFocus || [],
-      personalityTags: selfPlayer.personalityTags,
-      primaryObjective: selfPlayer.primaryObjective,
-      weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
-      budgetTier: selfPlayer.budgetTier,
-    } : undefined;
+    const playerProfile = selfPlayer
+      ? {
+          sports: selfPlayer.sportsFocus || [],
+          personalityTags: selfPlayer.personalityTags,
+          primaryObjective: selfPlayer.primaryObjective,
+          weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
+          budgetTier: selfPlayer.budgetTier,
+        }
+      : undefined;
 
     res.status(200).json({
       success: true,
@@ -485,7 +495,8 @@ export const getMyPlayersHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch players",
+      message:
+        error instanceof Error ? error.message : "Failed to fetch players",
     });
   }
 };
@@ -606,6 +617,15 @@ export const getProfilePictureUploadUrlHandler = async (
       res.status(400).json({
         success: false,
         message: "fileName and contentType are required",
+      });
+      return;
+    }
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(contentType)) {
+      res.status(400).json({
+        success: false,
+        message: `Invalid content type. Allowed: ${allowedTypes.join(", ")}`,
       });
       return;
     }

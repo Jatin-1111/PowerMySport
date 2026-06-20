@@ -279,6 +279,8 @@ const listReviewsByTarget = async (
     const query = {
       targetType,
       targetId: targetObjectId,
+      isHidden: { $ne: true },
+      moderationStatus: { $ne: "REMOVED" },
     };
 
     const [reviews, total] = await Promise.all([

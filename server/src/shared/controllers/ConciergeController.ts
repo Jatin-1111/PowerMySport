@@ -1,10 +1,22 @@
 import { Request, Response } from "express";
+import path from "path";
 import { s3Service } from "../services/S3Service";
 import { ConciergeRequest } from "../models/ConciergeRequest";
 import { sendEmail } from "../../utils/email";
 import { User } from "../../client/models/User";
 
-export const getPresignedUploadUrl = async (req: Request, res: Response): Promise<void> => {
+const escHtml = (str: unknown): string =>
+  String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+
+export const getPresignedUploadUrl = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { fileName, contentType, documentType } = req.body;
     const userId = req.user?.id;
@@ -19,12 +31,44 @@ export const getPresignedUploadUrl = async (req: Request, res: Response): Promis
       return;
     }
 
-    const { uploadUrl, downloadUrl, key } = await s3Service.generateConciergeDocumentUploadUrl(
-      fileName,
-      contentType,
-      userId.toString(),
-      documentType
-    );
+    const ALLOWED_CONTENT_TYPES = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+    ];
+    if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
+      res.status(400).json({
+        error: "Invalid file type. Only PDF, JPG, and PNG are allowed.",
+      });
+      return;
+    }
+
+    const ALLOWED_DOCUMENT_TYPES = [
+      "AITA_ID",
+      "BCCI_ID",
+      "BIRTH_CERTIFICATE",
+      "SCHOOL_CERTIFICATE",
+      "ID_PROOF",
+      "ADDRESS_PROOF",
+      "SPORTS_CERTIFICATE",
+      "OTHER",
+    ];
+    if (!ALLOWED_DOCUMENT_TYPES.includes(documentType)) {
+      res.status(400).json({ error: "Invalid document type." });
+      return;
+    }
+
+    const safeFileName = path
+      .basename(fileName)
+      .replace(/[^a-zA-Z0-9._\-]/g, "_");
+
+    const { uploadUrl, downloadUrl, key } =
+      await s3Service.generateConciergeDocumentUploadUrl(
+        safeFileName,
+        contentType,
+        userId.toString(),
+        documentType,
+      );
 
     res.status(200).json({ uploadUrl, downloadUrl, key });
   } catch (error) {
@@ -33,7 +77,10 @@ export const getPresignedUploadUrl = async (req: Request, res: Response): Promis
   }
 };
 
-export const submitConciergeRequest = async (req: Request, res: Response): Promise<void> => {
+export const submitConciergeRequest = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?.id;
 
@@ -54,8 +101,21 @@ export const submitConciergeRequest = async (req: Request, res: Response): Promi
       documents,
     } = req.body;
 
-    if (!sportSlug || !prerequisiteId || !prerequisiteName || !documents || !Array.isArray(documents)) {
+    if (
+      !sportSlug ||
+      !prerequisiteId ||
+      !prerequisiteName ||
+      !documents ||
+      !Array.isArray(documents)
+    ) {
       res.status(400).json({ error: "Missing required fields" });
+      return;
+    }
+
+    if (documents.length > 10) {
+      res
+        .status(400)
+        .json({ error: "Maximum 10 documents allowed per request." });
       return;
     }
 
@@ -78,23 +138,30 @@ export const submitConciergeRequest = async (req: Request, res: Response): Promi
     const user = await User.findById(userId);
 
     // Format documents list for email
-    const docsListHtml = documents.map(doc => `<li><strong>${doc.documentName}:</strong> uploaded to S3</li>`).join('');
+    const docsListHtml = documents
+      .map(
+        (doc) =>
+          `<li><strong>${escHtml(doc.documentName)}:</strong> uploaded to S3</li>`,
+      )
+      .join("");
 
     // Format item label
-    const itemLabel = itemType ? itemType.charAt(0).toUpperCase() + itemType.slice(1) : "Tournament";
+    const itemLabel = itemType
+      ? itemType.charAt(0).toUpperCase() + itemType.slice(1)
+      : "Tournament";
     const finalItemName = itemName || tournamentName;
 
     // Send email notification to admin team
     const adminEmail = process.env.EMAIL_USER || "teams@powermysport.com";
     await sendEmail({
       to: adminEmail,
-      subject: `New Concierge Request from ${user?.name || 'A User'} for ${sportSlug}`,
+      subject: `New Concierge Request from ${user?.name || "A User"} for ${sportSlug}`,
       html: `
         <h2>New Registration Request</h2>
-        <p><strong>Parent Name:</strong> ${user?.name || 'Unknown'}</p>
-        <p><strong>Sport:</strong> ${sportSlug}</p>
-        <p><strong>Requested ID:</strong> ${prerequisiteName} (${prerequisiteId})</p>
-        ${finalItemName ? `<p><strong>For ${itemLabel}:</strong> ${finalItemName}</p>` : ''}
+        <p><strong>Parent Name:</strong> ${escHtml(user?.name) || "Unknown"}</p>
+        <p><strong>Sport:</strong> ${escHtml(sportSlug)}</p>
+        <p><strong>Requested ID:</strong> ${escHtml(prerequisiteName)} (${escHtml(prerequisiteId)})</p>
+        ${finalItemName ? `<p><strong>For ${escHtml(itemLabel)}:</strong> ${escHtml(finalItemName)}</p>` : ""}
         <br />
         <h3>Documents Uploaded:</h3>
         <ul>
@@ -105,14 +172,19 @@ export const submitConciergeRequest = async (req: Request, res: Response): Promi
       `,
     });
 
-    res.status(201).json({ message: "Concierge request submitted successfully", request });
+    res
+      .status(201)
+      .json({ message: "Concierge request submitted successfully", request });
   } catch (error) {
     console.error("Error submitting concierge request:", error);
     res.status(500).json({ error: "Failed to submit request" });
   }
 };
 
-export const getUserConciergeRequests = async (req: Request, res: Response): Promise<void> => {
+export const getUserConciergeRequests = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?.id;
 
@@ -121,9 +193,31 @@ export const getUserConciergeRequests = async (req: Request, res: Response): Pro
       return;
     }
 
-    const requests = await ConciergeRequest.find({ userId }).sort({ createdAt: -1 });
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(
+      50,
+      Math.max(1, parseInt(req.query.limit as string) || 20),
+    );
+    const skip = (page - 1) * limit;
 
-    res.status(200).json({ requests });
+    const [requests, total] = await Promise.all([
+      ConciergeRequest.find({ userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      ConciergeRequest.countDocuments({ userId }),
+    ]);
+
+    res.status(200).json({
+      requests,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching concierge requests:", error);
     res.status(500).json({ error: "Failed to fetch requests" });

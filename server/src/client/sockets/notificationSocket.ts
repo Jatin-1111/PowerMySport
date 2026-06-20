@@ -5,7 +5,7 @@ import {
   markUserOnline,
   touchUserLastActive,
 } from "../../shared/services/UserPresenceService";
-import { verifyToken } from "../../utils/jwt";
+import { isTokenRevoked, verifyToken } from "../../utils/jwt";
 
 let notificationSocketIO: SocketIOServer | null = null;
 
@@ -98,7 +98,7 @@ export const getNotificationSocket = (): SocketIOServer | null => {
 // works for every logged-in user regardless of which features they use.
 // ---------------------------------------------------------------------------
 
-const getPresenceUserId = (socket: Socket): string | null => {
+const getPresenceUserId = async (socket: Socket): Promise<string | null> => {
   const authToken = (
     socket.handshake.auth?.token as string | undefined
   )?.trim();
@@ -127,6 +127,9 @@ const getPresenceUserId = (socket: Socket): string | null => {
   for (const token of candidates) {
     try {
       const payload = verifyToken(token);
+      if (await isTokenRevoked(payload.jti)) {
+        continue;
+      }
       return payload.id;
     } catch {
       // try next candidate
@@ -140,13 +143,16 @@ export const setupPresenceSocket = (io: SocketIOServer): void => {
   const presenceNs = io.of("/presence");
 
   presenceNs.use((socket, next) => {
-    const userId = getPresenceUserId(socket);
-    if (!userId) {
-      next(new Error("Unauthorized"));
-      return;
-    }
-    socket.data.userId = userId;
-    next();
+    getPresenceUserId(socket)
+      .then((userId) => {
+        if (!userId) {
+          next(new Error("Unauthorized"));
+          return;
+        }
+        socket.data.userId = userId;
+        next();
+      })
+      .catch(() => next(new Error("Unauthorized")));
   });
 
   presenceNs.on("connection", async (socket) => {

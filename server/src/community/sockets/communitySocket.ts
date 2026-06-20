@@ -5,7 +5,7 @@ import {
   markUserOnline,
   touchUserLastActive,
 } from "../../shared/services/UserPresenceService";
-import { verifyToken } from "../../utils/jwt";
+import { isTokenRevoked, verifyToken } from "../../utils/jwt";
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   if (!cookieHeader) {
@@ -24,7 +24,7 @@ const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   return null;
 };
 
-const getSocketUserId = (socket: Socket): string | null => {
+const getSocketUserId = async (socket: Socket): Promise<string | null> => {
   const authToken = (
     socket.handshake.auth?.token as string | undefined
   )?.trim();
@@ -42,6 +42,9 @@ const getSocketUserId = (socket: Socket): string | null => {
   for (const token of candidates) {
     try {
       const payload = verifyToken(token);
+      if (await isTokenRevoked(payload.jti)) {
+        continue;
+      }
       return payload.id;
     } catch {
       // Try next token source
@@ -84,7 +87,7 @@ export const setupCommunitySocket = (io: Server): void => {
   const communityNamespace = io.of("/community");
 
   communityNamespace.use(async (socket, next) => {
-    const userId = getSocketUserId(socket);
+    const userId = await getSocketUserId(socket);
     if (!userId) {
       next(new Error("Unauthorized"));
       return;
@@ -207,22 +210,20 @@ export const setupCommunitySocket = (io: Server): void => {
         );
 
         if (result.messageIds.length) {
-          communityNamespace.to(`conversation:${conversationId}`).emit(
-            "community:messagesRead",
-            {
+          communityNamespace
+            .to(`conversation:${conversationId}`)
+            .emit("community:messagesRead", {
               conversationId,
               readerId: userId,
               messageIds: result.messageIds,
-            },
-          );
+            });
 
           for (const participantId of result.participantIds) {
-            communityNamespace.to(`user:${participantId}`).emit(
-              "community:conversationUpdated",
-              {
+            communityNamespace
+              .to(`user:${participantId}`)
+              .emit("community:conversationUpdated", {
                 conversationId,
-              },
-            );
+              });
           }
         }
 
@@ -254,10 +255,13 @@ export const setupCommunitySocket = (io: Server): void => {
         const conversationId = payload?.conversationId;
         if (!conversationId) return;
 
-        communityNamespace.to(`conversation:${conversationId}`).emit(
-          "community:userTyping",
-          { conversationId, userId, isTyping: true },
-        );
+        communityNamespace
+          .to(`conversation:${conversationId}`)
+          .emit("community:userTyping", {
+            conversationId,
+            userId,
+            isTyping: true,
+          });
 
         if (typeof callback === "function") callback({ success: true });
       } catch (error) {
@@ -278,10 +282,13 @@ export const setupCommunitySocket = (io: Server): void => {
         const conversationId = payload?.conversationId;
         if (!conversationId) return;
 
-        communityNamespace.to(`conversation:${conversationId}`).emit(
-          "community:userTyping",
-          { conversationId, userId, isTyping: false },
-        );
+        communityNamespace
+          .to(`conversation:${conversationId}`)
+          .emit("community:userTyping", {
+            conversationId,
+            userId,
+            isTyping: false,
+          });
 
         if (typeof callback === "function") callback({ success: true });
       } catch (error) {
@@ -289,63 +296,65 @@ export const setupCommunitySocket = (io: Server): void => {
       }
     });
 
-    socket.on("community:markConversationAsDelivered", async (payload, callback) => {
-      try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:markConversationAsDelivered",
-          60,
-          10_000,
-        );
-        if (!allowed) {
-          const message = "Too many read requests, please slow down";
-          socket.emit("community:error", { message });
-          if (typeof callback === "function") {
-            callback({ success: false, message });
-          }
-          return;
-        }
-
-        const conversationId = String(payload?.conversationId || "");
-        if (!conversationId) {
-          const message = "conversationId is required";
-          socket.emit("community:error", { message });
-          if (typeof callback === "function") {
-            callback({ success: false, message });
-          }
-          return;
-        }
-
-        const result = await CommunityService.markConversationDelivered(
-          userId,
-          conversationId,
-        );
-
-        if (result.messageIds.length) {
-          communityNamespace.to(`conversation:${conversationId}`).emit(
-            "community:messagesDelivered",
-            {
-              conversationId,
-              readerId: userId,
-              messageIds: result.messageIds,
-            },
+    socket.on(
+      "community:markConversationAsDelivered",
+      async (payload, callback) => {
+        try {
+          const allowed = consumeRateLimit(
+            socketRateLimit,
+            "community:markConversationAsDelivered",
+            60,
+            10_000,
           );
-        }
+          if (!allowed) {
+            const message = "Too many read requests, please slow down";
+            socket.emit("community:error", { message });
+            if (typeof callback === "function") {
+              callback({ success: false, message });
+            }
+            return;
+          }
 
-        if (typeof callback === "function") {
-          callback({ success: true, data: result });
+          const conversationId = String(payload?.conversationId || "");
+          if (!conversationId) {
+            const message = "conversationId is required";
+            socket.emit("community:error", { message });
+            if (typeof callback === "function") {
+              callback({ success: false, message });
+            }
+            return;
+          }
+
+          const result = await CommunityService.markConversationDelivered(
+            userId,
+            conversationId,
+          );
+
+          if (result.messageIds.length) {
+            communityNamespace
+              .to(`conversation:${conversationId}`)
+              .emit("community:messagesDelivered", {
+                conversationId,
+                readerId: userId,
+                messageIds: result.messageIds,
+              });
+          }
+
+          if (typeof callback === "function") {
+            callback({ success: true, data: result });
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Failed to mark messages as delivered";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
         }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to mark messages as delivered";
-        socket.emit("community:error", { message });
-        if (typeof callback === "function") {
-          callback({ success: false, message });
-        }
-      }
-    });
+      },
+    );
 
     socket.on("community:sendMessage", async (payload, callback) => {
       try {
@@ -369,7 +378,9 @@ export const setupCommunitySocket = (io: Server): void => {
         const rawType = payload?.type;
         const messageType: "TEXT" | "IMAGE" =
           rawType === "IMAGE" ? "IMAGE" : "TEXT";
-        const metadata: { width?: number; height?: number; caption?: string } | undefined =
+        const metadata:
+          | { width?: number; height?: number; caption?: string }
+          | undefined =
           messageType === "IMAGE" && payload?.metadata
             ? {
                 width:
@@ -403,16 +414,17 @@ export const setupCommunitySocket = (io: Server): void => {
           { type: messageType, ...(metadata ? { metadata } : {}) },
         );
 
-        communityNamespace.to(`conversation:${conversationId}`).emit(
-          "community:newMessage",
-          message,
-        );
+        communityNamespace
+          .to(`conversation:${conversationId}`)
+          .emit("community:newMessage", message);
 
         for (const participantId of message.participantIds) {
-          communityNamespace.to(`user:${participantId}`).emit("community:conversationUpdated", {
-            conversationId,
-            conversationType: message.conversationType || "DM",
-          });
+          communityNamespace
+            .to(`user:${participantId}`)
+            .emit("community:conversationUpdated", {
+              conversationId,
+              conversationType: message.conversationType || "DM",
+            });
         }
 
         if (typeof callback === "function") {
@@ -465,16 +477,17 @@ export const setupCommunitySocket = (io: Server): void => {
           content,
         );
 
-        communityNamespace.to(`conversation:${updated.conversationId}`).emit(
-          "community:messageEdited",
-          updated,
-        );
+        communityNamespace
+          .to(`conversation:${updated.conversationId}`)
+          .emit("community:messageEdited", updated);
 
         for (const participantId of updated.participantIds) {
-          communityNamespace.to(`user:${participantId}`).emit("community:conversationUpdated", {
-            conversationId: updated.conversationId,
-            conversationType: updated.conversationType || "DM",
-          });
+          communityNamespace
+            .to(`user:${participantId}`)
+            .emit("community:conversationUpdated", {
+              conversationId: updated.conversationId,
+              conversationType: updated.conversationType || "DM",
+            });
         }
 
         if (typeof callback === "function") {
@@ -519,16 +532,17 @@ export const setupCommunitySocket = (io: Server): void => {
 
         const deleted = await CommunityService.deleteMessage(userId, messageId);
 
-        communityNamespace.to(`conversation:${deleted.conversationId}`).emit(
-          "community:messageDeleted",
-          deleted,
-        );
+        communityNamespace
+          .to(`conversation:${deleted.conversationId}`)
+          .emit("community:messageDeleted", deleted);
 
         for (const participantId of deleted.participantIds) {
-          communityNamespace.to(`user:${participantId}`).emit("community:conversationUpdated", {
-            conversationId: deleted.conversationId,
-            conversationType: deleted.conversationType || "DM",
-          });
+          communityNamespace
+            .to(`user:${participantId}`)
+            .emit("community:conversationUpdated", {
+              conversationId: deleted.conversationId,
+              conversationType: deleted.conversationType || "DM",
+            });
         }
 
         if (typeof callback === "function") {
@@ -555,7 +569,10 @@ export const setupCommunitySocket = (io: Server): void => {
       try {
         await CommunityService.touchLastSeen(userId);
       } catch (error) {
-        console.error("Failed to persist community last seen on disconnect:", error);
+        console.error(
+          "Failed to persist community last seen on disconnect:",
+          error,
+        );
       }
     });
   });

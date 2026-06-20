@@ -4,7 +4,7 @@ import {
   markUserOnline,
   touchUserLastActive,
 } from "../../shared/services/UserPresenceService";
-import { verifyToken } from "../../utils/jwt";
+import { isTokenRevoked, verifyToken } from "../../utils/jwt";
 
 const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   if (!cookieHeader) {
@@ -23,7 +23,7 @@ const extractTokenFromCookie = (cookieHeader?: string): string | null => {
   return null;
 };
 
-const getSocketUserId = (socket: Socket): string | null => {
+const getSocketUserId = async (socket: Socket): Promise<string | null> => {
   const authToken = (
     socket.handshake.auth?.token as string | undefined
   )?.trim();
@@ -41,6 +41,9 @@ const getSocketUserId = (socket: Socket): string | null => {
   for (const token of candidates) {
     try {
       const payload = verifyToken(token);
+      if (await isTokenRevoked(payload.jti)) {
+        continue;
+      }
       return payload.id;
     } catch {
       // Try next token source
@@ -57,7 +60,7 @@ export const setupFriendSocket = (io: Server): void => {
   console.log("🔧 Setting up /friends namespace");
 
   friendsNamespace.use(async (socket, next) => {
-    const userId = getSocketUserId(socket);
+    const userId = await getSocketUserId(socket);
     if (!userId) {
       console.log("❌ Friend socket auth failed: No userId found");
       next(new Error("Unauthorized"));
@@ -198,7 +201,11 @@ export const notifyFriendRemoved = (
     });
 };
 
-export const notifyUserDataUpdated = (userId: string, event: string, payload?: any) => {
+export const notifyUserDataUpdated = (
+  userId: string,
+  event: string,
+  payload?: any,
+) => {
   if (!friendSocketInstance) return;
   friendSocketInstance.of("/friends").to(`user:${userId}`).emit(event, payload);
 };
