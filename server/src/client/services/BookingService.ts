@@ -189,6 +189,7 @@ const hasConflictingVenueBooking = async (
   date: Date,
   startTime: string,
   endTime: string,
+  userId?: string | null,
   session?: ClientSession,
 ): Promise<boolean> => {
   const { start, end } = toDayRange(date);
@@ -217,8 +218,28 @@ const hasConflictingVenueBooking = async (
     query.session(session);
   }
 
-  const conflict = await query;
-  return Boolean(conflict);
+  const conflicts = await query;
+  
+  if (conflicts) {
+    // If the conflict is an unpaid checkout by the same user, cancel it and ignore the conflict
+    if (
+      userId &&
+      conflicts.userId.toString() === userId &&
+      (conflicts.status === "PENDING_CONFIRMATION" || conflicts.status === "PENDING_INVITES") &&
+      !conflicts.paymentConfirmedAt
+    ) {
+      conflicts.status = "CANCELLED";
+      conflicts.cancellationReason = "Overwritten by a new booking attempt from the same user";
+      if (session) {
+        await conflicts.save({ session });
+      } else {
+        await conflicts.save();
+      }
+      return false; // Not a conflict anymore
+    }
+  }
+
+  return Boolean(conflicts);
 };
 
 const hasConflictingCoachBooking = async (
@@ -226,6 +247,7 @@ const hasConflictingCoachBooking = async (
   date: Date,
   startTime: string,
   endTime: string,
+  userId?: string | null,
   session?: ClientSession,
 ): Promise<boolean> => {
   const { start, end } = toDayRange(date);
@@ -254,8 +276,28 @@ const hasConflictingCoachBooking = async (
     query.session(session);
   }
 
-  const conflict = await query;
-  return Boolean(conflict);
+  const conflicts = await query;
+
+  if (conflicts) {
+    // If the conflict is an unpaid checkout by the same user, cancel it and ignore the conflict
+    if (
+      userId &&
+      conflicts.userId.toString() === userId &&
+      (conflicts.status === "PENDING_CONFIRMATION" || conflicts.status === "PENDING_INVITES") &&
+      !conflicts.paymentConfirmedAt
+    ) {
+      conflicts.status = "CANCELLED";
+      conflicts.cancellationReason = "Overwritten by a new booking attempt from the same user";
+      if (session) {
+        await conflicts.save({ session });
+      } else {
+        await conflicts.save();
+      }
+      return false; // Not a conflict anymore
+    }
+  }
+
+  return Boolean(conflicts);
 };
 
 const acquireResourceSlotLock = async (
@@ -320,6 +362,7 @@ const createBookingAtomically = async (
             payload.date,
             payload.startTime,
             payload.endTime,
+            payload.userId,
             session,
           );
 
@@ -344,6 +387,7 @@ const createBookingAtomically = async (
             payload.date,
             payload.startTime,
             payload.endTime,
+            payload.userId,
             session,
           );
 
@@ -388,6 +432,7 @@ const createBookingAtomically = async (
             ? { discountAmount: payload.discountAmount }
             : {}),
           status: "PENDING_CONFIRMATION",
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
           checkInCode: payload.checkInCode,
           // Awaiting provider confirmation before booking is confirmed
           participantName: payload.participantName,
@@ -638,6 +683,29 @@ export const initiateBooking = async (
       throw new Error("User not found");
     }
     console.log("[initiateBooking] STEP 1 OK: user =", user._id.toString());
+
+    // Clean up any existing abandoned booking for this exact same slot by this user
+    // This allows them to "try again" immediately without hitting "Coach/Venue is not available"
+    const startOfDay = new Date(payload.date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const cleanupQuery: any = {
+      userId: user._id,
+      date: {
+        $gte: startOfDay,
+        $lt: new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000),
+      },
+      startTime: normalizedStartTime,
+      endTime: normalizedEndTime,
+      status: "PENDING_CONFIRMATION",
+    };
+    if (payload.coachId) cleanupQuery.coachId = payload.coachId;
+    if (payload.venueId) cleanupQuery.venueId = payload.venueId;
+
+    const deletedAbandoned = await Booking.deleteMany(cleanupQuery);
+    if (deletedAbandoned.deletedCount > 0) {
+      console.log(`[initiateBooking] Cleaned up ${deletedAbandoned.deletedCount} abandoned booking(s) for user ${user._id} attempting to re-book`);
+    }
 
     // Determine participant details
     let participantName = user.name;
@@ -1051,6 +1119,7 @@ export const initiateBooking = async (
               ? { discountAmount: bookingPayload.discountAmount }
               : {}),
             status: "PENDING_CONFIRMATION",
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
             checkInCode: bookingPayload.checkInCode,
             // Awaiting provider confirmation before booking is confirmed
             participantName: bookingPayload.participantName,
@@ -1109,7 +1178,7 @@ export const getUserBookings = async (
   const bookings = await Booking.find(query)
     .select("+checkInCode")
     .populate("venueId coachId")
-    .sort({ date: -1 })
+    .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
 
@@ -2362,17 +2431,14 @@ export const updatePaymentStatus = async (
     await sendBookingPaymentConfirmation(bookingId);
   }
 
-  // Send payment status notification and cancel booking if failed
+  // Send payment status notification and delete booking if failed
   if (status === "FAILED") {
-    // Automatically cancel the booking if payment fails
-    // This prevents unpaid bookings from showing up for coaches/venues
-    if (booking.status !== "CANCELLED") {
-      booking.status = "CANCELLED";
-      if (session) {
-        await booking.save({ session });
-      } else {
-        await booking.save();
-      }
+    // Automatically delete the booking if payment fails
+    // This removes unpaid bookings from showing up for coaches/venues/players
+    if (session) {
+      await Booking.deleteOne({ _id: booking._id }, { session });
+    } else {
+      await Booking.deleteOne({ _id: booking._id });
     }
 
     const venue = await Venue.findById(booking.venueId).select("name");
@@ -3198,28 +3264,22 @@ export const cleanupStaleBookingLocks = async (): Promise<number> => {
 
 /**
  * Cleanup expired bookings
- * Updates bookings that have passed their expiration time to CANCELLED
+ * Deletes bookings that have passed their expiration time without payment
  * Only affects bookings that are still pending payment confirmation
- * Returns number of expired bookings cancelled
+ * Returns number of expired bookings deleted
  */
 export const cleanupExpiredBookings = async (): Promise<number> => {
   const now = new Date();
 
-  const result = await Booking.updateMany(
+  const result = await Booking.deleteMany(
     {
-      status: "PENDING_PAYMENT", // Only cancel bookings awaiting payment
+      status: { $in: ["PENDING_CONFIRMATION", "PENDING_INVITES"] },
+      paymentConfirmedAt: { $exists: false },
       expiresAt: { $lt: now },
-    },
-    {
-      $set: {
-        status: "CANCELLED",
-        cancelledAt: now,
-        cancellationReason: "Booking expired - payment not confirmed",
-      },
-    },
+    }
   );
 
-  return result.modifiedCount || 0;
+  return result.deletedCount || 0;
 };
 
 // ============================================

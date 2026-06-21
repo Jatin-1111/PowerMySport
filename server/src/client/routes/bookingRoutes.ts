@@ -20,6 +20,7 @@ import {
   getPendingInvitationsCount,
   verifyPhonePeOrderStatus,
   validateBookingPromoCode,
+  payBookingWithWallet,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
@@ -128,6 +129,14 @@ router.post(
   authMiddleware,
   playerOnlyMiddleware,
   initiatePhonePePaymentForBooking,
+);
+
+// Pay for a booking using Wallet
+router.post(
+  "/:bookingId/wallet/pay",
+  authMiddleware,
+  playerOnlyMiddleware,
+  payBookingWithWallet,
 );
 
 // PhonePe callback (no auth)

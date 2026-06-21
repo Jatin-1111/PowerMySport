@@ -8,6 +8,7 @@ export interface PaymentMethodOption {
   description?: string;
   badge?: string;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
 interface PaymentMethodSelectorProps {
@@ -32,11 +33,16 @@ export function PaymentMethodSelector({
           <button
             key={option.id}
             type="button"
-            onClick={() => onChange(option.id)}
+            onClick={() => {
+              if (!option.disabled) onChange(option.id);
+            }}
+            disabled={option.disabled}
             className={cn(
               "flex items-center justify-between gap-4 rounded-xl border-2 px-4 py-3.5 text-left transition-all",
               isSelected
                 ? "border-power-orange bg-power-orange/5 shadow-sm"
+                : option.disabled
+                ? "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
                 : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
             )}
           >

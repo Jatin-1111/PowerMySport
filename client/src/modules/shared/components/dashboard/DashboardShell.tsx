@@ -144,6 +144,9 @@ export const DashboardShell = ({
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const isCheckout = pathname.includes("/checkout");
+  const shouldShowBottomNav = bottomNavItems && !isCheckout;
+
   const displayName = useMemo(() => {
     if (!userName?.trim()) {
       return "User";
@@ -251,12 +254,12 @@ export const DashboardShell = ({
           <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
             {children}
           </div>
-          {bottomNavItems && <BottomNavSpacer />}
+          {shouldShowBottomNav && <BottomNavSpacer />}
         </main>
       </div>
 
       {/* Mobile Bottom Navigation */}
-      {bottomNavItems && <BottomNav items={bottomNavItems} />}
+      {shouldShowBottomNav && <BottomNav items={bottomNavItems} />}
     </div>
   );
 };

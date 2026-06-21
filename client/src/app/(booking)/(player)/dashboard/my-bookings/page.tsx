@@ -454,6 +454,13 @@ export default function BookingsPage() {
                             {formatBookingStatus(booking.status)}
                           </Badge>
                         </div>
+
+                        {booking.createdAt && (
+                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-xs text-slate-400">
+                            <Clock className="h-3 w-3" />
+                            Booked on {formatDate(booking.createdAt)} at {formatTime(booking.createdAt)}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-2 sm:w-auto">

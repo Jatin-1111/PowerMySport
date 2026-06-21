@@ -38,6 +38,7 @@ import {
 import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBookingInviteSection";
 import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
 import { bookingApi } from "@/modules/booking/services/booking";
+import { walletApi } from "@/modules/wallet/services/wallet";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { Button } from "@/modules/shared/ui/Button";
 import { coachApi } from "@/modules/coach/services/coach";
@@ -470,6 +471,7 @@ function CheckoutPageContent() {
   const [isGroupBooking, setIsGroupBooking] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [paymentType, setPaymentType] = useState<PaymentType>("SINGLE");
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   useEffect(() => {
     setSelectedDependentId(dependentId);
@@ -490,13 +492,14 @@ function CheckoutPageContent() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [detailsResponse, profileResponse] = await Promise.all([
+        const [detailsResponse, profileResponse, walletResponse] = await Promise.all([
           type === "coach" && coachId
             ? coachApi.getCoachById(coachId)
             : type === "venue" && venueId
               ? venueApi.getVenue(venueId)
               : Promise.resolve(null),
           authApi.getProfile().catch(() => null),
+          walletApi.getWallet().catch(() => null),
         ]);
 
         if (type === "coach" && detailsResponse?.success)
@@ -511,6 +514,10 @@ function CheckoutPageContent() {
             router.replace(getDashboardPathByRole(profileResponse.data.role));
             return;
           }
+        }
+
+        if (walletResponse) {
+          setWalletBalance(walletResponse.balance);
         }
       } catch {
         toast.error("Unable to load details");
@@ -567,6 +574,11 @@ function CheckoutPageContent() {
       ? Math.round(serviceFee * (Number.isFinite(taxRate) ? taxRate : 0))
       : 0;
   const total = Math.max(0, subtotal + serviceFee + taxes - discount);
+  
+  const finalPayableAmount = isGroupBooking && paymentType === "SPLIT"
+    ? Math.round(total / (selectedFriendIds.length + 1))
+    : total;
+
   const isZeroCommission = serviceFeeRate === 0;
 
   const hasRequiredDetails = Boolean(date && startTime && endTime && sport);
@@ -608,6 +620,20 @@ function CheckoutPageContent() {
     { id: 2, label: "Payment" },
     { id: 3, label: "Confirm" },
   ];
+
+  const dynamicPaymentOptions = useMemo(() => {
+    const opts = [...paymentOptions];
+    if (walletBalance !== null) {
+      opts.unshift({
+        id: "wallet",
+        label: "Wallet Balance",
+        description: `Available: ₹${walletBalance.toFixed(2)}`,
+        icon: <Wallet size={18} />,
+        disabled: walletBalance < finalPayableAmount,
+      });
+    }
+    return opts;
+  }, [walletBalance, finalPayableAmount]);
 
   const goToStep = (n: number) => {
     setStepDir(n > currentStep ? 1 : -1);
@@ -786,6 +812,22 @@ function CheckoutPageContent() {
       const bookingId = response.booking?.id;
       if (!bookingId) throw new Error("Booking could not be created");
 
+      if (paymentMethod === "wallet") {
+        await bookingApi.payWithWallet(bookingId);
+        
+        statsApi
+          .trackFunnelEvent({
+            eventName: "checkout_payment_completed",
+            entityType: "BOOKING",
+            entityId: bookingId,
+            metadata: { total, paymentMethod, isGroupBooking, paymentType },
+          })
+          .catch(() => {});
+          
+        router.replace(`/dashboard/bookings/${bookingId}?success=true`);
+        return;
+      }
+
       const phonePeInit = await bookingApi.initiatePhonePePayment(bookingId, {
         type,
       });
@@ -870,8 +912,55 @@ function CheckoutPageContent() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const ctaButtons = (
+    <div className="flex shrink-0 gap-2 lg:mt-4 lg:w-full lg:flex-col lg:space-y-2.5">
+      {currentStep > 1 && (
+        <Button
+          variant="outline"
+          className="hidden lg:flex w-full"
+          onClick={handlePrevStep}
+          disabled={isSubmitting}
+        >
+          <ChevronLeft size={16} />
+          Back
+        </Button>
+      )}
+      <Button
+        variant="primary"
+        className="w-[180px] lg:w-full gap-2"
+        disabled={
+          !hasRequiredDetails ||
+          !hasValidDuration ||
+          isSubmitting ||
+          total <= 0
+        }
+        loading={currentStep === 3 ? isSubmitting : false}
+        onClick={currentStep === 3 ? handleCheckout : handleNextStep}
+      >
+        {currentStep === 1 && (
+          <>
+            Continue
+            <ArrowRight size={15} />
+          </>
+        )}
+        {currentStep === 2 && (
+          <>
+            Confirm
+            <ArrowRight size={15} />
+          </>
+        )}
+        {currentStep === 3 && (
+          <>
+            Pay <span className="hidden lg:inline">{formatCurrency(total)}</span>
+            <ArrowRight size={15} />
+          </>
+        )}
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-28 lg:pb-0">
       <motion.div variants={fadeUp} initial="hidden" animate="show">
         <Breadcrumbs
           items={[
@@ -1129,68 +1218,11 @@ function CheckoutPageContent() {
                       <PaymentMethodSelector
                         value={paymentMethod}
                         onChange={setPaymentMethod}
-                        options={paymentOptions}
+                        options={dynamicPaymentOptions}
                       />
                     </div>
                   </SectionCard>
 
-                  {/* Promo code */}
-                  <SectionCard>
-                    <SectionHeader
-                      step={3}
-                      icon={<TicketPercent size={15} />}
-                      title="Promo code"
-                      description="Apply a code to reduce your total."
-                    />
-                    <div className="p-5 sm:p-6">
-                      <form
-                        onSubmit={handleApplyPromo}
-                        className="flex flex-col gap-3 sm:flex-row"
-                      >
-                        <div className="relative flex-1">
-                          <TicketPercent
-                            size={14}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                          />
-                          <input
-                            value={promoCode}
-                            onChange={(e) => setPromoCode(e.target.value)}
-                            placeholder="Enter promo code"
-                            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 uppercase"
-                          />
-                        </div>
-                        <Button
-                          type="submit"
-                          variant="outline"
-                          disabled={isApplyingPromo}
-                          className="sm:w-28"
-                        >
-                          {isApplyingPromo ? "Applying..." : "Apply"}
-                        </Button>
-                      </form>
-                      <AnimatePresence>
-                        {promoMessage && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className={cn(
-                              "mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium",
-                              promoSuccess
-                                ? "bg-turf-green/10 text-turf-green"
-                                : "bg-slate-100 text-slate-500",
-                            )}
-                          >
-                            {promoSuccess && (
-                              <CheckCircle2 size={13} className="shrink-0" />
-                            )}
-                            {promoMessage}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </SectionCard>
                 </>
               )}
 
@@ -1282,7 +1314,7 @@ function CheckoutPageContent() {
                         <p className="text-xs text-slate-400">Paying with</p>
                         <p className="text-sm font-semibold text-slate-800">
                           {
-                            paymentOptions.find((o) => o.id === paymentMethod)
+                            dynamicPaymentOptions.find((o) => o.id === paymentMethod)
                               ?.label
                           }
                         </p>
@@ -1404,6 +1436,66 @@ function CheckoutPageContent() {
               </div>
             )}
 
+            {/* Promo code */}
+            <SectionCard>
+              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center gap-2">
+                <TicketPercent size={16} className="text-slate-500" />
+                <h2 className="font-title text-base font-semibold text-slate-900">
+                  Offers & Promos
+                </h2>
+              </div>
+              <div className="p-4 sm:p-5">
+                <form
+                  onSubmit={handleApplyPromo}
+                  className="flex flex-col gap-3"
+                >
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <TicketPercent
+                        size={14}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <input
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value)}
+                        placeholder="Enter promo code"
+                        className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 uppercase"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      disabled={isApplyingPromo}
+                      className="w-auto px-4"
+                    >
+                      {isApplyingPromo ? "..." : "Apply"}
+                    </Button>
+                  </div>
+                </form>
+                <AnimatePresence>
+                  {promoMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={cn(
+                        "mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium",
+                        promoSuccess
+                          ? "bg-turf-green/10 text-turf-green"
+                          : "bg-slate-100 text-slate-500",
+                      )}
+                    >
+                      {promoSuccess && (
+                        <CheckCircle2 size={13} className="shrink-0" />
+                      )}
+                      {promoMessage}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </SectionCard>
+
             {/* Order summary card */}
             <SectionCard>
               <SectionHeader title="Order summary" />
@@ -1492,55 +1584,13 @@ function CheckoutPageContent() {
                   </p>
                 </div>
 
-                {/* CTA buttons */}
-                <div className="mt-4 space-y-2.5">
-                  {currentStep > 1 && (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handlePrevStep}
-                      disabled={isSubmitting}
-                    >
-                      <ChevronLeft size={16} />
-                      Back
-                    </Button>
-                  )}
-                  <Button
-                    variant="primary"
-                    className="w-full gap-2"
-                    disabled={
-                      !hasRequiredDetails ||
-                      !hasValidDuration ||
-                      isSubmitting ||
-                      total <= 0
-                    }
-                    loading={currentStep === 3 ? isSubmitting : false}
-                    onClick={
-                      currentStep === 3 ? handleCheckout : handleNextStep
-                    }
-                  >
-                    {currentStep === 1 && (
-                      <>
-                        Continue to payment
-                        <ArrowRight size={15} />
-                      </>
-                    )}
-                    {currentStep === 2 && (
-                      <>
-                        Review and confirm
-                        <ArrowRight size={15} />
-                      </>
-                    )}
-                    {currentStep === 3 && (
-                      <>
-                        Pay {formatCurrency(total)}
-                        <ArrowRight size={15} />
-                      </>
-                    )}
-                  </Button>
-                </div>
               </div>
             </SectionCard>
+
+            {/* Desktop CTA (hidden on mobile) */}
+            <div className="hidden lg:block mt-6">
+              {ctaButtons}
+            </div>
 
             {/* Security trust badge */}
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-sm">
@@ -1569,6 +1619,20 @@ function CheckoutPageContent() {
             />
           </motion.div>
         </aside>
+      </div>
+
+      {/* Mobile Fixed CTA (hidden on desktop) */}
+      {/* Placed outside of motion.div to ensure `fixed` positioning isn't broken by CSS transforms */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden">
+        <div className="mx-auto flex max-w-7xl items-center gap-4">
+          <div className="flex-1">
+            <p className="text-xs text-slate-500 font-medium">Total due</p>
+            <p className="text-lg font-bold text-slate-900 leading-none mt-0.5">
+              {formatCurrency(total)}
+            </p>
+          </div>
+          {ctaButtons}
+        </div>
       </div>
     </div>
   );

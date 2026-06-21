@@ -4,6 +4,7 @@ import { Booking } from "../models/Booking";
 import { Venue } from "../models/Venue";
 import { User } from "../models/User";
 import { BookingPaymentTransaction } from "../models/BookingPayment";
+import { WalletService } from "../services/WalletService";
 import {
   cancelBooking,
   checkInBookingByCode,
@@ -1742,6 +1743,119 @@ export const getPendingInvitationsCount = async (
         error instanceof Error
           ? error.message
           : "Failed to get invitations count",
+    });
+  }
+};
+
+/**
+ * Pay for a booking using Wallet Balance
+ * POST /api/bookings/:bookingId/wallet/pay
+ */
+export const payBookingWithWallet = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const bookingId = req.params.bookingId as string;
+    const user = req.user;
+
+    if (!user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      res.status(404).json({ success: false, message: "Booking not found" });
+      return;
+    }
+
+    // Must be PENDING_CONFIRMATION or PENDING_INVITES
+    if (
+      booking.status !== "PENDING_CONFIRMATION" &&
+      booking.status !== "PENDING_INVITES"
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Booking cannot be paid for in its current state",
+      });
+      return;
+    }
+
+    // Verify user is part of the booking (organizer or participant)
+    if (
+      booking.userId.toString() !== user.id &&
+      booking.organizerId?.toString() !== user.id
+    ) {
+      // Find if they are a participant
+      const isParticipant = booking.payments?.some(
+        (p) => p.userId.toString() === user.id
+      );
+      if (!isParticipant) {
+        res.status(403).json({
+          success: false,
+          message: "Not authorized to pay for this booking",
+        });
+        return;
+      }
+    }
+
+    // Calculate user's share
+    const paymentShare = booking.payments?.find(
+      (p) => p.userId.toString() === user.id
+    );
+
+    const amount = paymentShare ? paymentShare.amount : booking.totalAmount;
+
+    if (paymentShare && paymentShare.status === "PAID") {
+      res.status(400).json({
+        success: false,
+        message: "Your share of this booking is already paid",
+      });
+      return;
+    }
+
+    if (!paymentShare && booking.paymentConfirmedAt) {
+      res.status(400).json({
+        success: false,
+        message: "Booking is already paid",
+      });
+      return;
+    }
+
+    // Deduct from wallet
+    await WalletService.debitWallet(
+      user.id,
+      amount,
+      `Booking Payment: ${bookingId}`,
+      bookingId
+    );
+
+    const merchantOrderId = `WALLET-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    // Create payment transaction
+    await BookingPaymentTransaction.create({
+      bookingId: booking._id,
+      userId: user.id,
+      merchantOrderId,
+      amount,
+      status: "COMPLETED",
+      state: "COMPLETED",
+    });
+
+    // Update booking status
+    await updatePaymentStatus(bookingId, user.id, "PAID");
+
+    res.status(200).json({
+      success: true,
+      message: "Paid via wallet successfully",
+    });
+  } catch (error) {
+    console.error("[payBookingWithWallet]", error);
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to pay via wallet",
     });
   }
 };

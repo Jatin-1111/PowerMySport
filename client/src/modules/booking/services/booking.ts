@@ -1,4 +1,4 @@
-﻿import axiosInstance from "@/lib/api/axios";
+import axiosInstance from "@/lib/api/axios";
 import { clearRequestCache, withRequestCache } from "@/lib/api/requestCache";
 import {
   ApiResponse,
@@ -143,6 +143,14 @@ export const bookingApi = {
       payload || {},
     );
     return response.data.data;
+  },
+
+  // Pay for booking using wallet balance
+  payWithWallet: async (bookingId: string): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/wallet/pay`,
+    );
+    return response.data;
   },
 
   // Verify PhonePe order status (fallback)
