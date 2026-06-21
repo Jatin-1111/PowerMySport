@@ -1,12 +1,13 @@
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion, Variants } from "framer-motion";
 import {
   Calendar,
+  Check,
   Clock,
   MapPin,
   ShieldCheck,
   TicketPercent,
-  Trophy,
   User as UserIcon,
   Wallet,
 } from "lucide-react";
@@ -16,18 +17,11 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { toast } from "@/lib/toast";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { authApi } from "@/modules/auth/services/auth";
-import { BackButton } from "@/components/ui/back-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import {
   CheckoutDetailItem,
   CheckoutDetailList,
 } from "@/modules/booking/components/checkout/CheckoutDetailList";
-import { CheckoutSection } from "@/modules/booking/components/checkout/CheckoutSection";
-import { CheckoutShell } from "@/modules/booking/components/checkout/CheckoutShell";
-import {
-  CheckoutSummary,
-  CheckoutSummaryItem,
-} from "@/modules/booking/components/checkout/CheckoutSummary";
 import {
   PaymentMethodOption,
   PaymentMethodSelector,
@@ -36,9 +30,7 @@ import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBoo
 import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { statsApi } from "@/modules/analytics/services/stats";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
 import { coachApi } from "@/modules/coach/services/coach";
 import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
 import { venueApi } from "@/modules/venue/services/venue";
@@ -46,6 +38,42 @@ import { Coach, User, Venue } from "@/types";
 import { getOwnVenueLocationDisplay } from "@/utils/location";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
+import { cn } from "@/utils/cn";
+
+// ─── Animation variants ──────────────────────────────────────────────────────
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
+  },
+};
+
+const fadeIn: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
+};
+
+const stepVariants: Variants = {
+  enter: (dir: number) => ({
+    opacity: 0,
+    x: dir > 0 ? 28 : -28,
+  }),
+  center: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] },
+  },
+  exit: (dir: number) => ({
+    opacity: 0,
+    x: dir > 0 ? -28 : 28,
+    transition: { duration: 0.25, ease: "easeIn" },
+  }),
+};
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const paymentOptions: PaymentMethodOption[] = [
   {
@@ -59,33 +87,21 @@ const paymentOptions: PaymentMethodOption[] = [
 
 type BookingType = "coach" | "venue";
 
+// ─── Utility helpers ─────────────────────────────────────────────────────────
+
 const normalizeImageUrl = (value?: string) => {
-  if (!value || typeof value !== "string") {
-    return "";
-  }
-
+  if (!value || typeof value !== "string") return "";
   const trimmed = value.trim();
-  if (!trimmed) {
-    return "";
-  }
-
+  if (!trimmed) return "";
   if (
     trimmed.startsWith("http://") ||
     trimmed.startsWith("https://") ||
     trimmed.startsWith("/") ||
     trimmed.startsWith("data:image")
-  ) {
+  )
     return trimmed;
-  }
-
-  if (trimmed.startsWith("//")) {
-    return `https:${trimmed}`;
-  }
-
-  if (trimmed.includes("amazonaws.com")) {
-    return `https://${trimmed}`;
-  }
-
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  if (trimmed.includes("amazonaws.com")) return `https://${trimmed}`;
   return trimmed;
 };
 
@@ -94,7 +110,6 @@ const getCoachDisplayName = (coach: Coach) => {
     typeof coach.userId === "object" && coach.userId !== null
       ? coach.userId.name
       : "";
-
   return userName?.trim() || `${coach.sports?.[0] || "Coach"} Coach`;
 };
 
@@ -103,38 +118,256 @@ const getCoachImageCandidates = (coach: Coach) => {
     typeof coach.userId === "object" && coach.userId !== null
       ? coach.userId.photoUrl
       : "";
-
   return [
     coach.photoUrl,
     coach.profileImage,
     userPhoto,
     coach.ownVenueDetails?.images?.[0],
   ]
-    .map((value) => normalizeImageUrl(value))
-    .filter((value): value is string => Boolean(value));
+    .map((v) => normalizeImageUrl(v))
+    .filter((v): v is string => Boolean(v));
 };
 
 const getCoachLocationLabel = (coach: Coach) => {
-  if (coach.serviceMode === "FREELANCE") {
-    return "Freelance";
-  }
+  if (coach.serviceMode === "FREELANCE") return "Freelance";
   if (coach.serviceMode === "OWN_VENUE") {
     const venueLocation = getOwnVenueLocationDisplay(coach.ownVenueDetails);
-
-    if (!venueLocation) {
-      return "Own Venue";
-    }
-
-    return `Own Venue • ${venueLocation.title}`;
+    return venueLocation ? `Own Venue · ${venueLocation.title}` : "Own Venue";
   }
   return "Hybrid";
 };
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function SectionCard({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-slate-200/70 bg-white/95 shadow-sm backdrop-blur-sm",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SectionHeader({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+      <div>
+        <h2 className="font-title text-base font-semibold text-slate-900 sm:text-lg">
+          {title}
+        </h2>
+        {description && (
+          <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+        )}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+}
+
+function StepIndicator({
+  steps,
+  currentStep,
+}: {
+  steps: { id: number; label: string }[];
+  currentStep: number;
+}) {
+  return (
+    <div className="flex items-center gap-0">
+      {steps.map((step, index) => {
+        const isComplete = currentStep > step.id;
+        const isActive = currentStep === step.id;
+        return (
+          <div key={step.id} className="flex items-center">
+            <div className="flex flex-col items-center gap-1.5">
+              <motion.div
+                animate={{
+                  backgroundColor: isComplete
+                    ? "#E97316"
+                    : isActive
+                      ? "#fff"
+                      : "#f8fafc",
+                  borderColor: isComplete || isActive ? "#E97316" : "#e2e8f0",
+                  color: isComplete ? "#fff" : isActive ? "#E97316" : "#94a3b8",
+                }}
+                transition={{ duration: 0.3 }}
+                className="flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold"
+              >
+                {isComplete ? <Check size={13} strokeWidth={3} /> : step.id}
+              </motion.div>
+              <span
+                className={cn(
+                  "text-xs font-medium",
+                  isActive ? "text-slate-900" : "text-slate-400",
+                )}
+              >
+                {step.label}
+              </span>
+            </div>
+            {index < steps.length - 1 && (
+              <div className="mx-3 mb-5 h-px w-10 sm:w-16">
+                <motion.div
+                  animate={{
+                    backgroundColor:
+                      currentStep > step.id ? "#E97316" : "#e2e8f0",
+                  }}
+                  transition={{ duration: 0.3 }}
+                  className="h-full w-full"
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EntityCard({
+  coach,
+  venue,
+  type,
+}: {
+  coach: Coach | null;
+  venue: Venue | null;
+  type: BookingType;
+}) {
+  if (type === "venue" && venue) {
+    return (
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-40 shrink-0">
+          {venue.images?.[0] ? (
+            <img
+              src={venue.images[0]}
+              alt={venue.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-slate-50">
+              <MapPin size={22} className="text-slate-300" />
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-bold text-slate-900 sm:text-lg">
+            {venue.name}
+          </p>
+          {venue.address && (
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+              <MapPin size={13} className="shrink-0" />
+              <span className="truncate">{venue.address}</span>
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {venue.sports.map((s) => (
+              <span
+                key={s}
+                className="rounded-full bg-power-orange/8 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "coach" && coach) {
+    const name = getCoachDisplayName(coach);
+    const img = getCoachImageCandidates(coach)[0];
+    const locationLabel = getCoachLocationLabel(coach);
+    const venueLocation = getOwnVenueLocationDisplay(coach.ownVenueDetails);
+
+    return (
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 sm:h-28 sm:w-40 shrink-0">
+          {img ? (
+            <img src={img} alt={name} className="h-full w-full object-cover" />
+          ) : (
+            <UserIcon size={26} className="text-slate-300" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-bold text-slate-900 sm:text-lg">
+            {name}
+          </p>
+          <div className="mt-1">
+            {venueLocation ? (
+              <div className="flex items-start gap-1.5 text-sm text-slate-500">
+                <MapPin size={13} className="mt-0.5 shrink-0" />
+                <div>
+                  <p>{locationLabel}</p>
+                  <p className="text-xs">{venueLocation.description}</p>
+                  {venueLocation.mapsUrl && (
+                    <a
+                      href={venueLocation.mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-semibold text-power-orange hover:underline"
+                    >
+                      Open in Maps
+                    </a>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="flex items-center gap-1.5 text-sm text-slate-500">
+                <MapPin size={13} className="shrink-0" />
+                {locationLabel}
+              </p>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-slate-400">
+            {coach.rating.toFixed(1)} avg · {coach.reviewCount} reviews
+          </p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {coach.sports.slice(0, 4).map((s) => (
+              <span
+                key={s}
+                className="rounded-full bg-power-orange/8 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
+              >
+                {s}
+              </span>
+            ))}
+            {coach.sports.length > 4 && (
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+                +{coach.sports.length - 4} more
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const shouldReduceMotion = useReducedMotion();
 
-  // Query params
   const type = (searchParams.get("type") || "venue") as BookingType;
   const coachId = searchParams.get("coachId") || "";
   const venueId = searchParams.get("venueId") || "";
@@ -144,7 +377,6 @@ function CheckoutPageContent() {
   const sport = searchParams.get("sport") || "";
   const dependentId = searchParams.get("dependentId") || "";
 
-  // State
   const [coach, setCoach] = useState<Coach | null>(null);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -153,15 +385,15 @@ function CheckoutPageContent() {
   const [paymentMethod, setPaymentMethod] = useState("phonepe");
   const [promoCode, setPromoCode] = useState("");
   const [promoMessage, setPromoMessage] = useState<string | null>(null);
+  const [promoSuccess, setPromoSuccess] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [stepDir, setStepDir] = useState(1);
   const [alternateSlots, setAlternateSlots] = useState<string[]>([]);
   const [showWaitlistPrompt, setShowWaitlistPrompt] = useState(false);
   const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
-
-  // Group booking state
   const [isGroupBooking, setIsGroupBooking] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [paymentType, setPaymentType] = useState<PaymentType>("SINGLE");
@@ -182,9 +414,8 @@ function CheckoutPageContent() {
       .catch(() => {});
   }, [type, coachId, venueId, sport, date, startTime, endTime]);
 
-  // Load coach or venue details
   useEffect(() => {
-    const loadDetails = async () => {
+    const load = async () => {
       try {
         const [detailsResponse, profileResponse] = await Promise.all([
           type === "coach" && coachId
@@ -195,108 +426,90 @@ function CheckoutPageContent() {
           authApi.getProfile().catch(() => null),
         ]);
 
-        if (type === "coach" && detailsResponse) {
-          if (detailsResponse.success && detailsResponse.data) {
-            setCoach(detailsResponse.data as Coach);
-          } else {
-            toast.error("Unable to load coach details");
-          }
-        }
-
-        if (type === "venue" && detailsResponse) {
-          if (detailsResponse.success && detailsResponse.data) {
-            setVenue(detailsResponse.data as Venue);
-          } else {
-            toast.error("Unable to load venue details");
-          }
-        }
+        if (type === "coach" && detailsResponse?.success)
+          setCoach(detailsResponse.data as Coach);
+        if (type === "venue" && detailsResponse?.success)
+          setVenue(detailsResponse.data as Venue);
 
         if (profileResponse?.success && profileResponse.data) {
           setUser(profileResponse.data);
-
           if (profileResponse.data.role !== "PLAYER") {
             toast.error("Only player accounts can create bookings.");
             router.replace(getDashboardPathByRole(profileResponse.data.role));
             return;
           }
         }
-      } catch (error) {
-        console.error("Failed to load details:", error);
+      } catch {
         toast.error("Unable to load details");
       } finally {
         setLoading(false);
       }
     };
-
-    loadDetails();
+    load();
   }, [type, coachId, venueId]);
 
-  // Duration calculation
   const durationMinutes = useMemo(() => {
     if (!startTime || !endTime) return 0;
-    const [startHour, startMinute = "0"] = startTime.split(":");
-    const [endHour, endMinute = "0"] = endTime.split(":");
-    const startTotal = parseInt(startHour, 10) * 60 + parseInt(startMinute, 10);
-    const endTotal = parseInt(endHour, 10) * 60 + parseInt(endMinute, 10);
-    return Math.max(0, endTotal - startTotal);
+    const [sh, sm = "0"] = startTime.split(":");
+    const [eh, em = "0"] = endTime.split(":");
+    return Math.max(
+      0,
+      parseInt(eh, 10) * 60 +
+        parseInt(em, 10) -
+        parseInt(sh, 10) * 60 -
+        parseInt(sm, 10),
+    );
   }, [startTime, endTime]);
 
-  const durationHours = useMemo(() => {
-    if (!durationMinutes) return 0;
-    return Number((durationMinutes / 60).toFixed(2));
-  }, [durationMinutes]);
+  const durationHours = useMemo(
+    () => (durationMinutes ? Number((durationMinutes / 60).toFixed(2)) : 0),
+    [durationMinutes],
+  );
 
   const selectedDependent =
-    user?.dependents?.find(
-      (dependent) => dependent._id === selectedDependentId,
-    ) || null;
+    user?.dependents?.find((d) => d._id === selectedDependentId) || null;
 
-  // Price calculation
-  const getPricePerHour = () => {
+  const pricePerHour = useMemo(() => {
     if (type === "coach" && coach) {
-      if (sport && coach.sportPricing && coach.sportPricing[sport]) {
-        return coach.sportPricing[sport];
-      }
-      return coach.hourlyRate || 0;
-    } else if (type === "venue" && venue) {
-      if (sport && venue.sportPricing && venue.sportPricing[sport]) {
-        return venue.sportPricing[sport];
-      }
-      return venue.pricePerHour || 0;
+      return sport && coach.sportPricing?.[sport]
+        ? coach.sportPricing[sport]
+        : coach.hourlyRate || 0;
+    }
+    if (type === "venue" && venue) {
+      return sport && venue.sportPricing?.[sport]
+        ? venue.sportPricing[sport]
+        : venue.pricePerHour || 0;
     }
     return 0;
-  };
+  }, [type, coach, venue, sport]);
 
-  const pricePerHour = getPricePerHour();
   const serviceFeeRate = Number(process.env.NEXT_PUBLIC_SERVICE_FEE_RATE ?? 0);
   const taxRate = Number(process.env.NEXT_PUBLIC_TAX_RATE ?? 0.05);
-  const safeServiceFeeRate = Number.isFinite(serviceFeeRate)
-    ? serviceFeeRate
-    : 0;
-  const safeTaxRate = Number.isFinite(taxRate) ? taxRate : 0;
   const subtotal = durationHours * pricePerHour;
-  const serviceFee = Math.round(subtotal * safeServiceFeeRate);
-  const taxes = serviceFee > 0 ? Math.round(serviceFee * safeTaxRate) : 0;
+  const serviceFee = Math.round(
+    subtotal * (Number.isFinite(serviceFeeRate) ? serviceFeeRate : 0),
+  );
+  const taxes =
+    serviceFee > 0
+      ? Math.round(serviceFee * (Number.isFinite(taxRate) ? taxRate : 0))
+      : 0;
   const total = Math.max(0, subtotal + serviceFee + taxes - discount);
-  const isZeroCommission = safeServiceFeeRate === 0;
+  const isZeroCommission = serviceFeeRate === 0;
 
-  // Booking details
+  const hasRequiredDetails = Boolean(date && startTime && endTime && sport);
+  const hasValidDuration = durationMinutes > 0;
+  const isDetailsReady = type === "coach" ? Boolean(coach) : Boolean(venue);
+
   const bookingDetails: CheckoutDetailItem[] = [
-    {
-      label: "Date",
-      value: date ? formatDate(date) : "Not selected",
-    },
+    { label: "Date", value: date ? formatDate(date) : "Not selected" },
     {
       label: "Time",
       value:
         startTime && endTime
-          ? `${formatTime(startTime)} - ${formatTime(endTime)}`
+          ? `${formatTime(startTime)} – ${formatTime(endTime)}`
           : "Not selected",
     },
-    {
-      label: "Sport",
-      value: sport || "Not selected",
-    },
+    { label: "Sport", value: sport || "Not selected" },
     {
       label: "Participant",
       value: selectedDependent ? selectedDependent.name : user?.name || "Me",
@@ -304,121 +517,53 @@ function CheckoutPageContent() {
     },
     {
       label: "Duration",
-      value: durationHours ? `${durationHours} hour(s)` : "-",
-      hint: durationHours ? `${durationHours} x hourly rate` : undefined,
+      value: durationHours ? `${durationHours} hour(s)` : "–",
+      hint: durationHours ? `${durationHours} × hourly rate` : undefined,
     },
     ...(type === "coach"
       ? [
           {
             label: "Coach",
-            value: coach ? coach.sports?.[0] + " Coach" : "Loading...",
+            value: coach ? getCoachDisplayName(coach) : "Loading...",
           },
         ]
-      : [
-          {
-            label: "Venue",
-            value: venue?.name || "Loading...",
-          },
-        ]),
+      : [{ label: "Venue", value: venue?.name || "Loading..." }]),
   ];
-
-  // Summary items
-  const summaryItems: CheckoutSummaryItem[] = [
-    {
-      label: type === "coach" ? "Coach rate" : "Venue rate",
-      value: `${formatCurrency(pricePerHour)}/hr`,
-    },
-    {
-      label: "Subtotal",
-      value: formatCurrency(subtotal),
-      hint: durationHours ? `${durationHours} hour(s)` : "",
-    },
-    {
-      label: isZeroCommission ? "Platform fee" : "Service fee",
-      value: formatCurrency(serviceFee),
-      hint: isZeroCommission
-        ? "Limited-time zero commission on coach and venue bookings"
-        : "Platform support and protection",
-    },
-    {
-      label: "Taxes",
-      value: formatCurrency(taxes),
-      hint: "Estimated",
-    },
-  ];
-
-  if (discount > 0) {
-    summaryItems.push({
-      label: "Promo discount",
-      value: `-${formatCurrency(discount)}`,
-      hint: promoCode ? promoCode.toUpperCase() : undefined,
-      strong: true,
-    });
-  }
-
-  const hasRequiredDetails = Boolean(date && startTime && endTime && sport);
-  const hasValidDuration = durationMinutes > 0;
-  const isDetailsReady = type === "coach" ? Boolean(coach) : Boolean(venue);
-  const communityUrl = getCommunityAppUrl({
-    path: "q",
-    searchParams: {
-      q: `${sport} ${type === "coach" ? "coach" : "venue"}`.trim() || undefined,
-      sport: sport || undefined,
-    },
-  });
 
   const steps = [
-    {
-      id: 1,
-      label: "Step 1",
-      title: "Review your booking",
-      description:
-        type === "coach"
-          ? "Confirm coach and schedule details."
-          : "Confirm venue and schedule details.",
-    },
-    {
-      id: 2,
-      label: "Step 2",
-      title: "Choose payment",
-      description: "Select a method and apply promos.",
-    },
-    {
-      id: 3,
-      label: "Step 3",
-      title: "Confirm & pay",
-      description: "Verify summary and complete payment.",
-    },
+    { id: 1, label: "Review" },
+    { id: 2, label: "Payment" },
+    { id: 3, label: "Confirm" },
   ];
 
-  const currentStepInfo = steps.find((step) => step.id === currentStep);
+  const goToStep = (n: number) => {
+    setStepDir(n > currentStep ? 1 : -1);
+    setCurrentStep(n);
+  };
 
   const handleNextStep = () => {
     if (!hasRequiredDetails) {
-      toast.error("Missing booking details. Please edit your booking first.");
+      toast.error("Missing booking details.");
       return;
     }
     if (!hasValidDuration) {
       toast.error("End time must be after start time.");
       return;
     }
-    setCurrentStep((prev) => Math.min(3, prev + 1));
+    goToStep(Math.min(3, currentStep + 1));
   };
 
-  const handlePrevStep = () => {
-    setCurrentStep((prev) => Math.max(1, prev - 1));
-  };
+  const handlePrevStep = () => goToStep(Math.max(1, currentStep - 1));
 
-  const handleApplyPromo = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleApplyPromo = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setPromoMessage(null);
-
+    setPromoSuccess(false);
     if (!promoCode.trim()) {
       setDiscount(0);
       setPromoMessage("Enter a promo code to apply.");
       return;
     }
-
     try {
       setIsApplyingPromo(true);
       const result = await bookingApi.validatePromoCode({
@@ -426,39 +571,18 @@ function CheckoutPageContent() {
         subtotal,
         hasCoach: type === "coach",
       });
-
       if (!result.isValid) {
         setDiscount(0);
         setPromoMessage(result.message || "This promo code is not valid.");
-        statsApi
-          .trackFunnelEvent({
-            eventName: "promo_validation_failed",
-            entityType: "BOOKING",
-            metadata: { promoCode: promoCode.trim().toUpperCase(), subtotal },
-          })
-          .catch(() => {});
         return;
       }
-
       setDiscount(result.discountAmount);
-      setPromoMessage(result.message || "Promo applied successfully.");
-      statsApi
-        .trackFunnelEvent({
-          eventName: "promo_applied",
-          entityType: "BOOKING",
-          metadata: {
-            promoCode: promoCode.trim().toUpperCase(),
-            discountAmount: result.discountAmount,
-            subtotal,
-          },
-        })
-        .catch(() => {});
-    } catch (error) {
+      setPromoSuccess(true);
+      setPromoMessage(result.message || "Promo applied.");
+    } catch (err) {
       setDiscount(0);
       setPromoMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to validate promo code right now.",
+        err instanceof Error ? err.message : "Unable to validate promo code.",
       );
     } finally {
       setIsApplyingPromo(false);
@@ -476,15 +600,11 @@ function CheckoutPageContent() {
         endTime,
         alternateSlots,
       });
-      toast.success(
-        "You were added to waitlist. We will notify you on changes.",
-      );
+      toast.success("Added to waitlist. We will notify you of any changes.");
       setShowWaitlistPrompt(false);
-    } catch (error) {
+    } catch (err) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to join waitlist. Please try again.",
+        err instanceof Error ? err.message : "Failed to join waitlist.",
       );
     } finally {
       setIsJoiningWaitlist(false);
@@ -492,136 +612,112 @@ function CheckoutPageContent() {
   };
 
   const handleCheckout = async () => {
-    if (user && user.role !== "PLAYER") {
+    if (user?.role !== "PLAYER") {
       toast.error("Only player accounts can create bookings.");
       return;
     }
-
     if (!hasRequiredDetails) {
-      toast.error("Missing booking details. Please edit your booking first.");
+      toast.error("Missing booking details.");
       return;
     }
-
     if (!hasValidDuration) {
       toast.error("End time must be after start time.");
       return;
     }
-
     if (!isDetailsReady) {
       toast.error("Details are not available.");
       return;
     }
-
-    // Validate group booking
     if (isGroupBooking && selectedFriendIds.length === 0) {
-      toast.error("Please select at least one friend for group booking.");
+      toast.error("Select at least one friend for group booking.");
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const bookingDate = new Date(date).toISOString();
       let response;
 
       if (type === "coach") {
-        // Get player location for coach booking
         const playerLocation = await new Promise<{
           type: "Point";
           coordinates: [number, number];
         }>((resolve, reject) => {
           const timeout = setTimeout(
-            () =>
-              reject(
-                new Error(
-                  "Location request timed out. Coach is out of your service area or location is required.",
-                ),
-              ),
+            () => reject(new Error("Location request timed out.")),
             10000,
           );
-
           navigator.geolocation.getCurrentPosition(
-            (position) => {
+            (pos) => {
               clearTimeout(timeout);
               resolve({
                 type: "Point",
-                coordinates: [
-                  position.coords.longitude,
-                  position.coords.latitude,
-                ],
+                coordinates: [pos.coords.longitude, pos.coords.latitude],
               });
             },
-            (error) => {
+            (err) => {
               clearTimeout(timeout);
-              reject(error);
+              reject(err);
             },
             { enableHighAccuracy: true },
           );
         });
 
-        // Use group booking or regular booking
-        if (isGroupBooking && selectedFriendIds.length > 0) {
-          response = await bookingApi.initiateGroupBooking({
-            coachId,
-            sport,
-            date: bookingDate,
-            startTime,
-            endTime,
-            playerLocation,
-            promoCode: promoCode.trim() || undefined,
-            invitedFriendIds: selectedFriendIds,
-            paymentType,
-          });
-        } else {
-          response = await bookingApi.initiateBooking({
-            coachId,
-            sport,
-            date: bookingDate,
-            startTime,
-            endTime,
-            playerLocation,
-            promoCode: promoCode.trim() || undefined,
-            dependentId: selectedDependentId || undefined,
-          });
-        }
+        response =
+          isGroupBooking && selectedFriendIds.length > 0
+            ? await bookingApi.initiateGroupBooking({
+                coachId,
+                sport,
+                date: bookingDate,
+                startTime,
+                endTime,
+                playerLocation,
+                promoCode: promoCode.trim() || undefined,
+                invitedFriendIds: selectedFriendIds,
+                paymentType,
+              })
+            : await bookingApi.initiateBooking({
+                coachId,
+                sport,
+                date: bookingDate,
+                startTime,
+                endTime,
+                playerLocation,
+                promoCode: promoCode.trim() || undefined,
+                dependentId: selectedDependentId || undefined,
+              });
       } else {
-        // Venue booking - use group booking or regular booking
-        if (isGroupBooking && selectedFriendIds.length > 0) {
-          response = await bookingApi.initiateGroupBooking({
-            venueId,
-            sport,
-            date: bookingDate,
-            startTime,
-            endTime,
-            promoCode: promoCode.trim() || undefined,
-            invitedFriendIds: selectedFriendIds,
-            paymentType,
-          });
-        } else {
-          response = await bookingApi.initiateBooking({
-            venueId,
-            sport,
-            date: bookingDate,
-            startTime,
-            endTime,
-            promoCode: promoCode.trim() || undefined,
-            dependentId: selectedDependentId || undefined,
-          });
-        }
+        response =
+          isGroupBooking && selectedFriendIds.length > 0
+            ? await bookingApi.initiateGroupBooking({
+                venueId,
+                sport,
+                date: bookingDate,
+                startTime,
+                endTime,
+                promoCode: promoCode.trim() || undefined,
+                invitedFriendIds: selectedFriendIds,
+                paymentType,
+              })
+            : await bookingApi.initiateBooking({
+                venueId,
+                sport,
+                date: bookingDate,
+                startTime,
+                endTime,
+                promoCode: promoCode.trim() || undefined,
+                dependentId: selectedDependentId || undefined,
+              });
       }
 
       const bookingId = response.booking?.id;
-      if (!bookingId) {
-        throw new Error("Booking could not be created");
-      }
+      if (!bookingId) throw new Error("Booking could not be created");
 
       const phonePeInit = await bookingApi.initiatePhonePePayment(bookingId, {
         type,
       });
-
-      if (!phonePeInit?.redirectUrl) {
-        throw new Error("PhonePe payment could not be initiated");
-      }
+      if (!phonePeInit?.redirectUrl)
+        throw new Error("Payment could not be initiated");
 
       statsApi
         .trackFunnelEvent({
@@ -631,68 +727,66 @@ function CheckoutPageContent() {
           metadata: { total, paymentMethod, isGroupBooking, paymentType },
         })
         .catch(() => {});
-
       window.location.assign(phonePeInit.redirectUrl);
-      return;
-    } catch (submitError: unknown) {
-      console.error("Checkout failed:", submitError);
-      const errorMessage =
-        submitError instanceof Error
-          ? submitError.message
-          : "Unable to complete checkout. Please try again.";
-
-      if (
-        type === "venue" &&
-        typeof errorMessage === "string" &&
-        errorMessage.toLowerCase().includes("already booked")
-      ) {
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Unable to complete checkout.";
+      if (type === "venue" && msg.toLowerCase().includes("already booked")) {
         try {
-          const availability =
-            await bookingApi.getVenueAvailabilityWithAlternates(
-              venueId,
-              new Date(date).toISOString(),
-              startTime,
-              endTime,
-            );
-          setAlternateSlots(availability.data?.alternateSlots || []);
-          setShowWaitlistPrompt(true);
+          const av = await bookingApi.getVenueAvailabilityWithAlternates(
+            venueId,
+            new Date(date).toISOString(),
+            startTime,
+            endTime,
+          );
+          setAlternateSlots(av.data?.alternateSlots || []);
         } catch {
           setAlternateSlots([]);
-          setShowWaitlistPrompt(true);
         }
+        setShowWaitlistPrompt(true);
       }
-
       statsApi
         .trackFunnelEvent({
           eventName: "checkout_payment_failed",
           entityType: "BOOKING",
-          metadata: { errorMessage, total, paymentMethod },
+          metadata: { errorMessage: msg, total, paymentMethod },
         })
         .catch(() => {});
-
-      toast.error(errorMessage);
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const communityUrl = getCommunityAppUrl({
+    path: "q",
+    searchParams: {
+      q: `${sport} ${type === "coach" ? "coach" : "venue"}`.trim() || undefined,
+      sport: sport || undefined,
+    },
+  });
+
+  // ── Loading / error states ────────────────────────────────────────────────
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-3xl border border-slate-200/70 bg-white/90 py-16 shadow-sm">
-        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-power-orange" />
+      <div className="flex min-h-[420px] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-power-orange" />
+          <p className="text-sm text-slate-500">Loading your booking...</p>
+        </div>
       </div>
     );
   }
 
   if (!isDetailsReady) {
     return (
-      <div className="rounded-3xl border border-slate-200/70 bg-white/90 p-8 text-center shadow-sm">
-        <p className="text-slate-600">
+      <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200/70 bg-white/95 p-8 text-center">
+        <p className="text-sm text-slate-500">
           {type === "coach" ? "Coach" : "Venue"} not found.
         </p>
         <Button
           variant="outline"
-          className="mt-4"
           onClick={() => router.push(type === "coach" ? "/coaches" : "/venues")}
         >
           Browse {type === "coach" ? "coaches" : "venues"}
@@ -701,28 +795,48 @@ function CheckoutPageContent() {
     );
   }
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-6">
-      {/* Breadcrumbs */}
-      <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Checkout" },
-        ]}
-      />
+      <motion.div variants={fadeUp} initial="hidden" animate="show">
+        <Breadcrumbs
+          items={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Checkout" },
+          ]}
+        />
+      </motion.div>
 
-      <PlayerPageHeader
-        badge="Checkout"
-        title={
-          type === "coach"
-            ? "Complete your coach booking"
-            : "Complete your venue booking"
-        }
-        subtitle="Review your booking details, pick a payment method, and confirm your slot."
-        action={
-          <div className="flex flex-wrap gap-2">
+      {/* Page header */}
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        transition={{ delay: 0.05 }}
+        className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm sm:p-8"
+      >
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-600">
+              Checkout
+            </span>
+            <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">
+              {type === "coach"
+                ? "Complete your coach booking"
+                : "Complete your venue booking"}
+            </h1>
+            <p className="mt-1.5 max-w-xl text-sm text-slate-500">
+              Review details, choose a payment method, and confirm your slot.
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
             {currentStep > 1 && (
-              <Button variant="outline" onClick={handlePrevStep}>
+              <Button
+                variant="outline"
+                onClick={handlePrevStep}
+                disabled={isSubmitting}
+              >
                 Back
               </Button>
             )}
@@ -730,100 +844,428 @@ function CheckoutPageContent() {
               Edit booking
             </Button>
           </div>
-        }
-      />
-
-      <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-5 backdrop-blur-sm sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Step {currentStep} of {steps.length}
-            </p>
-            <p className="font-title text-lg font-semibold text-slate-900">
-              {currentStepInfo?.title}
-            </p>
-            <p className="text-sm text-slate-500">
-              {currentStepInfo?.description}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {steps.map((step, index) => {
-              const isActive = currentStep === step.id;
-              const isComplete = currentStep > step.id;
-              return (
-                <div key={step.id} className="flex items-center gap-3">
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold ${
-                      isComplete
-                        ? "border-power-orange bg-power-orange text-white"
-                        : isActive
-                          ? "border-power-orange text-power-orange"
-                          : "border-slate-200 text-slate-400"
-                    }`}
-                  >
-                    {step.id}
-                  </div>
-                  <div className="text-sm font-semibold text-slate-700">
-                    {step.label}
-                  </div>
-                  {index < steps.length - 1 && (
-                    <div className="h-px w-8 bg-slate-200" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
         </div>
-      </Card>
+        <div className="pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full bg-power-orange/5 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-turf-green/5 blur-3xl" />
+      </motion.div>
 
-      <CheckoutShell
-        aside={
-          <div className="space-y-6">
+      {/* Step progress */}
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        transition={{ delay: 0.1 }}
+        className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/95 px-5 py-4 shadow-sm backdrop-blur-sm sm:px-6"
+      >
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Step {currentStep} of {steps.length}
+          </p>
+          <p className="mt-0.5 text-sm font-semibold text-slate-800 sm:text-base">
+            {currentStep === 1 && "Review your booking"}
+            {currentStep === 2 && "Choose a payment method"}
+            {currentStep === 3 && "Confirm and pay"}
+          </p>
+        </div>
+        <StepIndicator steps={steps} currentStep={currentStep} />
+      </motion.div>
+
+      {/* Main grid */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+        {/* Left — step content */}
+        <div className="min-w-0">
+          <AnimatePresence mode="wait" custom={stepDir}>
+            <motion.div
+              key={currentStep}
+              custom={shouldReduceMotion ? 0 : stepDir}
+              variants={shouldReduceMotion ? fadeIn : stepVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="space-y-4"
+            >
+              {/* STEP 1 */}
+              {currentStep === 1 && (
+                <>
+                  {/* Entity overview */}
+                  <SectionCard>
+                    <SectionHeader
+                      title={
+                        type === "venue" ? "Venue overview" : "Coach overview"
+                      }
+                      description="Confirm the details before you pay."
+                    />
+                    <div className="p-5 sm:p-6">
+                      <EntityCard coach={coach} venue={venue} type={type} />
+                    </div>
+                  </SectionCard>
+
+                  {/* Booking details */}
+                  <SectionCard>
+                    <SectionHeader
+                      title="Booking details"
+                      description="Verify your schedule and attendee."
+                      action={
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
+                          <Calendar size={11} />
+                          {date ? formatDate(date) : "No date"}
+                        </span>
+                      }
+                    />
+                    <div className="p-5 sm:p-6 space-y-5">
+                      {user?.dependents && user.dependents.length > 0 && (
+                        <div>
+                          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Who is attending?
+                          </label>
+                          <select
+                            value={selectedDependentId}
+                            onChange={(e) =>
+                              setSelectedDependentId(e.target.value)
+                            }
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                          >
+                            <option value="">Me ({user.name})</option>
+                            {user.dependents.map((d) => (
+                              <option key={d._id} value={d._id || ""}>
+                                {d.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      <CheckoutDetailList items={bookingDetails} />
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-xs text-slate-500">
+                        <Clock size={13} className="shrink-0 text-slate-400" />
+                        Arrive 10 minutes before your slot starts.
+                      </div>
+                    </div>
+                  </SectionCard>
+                </>
+              )}
+
+              {/* STEP 2 */}
+              {currentStep === 2 && (
+                <>
+                  {/* Group booking */}
+                  <SectionCard>
+                    <SectionHeader
+                      title="Group booking"
+                      description="Invite friends and split the cost."
+                    />
+                    <div className="p-5 sm:p-6">
+                      <GroupBookingInviteSection
+                        isGroupBooking={isGroupBooking}
+                        onGroupBookingChange={setIsGroupBooking}
+                        selectedFriendIds={selectedFriendIds}
+                        onFriendSelectionChange={setSelectedFriendIds}
+                        paymentType={paymentType}
+                        onPaymentTypeChange={setPaymentType}
+                        totalAmount={total}
+                      />
+                    </div>
+                  </SectionCard>
+
+                  {/* Payment method */}
+                  <SectionCard>
+                    <SectionHeader
+                      title="Payment method"
+                      description="Choose how you want to pay."
+                    />
+                    <div className="p-5 sm:p-6 space-y-4">
+                      <PaymentMethodSelector
+                        value={paymentMethod}
+                        onChange={setPaymentMethod}
+                        options={paymentOptions}
+                      />
+                    </div>
+                  </SectionCard>
+
+                  {/* Promo code */}
+                  <SectionCard>
+                    <SectionHeader
+                      title="Promo code"
+                      description="Apply a code to reduce your total."
+                    />
+                    <div className="p-5 sm:p-6">
+                      <form
+                        onSubmit={handleApplyPromo}
+                        className="flex flex-col gap-3 sm:flex-row"
+                      >
+                        <div className="relative flex-1">
+                          <TicketPercent
+                            size={14}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                          />
+                          <input
+                            value={promoCode}
+                            onChange={(e) => setPromoCode(e.target.value)}
+                            placeholder="Enter promo code"
+                            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                          />
+                        </div>
+                        <Button
+                          type="submit"
+                          variant="outline"
+                          disabled={isApplyingPromo}
+                          className="sm:w-32"
+                        >
+                          {isApplyingPromo ? "Applying..." : "Apply"}
+                        </Button>
+                      </form>
+                      <AnimatePresence>
+                        {promoMessage && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className={cn(
+                              "mt-2.5 text-xs font-medium",
+                              promoSuccess
+                                ? "text-turf-green"
+                                : "text-slate-500",
+                            )}
+                          >
+                            {promoMessage}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </SectionCard>
+                </>
+              )}
+
+              {/* STEP 3 */}
+              {currentStep === 3 && (
+                <SectionCard>
+                  <SectionHeader
+                    title="Confirm booking"
+                    description="Review your summary before payment."
+                  />
+                  <div className="p-5 sm:p-6 space-y-5">
+                    <CheckoutDetailList items={bookingDetails} />
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-xs text-slate-500">
+                      Payment via{" "}
+                      <span className="font-semibold text-slate-700">
+                        {
+                          paymentOptions.find((o) => o.id === paymentMethod)
+                            ?.label
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </SectionCard>
+              )}
+
+              {/* Validation notices */}
+              <AnimatePresence>
+                {!hasRequiredDetails && (
+                  <motion.div
+                    variants={fadeIn}
+                    initial="hidden"
+                    animate="show"
+                    exit="hidden"
+                    className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+                  >
+                    Missing booking details. Please go back and select a date,
+                    time, and sport.
+                  </motion.div>
+                )}
+                {hasRequiredDetails && !hasValidDuration && (
+                  <motion.div
+                    variants={fadeIn}
+                    initial="hidden"
+                    animate="show"
+                    exit="hidden"
+                    className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+                  >
+                    End time must be after start time.
+                  </motion.div>
+                )}
+                {showWaitlistPrompt && (
+                  <motion.div
+                    variants={fadeUp}
+                    initial="hidden"
+                    animate="show"
+                    exit="hidden"
+                    className="rounded-xl border border-blue-200/60 bg-blue-50/60 p-4 text-sm text-blue-700"
+                  >
+                    <p className="font-semibold">This slot was just taken.</p>
+                    {alternateSlots.length > 0 ? (
+                      <p className="mt-1 text-xs">
+                        Nearby alternates: {alternateSlots.join(", ")}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs">
+                        No nearby alternate slots right now.
+                      </p>
+                    )}
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleJoinWaitlist}
+                        disabled={isJoiningWaitlist}
+                      >
+                        {isJoiningWaitlist ? "Joining..." : "Join waitlist"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowWaitlistPrompt(false)}
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Right — sticky sidebar */}
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            transition={{ delay: 0.15 }}
+            className="space-y-4"
+          >
+            {/* Zero commission banner */}
             {isZeroCommission && (
-              <Card className="relative overflow-hidden rounded-3xl border border-amber-100 bg-[linear-gradient(120deg,#fff7e7_0%,#fffdf4_40%,#f6fbff_100%)] p-5 shadow-sm">
-                <div className="absolute -right-10 -top-12 h-24 w-24 rounded-full bg-amber-200/40 blur-2xl" />
-                <div className="absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-sky-200/40 blur-2xl" />
-                <div className="relative flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-power-orange shadow-sm">
-                    <span className="text-lg font-bold">0%</span>
+              <div className="relative overflow-hidden rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-sky-50 p-5">
+                <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-amber-200/30 blur-2xl" />
+                <div className="relative flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+                    <span className="text-sm font-extrabold text-power-orange">
+                      0%
+                    </span>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Limited-time offer
                     </p>
-                    <p className="mt-2 font-title text-lg font-semibold text-slate-900">
-                      Zero commission on coach and venue bookings
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      Zero commission on all bookings
                     </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      We are waiving platform fees right now. You only pay the
-                      venue or coach rate plus taxes. Subscription plans are
-                      charged separately.
+                    <p className="mt-1 text-xs text-slate-500">
+                      You pay only the venue or coach rate plus applicable
+                      taxes.
                     </p>
                   </div>
                 </div>
-                <div className="relative mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
-                  <span className="rounded-full bg-white/80 px-3 py-1">
-                    No platform fee
-                  </span>
-                  <span className="rounded-full bg-white/80 px-3 py-1">
-                    Auto-applied at checkout
-                  </span>
-                  <span className="rounded-full bg-white/80 px-3 py-1">
-                    Transparent totals
-                  </span>
+                <div className="relative mt-4 flex flex-wrap gap-1.5">
+                  {[
+                    "No platform fee",
+                    "Auto-applied",
+                    "Transparent totals",
+                  ].map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-white/80 px-2.5 py-0.5 text-xs font-semibold text-slate-600"
+                    >
+                      {tag}
+                    </span>
+                  ))}
                 </div>
-              </Card>
+              </div>
             )}
-            <CheckoutSummary
-              items={summaryItems}
-              totalValue={formatCurrency(total)}
-              note={
-                type === "venue"
-                  ? "Your slot is reserved for 10 minutes after confirmation."
-                  : "Booking confirmed after location verification."
-              }
-              cta={
-                <div className="flex flex-col gap-2">
+
+            {/* Order summary */}
+            <SectionCard>
+              <SectionHeader title="Order summary" />
+              <div className="p-5 sm:p-6">
+                <div className="space-y-3">
+                  {[
+                    {
+                      label: type === "coach" ? "Coach rate" : "Venue rate",
+                      value: `${formatCurrency(pricePerHour)}/hr`,
+                    },
+                    {
+                      label: "Subtotal",
+                      value: formatCurrency(subtotal),
+                      hint: durationHours ? `${durationHours} hour(s)` : "",
+                    },
+                    {
+                      label: isZeroCommission ? "Platform fee" : "Service fee",
+                      value: formatCurrency(serviceFee),
+                      hint: isZeroCommission
+                        ? "Limited-time zero commission"
+                        : "Platform support and protection",
+                    },
+                    {
+                      label: "Taxes",
+                      value: formatCurrency(taxes),
+                      hint: "Estimated",
+                    },
+                    ...(discount > 0
+                      ? [
+                          {
+                            label: "Promo discount",
+                            value: `-${formatCurrency(discount)}`,
+                            hint: promoCode.toUpperCase(),
+                            strong: true,
+                          },
+                        ]
+                      : []),
+                  ].map((item: any) => (
+                    <div
+                      key={item.label}
+                      className="flex items-start justify-between gap-3 text-sm"
+                    >
+                      <div>
+                        <p
+                          className={cn(
+                            "text-slate-600",
+                            item.strong && "font-semibold text-turf-green",
+                          )}
+                        >
+                          {item.label}
+                        </p>
+                        {item.hint && (
+                          <p className="text-xs text-slate-400">{item.hint}</p>
+                        )}
+                      </div>
+                      <p
+                        className={cn(
+                          "shrink-0 text-slate-900",
+                          item.strong && "font-semibold text-turf-green",
+                        )}
+                      >
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 border-t border-slate-100 pt-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-900">Total</span>
+                    <motion.span
+                      key={total}
+                      initial={
+                        shouldReduceMotion
+                          ? false
+                          : { scale: 1.08, opacity: 0.7 }
+                      }
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.25 }}
+                      className="text-xl font-bold text-power-orange"
+                    >
+                      {formatCurrency(total)}
+                    </motion.span>
+                  </div>
+                  <p className="mt-1.5 text-xs text-slate-400">
+                    {type === "venue"
+                      ? "Your slot is reserved for 10 minutes after confirmation."
+                      : "Booking confirmed after location verification."}
+                  </p>
+                </div>
+
+                <div className="mt-5 space-y-2.5">
                   {currentStep > 1 && (
                     <Button
                       variant="outline"
@@ -848,340 +1290,42 @@ function CheckoutPageContent() {
                       currentStep === 3 ? handleCheckout : handleNextStep
                     }
                   >
-                    {currentStep === 1 && "Step 2: Payment"}
-                    {currentStep === 2 && "Step 3: Confirm"}
+                    {currentStep === 1 && "Continue to payment"}
+                    {currentStep === 2 && "Review and confirm"}
                     {currentStep === 3 && "Pay and confirm"}
                   </Button>
                 </div>
-              }
-            />
-
-            <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-5 backdrop-blur-sm sm:p-6">
-              <div className="flex items-start gap-3">
-                <span className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-green-100 shrink-0 text-green-600">
-                  <ShieldCheck size={18} />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    Protected checkout
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Payments are encrypted end-to-end. You can reschedule from
-                    your dashboard if needed.
-                  </p>
-                </div>
               </div>
-            </Card>
+            </SectionCard>
 
+            {/* Security */}
+            <div className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-sm">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-50 text-green-600">
+                <ShieldCheck size={16} />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Protected checkout
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Payments are encrypted. You can reschedule from your dashboard
+                  if needed.
+                </p>
+              </div>
+            </div>
+
+            {/* Community insights */}
             <CommunityInsightsCard
-              title="Need a quick second opinion before paying?"
-              description="See what players are saying about this slot, coach, or venue before final confirmation."
+              title="Second opinion before paying?"
+              description={`See what players are saying about this ${type === "coach" ? "coach" : "venue"} before you confirm.`}
               q={`${sport} ${type === "coach" ? "coach" : "venue"}`}
               sport={sport}
               ctaUrl={communityUrl}
-              enabled={Boolean(user && user.role === "PLAYER")}
+              enabled={Boolean(user?.role === "PLAYER")}
             />
-          </div>
-        }
-      >
-        {currentStep === 1 && (
-          <>
-            {type === "venue" && venue && (
-              <CheckoutSection
-                title="Venue overview"
-                description="Confirm the venue and location before you pay."
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-40">
-                    {venue.images?.[0] ? (
-                      <img
-                        src={venue.images[0]}
-                        alt={venue.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                        No image available
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-lg font-bold text-slate-900">
-                      {venue.name}
-                    </p>
-                    {venue.address && (
-                      <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-                        <MapPin size={16} />
-                        {venue.address}
-                      </p>
-                    )}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {venue.sports.map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </CheckoutSection>
-            )}
-
-            {type === "coach" && coach && (
-              <CheckoutSection
-                title="Coach overview"
-                description="Confirm the coach and location before you pay."
-              >
-                {(() => {
-                  const coachDisplayName = getCoachDisplayName(coach);
-                  const coachImage = getCoachImageCandidates(coach)[0];
-                  const locationLabel = getCoachLocationLabel(coach);
-                  const venueLocation = getOwnVenueLocationDisplay(
-                    coach.ownVenueDetails,
-                  );
-
-                  return (
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                      <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-28 sm:w-40">
-                        {coachImage ? (
-                          <img
-                            src={coachImage}
-                            alt={coachDisplayName}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <UserIcon size={26} className="text-slate-400" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-lg font-bold text-slate-900">
-                          {coachDisplayName}
-                        </p>
-                        {venueLocation ? (
-                          <div className="mt-1 flex items-start gap-2 text-sm text-slate-600">
-                            <MapPin size={16} className="mt-0.5 shrink-0" />
-                            <div className="space-y-1">
-                              <p className="font-medium text-slate-800">
-                                {locationLabel}
-                              </p>
-                              <p>{venueLocation.description}</p>
-                              {venueLocation.mapsUrl && (
-                                <a
-                                  href={venueLocation.mapsUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex text-xs font-semibold text-power-orange hover:underline"
-                                >
-                                  Open in Maps
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-                            <MapPin size={16} />
-                            {locationLabel}
-                          </p>
-                        )}
-                        <p className="mt-1 text-xs text-slate-500">
-                          ★ {coach.rating.toFixed(1)} ({coach.reviewCount}{" "}
-                          reviews)
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {coach.sports.slice(0, 4).map((item) => (
-                            <span
-                              key={item}
-                              className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange"
-                            >
-                              {item}
-                            </span>
-                          ))}
-                          {coach.sports.length > 4 && (
-                            <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                              +{coach.sports.length - 4} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </CheckoutSection>
-            )}
-
-            <CheckoutSection
-              title="Booking details"
-              description="Verify your schedule and attendee details."
-              action={
-                <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  <Calendar size={14} />
-                  {date ? formatDate(date) : "No date"}
-                </span>
-              }
-            >
-              {user?.dependents && user.dependents.length > 0 && (
-                <div className="mb-4">
-                  <label className="mb-2 block text-sm font-medium text-slate-900">
-                    Who is attending?
-                  </label>
-                  <select
-                    value={selectedDependentId}
-                    onChange={(event) =>
-                      setSelectedDependentId(event.target.value)
-                    }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
-                  >
-                    <option value="">Me ({user.name})</option>
-                    {user.dependents.map((dependent) => (
-                      <option key={dependent._id} value={dependent._id || ""}>
-                        {dependent.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <CheckoutDetailList items={bookingDetails} />
-              <div className="mt-4 flex flex-wrap gap-3 rounded-xl bg-white/50 border border-slate-200/60 p-4 text-sm text-slate-600">
-                <span className="flex items-center gap-2">
-                  <Clock size={16} className="text-slate-400" />
-                  Arrival buffer: 10 minutes before slot start.
-                </span>
-              </div>
-            </CheckoutSection>
-          </>
-        )}
-
-        {currentStep === 2 && (
-          <>
-            {/* Group Booking Section */}
-            <CheckoutSection
-              title="Group Booking"
-              description="Invite friends to join this booking and split the cost."
-            >
-              <GroupBookingInviteSection
-                isGroupBooking={isGroupBooking}
-                onGroupBookingChange={setIsGroupBooking}
-                selectedFriendIds={selectedFriendIds}
-                onFriendSelectionChange={setSelectedFriendIds}
-                paymentType={paymentType}
-                onPaymentTypeChange={setPaymentType}
-                totalAmount={total}
-              />
-            </CheckoutSection>
-
-            <CheckoutSection
-              title="Payment method"
-              description="Choose how you want to pay for this booking."
-            >
-              <PaymentMethodSelector
-                value={paymentMethod}
-                onChange={setPaymentMethod}
-                options={paymentOptions}
-              />
-              <div className="mt-4 rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-xs text-slate-500">
-                Selected:{" "}
-                {
-                  paymentOptions.find((option) => option.id === paymentMethod)
-                    ?.label
-                }
-              </div>
-            </CheckoutSection>
-
-            <CheckoutSection
-              title="Promo code"
-              description="Apply a promo to save on your booking."
-            >
-              <form
-                onSubmit={handleApplyPromo}
-                className="flex flex-col gap-3 sm:flex-row"
-              >
-                <div className="relative flex-1">
-                  <TicketPercent
-                    size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <input
-                    value={promoCode}
-                    onChange={(event) => setPromoCode(event.target.value)}
-                    placeholder="Enter code (try PLAY10)"
-                    className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
-                  />
-                </div>
-                <Button type="submit" variant="outline" className="sm:w-40">
-                  {isApplyingPromo ? "Applying..." : "Apply"}
-                </Button>
-              </form>
-              {promoMessage && (
-                <p className="mt-2 text-xs text-slate-500">{promoMessage}</p>
-              )}
-            </CheckoutSection>
-          </>
-        )}
-
-        {currentStep === 3 && (
-          <CheckoutSection
-            title="Confirm booking"
-            description="Review your summary before confirming payment."
-          >
-            <CheckoutDetailList items={bookingDetails} />
-            <div className="mt-4 rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-xs text-slate-500">
-              Payment method:{" "}
-              {
-                paymentOptions.find((option) => option.id === paymentMethod)
-                  ?.label
-              }
-            </div>
-          </CheckoutSection>
-        )}
-
-        {!hasRequiredDetails && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            Missing booking details. Please go back and select a date, time, and
-            sport.
-          </div>
-        )}
-
-        {hasRequiredDetails && !hasValidDuration && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            End time must be after start time.
-          </div>
-        )}
-
-        {showWaitlistPrompt && (
-          <div className="rounded-xl border border-blue-200/60 bg-blue-50/50 px-4 py-4 text-sm text-blue-700">
-            <p className="font-semibold">Selected slot was just taken.</p>
-            {alternateSlots.length > 0 ? (
-              <p className="mt-1 text-xs">
-                Alternate slots: {alternateSlots.join(", ")}
-              </p>
-            ) : (
-              <p className="mt-1 text-xs">
-                No nearby alternate slot found right now.
-              </p>
-            )}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleJoinWaitlist}
-                disabled={isJoiningWaitlist}
-              >
-                {isJoiningWaitlist ? "Joining..." : "Join waitlist"}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowWaitlistPrompt(false)}
-              >
-                Dismiss
-              </Button>
-            </div>
-          </div>
-        )}
-      </CheckoutShell>
+          </motion.div>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -1189,7 +1333,11 @@ function CheckoutPageContent() {
 export default function CheckoutPage() {
   return (
     <Suspense
-      fallback={<div className="text-center py-12">Loading checkout...</div>}
+      fallback={
+        <div className="flex min-h-[420px] items-center justify-center">
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-power-orange" />
+        </div>
+      }
     >
       <CheckoutPageContent />
     </Suspense>
