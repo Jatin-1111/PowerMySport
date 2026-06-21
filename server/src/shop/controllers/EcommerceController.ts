@@ -1200,12 +1200,13 @@ export class AdminEcommerceController {
         return;
       }
 
-      // Get paymentId from the payment transaction linked to this order
+      // Use gatewayOrderId (our merchantOrderId) — PhonePe's refund API requires
+      // the original merchantOrderId, not the PhonePe-assigned payment ID.
       const paymentTransaction = await PaymentTransactionModel.findOne({
         orderId: orderId,
       }).sort({ createdAt: -1 });
 
-      if (!paymentTransaction?.gatewayPaymentId) {
+      if (!paymentTransaction?.gatewayOrderId) {
         res.status(400).json({
           ok: false,
           error: {
@@ -1216,11 +1217,11 @@ export class AdminEcommerceController {
         return;
       }
 
-      const paymentId = paymentTransaction.gatewayPaymentId;
+      const merchantOrderId = paymentTransaction.gatewayOrderId;
 
       const refundId = await this.refundService.initiateRefund(
         orderId,
-        paymentId,
+        merchantOrderId,
         refundAmount,
         reason,
       );

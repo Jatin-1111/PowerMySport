@@ -95,29 +95,32 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
   }
 
   /**
-   * Verify payment from gateway by fetching actual order status via SDK
+   * Verify payment from gateway by fetching actual order status via SDK.
+   * merchantOrderId must be the merchantOrderId sent to PhonePe (not the PhonePe payment ID).
    */
   async verifyPayment(
-    paymentId: string, // This is actually gatewayOrderId
-    orderId: string,
-    signature: string,
+    merchantOrderId: string,
+    _orderId: string,
+    _signature: string,
   ): Promise<boolean> {
-    const status = await this.getPaymentStatus(paymentId);
+    const status = await this.getPaymentStatus(merchantOrderId);
     return status === PaymentStatus.CAPTURED;
   }
 
   /**
-   * Initiate refund using PhonePeService SDK
+   * Initiate refund using PhonePeService SDK.
+   * merchantOrderId must be the merchantOrderId sent during order creation, not the PhonePe payment ID.
+   * amount is in paise; this function converts to rupees for the PhonePe SDK.
    */
   async initiateRefund(
-    paymentId: string,
+    merchantOrderId: string,
     amount: number,
     reason: string,
   ): Promise<string> {
     const result = await initiatePhonePeRefund({
-      merchantRefundId: `R_${paymentId}_${Date.now()}`,
-      originalMerchantOrderId: paymentId,
-      amount: amount / 100, // initiatePhonePeRefund expects rupees, but Ecommerce amount is in paise
+      merchantRefundId: `R_${merchantOrderId}_${Date.now()}`,
+      originalMerchantOrderId: merchantOrderId,
+      amount: amount / 100, // PhonePe SDK expects rupees; amount here is in paise
     });
 
     return result.refundId || "";
@@ -290,9 +293,10 @@ export class PaymentService {
     phonepeOrderId: string,
     signature: string,
   ): Promise<PaymentTransactionDocument> {
-    // Verify with payment gateway
+    // phonepeOrderId is the merchantOrderId we generated; verifyPayment calls
+    // getPhonePeOrderStatus which requires the merchantOrderId, not the payment ID.
     const isValid = await this.gatewayService.verifyPayment(
-      paymentId,
+      phonepeOrderId,
       phonepeOrderId,
       signature,
     );
@@ -431,11 +435,13 @@ export class RefundService {
   }
 
   /**
-   * Initiate refund for an order
+   * Initiate refund for an order.
+   * merchantOrderId must be the gatewayOrderId stored on the PaymentTransaction
+   * (the merchantOrderId sent to PhonePe at order creation), NOT the gatewayPaymentId.
    */
   async initiateRefund(
     orderId: string,
-    paymentId: string,
+    merchantOrderId: string,
     refundAmount: number,
     reason: string,
   ): Promise<string> {
@@ -446,8 +452,8 @@ export class RefundService {
       throw new Error("Order not found");
     }
 
-    if (!paymentId) {
-      throw new Error("Payment ID required for refund");
+    if (!merchantOrderId) {
+      throw new Error("Merchant order ID required for refund");
     }
 
     if (refundAmount <= 0) {
@@ -460,7 +466,7 @@ export class RefundService {
 
     // Call payment gateway to initiate refund
     const refundId = await new PhonePeGatewayService().initiateRefund(
-      paymentId,
+      merchantOrderId,
       refundAmount,
       reason,
     );

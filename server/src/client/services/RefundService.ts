@@ -269,10 +269,11 @@ async function initiateStoreCreditRefund(
   amount: number,
 ): Promise<RefundStatusResponse> {
   try {
-    // Add credit to player's wallet
+    // amount is in paise; wallet balance is denominated in rupees — convert before crediting
+    const amountInRupees = amount / 100;
     const { transaction: walletTx } = await WalletService.creditWallet(
       transaction.userId.toString(),
-      amount,
+      amountInRupees,
       "Booking Refund",
       transaction._id.toString()
     );

@@ -112,13 +112,15 @@ router.post(
   checkInBookingWithCode,
 );
 
-// Confirm mock payment success and trigger booking confirmation email
-router.post(
-  "/:bookingId/mock-payment-success",
-  authMiddleware,
-  coachVerificationCompletedMiddleware,
-  confirmMockPaymentSuccessById,
-);
+// Confirm mock payment success — development/staging only, never in production
+if (process.env.NODE_ENV !== "production") {
+  router.post(
+    "/:bookingId/mock-payment-success",
+    authMiddleware,
+    coachVerificationCompletedMiddleware,
+    confirmMockPaymentSuccessById,
+  );
+}
 
 // Initiate PhonePe payment for a booking
 router.post(
