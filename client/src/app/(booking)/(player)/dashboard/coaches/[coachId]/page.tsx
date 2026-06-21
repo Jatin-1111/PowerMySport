@@ -32,9 +32,49 @@ export default function BookCoachPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Availability slot state
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<string>("");
+
   useEffect(() => {
     loadData();
   }, [coachId]);
+
+  // Fetch available slots whenever date or sport changes
+  useEffect(() => {
+    if (bookingData.date && bookingData.sport) {
+      fetchAvailableSlots(bookingData.date, bookingData.sport);
+    } else {
+      setAvailableSlots([]);
+      setSelectedSlot("");
+      setBookingData((prev) => ({ ...prev, startTime: "", endTime: "" }));
+    }
+  }, [bookingData.date, bookingData.sport]);
+
+  const fetchAvailableSlots = async (date: string, sport: string) => {
+    setLoadingSlots(true);
+    setSelectedSlot("");
+    setBookingData((prev) => ({ ...prev, startTime: "", endTime: "" }));
+    try {
+      const response = await bookingApi.getCoachAvailability(coachId, date, sport);
+      if (response.success && response.data) {
+        setAvailableSlots(response.data.availableSlots || []);
+      } else {
+        setAvailableSlots([]);
+      }
+    } catch {
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const handleSlotSelect = (slot: string) => {
+    const [startTime = "", endTime = ""] = slot.split("-");
+    setSelectedSlot(slot);
+    setBookingData((prev) => ({ ...prev, startTime, endTime }));
+  };
 
   const loadData = async () => {
     try {
@@ -43,18 +83,19 @@ export default function BookCoachPage() {
         const coachData = coachResponse.data;
         setCoach(coachData);
 
-        // If coach has a venue, fetch it
+        // Try to load linked venue
         const coachVenueId = (coachData as { venueId?: string }).venueId;
         if (coachVenueId) {
           loadVenue(coachVenueId);
+        } else {
+          // OWN_VENUE coaches may have ownVenueDetails but no separate venue doc
+          setLoading(false);
         }
       }
 
-      // Also load user data for dependents
       const userResponse = await authApi.getProfile();
       if (userResponse.success && userResponse.data) {
         setUser(userResponse.data);
-
         if (userResponse.data.role !== "PLAYER") {
           toast.error("Only player accounts can create bookings.");
           router.replace(getDashboardPathByRole(userResponse.data.role));
@@ -92,18 +133,16 @@ export default function BookCoachPage() {
 
   const calculateDuration = () => {
     if (!bookingData.startTime || !bookingData.endTime) return 0;
-    const start = parseInt(bookingData.startTime.split(":")[0]);
-    const end = parseInt(bookingData.endTime.split(":")[0]);
-    return end - start;
+    const [startH = "0", startM = "0"] = bookingData.startTime.split(":");
+    const [endH = "0", endM = "0"] = bookingData.endTime.split(":");
+    const startMins = parseInt(startH) * 60 + parseInt(startM);
+    const endMins = parseInt(endH) * 60 + parseInt(endM);
+    return Math.max(0, (endMins - startMins) / 60);
   };
 
   const getSportPrice = (sport: string) => {
     if (!venue) return 0;
-    if (
-      sport &&
-      venue.sportPricing &&
-      venue.sportPricing[sport] !== undefined
-    ) {
+    if (sport && venue.sportPricing && venue.sportPricing[sport] !== undefined) {
       return venue.sportPricing[sport];
     }
     return venue.pricePerHour;
@@ -119,6 +158,11 @@ export default function BookCoachPage() {
     return total;
   };
 
+  // Sports to show: prefer venue sports, fall back to coach sports
+  const sportsOptions = venue?.sports?.length
+    ? venue.sports
+    : coach?.sports || [];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -127,26 +171,20 @@ export default function BookCoachPage() {
       return;
     }
 
-    if (
-      !bookingData.date ||
-      !bookingData.startTime ||
-      !bookingData.endTime ||
-      !bookingData.sport
-    ) {
-      toast.error("Please fill in all fields");
+    if (!bookingData.date || !bookingData.startTime || !bookingData.endTime || !bookingData.sport) {
+      toast.error("Please select a date, sport, and time slot");
       return;
     }
 
-    const duration = calculateDuration();
-    if (duration <= 0) {
-      toast.error("End time must be after start time");
+    if (!selectedSlot) {
+      toast.error("Please select an available time slot");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const params = new URLSearchParams({
+      const urlParams = new URLSearchParams({
         type: "coach",
         coachId,
         date: bookingData.date,
@@ -158,7 +196,7 @@ export default function BookCoachPage() {
         }),
       });
 
-      router.push(`/dashboard/checkout?${params.toString()}`);
+      router.push(`/dashboard/checkout?${urlParams.toString()}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -251,13 +289,6 @@ export default function BookCoachPage() {
                 </p>
               </div>
             )}
-
-            {!venue && (
-              <div className="bg-yellow-50 text-yellow-800 p-3 rounded-md text-sm">
-                Warning: This coach does not have a linked venue. Booking may
-                not be possible.
-              </div>
-            )}
           </div>
         </Card>
 
@@ -269,27 +300,27 @@ export default function BookCoachPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Sport Selection */}
-            {venue && (
-              <div>
-                <label className="block text-sm font-medium text-slate-900 mb-2">
-                  Sport *
-                </label>
-                <select
-                  name="sport"
-                  value={bookingData.sport}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
-                >
-                  <option value="">Select a sport</option>
-                  {venue.sports.map((sport) => (
-                    <option key={sport} value={sport}>
-                      {sport}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-slate-900 mb-2">
+                Sport *
+              </label>
+              <select
+                name="sport"
+                value={bookingData.sport}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
+              >
+                <option value="">Select a sport</option>
+                {sportsOptions.map((sport) => (
+                  <option key={sport} value={sport}>
+                    {sport}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date */}
             <div>
               <label className="block text-sm font-medium text-slate-900 mb-2">
                 Date *
@@ -304,6 +335,39 @@ export default function BookCoachPage() {
                 className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
               />
             </div>
+
+            {/* Available Slots */}
+            {bookingData.date && bookingData.sport && (
+              <div>
+                <label className="block text-sm font-medium text-slate-900 mb-2">
+                  Available Time Slots *
+                </label>
+                {loadingSlots ? (
+                  <p className="text-sm text-slate-500">Loading slots...</p>
+                ) : availableSlots.length === 0 ? (
+                  <p className="text-sm text-red-500">
+                    No available slots for this date and sport.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {availableSlots.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => handleSlotSelect(slot)}
+                        className={`px-2 py-2 rounded-lg text-xs font-medium border transition-all ${
+                          selectedSlot === slot
+                            ? "bg-power-orange text-white border-power-orange"
+                            : "bg-white/80 text-slate-700 border-slate-200/60 hover:border-power-orange/50"
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Participant Selection */}
             {user && user.dependents && user.dependents.length > 0 && (
@@ -327,46 +391,19 @@ export default function BookCoachPage() {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
-                Start Time *
-              </label>
-              <input
-                type="time"
-                name="startTime"
-                value={bookingData.startTime}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
-                End Time *
-              </label>
-              <input
-                type="time"
-                name="endTime"
-                value={bookingData.endTime}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2.5 border border-slate-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/40 bg-white/80 text-slate-900 transition-all text-sm"
-              />
-            </div>
-
+            {/* Price summary */}
             {duration > 0 && (
               <div className="bg-white/50 rounded-lg p-4 border border-slate-200/60 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Duration</span>
                   <span className="font-semibold text-slate-900">
-                    {duration} hours
+                    {duration} hour{duration !== 1 ? "s" : ""}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Rate / hr</span>
                   <span className="font-semibold text-slate-900">
-                    ₹{coach.hourlyRate + (venue ? venue.pricePerHour : 0)}
+                    ₹{coach.hourlyRate + (venue ? getSportPrice(bookingData.sport) : 0)}
                   </span>
                 </div>
                 <div className="border-t border-slate-200/60 pt-2 mt-2">
@@ -379,9 +416,10 @@ export default function BookCoachPage() {
                 </div>
               </div>
             )}
+
             <Button
               type="submit"
-              disabled={isSubmitting || duration <= 0 || !venue}
+              disabled={isSubmitting || !selectedSlot}
               variant="primary"
               className="w-full"
             >

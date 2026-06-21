@@ -20,7 +20,10 @@ import {
   BookingWaitlist,
   BookingWaitlistDocument,
 } from "../models/BookingWaitlist";
-import { calculateGroupPaymentSplits, calculateSplitAmounts } from "../../utils/payment";
+import {
+  calculateGroupPaymentSplits,
+  calculateSplitAmounts,
+} from "../../utils/payment";
 import { generateDynamicSlots } from "../../utils/booking";
 import { emitSlotLocked } from "../sockets/bookingSocket";
 import { NotificationService } from "./NotificationService";
@@ -262,10 +265,15 @@ const acquireResourceSlotLock = async (
   startTime: string,
   session: ClientSession,
 ): Promise<void> => {
+  if (!mongoose.Types.ObjectId.isValid(resourceId)) {
+    throw new Error(
+      `Invalid resource ID format for ${resourceType}: ${resourceId}`,
+    );
+  }
   await BookingSlotLock.findOneAndUpdate(
     {
       resourceType,
-      resourceId: resourceId,
+      resourceId: new mongoose.Types.ObjectId(resourceId),
       dateKey: `${getDateKey(date)}-${startTime}`,
     },
     {
@@ -346,10 +354,28 @@ const createBookingAtomically = async (
           }
         }
 
+        console.log(
+          "[createBookingAtomically] about to construct Booking. userId:",
+          JSON.stringify(payload.userId),
+          "venueId:",
+          JSON.stringify(payload.venueId),
+          "coachId:",
+          JSON.stringify(payload.coachId),
+          "organizerId:",
+          JSON.stringify(payload.organizerId),
+          "participantId:",
+          JSON.stringify(payload.participantId?.toString()),
+          "payments:",
+          JSON.stringify(payload.payments),
+        );
         const booking = new Booking({
-          userId: payload.userId,
-          ...(payload.venueId ? { venueId: payload.venueId } : {}),
-          ...(payload.coachId ? { coachId: payload.coachId } : {}),
+          userId: new mongoose.Types.ObjectId(payload.userId),
+          ...(payload.venueId
+            ? { venueId: new mongoose.Types.ObjectId(payload.venueId) }
+            : {}),
+          ...(payload.coachId
+            ? { coachId: new mongoose.Types.ObjectId(payload.coachId) }
+            : {}),
           sport: payload.sport,
           date: payload.date,
           startTime: payload.startTime,
@@ -369,7 +395,7 @@ const createBookingAtomically = async (
           ...(payload.participantAge !== undefined
             ? { participantAge: payload.participantAge }
             : {}),
-          organizerId: payload.organizerId,
+          organizerId: new mongoose.Types.ObjectId(payload.organizerId),
           payments: payload.payments || [],
         });
 
@@ -569,7 +595,41 @@ export const initiateBooking = async (
       throw new Error("Cannot book a slot in the past");
     }
 
+    // --- BOOKING DEBUG LOG START ---
+    console.log(
+      "[initiateBooking] RAW PAYLOAD:",
+      JSON.stringify({
+        userId: payload.userId,
+        userIdType: typeof payload.userId,
+        userIdIsValid: mongoose.Types.ObjectId.isValid(payload.userId),
+        venueId: payload.venueId,
+        venueIdIsValid: payload.venueId
+          ? mongoose.Types.ObjectId.isValid(payload.venueId)
+          : "N/A",
+        coachId: payload.coachId,
+        coachIdIsValid: payload.coachId
+          ? mongoose.Types.ObjectId.isValid(payload.coachId)
+          : "N/A",
+        sport: payload.sport,
+        date: payload.date,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        dependentId: payload.dependentId,
+        dependentIdIsValid: payload.dependentId
+          ? mongoose.Types.ObjectId.isValid(payload.dependentId)
+          : "N/A",
+        hasPlayerLocation: Boolean(payload.playerLocation),
+      }),
+    );
+    // --- BOOKING DEBUG LOG END ---
+
     // Fetch user for participant information
+    console.log(
+      "[initiateBooking] STEP 1: validating userId =",
+      JSON.stringify(payload.userId),
+      "type:",
+      typeof payload.userId,
+    );
     if (!mongoose.Types.ObjectId.isValid(payload.userId)) {
       throw new Error("Invalid user ID format");
     }
@@ -577,6 +637,7 @@ export const initiateBooking = async (
     if (!user) {
       throw new Error("User not found");
     }
+    console.log("[initiateBooking] STEP 1 OK: user =", user._id.toString());
 
     // Determine participant details
     let participantName = user.name;
@@ -584,11 +645,22 @@ export const initiateBooking = async (
     let participantAge: number | undefined = undefined;
 
     if (payload.dependentId) {
-      if (payload.dependentId === "undefined" || !mongoose.Types.ObjectId.isValid(payload.dependentId)) {
+      console.log(
+        "[initiateBooking] STEP 2: validating dependentId =",
+        JSON.stringify(payload.dependentId),
+      );
+      if (
+        payload.dependentId === "undefined" ||
+        !mongoose.Types.ObjectId.isValid(payload.dependentId)
+      ) {
         throw new Error("Invalid dependent ID format");
       }
       // Booking is for a dependent (child)
-      const dependent = await Player.findOne({ _id: payload.dependentId, userId: user._id, type: "DEPENDENT" });
+      const dependent = await Player.findOne({
+        _id: payload.dependentId,
+        userId: user._id,
+        type: "DEPENDENT",
+      });
       if (!dependent) {
         throw new Error("Dependent not found");
       }
@@ -601,6 +673,14 @@ export const initiateBooking = async (
       participantName = dependent.name;
       participantId = dependent._id;
       participantAge = dependent.age;
+      console.log(
+        "[initiateBooking] STEP 2 OK: dependent =",
+        dependent._id.toString(),
+        "participantId type:",
+        typeof participantId,
+        "value:",
+        participantId?.toString(),
+      );
 
       // Validate minimum age (must be at least 3 years old)
       if (participantAge < 3) {
@@ -616,11 +696,19 @@ export const initiateBooking = async (
     } else {
       // Booking is for the parent/user themselves
       participantId = user._id;
+      console.log(
+        "[initiateBooking] STEP 2: no dependent, participantId =",
+        participantId?.toString(),
+      );
     }
 
     let venue: VenueDocument | null = null;
 
     if (payload.venueId) {
+      console.log(
+        "[initiateBooking] STEP 3: validating venueId =",
+        JSON.stringify(payload.venueId),
+      );
       if (!mongoose.Types.ObjectId.isValid(payload.venueId)) {
         throw new Error("Invalid venue ID format");
       }
@@ -628,6 +716,14 @@ export const initiateBooking = async (
       if (!venue) {
         throw new Error("Venue not found");
       }
+      console.log(
+        "[initiateBooking] STEP 3 OK: venue =",
+        venue._id.toString(),
+        "ownerId raw =",
+        JSON.stringify(venue.ownerId),
+        "ownerId type:",
+        typeof venue.ownerId,
+      );
 
       const venueAvailable = await isSlotAvailable(
         payload.venueId,
@@ -698,6 +794,14 @@ export const initiateBooking = async (
       if (!coach) {
         throw new Error("Coach not found");
       }
+      console.log(
+        "[initiateBooking] STEP 4 OK: coach =",
+        coach._id.toString(),
+        "userId raw =",
+        JSON.stringify((coach as any).userId),
+        "serviceMode:",
+        coach.serviceMode,
+      );
 
       if (COACH_SUBSCRIPTIONS_ENFORCE_BOOKING) {
         const now = new Date();
@@ -816,7 +920,9 @@ export const initiateBooking = async (
 
     let singlePaymentSplits: any[] = [];
     if (payload.venueId || payload.coachId) {
-      const venueOwnerIdStr = venue?.ownerId ? (venue.ownerId as any)._id?.toString() || venue.ownerId.toString() : undefined;
+      const venueOwnerIdStr = venue?.ownerId
+        ? (venue.ownerId as any)._id?.toString() || venue.ownerId.toString()
+        : undefined;
       let coachUserIdStr: string | undefined;
       if (payload.coachId) {
         const coachInfo = await Coach.findById(payload.coachId);
@@ -824,6 +930,29 @@ export const initiateBooking = async (
           coachUserIdStr = coachInfo.userId.toString();
         }
       }
+
+      console.log(
+        "[initiateBooking] STEP 5 splits input: venueOwnerIdStr =",
+        JSON.stringify(venueOwnerIdStr),
+        "venueOwnerIdValid:",
+        venueOwnerIdStr
+          ? mongoose.Types.ObjectId.isValid(venueOwnerIdStr)
+          : false,
+        "coachUserIdStr =",
+        JSON.stringify(coachUserIdStr),
+        "coachUserIdValid:",
+        coachUserIdStr
+          ? mongoose.Types.ObjectId.isValid(coachUserIdStr)
+          : false,
+        "payerUserId =",
+        JSON.stringify(payload.userId),
+        "venuePrice =",
+        venuePrice,
+        "coachPrice =",
+        coachPrice,
+        "totalAmount =",
+        totalAmount,
+      );
 
       const calculatedSplits = calculateSplitAmounts(
         venuePrice,
@@ -834,14 +963,24 @@ export const initiateBooking = async (
         totalAmount,
       );
 
+      console.log(
+        "[initiateBooking] STEP 5 calculatedSplits:",
+        JSON.stringify(calculatedSplits),
+      );
+
       singlePaymentSplits = calculatedSplits
-        .filter(p => p.userId && mongoose.Types.ObjectId.isValid(p.userId))
-        .map(p => ({
+        .filter((p) => p.userId && mongoose.Types.ObjectId.isValid(p.userId))
+        .map((p) => ({
           userId: p.userId,
           userType: p.userType,
           amount: p.amount,
-          status: p.status
+          status: p.status,
         }));
+
+      console.log(
+        "[initiateBooking] STEP 5 singlePaymentSplits after filter:",
+        JSON.stringify(singlePaymentSplits),
+      );
     }
 
     const bookingPayload: BookingCreatePayload = {
@@ -865,16 +1004,38 @@ export const initiateBooking = async (
       payments: singlePaymentSplits,
     };
 
+    console.log(
+      "[initiateBooking] STEP 6 bookingPayload:",
+      JSON.stringify({
+        userId: bookingPayload.userId,
+        userIdValid: mongoose.Types.ObjectId.isValid(bookingPayload.userId),
+        venueId: bookingPayload.venueId,
+        coachId: bookingPayload.coachId,
+        organizerId: bookingPayload.organizerId,
+        organizerIdValid: mongoose.Types.ObjectId.isValid(
+          bookingPayload.organizerId,
+        ),
+        participantId: bookingPayload.participantId?.toString(),
+        participantIdValid: bookingPayload.participantId
+          ? mongoose.Types.ObjectId.isValid(
+              bookingPayload.participantId.toString(),
+            )
+          : false,
+        paymentsCount: bookingPayload.payments?.length,
+        payments: bookingPayload.payments,
+      }),
+    );
+
     const booking =
       payload.venueId || payload.coachId
         ? await createBookingAtomically(bookingPayload)
         : await Booking.create({
-            userId: bookingPayload.userId,
+            userId: new mongoose.Types.ObjectId(bookingPayload.userId),
             ...(bookingPayload.venueId
-              ? { venueId: bookingPayload.venueId }
+              ? { venueId: new mongoose.Types.ObjectId(bookingPayload.venueId) }
               : {}),
             ...(bookingPayload.coachId
-              ? { coachId: bookingPayload.coachId }
+              ? { coachId: new mongoose.Types.ObjectId(bookingPayload.coachId) }
               : {}),
             sport: bookingPayload.sport,
             date: bookingPayload.date,
@@ -897,7 +1058,9 @@ export const initiateBooking = async (
             ...(bookingPayload.participantAge !== undefined
               ? { participantAge: bookingPayload.participantAge }
               : {}),
-            organizerId: bookingPayload.organizerId,
+            organizerId: new mongoose.Types.ObjectId(
+              bookingPayload.organizerId,
+            ),
             payments: bookingPayload.payments || [],
           });
 
@@ -1750,7 +1913,7 @@ export const checkInBookingByCode = async (
   const endParts = booking.endTime.split(":").map(Number);
   const endHour = endParts[0] ?? 0;
   const endMin = endParts[1] ?? 0;
-  
+
   const bookingEndDateTime = new Date(booking.date);
   bookingEndDateTime.setHours(endHour, endMin, 0, 0);
 
@@ -1805,29 +1968,52 @@ const checkCoachAvailabilityForBooking = async (
 ): Promise<boolean> => {
   const coach = await Coach.findById(coachId);
   if (!coach) return false;
+
   const dayOfWeek = date.getDay();
+
+  // Resolve slots: prefer sport-specific availability, fall back to generic availability.
+  // availabilityBySport is stored as a Mongoose Map — always use Map API.
   const availabilityBySport = (coach as any).availabilityBySport as
-    | Map<string, Array<{ dayOfWeek: number; startTime: string; endTime: string }>>
-    | Record<string, Array<{ dayOfWeek: number; startTime: string; endTime: string }>>
+    | Map<
+        string,
+        Array<{ dayOfWeek: number; startTime: string; endTime: string }>
+      >
     | undefined;
+
   const sportSlots =
-    sport && availabilityBySport
-      ? availabilityBySport instanceof Map
-        ? availabilityBySport.get(sport)
-        : availabilityBySport[sport]
+    sport && availabilityBySport instanceof Map
+      ? availabilityBySport.get(sport)
       : undefined;
-  const sourceSlots = sportSlots || coach.availability || [];
-  const dayAvailability = (sourceSlots as Array<{ dayOfWeek: number; startTime: string; endTime: string }>).find(
-    (a) => a.dayOfWeek === dayOfWeek,
+
+  const sourceSlots: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+  }> =
+    (sportSlots && sportSlots.length > 0 ? sportSlots : coach.availability) ||
+    [];
+
+  // Filter all slots for this day (a coach may have multiple windows per day).
+  const daySlots = sourceSlots.filter((a) => a.dayOfWeek === dayOfWeek);
+  if (daySlots.length === 0) return false;
+
+  // Normalize all times to HH:mm so string comparison is safe regardless of
+  // whether the stored availability used "9:00" or "09:00".
+  const norm = (t: string) => {
+    const [h = "0", m = "00"] = t.split(":");
+    return `${String(parseInt(h, 10)).padStart(2, "0")}:${m}`;
+  };
+  const normStart = norm(startTime);
+  const normEnd = norm(endTime);
+
+  // The requested time must fit within at least one of the day's availability windows.
+  const isWithinAnySlot = daySlots.some(
+    (slot) =>
+      normStart >= norm(slot.startTime) && normEnd <= norm(slot.endTime),
   );
-  if (!dayAvailability) return false;
-  if (
-    startTime < dayAvailability.startTime ||
-    endTime > dayAvailability.endTime
-  ) {
-    return false;
-  }
-  // Only active bookings block slots: CONFIRMED, IN_PROGRESS
+  if (!isWithinAnySlot) return false;
+
+  // Check for conflicting bookings on the same day.
   const existingBooking = await Booking.findOne({
     coachId,
     date: {
@@ -2135,9 +2321,10 @@ export const updatePaymentStatus = async (
       }
 
       // Use toObject() to safely spread Mongoose subdocuments
-      const plain = typeof (payment as any).toObject === 'function'
-        ? (payment as any).toObject()
-        : payment;
+      const plain =
+        typeof (payment as any).toObject === "function"
+          ? (payment as any).toObject()
+          : payment;
       return {
         ...plain,
         status,

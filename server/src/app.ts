@@ -13,7 +13,6 @@ import {
   apiRateLimitMiddleware,
   securityHeadersMiddleware,
 } from "./middleware/security";
-import { initializeScheduledJobs } from "./utils/scheduledJobs";
 
 import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
@@ -53,8 +52,7 @@ export const app: Express = express();
  */
 app.set("trust proxy", 1);
 
-// Initialize scheduled cleanup jobs
-initializeScheduledJobs();
+// NOTE: initializeScheduledJobs() is called in server.ts after the server starts listening.
 
 const normalizeOrigin = (origin: string): string =>
   origin.trim().replace(/\/$/, "").toLowerCase();

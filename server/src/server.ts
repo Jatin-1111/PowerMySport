@@ -24,6 +24,7 @@ import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
 import { startOutboxWorker } from "./shared/services/OutboxService";
 import { initializeScraperScheduler } from "./utils/scraperScheduler";
+import { initializeScheduledJobs } from "./utils/scheduledJobs";
 const PORT = process.env.PORT || 5000;
 
 let stopOutboxWorker: (() => void) | null = null;
@@ -98,14 +99,26 @@ const startServer = async () => {
       io.adapter(createAdapter(pub, sub));
       redisPub = pub;
       redisSub = sub;
-      console.log("🔴 Redis adapter attached to Socket.IO (multi-instance mode)");
+      console.log(
+        "🔴 Redis adapter attached to Socket.IO (multi-instance mode)",
+      );
     } catch {
-      console.warn("⚠️  Redis unavailable — running in single-instance mode (start Redis to enable horizontal scaling)");
+      console.warn(
+        "⚠️  Redis unavailable — running in single-instance mode (start Redis to enable horizontal scaling)",
+      );
       // Stop ioredis retry loop — without this it floods the logs with
       // connection errors indefinitely even though we've fallen back to
       // single-instance mode.
-      try { redisPub?.disconnect(); } catch { /* ignore */ }
-      try { redisSub?.disconnect(); } catch { /* ignore */ }
+      try {
+        redisPub?.disconnect();
+      } catch {
+        /* ignore */
+      }
+      try {
+        redisSub?.disconnect();
+      } catch {
+        /* ignore */
+      }
     }
 
     // Setup both socket handlers on the same instance
@@ -128,9 +141,15 @@ const startServer = async () => {
 
     let server: http.Server | null = null;
     let attempts = 5;
+    let jobsStarted = false;
 
     const startListening = (port: number) => {
-      server = httpServer.listen(port);
+      // Always create a fresh HTTP server for each attempt so we never call
+      // .listen() twice on the same server object (which causes double startup).
+      server = http.createServer(app);
+
+      // Re-attach Socket.IO to the new server instance.
+      io.attach(server);
 
       server.on("listening", () => {
         console.log(`\n✅ Server is running on http://localhost:${port}`);
@@ -138,34 +157,42 @@ const startServer = async () => {
         console.log(`👥 Friend socket ready`);
         console.log(`📝 API Documentation:`);
 
-        // Start booking expiration job
-        startExpirationJob();
-        console.log(`⏰ Booking expiration job started`);
+        // Guard: only start background jobs once, even if retried ports.
+        if (!jobsStarted) {
+          jobsStarted = true;
 
-        // Start reminder scheduler
-        initializeReminderScheduler();
-        console.log(`🔔 Booking reminder scheduler started\n`);
+          // Scheduled cleanup jobs (moved from app.ts to here so they only
+          // run after the server is confirmed listening).
+          initializeScheduledJobs();
 
-        // Start outbox worker to handle message notification delivery and retries
-        stopOutboxWorker = startOutboxWorker();
-        console.log("📨 Outbox worker started");
+          // Start booking expiration job
+          startExpirationJob();
+          console.log(`⏰ Booking expiration job started`);
 
-        // Start scraper bots (Disabled temporarily)
-        // initializeScraperScheduler();
-        // console.log("🤖 Scraper bot scheduler started\n");
+          // Start reminder scheduler
+          initializeReminderScheduler();
+          console.log(`🔔 Booking reminder scheduler started\n`);
+
+          // Start outbox worker to handle message notification delivery and retries
+          stopOutboxWorker = startOutboxWorker();
+          console.log("📨 Outbox worker started");
+        }
       });
 
       server.on("error", (err: any) => {
         if (err && err.code === "EADDRINUSE" && attempts > 0) {
           console.warn(`Port ${port} in use, trying ${port + 1}...`);
           attempts -= 1;
-          setTimeout(() => startListening(port + 1), 500);
+          // Close this server before trying the next port.
+          server?.close(() => setTimeout(() => startListening(port + 1), 100));
           return;
         }
 
         console.error("❌ Failed to start server:", err);
         process.exit(1);
       });
+
+      server.listen(port);
     };
 
     // Graceful shutdown

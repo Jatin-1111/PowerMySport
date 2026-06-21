@@ -1,5 +1,9 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { IAvailability, IOwnVenueDetails, ServiceMode } from "../../types/index";
+import {
+  IAvailability,
+  IOwnVenueDetails,
+  ServiceMode,
+} from "../../types/index";
 
 export type PayoutMethodType = "BANK_TRANSFER" | "UPI";
 
@@ -357,7 +361,7 @@ const coachSchema = new Schema<CoachDocument>(
     toJSON: {
       virtuals: true,
       transform(doc: any, ret: any) {
-        ret.id = ret._id;
+        ret.id = ret._id?.toString();
         delete ret.__v;
         // Convert Map to plain object for sportPricing
         if (ret.sportPricing instanceof Map) {
@@ -372,7 +376,7 @@ const coachSchema = new Schema<CoachDocument>(
     toObject: {
       virtuals: true,
       transform(doc: any, ret: any) {
-        ret.id = ret._id;
+        ret.id = ret._id?.toString();
         delete ret.__v;
         // Convert Map to plain object for sportPricing
         if (ret.sportPricing instanceof Map) {
