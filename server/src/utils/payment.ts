@@ -13,6 +13,8 @@ export const calculateSplitAmounts = (
   venueOwnerId: string,
   coachPrice?: number,
   coachUserId?: string,
+  payerUserId?: string,
+  totalAmount?: number,
 ): IPayment[] => {
   const payments: IPayment[] = [
     {
@@ -28,6 +30,18 @@ export const calculateSplitAmounts = (
       userId: coachUserId,
       userType: "COACH",
       amount: coachPrice,
+      status: "PENDING",
+    });
+  }
+
+  // Add the player (payer) entry so that getBookingPaymentAmount()
+  // and updatePaymentStatus() can locate the payer by userId.
+  // For single bookings the player pays the full totalAmount.
+  if (payerUserId) {
+    payments.push({
+      userId: payerUserId,
+      userType: "PLAYER",
+      amount: totalAmount ?? (venuePrice + (coachPrice || 0)),
       status: "PENDING",
     });
   }

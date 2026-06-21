@@ -8,6 +8,17 @@ import { sendEmail } from "../../utils/email";
 import { PaymentGateway, PaymentStatus } from "../../types/ecommerce";
 
 // ============ WEBHOOK CONTROLLER ============
+//
+// SCOPE: This controller handles PhonePe webhooks for **e-commerce (shop) orders** only.
+// It is mounted at /api/v1/webhooks/phonepe via ecommerceRoutes.ts.
+//
+// BOOKING PAYMENTS and COACH SUBSCRIPTION PAYMENTS are handled by a separate
+// pipeline: shared/routes/phonepeWebhook.ts → OutboxService → reconciliation
+// functions in BookingService and CoachSubscriptionPaymentService.
+//
+// The event shapes handled here (payment.captured, payment.failed, refund.created)
+// follow the e-commerce order payment flow. Do NOT add booking or subscription
+// logic to this controller.
 
 export class WebhookController {
   private paymentService: PaymentService;

@@ -2,6 +2,7 @@ import OutboxMessage from "../models/OutboxMessage";
 import { NotificationService } from "../../client/services/NotificationService";
 import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
 import { reconcileCoachSubscriptionPaymentFromWebhookPayload } from "../../client/services/CoachSubscriptionPaymentService";
+import { reconcileBookingPaymentFromWebhookPayload } from "../../client/services/BookingService";
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_ATTEMPTS = 6;
@@ -85,6 +86,10 @@ export const startOutboxWorker = () => {
               await reconcileCoachSubscriptionPaymentFromWebhookPayload(
                 event.payload,
               );
+
+              // Also try booking payment reconciliation — the webhook may be
+              // for a booking rather than a coach subscription.
+              await reconcileBookingPaymentFromWebhookPayload(event.payload);
 
               event.status = "DONE";
               event.processedAt = new Date();

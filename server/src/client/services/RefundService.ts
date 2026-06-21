@@ -61,10 +61,10 @@ export async function initiateRefund(
     throw new Error("Payment transaction not found");
   }
 
-  // Validate refund amount
+  // Validate refund amount (both values are in paise)
   if (amount > transaction.amount) {
     throw new Error(
-      `Refund amount (₹${amount}) cannot exceed original payment (₹${transaction.amount})`,
+      `Refund amount (${amount} paise) cannot exceed original payment (${transaction.amount} paise)`,
     );
   }
 
@@ -116,10 +116,13 @@ async function initiateCardRefund(
   const refundMerchantId = `REFUND-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
   try {
+    // Convert paise → rupees: initiatePhonePeRefund() → buildRefundRequest()
+    // does Math.round(amount * 100) internally, expecting rupees as input.
+    // BookingPaymentTransaction.amount is stored in paise.
     const refundResult = await initiatePhonePeRefund({
       merchantRefundId: refundMerchantId,
       originalMerchantOrderId: transaction.merchantOrderId,
-      amount,
+      amount: amount / 100,
     });
 
     // Update transaction with refund details

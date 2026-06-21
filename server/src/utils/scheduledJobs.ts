@@ -19,6 +19,7 @@ import { pathwayService } from "../shared/services/PathwayService";
 export const releaseCompletedBookingPayments = async (): Promise<void> => {
   try {
     const { Booking } = await import("../client/models/Booking");
+    const { BookingPaymentTransaction } = await import("../client/models/BookingPayment");
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -26,13 +27,29 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
       status: "COMPLETED",
       updatedAt: { $lte: twentyFourHoursAgo },
       "payments.status": "PENDING",
+      // Only release payouts for bookings where the player actually paid
+      paymentConfirmedAt: { $ne: null },
     });
 
     let releasedCount = 0;
 
     for (const booking of completedBookings) {
+      // Cross-reference: verify a real payment transaction was completed
+      const confirmedTx = await BookingPaymentTransaction.findOne({
+        bookingId: booking._id,
+        status: "COMPLETED",
+      });
+      if (!confirmedTx) {
+        console.warn(
+          `⚠️ Skipping payout release for booking ${booking._id}: no confirmed payment transaction found`,
+        );
+        continue;
+      }
+
+      // Only release payee entries (VENUE_LISTER / COACH).
+      // The PLAYER entry is already marked PAID by updatePaymentStatus().
       booking.payments = booking.payments.map((payment: any) => {
-        if (payment.status === "PENDING") {
+        if (payment.status === "PENDING" && payment.userType !== "PLAYER") {
           payment.status = "PAID";
           payment.paidAt = now;
         }

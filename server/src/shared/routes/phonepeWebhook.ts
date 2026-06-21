@@ -1,3 +1,20 @@
+/**
+ * PhonePe Webhook Route — Coach Subscriptions & Booking Payments
+ *
+ * SCOPE: This route receives PhonePe webhook callbacks for:
+ *   - Coach subscription payments (CoachSubscriptionPaymentTransaction)
+ *   - Booking payments (BookingPaymentTransaction, merchantOrderId starting with "bk_")
+ *
+ * It persists the raw event into PaymentWebhookEvent, enqueues an outbox message,
+ * and the OutboxService worker processes reconciliation asynchronously via:
+ *   - reconcileCoachSubscriptionPaymentFromWebhookPayload()
+ *   - reconcileBookingPaymentFromWebhookPayload()
+ *
+ * Mounted at: /api/payments/phonepe/webhook (see app.ts)
+ *
+ * E-COMMERCE order webhooks are handled separately by WebhookController
+ * in shared/controllers/WebhookController.ts (mounted at /api/v1/webhooks/phonepe).
+ */
 import express from "express";
 import crypto from "crypto";
 import PaymentWebhookEvent from "../models/PaymentWebhookEvent";

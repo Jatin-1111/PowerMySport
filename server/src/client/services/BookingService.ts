@@ -816,7 +816,9 @@ export const initiateBooking = async (
         venuePrice,
         venueOwnerIdStr || "",
         coachPrice > 0 ? coachPrice : undefined,
-        coachUserIdStr
+        coachUserIdStr,
+        payload.userId,
+        totalAmount,
       );
 
       singlePaymentSplits = calculatedSplits.map(p => ({
@@ -2104,18 +2106,27 @@ export const updatePaymentStatus = async (
         return payment;
       }
 
+      // Use toObject() to safely spread Mongoose subdocuments
+      const plain = typeof (payment as any).toObject === 'function'
+        ? (payment as any).toObject()
+        : payment;
       return {
-        ...payment,
+        ...plain,
         status,
         ...(status === "PAID" ? { paidAt: new Date() } : {}),
       };
     });
   }
 
+  // Set paymentConfirmedAt when all PLAYER entries are PAID.
+  // VENUE_LISTER/COACH entries represent payee splits (payout tracking)
+  // and are released by the scheduled payout job, not by the player paying.
   if (
     status === "PAID" &&
     (!booking.payments.length ||
-      booking.payments.every((payment) => payment.status === "PAID"))
+      booking.payments
+        .filter((payment) => payment.userType === "PLAYER")
+        .every((payment) => payment.status === "PAID"))
   ) {
     booking.paymentConfirmedAt = new Date();
   }
@@ -2977,4 +2988,115 @@ export const cleanupExpiredBookings = async (): Promise<number> => {
   );
 
   return result.modifiedCount || 0;
+};
+
+// ============================================
+// WEBHOOK RECONCILIATION FOR BOOKING PAYMENTS
+// ============================================
+
+/**
+ * Helper to extract a string value from a nested webhook payload.
+ * PhonePe webhooks can nest data in various structures.
+ */
+const pickString = (...values: unknown[]): string | undefined => {
+  for (const v of values) {
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return undefined;
+};
+
+const asRec = (v: unknown): Record<string, unknown> =>
+  v && typeof v === "object" ? (v as Record<string, unknown>) : {};
+
+/**
+ * Reconcile a booking payment from a raw webhook payload.
+ * Called by the outbox worker as a fallback after coach-subscription reconciliation.
+ *
+ * - Extracts merchantOrderId and payment state from the webhook payload
+ * - Finds a matching BookingPaymentTransaction
+ * - If found and state changed, updates both the transaction and the booking
+ *
+ * Returns the updated transaction, or null if no matching booking transaction was found.
+ */
+export const reconcileBookingPaymentFromWebhookPayload = async (
+  rawPayload: unknown,
+): Promise<any> => {
+  const payload = asRec(rawPayload);
+  const inner = asRec(payload.payload);
+  const data = asRec(payload.data);
+
+  const merchantOrderId = pickString(
+    payload.originalMerchantOrderId,
+    payload.merchantOrderId,
+    inner.originalMerchantOrderId,
+    inner.merchantOrderId,
+    data.originalMerchantOrderId,
+    data.merchantOrderId,
+    asRec(inner.paymentDetails).merchantOrderId,
+    asRec(data.paymentDetails).merchantOrderId,
+  );
+
+  if (!merchantOrderId) {
+    return null;
+  }
+
+  // Only process booking-related transactions (merchant IDs start with "bk_")
+  if (!merchantOrderId.startsWith("bk_")) {
+    return null;
+  }
+
+  const transaction = await BookingPaymentTransaction.findOne({
+    merchantOrderId,
+  });
+  if (!transaction) {
+    return null;
+  }
+
+  // Extract payment state
+  const rawState = pickString(
+    payload.state,
+    inner.state,
+    data.state,
+    asRec(inner.paymentDetails).state,
+    asRec(data.paymentDetails).state,
+  );
+
+  const normalizeState = (s?: string): string => {
+    if (!s) return "PENDING";
+    const upper = s.toUpperCase();
+    if (upper === "COMPLETED") return "COMPLETED";
+    if (upper === "FAILED") return "FAILED";
+    return "PENDING";
+  };
+
+  const state = normalizeState(rawState);
+
+  // Store the webhook callback on the transaction
+  transaction.callbackPayload = payload as any;
+  transaction.state = state;
+
+  if (state === "COMPLETED" && transaction.status !== "COMPLETED") {
+    transaction.status = "COMPLETED";
+    await updatePaymentStatus(
+      transaction.bookingId.toString(),
+      transaction.userId.toString(),
+      "PAID",
+    );
+    console.info(
+      `[BookingWebhook] Payment confirmed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,
+    );
+  } else if (state === "FAILED" && transaction.status !== "FAILED") {
+    transaction.status = "FAILED";
+    await updatePaymentStatus(
+      transaction.bookingId.toString(),
+      transaction.userId.toString(),
+      "FAILED",
+    );
+    console.info(
+      `[BookingWebhook] Payment failed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,
+    );
+  }
+
+  await transaction.save();
+  return transaction;
 };
