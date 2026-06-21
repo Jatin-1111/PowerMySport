@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Zap,
   RefreshCw,
+  Wallet,
 } from "lucide-react";
 import {
   Card,
@@ -531,6 +532,12 @@ export default function DashboardPage() {
                   icon: UserPlus,
                   label: "Manage Friends",
                   color: "bg-emerald-100 text-emerald-600",
+                },
+                {
+                  href: "/dashboard/wallet",
+                  icon: Wallet,
+                  label: "My Wallet",
+                  color: "bg-sky-100 text-sky-600",
                 },
                 {
                   href: "/dashboard/my-profile",

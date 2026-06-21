@@ -9,6 +9,7 @@
 import { Booking } from "../models/Booking";
 import { BookingPaymentTransaction } from "../models/BookingPayment";
 import { User } from "../models/User";
+import { WalletService } from "./WalletService";
 import {
   initiatePhonePeRefund,
   getPhonePeRefundStatus,
@@ -264,27 +265,15 @@ async function initiateStoreCreditRefund(
   transaction: any,
   amount: number,
 ): Promise<RefundStatusResponse> {
-  const storeCreditId = `CREDIT-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
   try {
     // Add credit to player's wallet
-    await User.findByIdAndUpdate(
-      transaction.userId,
-      {
-        $inc: { "playerProfile.walletBalance": amount },
-        $push: {
-          "playerProfile.walletTransactions": {
-            id: storeCreditId,
-            type: "CREDIT",
-            amount,
-            reason: "Booking Refund",
-            timestamp: new Date(),
-            bookingPaymentTransactionId: transaction._id,
-          },
-        },
-      },
-      { new: true },
+    const { transaction: walletTx } = await WalletService.creditWallet(
+      transaction.userId.toString(),
+      amount,
+      "Booking Refund",
+      transaction._id.toString()
     );
+    const storeCreditId = walletTx.id;
 
     // Update transaction
     transaction.refundMerchantId = storeCreditId;

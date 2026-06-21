@@ -21,6 +21,7 @@ import {
   User,
   UserPlus,
   Users,
+  Wallet,
 } from "lucide-react";
 import React from "react";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -115,6 +116,12 @@ export default function DashboardLayout({
       href: "/dashboard/support",
       label: "Support Tickets",
       icon: LifeBuoy,
+      section: "Account",
+    },
+    {
+      href: "/dashboard/wallet",
+      label: "My Wallet",
+      icon: Wallet,
       section: "Account",
     },
     {
