@@ -1,15 +1,27 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion, Variants } from "framer-motion";
 import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  Variants,
+} from "framer-motion";
+import {
+  ArrowRight,
   Calendar,
   Check,
+  CheckCircle2,
+  ChevronLeft,
   Clock,
+  CreditCard,
   MapPin,
   ShieldCheck,
+  Star,
   TicketPercent,
   User as UserIcon,
+  Users,
   Wallet,
+  Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -18,14 +30,11 @@ import { toast } from "@/lib/toast";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { authApi } from "@/modules/auth/services/auth";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import {
-  CheckoutDetailItem,
-  CheckoutDetailList,
-} from "@/modules/booking/components/checkout/CheckoutDetailList";
+import { CheckoutDetailItem } from "@/modules/booking/components/checkout/Checkoutdetaillist";
 import {
   PaymentMethodOption,
   PaymentMethodSelector,
-} from "@/modules/booking/components/checkout/PaymentMethodSelector";
+} from "@/modules/booking/components/checkout/Paymentmethodselector";
 import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBookingInviteSection";
 import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
 import { bookingApi } from "@/modules/booking/services/booking";
@@ -149,7 +158,7 @@ function SectionCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-slate-200/70 bg-white/95 shadow-sm backdrop-blur-sm",
+        "rounded-2xl border border-slate-200/80 bg-white shadow-sm",
         className,
       )}
     >
@@ -162,27 +171,43 @@ function SectionHeader({
   title,
   description,
   action,
+  icon,
+  step,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  icon?: React.ReactNode;
+  step?: number;
 }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
-      <div>
-        <h2 className="font-title text-base font-semibold text-slate-900 sm:text-lg">
-          {title}
-        </h2>
-        {description && (
-          <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+      <div className="flex items-start gap-3">
+        {step !== undefined && (
+          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-power-orange text-xs font-bold text-white">
+            {step}
+          </span>
         )}
+        {icon && !step && (
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+            {icon}
+          </span>
+        )}
+        <div>
+          <h2 className="font-title text-base font-semibold text-slate-900 sm:text-lg">
+            {title}
+          </h2>
+          {description && (
+            <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+          )}
+        </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
 
-function StepIndicator({
+function StepPill({
   steps,
   currentStep,
 }: {
@@ -190,48 +215,51 @@ function StepIndicator({
   currentStep: number;
 }) {
   return (
-    <div className="flex items-center gap-0">
+    <div className="flex items-center gap-1">
       {steps.map((step, index) => {
         const isComplete = currentStep > step.id;
         const isActive = currentStep === step.id;
+
         return (
-          <div key={step.id} className="flex items-center">
-            <div className="flex flex-col items-center gap-1.5">
+          <div key={step.id} className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <motion.div
                 animate={{
                   backgroundColor: isComplete
                     ? "#E97316"
                     : isActive
                       ? "#fff"
-                      : "#f8fafc",
+                      : "#f1f5f9",
                   borderColor: isComplete || isActive ? "#E97316" : "#e2e8f0",
                   color: isComplete ? "#fff" : isActive ? "#E97316" : "#94a3b8",
                 }}
                 transition={{ duration: 0.3 }}
-                className="flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold"
+                className="flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold"
               >
-                {isComplete ? <Check size={13} strokeWidth={3} /> : step.id}
+                {isComplete ? <Check size={12} strokeWidth={3} /> : step.id}
               </motion.div>
               <span
                 className={cn(
-                  "text-xs font-medium",
-                  isActive ? "text-slate-900" : "text-slate-400",
+                  "hidden text-xs font-semibold sm:inline",
+                  isActive
+                    ? "text-slate-800"
+                    : isComplete
+                      ? "text-power-orange"
+                      : "text-slate-400",
                 )}
               >
                 {step.label}
               </span>
             </div>
             {index < steps.length - 1 && (
-              <div className="mx-3 mb-5 h-px w-10 sm:w-16">
-                <motion.div
-                  animate={{
-                    backgroundColor:
-                      currentStep > step.id ? "#E97316" : "#e2e8f0",
-                  }}
-                  transition={{ duration: 0.3 }}
-                  className="h-full w-full"
-                />
-              </div>
+              <motion.div
+                animate={{
+                  backgroundColor:
+                    currentStep > step.id ? "#E97316" : "#e2e8f0",
+                }}
+                transition={{ duration: 0.3 }}
+                className="mx-1 h-px w-6 sm:w-10"
+              />
             )}
           </div>
         );
@@ -251,8 +279,8 @@ function EntityCard({
 }) {
   if (type === "venue" && venue) {
     return (
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="h-24 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-40 shrink-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="relative h-32 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-32 sm:w-44 shrink-0">
           {venue.images?.[0] ? (
             <img
               src={venue.images[0]}
@@ -260,26 +288,25 @@ function EntityCard({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-slate-50">
-              <MapPin size={22} className="text-slate-300" />
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+              <MapPin size={28} className="text-slate-300" />
             </div>
           )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-base font-bold text-slate-900 sm:text-lg">
-            {venue.name}
-          </p>
+          <p className="text-lg font-bold text-slate-900">{venue.name}</p>
           {venue.address && (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500">
-              <MapPin size={13} className="shrink-0" />
-              <span className="truncate">{venue.address}</span>
+            <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
+              <MapPin size={13} className="mt-0.5 shrink-0 text-power-orange" />
+              <span>{venue.address}</span>
             </p>
           )}
           <div className="mt-3 flex flex-wrap gap-1.5">
             {venue.sports.map((s) => (
               <span
                 key={s}
-                className="rounded-full bg-power-orange/8 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
+                className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
               >
                 {s}
               </span>
@@ -298,24 +325,43 @@ function EntityCard({
 
     return (
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 sm:h-28 sm:w-40 shrink-0">
+        <div className="relative h-32 w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 sm:h-32 sm:w-44 shrink-0">
           {img ? (
             <img src={img} alt={name} className="h-full w-full object-cover" />
           ) : (
-            <UserIcon size={26} className="text-slate-300" />
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+              <UserIcon size={32} className="text-slate-300" />
+            </div>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-base font-bold text-slate-900 sm:text-lg">
-            {name}
-          </p>
-          <div className="mt-1">
+          <p className="text-lg font-bold text-slate-900">{name}</p>
+
+          <div className="mt-1 flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <Star size={12} className="fill-amber-400 text-amber-400" />
+              <span className="text-sm font-semibold text-slate-700">
+                {coach.rating.toFixed(1)}
+              </span>
+            </div>
+            <span className="text-slate-300">·</span>
+            <span className="text-sm text-slate-500">
+              {coach.reviewCount} reviews
+            </span>
+          </div>
+
+          <div className="mt-2">
             {venueLocation ? (
               <div className="flex items-start gap-1.5 text-sm text-slate-500">
-                <MapPin size={13} className="mt-0.5 shrink-0" />
+                <MapPin
+                  size={13}
+                  className="mt-0.5 shrink-0 text-power-orange"
+                />
                 <div>
                   <p>{locationLabel}</p>
-                  <p className="text-xs">{venueLocation.description}</p>
+                  <p className="text-xs text-slate-400">
+                    {venueLocation.description}
+                  </p>
                   {venueLocation.mapsUrl && (
                     <a
                       href={venueLocation.mapsUrl}
@@ -323,26 +369,24 @@ function EntityCard({
                       rel="noreferrer"
                       className="text-xs font-semibold text-power-orange hover:underline"
                     >
-                      Open in Maps
+                      Open in Maps →
                     </a>
                   )}
                 </div>
               </div>
             ) : (
               <p className="flex items-center gap-1.5 text-sm text-slate-500">
-                <MapPin size={13} className="shrink-0" />
+                <MapPin size={13} className="shrink-0 text-power-orange" />
                 {locationLabel}
               </p>
             )}
           </div>
-          <p className="mt-1 text-xs text-slate-400">
-            {coach.rating.toFixed(1)} avg · {coach.reviewCount} reviews
-          </p>
+
           <div className="mt-3 flex flex-wrap gap-1.5">
             {coach.sports.slice(0, 4).map((s) => (
               <span
                 key={s}
-                className="rounded-full bg-power-orange/8 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
+                className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
               >
                 {s}
               </span>
@@ -359,6 +403,35 @@ function EntityCard({
   }
 
   return null;
+}
+
+// ─── Booking summary row ──────────────────────────────────────────────────────
+
+function BookingSummaryRow({
+  icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="flex items-start gap-3.5 py-3 border-b border-slate-100 last:border-0">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+        {icon}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {label}
+        </p>
+        <p className="mt-0.5 text-sm font-semibold text-slate-800">{value}</p>
+        {hint && <p className="mt-0.5 text-xs text-slate-400">{hint}</p>}
+      </div>
+    </div>
+  );
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -798,7 +871,7 @@ function CheckoutPageContent() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <motion.div variants={fadeUp} initial="hidden" animate="show">
         <Breadcrumbs
           items={[
@@ -808,70 +881,81 @@ function CheckoutPageContent() {
         />
       </motion.div>
 
-      {/* Page header */}
+      {/* ── Page header ── */}
       <motion.div
         variants={fadeUp}
         initial="hidden"
         animate="show"
         transition={{ delay: 0.05 }}
-        className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm sm:p-8"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 shadow-lg sm:p-8"
       >
-        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Decorative accent blobs */}
+        <div className="pointer-events-none absolute -right-12 -top-10 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-8 left-1/3 h-32 w-32 rounded-full bg-turf-green/15 blur-2xl" />
+
+        <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-600">
-              Checkout
-            </span>
-            <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-power-orange/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-power-orange">
+                <Zap size={11} />
+                Secure Checkout
+              </span>
+              {isZeroCommission && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-turf-green/20 px-3 py-1 text-xs font-semibold text-turf-green">
+                  0% Platform Fee
+                </span>
+              )}
+            </div>
+            <h1 className="mt-3 font-title text-2xl font-bold text-white sm:text-3xl">
               {type === "coach"
-                ? "Complete your coach booking"
-                : "Complete your venue booking"}
+                ? "Book your coach session"
+                : "Reserve your venue slot"}
             </h1>
-            <p className="mt-1.5 max-w-xl text-sm text-slate-500">
-              Review details, choose a payment method, and confirm your slot.
+            <p className="mt-1.5 text-sm text-slate-400">
+              Review details, pick a payment method, and confirm your slot.
             </p>
           </div>
-          <div className="flex shrink-0 gap-2">
+
+          <div className="flex shrink-0 items-center gap-2">
             {currentStep > 1 && (
               <Button
                 variant="outline"
                 onClick={handlePrevStep}
                 disabled={isSubmitting}
+                className="border-white/20 bg-white/10 text-white hover:bg-white/20"
               >
+                <ChevronLeft size={16} />
                 Back
               </Button>
             )}
-            <Button variant="outline" onClick={() => router.back()}>
+            <Button
+              variant="outline"
+              onClick={() => router.back()}
+              className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+            >
               Edit booking
             </Button>
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full bg-power-orange/5 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-turf-green/5 blur-3xl" />
-      </motion.div>
 
-      {/* Step progress */}
-      <motion.div
-        variants={fadeUp}
-        initial="hidden"
-        animate="show"
-        transition={{ delay: 0.1 }}
-        className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/95 px-5 py-4 shadow-sm backdrop-blur-sm sm:px-6"
-      >
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Step {currentStep} of {steps.length}
-          </p>
-          <p className="mt-0.5 text-sm font-semibold text-slate-800 sm:text-base">
-            {currentStep === 1 && "Review your booking"}
-            {currentStep === 2 && "Choose a payment method"}
-            {currentStep === 3 && "Confirm and pay"}
-          </p>
+        {/* Step progress inside header */}
+        <div className="relative z-10 mt-6 flex items-center justify-between rounded-xl bg-white/10 px-4 py-3 backdrop-blur-sm">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Step {currentStep} of {steps.length}
+            </p>
+            <p className="mt-0.5 text-sm font-semibold text-white">
+              {currentStep === 1 && "Review your booking"}
+              {currentStep === 2 && "Choose payment method"}
+              {currentStep === 3 && "Confirm and pay"}
+            </p>
+          </div>
+          <StepPill steps={steps} currentStep={currentStep} />
         </div>
-        <StepIndicator steps={steps} currentStep={currentStep} />
       </motion.div>
 
-      {/* Main grid */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
+      {/* ── Main grid ── */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.8fr)_minmax(300px,1fr)]">
         {/* Left — step content */}
         <div className="min-w-0">
           <AnimatePresence mode="wait" custom={stepDir}>
@@ -884,16 +968,17 @@ function CheckoutPageContent() {
               exit="exit"
               className="space-y-4"
             >
-              {/* STEP 1 */}
+              {/* ── STEP 1: Review ── */}
               {currentStep === 1 && (
                 <>
                   {/* Entity overview */}
                   <SectionCard>
                     <SectionHeader
+                      step={1}
                       title={
                         type === "venue" ? "Venue overview" : "Coach overview"
                       }
-                      description="Confirm the details before you pay."
+                      description="Confirm who you're booking with."
                     />
                     <div className="p-5 sm:p-6">
                       <EntityCard coach={coach} venue={venue} type={type} />
@@ -903,19 +988,24 @@ function CheckoutPageContent() {
                   {/* Booking details */}
                   <SectionCard>
                     <SectionHeader
+                      step={2}
                       title="Booking details"
-                      description="Verify your schedule and attendee."
+                      description="Your schedule and attendee."
                       action={
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">
-                          <Calendar size={11} />
-                          {date ? formatDate(date) : "No date"}
-                        </span>
+                        date ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange">
+                            <Calendar size={11} />
+                            {formatDate(date)}
+                          </span>
+                        ) : null
                       }
                     />
                     <div className="p-5 sm:p-6 space-y-5">
+                      {/* Attendee selector */}
                       {user?.dependents && user.dependents.length > 0 && (
                         <div>
-                          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            <Users size={12} />
                             Who is attending?
                           </label>
                           <select
@@ -934,22 +1024,83 @@ function CheckoutPageContent() {
                           </select>
                         </div>
                       )}
-                      <CheckoutDetailList items={bookingDetails} />
-                      <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-xs text-slate-500">
-                        <Clock size={13} className="shrink-0 text-slate-400" />
-                        Arrive 10 minutes before your slot starts.
+
+                      {/* Structured booking rows */}
+                      <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-4">
+                        <BookingSummaryRow
+                          icon={<Calendar size={15} />}
+                          label="Date"
+                          value={date ? formatDate(date) : "Not selected"}
+                        />
+                        <BookingSummaryRow
+                          icon={<Clock size={15} />}
+                          label="Time"
+                          value={
+                            startTime && endTime
+                              ? `${formatTime(startTime)} – ${formatTime(endTime)}`
+                              : "Not selected"
+                          }
+                          hint={
+                            durationHours
+                              ? `${durationHours} hour(s)`
+                              : undefined
+                          }
+                        />
+                        <BookingSummaryRow
+                          icon={<Zap size={15} />}
+                          label="Sport"
+                          value={sport || "Not selected"}
+                        />
+                        <BookingSummaryRow
+                          icon={<UserIcon size={15} />}
+                          label="Participant"
+                          value={
+                            selectedDependent
+                              ? selectedDependent.name
+                              : user?.name || "Me"
+                          }
+                          hint={
+                            selectedDependent
+                              ? "Booking for dependent"
+                              : "Booking for self"
+                          }
+                        />
+                        {type === "coach" ? (
+                          <BookingSummaryRow
+                            icon={<Star size={15} />}
+                            label="Coach"
+                            value={
+                              coach ? getCoachDisplayName(coach) : "Loading..."
+                            }
+                          />
+                        ) : (
+                          <BookingSummaryRow
+                            icon={<MapPin size={15} />}
+                            label="Venue"
+                            value={venue?.name || "Loading..."}
+                          />
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50/80 px-4 py-3">
+                        <Clock size={13} className="shrink-0 text-amber-500" />
+                        <p className="text-xs font-medium text-amber-700">
+                          Arrive 10 minutes before your slot starts.
+                        </p>
                       </div>
                     </div>
                   </SectionCard>
                 </>
               )}
 
-              {/* STEP 2 */}
+              {/* ── STEP 2: Payment ── */}
               {currentStep === 2 && (
                 <>
                   {/* Group booking */}
                   <SectionCard>
                     <SectionHeader
+                      step={1}
+                      icon={<Users size={15} />}
                       title="Group booking"
                       description="Invite friends and split the cost."
                     />
@@ -969,6 +1120,8 @@ function CheckoutPageContent() {
                   {/* Payment method */}
                   <SectionCard>
                     <SectionHeader
+                      step={2}
+                      icon={<CreditCard size={15} />}
                       title="Payment method"
                       description="Choose how you want to pay."
                     />
@@ -984,6 +1137,8 @@ function CheckoutPageContent() {
                   {/* Promo code */}
                   <SectionCard>
                     <SectionHeader
+                      step={3}
+                      icon={<TicketPercent size={15} />}
                       title="Promo code"
                       description="Apply a code to reduce your total."
                     />
@@ -1001,34 +1156,37 @@ function CheckoutPageContent() {
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value)}
                             placeholder="Enter promo code"
-                            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 uppercase"
                           />
                         </div>
                         <Button
                           type="submit"
                           variant="outline"
                           disabled={isApplyingPromo}
-                          className="sm:w-32"
+                          className="sm:w-28"
                         >
                           {isApplyingPromo ? "Applying..." : "Apply"}
                         </Button>
                       </form>
                       <AnimatePresence>
                         {promoMessage && (
-                          <motion.p
+                          <motion.div
                             initial={{ opacity: 0, y: -6 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
                             className={cn(
-                              "mt-2.5 text-xs font-medium",
+                              "mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium",
                               promoSuccess
-                                ? "text-turf-green"
-                                : "text-slate-500",
+                                ? "bg-turf-green/10 text-turf-green"
+                                : "bg-slate-100 text-slate-500",
                             )}
                           >
+                            {promoSuccess && (
+                              <CheckCircle2 size={13} className="shrink-0" />
+                            )}
                             {promoMessage}
-                          </motion.p>
+                          </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
@@ -1036,29 +1194,108 @@ function CheckoutPageContent() {
                 </>
               )}
 
-              {/* STEP 3 */}
+              {/* ── STEP 3: Confirm ── */}
               {currentStep === 3 && (
                 <SectionCard>
                   <SectionHeader
+                    step={1}
                     title="Confirm booking"
-                    description="Review your summary before payment."
+                    description="Final review before payment."
                   />
                   <div className="p-5 sm:p-6 space-y-5">
-                    <CheckoutDetailList items={bookingDetails} />
-                    <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-xs text-slate-500">
-                      Payment via{" "}
-                      <span className="font-semibold text-slate-700">
-                        {
-                          paymentOptions.find((o) => o.id === paymentMethod)
-                            ?.label
+                    {/* Entity quick recap */}
+                    <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-200">
+                        {type === "coach" && coach ? (
+                          getCoachImageCandidates(coach)[0] ? (
+                            <img
+                              src={getCoachImageCandidates(coach)[0]}
+                              alt={getCoachDisplayName(coach)}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center">
+                              <UserIcon size={18} className="text-slate-400" />
+                            </div>
+                          )
+                        ) : venue?.images?.[0] ? (
+                          <img
+                            src={venue.images[0]}
+                            alt={venue.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <MapPin size={18} className="text-slate-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">
+                          {type === "coach"
+                            ? coach
+                              ? getCoachDisplayName(coach)
+                              : "Coach"
+                            : venue?.name || "Venue"}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {sport && `${sport} · `}
+                          {date ? formatDate(date) : ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Summary rows */}
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-4">
+                      <BookingSummaryRow
+                        icon={<Calendar size={15} />}
+                        label="Date"
+                        value={date ? formatDate(date) : "Not selected"}
+                      />
+                      <BookingSummaryRow
+                        icon={<Clock size={15} />}
+                        label="Time"
+                        value={
+                          startTime && endTime
+                            ? `${formatTime(startTime)} – ${formatTime(endTime)}`
+                            : "Not selected"
                         }
+                        hint={
+                          durationHours ? `${durationHours} hour(s)` : undefined
+                        }
+                      />
+                      <BookingSummaryRow
+                        icon={<UserIcon size={15} />}
+                        label="Participant"
+                        value={
+                          selectedDependent
+                            ? selectedDependent.name
+                            : user?.name || "Me"
+                        }
+                      />
+                    </div>
+
+                    {/* Payment method recap */}
+                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                      <Wallet size={16} className="shrink-0 text-slate-500" />
+                      <div>
+                        <p className="text-xs text-slate-400">Paying with</p>
+                        <p className="text-sm font-semibold text-slate-800">
+                          {
+                            paymentOptions.find((o) => o.id === paymentMethod)
+                              ?.label
+                          }
+                        </p>
+                      </div>
+                      <span className="ml-auto rounded-full bg-turf-green/10 px-2.5 py-0.5 text-xs font-semibold text-turf-green">
+                        Encrypted
                       </span>
                     </div>
                   </div>
                 </SectionCard>
               )}
 
-              {/* Validation notices */}
+              {/* ── Validation notices ── */}
               <AnimatePresence>
                 {!hasRequiredDetails && (
                   <motion.div
@@ -1066,10 +1303,13 @@ function CheckoutPageContent() {
                     initial="hidden"
                     animate="show"
                     exit="hidden"
-                    className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+                    className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
                   >
-                    Missing booking details. Please go back and select a date,
-                    time, and sport.
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold">
+                      !
+                    </span>
+                    Missing booking details. Go back and select a date, time,
+                    and sport.
                   </motion.div>
                 )}
                 {hasRequiredDetails && !hasValidDuration && (
@@ -1078,8 +1318,11 @@ function CheckoutPageContent() {
                     initial="hidden"
                     animate="show"
                     exit="hidden"
-                    className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
+                    className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700"
                   >
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold">
+                      !
+                    </span>
                     End time must be after start time.
                   </motion.div>
                 )}
@@ -1089,15 +1332,17 @@ function CheckoutPageContent() {
                     initial="hidden"
                     animate="show"
                     exit="hidden"
-                    className="rounded-xl border border-blue-200/60 bg-blue-50/60 p-4 text-sm text-blue-700"
+                    className="rounded-xl border border-blue-200/60 bg-blue-50/80 p-4"
                   >
-                    <p className="font-semibold">This slot was just taken.</p>
+                    <p className="text-sm font-semibold text-blue-800">
+                      This slot was just taken.
+                    </p>
                     {alternateSlots.length > 0 ? (
-                      <p className="mt-1 text-xs">
+                      <p className="mt-1 text-xs text-blue-600">
                         Nearby alternates: {alternateSlots.join(", ")}
                       </p>
                     ) : (
-                      <p className="mt-1 text-xs">
+                      <p className="mt-1 text-xs text-blue-600">
                         No nearby alternate slots right now.
                       </p>
                     )}
@@ -1125,7 +1370,7 @@ function CheckoutPageContent() {
           </AnimatePresence>
         </div>
 
-        {/* Right — sticky sidebar */}
+        {/* ── Right — sticky sidebar ── */}
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
           <motion.div
             variants={fadeUp}
@@ -1136,114 +1381,96 @@ function CheckoutPageContent() {
           >
             {/* Zero commission banner */}
             {isZeroCommission && (
-              <div className="relative overflow-hidden rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-sky-50 p-5">
-                <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-amber-200/30 blur-2xl" />
+              <div className="relative overflow-hidden rounded-2xl border border-turf-green/20 bg-gradient-to-br from-turf-green/5 via-white to-emerald-50/40 p-4">
+                <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-turf-green/10 blur-xl" />
                 <div className="relative flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-                    <span className="text-sm font-extrabold text-power-orange">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-turf-green/10">
+                    <span className="text-xs font-extrabold text-turf-green">
                       0%
                     </span>
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Limited-time offer
+                      Limited offer
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">
-                      Zero commission on all bookings
+                    <p className="mt-0.5 text-sm font-semibold text-slate-900">
+                      Zero platform commission
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      You pay only the venue or coach rate plus applicable
-                      taxes.
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      You pay only the rate plus taxes.
                     </p>
                   </div>
-                </div>
-                <div className="relative mt-4 flex flex-wrap gap-1.5">
-                  {[
-                    "No platform fee",
-                    "Auto-applied",
-                    "Transparent totals",
-                  ].map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-white/80 px-2.5 py-0.5 text-xs font-semibold text-slate-600"
-                    >
-                      {tag}
-                    </span>
-                  ))}
                 </div>
               </div>
             )}
 
-            {/* Order summary */}
+            {/* Order summary card */}
             <SectionCard>
               <SectionHeader title="Order summary" />
-              <div className="p-5 sm:p-6">
-                <div className="space-y-3">
+              <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+                {/* Line items */}
+                <div className="space-y-2.5">
                   {[
                     {
                       label: type === "coach" ? "Coach rate" : "Venue rate",
                       value: `${formatCurrency(pricePerHour)}/hr`,
+                      sub: null,
                     },
                     {
                       label: "Subtotal",
                       value: formatCurrency(subtotal),
-                      hint: durationHours ? `${durationHours} hour(s)` : "",
+                      sub: durationHours ? `${durationHours} hr` : null,
                     },
                     {
                       label: isZeroCommission ? "Platform fee" : "Service fee",
                       value: formatCurrency(serviceFee),
-                      hint: isZeroCommission
-                        ? "Limited-time zero commission"
-                        : "Platform support and protection",
+                      sub: isZeroCommission ? "Free" : null,
                     },
                     {
                       label: "Taxes",
                       value: formatCurrency(taxes),
-                      hint: "Estimated",
+                      sub: "Estimated",
                     },
-                    ...(discount > 0
-                      ? [
-                          {
-                            label: "Promo discount",
-                            value: `-${formatCurrency(discount)}`,
-                            hint: promoCode.toUpperCase(),
-                            strong: true,
-                          },
-                        ]
-                      : []),
-                  ].map((item: any) => (
+                  ].map((item) => (
                     <div
                       key={item.label}
                       className="flex items-start justify-between gap-3 text-sm"
                     >
                       <div>
-                        <p
-                          className={cn(
-                            "text-slate-600",
-                            item.strong && "font-semibold text-turf-green",
-                          )}
-                        >
-                          {item.label}
-                        </p>
-                        {item.hint && (
-                          <p className="text-xs text-slate-400">{item.hint}</p>
+                        <p className="text-slate-600">{item.label}</p>
+                        {item.sub && (
+                          <p className="text-xs text-slate-400">{item.sub}</p>
                         )}
                       </div>
-                      <p
-                        className={cn(
-                          "shrink-0 text-slate-900",
-                          item.strong && "font-semibold text-turf-green",
-                        )}
-                      >
+                      <p className="shrink-0 font-medium text-slate-800">
                         {item.value}
                       </p>
                     </div>
                   ))}
+
+                  {discount > 0 && (
+                    <div className="flex items-start justify-between gap-3 rounded-lg bg-turf-green/8 px-2.5 py-2 text-sm">
+                      <div>
+                        <p className="font-semibold text-turf-green">
+                          Promo discount
+                        </p>
+                        <p className="text-xs text-turf-green/70">
+                          {promoCode.toUpperCase()}
+                        </p>
+                      </div>
+                      <p className="shrink-0 font-semibold text-turf-green">
+                        -{formatCurrency(discount)}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-4 border-t border-slate-100 pt-4">
+                {/* Total */}
+                <div className="mt-4 rounded-xl bg-gradient-to-r from-power-orange/8 to-amber-50/60 px-4 py-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-900">Total</span>
+                    <span className="text-sm font-semibold text-slate-700">
+                      Total due
+                    </span>
                     <motion.span
                       key={total}
                       initial={
@@ -1253,19 +1480,20 @@ function CheckoutPageContent() {
                       }
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ duration: 0.25 }}
-                      className="text-xl font-bold text-power-orange"
+                      className="text-2xl font-bold text-power-orange"
                     >
                       {formatCurrency(total)}
                     </motion.span>
                   </div>
-                  <p className="mt-1.5 text-xs text-slate-400">
+                  <p className="mt-1 text-xs text-slate-400">
                     {type === "venue"
-                      ? "Your slot is reserved for 10 minutes after confirmation."
-                      : "Booking confirmed after location verification."}
+                      ? "Slot reserved for 10 min after confirmation."
+                      : "Confirmed after location verification."}
                   </p>
                 </div>
 
-                <div className="mt-5 space-y-2.5">
+                {/* CTA buttons */}
+                <div className="mt-4 space-y-2.5">
                   {currentStep > 1 && (
                     <Button
                       variant="outline"
@@ -1273,12 +1501,13 @@ function CheckoutPageContent() {
                       onClick={handlePrevStep}
                       disabled={isSubmitting}
                     >
+                      <ChevronLeft size={16} />
                       Back
                     </Button>
                   )}
                   <Button
                     variant="primary"
-                    className="w-full"
+                    className="w-full gap-2"
                     disabled={
                       !hasRequiredDetails ||
                       !hasValidDuration ||
@@ -1290,17 +1519,32 @@ function CheckoutPageContent() {
                       currentStep === 3 ? handleCheckout : handleNextStep
                     }
                   >
-                    {currentStep === 1 && "Continue to payment"}
-                    {currentStep === 2 && "Review and confirm"}
-                    {currentStep === 3 && "Pay and confirm"}
+                    {currentStep === 1 && (
+                      <>
+                        Continue to payment
+                        <ArrowRight size={15} />
+                      </>
+                    )}
+                    {currentStep === 2 && (
+                      <>
+                        Review and confirm
+                        <ArrowRight size={15} />
+                      </>
+                    )}
+                    {currentStep === 3 && (
+                      <>
+                        Pay {formatCurrency(total)}
+                        <ArrowRight size={15} />
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
             </SectionCard>
 
-            {/* Security */}
-            <div className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white/95 p-4 shadow-sm">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-50 text-green-600">
+            {/* Security trust badge */}
+            <div className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-sm">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                 <ShieldCheck size={16} />
               </span>
               <div>
@@ -1308,8 +1552,8 @@ function CheckoutPageContent() {
                   Protected checkout
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Payments are encrypted. You can reschedule from your dashboard
-                  if needed.
+                  Payments are 256-bit encrypted. Reschedule any time from your
+                  dashboard.
                 </p>
               </div>
             </div>

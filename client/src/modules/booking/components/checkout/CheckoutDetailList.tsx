@@ -16,18 +16,26 @@ export function CheckoutDetailList({
   className,
 }: CheckoutDetailListProps) {
   return (
-    <div className={cn("grid gap-4 sm:grid-cols-2", className)}>
+    <div
+      className={cn(
+        "divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/60",
+        className,
+      )}
+    >
       {items.map((item) => (
-        <div key={`${item.label}-${item.value}`}>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div
+          key={`${item.label}-${item.value}`}
+          className="flex items-start justify-between gap-4 px-4 py-3"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 pt-0.5">
             {item.label}
           </p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">
-            {item.value}
-          </p>
-          {item.hint && (
-            <p className="mt-1 text-xs text-slate-500">{item.hint}</p>
-          )}
+          <div className="text-right">
+            <p className="text-sm font-semibold text-slate-800">{item.value}</p>
+            {item.hint && (
+              <p className="mt-0.5 text-xs text-slate-400">{item.hint}</p>
+            )}
+          </div>
         </div>
       ))}
     </div>
