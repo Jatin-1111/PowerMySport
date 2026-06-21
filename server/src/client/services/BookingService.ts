@@ -20,7 +20,7 @@ import {
   BookingWaitlist,
   BookingWaitlistDocument,
 } from "../models/BookingWaitlist";
-import { calculateGroupPaymentSplits } from "../../utils/payment";
+import { calculateGroupPaymentSplits, calculateSplitAmounts } from "../../utils/payment";
 import { generateDynamicSlots } from "../../utils/booking";
 import { emitSlotLocked } from "../sockets/bookingSocket";
 import { NotificationService } from "./NotificationService";
@@ -95,6 +95,7 @@ interface BookingCreatePayload {
   participantId: mongoose.Types.ObjectId;
   participantAge?: number;
   organizerId: mongoose.Types.ObjectId;
+  payments?: any[];
 }
 
 const generateRandomCheckInCode = (): string => {
@@ -369,6 +370,7 @@ const createBookingAtomically = async (
             ? { participantAge: payload.participantAge }
             : {}),
           organizerId: payload.organizerId,
+          payments: payload.payments || [],
         });
 
         await booking.save({ session });
@@ -799,6 +801,32 @@ export const initiateBooking = async (
 
     const checkInCode = await generateUniqueCheckInCode();
 
+    let singlePaymentSplits: any[] = [];
+    if (payload.venueId || payload.coachId) {
+      const venueOwnerIdStr = venue?.ownerId ? (venue.ownerId as any)._id?.toString() || venue.ownerId.toString() : undefined;
+      let coachUserIdStr: string | undefined;
+      if (payload.coachId) {
+        const coachInfo = await Coach.findById(payload.coachId);
+        if (coachInfo && coachInfo.userId) {
+          coachUserIdStr = coachInfo.userId.toString();
+        }
+      }
+
+      const calculatedSplits = calculateSplitAmounts(
+        venuePrice,
+        venueOwnerIdStr || "",
+        coachPrice > 0 ? coachPrice : undefined,
+        coachUserIdStr
+      );
+
+      singlePaymentSplits = calculatedSplits.map(p => ({
+        userId: new mongoose.Types.ObjectId(p.userId),
+        userType: p.userType,
+        amount: p.amount,
+        status: p.status
+      }));
+    }
+
     const bookingPayload: BookingCreatePayload = {
       userId: payload.userId,
       ...(payload.venueId ? { venueId: payload.venueId } : {}),
@@ -817,6 +845,7 @@ export const initiateBooking = async (
       participantId,
       ...(participantAge !== undefined ? { participantAge } : {}),
       organizerId: new mongoose.Types.ObjectId(payload.userId),
+      payments: singlePaymentSplits,
     };
 
     const booking =
@@ -852,6 +881,7 @@ export const initiateBooking = async (
               ? { participantAge: bookingPayload.participantAge }
               : {}),
             organizerId: bookingPayload.organizerId,
+            payments: bookingPayload.payments || [],
           });
 
     // Record promo code usage after successful booking
