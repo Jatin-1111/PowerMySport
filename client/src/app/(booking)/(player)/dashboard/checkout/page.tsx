@@ -30,11 +30,11 @@ import { toast } from "@/lib/toast";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { authApi } from "@/modules/auth/services/auth";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { CheckoutDetailItem } from "@/modules/booking/components/checkout/Checkoutdetaillist";
+import { CheckoutDetailItem } from "@/modules/booking/components/checkout/CheckoutDetailList";
 import {
   PaymentMethodOption,
   PaymentMethodSelector,
-} from "@/modules/booking/components/checkout/Paymentmethodselector";
+} from "@/modules/booking/components/checkout/PaymentMethodSelector";
 import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBookingInviteSection";
 import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
 import { bookingApi } from "@/modules/booking/services/booking";
