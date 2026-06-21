@@ -606,7 +606,7 @@ export const adminApi = {
   getPendingRefundBookings: async (params?: {
     page?: number;
     limit?: number;
-  }): Promise<ApiResponse<unknown[]>> => {
+  }): Promise<ApiResponse<unknown[]> & { stats?: { pendingCount: number; completedCount: number; failedCount: number; totalAmount: number } }> => {
     const query = new URLSearchParams();
     query.append("refundStatus", "PENDING");
     if (params?.page) query.append("page", String(params.page));

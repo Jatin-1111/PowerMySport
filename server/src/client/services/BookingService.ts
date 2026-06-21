@@ -1453,7 +1453,7 @@ const initiateBookingRefunds = async (
       continue;
     }
 
-    const refundMerchantId = `rf_${booking._id.toString()}_${target.userId}_${Date.now()}_${randomBytes(3).toString("hex")}`;
+    const refundMerchantId = `rf_${Date.now()}_${randomBytes(4).toString("hex")}`;
     const refundResponse = await initiatePhonePeRefund({
       merchantRefundId: refundMerchantId,
       originalMerchantOrderId: transaction.merchantOrderId,
@@ -1481,14 +1481,20 @@ const initiateBookingRefunds = async (
   }
 
   if (totalRefundPaise === 0) {
+    if (hasPending) {
+      // If we skipped transactions because they already have a refundState, 
+      // but the booking status was somehow still PENDING.
+      return {
+        refundStatus: "PROCESSED",
+        refundAmount: 0 // The amount is already tracked in transactions
+      };
+    }
     throw new Error("No eligible payment transactions found for refund");
   }
 
   const refundStatus: "PENDING" | "PROCESSED" | "REJECTED" = hasFailure
     ? "REJECTED"
-    : hasPending
-      ? "PENDING"
-      : "PROCESSED";
+    : "PROCESSED"; // Platform considers it processed even if gateway is still pending
 
   return {
     refundStatus,
@@ -2356,8 +2362,19 @@ export const updatePaymentStatus = async (
     await sendBookingPaymentConfirmation(bookingId);
   }
 
-  // Send payment status notification
+  // Send payment status notification and cancel booking if failed
   if (status === "FAILED") {
+    // Automatically cancel the booking if payment fails
+    // This prevents unpaid bookings from showing up for coaches/venues
+    if (booking.status !== "CANCELLED") {
+      booking.status = "CANCELLED";
+      if (session) {
+        await booking.save({ session });
+      } else {
+        await booking.save();
+      }
+    }
+
     const venue = await Venue.findById(booking.venueId).select("name");
     NotificationService.send({
       userId: payerUserId,

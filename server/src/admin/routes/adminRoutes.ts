@@ -30,6 +30,7 @@ import {
   rejectCoachVerification,
   reviewCommunityReport,
   listCommunityReports,
+  listRefunds,
   updateVenueAdminHandler,
   updateUserSafetyStatus,
   getRoleTemplates,
@@ -245,6 +246,13 @@ router.get(
 // Coach subscription override admin endpoints removed (deprecated)
 
 // Refund & dispute handling
+router.get(
+  "/refunds",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  listRefunds,
+);
 router.post(
   "/refunds/:bookingId",
   authMiddleware,

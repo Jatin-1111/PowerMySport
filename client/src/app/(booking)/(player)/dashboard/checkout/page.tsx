@@ -56,7 +56,7 @@ const fadeUp: Variants = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] },
+    transition: { duration: 0.4, ease: "easeOut" },
   },
 };
 
@@ -73,7 +73,7 @@ const stepVariants: Variants = {
   center: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] },
+    transition: { duration: 0.35, ease: "easeOut" },
   },
   exit: (dir: number) => ({
     opacity: 0,

@@ -9,6 +9,8 @@ import { toast } from "@/lib/toast";
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Landmark,
   Loader2,
@@ -17,6 +19,7 @@ import {
   TrendingDown,
   User,
 } from "lucide-react";
+import { PaginationMetadata } from "@/types";
 
 type RefundMethod = "ORIGINAL_CARD" | "BANK_TRANSFER" | "STORE_CREDIT";
 
@@ -57,15 +60,50 @@ export default function AdminRefundsPage() {
     bankName: "",
   });
 
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationMetadata>({
+    total: 0,
+    page: 1,
+    totalPages: 1,
+  });
+
+  const [stats, setStats] = useState({
+    pendingCount: 0,
+    completedCount: 0,
+    failedCount: 0,
+    totalAmount: 0
+  });
+
   const loadRefunds = async () => {
     try {
       setLoading(true);
       // Fetch bookings that have been refunded or have pending refunds
       // via the PhonePe refund status endpoint for each recent booking
       // The refunds page aggregates from the booking list filtered by refund state
-      const response = await adminApi.getPendingRefundBookings();
+      const response = await adminApi.getPendingRefundBookings({
+        page: currentPage,
+        limit: PAGE_SIZE,
+      });
       if (response.success && Array.isArray(response.data)) {
+        if (response.data.length === 0 && currentPage > 1) {
+          setCurrentPage((prev) => prev - 1);
+          return;
+        }
+        
         setRefunds(response.data as RefundRequest[]);
+        
+        if (response.stats) {
+          setStats(response.stats);
+        }
+        
+        if (response.pagination) {
+          setPagination({
+            total: response.pagination.total || 0,
+            page: response.pagination.page || 1,
+            totalPages: response.pagination.totalPages || 1,
+          });
+        }
       } else {
         setRefunds([]);
       }
@@ -79,7 +117,7 @@ export default function AdminRefundsPage() {
 
   useEffect(() => {
     loadRefunds();
-  }, []);
+  }, [currentPage]);
 
   const handleProcessRefund = async () => {
     if (!selectedRefund) return;
@@ -142,8 +180,6 @@ export default function AdminRefundsPage() {
   }
 
   const pendingRefunds = refunds.filter((r) => r.status === "PENDING");
-  const completedRefunds = refunds.filter((r) => r.status === "COMPLETED");
-  const failedRefunds = refunds.filter((r) => r.status === "FAILED");
 
   return (
     <div className="space-y-6">
@@ -158,25 +194,25 @@ export default function AdminRefundsPage() {
         <Card className="bg-white p-6 border-l-4 border-l-amber-500">
           <p className="text-sm font-semibold text-slate-500">Pending</p>
           <p className="text-3xl font-bold text-amber-600 mt-2">
-            {pendingRefunds.length}
+            {stats.pendingCount}
           </p>
         </Card>
         <Card className="bg-white p-6 border-l-4 border-l-emerald-500">
           <p className="text-sm font-semibold text-slate-500">Completed</p>
           <p className="text-3xl font-bold text-emerald-600 mt-2">
-            {completedRefunds.length}
+            {stats.completedCount}
           </p>
         </Card>
         <Card className="bg-white p-6 border-l-4 border-l-red-500">
           <p className="text-sm font-semibold text-slate-500">Failed</p>
           <p className="text-3xl font-bold text-red-600 mt-2">
-            {failedRefunds.length}
+            {stats.failedCount}
           </p>
         </Card>
         <Card className="bg-white p-6 border-l-4 border-l-power-orange">
           <p className="text-sm font-semibold text-slate-500">Total Amount</p>
           <p className="text-3xl font-bold text-power-orange mt-2">
-            ₹{refunds.reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
+            ₹{stats.totalAmount.toLocaleString()}
           </p>
         </Card>
       </div>
@@ -278,11 +314,10 @@ export default function AdminRefundsPage() {
                     />
                     <div>
                       <p className="font-semibold text-slate-900">
-                        Return to Original Card
+                        Return to Original Source
                       </p>
                       <p className="text-sm text-slate-600 mt-1">
-                        Refund will be reversed via PhonePe to the original
-                        card.
+                        Refund will be reversed via PhonePe to the original payment method (UPI, Card, etc.).
                         <br />
                         <span className="text-xs text-slate-500">
                           Processing time: 3-5 business days
@@ -518,29 +553,61 @@ export default function AdminRefundsPage() {
         </div>
       )}
 
-      {/* Completed Refunds */}
-      {completedRefunds.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">
-            Completed Refunds
-          </h3>
-          <div className="space-y-2">
-            {completedRefunds.map((refund) => (
-              <Card
-                key={refund.id}
-                className="bg-emerald-50 p-4 border border-emerald-200"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-emerald-900">
-                      {refund.playerName}
-                    </p>
-                    <p className="text-sm text-emerald-700">₹{refund.amount}</p>
-                  </div>
-                  <CheckCircle2 className="text-emerald-600" size={20} />
-                </div>
-              </Card>
-            ))}
+
+
+      {/* Pagination Controls */}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4 border-t border-slate-200 mt-6">
+          <div className="text-sm text-slate-500">
+            Showing{" "}
+            <span className="font-medium text-slate-900">
+              {Math.min(currentPage * PAGE_SIZE, pagination.total)}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-slate-900">
+              {pagination.total}
+            </span>{" "}
+            refund requests
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="px-2"
+            >
+              <ChevronLeft size={16} />
+            </Button>
+            
+            <div className="flex gap-1">
+              {Array.from(
+                { length: pagination.totalPages },
+                (_, i) => i + 1,
+              ).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "primary" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className="w-9 px-0"
+                >
+                  {page}
+                </Button>
+              ))}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))
+              }
+              disabled={currentPage === pagination.totalPages}
+              className="px-2"
+            >
+              <ChevronRight size={16} />
+            </Button>
           </div>
         </div>
       )}
