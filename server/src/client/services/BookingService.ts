@@ -92,9 +92,9 @@ interface BookingCreatePayload {
   discountAmount?: number;
   checkInCode: string;
   participantName: string;
-  participantId: mongoose.Types.ObjectId;
+  participantId: mongoose.Types.ObjectId | string;
   participantAge?: number;
-  organizerId: mongoose.Types.ObjectId;
+  organizerId: string;
   payments?: any[];
 }
 
@@ -265,7 +265,7 @@ const acquireResourceSlotLock = async (
   await BookingSlotLock.findOneAndUpdate(
     {
       resourceType,
-      resourceId: new mongoose.Types.ObjectId(resourceId),
+      resourceId: resourceId,
       dateKey: `${getDateKey(date)}-${startTime}`,
     },
     {
@@ -570,6 +570,9 @@ export const initiateBooking = async (
     }
 
     // Fetch user for participant information
+    if (!mongoose.Types.ObjectId.isValid(payload.userId)) {
+      throw new Error("Invalid user ID format");
+    }
     const user = await User.findById(payload.userId);
     if (!user) {
       throw new Error("User not found");
@@ -581,6 +584,9 @@ export const initiateBooking = async (
     let participantAge: number | undefined = undefined;
 
     if (payload.dependentId) {
+      if (payload.dependentId === "undefined" || !mongoose.Types.ObjectId.isValid(payload.dependentId)) {
+        throw new Error("Invalid dependent ID format");
+      }
       // Booking is for a dependent (child)
       const dependent = await Player.findOne({ _id: payload.dependentId, userId: user._id, type: "DEPENDENT" });
       if (!dependent) {
@@ -615,6 +621,9 @@ export const initiateBooking = async (
     let venue: VenueDocument | null = null;
 
     if (payload.venueId) {
+      if (!mongoose.Types.ObjectId.isValid(payload.venueId)) {
+        throw new Error("Invalid venue ID format");
+      }
       venue = await Venue.findById(payload.venueId).populate("ownerId");
       if (!venue) {
         throw new Error("Venue not found");
@@ -682,6 +691,9 @@ export const initiateBooking = async (
 
     // If coach is requested, validate and calculate coach price
     if (payload.coachId) {
+      if (!mongoose.Types.ObjectId.isValid(payload.coachId)) {
+        throw new Error("Invalid coach ID format");
+      }
       const coach = await Coach.findById(payload.coachId).populate("userId");
       if (!coach) {
         throw new Error("Coach not found");
@@ -750,6 +762,7 @@ export const initiateBooking = async (
         payload.date,
         normalizedStartTime,
         normalizedEndTime,
+        payload.sport,
       );
 
       if (!coachAvailable) {
@@ -821,12 +834,14 @@ export const initiateBooking = async (
         totalAmount,
       );
 
-      singlePaymentSplits = calculatedSplits.map(p => ({
-        userId: new mongoose.Types.ObjectId(p.userId),
-        userType: p.userType,
-        amount: p.amount,
-        status: p.status
-      }));
+      singlePaymentSplits = calculatedSplits
+        .filter(p => p.userId && mongoose.Types.ObjectId.isValid(p.userId))
+        .map(p => ({
+          userId: p.userId,
+          userType: p.userType,
+          amount: p.amount,
+          status: p.status
+        }));
     }
 
     const bookingPayload: BookingCreatePayload = {
@@ -846,7 +861,7 @@ export const initiateBooking = async (
       participantName,
       participantId,
       ...(participantAge !== undefined ? { participantAge } : {}),
-      organizerId: new mongoose.Types.ObjectId(payload.userId),
+      organizerId: payload.userId,
       payments: singlePaymentSplits,
     };
 
@@ -901,6 +916,7 @@ export const initiateBooking = async (
       booking,
     };
   } catch (error) {
+    console.error("[initiateBooking] error:", error);
     throw new Error(
       `Failed to initiate booking: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -1785,11 +1801,23 @@ const checkCoachAvailabilityForBooking = async (
   date: Date,
   startTime: string,
   endTime: string,
+  sport?: string,
 ): Promise<boolean> => {
   const coach = await Coach.findById(coachId);
   if (!coach) return false;
   const dayOfWeek = date.getDay();
-  const dayAvailability = coach.availability.find(
+  const availabilityBySport = (coach as any).availabilityBySport as
+    | Map<string, Array<{ dayOfWeek: number; startTime: string; endTime: string }>>
+    | Record<string, Array<{ dayOfWeek: number; startTime: string; endTime: string }>>
+    | undefined;
+  const sportSlots =
+    sport && availabilityBySport
+      ? availabilityBySport instanceof Map
+        ? availabilityBySport.get(sport)
+        : availabilityBySport[sport]
+      : undefined;
+  const sourceSlots = sportSlots || coach.availability || [];
+  const dayAvailability = (sourceSlots as Array<{ dayOfWeek: number; startTime: string; endTime: string }>).find(
     (a) => a.dayOfWeek === dayOfWeek,
   );
   if (!dayAvailability) return false;

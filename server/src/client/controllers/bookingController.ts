@@ -75,6 +75,11 @@ export const initiateNewBooking = async (
       },
     });
   } catch (error) {
+    console.error("[initiateNewBooking] Error details:", {
+      body: req.body,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     res.status(400).json({
       success: false,
       message:

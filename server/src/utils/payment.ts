@@ -16,14 +16,16 @@ export const calculateSplitAmounts = (
   payerUserId?: string,
   totalAmount?: number,
 ): IPayment[] => {
-  const payments: IPayment[] = [
-    {
+  const payments: IPayment[] = [];
+
+  if (venueOwnerId) {
+    payments.push({
       userId: venueOwnerId,
       userType: "VENUE_LISTER",
       amount: venuePrice,
       status: "PENDING",
-    },
-  ];
+    });
+  }
 
   if (coachPrice && coachUserId) {
     payments.push({
