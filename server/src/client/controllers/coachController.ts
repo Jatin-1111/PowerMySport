@@ -165,10 +165,8 @@ export const createNewCoach = async (
     }
 
     const {
-      bio,
       certifications: certBody,
       sports: sportsBody,
-      hourlyRate,
       sportPricing,
       serviceMode: serviceModeBody,
       ownVenueDetails,

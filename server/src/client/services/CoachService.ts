@@ -206,6 +206,10 @@ export interface CreateCoachPayload {
   sportPricing?: Record<string, number>;
   serviceMode: ServiceMode;
   ownVenueDetails?: IOwnVenueDetails; // Venue details stored in coach profile (not separate Venue document)
+  baseLocation?: {
+    type: "Point";
+    coordinates: [number, number];
+  };
   serviceRadiusKm?: number;
   travelBufferTime?: number;
   availability: Array<{
