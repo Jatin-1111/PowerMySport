@@ -23,6 +23,15 @@ export interface IPayoutMethod {
   updatedAt: Date;
 }
 
+export interface IBlockedDate {
+  id?: string;
+  startDate: Date;
+  endDate: Date;
+  reason?: string;
+  allDay: boolean;
+  blockedAt: Date;
+}
+
 export interface CoachDocument extends Document {
   id?: string;
   userId: mongoose.Types.ObjectId;
@@ -61,6 +70,7 @@ export interface CoachDocument extends Document {
    * MIGRATION NOTE: Changed from single payoutMethod to payoutMethods array
    */
   payoutMethods?: IPayoutMethod[];
+  blockedDates?: IBlockedDate[];
   rating: number;
   reviewCount: number;
   createdAt: Date;
@@ -339,6 +349,15 @@ const coachSchema = new Schema<CoachDocument>(
       type: Boolean,
       default: false,
     },
+    blockedDates: [
+      {
+        startDate: { type: Date, required: true },
+        endDate: { type: Date, required: true },
+        reason: { type: String, trim: true },
+        allDay: { type: Boolean, default: true },
+        blockedAt: { type: Date, default: Date.now },
+      },
+    ],
     payoutMethods: [
       {
         type: {

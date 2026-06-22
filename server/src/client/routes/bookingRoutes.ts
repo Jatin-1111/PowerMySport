@@ -21,6 +21,7 @@ import {
   verifyPhonePeOrderStatus,
   validateBookingPromoCode,
   payBookingWithWallet,
+  rescheduleBookingHandler,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
@@ -188,6 +189,13 @@ router.post(
   "/:bookingId/provider/reject",
   authMiddleware,
   rejectBookingByProviderHandler,
+);
+
+// Reschedule booking — coach only
+router.post(
+  "/:bookingId/reschedule",
+  authMiddleware,
+  rescheduleBookingHandler,
 );
 
 // Cancel booking

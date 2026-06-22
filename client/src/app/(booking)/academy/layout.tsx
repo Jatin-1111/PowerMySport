@@ -9,11 +9,14 @@ import {
 import { toast } from "@/lib/toast";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  BarChart2,
   Building2,
   Calendar,
   CreditCard,
   LayoutDashboard,
   Settings,
+  Star,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import React, { useEffect } from "react";
@@ -83,6 +86,21 @@ export default function AcademyLayout({
       href: "/academy/bookings",
       label: "Bookings",
       icon: Calendar,
+    },
+    {
+      href: "/academy/earnings",
+      label: "Earnings",
+      icon: TrendingUp,
+    },
+    {
+      href: "/academy/reviews",
+      label: "Reviews",
+      icon: Star,
+    },
+    {
+      href: "/academy/analytics",
+      label: "Analytics",
+      icon: BarChart2,
     },
     {
       href: "/academy/settings",

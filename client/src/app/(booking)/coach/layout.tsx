@@ -11,11 +11,14 @@ import {
 import { toast } from "@/lib/toast";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import {
+  BarChart2,
   Calendar,
+  CalendarDays,
   CreditCard,
   BadgeIndianRupee,
   Settings,
   ShieldCheck,
+  Star,
   User,
   Users,
 } from "lucide-react";
@@ -139,6 +142,31 @@ export default function CoachLayout({
       href: "/coach/payouts",
       label: "Payouts",
       icon: BadgeIndianRupee,
+    },
+    {
+      href: "/coach/schedule",
+      label: "Schedule",
+      icon: CalendarDays,
+    },
+    {
+      href: "/coach/clients",
+      label: "Clients",
+      icon: Users,
+    },
+    {
+      href: "/coach/earnings",
+      label: "Earnings",
+      icon: BadgeIndianRupee,
+    },
+    {
+      href: "/coach/reviews",
+      label: "Reviews",
+      icon: Star,
+    },
+    {
+      href: "/coach/analytics",
+      label: "Analytics",
+      icon: BarChart2,
     },
     {
       href: "/coach/my-bookings",

@@ -484,3 +484,115 @@ export interface ReviewListData {
 export interface InitiateBookingResponse {
   booking: Booking;
 }
+
+// ============================================
+// SCHEDULE & CALENDAR TYPES
+// ============================================
+
+export interface IBlockedDate {
+  id?: string;
+  _id?: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  allDay: boolean;
+  blockedAt: string;
+}
+
+export interface CoachCalendarData {
+  bookings: Booking[];
+  blockedDates: IBlockedDate[];
+  availability: IAvailability[];
+  availabilityBySport: Record<string, IAvailability[]>;
+  travelBufferTime: number;
+}
+
+// ============================================
+// CRM & ANALYTICS TYPES
+// ============================================
+
+export type NoteType = "GENERAL" | "SESSION" | "INJURY" | "GOAL" | "PROGRESS";
+
+export interface ClientNote {
+  _id?: string;
+  id?: string;
+  coachId: string;
+  clientId: string;
+  note: string;
+  noteType: NoteType;
+  sessionDate?: string;
+  bookingId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientSummary {
+  clientId: string;
+  name: string;
+  email: string;
+  photoUrl?: string;
+  sports: string[];
+  totalSessions: number;
+  completedSessions: number;
+  pendingSessions: number;
+  firstSessionDate: string | null;
+  lastSessionDate: string | null;
+  isActive: boolean;
+}
+
+export interface ClientDetails extends ClientSummary {
+  bookings: Booking[];
+  notes: ClientNote[];
+}
+
+export interface MonthlyEarning {
+  label: string;
+  total: number;
+  sessions: number;
+}
+
+export interface SportEarning {
+  sport: string;
+  total: number;
+  sessions: number;
+}
+
+export interface EarningsData {
+  allTime: { total: number; sessions: number };
+  thisMonth: { total: number; sessions: number };
+  lastMonth: { total: number; sessions: number };
+  pending: { total: number; sessions: number };
+  byMonth: MonthlyEarning[];
+  bySport: SportEarning[];
+  recentBookings: Booking[];
+}
+
+export interface AnalyticsOverview {
+  totalSessions: number;
+  completedSessions: number;
+  completionRate: number;
+  totalClients: number;
+  returningClients: number;
+  retentionRate: number;
+  avgRating: number;
+  reviewCount: number;
+}
+
+export interface TrendPoint {
+  label: string;
+  count: number;
+}
+
+export interface SportBreakdown {
+  sport: string;
+  count: number;
+  percentage: number;
+}
+
+export interface AnalyticsData {
+  overview: AnalyticsOverview;
+  sessionsTrend: TrendPoint[];
+  sportBreakdown: SportBreakdown[];
+  popularHours: Array<{ hour: number; count: number }>;
+  clientRetention: { newClients: number; returningClients: number };
+}

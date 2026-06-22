@@ -9,11 +9,14 @@ import {
 import { useRouter } from "next/navigation";
 import {
   BadgeIndianRupee,
+  BarChart2,
   BookOpen,
   Calendar,
   Grid3x3,
   LayoutDashboard,
   Settings,
+  Star,
+  TrendingUp,
   User,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
@@ -89,6 +92,21 @@ export default function VendorLayout({
       href: "/venue-lister/vendor-bookings",
       label: "Bookings",
       icon: Calendar,
+    },
+    {
+      href: "/venue-lister/earnings",
+      label: "Earnings",
+      icon: TrendingUp,
+    },
+    {
+      href: "/venue-lister/reviews",
+      label: "Reviews",
+      icon: Star,
+    },
+    {
+      href: "/venue-lister/analytics",
+      label: "Analytics",
+      icon: BarChart2,
     },
     {
       href: "/venue-lister/payouts",

@@ -24,6 +24,7 @@ import {
   updatePaymentStatus,
   validatePromoCodeForUser,
   rejectBookingByProvider,
+  rescheduleBookingByCoach,
 } from "../services/BookingService";
 import {
   getPhonePeOrderStatus,
@@ -1856,6 +1857,86 @@ export const payBookingWithWallet = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to pay via wallet",
+    });
+  }
+};
+
+/**
+ * Reschedule a confirmed booking — coach only
+ * POST /api/bookings/:bookingId/reschedule
+ */
+export const rescheduleBookingHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { bookingId } = req.params as { bookingId: string };
+    const { newDate, newStartTime, newEndTime } = req.body as {
+      newDate: string;
+      newStartTime: string;
+      newEndTime: string;
+    };
+
+    if (!newDate || !newStartTime || !newEndTime) {
+      res.status(400).json({
+        success: false,
+        message: "newDate, newStartTime, and newEndTime are required",
+      });
+      return;
+    }
+
+    const parsedDate = new Date(newDate);
+    if (isNaN(parsedDate.getTime())) {
+      res.status(400).json({ success: false, message: "Invalid date format" });
+      return;
+    }
+
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(newStartTime) || !timeRegex.test(newEndTime)) {
+      res.status(400).json({
+        success: false,
+        message: "Time must be in HH:mm format",
+      });
+      return;
+    }
+
+    if (newStartTime >= newEndTime) {
+      res.status(400).json({
+        success: false,
+        message: "End time must be after start time",
+      });
+      return;
+    }
+
+    const booking = await rescheduleBookingByCoach(
+      bookingId,
+      req.user.id,
+      parsedDate,
+      newStartTime,
+      newEndTime,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Booking rescheduled successfully",
+      data: transformDocument(booking.toJSON()),
+    });
+  } catch (error) {
+    const status =
+      error instanceof Error &&
+      (error.message.includes("Not authorized") ||
+        error.message.includes("not found"))
+        ? 403
+        : 400;
+    res.status(status).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to reschedule booking",
     });
   }
 };

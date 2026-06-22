@@ -10,6 +10,14 @@ import {
   Coach,
   CoachVerificationDocument,
   IAvailability,
+  IBlockedDate,
+  CoachCalendarData,
+  ClientSummary,
+  ClientDetails,
+  ClientNote,
+  NoteType,
+  EarningsData,
+  AnalyticsData,
 } from "@/types";
 
 export interface CoachVerificationUploadResponse {
@@ -358,5 +366,90 @@ export const coachApi = {
       `/coaches/subscriptions/phonepe/status/${merchantOrderId}`,
     );
     return response.data.data;
+  },
+
+  // Get coach calendar for a date range
+  getCalendar: async (
+    startDate: string,
+    endDate: string,
+  ): Promise<ApiResponse<CoachCalendarData>> => {
+    const response = await axiosInstance.get("/coaches/my-profile/calendar", {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  },
+
+  // Block a date range
+  blockDates: async (payload: {
+    startDate: string;
+    endDate: string;
+    reason?: string;
+    allDay?: boolean;
+  }): Promise<ApiResponse<IBlockedDate>> => {
+    const response = await axiosInstance.post(
+      "/coaches/my-profile/block-dates",
+      payload,
+    );
+    return response.data;
+  },
+
+  // Remove a blocked date
+  unblockDate: async (blockId: string): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.delete(
+      `/coaches/my-profile/block-dates/${blockId}`,
+    );
+    return response.data;
+  },
+
+  // CRM — client/athlete management
+  getClients: async (): Promise<ApiResponse<ClientSummary[]>> => {
+    const response = await axiosInstance.get("/coaches/my-clients");
+    return response.data;
+  },
+
+  getClientDetails: async (
+    clientUserId: string,
+  ): Promise<ApiResponse<ClientDetails>> => {
+    const response = await axiosInstance.get(
+      `/coaches/my-clients/${clientUserId}`,
+    );
+    return response.data;
+  },
+
+  addClientNote: async (
+    clientUserId: string,
+    payload: {
+      note: string;
+      noteType?: NoteType;
+      sessionDate?: string;
+      bookingId?: string;
+    },
+  ): Promise<ApiResponse<ClientNote>> => {
+    const response = await axiosInstance.post(
+      `/coaches/my-clients/${clientUserId}/notes`,
+      payload,
+    );
+    return response.data;
+  },
+
+  deleteClientNote: async (
+    clientUserId: string,
+    noteId: string,
+  ): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.delete(
+      `/coaches/my-clients/${clientUserId}/notes/${noteId}`,
+    );
+    return response.data;
+  },
+
+  // Earnings & Analytics
+  getEarnings: async (): Promise<ApiResponse<EarningsData>> => {
+    const response = await axiosInstance.get("/coaches/earnings");
+    return response.data;
+  },
+
+  getAnalytics: async (): Promise<ApiResponse<AnalyticsData>> => {
+    const response = await axiosInstance.get("/coaches/analytics");
+    return response.data;
   },
 };

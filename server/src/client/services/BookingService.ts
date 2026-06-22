@@ -3028,6 +3028,61 @@ export const confirmBookingByProvider = async (
   return booking;
 };
 
+/**
+ * Reschedule a confirmed booking to a new date/time — coach-initiated.
+ * Only CONFIRMED bookings can be rescheduled.
+ */
+export const rescheduleBookingByCoach = async (
+  bookingId: string,
+  coachUserId: string,
+  newDate: Date,
+  newStartTime: string,
+  newEndTime: string,
+): Promise<BookingDocument> => {
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    throw new Error("Invalid booking ID");
+  }
+
+  const booking = await Booking.findById(bookingId);
+  if (!booking) throw new Error("Booking not found");
+
+  if (booking.status !== "CONFIRMED") {
+    throw new Error("Only confirmed bookings can be rescheduled");
+  }
+
+  // Verify the requesting user is actually the assigned coach
+  const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
+  if (!coach) throw new Error("Coach profile not found");
+
+  if (!booking.coachId || booking.coachId.toString() !== coach._id.toString()) {
+    throw new Error("Not authorized to reschedule this booking");
+  }
+
+  // Check that the new slot doesn't conflict with another booking
+  const conflict = await Booking.findOne({
+    _id: { $ne: booking._id },
+    coachId: coach._id,
+    date: newDate,
+    status: { $in: ["CONFIRMED", "IN_PROGRESS", "PENDING_CONFIRMATION"] },
+    $or: [
+      { startTime: { $lt: newEndTime }, endTime: { $gt: newStartTime } },
+    ],
+  });
+
+  if (conflict) {
+    throw new Error(
+      "The requested time slot conflicts with an existing booking",
+    );
+  }
+
+  booking.date = newDate;
+  booking.startTime = newStartTime;
+  booking.endTime = newEndTime;
+  await booking.save();
+
+  return booking;
+};
+
 export const rejectBookingByProvider = async (
   bookingId: string,
   providerUserId: string,

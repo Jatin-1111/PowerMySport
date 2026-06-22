@@ -1,4 +1,4 @@
-﻿import axiosInstance from "@/lib/api/axios";
+import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, Booking, Venue } from "@/types";
 
 export interface PlatformStats {
@@ -328,6 +328,11 @@ export const statsApi = {
     ApiResponse<ObservabilitySnapshot>
   > => {
     const response = await axiosInstance.get("/stats/observability");
+    return response.data;
+  },
+
+  getVenueById: async (venueId: string): Promise<ApiResponse<Venue>> => {
+    const response = await axiosInstance.get(`/venues/${venueId}`);
     return response.data;
   },
 };

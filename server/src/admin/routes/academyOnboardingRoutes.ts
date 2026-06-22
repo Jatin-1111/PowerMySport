@@ -20,6 +20,7 @@ import {
   createSessionPackageHandler,
 } from "../../client/controllers/academyOnboardingController";
 import { authMiddleware, adminMiddleware } from "../../middleware/auth";
+import { getAcademyEarningsHandler, getAcademyAnalyticsHandler } from "../../client/controllers/academyAnalyticsController";
 import { validateRequest } from "../../middleware/validation";
 import {
   academyOnboardingStep1Schema,
@@ -263,5 +264,9 @@ router.post(
   authMiddleware,
   createSessionPackageHandler,
 );
+
+// Academy owner analytics (authenticated, not admin)
+router.get("/my/earnings", authMiddleware, getAcademyEarningsHandler);
+router.get("/my/analytics", authMiddleware, getAcademyAnalyticsHandler);
 
 export default router;

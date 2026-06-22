@@ -667,3 +667,99 @@ export const deleteCoach = async (coachId: string): Promise<boolean> => {
     session.endSession();
   }
 };
+
+/**
+ * Get coach calendar data for a date range.
+ * Returns bookings + blocked dates, optimized with a single aggregation.
+ */
+export const getCoachCalendar = async (
+  coachUserId: string,
+  startDate: Date,
+  endDate: Date,
+): Promise<{
+  bookings: any[];
+  blockedDates: any[];
+  availability: any[];
+  availabilityBySport: Record<string, any[]>;
+  travelBufferTime: number;
+}> => {
+  const coach = await Coach.findOne({ userId: coachUserId }).select(
+    "blockedDates availability availabilityBySport travelBufferTime",
+  );
+  if (!coach) throw new Error("Coach profile not found");
+
+  // Lean query — fast for read-only calendar data
+  const bookings = await Booking.find({
+    coachId: coach._id,
+    date: { $gte: startDate, $lte: endDate },
+    status: { $nin: ["CANCELLED"] },
+  })
+    .populate("userId", "name photoUrl email")
+    .sort({ date: 1, startTime: 1 })
+    .lean();
+
+  const availabilityBySport = coach.availabilityBySport
+    ? Object.fromEntries(coach.availabilityBySport as any)
+    : {};
+
+  return {
+    bookings,
+    blockedDates: (coach.blockedDates as any[]) ?? [],
+    availability: coach.availability ?? [],
+    availabilityBySport,
+    travelBufferTime: coach.travelBufferTime ?? 0,
+  };
+};
+
+/**
+ * Block a date range for a coach.
+ */
+export const blockCoachDates = async (
+  coachUserId: string,
+  payload: {
+    startDate: Date;
+    endDate: Date;
+    reason?: string;
+    allDay?: boolean;
+  },
+): Promise<any> => {
+  const coach = await Coach.findOne({ userId: coachUserId });
+  if (!coach) throw new Error("Coach profile not found");
+
+  const newBlock = {
+    startDate: payload.startDate,
+    endDate: payload.endDate,
+    reason: payload.reason?.trim() || undefined,
+    allDay: payload.allDay ?? true,
+    blockedAt: new Date(),
+  };
+
+  if (!coach.blockedDates) coach.blockedDates = [];
+  (coach.blockedDates as any[]).push(newBlock);
+  coach.markModified("blockedDates");
+  await coach.save();
+
+  return (coach.blockedDates as any[]).slice(-1)[0];
+};
+
+/**
+ * Remove a blocked date entry by its subdocument id.
+ */
+export const unblockCoachDate = async (
+  coachUserId: string,
+  blockId: string,
+): Promise<void> => {
+  const coach = await Coach.findOne({ userId: coachUserId });
+  if (!coach) throw new Error("Coach profile not found");
+
+  if (!coach.blockedDates) return;
+
+  const idx = (coach.blockedDates as any[]).findIndex(
+    (b: any) => b._id?.toString() === blockId,
+  );
+  if (idx === -1) throw new Error("Blocked date entry not found");
+
+  (coach.blockedDates as any[]).splice(idx, 1);
+  coach.markModified("blockedDates");
+  await coach.save();
+};

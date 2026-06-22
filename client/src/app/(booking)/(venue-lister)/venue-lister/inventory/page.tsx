@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -8,13 +8,32 @@ import OnboardingSectionCard from "@/modules/onboarding/components/onboarding/On
 import OpeningHoursInput from "@/modules/onboarding/components/onboarding/OpeningHoursInput";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Venue } from "@/types";
-import { Camera, X } from "lucide-react";
+import {
+  Camera,
+  X,
+  Building2,
+  MapPin,
+  Star,
+  IndianRupee,
+  Edit3,
+  Trash2,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle,
+  ImageOff,
+  Plus,
+  TrendingUp,
+  Layout,
+} from "lucide-react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const AMENITIES_OPTIONS = [
   "Parking",
@@ -31,6 +50,8 @@ const AMENITIES_OPTIONS = [
 
 const S3_BUCKET_HOST =
   "https://powermysport-images.s3.ap-south-1.amazonaws.com";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const normalizePhone = (value: unknown) => {
   if (value == null) return "";
@@ -148,6 +169,260 @@ const getVenueImageGroups = (venue: Venue) => {
   return { general, sports, all };
 };
 
+const getCoverPhoto = (venue: Venue): string | null => {
+  if (venue.coverPhotoUrl) return venue.coverPhotoUrl;
+  if (venue.coverPhotoKey) return toS3Url(venue.coverPhotoKey);
+  const groups = getVenueImageGroups(venue);
+  return groups.all[0] ?? null;
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function VenueSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden animate-pulse flex flex-col">
+      <div className="h-44 bg-slate-100" />
+      <div className="p-4 flex flex-col gap-3">
+        <div className="h-5 bg-slate-100 rounded-full w-3/4" />
+        <div className="h-3 bg-slate-100 rounded-full w-full" />
+        <div className="flex gap-2">
+          <div className="h-5 bg-slate-100 rounded-full w-16" />
+          <div className="h-5 bg-slate-100 rounded-full w-20" />
+          <div className="h-5 bg-slate-100 rounded-full w-14" />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <div className="h-5 bg-slate-100 rounded-full w-12" />
+          <div className="h-5 bg-slate-100 rounded-full w-16" />
+        </div>
+        <div className="h-px bg-slate-100" />
+        <div className="flex justify-between items-center">
+          <div className="h-7 bg-slate-100 rounded-full w-24" />
+          <div className="h-4 bg-slate-100 rounded-full w-16" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-9 bg-slate-100 rounded-lg flex-1" />
+          <div className="h-9 bg-slate-100 rounded-lg flex-1" />
+          <div className="h-9 w-9 bg-slate-100 rounded-lg shrink-0" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VenueCard({
+  venue,
+  onEdit,
+  onDelete,
+  index,
+}: {
+  venue: Venue;
+  onEdit: (v: Venue) => void;
+  onDelete: (id: string) => void;
+  index: number;
+}) {
+  const coverPhoto = getCoverPhoto(venue);
+  const displayAddress =
+    venue.address ||
+    (venue.location?.coordinates
+      ? `${venue.location.coordinates[1].toFixed(4)}° N, ${venue.location.coordinates[0].toFixed(4)}° E`
+      : "Location not set");
+
+  const isActive = Boolean(venue.description?.trim()) && Boolean(coverPhoto);
+  const hasRating = Boolean(venue.rating && venue.rating > 0);
+  const visibleSports = venue.sports.slice(0, 3);
+  const moreSports = venue.sports.length - 3;
+  const amenitiesList = venue.amenities || [];
+  const visibleAmenities = amenitiesList.slice(0, 3);
+  const moreAmenities = amenitiesList.length - 3;
+  const totalImages = getVenueImageGroups(venue).all.length;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.07, ease: "easeOut" }}
+      className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-slate-300 transition-all duration-300 overflow-hidden flex flex-col"
+    >
+      {/* ── Cover photo ── */}
+      <div className="relative h-44 bg-slate-100 overflow-hidden">
+        {coverPhoto ? (
+          <img
+            src={coverPhoto}
+            alt={venue.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-100 to-slate-200">
+            <Building2 className="w-10 h-10 text-slate-300" />
+            <span className="text-xs text-slate-400 font-medium">
+              No photos yet
+            </span>
+          </div>
+        )}
+
+        {/* Gradient overlay */}
+        {coverPhoto && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+        )}
+
+        {/* Status badge */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          {totalImages > 0 && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-black/40 text-white backdrop-blur-sm">
+              {totalImages} photo{totalImages !== 1 ? "s" : ""}
+            </span>
+          )}
+          <span
+            className={[
+              "text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm",
+              isActive
+                ? "bg-emerald-500/90 text-white"
+                : "bg-amber-500/90 text-white",
+            ].join(" ")}
+          >
+            {isActive ? "Active" : "Incomplete"}
+          </span>
+        </div>
+
+        {/* Name overlay (only when cover photo present) */}
+        {coverPhoto && (
+          <div className="absolute bottom-0 left-0 right-0 px-4 py-3">
+            <h3 className="text-white font-bold text-lg leading-tight line-clamp-1 drop-shadow-sm">
+              {venue.name}
+            </h3>
+          </div>
+        )}
+      </div>
+
+      {/* ── Card body ── */}
+      <div className="flex flex-col gap-3 p-4 flex-1">
+        {/* Name (when no cover photo) */}
+        {!coverPhoto && (
+          <h3 className="text-slate-900 font-bold text-lg leading-tight line-clamp-2">
+            {venue.name}
+          </h3>
+        )}
+
+        {/* Address */}
+        <div className="flex items-start gap-1.5">
+          <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />
+          <span className="text-xs text-slate-500 line-clamp-2">
+            {displayAddress}
+          </span>
+        </div>
+
+        {/* Sports */}
+        <div className="flex flex-wrap gap-1.5">
+          {visibleSports.map((sport) => (
+            <span
+              key={sport}
+              className="px-2.5 py-0.5 bg-orange-50 text-orange-600 text-xs font-medium rounded-full border border-orange-100"
+            >
+              {formatSportLabel(sport)}
+            </span>
+          ))}
+          {moreSports > 0 && (
+            <span className="px-2.5 py-0.5 bg-slate-100 text-slate-500 text-xs font-medium rounded-full">
+              +{moreSports} more
+            </span>
+          )}
+        </div>
+
+        {/* Amenities */}
+        {visibleAmenities.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {visibleAmenities.map((a) => (
+              <span
+                key={a}
+                className="px-2 py-0.5 bg-slate-50 text-slate-600 text-xs rounded-full border border-slate-100"
+              >
+                {a}
+              </span>
+            ))}
+            {moreAmenities > 0 && (
+              <span className="text-xs text-slate-400 self-center">
+                +{moreAmenities}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* External coaches badge */}
+        {venue.allowExternalCoaches && (
+          <div className="flex items-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-xs text-emerald-600 font-medium">
+              External coaches welcome
+            </span>
+          </div>
+        )}
+
+        <div className="flex-1" />
+
+        {/* Price + Rating */}
+        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+          <div className="flex items-baseline gap-0.5">
+            <IndianRupee className="w-4 h-4 text-orange-500 shrink-0" strokeWidth={2.5} />
+            <span className="text-xl font-bold text-slate-900">
+              {venue.pricePerHour.toLocaleString("en-IN")}
+            </span>
+            <span className="text-xs text-slate-400 ml-0.5">/hr</span>
+          </div>
+          {hasRating ? (
+            <div className="flex items-center gap-1">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <span className="text-sm font-semibold text-slate-700">
+                {venue.rating!.toFixed(1)}
+              </span>
+              {venue.reviewCount && venue.reviewCount > 0 && (
+                <span className="text-xs text-slate-400">
+                  ({venue.reviewCount})
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-xs text-slate-300 italic">No reviews yet</span>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button
+            onClick={() => onEdit(venue)}
+            variant="outline"
+            size="sm"
+            icon={<Edit3 className="w-3.5 h-3.5" />}
+            className="flex-1 !border-slate-200 !text-slate-700 hover:!border-orange-300 hover:!text-orange-600 text-sm"
+          >
+            Edit
+          </Button>
+          <Link href={`/venues/${venue.id || venue._id}`} className="flex-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<ExternalLink className="w-3.5 h-3.5" />}
+              className="w-full !text-slate-500 hover:!text-slate-700 hover:!bg-slate-50 text-sm"
+            >
+              Preview
+            </Button>
+          </Link>
+          <button
+            onClick={() =>
+              onDelete(venue.id || (venue as { _id?: string })._id || "")
+            }
+            className="flex items-center justify-center w-9 h-9 rounded-lg border border-red-100 bg-red-50 text-red-500 hover:bg-red-100 hover:border-red-200 transition-colors shrink-0"
+            title="Delete venue"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function VenueInventoryPage() {
   const { user } = useAuthStore();
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -202,7 +477,6 @@ export default function VenueInventoryPage() {
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [imageError, setImageError] = useState("");
 
-  // Check if user can add more venues (defaults to false for venue listers from inquiry)
   const canAddMoreVenues = user?.venueListerProfile?.canAddMoreVenues ?? false;
 
   const getInputClassName = (hasError: boolean) => {
@@ -250,7 +524,7 @@ export default function VenueInventoryPage() {
       try {
         const results = await geoApi.autocomplete(query);
         setSuggestions(results);
-      } catch (err) {
+      } catch {
         setSearchError("Unable to fetch suggestions");
       } finally {
         setIsSearching(false);
@@ -346,12 +620,8 @@ export default function VenueInventoryPage() {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     const maxSizeBytes = 5 * 1024 * 1024;
     const valid = selected.filter((file) => {
-      if (!allowedTypes.includes(file.type)) {
-        return false;
-      }
-      if (file.size > maxSizeBytes) {
-        return false;
-      }
+      if (!allowedTypes.includes(file.type)) return false;
+      if (file.size > maxSizeBytes) return false;
       return true;
     });
 
@@ -475,7 +745,7 @@ export default function VenueInventoryPage() {
               lng: result.lon,
             },
           }));
-        } catch (error) {
+        } catch {
           setSearchError("Unable to resolve address");
           setIsSubmitting(false);
           return;
@@ -521,12 +791,13 @@ export default function VenueInventoryPage() {
         ? basePricePerHour
         : Math.min(...Object.values(pricingMap));
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const venueData: any = {
         ownerName: formData.ownerName,
         ownerEmail: formData.ownerEmail,
         ownerPhone: normalizedPhone,
         name: formData.name,
-        address: formData.address, // Send address string
+        address: formData.address,
         sports: sportsList,
         pricePerHour: effectiveBasePrice,
         sportPricing: pricingMap,
@@ -537,7 +808,6 @@ export default function VenueInventoryPage() {
         openingHours: formData.openingHours,
       };
 
-      // Transform location to GeoJSON if present
       if (formData.location) {
         venueData.location = {
           type: "Point",
@@ -603,57 +873,67 @@ export default function VenueInventoryPage() {
         throw new Error("Unable to upload images without a venue ID");
       }
 
-      // Reset form and reload
-      setFormData({
-        ownerName: "",
-        ownerEmail: "",
-        ownerPhone: "",
-        name: "",
-        address: "",
-        location: null,
-        sports: [],
-        pricePerHour: "",
-        amenities: "",
-        description: "",
-        openingHours: {
-          monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-          tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-          wednesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-          thursday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-          friday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-          saturday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-          sunday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        },
-      });
-      setSamePriceForAll(true);
-      setBasePricePerHour(0);
-      setSportPricing({});
-      setAddressQuery("");
-      setSuggestions([]);
-      setSearchError("");
-      setHasSelectedLocation(false);
-      setSelectedImages([]);
-      setExistingImages([]);
-      setExistingGeneralImages([]);
-      setExistingSportImages({});
-      setExistingCoverPhotoUrl("");
-      setCoverPhotoIndex(0);
-      setImageError("");
+      resetForm();
       setShowForm(false);
       setEditingVenue(null);
       loadVenues();
-    } catch (error: any) {
+      toast.success(
+        editingVenue ? "Venue updated successfully!" : "Venue created successfully!",
+      );
+    } catch (error: unknown) {
       console.error("Failed to save venue:", error);
-      toast.error(error.response?.data?.message || "Failed to save venue");
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast.error(
+        apiError.response?.data?.message || "Failed to save venue",
+      );
     } finally {
       setIsUploadingImages(false);
       setIsSubmitting(false);
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      ownerName: "",
+      ownerEmail: "",
+      ownerPhone: "",
+      name: "",
+      address: "",
+      location: null,
+      sports: [],
+      pricePerHour: "",
+      amenities: "",
+      description: "",
+      openingHours: {
+        monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        wednesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        thursday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        friday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        saturday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+        sunday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
+      },
+    });
+    setSamePriceForAll(true);
+    setBasePricePerHour(0);
+    setSportPricing({});
+    setSelectedAmenities([]);
+    setAddressQuery("");
+    setSuggestions([]);
+    setSearchError("");
+    setHasSelectedLocation(false);
+    setSelectedImages([]);
+    setExistingImages([]);
+    setExistingGeneralImages([]);
+    setExistingSportImages({});
+    setExistingCoverPhotoUrl("");
+    setCoverPhotoIndex(0);
+    setImageError("");
+    setFieldErrors({});
+  };
+
   const handleEdit = (venue: Venue) => {
     setEditingVenue(venue);
-    // Extract coordinates if available
     let loc = null;
     if (
       venue.location &&
@@ -687,7 +967,6 @@ export default function VenueInventoryPage() {
         ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
         : "");
 
-    // Default opening hours structure
     const defaultOpeningHours = {
       monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
       tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
@@ -738,6 +1017,7 @@ export default function VenueInventoryPage() {
     setImageError("");
     setCoverPhotoIndex(0);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleDelete = async (venueId: string) => {
@@ -745,9 +1025,9 @@ export default function VenueInventoryPage() {
 
     try {
       await venueApi.deleteVenue(venueId);
+      toast.success("Venue deleted.");
       loadVenues();
-    } catch (error) {
-      console.error("Failed to delete venue:", error);
+    } catch {
       toast.error("Failed to delete venue");
     }
   };
@@ -755,48 +1035,44 @@ export default function VenueInventoryPage() {
   const handleCancel = () => {
     setShowForm(false);
     setEditingVenue(null);
-    setFormData({
-      ownerName: "",
-      ownerEmail: "",
-      ownerPhone: "",
-      name: "",
-      address: "",
-      location: null,
-      sports: [],
-      pricePerHour: "",
-      amenities: "",
-      description: "",
-      openingHours: {
-        monday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        tuesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        wednesday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        thursday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        friday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        saturday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-        sunday: { isOpen: true, openTime: "09:00", closeTime: "21:00" },
-      },
-    });
-    setSamePriceForAll(true);
-    setBasePricePerHour(0);
-    setSportPricing({});
-    setSelectedAmenities([]);
-    setAddressQuery("");
-    setSuggestions([]);
-    setSearchError("");
-    setHasSelectedLocation(false);
-    setSelectedImages([]);
-    setExistingImages([]);
-    setExistingGeneralImages([]);
-    setExistingSportImages({});
-    setExistingCoverPhotoUrl("");
-    setCoverPhotoIndex(0);
-    setImageError("");
+    resetForm();
   };
+
+  // ── Stats derived from venues ──────────────────────────────────────────────
+
+  const totalSports = new Set(venues.flatMap((v) => v.sports)).size;
+  const venuesWithPhotos = venues.filter((v) => Boolean(getCoverPhoto(v))).length;
+  const avgRating =
+    venues.filter((v) => v.rating && v.rating > 0).length > 0
+      ? venues
+          .filter((v) => v.rating && v.rating > 0)
+          .reduce((sum, v) => sum + (v.rating ?? 0), 0) /
+        venues.filter((v) => v.rating && v.rating > 0).length
+      : null;
+
+  // ── Loading skeleton ───────────────────────────────────────────────────────
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <p className="text-slate-600">Loading venues...</p>
+      <div className="space-y-6">
+        <div className="rounded-2xl bg-white border border-slate-200/60 p-6 sm:p-8 animate-pulse">
+          <div className="h-4 bg-slate-100 rounded-full w-24 mb-4" />
+          <div className="h-8 bg-slate-100 rounded-full w-52 mb-3" />
+          <div className="h-4 bg-slate-100 rounded-full w-80" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl border border-slate-100 p-4 animate-pulse h-20"
+            />
+          ))}
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[0, 1, 2].map((i) => (
+            <VenueSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -807,600 +1083,657 @@ export default function VenueInventoryPage() {
   const hasExistingImages =
     existingGeneralImages.length > 0 || hasExistingSportImages;
 
-  return (
-    <div className="space-y-6">
-      <PlayerPageHeader
-        badge="Venue Lister"
-        title="My Venues"
-        subtitle="Manage listings, pricing, and availability for every venue you host."
-        action={
-          <div className="flex flex-wrap gap-3">
-            <Link href="/venue-lister/vendor-bookings">
-              <Button variant="secondary">View Bookings</Button>
-            </Link>
-            {!showForm && canAddMoreVenues && (
-              <Button onClick={() => setShowForm(true)} variant="primary">
-                Add Venue
-              </Button>
-            )}
-          </div>
-        }
-      />
+  // ── Main render ────────────────────────────────────────────────────────────
 
-      {/* Restriction message for venue listers who cannot add more */}
+  return (
+    <div className="space-y-6 pb-10">
+
+      {/* ── Page header ── */}
+      <SlideUp delay={0}>
+        <PlayerPageHeader
+          badge="Venue Lister"
+          title="My Venues"
+          subtitle="Manage listings, pricing, and availability for every venue you host."
+          action={
+            <div className="flex flex-wrap gap-3">
+              <Link href="/venue-lister/vendor-bookings">
+                <Button variant="secondary" size="sm">
+                  View Bookings
+                </Button>
+              </Link>
+              {!showForm && canAddMoreVenues && (
+                <Button
+                  onClick={() => setShowForm(true)}
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus className="w-4 h-4" />}
+                >
+                  Add Venue
+                </Button>
+              )}
+            </div>
+          }
+        />
+      </SlideUp>
+
+      {/* ── Restriction banner ── */}
       {!canAddMoreVenues && !showForm && (
-        <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4">
-          <p className="text-yellow-800">
-            <strong>Note:</strong> You can only manage your approved venue. To
-            add more venues, please contact our support team.
-          </p>
-        </div>
+        <SlideUp delay={0.05}>
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">
+                Single venue mode
+              </p>
+              <p className="text-sm text-amber-700 mt-0.5">
+                You can manage your approved venue below. To list additional
+                venues, contact our support team.
+              </p>
+            </div>
+          </div>
+        </SlideUp>
       )}
 
-      {/* Add/Edit Form */}
-      {showForm && (
-        <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-900 mb-2">
-              {editingVenue ? "Edit Your Venue" : "Create New Venue"}
-            </h2>
-            <p className="text-slate-600">
-              {editingVenue
-                ? "Update your venue details and information"
-                : "Add your venue to the platform"}
-            </p>
+      {/* ── Stats bar (visible when venues exist and form is not open) ── */}
+      {venues.length > 0 && !showForm && (
+        <SlideUp delay={0.08}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              {
+                label: "Total Venues",
+                value: venues.length,
+                icon: <Building2 className="w-4 h-4" />,
+                color: "text-orange-500",
+                bg: "bg-orange-50",
+              },
+              {
+                label: "Sports Offered",
+                value: totalSports,
+                icon: <Layout className="w-4 h-4" />,
+                color: "text-blue-500",
+                bg: "bg-blue-50",
+              },
+              {
+                label: "With Photos",
+                value: venuesWithPhotos,
+                icon: <ImageOff className="w-4 h-4" />,
+                color: "text-emerald-500",
+                bg: "bg-emerald-50",
+              },
+              {
+                label: "Avg Rating",
+                value: avgRating !== null ? avgRating.toFixed(1) : "—",
+                icon: <Star className="w-4 h-4" />,
+                color: "text-amber-500",
+                bg: "bg-amber-50",
+              },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 flex items-center gap-3"
+              >
+                <div
+                  className={`w-9 h-9 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center shrink-0`}
+                >
+                  {stat.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg font-bold text-slate-900 leading-tight">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs text-slate-500 truncate">{stat.label}</p>
+                </div>
+              </div>
+            ))}
           </div>
+        </SlideUp>
+      )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Owner Contact Information */}
-            <OnboardingSectionCard
-              title="Owner Contact Information"
-              subtitle="Your contact details for venue management"
-            >
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.ownerName}
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        ownerName: e.target.value,
-                      }));
-                      if (fieldErrors.ownerName) {
-                        setFieldErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.ownerName;
-                          return next;
-                        });
-                      }
-                    }}
-                    placeholder="Your full name"
-                    className={getInputClassName(
-                      Boolean(fieldErrors.ownerName),
-                    )}
-                    required
-                  />
-                  {fieldErrors.ownerName && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {fieldErrors.ownerName}
-                    </p>
-                  )}
-                  <p className="text-slate-600 text-xs mt-1">
-                    This will be your primary contact name
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.ownerEmail}
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        ownerEmail: e.target.value,
-                      }));
-                      if (fieldErrors.ownerEmail) {
-                        setFieldErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.ownerEmail;
-                          return next;
-                        });
-                      }
-                    }}
-                    placeholder="your.email@example.com"
-                    className={getInputClassName(
-                      Boolean(fieldErrors.ownerEmail),
-                    )}
-                    required
-                  />
-                  {fieldErrors.ownerEmail && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {fieldErrors.ownerEmail}
-                    </p>
-                  )}
-                  <p className="text-slate-600 text-xs mt-1">
-                    Used for important updates and bookings
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.ownerPhone}
-                    onChange={(e) => {
-                      const normalized = normalizePhone(e.target.value);
-                      setFormData((prev) => ({
-                        ...prev,
-                        ownerPhone: normalized,
-                      }));
-                      if (fieldErrors.ownerPhone) {
-                        setFieldErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.ownerPhone;
-                          return next;
-                        });
-                      }
-                    }}
-                    placeholder="Your phone number"
-                    className={getInputClassName(
-                      Boolean(fieldErrors.ownerPhone),
-                    )}
-                    required
-                  />
-                  {fieldErrors.ownerPhone && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {fieldErrors.ownerPhone}
-                    </p>
-                  )}
-                  <p className="text-slate-600 text-xs mt-1">
-                    Customers may contact you about bookings
-                  </p>
-                </div>
+      {/* ── Add/Edit Form ── */}
+      {showForm && (
+        <SlideUp delay={0.05}>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-orange-50 mb-4">
+                <Building2 className="w-6 h-6 text-orange-500" />
               </div>
-            </OnboardingSectionCard>
+              <h2 className="text-2xl font-bold text-slate-900 mb-1">
+                {editingVenue ? "Edit Venue" : "Create New Venue"}
+              </h2>
+              <p className="text-slate-500 text-sm">
+                {editingVenue
+                  ? "Update your venue details and information"
+                  : "Add your venue to the platform"}
+              </p>
+            </div>
 
-            {/* Venue Basic Details */}
-            <OnboardingSectionCard
-              title="Venue Details"
-              subtitle="Basic information about your venue"
-            >
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Venue Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="e.g., Elite Sports Arena"
-                    className={getInputClassName(Boolean(fieldErrors.name))}
-                    required
-                  />
-                  {fieldErrors.name && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {fieldErrors.name}
-                    </p>
-                  )}
-                  <p className="text-slate-600 text-xs mt-1">
-                    This is how customers will see your venue
-                  </p>
-                </div>
-
-                <div className="relative">
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={addressQuery}
-                    onChange={handleAddressChange}
-                    placeholder="Search your venue location"
-                    className={getInputClassName(Boolean(fieldErrors.address))}
-                    required
-                  />
-                  {isSearching && (
-                    <span className="absolute right-3 top-9 text-xs text-slate-500">
-                      Searching...
-                    </span>
-                  )}
-                  {searchError && (
-                    <p className="text-red-500 text-xs mt-1">{searchError}</p>
-                  )}
-                  {fieldErrors.address && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {fieldErrors.address}
-                    </p>
-                  )}
-                  {suggestions.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
-                      {suggestions.map((suggestion) => (
-                        <button
-                          type="button"
-                          key={suggestion.label}
-                          onClick={() => handleSelectSuggestion(suggestion)}
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
-                        >
-                          {suggestion.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <p className="text-slate-600 text-xs mt-1">
-                    Select from suggestions for accurate location
-                  </p>
-                </div>
-              </div>
-            </OnboardingSectionCard>
-
-            {/* Sports & Pricing */}
-            <OnboardingSectionCard
-              title="Sports & Pricing"
-              subtitle="Specify which sports you offer and set prices"
-            >
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-3">
-                    Sports Available <span className="text-red-500">*</span>
-                  </label>
-                  <SportsMultiSelect
-                    value={formData.sports}
-                    onChange={handleSportsChange}
-                    required
-                  />
-                  {fieldErrors.sports && (
-                    <p className="text-red-500 text-sm mt-2">
-                      {fieldErrors.sports}
-                    </p>
-                  )}
-                </div>
-
-                <div className="border-t pt-4">
-                  <div className="flex items-center gap-2 mb-3">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Owner Contact Information */}
+              <OnboardingSectionCard
+                title="Owner Contact Information"
+                subtitle="Your contact details for venue management"
+              >
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      type="checkbox"
-                      checked={samePriceForAll}
+                      type="text"
+                      value={formData.ownerName}
                       onChange={(e) => {
-                        const checked = e.target.checked;
-                        setSamePriceForAll(checked);
-                        if (checked) {
-                          const sportsList = formData.sports;
-                          const nextPricing: Record<string, number> = {};
-                          sportsList.forEach((sport) => {
-                            nextPricing[sport] = basePricePerHour;
+                        setFormData((prev) => ({
+                          ...prev,
+                          ownerName: e.target.value,
+                        }));
+                        if (fieldErrors.ownerName) {
+                          setFieldErrors((prev) => {
+                            const next = { ...prev };
+                            delete next.ownerName;
+                            return next;
                           });
-                          setSportPricing(nextPricing);
                         }
                       }}
-                      className="w-4 h-4 accent-power-orange rounded"
+                      placeholder="Your full name"
+                      className={getInputClassName(Boolean(fieldErrors.ownerName))}
+                      required
                     />
-                    <label className="text-sm font-medium text-slate-900">
-                      Same price for all sports
+                    {fieldErrors.ownerName && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors.ownerName}
+                      </p>
+                    )}
+                    <p className="text-slate-600 text-xs mt-1">
+                      This will be your primary contact name
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Email Address <span className="text-red-500">*</span>
                     </label>
+                    <input
+                      type="email"
+                      value={formData.ownerEmail}
+                      onChange={(e) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          ownerEmail: e.target.value,
+                        }));
+                        if (fieldErrors.ownerEmail) {
+                          setFieldErrors((prev) => {
+                            const next = { ...prev };
+                            delete next.ownerEmail;
+                            return next;
+                          });
+                        }
+                      }}
+                      placeholder="your.email@example.com"
+                      className={getInputClassName(Boolean(fieldErrors.ownerEmail))}
+                      required
+                    />
+                    {fieldErrors.ownerEmail && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors.ownerEmail}
+                      </p>
+                    )}
+                    <p className="text-slate-600 text-xs mt-1">
+                      Used for important updates and bookings
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.ownerPhone}
+                      onChange={(e) => {
+                        const normalized = normalizePhone(e.target.value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          ownerPhone: normalized,
+                        }));
+                        if (fieldErrors.ownerPhone) {
+                          setFieldErrors((prev) => {
+                            const next = { ...prev };
+                            delete next.ownerPhone;
+                            return next;
+                          });
+                        }
+                      }}
+                      placeholder="Your phone number"
+                      className={getInputClassName(Boolean(fieldErrors.ownerPhone))}
+                      required
+                    />
+                    {fieldErrors.ownerPhone && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors.ownerPhone}
+                      </p>
+                    )}
+                    <p className="text-slate-600 text-xs mt-1">
+                      Customers may contact you about bookings
+                    </p>
+                  </div>
+                </div>
+              </OnboardingSectionCard>
+
+              {/* Venue Details */}
+              <OnboardingSectionCard
+                title="Venue Details"
+                subtitle="Basic information about your venue"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Venue Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="e.g., Elite Sports Arena"
+                      className={getInputClassName(Boolean(fieldErrors.name))}
+                      required
+                    />
+                    {fieldErrors.name && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors.name}
+                      </p>
+                    )}
+                    <p className="text-slate-600 text-xs mt-1">
+                      This is how customers will see your venue
+                    </p>
+                  </div>
+
+                  <div className="relative">
+                    <label className="block text-sm font-semibold text-slate-900 mb-2">
+                      Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={addressQuery}
+                      onChange={handleAddressChange}
+                      placeholder="Search your venue location"
+                      className={getInputClassName(Boolean(fieldErrors.address))}
+                      required
+                    />
+                    {isSearching && (
+                      <span className="absolute right-3 top-9 text-xs text-slate-500">
+                        Searching…
+                      </span>
+                    )}
+                    {searchError && (
+                      <p className="text-red-500 text-xs mt-1">{searchError}</p>
+                    )}
+                    {fieldErrors.address && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {fieldErrors.address}
+                      </p>
+                    )}
+                    {suggestions.length > 0 && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                        {suggestions.map((suggestion) => (
+                          <button
+                            type="button"
+                            key={suggestion.label}
+                            onClick={() => handleSelectSuggestion(suggestion)}
+                            className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                          >
+                            {suggestion.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-slate-600 text-xs mt-1">
+                      Select from suggestions for accurate location
+                    </p>
+                  </div>
+                </div>
+              </OnboardingSectionCard>
+
+              {/* Sports & Pricing */}
+              <OnboardingSectionCard
+                title="Sports & Pricing"
+                subtitle="Specify which sports you offer and set prices"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-3">
+                      Sports Available <span className="text-red-500">*</span>
+                    </label>
+                    <SportsMultiSelect
+                      value={formData.sports}
+                      onChange={handleSportsChange}
+                      required
+                    />
+                    {fieldErrors.sports && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {fieldErrors.sports}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <input
+                        type="checkbox"
+                        checked={samePriceForAll}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSamePriceForAll(checked);
+                          if (checked) {
+                            const sportsList = formData.sports;
+                            const nextPricing: Record<string, number> = {};
+                            sportsList.forEach((sport) => {
+                              nextPricing[sport] = basePricePerHour;
+                            });
+                            setSportPricing(nextPricing);
+                          }
+                        }}
+                        className="w-4 h-4 accent-power-orange rounded"
+                      />
+                      <label className="text-sm font-medium text-slate-900">
+                        Same price for all sports
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-900 mb-2">
+                        {samePriceForAll
+                          ? "Price per hour"
+                          : "Base price per hour"}{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={basePricePerHour}
+                        onChange={(e) =>
+                          handleBasePriceChange(
+                            parseFloat(e.target.value) || 0,
+                          )
+                        }
+                        placeholder="e.g., 1500"
+                        className={getInputClassName(
+                          Boolean(fieldErrors.pricePerHour),
+                        )}
+                        required
+                        min="0"
+                        step="0.01"
+                      />
+                      {fieldErrors.pricePerHour && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {fieldErrors.pricePerHour}
+                        </p>
+                      )}
+                      <p className="text-slate-600 text-xs mt-1">
+                        Amount customers pay per hour
+                      </p>
+                    </div>
+
+                    {!samePriceForAll && formData.sports.length > 0 && (
+                      <div className="mt-4 pt-4 border-t space-y-3">
+                        {formData.sports.map((sport) => (
+                          <div key={sport}>
+                            <label className="block text-sm font-medium text-slate-900 mb-2">
+                              {sport} price per hour
+                            </label>
+                            <input
+                              type="number"
+                              value={sportPricing[sport] ?? ""}
+                              onChange={(e) =>
+                                handleSportPriceChange(
+                                  sport,
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              placeholder="Enter price"
+                              className={getInputClassName(false)}
+                              required
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </OnboardingSectionCard>
+
+              {/* Opening Hours */}
+              <OnboardingSectionCard
+                title="Operating Hours"
+                subtitle="Set your venue's daily operating schedule"
+              >
+                <OpeningHoursInput
+                  value={formData.openingHours}
+                  onChange={(hours) => {
+                    const validatedHours = Object.fromEntries(
+                      Object.entries(hours).map(([day, hourData]) => [
+                        day,
+                        {
+                          isOpen: hourData.isOpen,
+                          openTime: hourData.openTime || "09:00",
+                          closeTime: hourData.closeTime || "21:00",
+                        },
+                      ]),
+                    ) as typeof formData.openingHours;
+
+                    setFormData((prev) => ({
+                      ownerName: prev.ownerName,
+                      ownerEmail: prev.ownerEmail,
+                      ownerPhone: prev.ownerPhone,
+                      name: prev.name,
+                      address: prev.address,
+                      location: prev.location,
+                      sports: prev.sports,
+                      pricePerHour: prev.pricePerHour,
+                      amenities: prev.amenities,
+                      description: prev.description,
+                      openingHours: validatedHours,
+                    }));
+                  }}
+                />
+              </OnboardingSectionCard>
+
+              {/* Amenities & Description */}
+              <OnboardingSectionCard
+                title="Amenities & Description"
+                subtitle="Tell customers what your venue offers"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-900 mb-3">
+                      Amenities
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {AMENITIES_OPTIONS.map((amenity) => (
+                        <label
+                          key={amenity}
+                          className="flex items-center space-x-2 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedAmenities.includes(amenity)}
+                            onChange={() => toggleAmenity(amenity)}
+                            className="w-4 h-4 text-power-orange rounded"
+                          />
+                          <span className="text-sm text-slate-700">
+                            {amenity}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {fieldErrors.amenities && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {fieldErrors.amenities}
+                      </p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-slate-900 mb-2">
-                      {samePriceForAll
-                        ? "Price per hour"
-                        : "Base price per hour"}{" "}
-                      <span className="text-red-500">*</span>
+                      Description
                     </label>
-                    <input
-                      type="number"
-                      value={basePricePerHour}
-                      onChange={(e) =>
-                        handleBasePriceChange(parseFloat(e.target.value) || 0)
-                      }
-                      placeholder="e.g., 1500"
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      rows={4}
+                      placeholder="Describe your venue, its features, and atmosphere…"
                       className={getInputClassName(
-                        Boolean(fieldErrors.pricePerHour),
+                        Boolean(fieldErrors.description),
                       )}
-                      required
-                      min="0"
-                      step="0.01"
                     />
-                    {fieldErrors.pricePerHour && (
+                    {fieldErrors.description && (
                       <p className="text-red-500 text-sm mt-1">
-                        {fieldErrors.pricePerHour}
+                        {fieldErrors.description}
                       </p>
                     )}
                     <p className="text-slate-600 text-xs mt-1">
-                      Amount customers pay per hour
+                      A detailed description helps attract more customers
                     </p>
                   </div>
-
-                  {!samePriceForAll && formData.sports.length > 0 && (
-                    <div className="mt-4 pt-4 border-t space-y-3">
-                      {formData.sports.map((sport) => (
-                        <div key={sport}>
-                          <label className="block text-sm font-medium text-slate-900 mb-2">
-                            {sport} price per hour
-                          </label>
-                          <input
-                            type="number"
-                            value={sportPricing[sport] ?? ""}
-                            onChange={(e) =>
-                              handleSportPriceChange(
-                                sport,
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            placeholder="Enter price"
-                            className={getInputClassName(false)}
-                            required
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
-              </div>
-            </OnboardingSectionCard>
+              </OnboardingSectionCard>
 
-            {/* Opening Hours */}
-            <OnboardingSectionCard
-              title="Operating Hours"
-              subtitle="Set your venue's daily operating schedule"
-            >
-              <OpeningHoursInput
-                value={formData.openingHours}
-                onChange={(hours) => {
-                  // Ensure all times are defined with defaults
-                  const validatedHours = Object.fromEntries(
-                    Object.entries(hours).map(([day, hourData]) => [
-                      day,
-                      {
-                        isOpen: hourData.isOpen,
-                        openTime: hourData.openTime || "09:00",
-                        closeTime: hourData.closeTime || "21:00",
-                      },
-                    ]),
-                  ) as typeof formData.openingHours;
-
-                  setFormData((prev) => ({
-                    ownerName: prev.ownerName,
-                    ownerEmail: prev.ownerEmail,
-                    ownerPhone: prev.ownerPhone,
-                    name: prev.name,
-                    address: prev.address,
-                    location: prev.location,
-                    sports: prev.sports,
-                    pricePerHour: prev.pricePerHour,
-                    amenities: prev.amenities,
-                    description: prev.description,
-                    openingHours: validatedHours,
-                  }));
-                }}
-              />
-            </OnboardingSectionCard>
-
-            {/* Amenities & Description */}
-            <OnboardingSectionCard
-              title="Amenities & Description"
-              subtitle="Tell customers what your venue offers"
-            >
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-3">
-                    Amenities
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {AMENITIES_OPTIONS.map((amenity) => (
-                      <label
-                        key={amenity}
-                        className="flex items-center space-x-2 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedAmenities.includes(amenity)}
-                          onChange={() => toggleAmenity(amenity)}
-                          className="w-4 h-4 text-power-orange rounded"
-                        />
-                        <span className="text-sm text-slate-700">
-                          {amenity}
+              {/* Images */}
+              <OnboardingSectionCard
+                title="Venue Images"
+                subtitle="Upload high-quality photos to showcase your venue"
+              >
+                <div className="space-y-6">
+                  {(selectedImages.length > 0 ||
+                    existingImages.length > 0) && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm text-slate-600">
+                        <span>
+                          {selectedImages.length + existingImages.length} images
                         </span>
-                      </label>
-                    ))}
-                  </div>
-                  {fieldErrors.amenities && (
-                    <p className="text-red-500 text-sm mt-2">
-                      {fieldErrors.amenities}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="Describe your venue, its features, and atmosphere..."
-                    className={getInputClassName(
-                      Boolean(fieldErrors.description),
-                    )}
-                  />
-                  {fieldErrors.description && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {fieldErrors.description}
-                    </p>
-                  )}
-                  <p className="text-slate-600 text-xs mt-1">
-                    A detailed description helps attract more customers
-                  </p>
-                </div>
-              </div>
-            </OnboardingSectionCard>
-
-            {/* Images */}
-            <OnboardingSectionCard
-              title="Venue Images"
-              subtitle="Upload high-quality photos to showcase your venue"
-            >
-              <div className="space-y-6">
-                {/* Progress Bar */}
-                {(selectedImages.length > 0 || existingImages.length > 0) && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-slate-600">
-                      <span>
-                        {selectedImages.length + existingImages.length} images
-                        uploaded
-                      </span>
-                      <span>
-                        {Math.round(
-                          ((selectedImages.length + existingImages.length) /
-                            Math.max(
-                              selectedImages.length + existingImages.length,
-                              1,
-                            )) *
-                            100,
-                        )}
-                        %
-                      </span>
+                        <span className="text-orange-500 font-medium">
+                          {selectedImages.length + existingImages.length}/10
+                        </span>
+                      </div>
+                      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-power-orange transition-all duration-300"
+                          style={{
+                            width: `${((selectedImages.length + existingImages.length) / 10) * 100}%`,
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-power-orange transition-all duration-300"
-                        style={{
-                          width: `${((selectedImages.length + existingImages.length) / Math.max(selectedImages.length + existingImages.length, 1)) * 100}%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Existing Images */}
-                {hasExistingImages && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                      <span className="bg-power-orange/10 text-power-orange px-2 py-1 rounded text-xs">
-                        Current
-                      </span>
-                      Current Images ({existingImages.length})
-                    </h3>
+                  {hasExistingImages && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                        <span className="bg-power-orange/10 text-power-orange px-2 py-1 rounded text-xs">
+                          Current
+                        </span>
+                        Current Images ({existingImages.length})
+                      </h3>
 
-                    {existingGeneralImages.length > 0 && (
-                      <div className="mb-6">
-                        <h4 className="text-sm font-semibold text-slate-900 mb-3">
-                          General Venue Images ({existingGeneralImages.length})
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {existingGeneralImages.map((url, index) => (
-                            <div
-                              key={`general-${url}-${index}`}
-                              className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-power-orange/60 transition"
-                            >
-                              <div className="relative">
+                      {existingGeneralImages.length > 0 && (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-semibold text-slate-900 mb-3">
+                            General Venue Images (
+                            {existingGeneralImages.length})
+                          </h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {existingGeneralImages.map((url, index) => (
+                              <div
+                                key={`general-${url}-${index}`}
+                                className="relative group/img rounded-xl overflow-hidden border border-slate-200"
+                              >
                                 <img
                                   src={url}
                                   alt={`General venue ${index + 1}`}
-                                  className="w-full h-48 object-cover rounded"
+                                  className="w-full h-48 object-cover"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => removeExistingImage(url)}
-                                  className="absolute top-2 left-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                                  className="absolute top-2 left-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
                                   aria-label="Remove image"
                                 >
-                                  <X className="w-4 h-4" />
+                                  <X className="w-3.5 h-3.5" />
                                 </button>
                                 {existingCoverPhotoUrl === url && (
-                                  <span className="absolute top-2 right-2 bg-power-orange text-white text-xs px-2 py-1 rounded">
-                                    Cover Photo
+                                  <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                    Cover
                                   </span>
                                 )}
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {Object.entries(existingSportImages).map(
-                      ([sport, urls], sportIndex) =>
-                        urls.length > 0 ? (
-                          <div
-                            key={`${sport}-${sportIndex}`}
-                            className="mb-6 last:mb-0"
-                          >
-                            <h4 className="text-sm font-semibold text-slate-900 mb-3">
-                              {formatSportLabel(sport)} Images ({urls.length})
-                            </h4>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              {urls.map((url, index) => (
-                                <div
-                                  key={`${sport}-${url}-${index}`}
-                                  className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-power-orange/60 transition"
-                                >
-                                  <div className="relative">
+                      {Object.entries(existingSportImages).map(
+                        ([sport, urls], sportIndex) =>
+                          urls.length > 0 ? (
+                            <div
+                              key={`${sport}-${sportIndex}`}
+                              className="mb-6 last:mb-0"
+                            >
+                              <h4 className="text-sm font-semibold text-slate-900 mb-3">
+                                {formatSportLabel(sport)} Images ({urls.length})
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {urls.map((url, index) => (
+                                  <div
+                                    key={`${sport}-${url}-${index}`}
+                                    className="relative rounded-xl overflow-hidden border border-slate-200"
+                                  >
                                     <img
                                       src={url}
-                                      alt={`${formatSportLabel(sport)} ${
-                                        index + 1
-                                      }`}
-                                      className="w-full h-40 object-cover rounded"
+                                      alt={`${formatSportLabel(sport)} ${index + 1}`}
+                                      className="w-full h-40 object-cover"
                                     />
                                     <button
                                       type="button"
                                       onClick={() => removeExistingImage(url)}
-                                      className="absolute top-2 left-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                                      className="absolute top-2 left-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
                                       aria-label="Remove image"
                                     >
-                                      <X className="w-4 h-4" />
+                                      <X className="w-3.5 h-3.5" />
                                     </button>
                                     {existingCoverPhotoUrl === url && (
-                                      <span className="absolute top-2 right-2 bg-power-orange text-white text-xs px-2 py-1 rounded">
-                                        Cover Photo
+                                      <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                        Cover
                                       </span>
                                     )}
                                   </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ) : null,
-                    )}
-                  </div>
-                )}
+                          ) : null,
+                      )}
+                    </div>
+                  )}
 
-                {/* New Images Upload */}
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                    <span className="bg-power-orange/10 text-power-orange px-2 py-1 rounded text-xs">
-                      Add More
-                    </span>
-                    Add More Images
-                  </h3>
-                  <p className="text-sm text-slate-600 mb-4">
-                    Upload additional images to enhance your venue's
-                    presentation
-                  </p>
-
-                  <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                      <span className="bg-power-orange/10 text-power-orange px-2 py-1 rounded text-xs">
+                        Add More
+                      </span>
+                      Add More Images
+                    </h3>
                     <label className="cursor-pointer block">
-                      <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-power-orange/60 transition flex flex-col items-center justify-center">
-                        <Camera className="w-12 h-12 mb-3 text-slate-400" />
-                        <p className="text-sm font-medium text-slate-900">
-                          Click to upload images
-                        </p>
-                        <p className="text-xs text-slate-400 mt-1">
-                          JPG, PNG up to 5MB each (max 10 images)
-                        </p>
+                      <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 hover:border-orange-300 hover:bg-orange-50/30 transition-all flex flex-col items-center justify-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-orange-400" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-semibold text-slate-700">
+                            Click to upload images
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            JPG, PNG or WebP · up to 5 MB each · max 10 images
+                          </p>
+                        </div>
                       </div>
                       <input
                         type="file"
@@ -1410,164 +1743,146 @@ export default function VenueInventoryPage() {
                         className="hidden"
                       />
                     </label>
+                    {imageError && (
+                      <p className="text-red-500 text-sm mt-2">{imageError}</p>
+                    )}
                   </div>
 
-                  {imageError && (
-                    <p className="text-red-500 text-sm mt-2">{imageError}</p>
-                  )}
-                </div>
-
-                {/* Selected Images Preview */}
-                {selectedImages.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900 mb-3">
-                      New Images Ready to Upload ({selectedImages.length})
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {selectedImages.map((image, index) => (
-                        <div
-                          key={image.preview}
-                          className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-power-orange/60 transition"
-                        >
-                          <div className="relative">
+                  {selectedImages.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900 mb-3">
+                        New Images Ready ({selectedImages.length})
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {selectedImages.map((image, index) => (
+                          <div
+                            key={image.preview}
+                            className="relative rounded-xl overflow-hidden border border-slate-200"
+                          >
                             <img
                               src={image.preview}
                               alt={`Selected ${index + 1}`}
-                              className="w-full h-48 object-cover rounded"
+                              className="w-full h-48 object-cover"
                             />
                             <button
                               type="button"
                               onClick={() => handleRemoveImage(index)}
-                              className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                              className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3.5 h-3.5" />
                             </button>
-
-                            {/* Cover Photo Selection */}
-                            <div className="mt-3">
+                            {coverPhotoIndex === index && (
+                              <span className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                Cover
+                              </span>
+                            )}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/40 px-3 py-2">
                               <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                   type="radio"
                                   name="coverPhoto"
                                   checked={coverPhotoIndex === index}
                                   onChange={() => setCoverPhotoIndex(index)}
-                                  className="w-4 h-4 accent-power-orange"
+                                  className="w-3.5 h-3.5 accent-power-orange"
                                 />
-                                <span className="text-sm text-slate-700">
-                                  Set as cover photo
+                                <span className="text-xs text-white font-medium">
+                                  Set as cover
                                 </span>
                               </label>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {isUploadingImages && (
-                  <p className="text-sm text-slate-600 italic text-center py-4">
-                    Uploading images...
+                  {isUploadingImages && (
+                    <div className="flex items-center justify-center gap-2 py-4 text-slate-500 text-sm">
+                      <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      Uploading images…
+                    </div>
+                  )}
+                </div>
+              </OnboardingSectionCard>
+
+              {/* Form Actions */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  loading={isSubmitting}
+                  variant="primary"
+                  className="flex-1"
+                >
+                  {isSubmitting
+                    ? "Saving…"
+                    : editingVenue
+                      ? "Update Venue"
+                      : "Create Venue"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleCancel}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </SlideUp>
+      )}
+
+      {/* ── Venues list / empty state ── */}
+      {!showForm && (
+        <>
+          {venues.length === 0 ? (
+            <SlideUp delay={0.1}>
+              <div className="flex flex-col items-center justify-center bg-white border border-slate-100 rounded-2xl shadow-sm py-16 px-8 text-center gap-5">
+                <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center">
+                  <Building2 className="w-8 h-8 text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-1">
+                    No venues yet
+                  </h3>
+                  <p className="text-sm text-slate-500 max-w-xs">
+                    Add your first venue to start receiving bookings and
+                    generating revenue.
+                  </p>
+                </div>
+                {canAddMoreVenues && (
+                  <Button
+                    onClick={() => setShowForm(true)}
+                    variant="primary"
+                    size="md"
+                    icon={<Plus className="w-4 h-4" />}
+                  >
+                    Add Your First Venue
+                  </Button>
+                )}
+                {!canAddMoreVenues && (
+                  <p className="text-xs text-slate-400">
+                    Contact support to activate your first venue listing.
                   </p>
                 )}
               </div>
-            </OnboardingSectionCard>
-
-            {/* Form Actions */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                variant="primary"
-                className="flex-1"
-              >
-                {isSubmitting
-                  ? "Saving..."
-                  : editingVenue
-                    ? "Update Venue"
-                    : "Create Venue"}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleCancel}
-                variant="secondary"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
+            </SlideUp>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {venues.map((venue, index) => (
+                <VenueCard
+                  key={venue.id || venue._id || index}
+                  venue={venue}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  index={index}
+                />
+              ))}
             </div>
-          </form>
-        </div>
-      )}
-
-      {/* Venues List */}
-      {venues.length === 0 ? (
-        <Card className="text-center bg-white">
-          <p className="text-slate-600 mb-4">No venues added yet</p>
-          {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
-            >
-              Add your first venue
-            </button>
           )}
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {venues.map((venue) => (
-            <Card
-              key={venue.id}
-              className="bg-white hover:shadow-lg transition-shadow p-0 overflow-hidden"
-            >
-              <div className="p-4">
-                <h3 className="text-xl font-bold mb-2 text-slate-900">
-                  {venue.name}
-                </h3>
-                <p className="text-sm text-slate-600 mb-1">
-                  <span className="inline mr-1">📍</span>
-                  {venue.location?.coordinates
-                    ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
-                    : "Location not set"}
-                </p>
-                <p className="text-xs text-slate-500 mb-3">Hours not set</p>
-
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {venue.sports.map((sport, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 bg-power-orange/10 text-power-orange text-xs rounded-full"
-                    >
-                      {sport}
-                    </span>
-                  ))}
-                </div>
-
-                <p className="text-xl font-bold text-power-orange sm:text-2xl mb-4">
-                  ₹{venue.pricePerHour}
-                  <span className="text-sm text-slate-600">/hour</span>
-                </p>
-
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleEdit(venue)}
-                    variant="secondary"
-                    className="flex-1"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(venue.id)}
-                    variant="danger"
-                    className="flex-1"
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        </>
       )}
     </div>
   );

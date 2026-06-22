@@ -13,6 +13,9 @@ import {
   submitCoachVerificationHandler,
   updateMyCoachAvailability,
   updateCoachProfile,
+  getCoachCalendarHandler,
+  blockCoachDatesHandler,
+  unblockCoachDateHandler,
 } from "../controllers/coachController";
 import {
   cancelMyCoachSubscriptionHandler,
@@ -45,6 +48,16 @@ import {
 } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
 
+import {
+  getCoachClientsHandler,
+  getClientDetailsHandler,
+  addClientNoteHandler,
+  deleteClientNoteHandler,
+} from "../controllers/coachClientController";
+import {
+  getCoachEarningsHandler,
+  getCoachAnalyticsHandler,
+} from "../controllers/coachAnalyticsController";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
 
 const router = Router();
@@ -54,6 +67,31 @@ router.get("/discover", cacheResponse(60), discoverCoachesNearby);
 
 // Create coach profile (requires authentication and COACH role)
 router.post("/", authMiddleware, createNewCoach);
+
+// Coach calendar
+router.get("/my-profile/calendar", authMiddleware, getCoachCalendarHandler);
+
+// Block date ranges
+router.post("/my-profile/block-dates", authMiddleware, blockCoachDatesHandler);
+router.delete(
+  "/my-profile/block-dates/:blockId",
+  authMiddleware,
+  unblockCoachDateHandler,
+);
+
+// CRM — client/athlete management
+router.get("/my-clients", authMiddleware, getCoachClientsHandler);
+router.get("/my-clients/:clientUserId", authMiddleware, getClientDetailsHandler);
+router.post("/my-clients/:clientUserId/notes", authMiddleware, addClientNoteHandler);
+router.delete(
+  "/my-clients/:clientUserId/notes/:noteId",
+  authMiddleware,
+  deleteClientNoteHandler,
+);
+
+// Earnings & Analytics
+router.get("/earnings", authMiddleware, getCoachEarningsHandler);
+router.get("/analytics", authMiddleware, getCoachAnalyticsHandler);
 
 // Get current user's coach profile
 router.get("/my-profile", authMiddleware, getMyCoachProfile);

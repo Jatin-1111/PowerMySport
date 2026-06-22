@@ -297,4 +297,20 @@ export const bookingApi = {
       INVITATIONS_TTL_MS,
     );
   },
+
+  // Reschedule a confirmed booking (coach only)
+  rescheduleBooking: async (
+    bookingId: string,
+    payload: {
+      newDate: string;
+      newStartTime: string;
+      newEndTime: string;
+    },
+  ): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/reschedule`,
+      payload,
+    );
+    return response.data;
+  },
 };
