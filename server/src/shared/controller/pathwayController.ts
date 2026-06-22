@@ -52,6 +52,7 @@ export const getPathway = async (
       success: true,
       source: result.source, // "db" | "generated"
       isStale: result.isStale ?? false,
+      entitiesReady: result.entitiesReady ?? true,
       data: result.pathway,
       warnings: result.warnings,
     });

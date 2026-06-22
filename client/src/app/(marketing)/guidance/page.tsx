@@ -36,6 +36,14 @@ import {
   Diamond,
   Shield,
   Network,
+  AlertTriangle,
+  Brain,
+  Layers,
+  MapPin,
+  Eye,
+  MessageCircle,
+  CheckCheck,
+  Info,
 } from "lucide-react";
 import { useState, useEffect, useRef, Fragment, type FormEvent } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
@@ -52,6 +60,14 @@ type GuidanceFormState = {
   budget_tier: "Budget" | "Moderate" | "Premium";
   parent_specific_question: string;
   sport: string;
+  location: string;
+  current_pathway_level?: number;
+};
+
+type BurnoutRisk = {
+  level: "low" | "medium" | "high";
+  message: string;
+  recommendations: string[];
 };
 
 type GuidanceResponse = {
@@ -64,6 +80,13 @@ type GuidanceResponse = {
   };
   recommendedPlatformActions: string;
   recommendedSports?: string[];
+  mentalSkillsRoadmap?: {
+    currentFocus: string;
+    skills: Array<{ skill: string; howToDevelop: string }>;
+  };
+  talentIdentifiers?: string[];
+  multiSportAdvisory?: string;
+  burnoutRisk?: BurnoutRisk;
 };
 
 type GuidanceSubmission = {
@@ -191,7 +214,44 @@ const initialForm: GuidanceFormState = {
   budget_tier: "Moderate",
   parent_specific_question: "",
   sport: "",
+  location: "",
 };
+
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Delhi", "Jammu & Kashmir", "Chandigarh", "Puducherry",
+];
+
+// Required fields that must be filled before generating
+const REQUIRED_FIELDS: Array<{ key: keyof GuidanceFormState; label: string }> = [
+  { key: "child_age", label: "Child's age" },
+  { key: "child_gender", label: "Gender" },
+  { key: "primary_objective", label: "Primary goal" },
+  { key: "location", label: "State / Location" },
+];
+
+function isFormValid(form: GuidanceFormState): boolean {
+  return (
+    form.child_age >= 3 &&
+    form.child_age <= 21 &&
+    !!form.child_gender &&
+    !!form.primary_objective &&
+    !!form.location
+  );
+}
+
+function getMissingFields(form: GuidanceFormState): string[] {
+  const missing: string[] = [];
+  if (!form.child_age || form.child_age < 3 || form.child_age > 21) missing.push("Child's age (3–21)");
+  if (!form.child_gender) missing.push("Gender");
+  if (!form.primary_objective) missing.push("Primary goal");
+  if (!form.location) missing.push("State / Location");
+  return missing;
+}
 
 // ─── Animations ──────────────────────────────────────────────────────────────
 
@@ -223,6 +283,151 @@ const stagger: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
+
+// ─── Autofill badge ───────────────────────────────────────────────────────────
+
+function AutofillBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-bold text-emerald-700 ml-2">
+      <CheckCheck className="h-2.5 w-2.5" /> From profile
+    </span>
+  );
+}
+
+// ─── New result cards ─────────────────────────────────────────────────────────
+
+function BurnoutRiskCard({ risk }: { risk: BurnoutRisk }) {
+  if (risk.level === "low") return null;
+  const cfg = {
+    medium: {
+      bg: "from-amber-50 to-orange-50",
+      border: "border-amber-200",
+      icon: "text-amber-600",
+      title: "text-amber-900",
+      badge: "bg-amber-100 text-amber-700 border-amber-200",
+    },
+    high: {
+      bg: "from-rose-50 to-red-50",
+      border: "border-rose-300",
+      icon: "text-rose-600",
+      title: "text-rose-900",
+      badge: "bg-rose-100 text-rose-700 border-rose-200",
+    },
+  }[risk.level];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`rounded-2xl border ${cfg.border} bg-gradient-to-br ${cfg.bg} p-5`}
+    >
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 border ${cfg.border}`}>
+          <AlertTriangle className={`h-5 w-5 ${cfg.icon}`} />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className={`font-bold text-sm ${cfg.title}`}>Burnout Risk Alert</h3>
+            <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase ${cfg.badge}`}>
+              {risk.level === "high" ? "High Risk" : "Monitor"}
+            </span>
+          </div>
+          <p className={`text-xs mt-0.5 ${cfg.title} opacity-80`}>{risk.message}</p>
+        </div>
+      </div>
+      {risk.recommendations.length > 0 && (
+        <ul className="space-y-1.5">
+          {risk.recommendations.map((r, i) => (
+            <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+              <div className={`mt-0.5 h-4 w-4 shrink-0 flex items-center justify-center rounded-full bg-white/70 border ${cfg.border}`}>
+                <span className={`text-[9px] font-black ${cfg.icon}`}>{i + 1}</span>
+              </div>
+              {r}
+            </li>
+          ))}
+        </ul>
+      )}
+    </motion.div>
+  );
+}
+
+function MultiSportAdvisoryCard({ advisory }: { advisory: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-indigo-50 p-5"
+    >
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 border border-sky-200">
+          <Layers className="h-5 w-5 text-sky-600" />
+        </div>
+        <div>
+          <h3 className="font-bold text-sm text-sky-900">Multi-Sport Advisory</h3>
+          <p className="text-[10px] text-sky-600 font-semibold">Recommended for under-12</p>
+        </div>
+      </div>
+      <p className="text-sm text-slate-700 leading-relaxed">{advisory}</p>
+    </motion.div>
+  );
+}
+
+function MentalSkillsCard({ roadmap }: { roadmap: NonNullable<GuidanceResponse["mentalSkillsRoadmap"]> }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-violet-200 bg-white p-5"
+    >
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 border border-violet-200">
+          <Brain className="h-5 w-5 text-violet-600" />
+        </div>
+        <div>
+          <h3 className="font-title font-bold text-slate-900">Mental Skills Roadmap</h3>
+          <p className="text-xs text-violet-600 font-semibold">Right now: {roadmap.currentFocus}</p>
+        </div>
+      </div>
+      <div className="space-y-2.5">
+        {roadmap.skills.map((s, i) => (
+          <div key={i} className="rounded-xl bg-violet-50/60 border border-violet-100 p-3">
+            <p className="text-xs font-bold text-violet-800 mb-1">{s.skill}</p>
+            <p className="text-xs text-slate-600 leading-relaxed">{s.howToDevelop}</p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function TalentIdentifiersCard({ identifiers }: { identifiers: string[] }) {
+  if (!identifiers.length) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-5"
+    >
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 border border-amber-200">
+          <Eye className="h-5 w-5 text-amber-600" />
+        </div>
+        <div>
+          <h3 className="font-bold text-sm text-amber-900">Talent Indicators to Watch</h3>
+          <p className="text-[10px] text-amber-700 font-semibold">Observable signs of genuine aptitude</p>
+        </div>
+      </div>
+      <ul className="space-y-2">
+        {identifiers.map((id, i) => (
+          <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
+            <Star className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
+            {id}
+          </li>
+        ))}
+      </ul>
+    </motion.div>
+  );
+}
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -645,12 +850,11 @@ function Step2Goals({
 function Step3Lifestyle({
   form,
   update,
+  autofillFields,
 }: {
   form: GuidanceFormState;
-  update: <K extends keyof GuidanceFormState>(
-    k: K,
-    v: GuidanceFormState[K],
-  ) => void;
+  update: <K extends keyof GuidanceFormState>(k: K, v: GuidanceFormState[K]) => void;
+  autofillFields: Set<string>;
 }) {
   return (
     <motion.div
@@ -662,11 +866,42 @@ function Step3Lifestyle({
     >
       <div>
         <h2 className="font-title text-2xl font-bold text-slate-900 mb-1">
-          Time & budget
+          Time, budget & location
         </h2>
         <p className="text-sm text-slate-500">
-          Help us build a realistic plan.
+          Help us build a realistic, region-specific plan.
         </p>
+      </div>
+
+      {/* State / Location — required for govt scheme recommendations */}
+      <div className="space-y-2">
+        <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500">
+          State / Union Territory
+          <span className="ml-1.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-black text-rose-600">Required</span>
+          <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">For local schemes & resources</span>
+        </label>
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <select
+            value={form.location}
+            onChange={(e) => update("location", e.target.value)}
+            className={`h-12 w-full rounded-xl border pl-9 pr-4 text-sm font-medium text-slate-900 outline-none transition appearance-none ${
+              form.location
+                ? "border-emerald-300 bg-emerald-50/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                : "border-slate-200 bg-white focus:border-power-orange focus:ring-4 focus:ring-power-orange/10"
+            }`}
+          >
+            <option value="">— Select your state —</option>
+            {INDIAN_STATES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        {form.location && (
+          <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5" /> We'll include schemes and resources available in {form.location}
+          </p>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -740,19 +975,28 @@ function Step4Details({
   update,
 }: {
   form: GuidanceFormState;
-  update: <K extends keyof GuidanceFormState>(
-    k: K,
-    v: GuidanceFormState[K],
-  ) => void;
+  update: <K extends keyof GuidanceFormState>(k: K, v: GuidanceFormState[K]) => void;
 }) {
   const toggleTag = (tag: string) => {
     const has = form.personality_tags.includes(tag);
     update(
       "personality_tags",
-      has
-        ? form.personality_tags.filter((t) => t !== tag)
-        : [...form.personality_tags, tag],
+      has ? form.personality_tags.filter((t) => t !== tag) : [...form.personality_tags, tag],
     );
+  };
+
+  // Smart question chips based on context
+  const smartChips: string[] = [
+    ...(form.child_age <= 11 ? ["Should my child play multiple sports at this age, or specialise?"] : []),
+    ...(form.primary_objective === "Competitive" ? ["What talent indicators should I watch for in my child?"] : []),
+    "How do I find and evaluate the right coach for my child's age?",
+    "What documents should I start collecting from Day 1 for future trials?",
+    "How do I balance school academics with serious sport training?",
+  ];
+
+  const appendChip = (chip: string) => {
+    const existing = form.parent_specific_question.trim();
+    update("parent_specific_question", existing ? `${existing} ${chip}` : chip);
   };
 
   return (
@@ -765,10 +1009,10 @@ function Step4Details({
     >
       <div>
         <h2 className="font-title text-2xl font-bold text-slate-900 mb-1">
-          Personality & specifics
+          Personality & your questions
         </h2>
         <p className="text-sm text-slate-500">
-          Pick traits and share any specific questions.
+          Pick traits and tap quick questions or write your own.
         </p>
       </div>
 
@@ -804,21 +1048,46 @@ function Step4Details({
         </div>
       </div>
 
-      <label className="block space-y-2">
+      <div className="space-y-2">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-          Your biggest concern or goal{" "}
-          <span className="text-slate-400 normal-case font-normal">
-            (optional)
-          </span>
+          Your biggest concern or question{" "}
+          <span className="text-slate-400 normal-case font-normal">(optional)</span>
         </span>
+        {/* Smart question chips */}
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <MessageCircle className="h-3 w-3" /> Quick questions — tap to add
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {smartChips.map((chip) => {
+              const alreadyAdded = form.parent_specific_question.includes(chip);
+              return (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => !alreadyAdded && appendChip(chip)}
+                  disabled={alreadyAdded}
+                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all text-left ${
+                    alreadyAdded
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-power-orange hover:text-power-orange hover:bg-power-orange/5"
+                  }`}
+                >
+                  {alreadyAdded ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <span className="text-[10px] shrink-0">+</span>}
+                  {chip}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <textarea
           rows={4}
           value={form.parent_specific_question}
           onChange={(e) => update("parent_specific_question", e.target.value)}
-          placeholder="E.g. 'My child is shy about joining teams. How can I ease them into a sport?'"
+          placeholder="Or write your own concern — e.g. 'My child is shy about joining teams. How can I ease them in?'"
           className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition focus:border-power-orange focus:ring-4 focus:ring-power-orange/10 resize-none"
         />
-      </label>
+      </div>
     </motion.div>
   );
 }
@@ -1015,9 +1284,37 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
         </div>
       </motion.div>
 
+      {/* ── Burnout Risk ── */}
+      {submission.response.burnoutRisk && (
+        <motion.div custom={5} variants={fadeUp}>
+          <BurnoutRiskCard risk={submission.response.burnoutRisk} />
+        </motion.div>
+      )}
+
+      {/* ── Multi-Sport Advisory ── */}
+      {submission.response.multiSportAdvisory && (
+        <motion.div custom={6} variants={fadeUp}>
+          <MultiSportAdvisoryCard advisory={submission.response.multiSportAdvisory} />
+        </motion.div>
+      )}
+
+      {/* ── Mental Skills ── */}
+      {submission.response.mentalSkillsRoadmap && (
+        <motion.div custom={7} variants={fadeUp}>
+          <MentalSkillsCard roadmap={submission.response.mentalSkillsRoadmap} />
+        </motion.div>
+      )}
+
+      {/* ── Talent Identifiers ── */}
+      {submission.response.talentIdentifiers && submission.response.talentIdentifiers.length > 0 && (
+        <motion.div custom={8} variants={fadeUp}>
+          <TalentIdentifiersCard identifiers={submission.response.talentIdentifiers} />
+        </motion.div>
+      )}
+
       {/* ── CTA Buttons ── */}
       <motion.div
-        custom={4}
+        custom={9}
         variants={fadeUp}
         className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2"
       >
@@ -1053,6 +1350,7 @@ export default function GuidancePage() {
   const [selectedProfileId, setSelectedProfileId] = useState("");
   const [achievement, setAchievement] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [autofillFields, setAutofillFields] = useState<Set<string>>(new Set());
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1103,17 +1401,19 @@ export default function GuidancePage() {
     else if (player.skillLevel?.toLowerCase().includes("advanced"))
       fitness = "High";
 
-    setForm((f) => ({
-      ...f,
-      child_age: age || 8,
-      current_fitness_level: fitness,
-      personality_tags: player.personalityTags || f.personality_tags,
-      primary_objective: player.primaryObjective || f.primary_objective,
-      weekly_time_commitment:
-        player.weeklyTimeCommitment || f.weekly_time_commitment,
-      budget_tier: player.budgetTier || f.budget_tier,
-      sport: player.sportsFocus?.join(", ") || f.sport,
-    }));
+    const filled = new Set<string>();
+    setForm((f) => {
+      const next = { ...f };
+      if (age) { next.child_age = age; filled.add("child_age"); }
+      if (player.skillLevel) { next.current_fitness_level = fitness; filled.add("current_fitness_level"); }
+      if (player.personalityTags?.length) { next.personality_tags = player.personalityTags; filled.add("personality_tags"); }
+      if (player.primaryObjective) { next.primary_objective = player.primaryObjective; filled.add("primary_objective"); }
+      if (player.weeklyTimeCommitment) { next.weekly_time_commitment = player.weeklyTimeCommitment; filled.add("weekly_time_commitment"); }
+      if (player.budgetTier) { next.budget_tier = player.budgetTier; filled.add("budget_tier"); }
+      if (player.sportsFocus?.length) { next.sport = player.sportsFocus.join(", "); filled.add("sport"); }
+      return next;
+    });
+    setAutofillFields(filled);
   };
 
   const nextStep = () => {
@@ -1188,6 +1488,7 @@ export default function GuidancePage() {
     setShowResults(false);
     setSubmission(null);
     setError(null);
+    setAutofillFields(new Set());
     setSelectedProfileId("");
   };
 
@@ -1254,7 +1555,7 @@ export default function GuidancePage() {
                   <Step2Goals key="step2" form={form} update={update} />
                 )}
                 {step === 3 && (
-                  <Step3Lifestyle key="step3" form={form} update={update} />
+                  <Step3Lifestyle key="step3" form={form} update={update} autofillFields={autofillFields} />
                 )}
                 {step === 4 && (
                   <Step4Details key="step4" form={form} update={update} />
@@ -1289,24 +1590,42 @@ export default function GuidancePage() {
                     <ChevronRight className="h-4 w-4" />
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-5 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-wait"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Analyzing…
-                      </>
-                    ) : (
-                      <>
-                        <Trophy className="h-4 w-4" />
-                        Generate Roadmap
-                      </>
+                  <div className="flex-1 space-y-2">
+                    {/* Validation checklist */}
+                    {!isFormValid(form) && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-1.5 flex items-center gap-1">
+                          <Info className="h-3 w-3" /> Required before generating
+                        </p>
+                        <ul className="space-y-1">
+                          {getMissingFields(form).map((f) => (
+                            <li key={f} className="flex items-center gap-1.5 text-xs text-amber-800">
+                              <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={loading || !isFormValid(form)}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-5 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Analyzing…
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="h-4 w-4" />
+                          Generate Roadmap
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
 

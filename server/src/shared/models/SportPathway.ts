@@ -16,6 +16,43 @@ export interface PathwayLevel {
     facilities?: string[];
     governingBodies?: string[];
   };
+  benchmarks?: {
+    description: string;
+    metrics: Array<{ metric: string; target: string }>;
+  };
+  trialInfo?: {
+    typicalMonths: string;
+    registrationProcess: string;
+    eligibilityAge: string;
+    selectionCriteria: string[];
+    tips: string[];
+  };
+  injuryRisks?: {
+    commonInjuries: string[];
+    preventionTips: string[];
+    warningSignsToWatch: string[];
+  };
+  talentSignals?: {
+    physicalMarkers: string[];
+    cognitiveMarkers: string[];
+    behavioralMarkers: string[];
+  };
+  mentalSkillsFocus?: string[];
+  coachSelectionGuide?: {
+    mustHave: string[];
+    niceToHave: string[];
+    redFlags: string[];
+    questionsToAsk: string[];
+  };
+  governmentSchemes?: Array<{
+    name: string;
+    body: string;
+    eligibility: string;
+    benefit: string;
+    howToApply: string;
+  }>;
+  academicIntegration?: string;
+  proactiveDocuments?: string[];
 }
 
 export interface Tournament {
@@ -109,6 +146,46 @@ const pathwayLevelSchema = new Schema<PathwayLevel>(
       facilities: [{ type: String }],
       governingBodies: [{ type: String }],
     },
+    benchmarks: {
+      description: { type: String },
+      metrics: [{ metric: { type: String }, target: { type: String }, _id: false }],
+    },
+    trialInfo: {
+      typicalMonths: { type: String },
+      registrationProcess: { type: String },
+      eligibilityAge: { type: String },
+      selectionCriteria: [{ type: String }],
+      tips: [{ type: String }],
+    },
+    injuryRisks: {
+      commonInjuries: [{ type: String }],
+      preventionTips: [{ type: String }],
+      warningSignsToWatch: [{ type: String }],
+    },
+    talentSignals: {
+      physicalMarkers: [{ type: String }],
+      cognitiveMarkers: [{ type: String }],
+      behavioralMarkers: [{ type: String }],
+    },
+    mentalSkillsFocus: [{ type: String }],
+    coachSelectionGuide: {
+      mustHave: [{ type: String }],
+      niceToHave: [{ type: String }],
+      redFlags: [{ type: String }],
+      questionsToAsk: [{ type: String }],
+    },
+    governmentSchemes: [
+      {
+        name: { type: String },
+        body: { type: String },
+        eligibility: { type: String },
+        benefit: { type: String },
+        howToApply: { type: String },
+        _id: false,
+      },
+    ],
+    academicIntegration: { type: String },
+    proactiveDocuments: [{ type: String }],
   },
   { _id: false },
 );

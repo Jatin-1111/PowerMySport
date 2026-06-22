@@ -89,7 +89,46 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
         "academies": ["Example local academy 1"],
         "facilities": ["Example local facility"],
         "governingBodies": ["Example local federation branch"]
-      }
+      },
+      "benchmarks": {
+        "description": "What a child at this level should physically and technically be able to do",
+        "metrics": [{"metric": "specific skill or fitness attribute", "target": "measurable target appropriate for this level and sport"}]
+      },
+      "trialInfo": {
+        "typicalMonths": "Months when selection trials for this level typically happen in India (e.g. 'August–October')",
+        "registrationProcess": "Step-by-step: how a parent registers their child for trials",
+        "eligibilityAge": "Age range accepted at this level's trials",
+        "selectionCriteria": ["Physical fitness component being tested", "Technical skill being assessed"],
+        "tips": ["Actionable tip to prepare for trials"]
+      },
+      "injuryRisks": {
+        "commonInjuries": ["Most common injury for this sport at this training intensity"],
+        "preventionTips": ["Specific, actionable injury prevention advice"],
+        "warningSignsToWatch": ["Symptom or sign a parent must not ignore — when to see a doctor"]
+      },
+      "talentSignals": {
+        "physicalMarkers": ["Observable physical trait that indicates elite potential for this sport"],
+        "cognitiveMarkers": ["Mental or tactical aptitude sign coaches look for"],
+        "behavioralMarkers": ["Character trait or habit that predicts long-term success at elite level"]
+      },
+      "mentalSkillsFocus": ["Top mental skill to develop at this level", "second skill", "third skill"],
+      "coachSelectionGuide": {
+        "mustHave": ["Non-negotiable qualification or quality for a coach at this level"],
+        "niceToHave": ["Desirable but not essential trait"],
+        "redFlags": ["Warning sign of a coach who could harm a young athlete at this stage"],
+        "questionsToAsk": ["Specific interview question a parent should ask before hiring"]
+      },
+      "governmentSchemes": [
+        {
+          "name": "Official scheme name (e.g. Khelo India Youth Games, SAI Training Centre, TOPS)",
+          "body": "Ministry or body that runs it (e.g. Ministry of Youth Affairs & Sports, SAI)",
+          "eligibility": "Who qualifies — age range, performance level, sport",
+          "benefit": "What it provides — ₹ stipend amount or in-kind support (kit, coaching, travel)",
+          "howToApply": "Concise application process — where to register, deadline cycle"
+        }
+      ],
+      "academicIntegration": "Practical advice for parents on balancing school academics with sport at this specific level — board exam timing, school permissions, residential academies that cover studies",
+      "proactiveDocuments": ["Document to start collecting NOW that will be required at a higher level — be specific (e.g. 'Birth certificate issued by municipal corporation', 'School sports participation certificate signed by principal')"]
     },
     {
       "level": 2,
@@ -101,7 +140,16 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
       "competitions": "...",
       "steps": ["..."],
       "governingBody": "...",
-      "localResources": { "academies": [], "facilities": [], "governingBodies": [] }
+      "localResources": { "academies": [], "facilities": [], "governingBodies": [] },
+      "benchmarks": { "description": "...", "metrics": [{"metric": "...", "target": "..."}] },
+      "trialInfo": { "typicalMonths": "...", "registrationProcess": "...", "eligibilityAge": "...", "selectionCriteria": ["..."], "tips": ["..."] },
+      "injuryRisks": { "commonInjuries": ["..."], "preventionTips": ["..."], "warningSignsToWatch": ["..."] },
+      "talentSignals": { "physicalMarkers": ["..."], "cognitiveMarkers": ["..."], "behavioralMarkers": ["..."] },
+      "mentalSkillsFocus": ["..."],
+      "coachSelectionGuide": { "mustHave": ["..."], "niceToHave": ["..."], "redFlags": ["..."], "questionsToAsk": ["..."] },
+      "governmentSchemes": [{ "name": "...", "body": "...", "eligibility": "...", "benefit": "...", "howToApply": "..." }],
+      "academicIntegration": "...",
+      "proactiveDocuments": ["..."]
     },
     {
       "level": 3,
@@ -113,7 +161,16 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
       "competitions": "...",
       "steps": ["..."],
       "governingBody": "...",
-      "localResources": { "academies": [], "facilities": [], "governingBodies": [] }
+      "localResources": { "academies": [], "facilities": [], "governingBodies": [] },
+      "benchmarks": { "description": "...", "metrics": [{"metric": "...", "target": "..."}] },
+      "trialInfo": { "typicalMonths": "...", "registrationProcess": "...", "eligibilityAge": "...", "selectionCriteria": ["..."], "tips": ["..."] },
+      "injuryRisks": { "commonInjuries": ["..."], "preventionTips": ["..."], "warningSignsToWatch": ["..."] },
+      "talentSignals": { "physicalMarkers": ["..."], "cognitiveMarkers": ["..."], "behavioralMarkers": ["..."] },
+      "mentalSkillsFocus": ["..."],
+      "coachSelectionGuide": { "mustHave": ["..."], "niceToHave": ["..."], "redFlags": ["..."], "questionsToAsk": ["..."] },
+      "governmentSchemes": [{ "name": "...", "body": "...", "eligibility": "...", "benefit": "...", "howToApply": "..." }],
+      "academicIntegration": "...",
+      "proactiveDocuments": ["..."]
     },
     {
       "level": 4,
@@ -125,7 +182,16 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
       "competitions": "...",
       "steps": ["..."],
       "governingBody": "...",
-      "localResources": { "academies": [], "facilities": [], "governingBodies": [] }
+      "localResources": { "academies": [], "facilities": [], "governingBodies": [] },
+      "benchmarks": { "description": "...", "metrics": [{"metric": "...", "target": "..."}] },
+      "trialInfo": { "typicalMonths": "...", "registrationProcess": "...", "eligibilityAge": "...", "selectionCriteria": ["..."], "tips": ["..."] },
+      "injuryRisks": { "commonInjuries": ["..."], "preventionTips": ["..."], "warningSignsToWatch": ["..."] },
+      "talentSignals": { "physicalMarkers": ["..."], "cognitiveMarkers": ["..."], "behavioralMarkers": ["..."] },
+      "mentalSkillsFocus": ["..."],
+      "coachSelectionGuide": { "mustHave": ["..."], "niceToHave": ["..."], "redFlags": ["..."], "questionsToAsk": ["..."] },
+      "governmentSchemes": [{ "name": "TOPS (Target Olympic Podium Scheme)", "body": "SAI / Ministry of Youth Affairs", "eligibility": "...", "benefit": "...", "howToApply": "..." }],
+      "academicIntegration": "...",
+      "proactiveDocuments": ["..."]
     },
     {
       "level": 5,
@@ -137,7 +203,16 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
       "competitions": "Key international competitions (Asian Games, World Championships, Olympics, etc.)",
       "steps": ["..."],
       "governingBody": "International governing body",
-      "localResources": { "academies": [], "facilities": [], "governingBodies": [] }
+      "localResources": { "academies": [], "facilities": [], "governingBodies": [] },
+      "benchmarks": { "description": "...", "metrics": [{"metric": "...", "target": "..."}] },
+      "trialInfo": { "typicalMonths": "...", "registrationProcess": "...", "eligibilityAge": "...", "selectionCriteria": ["..."], "tips": ["..."] },
+      "injuryRisks": { "commonInjuries": ["..."], "preventionTips": ["..."], "warningSignsToWatch": ["..."] },
+      "talentSignals": { "physicalMarkers": ["..."], "cognitiveMarkers": ["..."], "behavioralMarkers": ["..."] },
+      "mentalSkillsFocus": ["..."],
+      "coachSelectionGuide": { "mustHave": ["..."], "niceToHave": ["..."], "redFlags": ["..."], "questionsToAsk": ["..."] },
+      "governmentSchemes": [{ "name": "...", "body": "...", "eligibility": "...", "benefit": "...", "howToApply": "..." }],
+      "academicIntegration": "...",
+      "proactiveDocuments": ["..."]
     }
   ],
   "equipment": [

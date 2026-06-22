@@ -50,10 +50,9 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
         trim: true,
         maxlength: 1000,
       },
-      sport: {
-        type: String,
-        trim: true,
-      },
+      sport: { type: String, trim: true },
+      location: { type: String, trim: true },
+      current_pathway_level: { type: Number, min: 1, max: 5 },
     },
     response: {
       profileAnalysis: { type: String, required: true },
@@ -65,6 +64,17 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       },
       recommendedPlatformActions: { type: String, required: true },
       recommendedSports: { type: [String] },
+      mentalSkillsRoadmap: {
+        currentFocus: { type: String },
+        skills: [{ skill: { type: String }, howToDevelop: { type: String }, _id: false }],
+      },
+      talentIdentifiers: { type: [String] },
+      multiSportAdvisory: { type: String },
+      burnoutRisk: {
+        level: { type: String, enum: ["low", "medium", "high"] },
+        message: { type: String },
+        recommendations: { type: [String] },
+      },
     },
   },
   { timestamps: true },

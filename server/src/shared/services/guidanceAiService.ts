@@ -16,6 +16,14 @@ export const guidanceRequestSchema = z.object({
   budget_tier: z.enum(["Budget", "Moderate", "Premium"]),
   parent_specific_question: z.string().trim().max(1000).optional(),
   sport: z.string().trim().optional(),
+  location: z.string().trim().max(80).optional(), // Indian state for local scheme recommendations
+  current_pathway_level: z.number().int().min(1).max(5).optional(),
+});
+
+export const burnoutRiskSchema = z.object({
+  level: z.enum(["low", "medium", "high"]),
+  message: z.string(),
+  recommendations: z.array(z.string()),
 });
 
 export const guidanceResponseSchema = z.object({
@@ -28,23 +36,46 @@ export const guidanceResponseSchema = z.object({
   }),
   recommendedPlatformActions: z.string(),
   recommendedSports: z.array(z.string()).optional(),
+  mentalSkillsRoadmap: z.object({
+    currentFocus: z.string(),
+    skills: z.array(z.object({ skill: z.string(), howToDevelop: z.string() })),
+  }).optional(),
+  talentIdentifiers: z.array(z.string()).optional(),
+  multiSportAdvisory: z.string().optional(),
+  // Server-computed — not from AI, added in controller
+  burnoutRisk: burnoutRiskSchema.optional(),
 });
 
 export type GuidanceRequest = z.infer<typeof guidanceRequestSchema>;
 export type GuidanceResponse = z.infer<typeof guidanceResponseSchema>;
 
-export const getYouthSportsGuidanceSystemPrompt = (hasSport: boolean) => `You are an expert Youth Sports Consultant. You will receive a child's profile strictly in JSON format. ${
+export const getYouthSportsGuidanceSystemPrompt = (hasSport: boolean, age: number) => `You are an expert Youth Sports Consultant advising an Indian parent. You will receive a child's profile strictly in JSON format. ${
   hasSport
-    ? 'The profile includes a specific "sport", you MUST focus your analysis on how to improve in that specific sport, or suggest highly complementary cross-training sports. DO NOT include the "recommendedSports" field in your response.'
-    : "The profile does NOT include a specific sport. You MUST recommend the top 3 sports that best fit the child's profile based on their personality, goals, age, and fitness level. Include these in the \\\"recommendedSports\\\" array."
+    ? 'The profile includes a specific "sport". Focus your analysis on how to progress in that sport. Do NOT include "recommendedSports" in your response.'
+    : "The profile has NO specific sport. Recommend the top 3 sports that best fit the child based on personality, goals, age, and fitness. Include these in the \"recommendedSports\" array."
 }
-You must analyze this data and return your absolute final response strictly as a JSON object matching this schema blueprint, without any markdown wrappers or conversational preamble before or after the JSON structure:
+Return ONLY a valid JSON object — no markdown, no preamble — matching this schema exactly:
 {
-  "profileAnalysis": "String summarizing how their profile attributes match up",
-  "idealCoachingStyle": "String describing what kind of coach profile to look for on our platform",
-  "weeklyBlueprint": { "trainingHours": "String", "freePlayHours": "String", "restDays": "String" },
-  "recommendedPlatformActions": "Specific actionable next steps on what to book first on our site"${
-    hasSport ? "" : ',\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"]'
+  "profileAnalysis": "2-3 sentences: how this child's specific profile (personality, fitness, age, goals) positions them for sport",
+  "idealCoachingStyle": "Specific description of the coaching style and communication approach that fits this child's personality and age — what to look for when hiring",
+  "weeklyBlueprint": {
+    "trainingHours": "Specific hours per week for structured training",
+    "freePlayHours": "Hours per week for unstructured free play",
+    "restDays": "How many rest days and why"
+  },
+  "recommendedPlatformActions": "3-4 specific next steps the parent should take on the platform to get started",${
+    hasSport ? "" : '\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"],'
+  }
+  "mentalSkillsRoadmap": {
+    "currentFocus": "The single most important mental skill for this child to develop right now given their age and objective",
+    "skills": [
+      {"skill": "Mental skill name", "howToDevelop": "Concrete, age-appropriate exercise or drill to build this skill"}
+    ]
+  },
+  "talentIdentifiers": ["Observable sign or marker that this child shows genuine aptitude — specific to the sport and age group"],${
+    age <= 11
+      ? '\n  "multiSportAdvisory": "Explain in 2-3 sentences why playing multiple sports (not specialising yet) is scientifically recommended for children under 12, with specific benefits for this child\'s profile and which complementary sports to consider",'
+      : ""
   }
 }`;
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -88,7 +119,7 @@ export const generateYouthSportsGuidance = async (
         model: modelName,
         contents: JSON.stringify(payload),
         config: {
-          systemInstruction: getYouthSportsGuidanceSystemPrompt(!!payload.sport),
+          systemInstruction: getYouthSportsGuidanceSystemPrompt(!!payload.sport, payload.child_age),
           responseMimeType: "application/json",
           temperature: 0.4,
         },

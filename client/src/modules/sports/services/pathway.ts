@@ -17,6 +17,43 @@ export interface PathwayLevel {
     facilities?: string[];
     governingBodies?: string[];
   };
+  benchmarks?: {
+    description: string;
+    metrics: Array<{ metric: string; target: string }>;
+  };
+  trialInfo?: {
+    typicalMonths: string;
+    registrationProcess: string;
+    eligibilityAge: string;
+    selectionCriteria: string[];
+    tips: string[];
+  };
+  injuryRisks?: {
+    commonInjuries: string[];
+    preventionTips: string[];
+    warningSignsToWatch: string[];
+  };
+  talentSignals?: {
+    physicalMarkers: string[];
+    cognitiveMarkers: string[];
+    behavioralMarkers: string[];
+  };
+  mentalSkillsFocus?: string[];
+  coachSelectionGuide?: {
+    mustHave: string[];
+    niceToHave: string[];
+    redFlags: string[];
+    questionsToAsk: string[];
+  };
+  governmentSchemes?: Array<{
+    name: string;
+    body: string;
+    eligibility: string;
+    benefit: string;
+    howToApply: string;
+  }>;
+  academicIntegration?: string;
+  proactiveDocuments?: string[];
 }
 
 export interface Tournament {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
@@ -79,6 +79,10 @@ import {
   Quote,
   BadgeCheck,
   PartyPopper,
+  AlertTriangle,
+  Activity,
+  Calendar,
+  UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -1003,6 +1007,17 @@ function ProgressTracker({
                       </p>
                     </div>
                   ) : null}
+
+                  {/* Trajectory insight */}
+                  {nextLevel && nextLevel.ageRange && (
+                    <div className="mt-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 flex items-center gap-2">
+                      <Calendar className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                      <p className="text-[11px] text-amber-700">
+                        <span className="font-bold">{nextLevel.label}</span> athletes are typically{" "}
+                        <span className="font-bold">{nextLevel.ageRange}</span> — plan accordingly.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1020,46 +1035,57 @@ function PathwayLevelCard({
   isActive,
   onClick,
   isCurrentLevel,
+  completedSteps = 0,
+  totalSteps = 0,
 }: {
   level: any;
   isActive: boolean;
   onClick: () => void;
   isCurrentLevel?: boolean;
+  completedSteps?: number;
+  totalSteps?: number;
 }) {
   const colors = levelColorMap[level.level] ?? levelColorMap[1];
+  const completionPct = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
   return (
     <motion.button
       variants={cardReveal}
       onClick={onClick}
-      whileHover={{ y: -3, scale: 1.02 }}
+      whileHover={{ y: -2, scale: 1.01 }}
       transition={SPRING_STIFF}
-      className={`group relative w-full overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 will-change-transform ${
+      className={`group relative w-full overflow-hidden rounded-2xl border text-left transition-all duration-300 will-change-transform ${
         isActive
           ? `bg-gradient-to-br ${colors.bg} ${colors.border} shadow-lg`
           : "border-white/70 bg-white/80 backdrop-blur-sm hover:border-white/90 hover:bg-white/90 premium-shadow"
       }`}
     >
-      <div className="flex items-center gap-3">
+      {/* Left accent stripe when active */}
+      {isActive && (
+        <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${colors.gradient}`} />
+      )}
+
+      <div className={`flex items-center gap-3 p-4 ${isActive ? "pl-5" : ""}`}>
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${colors.gradient} text-white shadow-md transition-transform duration-300 group-hover:scale-110`}
         >
           {levelIconMap[level.level]}
         </div>
         <div className="flex-1 min-w-0">
-          <p
-            className={`text-[10px] font-bold uppercase tracking-widest ${colors.text}`}
-          >
+          <p className={`text-[10px] font-bold uppercase tracking-widest ${colors.text}`}>
             Level {level.level}
           </p>
-          <p className="font-bold text-slate-900 truncate text-sm">
-            {level.label}
-          </p>
+          <p className="font-bold text-slate-900 truncate text-sm">{level.label}</p>
           <p className="text-xs text-slate-500 truncate">{level.keyFocus}</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {isCurrentLevel && (
             <span className="hidden sm:flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[9px] font-bold text-amber-700">
               <Pin className="h-2.5 w-2.5" /> HERE
+            </span>
+          )}
+          {totalSteps > 0 && (
+            <span className={`text-[10px] font-semibold ${colors.text}`}>
+              {completedSteps}/{totalSteps}
             </span>
           )}
           <motion.div
@@ -1071,6 +1097,23 @@ function PathwayLevelCard({
           </motion.div>
         </div>
       </div>
+
+      {/* Completion progress bar */}
+      {totalSteps > 0 && (
+        <div className={`px-4 pb-3 ${isActive ? "pl-5" : ""}`}>
+          <div className="h-1 w-full rounded-full bg-slate-200/70 overflow-hidden">
+            <motion.div
+              className={`h-full rounded-full bg-gradient-to-r ${colors.gradient}`}
+              initial={{ width: 0 }}
+              animate={{ width: `${completionPct}%` }}
+              transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            />
+          </div>
+          {completedSteps === totalSteps && totalSteps > 0 && (
+            <p className={`mt-1 text-[10px] font-bold ${colors.text}`}>All done!</p>
+          )}
+        </div>
+      )}
     </motion.button>
   );
 }
@@ -1098,6 +1141,22 @@ function PathwayLevelDetail({
   const lLabel = level.label || `Level ${level.level}`;
   const communityUrl = getCommunityAppUrl();
 
+  const [innerTab, setInnerTab] = useState("overview");
+  useEffect(() => { setInnerTab("overview"); }, [level.level]);
+
+  const hasDevelop = !!(level.benchmarks || level.injuryRisks);
+  const hasCompete = !!(level.trialInfo || (level.governmentSchemes?.length));
+  const hasCoach = !!(level.coachSelectionGuide || level.localResources);
+  const hasDocs = !!(level.proactiveDocuments?.length);
+
+  const innerTabs = [
+    { id: "overview", label: "Overview", icon: <Target className="h-3 w-3" /> },
+    ...(hasDevelop ? [{ id: "develop", label: "Develop", icon: <Dumbbell className="h-3 w-3" /> }] : []),
+    ...(hasCompete ? [{ id: "compete", label: "Compete", icon: <Trophy className="h-3 w-3" /> }] : []),
+    ...(hasCoach ? [{ id: "coach", label: "Coaching", icon: <Users className="h-3 w-3" /> }] : []),
+    ...(hasDocs ? [{ id: "docs", label: "Docs", icon: <FileText className="h-3 w-3" /> }] : []),
+  ];
+
   return (
     <motion.div
       key={level.level}
@@ -1105,259 +1164,420 @@ function PathwayLevelDetail({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.98 }}
       transition={SPRING_STIFF}
-      className={`relative flex-1 flex flex-col overflow-hidden rounded-3xl border bg-gradient-to-br ${colors.bg} ${colors.border} p-5 sm:p-6 lg:p-8 shadow-xl`}
+      className={`relative flex-1 flex flex-col overflow-hidden rounded-3xl border-2 bg-gradient-to-br ${colors.bg} ${colors.border} shadow-xl`}
     >
-      <div className="flex items-start gap-3 sm:gap-5 mb-6">
-        <div
-          className={`flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${colors.gradient} text-white shadow-lg`}
-        >
+      {/* ── Header ── */}
+      <div className={`flex items-start gap-3 sm:gap-4 p-5 sm:p-6 border-b border-white/60`}>
+        <div className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${colors.gradient} text-white shadow-lg`}>
           {levelIconMap[level.level]}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <span
-              className={`inline-block max-w-full break-words rounded-full border px-3 py-0.5 text-xs font-bold uppercase tracking-widest ${colors.badge}`}
-            >
+          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+            <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${colors.badge}`}>
               Level {level.level}
             </span>
-            <span
-              className={`inline-block max-w-full break-words rounded-full border px-3 py-0.5 text-xs font-semibold ${colors.badge}`}
-            >
+            <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${colors.badge}`}>
               {level.ageRange}
             </span>
             {level.governingBody && (
-              <span className="inline-block max-w-full break-words rounded-full border border-slate-200 bg-slate-100 px-3 py-0.5 text-xs font-semibold text-slate-600">
+              <span className="rounded-full border border-slate-200 bg-white/80 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
                 {level.governingBody}
               </span>
             )}
           </div>
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900 lg:text-2xl break-words">
+          <h3 className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 break-words leading-snug">
             {level.title}
           </h3>
         </div>
       </div>
-      <p className="mb-6 text-sm leading-relaxed text-slate-600">
-        {level.description}
-      </p>
 
-      {/* Parent's Corner */}
-      <div
-        className={
-          "mb-8 rounded-2xl border bg-white/90 p-4 sm:p-6 " +
-          colors.border +
-          " shadow-sm backdrop-blur-md transition-all duration-300 hover:shadow-md"
-        }
-      >
-        <h4 className="mb-5 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-800">
-          <HeartHandshake className={"h-5 w-5 " + colors.text} />
-          Parent's Corner
-        </h4>
-        <div className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2">
-          <div className="flex items-start gap-3">
-            <div
-              className={
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow " +
-                colors.gradient
-              }
+      {/* ── Inner tab navigation ── */}
+      {innerTabs.length > 1 && (
+        <div className={`flex gap-0 overflow-x-auto px-4 pt-3 hide-scrollbar`}>
+          {innerTabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setInnerTab(t.id)}
+              className={`flex shrink-0 items-center gap-1.5 rounded-t-xl px-3.5 py-2 text-[11px] font-bold transition-all duration-200 border-b-2 ${
+                innerTab === t.id
+                  ? `bg-white/90 ${colors.text} border-current shadow-sm`
+                  : `text-slate-400 border-transparent hover:text-slate-600 hover:bg-white/40`
+              }`}
             >
-              <Clock className="h-4 w-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                Time Investment
-              </p>
-              <p className="text-sm font-semibold text-slate-800">
-                {commitment.time}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div
-              className={
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow " +
-                colors.gradient
-              }
-            >
-              <Wallet className="h-4 w-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                Financial Impact
-              </p>
-              <p className="text-sm font-semibold text-slate-800">
-                {commitment.financial}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div
-              className={
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow " +
-                colors.gradient
-              }
-            >
-              <Map className="h-4 w-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                Travel
-              </p>
-              <p className="text-sm font-semibold text-slate-800">
-                {commitment.travel}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div
-              className={
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow " +
-                colors.gradient
-              }
-            >
-              <Compass className="h-4 w-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                Your Role
-              </p>
-              <p className="text-sm font-semibold text-slate-800">
-                {commitment.role}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-6 mt-6 lg:mt-auto">
-        <h4 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-          <TrendingUp className="h-3.5 w-3.5" />
-          Key Objectives
-        </h4>
-        {/* P9: each objective has an inline deep-link chip */}
-        <ul className="space-y-2.5">
-          {level.steps.map((step: string, i: number) => {
-            const discUrl = sName ? buildDiscoveryUrl(step, sName, lLabel) : null;
-            return (
-              <li key={i} className="flex items-start gap-2.5 group">
-                <CheckCircle
-                  className={"mt-0.5 h-4 w-4 shrink-0 " + colors.text}
-                />
-                <span className="flex-1 min-w-0 text-sm leading-relaxed text-slate-700">
-                  {step}
-                </span>
-                {discUrl && (
-                  <Link
-                    href={discUrl}
-                    onClick={(e) => e.stopPropagation()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Find nearby venues/coaches for this step"
-                    className={`shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center gap-1 rounded-lg border ${colors.badge} px-2 py-0.5 text-[10px] font-bold whitespace-nowrap`}
-                  >
-                    <ExternalLink className="h-2.5 w-2.5" /> Go
-                  </Link>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      {/* Local Resources Section */}
-      {level.localResources &&
-        (level.localResources.academies?.length ||
-          level.localResources.facilities?.length ||
-          level.localResources.governingBodies?.length) ? (
-        <div className="mb-6 rounded-xl bg-slate-50 border border-slate-100 p-4">
-          <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <MapPin className="h-3.5 w-3.5" />
-            Local Resources
-          </h4>
-          <div className="space-y-4">
-            {level.localResources.academies && level.localResources.academies.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Academies
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {level.localResources.academies.map((item: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm"
-                    >
-                      <Star className="h-3 w-3 text-amber-500" /> {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {level.localResources.facilities && level.localResources.facilities.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Facilities
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {level.localResources.facilities.map((item: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm"
-                    >
-                      <Pin className="h-3 w-3 text-emerald-500" /> {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {level.localResources.governingBodies && level.localResources.governingBodies.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                  Governing Bodies
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {level.localResources.governingBodies.map((item: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm"
-                    >
-                      <Shield className="h-3 w-3 text-blue-500" /> {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Stories teaser */}
-      {sName && onSelectTab && (
-        <div className="mt-4 mb-2 flex items-center justify-center">
-          <button
-            onClick={() => onSelectTab("stories")}
-            className={`flex items-center gap-1.5 text-xs font-semibold ${colors.text} hover:opacity-85 transition`}
-          >
-            <MessageSquareQuote className="h-4 w-4" />
-            <span>Success story at this level</span>
-          </button>
+              {t.icon}
+              {t.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Actionable CTAs — P9: include sport + level params */}
-      <div className="mt-2 flex flex-col sm:flex-row gap-3">
-        <Link
-          href={`${communityUrl}/discover?tab=COMMUNITIES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm transition-all hover:opacity-90 bg-gradient-to-r ${colors.gradient}`}
-        >
-          <Users className="h-4 w-4" />
-          Find Local Communities
-        </Link>
-        <Link
-          href={`${communityUrl}/discover?tab=COACHES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
-        >
-          <Trophy className="h-4 w-4" />
-          Find Coaches
-        </Link>
+      {/* ── Tab content ── */}
+      <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+        <AnimatePresence mode="wait">
+
+          {/* ── Overview ── */}
+          {innerTab === "overview" && (
+            <motion.div key="overview" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="space-y-5">
+              <p className="text-sm leading-relaxed text-slate-600">{level.description}</p>
+
+              {/* Parent's Corner */}
+              <div className={`rounded-2xl border bg-white/90 p-4 sm:p-5 ${colors.border} shadow-sm`}>
+                <h4 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
+                  <HeartHandshake className={"h-4 w-4 " + colors.text} />
+                  Parent's Corner
+                </h4>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {[
+                    { icon: <Clock className="h-3.5 w-3.5" />, label: "Time", value: commitment.time },
+                    { icon: <Wallet className="h-3.5 w-3.5" />, label: "Budget", value: commitment.financial },
+                    { icon: <Map className="h-3.5 w-3.5" />, label: "Travel", value: commitment.travel },
+                    { icon: <Compass className="h-3.5 w-3.5" />, label: "Your Role", value: commitment.role },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-start gap-2.5">
+                      <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${colors.gradient} text-white shadow-sm`}>
+                        {item.icon}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{item.label}</p>
+                        <p className="text-xs font-semibold text-slate-800 leading-snug">{item.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Key Objectives */}
+              <div>
+                <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <TrendingUp className="h-3.5 w-3.5" /> Key Objectives
+                </h4>
+                <ul className="space-y-2">
+                  {level.steps.map((step: string, i: number) => {
+                    const discUrl = sName ? buildDiscoveryUrl(step, sName, lLabel) : null;
+                    return (
+                      <li key={i} className="flex items-start gap-2.5 group">
+                        <CheckCircle className={"mt-0.5 h-4 w-4 shrink-0 " + colors.text} />
+                        <span className="flex-1 min-w-0 text-sm leading-relaxed text-slate-700">{step}</span>
+                        {discUrl && (
+                          <Link href={discUrl} onClick={(e) => e.stopPropagation()} target="_blank" rel="noopener noreferrer"
+                            className={`shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center gap-1 rounded-lg border ${colors.badge} px-2 py-0.5 text-[10px] font-bold whitespace-nowrap`}>
+                            <ExternalLink className="h-2.5 w-2.5" /> Go
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Develop ── */}
+          {innerTab === "develop" && hasDevelop && (
+            <motion.div key="develop" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="space-y-5">
+              {level.benchmarks && (
+                <div>
+                  <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600">
+                    <BarChart3 className="h-3.5 w-3.5" /> Performance Benchmarks
+                  </h4>
+                  <p className="mb-3 text-sm text-slate-600 leading-relaxed">{level.benchmarks.description}</p>
+                  {level.benchmarks.metrics?.length > 0 && (
+                    <div className="overflow-x-auto rounded-xl border border-slate-100">
+                      <table className="min-w-full text-xs">
+                        <thead>
+                          <tr className="bg-slate-50">
+                            <th className="px-3 py-2 text-left font-bold uppercase tracking-wider text-slate-400">Metric</th>
+                            <th className="px-3 py-2 text-left font-bold uppercase tracking-wider text-slate-400">Target</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {level.benchmarks.metrics.map((m: { metric: string; target: string }, idx: number) => (
+                            <tr key={idx} className="hover:bg-indigo-50/40 transition-colors">
+                              <td className="px-3 py-2.5 font-semibold text-slate-700">{m.metric}</td>
+                              <td className="px-3 py-2.5 font-bold text-indigo-700">{m.target}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+              {level.injuryRisks && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                  <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-700">
+                    <Activity className="h-3.5 w-3.5" /> Health & Injury Prevention
+                  </h4>
+                  <div className="space-y-3">
+                    {level.injuryRisks.commonInjuries?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-1.5">Common Injuries</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {level.injuryRisks.commonInjuries.map((inj: string, i: number) => (
+                            <span key={i} className="rounded-full border border-amber-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-800">{inj}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {level.injuryRisks.preventionTips?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Prevention Tips</p>
+                        <ul className="space-y-1">
+                          {level.injuryRisks.preventionTips.map((t: string, i: number) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                              <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />{t}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {level.injuryRisks.warningSignsToWatch?.length > 0 && (
+                      <div className="rounded-lg border border-rose-200 bg-white/80 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600 mb-1.5">Warning Signs — See a Doctor</p>
+                        <ul className="space-y-1">
+                          {level.injuryRisks.warningSignsToWatch.map((s: string, i: number) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-rose-700">
+                              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" />{s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* ── Compete ── */}
+          {innerTab === "compete" && hasCompete && (
+            <motion.div key="compete" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="space-y-5">
+              {level.trialInfo && (
+                <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4">
+                  <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-sky-700">
+                    <Calendar className="h-3.5 w-3.5" /> Trial & Selection Calendar
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="rounded-lg bg-white/80 border border-sky-100 p-2.5">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Typical Months</p>
+                      <p className="text-xs font-semibold text-sky-800">{level.trialInfo.typicalMonths}</p>
+                    </div>
+                    <div className="rounded-lg bg-white/80 border border-sky-100 p-2.5">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Eligibility Age</p>
+                      <p className="text-xs font-semibold text-sky-800">{level.trialInfo.eligibilityAge}</p>
+                    </div>
+                  </div>
+                  <div className="mb-3 rounded-lg bg-white/80 border border-sky-100 p-2.5">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Registration Process</p>
+                    <p className="text-xs text-slate-700">{level.trialInfo.registrationProcess}</p>
+                  </div>
+                  {level.trialInfo.selectionCriteria?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Selection Criteria</p>
+                      <ul className="space-y-1">
+                        {level.trialInfo.selectionCriteria.map((c: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                            <CheckCircle className={"mt-0.5 h-3.5 w-3.5 shrink-0 " + colors.text} />{c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {level.trialInfo.tips?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Tips to Crack the Trial</p>
+                      <ul className="space-y-1">
+                        {level.trialInfo.tips.map((t: string, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                            <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />{t}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              {level.governmentSchemes && level.governmentSchemes.length > 0 && (
+                <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-4">
+                  <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-violet-700">
+                    <Landmark className="h-3.5 w-3.5" /> Government Schemes & Funding
+                  </h4>
+                  <div className="space-y-3">
+                    {level.governmentSchemes.map((scheme: { name: string; body: string; eligibility: string; benefit: string; howToApply: string }, i: number) => (
+                      <div key={i} className="rounded-xl border border-violet-100 bg-white/90 p-3">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <GraduationCap className="h-3.5 w-3.5 shrink-0 text-violet-600" />
+                          <p className="text-xs font-bold text-violet-900">{scheme.name}</p>
+                        </div>
+                        <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{scheme.body}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                          <div><p className="font-bold text-slate-400 text-[9px] uppercase mb-0.5">Eligibility</p><p className="text-slate-700">{scheme.eligibility}</p></div>
+                          <div><p className="font-bold text-slate-400 text-[9px] uppercase mb-0.5">Benefit</p><p className="text-slate-700">{scheme.benefit}</p></div>
+                          <div><p className="font-bold text-slate-400 text-[9px] uppercase mb-0.5">How to Apply</p><p className="text-slate-700">{scheme.howToApply}</p></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* ── Coaching ── */}
+          {innerTab === "coach" && hasCoach && (
+            <motion.div key="coach" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="space-y-5">
+              {level.coachSelectionGuide && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+                  <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                    <UserCheck className="h-3.5 w-3.5" /> Coach Selection Guide
+                  </h4>
+                  <div className="space-y-3">
+                    {level.coachSelectionGuide.mustHave?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-1.5">Must-Have Qualities</p>
+                        <ul className="space-y-1">
+                          {level.coachSelectionGuide.mustHave.map((q: string, i: number) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />{q}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {level.coachSelectionGuide.niceToHave?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Nice to Have</p>
+                        <ul className="space-y-1">
+                          {level.coachSelectionGuide.niceToHave.map((q: string, i: number) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                              <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-300" />{q}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {level.coachSelectionGuide.redFlags?.length > 0 && (
+                      <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600 mb-1.5">Red Flags — Avoid This Coach</p>
+                        <ul className="space-y-1">
+                          {level.coachSelectionGuide.redFlags.map((r: string, i: number) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-rose-700">
+                              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" />{r}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {level.coachSelectionGuide.questionsToAsk?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Questions to Ask Before Hiring</p>
+                        <ul className="space-y-1">
+                          {level.coachSelectionGuide.questionsToAsk.map((q: string, i: number) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                              <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" /><em>{q}</em>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {level.localResources && (level.localResources.academies?.length || level.localResources.facilities?.length || level.localResources.governingBodies?.length) ? (
+                <div className="rounded-xl bg-slate-50 border border-slate-100 p-4">
+                  <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <MapPin className="h-3.5 w-3.5" /> Local Resources
+                  </h4>
+                  <div className="space-y-3">
+                    {level.localResources.academies?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Academies</p>
+                        <div className="flex flex-wrap gap-2">
+                          {level.localResources.academies.map((item: string, idx: number) => (
+                            <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm">
+                              <Star className="h-3 w-3 text-amber-500" /> {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {level.localResources.facilities?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Facilities</p>
+                        <div className="flex flex-wrap gap-2">
+                          {level.localResources.facilities.map((item: string, idx: number) => (
+                            <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm">
+                              <Pin className="h-3 w-3 text-emerald-500" /> {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {level.localResources.governingBodies?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Governing Bodies</p>
+                        <div className="flex flex-wrap gap-2">
+                          {level.localResources.governingBodies.map((item: string, idx: number) => (
+                            <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm">
+                              <Shield className="h-3 w-3 text-blue-500" /> {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </motion.div>
+          )}
+
+          {/* ── Documents ── */}
+          {innerTab === "docs" && hasDocs && (
+            <motion.div key="docs" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }}>
+              <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+                <FileText className="h-3.5 w-3.5 text-slate-500" /> Document Vault — Prepare Now
+              </h4>
+              <ul className="space-y-2">
+                {level.proactiveDocuments.map((doc: string, i: number) => (
+                  <li key={i} className="flex items-center gap-2.5 rounded-lg border border-slate-100 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-700">
+                    <ClipboardList className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    {doc}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-[11px] text-slate-400 italic">Collect these documents early to avoid last-minute scrambling at trials and registrations.</p>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </div>
+
+      {/* ── Footer: stories teaser + CTAs ── */}
+      <div className={`border-t border-white/60 p-4 sm:p-5 space-y-3 bg-gradient-to-br ${colors.bg}`}>
+        {sName && onSelectTab && (
+          <button
+            onClick={() => onSelectTab("stories")}
+            className={`w-full flex items-center justify-center gap-1.5 text-xs font-semibold ${colors.text} hover:opacity-80 transition`}
+          >
+            <MessageSquareQuote className="h-4 w-4" />
+            <span>View success story at this level</span>
+          </button>
+        )}
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          <Link
+            href={`${communityUrl}/discover?tab=COMMUNITIES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:opacity-90 bg-gradient-to-r ${colors.gradient}`}
+          >
+            <Users className="h-4 w-4" /> Find Communities
+          </Link>
+          <Link
+            href={`${communityUrl}/discover?tab=COACHES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
+          >
+            <Trophy className="h-4 w-4" /> Find Coaches
+          </Link>
+        </div>
       </div>
     </motion.div>
   );
@@ -2649,6 +2869,8 @@ function PathwayExplorerSection() {
                             level={lv}
                             isActive={i === activeIdx}
                             isCurrentLevel={progress.currentLevel === lv.level}
+                            completedSteps={(progress.completedSteps?.[lv.level] || []).filter(Boolean).length}
+                            totalSteps={lv.steps.length}
                             onClick={() => {
                               if (typeof window !== "undefined" && window.innerWidth < 1024) {
                                 setActiveIdx(activeIdx === i ? -1 : i);
@@ -2687,7 +2909,7 @@ function PathwayExplorerSection() {
                     </div>
 
                     {/* Right: detail (Desktop Only) */}
-                    <div className="hidden h-full lg:flex lg:flex-col">
+                    <div className="hidden lg:flex lg:flex-col lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
                       <AnimatePresence mode="wait">
                         {selectedLevel && (
                           <PathwayLevelDetail
