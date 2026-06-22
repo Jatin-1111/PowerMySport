@@ -230,7 +230,7 @@ export function CoachOnboardingForm() {
   const resolvedHourlyRate =
     pricingMode === "SAME"
       ? hourlyRate
-      : Math.max(0, ...Object.values(pricingPayload));
+      : Math.min(...Object.values(pricingPayload).filter((v) => v > 0));
 
   const validateStep1 = () => {
     const nextErrors: FormErrors = {};

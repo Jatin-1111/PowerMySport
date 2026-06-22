@@ -542,7 +542,7 @@ export default function CoachBillingPage() {
               </span>
             </div>
             <div className="mt-4 space-y-3">
-              {activeSubscriptions.slice(0, 5).map((subscription: any) => {
+              {activeSubscriptions.map((subscription: any) => {
                 const packageData = subscription.packageId as
                   | { name?: string; frequency?: string }
                   | string
@@ -969,8 +969,7 @@ export default function CoachBillingPage() {
                   <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
                     {form.frequency}
                   </span>
-                  {typeof parseOptionalWholeNumber(form.maxStudents) ===
-                  "number" ? (
+                  {Number.isInteger(parseOptionalWholeNumber(form.maxStudents)) ? (
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
                       Up to {parseOptionalWholeNumber(form.maxStudents)}{" "}
                       students
@@ -980,8 +979,7 @@ export default function CoachBillingPage() {
                       Flexible student count
                     </span>
                   )}
-                  {typeof parseOptionalWholeNumber(form.maxSessions) ===
-                  "number" ? (
+                  {Number.isInteger(parseOptionalWholeNumber(form.maxSessions)) ? (
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
                       {parseOptionalWholeNumber(form.maxSessions)} sessions
                     </span>

@@ -1051,7 +1051,7 @@ export default function CoachVerificationPage() {
       }
     }
 
-    const hourlyRate = Math.max(...Object.values(pricingPayload));
+    const hourlyRate = Math.min(...Object.values(pricingPayload));
     const serviceRadiusKm = Number(serviceRadiusKmInput || "10");
     const travelBufferTime = Number(travelBufferTimeInput || "30");
 
@@ -1203,7 +1203,7 @@ export default function CoachVerificationPage() {
         }
         pricingPayload[sport] = value;
       }
-      hourlyRate = Math.max(...Object.values(pricingPayload));
+      hourlyRate = Math.min(...Object.values(pricingPayload));
     }
 
     const normalizedDocs = verificationDocs

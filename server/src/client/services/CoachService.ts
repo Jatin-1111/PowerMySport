@@ -262,6 +262,7 @@ export const findCoachesNearby = async (
   radiusKm: number,
   sport?: string,
   limit: number = 50,
+  skip: number = 0,
 ): Promise<CoachDocument[]> => {
   try {
     const radiusMeters = radiusKm * 1000;
@@ -284,6 +285,7 @@ export const findCoachesNearby = async (
       {
         $sort: { rating: -1, reviewCount: -1, distanceMeters: 1, _id: 1 },
       },
+      { $skip: skip },
       { $limit: limit },
       {
         $project: {
@@ -331,6 +333,7 @@ export const findCoachesNearby = async (
 export const getAllCoaches = async (
   sport?: string,
   limit: number = 50,
+  skip: number = 0,
 ): Promise<CoachDocument[]> => {
   try {
     const query: any = {
@@ -345,6 +348,7 @@ export const getAllCoaches = async (
     const coaches = await Coach.find(query)
       .select(COACH_LISTING_SELECT)
       .sort({ rating: -1, reviewCount: -1, _id: 1 })
+      .skip(skip)
       .limit(limit)
       .populate({
         path: "userId",
@@ -594,11 +598,19 @@ export const updateCoach = async (
         const venueData = value as any;
 
         // Extract coordinates from either location or flat structure
-        const coordinates = Array.isArray(venueData.location?.coordinates)
+        const rawCoords = Array.isArray(venueData.location?.coordinates)
           ? venueData.location.coordinates
           : Array.isArray(venueData.coordinates)
             ? venueData.coordinates
-            : [77.2, 28.7];
+            : null;
+
+        if (!rawCoords || rawCoords.length !== 2) {
+          throw new Error(
+            "ownVenueDetails.location.coordinates ([longitude, latitude]) is required",
+          );
+        }
+
+        const coordinates = rawCoords;
 
         coach.ownVenueDetails = {
           name: venueData.name,
@@ -635,16 +647,19 @@ export const updateCoach = async (
  * Delete coach profile (with cascade: delete all associated bookings)
  */
 export const deleteCoach = async (coachId: string): Promise<boolean> => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    // First, delete all bookings associated with this coach
-    await Booking.deleteMany({ coachId });
-
-    // Then delete the coach
-    const result = await Coach.findByIdAndDelete(coachId);
+    await Booking.deleteMany({ coachId }, { session });
+    const result = await Coach.findByIdAndDelete(coachId, { session });
+    await session.commitTransaction();
     return !!result;
   } catch (error) {
+    await session.abortTransaction();
     throw new Error(
       `Failed to delete coach: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
+  } finally {
+    session.endSession();
   }
 };

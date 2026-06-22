@@ -109,9 +109,7 @@ export default function CoachBookingsPage() {
       (booking) => booking.status === "COMPLETED",
     ).length;
     const totalEarnings = allCoachBookings
-      .filter((booking) =>
-        ["CONFIRMED", "IN_PROGRESS", "COMPLETED"].includes(booking.status),
-      )
+      .filter((booking) => booking.status === "COMPLETED")
       .reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
 
     return {

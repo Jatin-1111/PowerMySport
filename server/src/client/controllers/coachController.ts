@@ -71,17 +71,19 @@ export const discoverCoachesNearby = async (
     const context = buildCoachDiscoveryContext(req);
 
     const startedAt = Date.now();
+    const skip = (context.page - 1) * context.limit;
     const coaches =
       !context.hasLocation ||
       context.latitude === undefined ||
       context.longitude === undefined
-        ? await getAllCoaches(context.sportFilter, context.limit)
+        ? await getAllCoaches(context.sportFilter, context.limit, skip)
         : await findCoachesNearby(
             context.latitude,
             context.longitude,
             context.radiusMeters / 1000,
             context.sportFilter,
             context.limit,
+            skip,
           );
     const coachesFetchMs = Date.now() - startedAt;
     const totalDurationMs = Date.now() - requestStartedAt;
@@ -162,9 +164,35 @@ export const createNewCoach = async (
       return;
     }
 
+    const {
+      bio,
+      certifications: certBody,
+      sports: sportsBody,
+      hourlyRate,
+      sportPricing,
+      serviceMode: serviceModeBody,
+      ownVenueDetails,
+      baseLocation,
+      serviceRadiusKm,
+      travelBufferTime,
+      availability,
+      availabilityBySport,
+    } = req.body;
+
     const coach = await createCoach({
       userId: req.user.id,
-      ...req.body,
+      bio,
+      certifications: certBody,
+      sports: sportsBody,
+      hourlyRate,
+      sportPricing,
+      serviceMode: serviceModeBody,
+      ownVenueDetails,
+      baseLocation,
+      serviceRadiusKm,
+      travelBufferTime,
+      availability,
+      availabilityBySport,
     });
 
     console.log("Created coach:", {
@@ -356,7 +384,15 @@ export const updateMyCoachAvailability = async (
         );
     }
 
-    const flattened = Object.values(normalizedBySport).flat();
+    const seen = new Set<string>();
+    const flattened = Object.values(normalizedBySport)
+      .flat()
+      .filter((slot) => {
+        const key = `${slot.dayOfWeek}|${slot.startTime}|${slot.endTime}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
     const coachId = (coach.id || coach._id.toString()) as string;
     const updated = await updateCoach(coachId, {
@@ -568,6 +604,13 @@ export const getCoachAvailability = async (
     }
 
     const targetDate = new Date(date as string);
+    if (isNaN(targetDate.getTime())) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid date format. Use YYYY-MM-DD.",
+      });
+      return;
+    }
     const dayOfWeek = targetDate.getDay();
     const availabilityBySport = (coach as any).availabilityBySport as
       | Record<

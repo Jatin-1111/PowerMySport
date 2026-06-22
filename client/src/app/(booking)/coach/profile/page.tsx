@@ -614,7 +614,7 @@ export default function CoachProfilePage() {
       }
     }
 
-    const hourlyRate = Math.max(...Object.values(pricingPayload));
+    const hourlyRate = Math.min(...Object.values(pricingPayload));
 
     const parsedServiceRadius = Number(coachingForm.serviceRadiusKmInput);
     const parsedTravelBuffer = Number(coachingForm.travelBufferTimeInput);
@@ -1397,7 +1397,8 @@ export default function CoachProfilePage() {
                       </div>
                     )}
 
-                  {coachProfile.hourlyRate && !coachProfile.sportPricing && (
+                  {coachProfile.hourlyRate &&
+                    Object.keys(coachProfile.sportPricing ?? {}).length === 0 && (
                     <div>
                       <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
                         Hourly Rate
