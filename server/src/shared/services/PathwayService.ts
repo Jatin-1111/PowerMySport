@@ -18,6 +18,7 @@ const log = {
 type CanonicalAttachResult = {
   pathway: SportPathwayDocument;
   warnings: string[];
+  entitiesReady: boolean;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -197,6 +198,7 @@ export class PathwayService {
     pathway: SportPathwayDocument | null;
     source: "db" | "generated" | "not_a_sport";
     isStale?: boolean;
+    entitiesReady?: boolean;
     message?: string;
     warnings?: string[];
   }> {
@@ -235,7 +237,8 @@ export class PathwayService {
         );
       }
 
-      // Attach live canonical data (tournaments/scholarships/universities)
+      // Attach live canonical data (tournaments/scholarships/universities).
+      // Non-blocking: if entities are missing the scraper fires in the background.
       const enriched = await this.attachCanonicalEntities(
         existing,
         slug,
@@ -246,17 +249,22 @@ export class PathwayService {
         pathway: enriched.pathway,
         source: "db",
         isStale,
+        entitiesReady: enriched.entitiesReady,
         warnings: enriched.warnings,
       };
     }
 
-    // ── 4. Validate unknown sports via Gemini ──────────────────────────────
+    // ── 4. For unknown sports: validate + generate IN PARALLEL ─────────────
+    //    For known sports: skip validation entirely (it's already confirmed).
+    let generated: Awaited<ReturnType<typeof this.generatePathway>>;
+
     if (!knownSport) {
-      log.info(
-        `[PathwayService] Validating unknown sport ${finalSportName} via Gemini...`,
-      );
-      const isValid = await this.validateSport(finalSportName);
-      log.info(`[PathwayService] Validation result:`, isValid);
+      log.info(`[PathwayService] Unknown sport — running validate+generate in parallel: ${finalSportName}`);
+      const [isValid, gen] = await Promise.all([
+        this.validateSport(finalSportName),
+        this.generatePathway(finalSportName, childAge, childCity),
+      ]);
+      log.info(`[PathwayService] Validation: ${isValid}, generated: ${!!gen}`);
       if (!isValid) {
         return {
           pathway: null,
@@ -264,19 +272,34 @@ export class PathwayService {
           message: `"${finalSportName}" does not appear to be a recognised sport or athletic activity.`,
         };
       }
+      generated = gen;
+    } else {
+      // ── 5. Known sport — generate directly (no validation round-trip) ────
+      generated = await this.generatePathway(finalSportName, childAge, childCity);
     }
 
-    // ── 5. Generate pathway with Gemini (levels, equipment, careers only) ──
-    const generated = await this.generatePathway(
-      finalSportName,
-      childAge,
-      childCity,
-    );
     if (!generated) {
+      // Graceful fallback: if generation fails for a city/age variant,
+      // serve any existing cached pathway for this sport slug.
+      const fallbackDoc = await SportPathway.findOne({ sportSlug: slug }).sort({ lookupCount: -1 });
+      if (fallbackDoc) {
+        log.warn(`[PathwayService] Generation failed for ${cacheKey} — serving fallback for ${slug}`);
+        const enriched = await this.attachCanonicalEntities(fallbackDoc, slug, finalSportName, childCity);
+        return {
+          pathway: enriched.pathway,
+          source: "db",
+          isStale: true,
+          entitiesReady: enriched.entitiesReady,
+          warnings: [
+            ...(enriched.warnings || []),
+            "City-specific data is being generated. Showing general pathway for now.",
+          ],
+        };
+      }
       return {
         pathway: null,
         source: "not_a_sport",
-        message: "Could not generate pathway for this sport at the moment.",
+        message: "Could not generate pathway for this sport right now. Please try again in a moment.",
       };
     }
 
@@ -290,16 +313,12 @@ export class PathwayService {
 
     const saved = await this.savePathway(slug, cacheKey, generated);
 
-    // Attach canonical entities for the freshly generated pathway
-    const enriched = await this.attachCanonicalEntities(
-      saved,
-      slug,
-      finalSportName,
-      childCity,
-    );
+    // Attach canonical entities (non-blocking — scraper fires in background if needed)
+    const enriched = await this.attachCanonicalEntities(saved, slug, finalSportName, childCity);
     return {
       pathway: enriched.pathway,
       source: "generated",
+      entitiesReady: enriched.entitiesReady,
       warnings: enriched.warnings,
     };
   }
@@ -531,23 +550,67 @@ export class PathwayService {
   // ── Private helpers ────────────────────────────────────────────────────────
 
   /**
+   * Fetch entities (tournaments/scholarships/universities) for a sport,
+   * waiting for the scraper if they aren't in the DB yet.
+   * Used by the dedicated /entities endpoint so the client can fetch this
+   * in parallel while the skeleton is already displayed.
+   */
+  async getEntities(
+    sportName: string,
+    childCity?: string,
+  ): Promise<{ tournaments: any[]; scholarships: any[]; universities: any[] }> {
+    const slug = toSlug(sportName);
+    const knownSport = await Sport.findOne({ slug });
+    const finalSlug = knownSport ? knownSport.slug : slug;
+    const finalName = knownSport ? knownSport.name : sportName;
+
+    const cityQuery = this.buildCityQuery(childCity);
+
+    const [t, s, u] = await Promise.all([
+      Tournament.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+      Scholarship.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+      University.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+    ]);
+
+    const missingEntities = t.length === 0 || s.length === 0 || u.length === 0;
+    const missingDates = t.length > 0 && (t as any[]).some((doc) => !doc.typicalDates && !doc.registrationDeadline);
+    const needsRefresh = missingEntities || missingDates;
+    if (needsRefresh) {
+      log.info(`[PathwayService] getEntities: scraping ${finalSlug} (missingEntities=${missingEntities}, missingDates=${missingDates})...`);
+      try {
+        await realDataScraperService.scrapeSport({
+          sportSlug: finalSlug,
+          sportName: finalName,
+          ...(childCity ? { city: childCity } : {}),
+        });
+      } catch (err) {
+        log.error(`[PathwayService] getEntities scraper failed for ${finalSlug}:`, err);
+      }
+
+      const [t2, s2, u2] = await Promise.all([
+        Tournament.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+        Scholarship.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+        University.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+      ]);
+      return { tournaments: t2, scholarships: s2, universities: u2 };
+    }
+
+    return { tournaments: t, scholarships: s, universities: u };
+  }
+
+  /**
    * Overlays live data from the canonical Tournament/Scholarship/University
-   * collections onto a pathway response. This is intentionally NOT persisted
-   * back onto the SportPathway document — it's resolved fresh on every read,
-   * so re-running the scraper updates what parents see immediately, without
-   * needing to delete/regenerate the pathway.
+   * collections onto a pathway response. Non-blocking: if entities are missing,
+   * the scraper is fired in the background and empty arrays are returned
+   * immediately so the skeleton can be served to the client right away.
    */
   private async attachCanonicalEntities(
     pathway: SportPathwayDocument,
     sportSlug: string,
     sportName?: string,
     childCity?: string,
-    allowScrapeFallback = true,
   ): Promise<CanonicalAttachResult> {
-    const cityRegex = childCity ? new RegExp(`^${childCity}$`, "i") : null;
-    const cityQuery = childCity
-      ? { $or: [{ city: cityRegex }, { city: { $exists: false } }, { city: null }, { city: /national/i }] }
-      : {};
+    const cityQuery = this.buildCityQuery(childCity);
 
     const [tournaments, scholarships, universities] = await Promise.all([
       Tournament.find({ sportSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
@@ -555,58 +618,52 @@ export class PathwayService {
       University.find({ sportSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
     ]);
 
-    const warnings: string[] = [];
-
-    const needsRefresh =
-      tournaments.length === 0 ||
-      scholarships.length === 0 ||
-      universities.length === 0;
-
-    if (needsRefresh && sportName && allowScrapeFallback) {
-      warnings.push(
-        `Some live data was missing for ${sportSlug}; using scraper fallback to refresh it.`,
-      );
-      try {
-        log.info(
-          `[PathwayService] Missing canonical data for ${sportSlug}; running scraper fallback.`,
-        );
-        await realDataScraperService.scrapeSport({
-          sportSlug,
-          sportName,
-          ...(childCity ? { city: childCity } : {}),
-        });
-
-        return this.attachCanonicalEntities(
-          pathway,
-          sportSlug,
-          sportName,
-          childCity,
-          false, // prevent infinite recursion
-        );
-      } catch (error) {
-        log.error(
-          `[PathwayService] Scraper fallback failed for ${sportSlug}:`,
-          error,
-        );
-        warnings.push(
-          `Automatic refresh failed for ${sportSlug}. Showing the data that is already available.`,
-        );
-      }
-    }
-
     const plain =
       typeof (pathway as any).toObject === "function"
         ? (pathway as any).toObject()
         : pathway;
 
+    const missingEntities =
+      tournaments.length === 0 || scholarships.length === 0 || universities.length === 0;
+    const missingDates =
+      tournaments.length > 0 &&
+      (tournaments as any[]).some((t) => !t.typicalDates && !t.registrationDeadline);
+    const needsRefresh = missingEntities || missingDates;
+
+    if (needsRefresh && sportName) {
+      // Fire scraper in the background — don't block the response.
+      log.info(
+        `[PathwayService] Stale canonical data for ${sportSlug} (missingEntities=${missingEntities}, missingDates=${missingDates}) — scraper started in background.`,
+      );
+      realDataScraperService
+        .scrapeSport({ sportSlug, sportName, ...(childCity ? { city: childCity } : {}) })
+        .catch((err) => log.error(`[PathwayService] Background scraper failed for ${sportSlug}:`, err));
+
+      return {
+        pathway: { ...plain, tournaments, scholarships, universities } as SportPathwayDocument,
+        warnings: [],
+        // entitiesReady=false tells the client to call /entities and wait for fresh data
+        entitiesReady: !missingEntities && !missingDates,
+      };
+    }
+
     return {
-      pathway: {
-        ...plain,
-        tournaments,
-        scholarships,
-        universities,
-      } as SportPathwayDocument,
-      warnings,
+      pathway: { ...plain, tournaments, scholarships, universities } as SportPathwayDocument,
+      warnings: [],
+      entitiesReady: true,
+    };
+  }
+
+  private buildCityQuery(childCity?: string) {
+    if (!childCity) return {};
+    const cityRegex = new RegExp(`^${childCity}$`, "i");
+    return {
+      $or: [
+        { city: cityRegex },
+        { city: { $exists: false } },
+        { city: null },
+        { city: /national/i },
+      ],
     };
   }
 
@@ -624,7 +681,7 @@ export class PathwayService {
     if (this.genAI) {
       try {
         const result = await this.genAI.models.generateContent({
-          model: "gemini-2.5-flash-lite",
+          model: "gemini-3.5-flash",
           contents: prompt,
         });
         const answer = (result.text ?? "").trim().toLowerCase();
@@ -674,6 +731,7 @@ export class PathwayService {
 
     const modelCandidates = [
       process.env.GEMINI_MODEL_NAME,
+      "gemini-3.5-flash",
       "gemini-2.5-flash",
       "gemini-2.5-flash-lite",
       "gemini-2.0-flash",

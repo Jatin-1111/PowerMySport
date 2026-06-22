@@ -4,6 +4,7 @@ export interface CommunityAnswerDocument extends Document {
   postId: mongoose.Types.ObjectId;
   authorId: mongoose.Types.ObjectId;
   content: string;
+  isAnonymous: boolean;
   voteScore: number;
   upvoteCount: number;
   downvoteCount: number;
@@ -34,6 +35,7 @@ const communityAnswerSchema = new Schema<CommunityAnswerDocument>(
       minlength: 10,
       maxlength: 5000,
     },
+    isAnonymous: { type: Boolean, default: false },
     voteScore: { type: Number, default: 0, index: true },
     upvoteCount: { type: Number, default: 0 },
     downvoteCount: { type: Number, default: 0 },

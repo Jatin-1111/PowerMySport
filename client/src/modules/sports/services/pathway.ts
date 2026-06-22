@@ -88,6 +88,7 @@ interface ApiResponse<T> {
   message?: string;
   source?: "db" | "generated";
   isStale?: boolean;
+  entitiesReady?: boolean;
   data?: T;
 }
 
@@ -104,7 +105,12 @@ export const pathwayApi = {
     sportName: string,
     childAge?: number,
     childCity?: string,
-  ): Promise<{ pathway: SportPathway; source: "db" | "generated"; isStale?: boolean } | null> => {
+  ): Promise<{
+    pathway: SportPathway;
+    source: "db" | "generated";
+    isStale?: boolean;
+    entitiesReady?: boolean;
+  } | null> => {
     try {
       const params = new URLSearchParams({ sport: sportName });
       if (childAge) params.append("age", String(childAge));
@@ -117,6 +123,7 @@ export const pathwayApi = {
           pathway: resp.data.data,
           source: resp.data.source ?? "db",
           isStale: resp.data.isStale,
+          entitiesReady: resp.data.entitiesReady ?? true,
         };
       }
       return null;
@@ -125,6 +132,29 @@ export const pathwayApi = {
         throw new Error(err.response.data?.message || "Not found");
       }
       throw err;
+    }
+  },
+
+  /**
+   * Fetch only tournaments/scholarships/universities for a sport.
+   * The server waits for the scraper if they aren't cached yet.
+   * Call this in parallel with getPathway when entitiesReady is false.
+   */
+  getEntities: async (
+    sportName: string,
+    childCity?: string,
+  ): Promise<{ tournaments: Tournament[]; scholarships: Scholarship[]; universities: University[] } | null> => {
+    try {
+      const params = new URLSearchParams({ sport: sportName });
+      if (childCity) params.append("city", childCity.trim());
+      const resp = await axiosInstance.get<ApiResponse<{
+        tournaments: Tournament[];
+        scholarships: Scholarship[];
+        universities: University[];
+      }>>(`/pathways/entities?${params.toString()}`);
+      return resp.data.data ?? null;
+    } catch {
+      return null;
     }
   },
 

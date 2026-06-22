@@ -6,6 +6,7 @@ import {
   ArrowBigDown,
   ArrowBigUp,
   ChevronLeft,
+  EyeOff,
   Flag,
   LoaderCircle,
   MessageCircle,
@@ -42,6 +43,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
   const [answerPage, setAnswerPage] = useState(1);
   const [hasMoreAnswers, setHasMoreAnswers] = useState(false);
   const [answerDraft, setAnswerDraft] = useState("");
+  const [answerIsAnonymous, setAnswerIsAnonymous] = useState(false);
   const [isEditingPost, setIsEditingPost] = useState(false);
   const [postTitleDraft, setPostTitleDraft] = useState("");
   const [postBodyDraft, setPostBodyDraft] = useState("");
@@ -242,9 +244,11 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
       const created = await communityService.createAnswer(
         postId,
         answerDraft.trim(),
+        answerIsAnonymous,
       );
       setAnswers((current) => [...current, created]);
       setAnswerDraft("");
+      setAnswerIsAnonymous(false);
       setPost((current) =>
         current
           ? {
@@ -590,6 +594,11 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
               <span className="font-semibold text-slate-900">
                 {post.author.displayName}
               </span>
+              {post.author.isVerifiedExpert ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                  ★ {post.author.expertTitle || "Verified Coach"}
+                </span>
+              ) : null}
               <span className="text-slate-500">
                 {toRelativeTime(post.createdAt)}
               </span>
@@ -659,7 +668,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
           disabled={post.status === "CLOSED"}
           className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-500 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange disabled:bg-slate-50"
         />
-        <div className="mt-4 flex items-center gap-3 sm:gap-4">
+        <div className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4">
           <button
             onClick={() => void submitAnswer()}
             disabled={isSubmitting || post.status === "CLOSED"}
@@ -671,6 +680,21 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                 ? "Posting..."
                 : "Post Answer"}
           </button>
+          <label className="flex cursor-pointer items-center gap-2">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={answerIsAnonymous}
+                onChange={(e) => setAnswerIsAnonymous(e.target.checked)}
+                disabled={post.status === "CLOSED"}
+                className="sr-only"
+              />
+              <div className={`h-4 w-8 rounded-full transition-colors ${answerIsAnonymous ? "bg-slate-700" : "bg-slate-300"}`} />
+              <div className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${answerIsAnonymous ? "translate-x-4" : "translate-x-0.5"}`} />
+            </div>
+            <EyeOff size={13} className="text-slate-500" />
+            <span className="text-xs font-semibold text-slate-700">Post anonymously</span>
+          </label>
           <span className="text-xs text-slate-500">
             {answerDraft.length} characters
           </span>
@@ -741,6 +765,11 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                       <span className="font-semibold text-slate-900">
                         {answer.author.displayName}
                       </span>
+                      {answer.author.isVerifiedExpert ? (
+                        <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                          ★ {answer.author.expertTitle || "Verified Coach"}
+                        </span>
+                      ) : null}
                       {index === 0 && answer.voteScore > 0 ? (
                         <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">
                           Top Answer

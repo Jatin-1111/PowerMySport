@@ -2,6 +2,7 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import {
   getPathway,
+  getPathwayEntities,
   searchPathways,
   refreshPathway,
   refreshStalePathways,
@@ -32,6 +33,11 @@ router.get("/stories", pathwayRateLimiter, getPathwayStories);
 
 // GET /api/pathways?sport=cricket&age=12&city=Mumbai
 router.get("/", pathwayRateLimiter, getPathway);
+
+// GET /api/pathways/entities?sport=cricket&city=Mumbai
+// Fetches only tournaments/scholarships/universities — waits for scraper if needed.
+// The client calls this in parallel with the main pathway request.
+router.get("/entities", pathwayRateLimiter, getPathwayEntities);
 
 // ── Admin / internal routes ───────────────────────────────────────────────────
 // These require no extra middleware in development.

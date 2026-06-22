@@ -132,11 +132,26 @@ export interface ConversationMessage {
 
 export type CommunityFeedSort = "NEW" | "TOP" | "UNANSWERED";
 
+export const COMMUNITY_POST_CATEGORIES = [
+  "General",
+  "Equipment",
+  "Coaching",
+  "Injury & Recovery",
+  "Nutrition",
+  "Training",
+  "Tournaments",
+  "Academics",
+] as const;
+
+export type CommunityPostCategory = (typeof COMMUNITY_POST_CATEGORIES)[number];
+
 export interface CommunityAuthorSummary {
   id: string;
   displayName: string;
   isIdentityPublic: boolean;
   photoUrl?: string | null;
+  isVerifiedExpert?: boolean;
+  expertTitle?: string;
 }
 
 export interface CommunityPost {
@@ -146,6 +161,8 @@ export interface CommunityPost {
   tags: string[];
   sport: string;
   city: string;
+  category: CommunityPostCategory;
+  isAnonymous: boolean;
   status: "OPEN" | "CLOSED";
   voteScore: number;
   upvoteCount: number;
@@ -162,6 +179,7 @@ export interface CommunityAnswer {
   id: string;
   postId: string;
   content: string;
+  isAnonymous: boolean;
   voteScore: number;
   upvoteCount: number;
   downvoteCount: number;

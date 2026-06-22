@@ -32,6 +32,7 @@ import supportTicketRoutes from "./client/routes/supportTicketRoutes";
 import venueInquiryRoutes from "./client/routes/venueInquiryRoutes";
 import venueOnboardingRoutes from "./client/routes/venueOnboardingRoutes";
 import venueRoutes from "./client/routes/venueRoutes";
+import calendarRoutes from "./client/routes/calendarRoutes";
 import walletRoutes from "./client/routes/walletRoutes";
 import communityRoutes from "./community/routes/communityRoutes";
 import authRoutes from "./shared/routes/authRoutes";
@@ -161,6 +162,7 @@ app.use("/api/refund-methods", refundMethodRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/guidance", guidanceRoutes);
 app.use("/api/pathway-profile", pathwayProfileRoutes);
+app.use("/api/calendar", calendarRoutes);
 app.use("/api/wallet", walletRoutes);
 // Community Domain
 app.use("/api/community", communityRoutes);

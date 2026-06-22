@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   Bell,
   Calendar,
@@ -17,15 +17,67 @@ import { cn } from "@/utils/cn";
 import { notificationApi, type Notification } from "@/lib/api/notification";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "@/utils/date";
+import { getCommunityAppUrl } from "@/lib/community/url";
 
 interface NotificationDropdownProps {
   className?: string;
 }
 
+// Maps a notification to the URL it should navigate to when clicked.
+function getNotificationLink(notification: Notification): string {
+  const data = notification.data || {};
+  const event = data.event as string | undefined;
+
+  switch (notification.type) {
+    case "MESSAGE_RECEIVED": {
+      if (event === "COMMUNITY_MESSAGE_RECEIVED") {
+        const conversationId = data.conversationId as string | undefined;
+        return getCommunityAppUrl({
+          path: "chats",
+          searchParams: conversationId ? { conversation: conversationId } : {},
+        });
+      }
+      if (event === "COMMUNITY_ANSWER_CREATED") {
+        const postId = data.postId as string | undefined;
+        return postId
+          ? getCommunityAppUrl({ path: `q/${postId}` })
+          : getCommunityAppUrl({ path: "q" });
+      }
+      if (event === "COMMUNITY_UPVOTE_RECEIVED") {
+        const postId = data.postId as string | undefined;
+        return postId
+          ? getCommunityAppUrl({ path: `q/${postId}` })
+          : getCommunityAppUrl({ path: "q" });
+      }
+      return getCommunityAppUrl({ path: "chats" });
+    }
+    case "FRIEND_REQUEST":
+    case "FRIEND_REQUEST_ACCEPTED":
+    case "FRIEND_REQUEST_DECLINED":
+    case "FRIEND_REMOVED":
+      return "/dashboard/my-profile";
+    case "BOOKING_INVITATION":
+    case "BOOKING_CONFIRMED":
+    case "BOOKING_CANCELLED":
+    case "BOOKING_STATUS_UPDATED":
+    case "BOOKING_REMINDER":
+    case "INVITATION_EXPIRY":
+      return "/dashboard";
+    case "PAYMENT_FAILED":
+      return "/dashboard";
+    case "REVIEW_RECEIVED":
+      return "/dashboard";
+    default:
+      return "/notifications";
+  }
+}
+
 export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   className,
 }) => {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -50,7 +102,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   // Fetch unread count on mount and periodically
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // Every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -125,6 +177,32 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       console.error("Failed to mark all as read:", error);
     }
   };
+
+  const handleNotificationClick = useCallback(
+    (notification: Notification) => {
+      // Mark as read (fire-and-forget)
+      if (!notification.isRead) {
+        notificationApi.markAsRead(notification._id).catch(() => {});
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n._id === notification._id ? { ...n, isRead: true } : n,
+          ),
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+
+      setIsOpen(false);
+
+      const url = getNotificationLink(notification);
+      // External URL (different app/port) — full navigation
+      if (url.startsWith("http")) {
+        window.location.href = url;
+      } else {
+        router.push(url);
+      }
+    },
+    [router],
+  );
 
   const getNotificationIcon = (category: string) => {
     const iconMap: Record<
@@ -259,10 +337,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 notifications.map((notification) => {
                   const tone = getNotificationTone(notification.category);
                   return (
-                    <div
+                    <button
                       key={notification._id}
+                      type="button"
+                      onClick={() => handleNotificationClick(notification)}
                       className={cn(
-                        "cursor-pointer border-b border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50",
+                        "w-full text-left border-b border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-power-orange",
                         !notification.isRead && "bg-[#eef6ff]/75",
                       )}
                     >
@@ -277,9 +357,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                         >
                           {React.createElement(
                             getNotificationIcon(notification.category),
-                            {
-                              className: "h-4 w-4",
-                            },
+                            { className: "h-4 w-4" },
                           )}
                         </div>
 
@@ -327,7 +405,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                         {/* Actions */}
                         <div className="flex items-center gap-1 shrink-0">
                           {!notification.isRead && (
-                            <button
+                            <span
+                              role="button"
                               onClick={(e) =>
                                 handleMarkAsRead(notification._id, e)
                               }
@@ -335,18 +414,19 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                               title="Mark as read"
                             >
                               <Check className="w-4 h-4" />
-                            </button>
+                            </span>
                           )}
-                          <button
+                          <span
+                            role="button"
                             onClick={(e) => handleDelete(notification._id, e)}
                             className="rounded p-1 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-700"
                             title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </span>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })
               )}

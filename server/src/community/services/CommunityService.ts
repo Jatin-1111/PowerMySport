@@ -285,6 +285,7 @@ export const CommunityService = {
       tag?: string;
       sport?: string;
       city?: string;
+      category?: string;
       mine?: boolean;
     },
   ) {
@@ -329,6 +330,11 @@ export const CommunityService = {
       query.city = city;
     }
 
+    const category = normalizeOptionalText(filters?.category);
+    if (category) {
+      query.category = category;
+    }
+
     if (sort === "UNANSWERED") {
       query.answerCount = 0;
     }
@@ -362,7 +368,7 @@ export const CommunityService = {
 
     const [users, profiles, votes] = await Promise.all([
       User.find({ _id: { $in: authorIds } })
-        .select("_id name photoUrl photoS3Key")
+        .select("_id name photoUrl photoS3Key role")
         .lean(),
       CommunityProfile.find({ userId: { $in: authorIds } })
         .select("userId anonymousAlias isIdentityPublic")
@@ -386,8 +392,11 @@ export const CommunityService = {
       items: await Promise.all(
         posts.map(async (post) => {
           const authorId = String(post.authorId);
-          const author = userMap.get(authorId);
+          const authorUser = userMap.get(authorId);
           const profile = profileMap.get(authorId);
+          const isSelf = authorId === userId;
+          const isPostAnon = post.isAnonymous && !isSelf;
+          const isVerifiedExpert = !isPostAnon && authorUser?.role === "COACH";
 
           return {
             id: String(post._id),
@@ -396,6 +405,8 @@ export const CommunityService = {
             tags: post.tags,
             sport: post.sport || "",
             city: post.city || "",
+            category: post.category || "General",
+            isAnonymous: post.isAnonymous || false,
             status: post.status,
             voteScore: post.voteScore || 0,
             upvoteCount: post.upvoteCount || 0,
@@ -406,18 +417,22 @@ export const CommunityService = {
             updatedAt: post.updatedAt,
             myVote: voteMap.get(String(post._id))?.value || 0,
             author: {
-              id: authorId,
-              displayName:
-                authorId === userId
-                  ? author?.name || "Me"
+              id: isPostAnon ? "anon" : authorId,
+              displayName: isPostAnon
+                ? "Anonymous Parent"
+                : isSelf
+                  ? authorUser?.name || "Me"
                   : profile?.isIdentityPublic
-                    ? author?.name || "Player"
+                    ? authorUser?.name || "Player"
                     : profile?.anonymousAlias || "Anonymous Player",
-              isIdentityPublic: profile?.isIdentityPublic ?? true,
-              photoUrl:
-                profile?.isIdentityPublic && author
-                  ? await resolveUserPhotoUrl(author)
+              isIdentityPublic: isPostAnon ? false : (profile?.isIdentityPublic ?? true),
+              photoUrl: isPostAnon
+                ? null
+                : profile?.isIdentityPublic && authorUser
+                  ? await resolveUserPhotoUrl(authorUser)
                   : null,
+              isVerifiedExpert,
+              expertTitle: isVerifiedExpert ? "Verified Coach" : undefined,
             },
           };
         }),
@@ -456,7 +471,7 @@ export const CommunityService = {
           .lean(),
         CommunityAnswer.countDocuments({ postId: post._id, isDeleted: false }),
         User.findById(post.authorId)
-          .select("_id name photoUrl photoS3Key")
+          .select("_id name photoUrl photoS3Key role")
           .lean(),
         CommunityProfile.findOne({ userId: post.authorId })
           .select("userId anonymousAlias isIdentityPublic")
@@ -473,7 +488,7 @@ export const CommunityService = {
     const answerAuthorIds = answers.map((item) => String(item.authorId));
     const [answerUsers, answerProfiles, answerVotes] = await Promise.all([
       User.find({ _id: { $in: answerAuthorIds } })
-        .select("_id name photoUrl photoS3Key")
+        .select("_id name photoUrl photoS3Key role")
         .lean(),
       CommunityProfile.find({ userId: { $in: answerAuthorIds } })
         .select("userId anonymousAlias isIdentityPublic")
@@ -504,6 +519,10 @@ export const CommunityService = {
     );
 
     const postAuthorId = String(post.authorId);
+    const isPostAuthorSelf = postAuthorId === userId;
+    const isPostAnon = post.isAnonymous && !isPostAuthorSelf;
+    const isPostAuthorExpert = !isPostAnon && postAuthor?.role === "COACH";
+
     return {
       post: {
         id: String(post._id),
@@ -512,6 +531,8 @@ export const CommunityService = {
         tags: post.tags,
         sport: post.sport || "",
         city: post.city || "",
+        category: post.category || "General",
+        isAnonymous: post.isAnonymous || false,
         status: post.status,
         voteScore: post.voteScore || 0,
         upvoteCount: post.upvoteCount || 0,
@@ -522,18 +543,22 @@ export const CommunityService = {
         updatedAt: post.updatedAt,
         myVote: myPostVote?.value || 0,
         author: {
-          id: postAuthorId,
-          displayName:
-            postAuthorId === userId
+          id: isPostAnon ? "anon" : postAuthorId,
+          displayName: isPostAnon
+            ? "Anonymous Parent"
+            : isPostAuthorSelf
               ? postAuthor?.name || "Me"
               : postAuthorProfile?.isIdentityPublic
                 ? postAuthor?.name || "Player"
                 : postAuthorProfile?.anonymousAlias || "Anonymous Player",
-          isIdentityPublic: postAuthorProfile?.isIdentityPublic ?? true,
-          photoUrl:
-            postAuthorProfile?.isIdentityPublic && postAuthor
+          isIdentityPublic: isPostAnon ? false : (postAuthorProfile?.isIdentityPublic ?? true),
+          photoUrl: isPostAnon
+            ? null
+            : postAuthorProfile?.isIdentityPublic && postAuthor
               ? await resolveUserPhotoUrl(postAuthor)
               : null,
+          isVerifiedExpert: isPostAuthorExpert,
+          expertTitle: isPostAuthorExpert ? "Verified Coach" : undefined,
         },
       },
       answers: await Promise.all(
@@ -541,11 +566,15 @@ export const CommunityService = {
           const answerAuthorId = String(answer.authorId);
           const answerUser = answerUserMap.get(answerAuthorId);
           const answerProfile = answerProfileMap.get(answerAuthorId);
+          const isAnswerSelf = answerAuthorId === userId;
+          const isAnswerAnon = answer.isAnonymous && !isAnswerSelf;
+          const isAnswerExpert = !isAnswerAnon && answerUser?.role === "COACH";
 
           return {
             id: String(answer._id),
             postId: String(answer.postId),
             content: answer.content,
+            isAnonymous: answer.isAnonymous || false,
             voteScore: answer.voteScore || 0,
             upvoteCount: answer.upvoteCount || 0,
             downvoteCount: answer.downvoteCount || 0,
@@ -553,18 +582,22 @@ export const CommunityService = {
             updatedAt: answer.updatedAt,
             myVote: answerVoteMap.get(String(answer._id))?.value || 0,
             author: {
-              id: answerAuthorId,
-              displayName:
-                answerAuthorId === userId
+              id: isAnswerAnon ? "anon" : answerAuthorId,
+              displayName: isAnswerAnon
+                ? "Anonymous Parent"
+                : isAnswerSelf
                   ? answerUser?.name || "Me"
                   : answerProfile?.isIdentityPublic
                     ? answerUser?.name || "Player"
                     : answerProfile?.anonymousAlias || "Anonymous Player",
-              isIdentityPublic: answerProfile?.isIdentityPublic ?? true,
-              photoUrl:
-                answerProfile?.isIdentityPublic && answerUser
+              isIdentityPublic: isAnswerAnon ? false : (answerProfile?.isIdentityPublic ?? true),
+              photoUrl: isAnswerAnon
+                ? null
+                : answerProfile?.isIdentityPublic && answerUser
                   ? await resolveUserPhotoUrl(answerUser)
                   : null,
+              isVerifiedExpert: isAnswerExpert,
+              expertTitle: isAnswerExpert ? "Verified Coach" : undefined,
             },
           };
         }),
@@ -585,6 +618,8 @@ export const CommunityService = {
       tags?: string[];
       sport?: string;
       city?: string;
+      category?: string;
+      isAnonymous?: boolean;
     },
   ) {
     await ensureProfile(userId);
@@ -598,6 +633,8 @@ export const CommunityService = {
       tags: normalizeTags(payload.tags),
       sport: normalizeOptionalText(payload.sport),
       city: normalizeOptionalText(payload.city),
+      ...(payload.category ? { category: payload.category } : {}),
+      ...(payload.isAnonymous ? { isAnonymous: true } : {}),
     });
 
     await CommunityReputation.updateOne(
@@ -720,7 +757,7 @@ export const CommunityService = {
     return { id: String(post._id), deleted: true };
   },
 
-  async createAnswer(userId: string, postId: string, content: string) {
+  async createAnswer(userId: string, postId: string, content: string, isAnonymous = false) {
     await ensureProfile(userId);
     const userRole = await getCommunityRole(userId);
     ensureQnaAllowedForRole(userRole);
@@ -738,6 +775,7 @@ export const CommunityService = {
       postId: post._id,
       authorId: userId,
       content: content.trim(),
+      ...(isAnonymous ? { isAnonymous: true } : {}),
     });
 
     if (String(post.authorId) !== userId) {

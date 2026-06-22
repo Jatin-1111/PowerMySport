@@ -64,6 +64,36 @@ export const getPathway = async (
   }
 };
 
+/**
+ * GET /api/pathways/entities?sport=cricket&city=Mumbai
+ * Returns just tournaments/scholarships/universities for a sport.
+ * Triggers the scraper and waits for it if entities aren't cached yet.
+ * Called in parallel with the skeleton request from the client.
+ */
+export const getPathwayEntities = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { sport, city } = req.query;
+    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
+      res.status(400).json({ success: false, message: "Provide a sport name." });
+      return;
+    }
+    const rawCity = city && typeof city === "string" ? city.trim() : "";
+    const childCity = rawCity
+      .replace(/[^a-zA-Zऀ-ॿ\s,.\-]/g, "")
+      .slice(0, 80)
+      .trim() || undefined;
+
+    const entities = await pathwayService.getEntities(sport.trim(), childCity);
+    res.json({ success: true, data: entities });
+  } catch (error) {
+    console.error("Error fetching pathway entities:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch entities." });
+  }
+};
+
 export const getPathwayStories = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sport, level } = req.query;

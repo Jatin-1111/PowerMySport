@@ -21,9 +21,10 @@ interface GroundedExtractionResult {
 
 const scraperModelCandidates = [
   process.env.GEMINI_SCRAPER_MODEL,
-  "gemini-3.5-flash",
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
 ].filter(Boolean) as string[];
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
@@ -35,6 +36,8 @@ function schemaBullets(type: EntityType): string {
 - description (string — what it is and where it's held)
 - ageGroup (string, e.g. "Under-14", "Open")
 - city (string, e.g. "Mumbai" or "National")
+- typicalDates (string — when this tournament is typically held each year, e.g. "Usually held in January–February" or "October–November, annually". If you found a specific upcoming date include it, e.g. "Next edition: March 2026". Use null if unknown.)
+- registrationDeadline (string — typical registration window relative to the event, e.g. "Registration closes 3–4 weeks before the event" or a specific upcoming deadline if found. Use null if unknown.)
 - prerequisiteId (string — registration ID required, e.g. "<FEDERATION_ACRONYM>_ID")
 - prerequisiteName (string — human-readable name of that ID/registration)
 - prerequisiteGuide (array of 2-4 short steps to obtain that registration)
@@ -82,7 +85,9 @@ function entityLabel(type: EntityType): string {
  * step 2 below does the strict-JSON conversion in a tool-free call.
  */
 function buildGroundingPrompt(type: EntityType, ctx: ScrapeContext): string {
-  const cityClause = ctx.city ? ` specifically located in or highly relevant to players from ${ctx.city}` : "";
+  const cityClause = ctx.city
+    ? ` specifically located in or highly relevant to players from ${ctx.city}`
+    : "";
 
   if (type === "tournament") {
     return `Use Google Search to research REAL, CURRENTLY ACTIVE tennis tournaments in
@@ -282,6 +287,8 @@ async function upsertTournaments(
           description: item.description || "",
           ageGroup: item.ageGroup || "Open",
           city: item.city,
+          typicalDates: item.typicalDates || undefined,
+          registrationDeadline: item.registrationDeadline || undefined,
           prerequisiteId: item.prerequisiteId,
           prerequisiteName: item.prerequisiteName,
           prerequisiteGuide: item.prerequisiteGuide || [],

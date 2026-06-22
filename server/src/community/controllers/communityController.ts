@@ -782,13 +782,16 @@ export const createCommunityPost = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { title, body, tags, sport, city } = req.body as {
-      title: string;
-      body: string;
-      tags?: string[];
-      sport?: string;
-      city?: string;
-    };
+    const { title, body, tags, sport, city, category, isAnonymous } =
+      req.body as {
+        title: string;
+        body: string;
+        tags?: string[];
+        sport?: string;
+        city?: string;
+        category?: string;
+        isAnonymous?: boolean;
+      };
 
     const payload: {
       title: string;
@@ -796,6 +799,8 @@ export const createCommunityPost = async (
       tags?: string[];
       sport?: string;
       city?: string;
+      category?: string;
+      isAnonymous?: boolean;
     } = {
       title,
       body,
@@ -808,6 +813,12 @@ export const createCommunityPost = async (
     }
     if (typeof city === "string") {
       payload.city = city;
+    }
+    if (typeof category === "string") {
+      payload.category = category;
+    }
+    if (isAnonymous === true) {
+      payload.isAnonymous = true;
     }
 
     const data = await CommunityService.createPost(getUserId(req), payload);
@@ -933,11 +944,15 @@ export const createCommunityAnswer = async (
       throw new Error("postId is required");
     }
 
-    const { content } = req.body as { content: string };
+    const { content, isAnonymous } = req.body as {
+      content: string;
+      isAnonymous?: boolean;
+    };
     const data = await CommunityService.createAnswer(
       getUserId(req),
       postId,
       content,
+      isAnonymous === true,
     );
 
     emitCommunityQnaEvent("community:qnaAnswerCreated", {

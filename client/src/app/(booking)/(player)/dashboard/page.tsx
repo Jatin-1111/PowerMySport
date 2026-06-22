@@ -11,27 +11,22 @@ import {
   MapPin,
   Users,
   TrendingUp,
-  Clock,
   ChevronRight,
   Zap,
-  RefreshCw,
   Wallet,
 } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
+import { DashboardCalendar } from "@/modules/player/components/DashboardCalendar";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import { friendService } from "@/modules/shared/services/friend";
-import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import {
   StaggerContainer,
@@ -50,22 +45,6 @@ interface UpcomingBooking {
   startTime: string;
   endTime: string;
   status: string;
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  PENDING_CONFIRMATION: "bg-amber-50 text-amber-700 border-amber-200",
-  PENDING_INVITES: "bg-blue-50 text-blue-700 border-blue-200",
-  IN_PROGRESS: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  CANCELLED: "bg-red-50 text-red-700 border-red-200",
-  COMPLETED: "bg-slate-50 text-slate-700 border-slate-200",
-};
-
-function formatBookingStatus(status: string) {
-  return status
-    .charAt(0)
-    .toUpperCase()
-    .concat(status.slice(1).toLowerCase().replace(/_/g, " "));
 }
 
 export default function DashboardPage() {
@@ -320,9 +299,14 @@ export default function DashboardPage() {
         </StaggerItem>
       </StaggerContainer>
 
+      {/* Calendar */}
+      <SlideUp delay={0.15} yOffset={18}>
+        <DashboardCalendar />
+      </SlideUp>
+
       {/* Active Subscriptions */}
       {liveSubscriptions.length > 0 && (
-        <SlideUp delay={0.15} yOffset={18}>
+        <SlideUp delay={0.2} yOffset={18}>
           <Card className="shop-surface premium-shadow overflow-hidden p-0">
             <ProfileSectionHeader
               icon={TrendingUp}
@@ -449,63 +433,8 @@ export default function DashboardPage() {
         </SlideUp>
       )}
 
-      {/* Upcoming Bookings List */}
-      {upcomingBookings.length > 0 && (
-        <SlideUp delay={0.2} yOffset={20}>
-          <Card className="shop-surface premium-shadow overflow-hidden p-0">
-            <ProfileSectionHeader
-              icon={Calendar}
-              title="Next Sessions"
-              description="Your upcoming bookings at a glance."
-              action={
-                <Link href="/dashboard/my-bookings">
-                  <Button variant="outline" size="sm" icon={<ChevronRight size={14} />}>
-                    View all
-                  </Button>
-                </Link>
-              }
-            />
-            <CardContent className="px-6 py-5 space-y-3">
-              {upcomingBookings.map((booking) => (
-                <motion.div
-                  key={booking.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 transition-colors hover:bg-white"
-                  whileHover={{ y: -2 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                >
-                  <div className="flex items-center gap-4">
-                    <motion.div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100"
-                      whileHover={{ scale: 1.05, rotate: 3 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                    >
-                      <Calendar className="h-5 w-5 text-power-orange" />
-                    </motion.div>
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        {booking.venueName || booking.coachName}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        {booking.sport} •{" "}
-                        {new Date(booking.date).toLocaleDateString()} at{" "}
-                        {booking.startTime}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge
-                    className={`border ${STATUS_COLORS[booking.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}
-                  >
-                    {formatBookingStatus(booking.status)}
-                  </Badge>
-                </motion.div>
-              ))}
-            </CardContent>
-          </Card>
-        </SlideUp>
-      )}
-
       {/* Quick Actions */}
-      <SlideUp delay={0.3} yOffset={20}>
+      <SlideUp delay={0.25} yOffset={20}>
         <Card className="shop-surface premium-shadow overflow-hidden p-0">
           <ProfileSectionHeader
             icon={Zap}

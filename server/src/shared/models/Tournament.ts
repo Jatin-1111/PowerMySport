@@ -18,6 +18,10 @@ export interface TournamentDocument extends Document {
   documentChecklist?: string[];
   /** Real URLs returned by Google Search grounding — shown to parents as proof */
   sourceUrls: string[];
+  /** e.g. "Usually held in January–February" — typical annual window */
+  typicalDates?: string;
+  /** e.g. "Registration closes 3 weeks before the event" */
+  registrationDeadline?: string;
   /** false until an admin/moderator has eyeballed it */
   isVerified: boolean;
   lastScrapedAt: Date;
@@ -37,6 +41,8 @@ const tournamentSchema = new Schema<TournamentDocument>(
     prerequisiteName: { type: String },
     prerequisiteGuide: [{ type: String }],
     documentChecklist: [{ type: String }],
+    typicalDates: { type: String },
+    registrationDeadline: { type: String },
     sourceUrls: { type: [String], default: [] },
     isVerified: { type: Boolean, default: false },
     lastScrapedAt: { type: Date, default: Date.now },

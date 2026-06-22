@@ -2,6 +2,19 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export type CommunityPostStatus = "OPEN" | "CLOSED";
 
+export const COMMUNITY_POST_CATEGORIES = [
+  "General",
+  "Equipment",
+  "Coaching",
+  "Injury & Recovery",
+  "Nutrition",
+  "Training",
+  "Tournaments",
+  "Academics",
+] as const;
+
+export type CommunityPostCategory = (typeof COMMUNITY_POST_CATEGORIES)[number];
+
 export interface CommunityPostDocument extends Document {
   authorId: mongoose.Types.ObjectId;
   title: string;
@@ -9,6 +22,8 @@ export interface CommunityPostDocument extends Document {
   tags: string[];
   sport?: string;
   city?: string;
+  category: CommunityPostCategory;
+  isAnonymous: boolean;
   voteScore: number;
   upvoteCount: number;
   downvoteCount: number;
@@ -53,6 +68,13 @@ const communityPostSchema = new Schema<CommunityPostDocument>(
     },
     sport: { type: String, trim: true, maxlength: 60, default: "" },
     city: { type: String, trim: true, maxlength: 80, default: "" },
+    category: {
+      type: String,
+      enum: COMMUNITY_POST_CATEGORIES,
+      default: "General",
+      index: true,
+    },
+    isAnonymous: { type: Boolean, default: false, index: true },
     voteScore: { type: Number, default: 0, index: true },
     upvoteCount: { type: Number, default: 0 },
     downvoteCount: { type: Number, default: 0 },

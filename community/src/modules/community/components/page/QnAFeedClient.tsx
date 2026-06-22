@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import {
+  COMMUNITY_POST_CATEGORIES,
   CommunityActivityItem,
   CommunityFeedSort,
   CommunityPost,
@@ -153,6 +154,7 @@ export default function QnAFeedClient() {
   const [q, setQ] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeTag, setActiveTag] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [sportFilterInput, setSportFilterInput] = useState("");
   const [cityFilterInput, setCityFilterInput] = useState("");
   const [sportFilter, setSportFilter] = useState("");
@@ -211,6 +213,7 @@ export default function QnAFeedClient() {
             tag: activeTag || undefined,
             sport: sportFilter || undefined,
             city: cityFilter || undefined,
+            category: categoryFilter || undefined,
             mine: viewMode === "MINE",
           }),
           communityService.getMyReputation(),
@@ -230,7 +233,7 @@ export default function QnAFeedClient() {
         setIsLoadingMore(false);
       }
     },
-    [sort, q, activeTag, sportFilter, cityFilter, viewMode],
+    [sort, q, activeTag, sportFilter, cityFilter, categoryFilter, viewMode],
   );
 
   const loadActivity = useCallback(async () => {
@@ -685,6 +688,35 @@ export default function QnAFeedClient() {
                 </div>
               </div>
 
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Category
+                </span>
+                <button
+                  onClick={() => setCategoryFilter("")}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                    !categoryFilter
+                      ? "border-violet-400/50 bg-violet-50 text-violet-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  All
+                </button>
+                {COMMUNITY_POST_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat === categoryFilter ? "" : cat)}
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                      categoryFilter === cat
+                        ? "border-violet-400/50 bg-violet-50 text-violet-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
               {spotlight.popularTags.length > 0 && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -884,6 +916,11 @@ export default function QnAFeedClient() {
                           <span className="font-semibold text-slate-900">
                             {featuredPost.author.displayName}
                           </span>
+                          {featuredPost.author.isVerifiedExpert ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                              ★ {featuredPost.author.expertTitle || "Verified Coach"}
+                            </span>
+                          ) : null}
                           <span className="text-slate-500">
                             {toRelativeTime(featuredPost.createdAt)} ago
                           </span>
@@ -957,6 +994,11 @@ export default function QnAFeedClient() {
 
                           {/* Tags & Status */}
                           <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {post.category && post.category !== "General" ? (
+                              <span className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
+                                {post.category}
+                              </span>
+                            ) : null}
                             {post.tags.map((tag) => (
                               <span
                                 key={`${post.id}-${tag}`}
@@ -988,6 +1030,11 @@ export default function QnAFeedClient() {
                               <span className="font-medium text-slate-700">
                                 {post.author.displayName}
                               </span>
+                              {post.author.isVerifiedExpert ? (
+                                <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                                  ★ {post.author.expertTitle || "Verified Coach"}
+                                </span>
+                              ) : null}
                               <span className="text-slate-400">
                                 {toRelativeTime(post.createdAt)} ago
                               </span>

@@ -11,6 +11,8 @@ import {
 } from "@/modules/sports/services/pathway";
 import { sportsApi, Sport } from "@/modules/sports/services/sports";
 import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
+import { TournamentModal } from "@/modules/sports/components/TournamentDetailModal";
+import { TournamentRecommendationPanel } from "@/modules/sports/components/TournamentRecommendationPanel";
 import { pathwayProfileApi, AthleteStory } from "@/modules/sports/services/pathwayProfileApi";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import Fuse from "fuse.js";
@@ -67,7 +69,6 @@ import {
   // P5-P9 icons
   Heart,
   Bookmark,
-  CalendarDays,
   Bell,
   MessageSquareQuote,
   ExternalLink,
@@ -344,13 +345,6 @@ type ApplicationRecord = {
   submittedAt: string;
 };
 
-type ReminderRecord = {
-  id: string;
-  label: string;
-  date: string; // ISO
-  sport: string;
-  type: "tournament" | "scholarship";
-};
 
 function lsGet<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -370,8 +364,6 @@ function saveSaved(items: SavedItem[]) { lsSet("pms_saved_items", items); }
 function loadApplications(): ApplicationRecord[] { return lsGet("pms_applications", []); }
 function saveApplications(items: ApplicationRecord[]) { lsSet("pms_applications", items); }
 
-function loadReminders(): ReminderRecord[] { return lsGet("pms_reminders", []); }
-function saveReminders(items: ReminderRecord[]) { lsSet("pms_reminders", items); }
 
 // Stories are now fetched from the backend
 
@@ -654,293 +646,6 @@ function ApplicationsTab({
   );
 }
 
-// ─── P7: Deadline Calendar Tab ────────────────────────────────────────────────
-
-type DeadlineEvent = {
-  id: string;
-  label: string;
-  date: Date;
-  type: "tournament" | "scholarship";
-  sport: string;
-};
-
-function extractDeadlines(pathway: SportPathway, sport: string): DeadlineEvent[] {
-  const events: DeadlineEvent[] = [];
-  const datePatterns = [
-    /deadline[:\s]+([A-Za-z]+\s+\d{1,2},?\s+\d{4})/gi,
-    /apply\s+by[:\s]+([A-Za-z]+\s+\d{1,2},?\s+\d{4})/gi,
-    /(\d{1,2}\s+[A-Za-z]+\s+\d{4})/g,
-    /([A-Za-z]+\s+\d{1,2},\s+\d{4})/g,
-  ];
-
-  const tryParse = (str: string): Date | null => {
-    const d = new Date(str);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
-  const scan = (text: string, label: string, type: "tournament" | "scholarship") => {
-    if (!text) return;
-    for (const pat of datePatterns) {
-      const matches = [...text.matchAll(pat)];
-      for (const m of matches) {
-        const parsed = tryParse(m[1] || m[0]);
-        if (parsed && parsed > new Date()) {
-          events.push({ id: `${label}-${parsed.toISOString()}`, label, date: parsed, type, sport });
-          break;
-        }
-      }
-    }
-  };
-
-  pathway.tournaments?.forEach((t: any) => scan(t.description, t.name, "tournament"));
-  pathway.scholarships?.forEach((s: any) => scan(s.description, s.name, "scholarship"));
-
-  return events.sort((a, b) => a.date.getTime() - b.date.getTime());
-}
-
-function CalendarTab({
-  pathway,
-  reminders,
-  onRemindersChange,
-}: {
-  pathway: SportPathway;
-  reminders: ReminderRecord[];
-  onRemindersChange: (r: ReminderRecord[]) => void;
-}) {
-  const [view, setView] = useState<"list" | "month">("list");
-  const [manualLabel, setManualLabel] = useState("");
-  const [manualDate, setManualDate] = useState("");
-  const [manualType, setManualType] = useState<"tournament" | "scholarship">("tournament");
-  const [manualEvents, setManualEvents] = useState<DeadlineEvent[]>([]);
-
-  const extracted = extractDeadlines(pathway, pathway.sportName);
-  const all = [...extracted, ...manualEvents].sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  const addManual = () => {
-    if (!manualLabel.trim() || !manualDate) return;
-    const d = new Date(manualDate);
-    if (isNaN(d.getTime())) return;
-    setManualEvents((prev) => [
-      ...prev,
-      { id: `manual-${Date.now()}`, label: manualLabel.trim(), date: d, type: manualType, sport: pathway.sportName },
-    ]);
-    setManualLabel("");
-    setManualDate("");
-  };
-
-  const isReminded = (event: DeadlineEvent) => reminders.some((r) => r.id === event.id);
-  const toggleReminder = (event: DeadlineEvent) => {
-    let updated: ReminderRecord[];
-    if (isReminded(event)) {
-      updated = reminders.filter((r) => r.id !== event.id);
-    } else {
-      updated = [...reminders, { id: event.id, label: event.label, date: event.date.toISOString(), sport: event.sport, type: event.type }];
-    }
-    onRemindersChange(updated);
-  };
-
-  const exportICS = (event: DeadlineEvent) => {
-    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-    const content = [
-      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//PowerMySport//EN",
-      "BEGIN:VEVENT",
-      `UID:${event.id}@powermysport`,
-      `DTSTART:${fmt(event.date)}`,
-      `DTEND:${fmt(new Date(event.date.getTime() + 3600000))}`,
-      `SUMMARY:${event.label} Deadline — ${event.sport}`,
-      `DESCRIPTION:Pathway deadline tracked via PowerMySport`,
-      "END:VEVENT", "END:VCALENDAR",
-    ].join("\r\n");
-    const blob = new Blob([content], { type: "text/calendar" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `${event.label.replace(/\s+/g, "_")}_deadline.ics`;
-    a.click(); URL.revokeObjectURL(url);
-  };
-
-  const typeColor = { tournament: "text-power-orange bg-orange-50 border-orange-200", scholarship: "text-emerald-700 bg-emerald-50 border-emerald-200" };
-  const daysUntil = (d: Date) => Math.ceil((d.getTime() - Date.now()) / 86400000);
-
-  return (
-    <motion.div
-      key="calendar"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.2 }}
-      className="space-y-6"
-    >
-      {/* Header */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1">
-          <h3 className="font-title font-bold text-slate-900 text-lg">{pathway.sportName} — Deadlines</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {all.length > 0 ? `${all.length} upcoming deadline${all.length > 1 ? "s" : ""} detected` : "No deadlines detected from pathway text — add them manually below"}
-          </p>
-        </div>
-        <div className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1">
-          {(["list", "month"] as const).map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition ${view === v ? "bg-power-orange text-white shadow" : "text-slate-500 hover:text-slate-700"}`}>
-              {v}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Deadline list */}
-      {view === "list" && (
-        <div className="space-y-3">
-          {all.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-400 text-sm">
-              No deadlines detected. Add one manually below.
-            </div>
-          ) : (
-            all.map((ev) => {
-              const days = daysUntil(ev.date);
-              const reminded = isReminded(ev);
-              return (
-                <div key={ev.id} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className={`flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-xl border text-center ${days <= 14 ? "bg-rose-50 border-rose-200" : "bg-slate-50 border-slate-200"}`}>
-                    <span className={`text-[10px] font-bold uppercase ${days <= 14 ? "text-rose-500" : "text-slate-400"}`}>
-                      {ev.date.toLocaleString("en-IN", { month: "short" })}
-                    </span>
-                    <span className={`text-base font-extrabold leading-none ${days <= 14 ? "text-rose-700" : "text-slate-800"}`}>
-                      {ev.date.getDate()}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 text-sm break-words">{ev.label}</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold capitalize ${typeColor[ev.type]}`}>{ev.type}</span>
-                      <span className={`text-[10px] font-semibold ${days <= 7 ? "text-rose-600" : days <= 30 ? "text-amber-600" : "text-slate-400"}`}>
-                        {days <= 0 ? "Today!" : `${days} day${days > 1 ? "s" : ""} away`}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button onClick={() => toggleReminder(ev)}
-                      title={reminded ? "Reminder set" : "Set reminder"}
-                      className={`flex h-7 w-7 items-center justify-center rounded-full border transition ${reminded ? "border-amber-200 bg-amber-50 text-amber-500" : "border-slate-200 bg-white text-slate-300 hover:text-amber-400"}`}>
-                      <Bell className={`h-3.5 w-3.5 ${reminded ? "fill-amber-400" : ""}`} />
-                    </button>
-                    <button onClick={() => exportICS(ev)}
-                      title="Add to calendar"
-                      className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-300 hover:text-indigo-500 transition">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
-
-      {/* Month view — compact grid */}
-      {view === "month" && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          {(() => {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const firstDay = new Date(year, month, 1).getDay();
-            const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
-            const eventsOnDay = (day: number) => all.filter((e) => e.date.getFullYear() === year && e.date.getMonth() === month && e.date.getDate() === day);
-            return (
-              <>
-                <p className="text-sm font-bold text-slate-700 mb-3 text-center">
-                  {now.toLocaleString("en-IN", { month: "long", year: "numeric" })}
-                </p>
-                <div className="grid grid-cols-7 text-center text-[10px] font-bold uppercase text-slate-400 mb-1">
-                  {["S","M","T","W","T","F","S"].map((d, i) => <div key={i}>{d}</div>)}
-                </div>
-                <div className="grid grid-cols-7 gap-0.5">
-                  {cells.map((day, i) => {
-                    const evs = day ? eventsOnDay(day) : [];
-                    const isToday = day === now.getDate();
-                    return (
-                      <div key={i} className={`relative flex flex-col items-center justify-start rounded-lg py-1.5 min-h-[36px] ${isToday ? "bg-orange-50" : ""}`}>
-                        {day && <span className={`text-xs font-semibold ${isToday ? "text-power-orange font-bold" : "text-slate-700"}`}>{day}</span>}
-                        {evs.length > 0 && (
-                          <div className="flex gap-0.5 mt-0.5">
-                            {evs.slice(0, 2).map((_, idx) => <div key={idx} className="h-1.5 w-1.5 rounded-full bg-power-orange" />)}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            );
-          })()}
-          {all.length > 0 && (
-            <p className="mt-3 text-center text-[10px] text-slate-400">
-              Orange dots = deadlines. Switch to List view for details.
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Active reminders */}
-      {reminders.length > 0 && (
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Your Reminders</p>
-          <div className="space-y-2">
-            {reminders.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2">
-                <Bell className="h-4 w-4 text-amber-500 shrink-0 fill-amber-300" />
-                <p className="flex-1 text-sm font-semibold text-slate-800 truncate">{r.label}</p>
-                <p className="text-[10px] text-slate-400 shrink-0">
-                  {new Date(r.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                </p>
-                <button onClick={() => onRemindersChange(reminders.filter((x) => x.id !== r.id))}
-                  className="text-slate-300 hover:text-rose-500 transition shrink-0">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Manual add */}
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Add a deadline manually</p>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            value={manualLabel}
-            onChange={(e) => setManualLabel(e.target.value)}
-            placeholder="e.g. District Trial Registration"
-            className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-power-orange transition"
-          />
-          <input
-            type="date"
-            value={manualDate}
-            onChange={(e) => setManualDate(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-power-orange transition"
-          />
-          <select
-            value={manualType}
-            onChange={(e) => setManualType(e.target.value as any)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-power-orange transition"
-          >
-            <option value="tournament">Tournament</option>
-            <option value="scholarship">Scholarship</option>
-          </select>
-          <button
-            onClick={addManual}
-            disabled={!manualLabel.trim() || !manualDate}
-            className="rounded-xl bg-power-orange px-4 py-2 text-sm font-bold text-white shadow transition hover:bg-orange-600 disabled:opacity-50"
-          >
-            Add
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 // ─── P8: Stories Tab ──────────────────────────────────────────────────────────
 
@@ -2151,6 +1856,7 @@ function PathwayExplorerSection() {
     pathway: SportPathway;
     source: "db" | "generated";
   } | null>(null);
+  const [entitiesStatus, setEntitiesStatus] = useState<"idle" | "loading" | "ready">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<
@@ -2168,6 +1874,7 @@ function PathwayExplorerSection() {
     | "stories"
   >("pathway");
   const [modalData, setModalData] = useState<{ item: any; type: "tournament" | "scholarship" | "university" } | null>(null);
+  const [detailTournament, setDetailTournament] = useState<any | null>(null);
 
   // P1: progress tracker state
   const [progress, setProgress] = useState<ProgressState>(DEFAULT_PROGRESS);
@@ -2179,7 +1886,6 @@ function PathwayExplorerSection() {
   // P5-P8 states
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
-  const [reminders, setReminders] = useState<ReminderRecord[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -2196,14 +1902,12 @@ function PathwayExplorerSection() {
           setProgress(dbProfile.progress || DEFAULT_PROGRESS);
           setSavedItems(dbProfile.savedItems || []);
           setApplications(dbProfile.applications || []);
-          setReminders(dbProfile.reminders || []);
           return;
         }
       }
       setProgress(loadProgress());
       setSavedItems(loadSaved());
       setApplications(loadApplications());
-      setReminders(loadReminders());
     };
     initProfile();
   }, [user]);
@@ -2230,12 +1934,6 @@ function PathwayExplorerSection() {
     setApplications(items);
     saveApplications(items);
     if (user) pathwayProfileApi.updateProfile({ applications: items });
-  };
-
-  const handleRemindersChange = (items: ReminderRecord[]) => {
-    setReminders(items);
-    saveReminders(items);
-    if (user) pathwayProfileApi.updateProfile({ reminders: items });
   };
 
   const handleUpdateApplicationStatus = (id: string, status: ApplicationRecord["status"]) => {
@@ -2292,22 +1990,54 @@ function PathwayExplorerSection() {
     setStatus("loading");
     setResult(null);
     setErrorMsg("");
+    setEntitiesStatus("idle");
     setActiveIdx(0);
     setActiveTab("pathway");
+
+    const city = selectedState || undefined;
+
     try {
-      const res = await pathwayApi.getPathway(name, undefined, selectedState || undefined);
-      if (res) {
-        setResult(res);
-        setQuery(res.pathway.sportName);
-        setStatus("success");
-      } else {
-        setErrorMsg(
-          `"${name}" doesn't appear to be a recognised sport. Please try a different name.`,
-        );
+      const res = await pathwayApi.getPathway(name, undefined, city);
+      if (!res) {
+        setErrorMsg(`"${name}" doesn't appear to be a recognised sport. Please try a different name.`);
         setStatus("error");
+        return;
+      }
+
+      setResult(res);
+      setQuery(res.pathway.sportName);
+      setStatus("success");
+
+      // If entities (tournaments/scholarships/universities) weren't ready yet,
+      // fetch them in the background and merge when done.
+      if (!res.entitiesReady) {
+        setEntitiesStatus("loading");
+        pathwayApi.getEntities(res.pathway.sportName, city).then((entities) => {
+          if (!entities) { setEntitiesStatus("ready"); return; }
+          setResult((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              pathway: {
+                ...prev.pathway,
+                tournaments: entities.tournaments,
+                scholarships: entities.scholarships,
+                universities: entities.universities,
+              },
+            };
+          });
+          setEntitiesStatus("ready");
+        }).catch(() => setEntitiesStatus("ready"));
+      } else {
+        setEntitiesStatus("ready");
       }
     } catch (err: any) {
-      setErrorMsg(err.message || "Something went wrong. Please try again.");
+      const msg = err.message || "";
+      setErrorMsg(
+        msg && !msg.toLowerCase().includes("not found")
+          ? msg
+          : "Something went wrong. Please try again in a moment.",
+      );
       setStatus("error");
     }
   };
@@ -2660,8 +2390,8 @@ function PathwayExplorerSection() {
 
               {/* Tabs */}
               {(result || savedItems.length > 0 || applications.length > 0) && (
-                <div className="mb-8 flex w-full overflow-x-auto hide-scrollbar rounded-2xl bg-slate-100/70 p-1.5 backdrop-blur-md border border-slate-200/60 shadow-inner">
-                  <div className="flex gap-1.5">
+                <div className="mb-8 w-full overflow-x-auto hide-scrollbar">
+                  <div className="inline-flex min-w-max gap-1.5 rounded-2xl bg-slate-100/70 p-1.5 backdrop-blur-md border border-slate-200/60 shadow-inner">
                   {[
                     {
                       id: "pathway",
@@ -2724,12 +2454,6 @@ function PathwayExplorerSection() {
                       badge: applications.length,
                       icon: <ClipboardList className="h-4 w-4" />,
                       show: applications.length > 0,
-                    },
-                    {
-                      id: "calendar",
-                      label: "Calendar",
-                      icon: <CalendarDays className="h-4 w-4" />,
-                      show: !!result,
                     },
                     {
                       id: "stories",
@@ -2986,53 +2710,75 @@ function PathwayExplorerSection() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    className="space-y-0"
                   >
-                    {result.pathway.tournaments?.length > 0 ? (
-                      result.pathway.tournaments.map((t: any, i: number) => (
-                        <div
-                          key={i}
-                          onClick={() => setModalData({ item: t, type: "tournament" })}
-                          className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-power-orange hover:ring-1 hover:ring-power-orange group cursor-pointer relative"
-                        >
-                          <div>
-                            <div className="mb-3 flex items-start justify-between gap-2">
-                              <h3 className="font-title font-bold text-slate-800 break-words group-hover:text-power-orange transition-colors pr-8">
-                                {t.name}
-                              </h3>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="shrink-0 rounded-full bg-orange-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-power-orange">
-                                  {t.level}
-                                </span>
-                                <SaveButton
-                                  item={t}
-                                  type="tournament"
-                                  sport={result.pathway.sportName}
-                                  savedItems={savedItems}
-                                  onToggle={handleSavedChange}
-                                />
-                              </div>
-                            </div>
-                            <p className="mb-4 text-sm text-slate-600 line-clamp-3">
-                              {t.description}
-                            </p>
-                          </div>
-                          <div className="flex items-center justify-between border-t border-slate-100 pt-3 gap-2">
-                            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 min-w-0 flex-1">
-                              <Users className="h-4 w-4 text-slate-400 shrink-0" />
-                              <span className="truncate">{t.ageGroup}</span>
-                            </div>
-                            <span className="text-xs font-bold text-power-orange flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 whitespace-nowrap">
-                              View Details <ArrowRight className="h-3 w-3" />
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
-                        No specific tournaments found for this sport.
+                    {/* Entities loading banner */}
+                    {entitiesStatus === "loading" && (
+                      <div className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 mb-4">
+                        <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
+                        <p className="text-sm font-medium text-violet-700">
+                          Fetching live tournament data — this takes a moment the first time for a new sport.
+                        </p>
                       </div>
                     )}
+                    {/* Recommendation Panel */}
+                    {result.pathway.tournaments?.length > 0 && (
+                      <TournamentRecommendationPanel
+                        tournaments={result.pathway.tournaments}
+                        currentLevel={progress.currentLevel}
+                        sportName={result.pathway.sportName}
+                        onViewTournament={(t) => setDetailTournament(t)}
+                      />
+                    )}
+
+                    {/* Tournament Grid */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {result.pathway.tournaments?.length > 0 ? (
+                        result.pathway.tournaments.map((t: any, i: number) => (
+                          <div
+                            key={i}
+                            onClick={() => setDetailTournament(t)}
+                            className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-power-orange hover:ring-1 hover:ring-power-orange group cursor-pointer relative"
+                          >
+                            <div>
+                              <div className="mb-3 flex items-start justify-between gap-2">
+                                <h3 className="font-title font-bold text-slate-800 break-words group-hover:text-power-orange transition-colors pr-8">
+                                  {t.name}
+                                </h3>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="shrink-0 rounded-full bg-orange-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-power-orange">
+                                    {t.level}
+                                  </span>
+                                  <SaveButton
+                                    item={t}
+                                    type="tournament"
+                                    sport={result.pathway.sportName}
+                                    savedItems={savedItems}
+                                    onToggle={handleSavedChange}
+                                  />
+                                </div>
+                              </div>
+                              <p className="mb-4 text-sm text-slate-600 line-clamp-3">
+                                {t.description}
+                              </p>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-slate-100 pt-3 gap-2">
+                              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 min-w-0 flex-1">
+                                <Users className="h-4 w-4 text-slate-400 shrink-0" />
+                                <span className="truncate">{t.ageGroup}</span>
+                              </div>
+                              <span className="text-xs font-bold text-power-orange flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 whitespace-nowrap">
+                                View Details <ArrowRight className="h-3 w-3" />
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
+                          No specific tournaments found for this sport.
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 )}
 
@@ -3045,6 +2791,12 @@ function PathwayExplorerSection() {
                     transition={{ duration: 0.2 }}
                     className="grid grid-cols-1 gap-4 sm:grid-cols-2"
                   >
+                    {entitiesStatus === "loading" && (
+                      <div className="col-span-full flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3">
+                        <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
+                        <p className="text-sm font-medium text-violet-700">Fetching live scholarship data...</p>
+                      </div>
+                    )}
                     {result.pathway.scholarships?.length > 0 ? (
                       result.pathway.scholarships.map((s: any, i: number) => (
                         <div
@@ -3112,6 +2864,12 @@ function PathwayExplorerSection() {
                     transition={{ duration: 0.2 }}
                     className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
                   >
+                    {entitiesStatus === "loading" && (
+                      <div className="col-span-full flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3">
+                        <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
+                        <p className="text-sm font-medium text-violet-700">Fetching live university data...</p>
+                      </div>
+                    )}
                     {result.pathway.universities?.length > 0 ? (
                       result.pathway.universities.map((u: any, i: number) => (
                         <div
@@ -3303,16 +3061,7 @@ function PathwayExplorerSection() {
                   />
                 )}
 
-                {/* P7: Calendar Tab */}
-                {result && activeTab === "calendar" && (
-                  <CalendarTab
-                    pathway={result.pathway}
-                    reminders={reminders}
-                    onRemindersChange={handleRemindersChange}
-                  />
-                )}
-
-                {/* P8: Stories Tab */}
+                {/* P7: Stories Tab */}
                 {result && activeTab === "stories" && (
                   <StoriesTab
                     sportName={result.pathway.sportName}
@@ -3325,6 +3074,32 @@ function PathwayExplorerSection() {
           )}
         </AnimatePresence>
 
+        {/* Tournament modal — detail view + concierge flow in one panel */}
+        {detailTournament && (
+          <TournamentModal
+            isOpen={!!detailTournament}
+            tournament={detailTournament}
+            onClose={() => setDetailTournament(null)}
+            currentLevel={progress.currentLevel}
+            sportName={result?.pathway.sportName || ""}
+            type="tournament"
+            isSaved={savedItems.some(s => s.id === `tournament:${detailTournament?.name || ""}:${result?.pathway.sportName || ""}`)}
+            onToggleSave={() => {
+              if (!detailTournament || !result) return;
+              const id = `tournament:${detailTournament.name}:${result.pathway.sportName}`;
+              const isSaved = savedItems.some(s => s.id === id);
+              const updated = isSaved
+                ? savedItems.filter(s => s.id !== id)
+                : [...savedItems, { id, type: "tournament" as const, name: detailTournament.name, sport: result.pathway.sportName, data: detailTournament, savedAt: new Date().toISOString() }];
+              handleSavedChange(updated);
+            }}
+            onSubmitSuccess={(record) => {
+              handleApplicationsChange([...applications, record]);
+            }}
+          />
+        )}
+
+        {/* Concierge modal — scholarships & universities only */}
         {modalData && (
           <PathwayConciergeModal
             isOpen={!!modalData}

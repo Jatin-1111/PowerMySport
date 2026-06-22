@@ -23,6 +23,7 @@ export interface ConciergeRequest {
   prerequisiteName: string;
   documents: ConciergeRequestDoc[];
   status: "pending" | "processing" | "completed" | "rejected";
+  adminNotes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,10 +39,11 @@ export const conciergeApi = {
   updateStatus: async (
     id: string,
     status: "pending" | "processing" | "completed" | "rejected",
+    adminNotes?: string,
   ) => {
     const res = await axiosInstance.patch<{ success: boolean; request: ConciergeRequest }>(
       `/admin/concierge-requests/${id}/status`,
-      { status },
+      { status, adminNotes },
     );
     return res.data.request;
   },

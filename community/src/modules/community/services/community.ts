@@ -161,6 +161,7 @@ const buildPostsKey = (
     tag?: string;
     sport?: string;
     city?: string;
+    category?: string;
     mine?: boolean;
   },
 ) =>
@@ -173,6 +174,7 @@ const buildPostsKey = (
     params?.tag || "",
     params?.sport || "",
     params?.city || "",
+    params?.category || "",
     params?.mine ? "mine" : "all",
   ].join(":");
 const buildPostDetailsKey = (postId: string, page: number, limit: number) =>
@@ -802,6 +804,7 @@ export const communityService = {
       tag?: string;
       sport?: string;
       city?: string;
+      category?: string;
       mine?: boolean;
     },
   ): Promise<CommunityPostListResponse> {
@@ -818,6 +821,7 @@ export const communityService = {
           ...(params?.tag ? { tag: params.tag } : {}),
           ...(params?.sport ? { sport: params.sport } : {}),
           ...(params?.city ? { city: params.city } : {}),
+          ...(params?.category ? { category: params.category } : {}),
           ...(params?.mine ? { mine: true } : {}),
         },
       });
@@ -996,6 +1000,8 @@ export const communityService = {
     tags?: string[];
     sport?: string;
     city?: string;
+    category?: string;
+    isAnonymous?: boolean;
   }): Promise<CommunityPost> {
     const response = await axiosInstance.post<ApiResponse<CommunityPost>>(
       "/community/posts",
@@ -1040,10 +1046,11 @@ export const communityService = {
   async createAnswer(
     postId: string,
     content: string,
+    isAnonymous = false,
   ): Promise<CommunityAnswer> {
     const response = await axiosInstance.post<ApiResponse<CommunityAnswer>>(
       `/community/posts/${postId}/answers`,
-      { content },
+      { content, ...(isAnonymous ? { isAnonymous: true } : {}) },
     );
     clearCacheByPrefixes([
       "posts",

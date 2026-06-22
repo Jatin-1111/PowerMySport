@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
+import { COMMUNITY_POST_CATEGORIES } from "@/modules/community/types";
 import SportsSelect from "@/modules/sports/components/SportsSelect";
-import { X, Loader2, MessageCircle, MapPin, AlignLeft, Hash } from "lucide-react";
+import { X, Loader2, MessageCircle, MapPin, AlignLeft, Hash, ChevronDown, EyeOff } from "lucide-react";
 
 interface AskQuestionModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export default function AskQuestionModal({
   const [tags, setTags] = useState("");
   const [sport, setSport] = useState("");
   const [city, setCity] = useState("");
+  const [category, setCategory] = useState("General");
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -51,6 +54,8 @@ export default function AskQuestionModal({
           .filter(Boolean),
         sport: sport.trim() || undefined,
         city: city.trim() || undefined,
+        category: category || "General",
+        isAnonymous: isAnonymous || undefined,
       });
 
       setTitle("");
@@ -58,6 +63,8 @@ export default function AskQuestionModal({
       setTags("");
       setSport("");
       setCity("");
+      setCategory("General");
+      setIsAnonymous(false);
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -211,6 +218,45 @@ export default function AskQuestionModal({
                       />
                     </div>
                   </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                      <ChevronDown size={16} className="text-violet-500" />
+                      Category
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full appearance-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-violet-500/50 focus:outline-none focus:ring-4 focus:ring-violet-500/10 pr-10"
+                      >
+                        {COMMUNITY_POST_CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={16} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    </div>
+                  </div>
+
+                  {/* Anonymous Toggle */}
+                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={isAnonymous}
+                        onChange={(e) => setIsAnonymous(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <div className={`h-5 w-9 rounded-full transition-colors ${isAnonymous ? "bg-slate-700" : "bg-slate-300"}`} />
+                      <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isAnonymous ? "translate-x-4" : "translate-x-0.5"}`} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <EyeOff size={15} className="text-slate-500" />
+                      <span className="text-sm font-semibold text-slate-800">Post Anonymously</span>
+                      <span className="text-xs text-slate-500">— your name will be hidden</span>
+                    </div>
+                  </label>
 
                   {error && (
                     <div className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600">

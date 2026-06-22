@@ -22,7 +22,7 @@ export const getAllConciergeRequests = async (
 };
 
 /**
- * Update the status of a specific concierge request
+ * Update the status and optional admin notes of a specific concierge request
  */
 export const updateConciergeRequestStatus = async (
   req: Request,
@@ -30,16 +30,21 @@ export const updateConciergeRequestStatus = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, adminNotes } = req.body;
 
     if (!["pending", "processing", "completed", "rejected"].includes(status)) {
       res.status(400).json({ success: false, error: "Invalid status value" });
       return;
     }
 
+    const updatePayload: Record<string, any> = { status };
+    if (adminNotes !== undefined) {
+      updatePayload.adminNotes = String(adminNotes).slice(0, 2000);
+    }
+
     const updatedRequest = await ConciergeRequest.findByIdAndUpdate(
       id,
-      { status },
+      updatePayload,
       { new: true },
     ).populate("userId", "name email phone");
 

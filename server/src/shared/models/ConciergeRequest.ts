@@ -15,6 +15,7 @@ export interface IConciergeRequest extends Document {
     s3Key: string;
   }>;
   status: "pending" | "processing" | "completed" | "rejected";
+  adminNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,7 @@ const ConciergeRequestSchema = new Schema<IConciergeRequest>(
       enum: ["pending", "processing", "completed", "rejected"],
       default: "pending",
     },
+    adminNotes: { type: String },
   },
   { timestamps: true }
 );
