@@ -654,12 +654,12 @@ export const addAddress = async (
     user.addresses = [];
   }
 
-  const newAddress = {
+  const newAddress: any = {
     fullName: addressData.fullName,
     email: addressData.email,
     phone: addressData.phone,
     addressLine1: addressData.addressLine1,
-    addressLine2: addressData.addressLine2,
+    ...(addressData.addressLine2 !== undefined ? { addressLine2: addressData.addressLine2 } : {}),
     city: addressData.city,
     state: addressData.state,
     postalCode: addressData.postalCode,
@@ -670,8 +670,8 @@ export const addAddress = async (
   user.addresses.push(newAddress);
 
   // Set default address ID if this is the first address
-  if (user.addresses.length === 1 && user.addresses[0]._id) {
-    user.defaultAddressId = user.addresses[0]._id;
+  if (user.addresses && user.addresses.length === 1 && user.addresses[0]!._id) {
+    user.defaultAddressId = user.addresses[0]!._id as any;
   }
 
   await user.save();
@@ -750,12 +750,12 @@ export const deleteAddress = async (
   // If deleted address was default, set new default
   if (
     user.defaultAddressId?.toString() === addressId &&
-    user.addresses.length > 0
+    user.addresses && user.addresses.length > 0
   ) {
-    user.defaultAddressId = user.addresses[0]._id;
-    user.addresses[0].isDefault = true;
-  } else if (user.addresses.length === 0) {
-    user.defaultAddressId = undefined;
+    user.defaultAddressId = user.addresses[0]!._id as any;
+    user.addresses[0]!.isDefault = true;
+  } else if (user.addresses && user.addresses.length === 0) {
+    user.defaultAddressId = undefined as any;
   }
 
   // Clear isDefault flag if no default is set
@@ -795,7 +795,7 @@ export const setDefaultAddress = async (
 
   // Set new default
   address.isDefault = true;
-  user.defaultAddressId = address._id;
+  user.defaultAddressId = address._id as any;
 
   await user.save();
   return user;

@@ -846,6 +846,13 @@ export const updateAddressHandler = async (
     }
 
     const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid address ID",
+      });
+      return;
+    }
     const {
       fullName,
       email,
@@ -904,6 +911,13 @@ export const deleteAddressHandler = async (
     }
 
     const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid address ID",
+      });
+      return;
+    }
 
     const user = await deleteAddress(req.user.id, addressId);
 
@@ -941,6 +955,13 @@ export const setDefaultAddressHandler = async (
     }
 
     const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid address ID",
+      });
+      return;
+    }
 
     const user = await setDefaultAddress(req.user.id, addressId);
 

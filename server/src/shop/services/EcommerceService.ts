@@ -588,7 +588,7 @@ export class OrderService {
 
     // Update order
     order.status = OrderStatus.PAYMENT_CONFIRMED;
-    order.paymentStatus = PaymentStatus.PAID;
+    order.paymentStatus = PaymentStatus.CAPTURED;
     order.paymentGatewayPaymentId = paymentGatewayPaymentId;
     order.fulfillmentStatus = FulfillmentStatus.PENDING;
 

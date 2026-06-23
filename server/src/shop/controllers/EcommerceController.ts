@@ -13,6 +13,7 @@ import {
   FulfillmentStatus,
   OrderStatus,
   PaymentGateway,
+  PaymentStatus,
 } from "../../types/ecommerce";
 import {
   Order as OrderModel,
@@ -825,8 +826,7 @@ export class EcommerceController {
 
       // Can only generate invoice for paid orders
       if (
-        order.paymentStatus !== "CAPTURED" &&
-        order.paymentStatus !== "PAID"
+        order.paymentStatus !== PaymentStatus.CAPTURED
       ) {
         res.status(409).json({
           ok: false,
