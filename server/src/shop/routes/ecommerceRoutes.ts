@@ -1,13 +1,13 @@
-import { Router, Request, Response } from "express";
-import {
-  EcommerceController,
-  AdminEcommerceController,
-} from "../controllers/EcommerceController";
-import { SellerController } from "../controllers/SellerController";
-import { WebhookController } from "../../shared/controllers/WebhookController";
-import { joinWaitlist } from "../controllers/WaitlistController";
+import { Request, Response, Router } from "express";
 import { authMiddleware, requirePermission } from "../../middleware/auth";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
+import { WebhookController } from "../../shared/controllers/WebhookController";
+import {
+  AdminEcommerceController,
+  EcommerceController,
+} from "../controllers/EcommerceController";
+import { SellerController } from "../controllers/SellerController";
+import { joinWaitlist } from "../controllers/WaitlistController";
 
 const router = Router();
 const controller = new EcommerceController();
@@ -43,8 +43,10 @@ router.get("/products/:id", cacheResponse(300), (req: Request, res: Response) =>
  * GET /api/v1/products/:id/related
  * Get related products
  */
-router.get("/products/:id/related", cacheResponse(300), (req: Request, res: Response) =>
-  controller.getRelatedProducts(req, res),
+router.get(
+  "/products/:id/related",
+  cacheResponse(300),
+  (req: Request, res: Response) => controller.getRelatedProducts(req, res),
 );
 
 // ============ AUTHENTICATED CUSTOMER ROUTES ============
@@ -125,14 +127,28 @@ router.get("/orders/:orderId", authMiddleware, (req: Request, res: Response) =>
   controller.getOrder(req, res),
 );
 
-// ============ REVIEWS ROUTES ============
-
-router.get("/products/:id/reviews", cacheResponse(300), (req: Request, res: Response) =>
-  controller.getProductReviews(req, res),
+/**
+ * GET /api/v1/orders/:orderId/invoice/pdf
+ * Download order invoice PDF
+ */
+router.get(
+  "/orders/:orderId/invoice/pdf",
+  authMiddleware,
+  (req: Request, res: Response) => controller.downloadOrderInvoice(req, res),
 );
 
-router.post("/products/:id/reviews", authMiddleware, (req: Request, res: Response) =>
-  controller.submitProductReview(req, res),
+// ============ REVIEWS ROUTES ============
+
+router.get(
+  "/products/:id/reviews",
+  cacheResponse(300),
+  (req: Request, res: Response) => controller.getProductReviews(req, res),
+);
+
+router.post(
+  "/products/:id/reviews",
+  authMiddleware,
+  (req: Request, res: Response) => controller.submitProductReview(req, res),
 );
 
 // ============ WISHLIST ROUTES ============
@@ -173,7 +189,8 @@ router.post(
   "/admin/products/upload-url",
   authMiddleware,
   requirePermission("products:create"),
-  (req: Request, res: Response) => adminController.generateImageUploadUrl(req, res),
+  (req: Request, res: Response) =>
+    adminController.generateImageUploadUrl(req, res),
 );
 
 /**
@@ -273,7 +290,7 @@ router.post("/webhooks/phonepe", (req: Request, res: Response) => {
  * List logged-in seller's products
  */
 router.get("/seller/products", authMiddleware, (req: Request, res: Response) =>
-  sellerController.listSellerProducts(req, res)
+  sellerController.listSellerProducts(req, res),
 );
 
 /**
@@ -281,23 +298,29 @@ router.get("/seller/products", authMiddleware, (req: Request, res: Response) =>
  * List a new product for sale (merchant or P2P)
  */
 router.post("/seller/products", authMiddleware, (req: Request, res: Response) =>
-  sellerController.createSellerProduct(req, res)
+  sellerController.createSellerProduct(req, res),
 );
 
 /**
  * PATCH /api/v1/seller/products/:productId
  * Update a seller's product listing
  */
-router.patch("/seller/products/:productId", authMiddleware, (req: Request, res: Response) =>
-  sellerController.updateSellerProduct(req, res)
+router.patch(
+  "/seller/products/:productId",
+  authMiddleware,
+  (req: Request, res: Response) =>
+    sellerController.updateSellerProduct(req, res),
 );
 
 /**
  * DELETE /api/v1/seller/products/:productId
  * Deactivate a seller's product listing
  */
-router.delete("/seller/products/:productId", authMiddleware, (req: Request, res: Response) =>
-  sellerController.deleteSellerProduct(req, res)
+router.delete(
+  "/seller/products/:productId",
+  authMiddleware,
+  (req: Request, res: Response) =>
+    sellerController.deleteSellerProduct(req, res),
 );
 
 /**
@@ -305,7 +328,7 @@ router.delete("/seller/products/:productId", authMiddleware, (req: Request, res:
  * List orders received for seller's items
  */
 router.get("/seller/orders", authMiddleware, (req: Request, res: Response) =>
-  sellerController.listSellerOrders(req, res)
+  sellerController.listSellerOrders(req, res),
 );
 
 /**
@@ -316,7 +339,7 @@ router.patch(
   "/seller/orders/:orderId/items/:productVariantId/fulfillment",
   authMiddleware,
   (req: Request, res: Response) =>
-    sellerController.updateSellerOrderItemFulfillment(req, res)
+    sellerController.updateSellerOrderItemFulfillment(req, res),
 );
 
 export default router;

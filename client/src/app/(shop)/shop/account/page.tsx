@@ -13,7 +13,13 @@ import {
   updateSellerOrderItemFulfillment,
   listOrders,
   type Product,
-  type Order
+  type Order,
+  getUserAddresses,
+  addUserAddress,
+  updateUserAddress,
+  deleteUserAddress,
+  setDefaultUserAddress,
+  type UserAddress
 } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
 import { useAuthStore } from "@/modules/auth/store/authStore";

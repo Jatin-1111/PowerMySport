@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { Booking } from "../../client/models/Booking";
-import { User, UserDocument } from "../../client/models/User";
 import { Player } from "../../client/models/Player";
+import { User, UserDocument } from "../../client/models/User";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "../../utils/email";
 import { S3Service } from "./S3Service";
 
@@ -563,7 +563,9 @@ export const updateProfile = async (
       email: payload.shippingAddress.email,
       phone: payload.shippingAddress.phone,
       addressLine1: payload.shippingAddress.addressLine1,
-      ...(payload.shippingAddress.addressLine2 !== undefined ? { addressLine2: payload.shippingAddress.addressLine2 } : {}),
+      ...(payload.shippingAddress.addressLine2 !== undefined
+        ? { addressLine2: payload.shippingAddress.addressLine2 }
+        : {}),
       city: payload.shippingAddress.city,
       state: payload.shippingAddress.state,
       postalCode: payload.shippingAddress.postalCode,
@@ -624,4 +626,191 @@ export const confirmProfilePictureUpload = async (
   await user.save();
 
   return user;
+};
+
+/**
+ * Add a new address for the user
+ */
+export const addAddress = async (
+  userId: string,
+  addressData: {
+    fullName: string;
+    email: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country?: string;
+  },
+): Promise<UserDocument> => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!user.addresses) {
+    user.addresses = [];
+  }
+
+  const newAddress = {
+    fullName: addressData.fullName,
+    email: addressData.email,
+    phone: addressData.phone,
+    addressLine1: addressData.addressLine1,
+    addressLine2: addressData.addressLine2,
+    city: addressData.city,
+    state: addressData.state,
+    postalCode: addressData.postalCode,
+    country: addressData.country || "IN",
+    isDefault: user.addresses.length === 0, // First address is default
+  };
+
+  user.addresses.push(newAddress);
+
+  // Set default address ID if this is the first address
+  if (user.addresses.length === 1 && user.addresses[0]._id) {
+    user.defaultAddressId = user.addresses[0]._id;
+  }
+
+  await user.save();
+  return user;
+};
+
+/**
+ * Update an existing address
+ */
+export const updateAddress = async (
+  userId: string,
+  addressId: string,
+  addressData: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  },
+): Promise<UserDocument> => {
+  const user = await User.findById(userId);
+  if (!user || !user.addresses) {
+    throw new Error("User or address not found");
+  }
+
+  const address = user.addresses.find(
+    (addr) => addr._id?.toString() === addressId,
+  );
+  if (!address) {
+    throw new Error("Address not found");
+  }
+
+  // Update address fields
+  if (addressData.fullName) address.fullName = addressData.fullName;
+  if (addressData.email) address.email = addressData.email;
+  if (addressData.phone) address.phone = addressData.phone;
+  if (addressData.addressLine1) address.addressLine1 = addressData.addressLine1;
+  if (addressData.addressLine2 !== undefined)
+    address.addressLine2 = addressData.addressLine2;
+  if (addressData.city) address.city = addressData.city;
+  if (addressData.state) address.state = addressData.state;
+  if (addressData.postalCode) address.postalCode = addressData.postalCode;
+  if (addressData.country) address.country = addressData.country;
+
+  address.updatedAt = new Date();
+
+  await user.save();
+  return user;
+};
+
+/**
+ * Delete an address
+ */
+export const deleteAddress = async (
+  userId: string,
+  addressId: string,
+): Promise<UserDocument> => {
+  const user = await User.findById(userId);
+  if (!user || !user.addresses) {
+    throw new Error("User or address not found");
+  }
+
+  const addressIndex = user.addresses.findIndex(
+    (addr) => addr._id?.toString() === addressId,
+  );
+  if (addressIndex === -1) {
+    throw new Error("Address not found");
+  }
+
+  user.addresses.splice(addressIndex, 1);
+
+  // If deleted address was default, set new default
+  if (
+    user.defaultAddressId?.toString() === addressId &&
+    user.addresses.length > 0
+  ) {
+    user.defaultAddressId = user.addresses[0]._id;
+    user.addresses[0].isDefault = true;
+  } else if (user.addresses.length === 0) {
+    user.defaultAddressId = undefined;
+  }
+
+  // Clear isDefault flag if no default is set
+  user.addresses.forEach((addr) => {
+    if (!user.defaultAddressId) {
+      addr.isDefault = false;
+    }
+  });
+
+  await user.save();
+  return user;
+};
+
+/**
+ * Set default address for user
+ */
+export const setDefaultAddress = async (
+  userId: string,
+  addressId: string,
+): Promise<UserDocument> => {
+  const user = await User.findById(userId);
+  if (!user || !user.addresses) {
+    throw new Error("User or address not found");
+  }
+
+  const address = user.addresses.find(
+    (addr) => addr._id?.toString() === addressId,
+  );
+  if (!address) {
+    throw new Error("Address not found");
+  }
+
+  // Clear previous default
+  user.addresses.forEach((addr) => {
+    addr.isDefault = false;
+  });
+
+  // Set new default
+  address.isDefault = true;
+  user.defaultAddressId = address._id;
+
+  await user.save();
+  return user;
+};
+
+/**
+ * Get all addresses for a user
+ */
+export const getUserAddresses = async (
+  userId: string,
+): Promise<UserDocument["addresses"]> => {
+  const user = await User.findById(userId).select("addresses defaultAddressId");
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return user.addresses || [];
 };

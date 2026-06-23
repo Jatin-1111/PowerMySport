@@ -1,27 +1,23 @@
 import mongoose from "mongoose";
+import { User as UserModel } from "../../client/models/User";
+import { getPhonePeOrderStatus } from "../../shared/services/PhonePeService";
 import {
-  Cart as CartModel,
+  FulfillmentStatus,
+  OrderStatus,
+  PaymentGateway,
+  PaymentStatus,
+} from "../../types/ecommerce";
+import {
   CartDocument,
   CartItemDocument,
+  Cart as CartModel,
   Inventory as InventoryModel,
-  InventoryDocument,
-  Product as ProductModel,
-  ProductDocument,
-  Order as OrderModel,
   OrderDocument,
+  Order as OrderModel,
   PaymentTransaction as PaymentTransactionModel,
-  PaymentTransactionDocument,
+  ProductDocument,
+  Product as ProductModel,
 } from "../models/Ecommerce";
-import {
-  OrderStatus,
-  PaymentStatus,
-  FulfillmentStatus,
-  PaymentGateway,
-  ApiResponse,
-} from "../../types/ecommerce";
-import { getPhonePeOrderStatus } from "../../shared/services/PhonePeService";
-import { User as UserModel } from "../../client/models/User";
-import { sendOrderConfirmationEmail } from "../../utils/email";
 
 // ============ INVENTORY SERVICE ============
 
@@ -592,7 +588,7 @@ export class OrderService {
 
     // Update order
     order.status = OrderStatus.PAYMENT_CONFIRMED;
-    order.paymentStatus = PaymentStatus.CAPTURED;
+    order.paymentStatus = PaymentStatus.PAID;
     order.paymentGatewayPaymentId = paymentGatewayPaymentId;
     order.fulfillmentStatus = FulfillmentStatus.PENDING;
 
@@ -609,40 +605,79 @@ export class OrderService {
     // Clear user's cart after successful order
     await this.cartService.clearCart(order.userId.toString());
 
-    // Send transaction order confirmation email asynchronously
-    UserModel.findById(order.userId)
-      .then((user) => {
-        if (user && user.email) {
-          sendOrderConfirmationEmail({
-            email: user.email,
-            name: user.name,
-            orderNumber: order.orderNumber,
-            totalAmount: order.totalAmount,
-            items: order.items.map((item) => ({
-              productName: item.productName,
-              variantLabel: item.variantLabel,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              lineTotal: item.lineTotal,
-            })),
-            shippingAddress: {
-              fullName: order.shippingAddress.fullName,
-              addressLine1: order.shippingAddress.addressLine1,
-              ...(order.shippingAddress.addressLine2 !== undefined ? { addressLine2: order.shippingAddress.addressLine2 } : {}),
-              city: order.shippingAddress.city,
-              state: order.shippingAddress.state,
-              postalCode: order.shippingAddress.postalCode,
-              country: order.shippingAddress.country || "IN",
-            },
-            paymentMethod: order.paymentMethod,
-          }).catch((err) => {
-            console.error("Failed to send order confirmation email:", err);
-          });
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to fetch user for order confirmation email:", err);
+    // Queue order confirmation email via outbox system with retry logic
+    const user = await UserModel.findById(order.userId);
+    if (user && user.email) {
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #ff5722;">Order Confirmation</h2>
+            <p>Hi ${user.name || "Customer"},</p>
+            <p>Thank you for your order! We're thrilled to have you with us.</p>
+            
+            <h3>Order Details</h3>
+            <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+            <p><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Total Amount:</strong> ₹${order.totalAmount.toFixed(2)}</p>
+            
+            <h3>Items Ordered</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead><tr style="background-color: #f5f5f5;"><th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Product</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Qty</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Price</th></tr></thead>
+              <tbody>
+                ${order.items
+                  .map(
+                    (item) => `
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${item.productName}${item.variantLabel ? ` (${item.variantLabel})` : ""}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.quantity}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">₹${item.lineTotal.toFixed(2)}</td>
+                  </tr>
+                `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            
+            <h3>Shipping Address</h3>
+            <p>
+              ${order.shippingAddress.fullName}<br/>
+              ${order.shippingAddress.addressLine1}<br/>
+              ${order.shippingAddress.addressLine2 ? order.shippingAddress.addressLine2 + "<br/>" : ""}
+              ${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}<br/>
+              ${order.shippingAddress.country || "IN"}
+            </p>
+            
+            <h3>What's Next?</h3>
+            <p>Your order is being processed and will be shipped shortly. You'll receive tracking updates via email.</p>
+            
+            <p style="color: #666; font-size: 12px; margin-top: 20px;">
+              If you have any questions, please contact our support team at support@powermysport.com
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Import OutboxMessage here to avoid circular dependencies
+      const OutboxMessage = require("../models/OutboxMessage").default;
+      await OutboxMessage.create({
+        type: "send_email",
+        payload: {
+          to: user.email,
+          subject: `Order Confirmation - ${order.orderNumber}`,
+          html: emailHtml,
+        },
+        status: "PENDING",
+        attempts: 0,
       });
+      console.info("[order] queued confirmation email for", {
+        orderId,
+        email: user.email,
+      });
+    }
 
     return order;
   }
@@ -937,13 +972,13 @@ export class ProductService {
     // Get facets (available brands and price range) for the current filtered (or unfiltered) set
     // This allows dynamic filter sidebars
     const facets = await ProductModel.aggregate([
-      { 
-        $match: { 
-          isActive: true, 
+      {
+        $match: {
+          isActive: true,
           ...(category ? { category } : {}),
           ...(condition ? { condition } : {}),
-          ...(sellerType ? { sellerType } : {})
-        } 
+          ...(sellerType ? { sellerType } : {}),
+        },
       },
       {
         $group: {
@@ -951,15 +986,18 @@ export class ProductService {
           brands: { $addToSet: "$brand" },
           minPrice: { $min: "$basePrice" },
           maxPrice: { $max: "$basePrice" },
-        }
-      }
+        },
+      },
     ]);
 
-    const availableFacets = facets.length > 0 ? {
-      brands: facets[0].brands.filter(Boolean).sort(),
-      minPrice: facets[0].minPrice || 0,
-      maxPrice: facets[0].maxPrice || 10000,
-    } : { brands: [], minPrice: 0, maxPrice: 10000 };
+    const availableFacets =
+      facets.length > 0
+        ? {
+            brands: facets[0].brands.filter(Boolean).sort(),
+            minPrice: facets[0].minPrice || 0,
+            maxPrice: facets[0].maxPrice || 10000,
+          }
+        : { brands: [], minPrice: 0, maxPrice: 10000 };
 
     return {
       products,
@@ -973,7 +1011,10 @@ export class ProductService {
   /**
    * Get related products based on category and tags
    */
-  async getRelatedProducts(productId: string, limit: number = 4): Promise<ProductDocument[]> {
+  async getRelatedProducts(
+    productId: string,
+    limit: number = 4,
+  ): Promise<ProductDocument[]> {
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return [];
     }
@@ -984,10 +1025,7 @@ export class ProductService {
     const related = await ProductModel.find({
       _id: { $ne: product._id },
       isActive: true,
-      $or: [
-        { category: product.category },
-        { tags: { $in: product.tags } }
-      ]
+      $or: [{ category: product.category }, { tags: { $in: product.tags } }],
     })
       .sort({ averageRating: -1, totalReviews: -1 }) // Show best rated first
       .limit(limit);
@@ -1034,7 +1072,9 @@ export class ProductService {
     await product.save();
 
     for (const variant of product.variants) {
-      let inventory = await InventoryModel.findOne({ productVariantId: variant._id });
+      let inventory = await InventoryModel.findOne({
+        productVariantId: variant._id,
+      });
       if (inventory) {
         inventory.quantityOnHand = variant.stock;
         inventory.reorderLevel = variant.reorderLevel;

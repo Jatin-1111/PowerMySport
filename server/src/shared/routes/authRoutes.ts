@@ -1,12 +1,20 @@
 import { Router } from "express";
+import type { ClientRateLimitInfo, Store } from "express-rate-limit";
 import rateLimit from "express-rate-limit";
 import redis from "../../config/redis";
+import { authMiddleware } from "../../middleware/auth";
+import { loginSchema, registerSchema } from "../../middleware/schemas";
+import { validateRequest } from "../../middleware/validation";
 import {
+  addAddressHandler,
   addDependentHandler,
   confirmProfilePictureUploadHandler,
+  deleteAddressHandler,
   deleteDependentHandler,
   forgotPassword,
+  getAddressesHandler,
   getAuthBridge,
+  getMyPlayersHandler,
   getProfile,
   getProfilePictureUploadUrlHandler,
   googleAuth,
@@ -15,14 +23,11 @@ import {
   logout,
   register,
   resetPasswordHandler,
+  setDefaultAddressHandler,
+  updateAddressHandler,
   updateDependentHandler,
   updateProfileHandler,
-  getMyPlayersHandler,
 } from "../controller/authController";
-import { authMiddleware } from "../../middleware/auth";
-import { loginSchema, registerSchema } from "../../middleware/schemas";
-import { validateRequest } from "../../middleware/validation";
-import type { ClientRateLimitInfo, Store } from "express-rate-limit";
 
 const router = Router();
 
@@ -170,6 +175,17 @@ router.delete(
   "/dependents/:dependentId",
   authMiddleware,
   deleteDependentHandler,
+);
+
+// Address management endpoints
+router.get("/addresses", authMiddleware, getAddressesHandler);
+router.post("/addresses", authMiddleware, addAddressHandler);
+router.put("/addresses/:addressId", authMiddleware, updateAddressHandler);
+router.delete("/addresses/:addressId", authMiddleware, deleteAddressHandler);
+router.patch(
+  "/addresses/:addressId/set-default",
+  authMiddleware,
+  setDefaultAddressHandler,
 );
 
 export default router;

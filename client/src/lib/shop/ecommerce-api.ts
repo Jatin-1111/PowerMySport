@@ -28,7 +28,13 @@ export interface Product {
   isActive: boolean;
   seller?: string;
   sellerName?: string;
-  sellerType?: "MERCHANT" | "PARENT" | "PLAYER" | "COACH" | "ACADEMY" | "SYSTEM";
+  sellerType?:
+    | "MERCHANT"
+    | "PARENT"
+    | "PLAYER"
+    | "COACH"
+    | "ACADEMY"
+    | "SYSTEM";
   condition?: "NEW" | "USED";
   createdAt: string;
 }
@@ -156,7 +162,7 @@ const DEMO_PRODUCTS: Product[] = [
     category: "Running",
     images: [
       "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=800&q=80",
     ],
     basePrice: 12999,
     salePrice: 9999,
@@ -175,7 +181,7 @@ const DEMO_PRODUCTS: Product[] = [
     category: "Basketball",
     images: [
       "https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1494199505258-5f95387f933c?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1494199505258-5f95387f933c?auto=format&fit=crop&w=800&q=80",
     ],
     basePrice: 2499,
     taxable: true,
@@ -189,11 +195,12 @@ const DEMO_PRODUCTS: Product[] = [
     id: "prod_3",
     sku: "YOGA-MAT-001",
     name: "Zenith Pro Yoga Mat",
-    description: "Extra thick, non-slip premium yoga mat for serious practitioners.",
+    description:
+      "Extra thick, non-slip premium yoga mat for serious practitioners.",
     category: "Yoga",
     images: [
       "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1599443015574-be5fe8a05783?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1599443015574-be5fe8a05783?auto=format&fit=crop&w=800&q=80",
     ],
     basePrice: 3499,
     salePrice: 2999,
@@ -212,7 +219,7 @@ const DEMO_PRODUCTS: Product[] = [
     category: "Accessories",
     images: [
       "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1547949007-5350520cb955?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1547949007-5350520cb955?auto=format&fit=crop&w=800&q=80",
     ],
     basePrice: 4599,
     taxable: true,
@@ -230,7 +237,7 @@ const DEMO_PRODUCTS: Product[] = [
     category: "Training",
     images: [
       "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80",
     ],
     basePrice: 2199,
     taxable: true,
@@ -248,7 +255,7 @@ const DEMO_PRODUCTS: Product[] = [
     category: "Training",
     images: [
       "https://images.unsplash.com/photo-1586401700864-76ce0730d5fa?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80",
     ],
     basePrice: 5999,
     salePrice: 4999,
@@ -258,7 +265,7 @@ const DEMO_PRODUCTS: Product[] = [
     totalStock: 15,
     isActive: true,
     createdAt: new Date().toISOString(),
-  }
+  },
 ];
 
 export async function listProducts(params?: {
@@ -290,12 +297,14 @@ export async function listProducts(params?: {
     // Return demo data if backend API fails or is not implemented
     let filtered = [...DEMO_PRODUCTS];
     if (params?.category && params.category !== "ALL") {
-      filtered = filtered.filter(p => p.category === params.category);
+      filtered = filtered.filter((p) => p.category === params.category);
     }
     if (params?.search) {
-      filtered = filtered.filter(p => p.name.toLowerCase().includes(params.search!.toLowerCase()));
+      filtered = filtered.filter((p) =>
+        p.name.toLowerCase().includes(params.search!.toLowerCase()),
+      );
     }
-    
+
     return {
       products: filtered,
       total: filtered.length,
@@ -304,8 +313,8 @@ export async function listProducts(params?: {
       facets: {
         brands: ["Nike", "Adidas", "Puma", "Under Armour"],
         minPrice: 0,
-        maxPrice: 20000
-      }
+        maxPrice: 20000,
+      },
     };
   }
 }
@@ -314,7 +323,10 @@ export async function getProductById(id: string): Promise<Product> {
   return apiFetch<Product>(`/v1/products/${id}`);
 }
 
-export async function getRelatedProducts(id: string, limit?: number): Promise<Product[]> {
+export async function getRelatedProducts(
+  id: string,
+  limit?: number,
+): Promise<Product[]> {
   const query = limit ? `?limit=${limit}` : "";
   return apiFetch<Product[]>(`/v1/products/${id}/related${query}`);
 }
@@ -362,18 +374,38 @@ export async function getOrderById(id: string): Promise<Order> {
   return response.data.data;
 }
 
+export async function downloadOrderInvoice(orderId: string): Promise<Blob> {
+  const response = await axios.get(`/v1/orders/${orderId}/invoice/pdf`, {
+    responseType: "blob",
+  });
+  return response.data as Blob;
+}
+
 export async function listSellerProducts(): Promise<Product[]> {
-  const response = await axios.get<ApiEnvelope<Product[]>>("/v1/seller/products");
+  const response = await axios.get<ApiEnvelope<Product[]>>(
+    "/v1/seller/products",
+  );
   return response.data.data;
 }
 
-export async function createSellerProduct(data: Partial<Product> & { stock?: number; condition?: string }): Promise<Product> {
-  const response = await axios.post<ApiEnvelope<Product>>("/v1/seller/products", data);
+export async function createSellerProduct(
+  data: Partial<Product> & { stock?: number; condition?: string },
+): Promise<Product> {
+  const response = await axios.post<ApiEnvelope<Product>>(
+    "/v1/seller/products",
+    data,
+  );
   return response.data.data;
 }
 
-export async function updateSellerProduct(productId: string, data: Partial<Product> & { stock?: number }): Promise<Product> {
-  const response = await axios.patch<ApiEnvelope<Product>>(`/v1/seller/products/${productId}`, data);
+export async function updateSellerProduct(
+  productId: string,
+  data: Partial<Product> & { stock?: number },
+): Promise<Product> {
+  const response = await axios.patch<ApiEnvelope<Product>>(
+    `/v1/seller/products/${productId}`,
+    data,
+  );
   return response.data.data;
 }
 
@@ -390,11 +422,71 @@ export async function updateSellerOrderItemFulfillment(
   orderId: string,
   productVariantId: string,
   fulfillmentStatus: string,
-  trackingNumber?: string
+  trackingNumber?: string,
 ): Promise<Order> {
   const response = await axios.patch<ApiEnvelope<Order>>(
     `/v1/seller/orders/${orderId}/items/${productVariantId}/fulfillment`,
-    { fulfillmentStatus, trackingNumber }
+    { fulfillmentStatus, trackingNumber },
   );
+  return response.data.data;
+}
+
+// Address management functions
+export interface UserAddress {
+  _id?: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export async function getUserAddresses(): Promise<UserAddress[]> {
+  const response =
+    await axios.get<ApiEnvelope<UserAddress[]>>("/auth/addresses");
+  return response.data.data;
+}
+
+export async function addUserAddress(
+  address: Omit<UserAddress, "_id" | "createdAt" | "updatedAt">,
+): Promise<{ addresses: UserAddress[]; defaultAddressId?: string }> {
+  const response = await axios.post<
+    ApiEnvelope<{ addresses: UserAddress[]; defaultAddressId?: string }>
+  >("/auth/addresses", address);
+  return response.data.data;
+}
+
+export async function updateUserAddress(
+  addressId: string,
+  address: Partial<Omit<UserAddress, "_id" | "createdAt" | "updatedAt">>,
+): Promise<{ addresses: UserAddress[]; defaultAddressId?: string }> {
+  const response = await axios.put<
+    ApiEnvelope<{ addresses: UserAddress[]; defaultAddressId?: string }>
+  >(`/auth/addresses/${addressId}`, address);
+  return response.data.data;
+}
+
+export async function deleteUserAddress(
+  addressId: string,
+): Promise<{ addresses: UserAddress[]; defaultAddressId?: string }> {
+  const response = await axios.delete<
+    ApiEnvelope<{ addresses: UserAddress[]; defaultAddressId?: string }>
+  >(`/auth/addresses/${addressId}`);
+  return response.data.data;
+}
+
+export async function setDefaultUserAddress(
+  addressId: string,
+): Promise<{ addresses: UserAddress[]; defaultAddressId?: string }> {
+  const response = await axios.patch<
+    ApiEnvelope<{ addresses: UserAddress[]; defaultAddressId?: string }>
+  >(`/auth/addresses/${addressId}/set-default`);
   return response.data.data;
 }
