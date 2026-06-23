@@ -54,6 +54,8 @@ export class EcommerceController {
         rating,
         minPrice,
         maxPrice,
+        condition,
+        sellerType,
       } = req.query;
 
       const result = await this.productService.listProducts(
@@ -66,6 +68,8 @@ export class EcommerceController {
         rating ? Number(rating) : undefined,
         minPrice ? Number(minPrice) : undefined,
         maxPrice ? Number(maxPrice) : undefined,
+        condition as string,
+        sellerType as string,
       );
 
       res.json({
@@ -798,6 +802,7 @@ export class EcommerceController {
       else wishlist.products.push({ productId, addedAt: new Date() } as any);
       
       await wishlist.save();
+      await wishlist.populate("products.productId");
       res.json({ ok: true, data: wishlist.products });
     } catch (error: any) {
       res.status(500).json({ ok: false, error: { code: "INTERNAL_ERROR", message: error.message } });

@@ -12,10 +12,12 @@ export interface ProductVariant {
 
 export interface Product {
   id: string;
+  _id?: string;
   sku: string;
   name: string;
   description: string;
   category: string;
+  brand?: string;
   images: string[];
   basePrice: number;
   salePrice?: number;
@@ -24,6 +26,10 @@ export interface Product {
   variants: ProductVariant[];
   totalStock: number;
   isActive: boolean;
+  seller?: string;
+  sellerName?: string;
+  sellerType?: "MERCHANT" | "PARENT" | "PLAYER" | "COACH" | "ACADEMY" | "SYSTEM";
+  condition?: "NEW" | "USED";
   createdAt: string;
 }
 
@@ -64,10 +70,15 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  sellerId?: string;
+  condition?: "NEW" | "USED";
+  fulfillmentStatus?: string;
+  trackingNumber?: string;
 }
 
 export interface Order {
   id: string;
+  _id?: string;
   orderNumber: string;
   status: string;
   subtotal: number;
@@ -260,6 +271,8 @@ export async function listProducts(params?: {
   rating?: number;
   minPrice?: number;
   maxPrice?: number;
+  condition?: string;
+  sellerType?: string;
 }): Promise<{
   products: Product[];
   total: number;
@@ -346,5 +359,42 @@ export async function listOrders(params?: {
 
 export async function getOrderById(id: string): Promise<Order> {
   const response = await axios.get<ApiEnvelope<Order>>(`/v1/orders/${id}`);
+  return response.data.data;
+}
+
+export async function listSellerProducts(): Promise<Product[]> {
+  const response = await axios.get<ApiEnvelope<Product[]>>("/v1/seller/products");
+  return response.data.data;
+}
+
+export async function createSellerProduct(data: Partial<Product> & { stock?: number; condition?: string }): Promise<Product> {
+  const response = await axios.post<ApiEnvelope<Product>>("/v1/seller/products", data);
+  return response.data.data;
+}
+
+export async function updateSellerProduct(productId: string, data: Partial<Product> & { stock?: number }): Promise<Product> {
+  const response = await axios.patch<ApiEnvelope<Product>>(`/v1/seller/products/${productId}`, data);
+  return response.data.data;
+}
+
+export async function deleteSellerProduct(productId: string): Promise<void> {
+  await axios.delete<ApiEnvelope<unknown>>(`/v1/seller/products/${productId}`);
+}
+
+export async function listSellerOrders(): Promise<Order[]> {
+  const response = await axios.get<ApiEnvelope<Order[]>>("/v1/seller/orders");
+  return response.data.data;
+}
+
+export async function updateSellerOrderItemFulfillment(
+  orderId: string,
+  productVariantId: string,
+  fulfillmentStatus: string,
+  trackingNumber?: string
+): Promise<Order> {
+  const response = await axios.patch<ApiEnvelope<Order>>(
+    `/v1/seller/orders/${orderId}/items/${productVariantId}/fulfillment`,
+    { fulfillmentStatus, trackingNumber }
+  );
   return response.data.data;
 }

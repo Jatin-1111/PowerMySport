@@ -190,6 +190,7 @@ export const getProfile = async (
         photoS3Key: user.photoS3Key,
         playerProfile,
         dependents,
+        shippingAddress: user.shippingAddress,
       },
     });
   } catch (error) {
@@ -258,7 +259,7 @@ export const updateProfileHandler = async (
       return;
     }
 
-    const { name, email, phone, dob, playerProfile } = req.body;
+    const { name, email, phone, dob, playerProfile, shippingAddress } = req.body;
 
     const updatedUser = await updateProfile(req.user.id, {
       name,
@@ -266,6 +267,7 @@ export const updateProfileHandler = async (
       phone,
       dob,
       playerProfile,
+      shippingAddress,
     });
 
     res.status(200).json({
@@ -281,6 +283,7 @@ export const updateProfileHandler = async (
         dob: updatedUser.dob,
         photoUrl: updatedUser.photoUrl,
         photoS3Key: updatedUser.photoS3Key,
+        shippingAddress: updatedUser.shippingAddress,
       },
     });
   } catch (error) {

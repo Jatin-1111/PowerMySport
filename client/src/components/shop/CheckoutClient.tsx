@@ -3,10 +3,11 @@
 import { motion } from "framer-motion";
 import { CheckCircle2, CreditCard, LockKeyhole, MapPin } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useEffect } from "react";
 import { clearShopCart, getShopCartTotals, useShopCart } from "@/lib/shop/cart";
 import { createOrderFromCart } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 
 const initialForm = {
   fullName: "",
@@ -22,7 +23,30 @@ const initialForm = {
 export function CheckoutClient() {
   const items = useShopCart();
   const totals = useMemo(() => getShopCartTotals(items), [items]);
+  const { user } = useAuthStore();
   const [form, setForm] = useState(initialForm);
+
+  useEffect(() => {
+    if (user && user.shippingAddress) {
+      setForm({
+        fullName: user.shippingAddress.fullName || "",
+        email: user.shippingAddress.email || "",
+        phone: user.shippingAddress.phone || "",
+        addressLine1: user.shippingAddress.addressLine1 || "",
+        addressLine2: user.shippingAddress.addressLine2 || "",
+        city: user.shippingAddress.city || "",
+        state: user.shippingAddress.state || "",
+        postalCode: user.shippingAddress.postalCode || "",
+      });
+    } else if (user) {
+      setForm((current) => ({
+        ...current,
+        fullName: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+      }));
+    }
+  }, [user]);
   const [status, setStatus] = useState<"idle" | "placing" | "placed" | "error">(
     "idle",
   );

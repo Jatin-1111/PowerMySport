@@ -478,6 +478,17 @@ export interface UpdateProfilePayload {
       graduationYear?: number;
     };
   };
+  shippingAddress?: {
+    fullName: string;
+    email: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
 }
 
 export const updateProfile = async (
@@ -544,6 +555,20 @@ export const updateProfile = async (
     }
 
     await selfPlayer.save();
+  }
+
+  if (payload.shippingAddress) {
+    user.shippingAddress = {
+      fullName: payload.shippingAddress.fullName,
+      email: payload.shippingAddress.email,
+      phone: payload.shippingAddress.phone,
+      addressLine1: payload.shippingAddress.addressLine1,
+      ...(payload.shippingAddress.addressLine2 !== undefined ? { addressLine2: payload.shippingAddress.addressLine2 } : {}),
+      city: payload.shippingAddress.city,
+      state: payload.shippingAddress.state,
+      postalCode: payload.shippingAddress.postalCode,
+      country: payload.shippingAddress.country || "IN",
+    };
   }
 
   await user.save();

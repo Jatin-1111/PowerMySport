@@ -65,6 +65,18 @@ export interface Dependent {
   budgetTier?: "Budget" | "Moderate" | "Premium";
 }
 
+export interface UserShippingAddress {
+  fullName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -79,6 +91,7 @@ export interface User {
   playerProfile?: IPlayerProfile;
   venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];
+  shippingAddress?: UserShippingAddress;
 }
 
 export interface AuthResponse {

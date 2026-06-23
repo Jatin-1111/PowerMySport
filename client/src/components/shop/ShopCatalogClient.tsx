@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, SlidersHorizontal, Sparkles, ShoppingCart, ArrowUpRight, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ProductCard } from "@/components/shop/ProductCard";
 import type { Product } from "@/lib/shop/ecommerce-api";
 import { getShopCartTotals, useShopCart } from "@/lib/shop/cart";
@@ -35,8 +35,21 @@ export function ShopCatalogClient({
   const [brand, setBrand] = useState(searchParams.get("brand") || "");
   const [rating, setRating] = useState(searchParams.get("rating") ? Number(searchParams.get("rating")) : 0);
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : facets.maxPrice);
+  const [condition, setCondition] = useState(searchParams.get("condition") || "");
+  const [sellerType, setSellerType] = useState(searchParams.get("sellerType") || "");
 
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    setSearch(searchParams.get("search") || "");
+    setCategory(searchParams.get("category") || "ALL");
+    setSort(searchParams.get("sortBy") || "featured");
+    setBrand(searchParams.get("brand") || "");
+    setRating(searchParams.get("rating") ? Number(searchParams.get("rating")) : 0);
+    setMaxPrice(searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : facets.maxPrice);
+    setCondition(searchParams.get("condition") || "");
+    setSellerType(searchParams.get("sellerType") || "");
+  }, [searchParams, facets.maxPrice]);
 
   const cartItems = useShopCart();
   const totals = useMemo(() => getShopCartTotals(cartItems), [cartItems]);
@@ -55,6 +68,8 @@ export function ShopCatalogClient({
     if (brand) params.set("brand", brand);
     if (rating > 0) params.set("rating", rating.toString());
     if (maxPrice < facets.maxPrice) params.set("maxPrice", maxPrice.toString());
+    if (condition) params.set("condition", condition);
+    if (sellerType) params.set("sellerType", sellerType);
 
     router.push(`/shop?${params.toString()}`);
   };
@@ -66,6 +81,8 @@ export function ShopCatalogClient({
     setBrand("");
     setRating(0);
     setMaxPrice(facets.maxPrice || 10000);
+    setCondition("");
+    setSellerType("");
     router.push("/shop");
   };
 
@@ -234,7 +251,7 @@ export function ShopCatalogClient({
                 <SlidersHorizontal className="h-5 w-5 text-slate-900" />
                 <h2 className="text-lg font-black text-slate-900">Filters</h2>
               </div>
-            {(search || category !== "ALL" || brand || rating > 0 || maxPrice < (facets.maxPrice || 10000)) && (
+            {(search || category !== "ALL" || brand || rating > 0 || maxPrice < (facets.maxPrice || 10000) || condition || sellerType) && (
               <button
                 onClick={clearFilters}
                 className="text-xs font-bold text-[#ff5722] hover:underline transition-all"
@@ -347,6 +364,66 @@ export function ShopCatalogClient({
                   {r} Stars & Up
                 </button>
               ))}
+            </div>
+          </details>
+
+          <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm" open>
+            <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              Gear Condition
+              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                onClick={() => setCondition("")}
+                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", condition === "" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
+              >
+                All Gear
+              </button>
+              <button
+                onClick={() => setCondition("NEW")}
+                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", condition === "NEW" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
+              >
+                New Gear
+              </button>
+              <button
+                onClick={() => setCondition("USED")}
+                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", condition === "USED" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
+              >
+                Used / Pre-owned
+              </button>
+            </div>
+          </details>
+
+          <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm" open>
+            <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              Seller Type
+              <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                onClick={() => setSellerType("")}
+                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
+              >
+                All Sellers
+              </button>
+              <button
+                onClick={() => setSellerType("SYSTEM")}
+                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "SYSTEM" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
+              >
+                PowerMySport Store
+              </button>
+              <button
+                onClick={() => setSellerType("PARENT")}
+                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "PARENT" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
+              >
+                Parents
+              </button>
+              <button
+                onClick={() => setSellerType("PLAYER")}
+                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "PLAYER" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
+              >
+                Players (P2P)
+              </button>
             </div>
           </details>
 

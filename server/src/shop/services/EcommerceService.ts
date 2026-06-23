@@ -20,6 +20,8 @@ import {
   ApiResponse,
 } from "../../types/ecommerce";
 import { getPhonePeOrderStatus } from "../../shared/services/PhonePeService";
+import { User as UserModel } from "../../client/models/User";
+import { sendOrderConfirmationEmail } from "../../utils/email";
 
 // ============ INVENTORY SERVICE ============
 
@@ -535,6 +537,9 @@ export class OrderService {
         quantity: cartItem.quantity,
         unitPrice: variantDoc?.price || 0,
         lineTotal: cartItem.lineTotal,
+        sellerId: variant.seller || null,
+        condition: variant.condition || "NEW",
+        fulfillmentStatus: FulfillmentStatus.PENDING,
       });
     }
 
@@ -603,6 +608,41 @@ export class OrderService {
 
     // Clear user's cart after successful order
     await this.cartService.clearCart(order.userId.toString());
+
+    // Send transaction order confirmation email asynchronously
+    UserModel.findById(order.userId)
+      .then((user) => {
+        if (user && user.email) {
+          sendOrderConfirmationEmail({
+            email: user.email,
+            name: user.name,
+            orderNumber: order.orderNumber,
+            totalAmount: order.totalAmount,
+            items: order.items.map((item) => ({
+              productName: item.productName,
+              variantLabel: item.variantLabel,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              lineTotal: item.lineTotal,
+            })),
+            shippingAddress: {
+              fullName: order.shippingAddress.fullName,
+              addressLine1: order.shippingAddress.addressLine1,
+              ...(order.shippingAddress.addressLine2 !== undefined ? { addressLine2: order.shippingAddress.addressLine2 } : {}),
+              city: order.shippingAddress.city,
+              state: order.shippingAddress.state,
+              postalCode: order.shippingAddress.postalCode,
+              country: order.shippingAddress.country || "IN",
+            },
+            paymentMethod: order.paymentMethod,
+          }).catch((err) => {
+            console.error("Failed to send order confirmation email:", err);
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch user for order confirmation email:", err);
+      });
 
     return order;
   }
@@ -835,6 +875,8 @@ export class ProductService {
     rating?: number,
     minPrice?: number,
     maxPrice?: number,
+    condition?: string,
+    sellerType?: string,
   ) {
     const query: any = {
       isActive: true,
@@ -856,6 +898,14 @@ export class ProductService {
       query.basePrice = {};
       if (minPrice !== undefined) query.basePrice.$gte = minPrice;
       if (maxPrice !== undefined) query.basePrice.$lte = maxPrice;
+    }
+
+    if (condition) {
+      query.condition = condition;
+    }
+
+    if (sellerType) {
+      query.sellerType = sellerType;
     }
 
     if (search) {
@@ -887,7 +937,14 @@ export class ProductService {
     // Get facets (available brands and price range) for the current filtered (or unfiltered) set
     // This allows dynamic filter sidebars
     const facets = await ProductModel.aggregate([
-      { $match: { isActive: true, ...(category ? { category } : {}) } },
+      { 
+        $match: { 
+          isActive: true, 
+          ...(category ? { category } : {}),
+          ...(condition ? { condition } : {}),
+          ...(sellerType ? { sellerType } : {})
+        } 
+      },
       {
         $group: {
           _id: null,
@@ -967,28 +1024,30 @@ export class ProductService {
     productId: string,
     updateData: any,
   ): Promise<ProductDocument | null> {
-    const product = await ProductModel.findByIdAndUpdate(productId, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await ProductModel.findById(productId);
+    if (!product) return null;
 
-    if (product) {
-      for (const variant of product.variants) {
-        let inventory = await InventoryModel.findOne({ productVariantId: variant._id });
-        if (inventory) {
-          inventory.quantityOnHand = variant.stock;
-          inventory.reorderLevel = variant.reorderLevel;
-          await inventory.save();
-        } else {
-          inventory = new InventoryModel({
-            productVariantId: variant._id,
-            quantityOnHand: variant.stock,
-            quantityReserved: 0,
-            quantityAvailable: variant.stock,
-            reorderLevel: variant.reorderLevel,
-          });
-          await inventory.save();
-        }
+    // Apply updates
+    Object.assign(product, updateData);
+
+    // Save product (which runs validation & pre-save hook for totalStock)
+    await product.save();
+
+    for (const variant of product.variants) {
+      let inventory = await InventoryModel.findOne({ productVariantId: variant._id });
+      if (inventory) {
+        inventory.quantityOnHand = variant.stock;
+        inventory.reorderLevel = variant.reorderLevel;
+        await inventory.save();
+      } else {
+        inventory = new InventoryModel({
+          productVariantId: variant._id,
+          quantityOnHand: variant.stock,
+          quantityReserved: 0,
+          quantityAvailable: variant.stock,
+          reorderLevel: variant.reorderLevel,
+        });
+        await inventory.save();
       }
     }
 

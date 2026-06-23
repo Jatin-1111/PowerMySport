@@ -43,6 +43,17 @@ export interface UserDocument extends Document {
     addedAt?: Date;
     updatedAt?: Date;
   }>;
+  shippingAddress?: {
+    fullName: string;
+    email: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -91,6 +102,17 @@ const userSchema = new Schema<UserDocument>(
     refundMethods: [
       { type: { type: String, enum: ["ORIGINAL_CARD", "BANK_ACCOUNT", "STORE_CREDIT"], default: "ORIGINAL_CARD" }, accountHolderName: { type: String, trim: true }, accountNumber: { type: String, trim: true }, ifscCode: { type: String, trim: true, uppercase: true }, bankName: { type: String, trim: true }, isDefault: { type: Boolean, default: false }, addedAt: { type: Date, default: Date.now }, updatedAt: { type: Date, default: Date.now } },
     ],
+    shippingAddress: {
+      fullName: { type: String, trim: true },
+      email: { type: String, trim: true, lowercase: true },
+      phone: { type: String, trim: true },
+      addressLine1: { type: String, trim: true },
+      addressLine2: { type: String, trim: true },
+      city: { type: String, trim: true },
+      state: { type: String, trim: true },
+      postalCode: { type: String, trim: true },
+      country: { type: String, trim: true, default: "IN" },
+    },
   },
   { timestamps: true, discriminatorKey: "userType" },
 );

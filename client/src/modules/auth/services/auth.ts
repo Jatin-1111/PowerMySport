@@ -46,6 +46,7 @@ export const authApi = {
       weeklyTimeCommitment?: number;
       budgetTier?: "Budget" | "Moderate" | "Premium";
     };
+    shippingAddress?: User["shippingAddress"];
   }): Promise<ApiResponse<User>> => {
     const response = await axiosInstance.put("/auth/profile", data);
     return response.data;

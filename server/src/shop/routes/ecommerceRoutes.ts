@@ -3,6 +3,7 @@ import {
   EcommerceController,
   AdminEcommerceController,
 } from "../controllers/EcommerceController";
+import { SellerController } from "../controllers/SellerController";
 import { WebhookController } from "../../shared/controllers/WebhookController";
 import { joinWaitlist } from "../controllers/WaitlistController";
 import { authMiddleware, requirePermission } from "../../middleware/auth";
@@ -11,6 +12,7 @@ import { cacheResponse } from "../../middleware/cacheMiddleware";
 const router = Router();
 const controller = new EcommerceController();
 const adminController = new AdminEcommerceController();
+const sellerController = new SellerController();
 const webhookController = new WebhookController();
 
 // ============ PUBLIC CATALOG ROUTES ============
@@ -263,5 +265,58 @@ router.post(
 router.post("/webhooks/phonepe", (req: Request, res: Response) => {
   webhookController.handlePhonePeWebhook(req, res);
 });
+
+// ============ SELLER/MARKETPLACE ROUTES ============
+
+/**
+ * GET /api/v1/seller/products
+ * List logged-in seller's products
+ */
+router.get("/seller/products", authMiddleware, (req: Request, res: Response) =>
+  sellerController.listSellerProducts(req, res)
+);
+
+/**
+ * POST /api/v1/seller/products
+ * List a new product for sale (merchant or P2P)
+ */
+router.post("/seller/products", authMiddleware, (req: Request, res: Response) =>
+  sellerController.createSellerProduct(req, res)
+);
+
+/**
+ * PATCH /api/v1/seller/products/:productId
+ * Update a seller's product listing
+ */
+router.patch("/seller/products/:productId", authMiddleware, (req: Request, res: Response) =>
+  sellerController.updateSellerProduct(req, res)
+);
+
+/**
+ * DELETE /api/v1/seller/products/:productId
+ * Deactivate a seller's product listing
+ */
+router.delete("/seller/products/:productId", authMiddleware, (req: Request, res: Response) =>
+  sellerController.deleteSellerProduct(req, res)
+);
+
+/**
+ * GET /api/v1/seller/orders
+ * List orders received for seller's items
+ */
+router.get("/seller/orders", authMiddleware, (req: Request, res: Response) =>
+  sellerController.listSellerOrders(req, res)
+);
+
+/**
+ * PATCH /api/v1/seller/orders/:orderId/items/:productVariantId/fulfillment
+ * Update fulfillment status/tracking of a seller's order item
+ */
+router.patch(
+  "/seller/orders/:orderId/items/:productVariantId/fulfillment",
+  authMiddleware,
+  (req: Request, res: Response) =>
+    sellerController.updateSellerOrderItemFulfillment(req, res)
+);
 
 export default router;

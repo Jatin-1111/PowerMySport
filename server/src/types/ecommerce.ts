@@ -53,6 +53,10 @@ export interface IProduct {
   variants: IProductVariant[];
   totalStock: number;
   isActive: boolean;
+  seller?: string;
+  sellerName?: string;
+  sellerType?: "MERCHANT" | "PARENT" | "PLAYER" | "COACH" | "ACADEMY" | "SYSTEM";
+  condition?: "NEW" | "USED";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -137,6 +141,10 @@ export interface IOrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  sellerId?: string;
+  condition?: "NEW" | "USED";
+  fulfillmentStatus: FulfillmentStatus;
+  trackingNumber?: string;
   createdAt: Date;
 }
 
