@@ -7,9 +7,11 @@ export function middleware(request: NextRequest) {
   if (!isCommunityLive) {
     const path = request.nextUrl.pathname;
     
-    // Redirect all paths to root where the waitlist is shown, except the root itself
+    // Rewrite all paths to root where the waitlist is shown, except the root itself
     if (path !== "/") {
-      return NextResponse.redirect(new URL("/", request.url));
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.rewrite(url);
     }
   }
   
