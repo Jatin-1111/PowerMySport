@@ -304,7 +304,10 @@ const cancelRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
 
   const cancelResults = await Promise.allSettled(
     Array.from({ length: config.cancelAttempts }, () =>
-      cancelBooking(booking.booking._id.toString()),
+      cancelBooking(
+        booking.booking._id.toString(),
+        booking.booking.organizerId.toString(),
+      ),
     ),
   );
 

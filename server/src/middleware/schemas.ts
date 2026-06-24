@@ -15,8 +15,11 @@ export const registerSchema = z.object({
     .enum(["PLAYER", "VENUE_LISTER", "COACH"])
     .optional()
     .default("PLAYER"),
+  // NOTE: "Admin" is intentionally NOT accepted at self-registration. Privileged
+  // roles/types must be provisioned through the admin/verification flows, never
+  // self-selected by the registrant.
   userType: z
-    .enum(["Parent", "Recreational", "Coach", "Academy", "VenueLister", "Admin"])
+    .enum(["Parent", "Recreational", "Coach", "Academy", "VenueLister"])
     .optional()
     .default("Recreational"),
 });

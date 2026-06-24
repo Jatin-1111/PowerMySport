@@ -1,5 +1,6 @@
 import { Sport, SportDocument } from "../models/Sport";
 import { GoogleGenAI } from "@google/genai";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -36,7 +37,9 @@ export class SportsService {
    */
   async searchSports(query: string): Promise<SportDocument[]> {
     try {
-      const regex = new RegExp(query, "i"); // case-insensitive
+      // Escape + length-cap the (unauthenticated) user input before building a
+      // regex to prevent regex injection and ReDoS DoS on this public endpoint.
+      const regex = new RegExp(buildSafeSearchRegexSource(query), "i");
       return await Sport.find({
         isVerified: true,
         $or: [{ name: regex }, { slug: regex }],

@@ -5,6 +5,7 @@ import { User } from "../models/User";
 import { CommunityProfile } from "../../community/models/CommunityProfile";
 import mongoose from "mongoose";
 import { S3Service } from "../../shared/services/S3Service";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
 
 type UserWithPhoto = {
   photoUrl?: string;
@@ -416,15 +417,17 @@ export class FriendService {
       return [];
     }
 
-    const lowerQuery = query.toLowerCase();
+    // Escape + length-cap the user input before using it in a $regex query to
+    // prevent regex injection and ReDoS (catastrophic backtracking) DoS.
+    const safeQuery = buildSafeSearchRegexSource(query.toLowerCase());
 
     // Search for players by name or email (case-insensitive)
     const users = await User.find({
       role: "PLAYER",
       _id: { $ne: userId }, // Exclude current user
       $or: [
-        { name: { $regex: lowerQuery, $options: "i" } },
-        { email: { $regex: lowerQuery, $options: "i" } },
+        { name: { $regex: safeQuery, $options: "i" } },
+        { email: { $regex: safeQuery, $options: "i" } },
       ],
     })
       .limit(20)

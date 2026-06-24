@@ -290,27 +290,38 @@ export class PaymentService {
   async verifyAndConfirmPayment(
     orderId: string,
     paymentId: string,
-    phonepeOrderId: string,
-    signature: string,
+    _phonepeOrderId: string,
+    _signature: string,
   ): Promise<PaymentTransactionDocument> {
-    // phonepeOrderId is the merchantOrderId we generated; verifyPayment calls
-    // getPhonePeOrderStatus which requires the merchantOrderId, not the payment ID.
-    const isValid = await this.gatewayService.verifyPayment(
-      phonepeOrderId,
-      phonepeOrderId,
-      signature,
-    );
+    // SECURITY: the client-supplied phonepeOrderId/signature are NOT trusted.
+    // We locate the transaction by our own orderId link, then re-poll PhonePe
+    // using the merchantOrderId WE stored at order creation, and require BOTH a
+    // COMPLETED state AND an exact amount match (paise) before confirming.
+    const transaction = await PaymentTransactionModel.findOne({
+      orderId: new mongoose.Types.ObjectId(orderId),
+    }).sort({ createdAt: -1 });
 
-    if (!isValid) {
-      throw new Error("Payment verification failed");
+    if (!transaction) {
+      throw new Error("Payment transaction not found");
     }
 
-    // Update transaction
-    const transaction = await PaymentTransactionModel.findOneAndUpdate(
-      {
-        orderId: new mongoose.Types.ObjectId(orderId),
-        gatewayOrderId: phonepeOrderId,
-      },
+    const gatewayStatus = await getPhonePeOrderStatus(
+      transaction.gatewayOrderId,
+    );
+
+    if (gatewayStatus.state !== "COMPLETED") {
+      throw new Error("Payment not completed");
+    }
+
+    if (
+      typeof gatewayStatus.amount !== "number" ||
+      gatewayStatus.amount !== transaction.amount
+    ) {
+      throw new Error("Payment amount mismatch");
+    }
+
+    const updated = await PaymentTransactionModel.findOneAndUpdate(
+      { _id: transaction._id },
       {
         gatewayPaymentId: paymentId,
         status: PaymentStatus.CAPTURED,
@@ -318,11 +329,7 @@ export class PaymentService {
       { new: true },
     );
 
-    if (!transaction) {
-      throw new Error("Payment transaction not found");
-    }
-
-    return transaction;
+    return updated || transaction;
   }
 
   /**
@@ -450,6 +457,14 @@ export class RefundService {
 
     if (!order) {
       throw new Error("Order not found");
+    }
+
+    // Only a CAPTURED order can be refunded. This also blocks repeat refunds:
+    // the first refund flips paymentStatus to REFUND_INITIATED, so a second
+    // call no longer sees CAPTURED and is rejected (prevents over-refunding
+    // beyond the amount actually collected).
+    if (order.paymentStatus !== PaymentStatus.CAPTURED) {
+      throw new Error("Order is not in a refundable (captured) state");
     }
 
     if (!merchantOrderId) {

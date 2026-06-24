@@ -46,6 +46,7 @@ export const authApi = {
       weeklyTimeCommitment?: number;
       budgetTier?: "Budget" | "Moderate" | "Premium";
     };
+    shippingAddress?: User["shippingAddress"];
   }): Promise<ApiResponse<User>> => {
     const response = await axiosInstance.put("/auth/profile", data);
     return response.data;
@@ -72,10 +73,10 @@ export const authApi = {
   },
 
   googleLogin: async (data: {
-    googleId: string;
-    email: string;
-    name: string;
-    photoUrl?: string;
+    // Raw Google ID token ("credential" from Google Identity Services).
+    // The server verifies this and derives identity from it — we no longer
+    // send client-decoded googleId/email (those were forgeable).
+    credential: string;
     role?: "PLAYER" | "VENUE_LISTER" | "COACH" | "ACADEMY_OWNER";
     userType?: string;
     action?: "login" | "register";

@@ -318,7 +318,16 @@ export const updateVenueDetails = async (
   try {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
-    const venue = await updateVenue(venueId, req.body);
+    const ownerId = req.user?.id;
+    if (!ownerId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const venue = await updateVenue(venueId, ownerId, req.body);
 
     if (!venue) {
       res.status(404).json({
@@ -351,7 +360,16 @@ export const deleteVenueById = async (
   try {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
-    const venue = await deleteVenue(venueId);
+    const ownerId = req.user?.id;
+    if (!ownerId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const venue = await deleteVenue(venueId, ownerId);
 
     if (!venue) {
       res.status(404).json({

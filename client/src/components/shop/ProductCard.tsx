@@ -92,12 +92,19 @@ export function ProductCard({ product }: { product: Product }) {
             )}
           </motion.div>
         </Link>
-        {product.salePrice ? (
-          <span className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full bg-[#ff5722] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md pointer-events-none">
-            <BadgePercent className="h-3.5 w-3.5" />
-            Sale
-          </span>
-        ) : null}
+        <div className="absolute left-4 top-4 z-20 flex flex-col gap-2 pointer-events-none">
+          {product.salePrice ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ff5722] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
+              <BadgePercent className="h-3.5 w-3.5" />
+              Sale
+            </span>
+          ) : null}
+          {product.condition === "USED" ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
+              Used
+            </span>
+          ) : null}
+        </div>
         <div className="absolute right-4 top-4 z-20">
           <WishlistButton productId={product.id} />
         </div>
@@ -111,7 +118,7 @@ export function ProductCard({ product }: { product: Product }) {
           {product.name}
         </Link>
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-          {product.category}
+          {product.category} {product.sellerName ? `• Sold by: ${product.sellerName}` : ""}
         </p>
 
         <div className="mt-auto pt-5 flex flex-col gap-4">

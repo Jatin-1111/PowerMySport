@@ -1,9 +1,10 @@
-import OutboxMessage from "../models/OutboxMessage";
-import { NotificationService } from "../../client/services/NotificationService";
-import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
-import { reconcileCoachSubscriptionPaymentFromWebhookPayload } from "../../client/services/CoachSubscriptionPaymentService";
 import { reconcileBookingPaymentFromWebhookPayload } from "../../client/services/BookingService";
+import { reconcileCoachSubscriptionPaymentFromWebhookPayload } from "../../client/services/CoachSubscriptionPaymentService";
+import { NotificationService } from "../../client/services/NotificationService";
 import { reconcileEcommerceOrderFromWebhookPayload } from "../../shop/services/EcommerceService";
+import { sendEmail } from "../../utils/email";
+import OutboxMessage from "../models/OutboxMessage";
+import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_ATTEMPTS = 6;
@@ -116,6 +117,16 @@ export const startOutboxWorker = () => {
               throw procErr;
             }
           }
+        } else if (item.type === "send_email") {
+          const payload = item.payload || {};
+          const { to, subject, html, text } = payload;
+
+          if (!to || !subject || !html) {
+            throw new Error("Missing required email fields: to, subject, html");
+          }
+
+          await sendEmail({ to, subject, html, text });
+          console.info("[outbox][email] sent", { to, subject });
         }
 
         item.status = "DONE";

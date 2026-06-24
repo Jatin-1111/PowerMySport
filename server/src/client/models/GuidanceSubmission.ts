@@ -70,6 +70,32 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       },
       talentIdentifiers: { type: [String] },
       multiSportAdvisory: { type: String },
+      journeyPhases: [
+        {
+          title: { type: String },
+          timeframe: { type: String },
+          focus: { type: String },
+          milestones: { type: [String] },
+          outcome: { type: String },
+          estimatedCost: { type: String },
+          _id: false,
+        },
+      ],
+      goalAssessment: {
+        statedGoal: { type: String },
+        verdict: {
+          type: String,
+          enum: ["On Track", "Achievable", "Ambitious", "Long-Term"],
+        },
+        rationale: { type: String },
+        benchmark: { type: String },
+      },
+      costBreakdown: {
+        monthlyCoaching: { type: String },
+        equipment: { type: String },
+        tournaments: { type: String },
+        summary: { type: String },
+      },
       burnoutRisk: {
         level: { type: String, enum: ["low", "medium", "high"] },
         message: { type: String },

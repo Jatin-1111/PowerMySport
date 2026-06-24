@@ -315,15 +315,36 @@ export const getAllVenues = async (
   };
 };
 
+// Fields a venue owner must never be able to set via a self-service update —
+// these control ownership, verification/approval state, and platform economics.
+const VENUE_PROTECTED_FIELDS = [
+  "_id",
+  "ownerId",
+  "approvalStatus",
+  "isVerified",
+  "isActive",
+  "commissionRate",
+  "rating",
+  "reviewCount",
+] as const;
+
 export const updateVenue = async (
   id: string,
+  ownerId: string,
   payload: Partial<CreateVenuePayload>,
 ): Promise<VenueDocument | null> => {
-  return Venue.findByIdAndUpdate(id, payload, { new: true });
+  // Strip protected fields so they cannot be mass-assigned, and scope the
+  // update to the owner so a lister can only edit their OWN venue (IDOR).
+  const sanitized: Record<string, unknown> = { ...payload };
+  for (const field of VENUE_PROTECTED_FIELDS) {
+    delete sanitized[field];
+  }
+  return Venue.findOneAndUpdate({ _id: id, ownerId }, sanitized, { new: true });
 };
 
 export const deleteVenue = async (
   id: string,
+  ownerId: string,
 ): Promise<VenueDocument | null> => {
-  return Venue.findByIdAndDelete(id);
+  return Venue.findOneAndDelete({ _id: id, ownerId });
 };

@@ -1,25 +1,24 @@
 import mongoose from "mongoose";
+import { User as UserModel } from "../../client/models/User";
+import OutboxMessage from "../../shared/models/OutboxMessage";
+import { getPhonePeOrderStatus } from "../../shared/services/PhonePeService";
 import {
-  Cart as CartModel,
+  FulfillmentStatus,
+  OrderStatus,
+  PaymentGateway,
+  PaymentStatus,
+} from "../../types/ecommerce";
+import {
   CartDocument,
   CartItemDocument,
+  Cart as CartModel,
   Inventory as InventoryModel,
-  InventoryDocument,
-  Product as ProductModel,
-  ProductDocument,
-  Order as OrderModel,
   OrderDocument,
+  Order as OrderModel,
   PaymentTransaction as PaymentTransactionModel,
-  PaymentTransactionDocument,
+  ProductDocument,
+  Product as ProductModel,
 } from "../models/Ecommerce";
-import {
-  OrderStatus,
-  PaymentStatus,
-  FulfillmentStatus,
-  PaymentGateway,
-  ApiResponse,
-} from "../../types/ecommerce";
-import { getPhonePeOrderStatus } from "../../shared/services/PhonePeService";
 
 // ============ INVENTORY SERVICE ============
 
@@ -535,6 +534,9 @@ export class OrderService {
         quantity: cartItem.quantity,
         unitPrice: variantDoc?.price || 0,
         lineTotal: cartItem.lineTotal,
+        sellerId: variant.seller || null,
+        condition: variant.condition || "NEW",
+        fulfillmentStatus: FulfillmentStatus.PENDING,
       });
     }
 
@@ -578,33 +580,170 @@ export class OrderService {
       throw new Error("Order not found");
     }
 
-    // Validate state transition
-    if (order.status !== OrderStatus.PENDING_PAYMENT) {
-      throw new Error(
-        `Cannot confirm payment for order in ${order.status} state`,
-      );
+    // Idempotency guard: confirmPayment can be invoked by both the PhonePe
+    // webhook reconciler and the client-side payment sync. If the order is
+    // already confirmed (or no longer awaiting payment), return it as-is
+    // instead of throwing — re-running the side effects would double-deduct
+    // inventory and re-send emails.
+    if (
+      order.paymentStatus === PaymentStatus.CAPTURED ||
+      order.status !== OrderStatus.PENDING_PAYMENT
+    ) {
+      return order;
     }
 
-    // Update order
+    // SECURITY: independently verify with PhonePe (using the merchantOrderId WE
+    // stored, not any client/webhook-supplied value) that this order was
+    // actually captured for the EXACT order amount before confirming. This is
+    // the single chokepoint every confirmation path flows through (client
+    // verify, sync, webhook, recovery), so it guards them all against
+    // confirming an unpaid or underpaid order.
+    const paymentTx = await PaymentTransactionModel.findOne({
+      orderId: order._id,
+    }).sort({ createdAt: -1 });
+
+    if (!paymentTx?.gatewayOrderId) {
+      throw new Error("Payment transaction not found for order");
+    }
+
+    const gatewayStatus = await getPhonePeOrderStatus(paymentTx.gatewayOrderId);
+    if (gatewayStatus.state !== "COMPLETED") {
+      throw new Error("Payment not completed at gateway");
+    }
+    if (
+      typeof gatewayStatus.amount !== "number" ||
+      gatewayStatus.amount !== order.totalAmount
+    ) {
+      throw new Error("Payment amount mismatch");
+    }
+
+    // 1) Persist the payment confirmation FIRST so the status is durable even
+    // if a downstream side effect (inventory/cart/email) fails.
     order.status = OrderStatus.PAYMENT_CONFIRMED;
     order.paymentStatus = PaymentStatus.CAPTURED;
-    order.paymentGatewayPaymentId = paymentGatewayPaymentId;
-    order.fulfillmentStatus = FulfillmentStatus.PENDING;
-
-    // Confirm inventory deduction for each item
-    for (const item of order.items) {
-      await this.inventoryService.confirmInventoryDeduction(
-        item.productVariantId.toString(),
-        item.quantity,
-      );
+    if (paymentGatewayPaymentId) {
+      order.paymentGatewayPaymentId = paymentGatewayPaymentId;
     }
-
+    order.fulfillmentStatus = FulfillmentStatus.PENDING;
     await order.save();
 
-    // Clear user's cart after successful order
-    await this.cartService.clearCart(order.userId.toString());
+    // 2) Confirm inventory deduction for each item (best effort — a reservation
+    // mismatch must never roll back a confirmed payment).
+    for (const item of order.items) {
+      try {
+        await this.inventoryService.confirmInventoryDeduction(
+          item.productVariantId.toString(),
+          item.quantity,
+        );
+      } catch (err) {
+        console.error("[order] inventory deduction failed (non-fatal)", {
+          orderId,
+          productVariantId: item.productVariantId.toString(),
+          error: (err as Error)?.message || String(err),
+        });
+      }
+    }
+
+    // 3) Clear user's cart after successful order (best effort).
+    try {
+      await this.cartService.clearCart(order.userId.toString());
+    } catch (err) {
+      console.error("[order] cart clear failed (non-fatal)", {
+        orderId,
+        error: (err as Error)?.message || String(err),
+      });
+    }
+
+    // 4) Queue order confirmation email via the outbox worker (best effort).
+    try {
+      await this.queueOrderConfirmationEmail(order);
+    } catch (err) {
+      console.error("[order] failed to queue confirmation email (non-fatal)", {
+        orderId,
+        error: (err as Error)?.message || String(err),
+      });
+    }
 
     return order;
+  }
+
+  /**
+   * Build and enqueue the order confirmation email for the outbox worker.
+   * Kept separate so checkout flows never fail on email-side errors.
+   */
+  private async queueOrderConfirmationEmail(
+    order: OrderDocument,
+  ): Promise<void> {
+    const user = await UserModel.findById(order.userId);
+    if (user && user.email) {
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #ff5722;">Order Confirmation</h2>
+            <p>Hi ${user.name || "Customer"},</p>
+            <p>Thank you for your order! We're thrilled to have you with us.</p>
+            
+            <h3>Order Details</h3>
+            <p><strong>Order Number:</strong> ${order.orderNumber}</p>
+            <p><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Total Amount:</strong> ₹${(order.totalAmount / 100).toFixed(2)}</p>
+            
+            <h3>Items Ordered</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead><tr style="background-color: #f5f5f5;"><th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Product</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Qty</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Price</th></tr></thead>
+              <tbody>
+                ${order.items
+                  .map(
+                    (item) => `
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${item.productName}${item.variantLabel ? ` (${item.variantLabel})` : ""}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.quantity}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">₹${(item.lineTotal / 100).toFixed(2)}</td>
+                  </tr>
+                `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            
+            <h3>Shipping Address</h3>
+            <p>
+              ${order.shippingAddress.fullName}<br/>
+              ${order.shippingAddress.addressLine1}<br/>
+              ${order.shippingAddress.addressLine2 ? order.shippingAddress.addressLine2 + "<br/>" : ""}
+              ${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}<br/>
+              ${order.shippingAddress.country || "IN"}
+            </p>
+            
+            <h3>What's Next?</h3>
+            <p>Your order is being processed and will be shipped shortly. You'll receive tracking updates via email.</p>
+            
+            <p style="color: #666; font-size: 12px; margin-top: 20px;">
+              If you have any questions, please contact our support team at support@powermysport.com
+            </p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await OutboxMessage.create({
+        type: "send_email",
+        payload: {
+          to: user.email,
+          subject: `Order Confirmation - ${order.orderNumber}`,
+          html: emailHtml,
+        },
+        status: "PENDING",
+        attempts: 0,
+      });
+      console.info("[order] queued confirmation email for", {
+        orderId: order._id.toString(),
+        email: user.email,
+      });
+    }
   }
 
   /**
@@ -835,6 +974,8 @@ export class ProductService {
     rating?: number,
     minPrice?: number,
     maxPrice?: number,
+    condition?: string,
+    sellerType?: string,
   ) {
     const query: any = {
       isActive: true,
@@ -856,6 +997,14 @@ export class ProductService {
       query.basePrice = {};
       if (minPrice !== undefined) query.basePrice.$gte = minPrice;
       if (maxPrice !== undefined) query.basePrice.$lte = maxPrice;
+    }
+
+    if (condition) {
+      query.condition = condition;
+    }
+
+    if (sellerType) {
+      query.sellerType = sellerType;
     }
 
     if (search) {
@@ -884,25 +1033,47 @@ export class ProductService {
 
     const total = await ProductModel.countDocuments(query);
 
-    // Get facets (available brands and price range) for the current filtered (or unfiltered) set
-    // This allows dynamic filter sidebars
-    const facets = await ProductModel.aggregate([
-      { $match: { isActive: true, ...(category ? { category } : {}) } },
+    // Facets power the filter sidebar. Categories are computed across the whole
+    // active catalog (never scoped by the current category) so the shopper can
+    // always switch between categories; brands and price range reflect the
+    // current category/condition/seller context.
+    const facetResult = await ProductModel.aggregate([
+      { $match: { isActive: true } },
       {
-        $group: {
-          _id: null,
-          brands: { $addToSet: "$brand" },
-          minPrice: { $min: "$basePrice" },
-          maxPrice: { $max: "$basePrice" },
-        }
-      }
+        $facet: {
+          categories: [{ $group: { _id: "$category" } }, { $sort: { _id: 1 } }],
+          scoped: [
+            {
+              $match: {
+                ...(category ? { category } : {}),
+                ...(condition ? { condition } : {}),
+                ...(sellerType ? { sellerType } : {}),
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                brands: { $addToSet: "$brand" },
+                minPrice: { $min: "$basePrice" },
+                maxPrice: { $max: "$basePrice" },
+              },
+            },
+          ],
+        },
+      },
     ]);
 
-    const availableFacets = facets.length > 0 ? {
-      brands: facets[0].brands.filter(Boolean).sort(),
-      minPrice: facets[0].minPrice || 0,
-      maxPrice: facets[0].maxPrice || 10000,
-    } : { brands: [], minPrice: 0, maxPrice: 10000 };
+    const facetData = facetResult[0] || { categories: [], scoped: [] };
+    const scopedFacets = facetData.scoped?.[0] || {};
+    const availableFacets = {
+      categories: (facetData.categories || [])
+        .map((entry: { _id: string }) => entry._id)
+        .filter(Boolean)
+        .sort(),
+      brands: (scopedFacets.brands || []).filter(Boolean).sort(),
+      minPrice: scopedFacets.minPrice || 0,
+      maxPrice: scopedFacets.maxPrice || 10000,
+    };
 
     return {
       products,
@@ -916,7 +1087,10 @@ export class ProductService {
   /**
    * Get related products based on category and tags
    */
-  async getRelatedProducts(productId: string, limit: number = 4): Promise<ProductDocument[]> {
+  async getRelatedProducts(
+    productId: string,
+    limit: number = 4,
+  ): Promise<ProductDocument[]> {
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return [];
     }
@@ -927,10 +1101,7 @@ export class ProductService {
     const related = await ProductModel.find({
       _id: { $ne: product._id },
       isActive: true,
-      $or: [
-        { category: product.category },
-        { tags: { $in: product.tags } }
-      ]
+      $or: [{ category: product.category }, { tags: { $in: product.tags } }],
     })
       .sort({ averageRating: -1, totalReviews: -1 }) // Show best rated first
       .limit(limit);
@@ -967,28 +1138,32 @@ export class ProductService {
     productId: string,
     updateData: any,
   ): Promise<ProductDocument | null> {
-    const product = await ProductModel.findByIdAndUpdate(productId, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await ProductModel.findById(productId);
+    if (!product) return null;
 
-    if (product) {
-      for (const variant of product.variants) {
-        let inventory = await InventoryModel.findOne({ productVariantId: variant._id });
-        if (inventory) {
-          inventory.quantityOnHand = variant.stock;
-          inventory.reorderLevel = variant.reorderLevel;
-          await inventory.save();
-        } else {
-          inventory = new InventoryModel({
-            productVariantId: variant._id,
-            quantityOnHand: variant.stock,
-            quantityReserved: 0,
-            quantityAvailable: variant.stock,
-            reorderLevel: variant.reorderLevel,
-          });
-          await inventory.save();
-        }
+    // Apply updates
+    Object.assign(product, updateData);
+
+    // Save product (which runs validation & pre-save hook for totalStock)
+    await product.save();
+
+    for (const variant of product.variants) {
+      let inventory = await InventoryModel.findOne({
+        productVariantId: variant._id,
+      });
+      if (inventory) {
+        inventory.quantityOnHand = variant.stock;
+        inventory.reorderLevel = variant.reorderLevel;
+        await inventory.save();
+      } else {
+        inventory = new InventoryModel({
+          productVariantId: variant._id,
+          quantityOnHand: variant.stock,
+          quantityReserved: 0,
+          quantityAvailable: variant.stock,
+          reorderLevel: variant.reorderLevel,
+        });
+        await inventory.save();
       }
     }
 

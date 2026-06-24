@@ -1780,3 +1780,133 @@ export const sendShopLaunchEmail = async (email: string): Promise<void> => {
   });
 };
 
+interface OrderConfirmationEmailOptions {
+  email: string;
+  name: string;
+  orderNumber: string;
+  totalAmount: number;
+  items: Array<{
+    productName: string;
+    variantLabel: string;
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+  }>;
+  shippingAddress: {
+    fullName: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  paymentMethod: string;
+}
+
+export const sendOrderConfirmationEmail = async (
+  options: OrderConfirmationEmailOptions
+): Promise<void> => {
+  const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const itemsHtml = options.items.map(item => `
+    <tr>
+      <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
+        <div style="font-weight: bold; color: #0f172a;">${item.productName}</div>
+        <div style="font-size: 12px; color: #64748b;">${item.variantLabel}</div>
+      </td>
+      <td style="padding: 12px 0; text-align: center; border-bottom: 1px solid #e2e8f0; color: #475569;">
+        x${item.quantity}
+      </td>
+      <td style="padding: 12px 0; text-align: right; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0f172a;">
+        ₹${(item.lineTotal / 100).toFixed(2)}
+      </td>
+    </tr>
+  `).join("");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dbe3ee;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); padding:30px 28px 24px;text-align:center;">
+              <div style="font-size:34px;line-height:34px;">🛍️</div>
+              <h1 style="margin:12px 0 0;font-size:30px;line-height:34px;color:#ffffff;font-weight:800;">Order Confirmed!</h1>
+              <p style="margin:10px 0 0;font-size:15px;line-height:22px;color:rgba(255,255,255,0.9);">Thank you for your purchase. Your order has been placed successfully.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 28px 22px;background-color:#ffffff;">
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Your payment has been captured and order <strong>#${options.orderNumber}</strong> is now being processed.</p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;">
+                <tr>
+                  <td style="font-size:15px;font-weight:800;color:#1e293b;" colspan="3">Items Ordered</td>
+                </tr>
+                ${itemsHtml}
+                <tr>
+                  <td colspan="2" style="padding: 16px 0 0; font-size: 15px; font-weight: bold; color: #0f172a;">Total Amount Paid</td>
+                  <td style="padding: 16px 0 0; text-align: right; font-size: 18px; font-weight: 800; color: #ff6b35;">
+                    ₹${(options.totalAmount / 100).toFixed(2)}
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;">
+                <tr>
+                  <td style="font-size:15px;font-weight:800;color:#1e293b;">Shipping Address</td>
+                </tr>
+                <tr>
+                  <td style="font-size:14px;line-height:20px;color:#475569;padding-top:8px;">
+                    <strong>${options.shippingAddress.fullName}</strong><br/>
+                    ${options.shippingAddress.addressLine1}<br/>
+                    ${options.shippingAddress.addressLine2 ? `${options.shippingAddress.addressLine2}<br/>` : ""}
+                    ${options.shippingAddress.city}, ${options.shippingAddress.state} - ${options.shippingAddress.postalCode}<br/>
+                    ${options.shippingAddress.country}
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+                <tr>
+                  <td align="center">
+                    <a href="${frontendBaseUrl}/shop/account?tab=orders" style="display:inline-block;padding:13px 28px;background-color:#ff6b35;color:#ffffff;text-decoration:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:0.2px;">View Order Status</a>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;border-top:1px solid #e2e8f0;padding-top:20px;">
+                <tr>
+                  <td align="center" style="font-size:12px;line-height:18px;color:#94a3b8;">
+                    If you have any questions, please contact support from your dashboard.<br/>
+                    © ${new Date().getFullYear()} PowerMySport. All rights reserved.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.email,
+    subject: `Order Confirmed: #${options.orderNumber} 🛍️ | PowerMySport`,
+    html,
+  });
+};
+
+

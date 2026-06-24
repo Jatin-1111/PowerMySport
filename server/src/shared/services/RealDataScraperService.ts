@@ -21,6 +21,7 @@ interface GroundedExtractionResult {
 
 const scraperModelCandidates = [
   process.env.GEMINI_SCRAPER_MODEL,
+  "gemini-2.5",
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
   "gemini-2.0-flash",

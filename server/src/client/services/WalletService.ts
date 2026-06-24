@@ -166,6 +166,18 @@ export class WalletService {
     const phonePeStatus = await getPhonePeOrderStatus(merchantOrderId);
 
     if (phonePeStatus.state === "COMPLETED") {
+      // SECURITY: only credit the wallet if PhonePe actually settled the same
+      // amount the user initiated. transaction.amount is in rupees; PhonePe
+      // reports paise. Without this check a user could initiate a large top-up
+      // and pay (or be charged) a smaller amount yet receive full credit.
+      const expectedPaise = Math.round(transaction.amount * 100);
+      if (
+        typeof phonePeStatus.amount !== "number" ||
+        phonePeStatus.amount !== expectedPaise
+      ) {
+        throw new Error("Top-up amount mismatch");
+      }
+
       // It's a success, update balance and transaction status
       const updatedWallet = await Wallet.findOneAndUpdate(
         { userId, "transactions.id": transaction.id, "transactions.status": "PENDING" },

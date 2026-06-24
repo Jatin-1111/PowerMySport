@@ -1,24 +1,32 @@
 import { Request, Response } from "express";
+import { v4 as uuidv4 } from "uuid";
+import { Review as ReviewModel } from "../../client/models/Review";
+import { NotificationService } from "../../client/services/NotificationService";
+import { validatePromoCode } from "../../client/services/PromoCodeService";
 import {
-  CartService,
-  OrderService,
-  ProductService,
-  InventoryService,
-} from "../services/EcommerceService";
-import { PaymentService, RefundService } from "../../shared/services/PaymentService";
+  PaymentService,
+  RefundService,
+} from "../../shared/services/PaymentService";
 import { s3Service } from "../../shared/services/S3Service";
 import {
+  ApiResponse,
+  FulfillmentStatus,
   OrderStatus,
   PaymentGateway,
-  FulfillmentStatus,
-  ApiResponse,
+  PaymentStatus,
 } from "../../types/ecommerce";
-import { Wishlist as WishlistModel, Order as OrderModel, Product as ProductModel } from "../models/Ecommerce";
-import { Review as ReviewModel } from "../../client/models/Review";
-import { v4 as uuidv4 } from "uuid";
-import { validatePromoCode } from "../../client/services/PromoCodeService";
-import { NotificationService } from "../../client/services/NotificationService";
-import { PaymentTransaction as PaymentTransactionModel } from "../models/Ecommerce";
+import {
+  Order as OrderModel,
+  PaymentTransaction as PaymentTransactionModel,
+  Product as ProductModel,
+  Wishlist as WishlistModel,
+} from "../models/Ecommerce";
+import {
+  CartService,
+  InventoryService,
+  OrderService,
+  ProductService,
+} from "../services/EcommerceService";
 
 const getParam = (value: unknown): string | null =>
   typeof value === "string" && value.trim().length > 0 ? value : null;
@@ -54,6 +62,8 @@ export class EcommerceController {
         rating,
         minPrice,
         maxPrice,
+        condition,
+        sellerType,
       } = req.query;
 
       const result = await this.productService.listProducts(
@@ -66,6 +76,8 @@ export class EcommerceController {
         rating ? Number(rating) : undefined,
         minPrice ? Number(minPrice) : undefined,
         maxPrice ? Number(maxPrice) : undefined,
+        condition as string,
+        sellerType as string,
       );
 
       res.json({
@@ -549,6 +561,30 @@ export class EcommerceController {
         return;
       }
 
+      // Enforce ownership before confirming payment (prevents acting on
+      // another user's order — IDOR).
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        res.status(401).json({
+          ok: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
+        });
+        return;
+      }
+
+      const existingOrder = await this.orderService.getOrderById(orderId);
+      if (
+        !existingOrder ||
+        (existingOrder.userId.toString() !== userId &&
+          (req as any).user?.role !== "ADMIN")
+      ) {
+        res.status(404).json({
+          ok: false,
+          error: { code: "NOT_FOUND", message: "Order not found" },
+        });
+        return;
+      }
+
       // Verify payment
       const paymentTx = await this.paymentService.verifyAndConfirmPayment(
         orderId,
@@ -577,7 +613,10 @@ export class EcommerceController {
           confirmedAt: new Date().toISOString(),
         },
       }).catch((err: Error) =>
-        console.error("[EcommerceController] Failed to send payment notification:", err),
+        console.error(
+          "[EcommerceController] Failed to send payment notification:",
+          err,
+        ),
       );
 
       res.json({
@@ -599,6 +638,118 @@ export class EcommerceController {
           code: "PAYMENT_VERIFICATION_FAILED",
           message: error.message,
         },
+      } as ApiResponse<null>);
+    }
+  }
+
+  /**
+   * POST /api/v1/orders/:orderId/sync-payment
+   * Reconcile an order's payment by polling the gateway for the definitive
+   * status. Called by the client after the PhonePe redirect lands back on the
+   * order page, so payment confirmation does not depend solely on the webhook.
+   */
+  async syncPayment(req: Request, res: Response): Promise<void> {
+    try {
+      const orderId = getParam((req.params as Record<string, unknown>).orderId);
+      const userId = (req as any).user?.id;
+
+      if (!orderId) {
+        res.status(400).json({
+          ok: false,
+          error: { code: "INVALID_REQUEST", message: "Order id is required" },
+        });
+        return;
+      }
+
+      const order = await this.orderService.getOrderById(orderId);
+      if (!order) {
+        res.status(404).json({
+          ok: false,
+          error: { code: "NOT_FOUND", message: "Order not found" },
+        });
+        return;
+      }
+
+      // Verify ownership (admins may reconcile any order)
+      if (
+        order.userId.toString() !== userId &&
+        (req as any).user?.role !== "ADMIN"
+      ) {
+        res.status(403).json({
+          ok: false,
+          error: { code: "FORBIDDEN", message: "Access denied" },
+        });
+        return;
+      }
+
+      // Already settled, or not in a state we can reconcile — return as-is.
+      if (
+        order.paymentStatus === PaymentStatus.CAPTURED ||
+        order.status !== OrderStatus.PENDING_PAYMENT
+      ) {
+        res.json({ ok: true, data: order } as ApiResponse<any>);
+        return;
+      }
+
+      // Look up the latest payment transaction for this order.
+      const paymentTx = await PaymentTransactionModel.findOne({
+        orderId,
+      }).sort({ createdAt: -1 });
+
+      if (!paymentTx?.gatewayOrderId) {
+        res.json({ ok: true, data: order } as ApiResponse<any>);
+        return;
+      }
+
+      // Ask the gateway for the definitive status.
+      const gatewayStatus = await this.paymentService
+        .getGatewayService()
+        .getPaymentStatus(paymentTx.gatewayOrderId);
+
+      if (gatewayStatus === PaymentStatus.CAPTURED) {
+        paymentTx.status = PaymentStatus.CAPTURED;
+        if (!paymentTx.gatewayPaymentId) {
+          paymentTx.gatewayPaymentId = paymentTx.gatewayOrderId;
+        }
+        await paymentTx.save();
+
+        const updatedOrder = await this.orderService.confirmPayment(
+          orderId,
+          paymentTx.gatewayPaymentId || paymentTx.gatewayOrderId,
+          paymentTx.gatewayOrderId,
+        );
+
+        NotificationService.send({
+          userId: updatedOrder.userId.toString(),
+          type: "PAYMENT_CONFIRMED",
+          title: "Payment Confirmed",
+          message: `Your payment for order ${updatedOrder.orderNumber} has been confirmed. We are processing your order.`,
+          data: {
+            orderId: updatedOrder._id.toString(),
+            orderNumber: updatedOrder.orderNumber,
+            totalAmount: updatedOrder.totalAmount,
+            confirmedAt: new Date().toISOString(),
+          },
+        }).catch((err: Error) =>
+          console.error(
+            "[EcommerceController] Failed to send payment notification:",
+            err,
+          ),
+        );
+
+        res.json({ ok: true, data: updatedOrder } as ApiResponse<any>);
+        return;
+      }
+
+      // Not captured yet (pending, or a transient gateway error). Leave the
+      // order untouched — the authoritative webhook handles genuine failures,
+      // and the shopper can retry. We never auto-fail here to avoid releasing
+      // inventory on a transient status-check error.
+      res.json({ ok: true, data: order } as ApiResponse<any>);
+    } catch (error: any) {
+      res.status(500).json({
+        ok: false,
+        error: { code: "INTERNAL_ERROR", message: error.message },
       } as ApiResponse<null>);
     }
   }
@@ -761,6 +912,204 @@ export class EcommerceController {
       } as ApiResponse<null>);
     }
   }
+
+  /**
+   * GET /api/v1/orders/:orderId/invoice/pdf
+   * Download order invoice as PDF
+   */
+  async downloadOrderInvoice(req: Request, res: Response): Promise<void> {
+    try {
+      const orderId = getParam((req.params as Record<string, unknown>).orderId);
+      const userId = (req as any).user?.id;
+
+      if (!orderId) {
+        res.status(400).json({
+          ok: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: "Order id is required",
+          },
+        });
+        return;
+      }
+
+      const order = await this.orderService.getOrderById(orderId);
+      if (!order) {
+        res.status(404).json({
+          ok: false,
+          error: {
+            code: "NOT_FOUND",
+            message: "Order not found",
+          },
+        });
+        return;
+      }
+
+      // Verify user owns this order or is admin
+      if (
+        order.userId.toString() !== userId &&
+        (req as any).user?.role !== "ADMIN"
+      ) {
+        res.status(403).json({
+          ok: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "Access denied",
+          },
+        });
+        return;
+      }
+
+      // Can only generate invoice for paid orders
+      if (
+        order.paymentStatus !== PaymentStatus.CAPTURED
+      ) {
+        res.status(409).json({
+          ok: false,
+          error: {
+            code: "INVALID_STATE",
+            message: "Invoice available only for paid orders",
+          },
+        });
+        return;
+      }
+
+      // Generate invoice number and date
+      const invoiceNumber = `INV-${order.orderNumber}`;
+      const invoiceDate = new Date(order.createdAt);
+
+      // All monetary values are stored in paise — render them as rupees.
+      const money = (paise: number) => `INR ${(paise / 100).toFixed(2)}`;
+
+      // Use PDFKit to generate the invoice
+      const PDFDocument = require("pdfkit");
+      const doc = new PDFDocument({ margin: 50 });
+
+      // Set response headers
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${invoiceNumber}.pdf"`,
+      );
+
+      doc.pipe(res);
+
+      // Header
+      doc
+        .fontSize(20)
+        .font("Helvetica-Bold")
+        .text("INVOICE", { align: "center" });
+      doc.moveDown(0.5);
+
+      // Invoice details
+      doc.fontSize(10).font("Helvetica");
+      doc.text(`Invoice Number: ${invoiceNumber}`);
+      doc.text(`Order Date: ${invoiceDate.toLocaleDateString("en-IN")}`);
+      doc.text(`Order Number: ${order.orderNumber}`);
+      doc.moveDown();
+
+      // Bill to section
+      doc.fontSize(12).font("Helvetica-Bold").text("BILL TO:");
+      doc.fontSize(10).font("Helvetica");
+      doc.text(order.shippingAddress.fullName);
+      doc.text(order.shippingAddress.addressLine1);
+      if (order.shippingAddress.addressLine2) {
+        doc.text(order.shippingAddress.addressLine2);
+      }
+      doc.text(
+        `${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}`,
+      );
+      doc.text(order.shippingAddress.country || "IN");
+      doc.moveDown();
+
+      // Items table
+      doc.fontSize(12).font("Helvetica-Bold").text("ORDER ITEMS");
+      doc.moveDown(0.5);
+
+      const tableTop = doc.y;
+      const col1X = 50;
+      const col2X = 300;
+      const col3X = 400;
+      const col4X = 500;
+
+      // Table header
+      doc.fontSize(10).font("Helvetica-Bold");
+      doc.text("Product", col1X, tableTop);
+      doc.text("Qty", col2X, tableTop);
+      doc.text("Unit Price", col3X, tableTop);
+      doc.text("Total", col4X, tableTop);
+
+      doc
+        .moveTo(col1X, tableTop + 15)
+        .lineTo(550, tableTop + 15)
+        .stroke();
+
+      // Table rows
+      let currentY = tableTop + 25;
+      doc.fontSize(9).font("Helvetica");
+
+      for (const item of order.items) {
+        const productName =
+          item.variantLabel && item.variantLabel !== "DEFAULT"
+            ? `${item.productName} (${item.variantLabel})`
+            : item.productName;
+
+        doc.text(productName, col1X, currentY, { width: 200, ellipsis: true });
+        doc.text(String(item.quantity), col2X, currentY);
+        doc.text(money(item.unitPrice), col3X, currentY);
+        doc.text(money(item.lineTotal), col4X, currentY);
+
+        currentY += 20;
+      }
+
+      doc.moveTo(col1X, currentY).lineTo(550, currentY).stroke();
+      currentY += 15;
+
+      // Summary
+      doc.fontSize(10).font("Helvetica");
+      doc.text("Subtotal:", col3X, currentY);
+      doc.text(
+        money(order.totalAmount - order.taxAmount - (order.shippingAmount || 0)),
+        col4X,
+        currentY,
+      );
+
+      currentY += 15;
+      doc.text("Tax (GST):", col3X, currentY);
+      doc.text(money(order.taxAmount), col4X, currentY);
+
+      if (order.shippingAmount && order.shippingAmount > 0) {
+        currentY += 15;
+        doc.text("Shipping:", col3X, currentY);
+        doc.text(money(order.shippingAmount), col4X, currentY);
+      }
+
+      currentY += 20;
+      doc.fontSize(12).font("Helvetica-Bold");
+      doc.text("TOTAL:", col3X, currentY);
+      doc.text(money(order.totalAmount), col4X, currentY);
+
+      // Footer
+      doc.moveDown(2);
+      doc
+        .fontSize(9)
+        .font("Helvetica")
+        .text("Thank you for your purchase!", { align: "center" });
+      doc.text("For support, contact: support@powermysport.com", {
+        align: "center",
+      });
+
+      doc.end();
+    } catch (error: any) {
+      res.status(500).json({
+        ok: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: error.message,
+        },
+      } as ApiResponse<null>);
+    }
+  }
   /**
    * GET /api/v1/wishlist
    */
@@ -768,13 +1117,25 @@ export class EcommerceController {
     try {
       const userId = (req as any).user?.id;
       if (!userId) {
-        res.status(401).json({ ok: false, error: { code: "UNAUTHORIZED", message: "User not authenticated" } });
+        res
+          .status(401)
+          .json({
+            ok: false,
+            error: { code: "UNAUTHORIZED", message: "User not authenticated" },
+          });
         return;
       }
-      const wishlist = await WishlistModel.findOne({ userId }).populate("products.productId");
+      const wishlist = await WishlistModel.findOne({ userId }).populate(
+        "products.productId",
+      );
       res.json({ ok: true, data: wishlist?.products || [] });
     } catch (error: any) {
-      res.status(500).json({ ok: false, error: { code: "INTERNAL_ERROR", message: error.message } });
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error: { code: "INTERNAL_ERROR", message: error.message },
+        });
     }
   }
 
@@ -786,21 +1147,34 @@ export class EcommerceController {
       const userId = (req as any).user?.id;
       const { productId } = req.body;
       if (!userId || !productId) {
-        res.status(400).json({ ok: false, error: { code: "INVALID_REQUEST", message: "Missing params" } });
+        res
+          .status(400)
+          .json({
+            ok: false,
+            error: { code: "INVALID_REQUEST", message: "Missing params" },
+          });
         return;
       }
       let wishlist = await WishlistModel.findOne({ userId });
       if (!wishlist) {
         wishlist = new WishlistModel({ userId, products: [] });
       }
-      const idx = wishlist.products.findIndex(p => p.productId.toString() === productId);
+      const idx = wishlist.products.findIndex(
+        (p) => p.productId.toString() === productId,
+      );
       if (idx > -1) wishlist.products.splice(idx, 1);
       else wishlist.products.push({ productId, addedAt: new Date() } as any);
-      
+
       await wishlist.save();
+      await wishlist.populate("products.productId");
       res.json({ ok: true, data: wishlist.products });
     } catch (error: any) {
-      res.status(500).json({ ok: false, error: { code: "INTERNAL_ERROR", message: error.message } });
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error: { code: "INTERNAL_ERROR", message: error.message },
+        });
     }
   }
 
@@ -816,28 +1190,63 @@ export class EcommerceController {
       const { rating, review } = req.body;
 
       if (!userId) {
-        res.status(401).json({ ok: false, error: { code: "UNAUTHORIZED", message: "User not authenticated" } });
+        res
+          .status(401)
+          .json({
+            ok: false,
+            error: { code: "UNAUTHORIZED", message: "User not authenticated" },
+          });
         return;
       }
       if (!rating || rating < 1 || rating > 5) {
-        res.status(400).json({ ok: false, error: { code: "INVALID_REQUEST", message: "Rating must be between 1 and 5" } });
+        res
+          .status(400)
+          .json({
+            ok: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: "Rating must be between 1 and 5",
+            },
+          });
         return;
       }
 
-      // Check if user has purchased this product
+      // Verify the user actually purchased THIS product (a DELIVERED order
+      // containing one of this product's variants) before marking the review a
+      // verified purchase — previously any delivered order of anything counted.
+      const product = await ProductModel.findById(productId).select(
+        "variants._id",
+      );
+      if (!product) {
+        res.status(404).json({
+          ok: false,
+          error: { code: "NOT_FOUND", message: "Product not found" },
+        });
+        return;
+      }
+      const variantIds = product.variants.map((v: any) => v._id);
       const hasPurchased = await OrderModel.findOne({
         userId,
-        status: { $in: [OrderStatus.DELIVERED] },
-        "items.productVariantId": { $exists: true } // We'll do a basic check here.
+        status: OrderStatus.DELIVERED,
+        "items.productVariantId": { $in: variantIds },
       });
-
-      // Ideally we'd map variantId to productId, but let's assume they can review if they just provide order details or we check if ANY item belongs to the product.
-      // For simplicity, we just allow review for now, but mark it verified if we find an order.
       const isVerified = !!hasPurchased;
 
-      const existingReview = await ReviewModel.findOne({ userId, targetType: "PRODUCT", targetId: productId });
+      const existingReview = await ReviewModel.findOne({
+        userId,
+        targetType: "PRODUCT",
+        targetId: productId,
+      });
       if (existingReview) {
-        res.status(400).json({ ok: false, error: { code: "INVALID_REQUEST", message: "You have already reviewed this product" } });
+        res
+          .status(400)
+          .json({
+            ok: false,
+            error: {
+              code: "INVALID_REQUEST",
+              message: "You have already reviewed this product",
+            },
+          });
         return;
       }
 
@@ -853,16 +1262,25 @@ export class EcommerceController {
       await newReview.save();
 
       // Recalculate Product average rating
-      const allReviews = await ReviewModel.find({ targetType: "PRODUCT", targetId: productId });
-      const avg = allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length;
+      const allReviews = await ReviewModel.find({
+        targetType: "PRODUCT",
+        targetId: productId,
+      });
+      const avg =
+        allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length;
       await ProductModel.findByIdAndUpdate(productId, {
         averageRating: avg,
-        totalReviews: allReviews.length
+        totalReviews: allReviews.length,
       });
 
       res.json({ ok: true, data: newReview });
     } catch (error: any) {
-      res.status(500).json({ ok: false, error: { code: "INTERNAL_ERROR", message: error.message } });
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error: { code: "INTERNAL_ERROR", message: error.message },
+        });
     }
   }
 
@@ -872,26 +1290,35 @@ export class EcommerceController {
   async getProductReviews(req: Request, res: Response): Promise<void> {
     try {
       const productId = req.params.id as string;
-      const reviews = await ReviewModel.find({ targetType: "PRODUCT", targetId: productId })
+      const reviews = await ReviewModel.find({
+        targetType: "PRODUCT",
+        targetId: productId,
+      })
         .populate("userId", "name photoUrl")
         .sort({ createdAt: -1 });
 
       // Calculate stats
       const stats = {
-        averageRating: reviews.reduce((sum, r) => sum + r.rating, 0) / (reviews.length || 1),
+        averageRating:
+          reviews.reduce((sum, r) => sum + r.rating, 0) / (reviews.length || 1),
         totalReviews: reviews.length,
         ratingDistribution: {
-          1: reviews.filter(r => r.rating === 1).length,
-          2: reviews.filter(r => r.rating === 2).length,
-          3: reviews.filter(r => r.rating === 3).length,
-          4: reviews.filter(r => r.rating === 4).length,
-          5: reviews.filter(r => r.rating === 5).length,
-        }
+          1: reviews.filter((r) => r.rating === 1).length,
+          2: reviews.filter((r) => r.rating === 2).length,
+          3: reviews.filter((r) => r.rating === 3).length,
+          4: reviews.filter((r) => r.rating === 4).length,
+          5: reviews.filter((r) => r.rating === 5).length,
+        },
       };
 
       res.json({ ok: true, data: { reviews, stats } });
     } catch (error: any) {
-      res.status(500).json({ ok: false, error: { code: "INTERNAL_ERROR", message: error.message } });
+      res
+        .status(500)
+        .json({
+          ok: false,
+          error: { code: "INTERNAL_ERROR", message: error.message },
+        });
     }
   }
 }
@@ -1038,7 +1465,7 @@ export class AdminEcommerceController {
 
       const result = await s3Service.generateProductImageUploadUrl(
         fileName,
-        contentType
+        contentType,
       );
 
       res.json({

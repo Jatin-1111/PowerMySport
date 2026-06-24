@@ -100,16 +100,10 @@ export default function LoginPage() {
         toast.error("No credential received from Google");
         return;
       }
-      // Decode JWT token from Google
-      const decoded = JSON.parse(
-        atob(credentialResponse.credential.split(".")[1]),
-      );
-
+      // Send the raw Google credential; the server verifies it and derives
+      // the user's identity from the verified token.
       const response = await authApi.googleLogin({
-        googleId: decoded.sub,
-        email: decoded.email,
-        name: decoded.name,
-        photoUrl: decoded.picture,
+        credential: credentialResponse.credential,
         action: "login",
       });
 

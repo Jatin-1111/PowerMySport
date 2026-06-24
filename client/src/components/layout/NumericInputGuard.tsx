@@ -19,7 +19,13 @@ export function NumericInputGuard() {
       if (!isGuardedInput(event.target)) return;
       if (event.ctrlKey || event.metaKey || event.altKey) return;
 
-      if (event.key.length === 1 && alphabetRegex.test(event.key)) {
+      // Synthetic keydown events (e.g. browser autofill / IME) can arrive with
+      // an undefined `key`, so guard before reading `.length`.
+      if (
+        typeof event.key === "string" &&
+        event.key.length === 1 &&
+        alphabetRegex.test(event.key)
+      ) {
         event.preventDefault();
       }
     };

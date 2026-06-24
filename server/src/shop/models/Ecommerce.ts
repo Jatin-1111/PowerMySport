@@ -51,6 +51,10 @@ export interface ProductDocument extends Document {
   isActive: boolean;
   averageRating: number;
   totalReviews: number;
+  seller?: mongoose.Types.ObjectId;
+  sellerName?: string;
+  sellerType?: "MERCHANT" | "PARENT" | "PLAYER" | "COACH" | "ACADEMY" | "SYSTEM";
+  condition?: "NEW" | "USED";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -248,6 +252,28 @@ const productSchema = new Schema<ProductDocument>(
     totalReviews: {
       type: Number,
       default: 0,
+    },
+    seller: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
+    sellerName: {
+      type: String,
+      trim: true,
+    },
+    sellerType: {
+      type: String,
+      enum: ["MERCHANT", "PARENT", "PLAYER", "COACH", "ACADEMY", "SYSTEM"],
+      default: "SYSTEM",
+      index: true,
+    },
+    condition: {
+      type: String,
+      enum: ["NEW", "USED"],
+      default: "NEW",
+      index: true,
     },
   },
   {
@@ -461,6 +487,10 @@ export interface OrderItemDocument extends Document {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  sellerId?: mongoose.Types.ObjectId;
+  condition?: "NEW" | "USED";
+  fulfillmentStatus: FulfillmentStatus;
+  trackingNumber?: string;
   createdAt: Date;
 }
 
@@ -523,9 +553,47 @@ const orderItemSchema = new Schema<OrderItemDocument>({
     required: true,
     min: 0,
   },
+  sellerId: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  condition: {
+    type: String,
+    enum: ["NEW", "USED"],
+    default: "NEW",
+  },
+  fulfillmentStatus: {
+    type: String,
+    enum: Object.values(FulfillmentStatus),
+    default: FulfillmentStatus.PENDING,
+  },
+  trackingNumber: {
+    type: String,
+    trim: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+}, {
+  toJSON: {
+    virtuals: true,
+    transform: (doc, ret: any) => {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    },
+  },
+  toObject: {
+    virtuals: true,
+    transform: (doc, ret: any) => {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    },
   },
 });
 
@@ -689,7 +757,27 @@ const orderSchema = new Schema<OrderDocument>(
       trim: true,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret: any) => {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: (doc, ret: any) => {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  },
 );
 
 // Index for user orders sorted by date

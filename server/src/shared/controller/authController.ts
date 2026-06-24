@@ -1,21 +1,27 @@
 import { Request, Response } from "express";
+import { generateToken, revokeToken } from "../../utils/jwt";
 import {
+  addAddress,
   addDependent,
   confirmProfilePictureUpload,
+  deleteAddress,
   deleteDependent,
+  getPlayersByUserId,
   getProfilePictureUploadUrl,
+  getUserAddresses,
   getUserById,
   googleLogin,
+  verifyGoogleCredential,
   graduateDependent,
   loginUser,
   registerUser,
   requestPasswordReset,
   resetPassword,
+  setDefaultAddress,
+  updateAddress,
   updateDependent,
   updateProfile,
-  getPlayersByUserId,
 } from "../services/AuthService";
-import { generateToken, revokeToken } from "../../utils/jwt";
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
 
@@ -190,6 +196,7 @@ export const getProfile = async (
         photoS3Key: user.photoS3Key,
         playerProfile,
         dependents,
+        shippingAddress: user.shippingAddress,
       },
     });
   } catch (error) {
@@ -258,7 +265,8 @@ export const updateProfileHandler = async (
       return;
     }
 
-    const { name, email, phone, dob, playerProfile } = req.body;
+    const { name, email, phone, dob, playerProfile, shippingAddress } =
+      req.body;
 
     const updatedUser = await updateProfile(req.user.id, {
       name,
@@ -266,6 +274,7 @@ export const updateProfileHandler = async (
       phone,
       dob,
       playerProfile,
+      shippingAddress,
     });
 
     res.status(200).json({
@@ -281,6 +290,7 @@ export const updateProfileHandler = async (
         dob: updatedUser.dob,
         photoUrl: updatedUser.photoUrl,
         photoS3Key: updatedUser.photoS3Key,
+        shippingAddress: updatedUser.shippingAddress,
       },
     });
   } catch (error) {
@@ -337,23 +347,18 @@ export const googleAuth = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const {
-      googleId,
-      email,
-      name,
-      photoUrl,
-      role,
-      userType,
-      action,
-      acceptedTerms,
-      acceptedPrivacy,
-    } = req.body;
+    const { credential, role, userType, action, acceptedTerms, acceptedPrivacy } =
+      req.body;
+
+    // Verify the Google ID token server-side. Identity (googleId/email/name) is
+    // derived ONLY from the verified token — never from client-supplied fields.
+    const identity = await verifyGoogleCredential(credential);
 
     const user = await googleLogin({
-      googleId,
-      email,
-      name,
-      photoUrl,
+      googleId: identity.googleId,
+      email: identity.email,
+      name: identity.name || identity.email.split("@")[0] || "User",
+      ...(identity.photoUrl ? { photoUrl: identity.photoUrl } : {}),
       role,
       userType,
       action,
@@ -713,6 +718,264 @@ export const confirmProfilePictureUploadHandler = async (
         error instanceof Error
           ? error.message
           : "Failed to confirm profile picture upload",
+    });
+  }
+};
+
+/**
+ * Add a new address for the user
+ */
+export const addAddressHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const {
+      fullName,
+      email,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country,
+    } = req.body;
+
+    if (
+      !fullName ||
+      !email ||
+      !phone ||
+      !addressLine1 ||
+      !city ||
+      !state ||
+      !postalCode
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "All required fields must be provided",
+      });
+      return;
+    }
+
+    const user = await addAddress(req.user.id, {
+      fullName,
+      email,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country: country || "IN",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Address added successfully",
+      data: {
+        addresses: user.addresses,
+        defaultAddressId: user.defaultAddressId,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to add address",
+    });
+  }
+};
+
+/**
+ * Get all addresses for the user
+ */
+export const getAddressesHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const addresses = await getUserAddresses(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      data: addresses,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to fetch addresses",
+    });
+  }
+};
+
+/**
+ * Update an existing address
+ */
+export const updateAddressHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid address ID",
+      });
+      return;
+    }
+    const {
+      fullName,
+      email,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country,
+    } = req.body;
+
+    const user = await updateAddress(req.user.id, addressId, {
+      fullName,
+      email,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Address updated successfully",
+      data: {
+        addresses: user.addresses,
+        defaultAddressId: user.defaultAddressId,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update address",
+    });
+  }
+};
+
+/**
+ * Delete an address
+ */
+export const deleteAddressHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid address ID",
+      });
+      return;
+    }
+
+    const user = await deleteAddress(req.user.id, addressId);
+
+    res.status(200).json({
+      success: true,
+      message: "Address deleted successfully",
+      data: {
+        addresses: user.addresses,
+        defaultAddressId: user.defaultAddressId,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to delete address",
+    });
+  }
+};
+
+/**
+ * Set default address
+ */
+export const setDefaultAddressHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid address ID",
+      });
+      return;
+    }
+
+    const user = await setDefaultAddress(req.user.id, addressId);
+
+    res.status(200).json({
+      success: true,
+      message: "Default address set successfully",
+      data: {
+        addresses: user.addresses,
+        defaultAddressId: user.defaultAddressId,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to set default address",
     });
   }
 };

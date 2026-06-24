@@ -75,8 +75,12 @@ const configuredOrigins = [
   .filter(Boolean);
 
 const allowedOrigins = new Set(configuredOrigins);
+// Only an explicit allowlist of known app subdomains is trusted — NOT a broad
+// `*.powermysport.com` wildcard. A wildcard would make any subdomain (including
+// a takeover-able or user-content subdomain) a trusted credentialed origin.
+// Add new legitimate subdomains here as they are introduced.
 const allowedOriginPatterns = [
-  /^https:\/\/([a-z0-9-]+\.)*powermysport\.com$/i,
+  /^https:\/\/(www|admin|community|api)\.powermysport\.com$/i,
   /^http:\/\/localhost:\d+$/i,
 ];
 

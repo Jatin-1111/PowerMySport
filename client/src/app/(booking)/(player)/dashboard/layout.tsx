@@ -14,6 +14,7 @@ import {
   Calendar,
   CreditCard,
   Home,
+  LayoutDashboard,
   LifeBuoy,
   Mail,
   MapPin,
@@ -49,16 +50,16 @@ export default function DashboardLayout({
 
   const navItems = [
     {
-      href: "/venues",
-      label: "Browse Venues",
-      icon: MapPin,
-      section: "Discover",
+      href: "/",
+      label: "Home",
+      icon: Home,
+      section: "Overview",
     },
     {
-      href: "/coaches",
-      label: "Browse Coaches",
-      icon: Users,
-      section: "Discover",
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      section: "Overview",
     },
     {
       href: "/dashboard/my-bookings",

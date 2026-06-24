@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import {
   generateYouthSportsGuidance,
   guidanceRequestSchema,
@@ -123,6 +124,41 @@ export const submitGuidance = async (
     res.status(isTemporarilyUnavailable ? 503 : 500).json({
       success: false,
       message: errorMessage,
+    });
+  }
+};
+
+export const deleteGuidance = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const id = req.params.id;
+    if (!id || !mongoose.isValidObjectId(id)) {
+      res.status(400).json({ success: false, message: "Invalid roadmap id" });
+      return;
+    }
+
+    const deleted = await GuidanceSubmission.findOneAndDelete({
+      _id: id,
+      userId: req.user.id,
+    });
+
+    if (!deleted) {
+      res.status(404).json({ success: false, message: "Roadmap not found" });
+      return;
+    }
+
+    res.status(200).json({ success: true, message: "Roadmap deleted" });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete roadmap",
     });
   }
 };

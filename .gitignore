@@ -3,3 +3,8 @@ package-lock.json
 .next
 _*.ps1
 .turbo
+
+# Environment files — never commit real secrets
+.env
+.env.*
+!.env.example

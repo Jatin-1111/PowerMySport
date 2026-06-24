@@ -24,6 +24,8 @@ export default async function ShopPage({
   const rating = typeof params.rating === "string" ? parseInt(params.rating) : undefined;
   const minPrice = typeof params.minPrice === "string" ? parseInt(params.minPrice) : undefined;
   const maxPrice = typeof params.maxPrice === "string" ? parseInt(params.maxPrice) : undefined;
+  const condition = typeof params.condition === "string" ? params.condition : undefined;
+  const sellerType = typeof params.sellerType === "string" ? params.sellerType : undefined;
 
   const data = await listProducts({
     page,
@@ -35,6 +37,8 @@ export default async function ShopPage({
     rating,
     minPrice,
     maxPrice,
+    condition,
+    sellerType,
   }).catch(() => ({ products: [] as Product[], total: 0, page: 1, pages: 1, facets: { brands: [], minPrice: 0, maxPrice: 10000 } }));
 
   return (

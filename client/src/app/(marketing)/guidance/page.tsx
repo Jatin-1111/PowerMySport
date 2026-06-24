@@ -44,9 +44,21 @@ import {
   MessageCircle,
   CheckCheck,
   Info,
+  Trash2,
+  Pencil,
+  Flag,
+  Route,
+  Rocket,
 } from "lucide-react";
-import { useState, useEffect, useRef, Fragment, type FormEvent } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { useState, useEffect, useRef, Fragment } from "react";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+  useMotionTemplate,
+  type Variants,
+} from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -86,7 +98,33 @@ type GuidanceResponse = {
   };
   talentIdentifiers?: string[];
   multiSportAdvisory?: string;
+  journeyPhases?: JourneyPhase[];
+  goalAssessment?: GoalAssessment;
+  costBreakdown?: CostBreakdown;
   burnoutRisk?: BurnoutRisk;
+};
+
+type JourneyPhase = {
+  title: string;
+  timeframe: string;
+  focus: string;
+  milestones: string[];
+  outcome: string;
+  estimatedCost?: string;
+};
+
+type GoalAssessment = {
+  statedGoal: string;
+  verdict: "On Track" | "Achievable" | "Ambitious" | "Long-Term";
+  rationale: string;
+  benchmark: string;
+};
+
+type CostBreakdown = {
+  monthlyCoaching: string;
+  equipment: string;
+  tournaments: string;
+  summary: string;
 };
 
 type GuidanceSubmission = {
@@ -263,25 +301,6 @@ const slideIn: Variants = {
     transition: { type: "spring", stiffness: 340, damping: 28 },
   },
   exit: { opacity: 0, x: -30, transition: { duration: 0.15 } },
-};
-
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: i * 0.08,
-      type: "spring",
-      stiffness: 300,
-      damping: 26,
-    },
-  }),
-};
-
-const stagger: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
 // ─── Autofill badge ───────────────────────────────────────────────────────────
@@ -514,12 +533,12 @@ function SelectCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left rounded-2xl border-2 p-4 transition-all duration-200 ${
+      className={`w-full text-left rounded-2xl border-2 p-4 transition-all duration-200 active:scale-[0.99] ${
         selected
           ? accent
             ? "border-power-orange bg-power-orange/5 shadow-power-orange/10 shadow-lg"
             : "border-power-orange bg-power-orange/5"
-          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
       }`}
     >
       {children}
@@ -565,9 +584,13 @@ function AchievementToast({ label }: { label: string }) {
 function PastRoadmapsDropdown({
   history,
   onSelect,
+  onDelete,
+  deletingId,
 }: {
   history: GuidanceSubmission[];
   onSelect: (h: GuidanceSubmission) => void;
+  onDelete: (id: string) => void;
+  deletingId: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -611,32 +634,52 @@ function PastRoadmapsDropdown({
               {history.length} saved roadmaps
             </p>
             {history.map((h) => (
-              <button
+              <div
                 key={h.id}
-                onClick={() => {
-                  onSelect(h);
-                  setOpen(false);
-                }}
-                className="w-full flex items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-slate-50 transition"
+                className="group flex items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-slate-50"
               >
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-power-orange/10 text-power-orange">
-                  <Trophy className="h-3.5 w-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">
-                    {h.query.primary_objective} · Age {h.query.child_age}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {new Date(h.createdAt).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                    <span className="mx-1">·</span>
-                    {h.query.current_fitness_level}
-                  </p>
-                </div>
-              </button>
+                <button
+                  onClick={() => {
+                    onSelect(h);
+                    setOpen(false);
+                  }}
+                  className="flex flex-1 min-w-0 items-start gap-3 rounded-lg px-1 py-1.5 text-left"
+                >
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-power-orange/10 text-power-orange">
+                    <Trophy className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">
+                      {h.query.primary_objective} · Age {h.query.child_age}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(h.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      <span className="mx-1">·</span>
+                      {h.query.current_fitness_level}
+                    </p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Delete roadmap"
+                  disabled={deletingId === h.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(h.id);
+                  }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
+                >
+                  {deletingId === h.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
             ))}
           </motion.div>
         )}
@@ -1092,9 +1135,765 @@ function Step4Details({
   );
 }
 
+// ─── Inputs summary (results mode) ─────────────────────────────────────────────
+
+function InputsSummaryBar({
+  query,
+  onEdit,
+}: {
+  query: GuidanceFormState;
+  onEdit: () => void;
+}) {
+  const chips: Array<{ icon: typeof Compass; label: string }> = [
+    { icon: UserCircle2, label: `Age ${query.child_age}` },
+    { icon: Target, label: query.primary_objective },
+    ...(query.sport?.trim() ? [{ icon: Activity, label: query.sport.trim() }] : []),
+    { icon: Timer, label: `${query.weekly_time_commitment}h / week` },
+    { icon: Wallet, label: query.budget_tier },
+    ...(query.location ? [{ icon: MapPin, label: query.location }] : []),
+  ];
+
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/80 p-3 shadow-sm backdrop-blur-sm">
+      <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        Built for
+      </span>
+      {chips.map((c) => (
+        <span
+          key={c.label}
+          className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+        >
+          <c.icon className="h-3.5 w-3.5 text-slate-400" />
+          {c.label}
+        </span>
+      ))}
+      <button
+        type="button"
+        onClick={onEdit}
+        className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-power-orange/40 hover:text-power-orange"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        Edit inputs
+      </button>
+    </div>
+  );
+}
+
+// ─── Goal & cost relevance cards ───────────────────────────────────────────────
+
+const VERDICT_STYLE: Record<
+  GoalAssessment["verdict"],
+  { badge: string; ring: string; icon: string; bg: string }
+> = {
+  "On Track": {
+    badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    ring: "border-emerald-200",
+    icon: "text-emerald-600",
+    bg: "bg-emerald-50/60",
+  },
+  Achievable: {
+    badge: "bg-sky-100 text-sky-700 border-sky-200",
+    ring: "border-sky-200",
+    icon: "text-sky-600",
+    bg: "bg-sky-50/60",
+  },
+  Ambitious: {
+    badge: "bg-amber-100 text-amber-700 border-amber-200",
+    ring: "border-amber-200",
+    icon: "text-amber-600",
+    bg: "bg-amber-50/60",
+  },
+  "Long-Term": {
+    badge: "bg-violet-100 text-violet-700 border-violet-200",
+    ring: "border-violet-200",
+    icon: "text-violet-600",
+    bg: "bg-violet-50/60",
+  },
+};
+
+function GoalAssessmentCard({ a }: { a: GoalAssessment }) {
+  const cfg = VERDICT_STYLE[a.verdict] ?? VERDICT_STYLE.Achievable;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`rounded-2xl border ${cfg.ring} ${cfg.bg} p-4`}
+    >
+      <div className="mb-2 flex items-center gap-2.5">
+        <div className={`flex h-9 w-9 items-center justify-center rounded-xl border bg-white/80 ${cfg.ring}`}>
+          <Crosshair className={`h-5 w-5 ${cfg.icon}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Goal check
+          </p>
+          <h4 className="truncate text-sm font-bold text-slate-900">
+            {a.statedGoal}
+          </h4>
+        </div>
+        <span
+          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase ${cfg.badge}`}
+        >
+          {a.verdict}
+        </span>
+      </div>
+      <p className="text-xs leading-relaxed text-slate-700">{a.rationale}</p>
+      <div className="mt-2.5 flex items-start gap-2 rounded-xl border border-white bg-white/70 px-3 py-2">
+        <BarChart3 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+        <p className="text-[11px] text-slate-600">
+          <span className="font-bold text-slate-700">Benchmark:</span> {a.benchmark}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+function CostBreakdownCard({ c }: { c: CostBreakdown }) {
+  const items = [
+    { icon: UserCircle2, label: "Coaching", value: c.monthlyCoaching },
+    { icon: Dumbbell, label: "Equipment", value: c.equipment },
+    { icon: Trophy, label: "Tournaments", value: c.tournaments },
+  ];
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-2">
+        <Wallet className="h-4 w-4 text-emerald-600" />
+        <h3 className="font-title text-sm font-semibold uppercase tracking-wide text-slate-900">
+          Investment
+        </h3>
+        <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-400">
+          Indicative
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {items.map(({ icon: Icon, label, value }) => (
+          <div
+            key={label}
+            className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3"
+          >
+            <Icon className="h-4 w-4 text-slate-400" />
+            <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              {label}
+            </p>
+            <p className="text-sm font-bold text-slate-800">{value}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-500">
+        <Info className="mt-0.5 h-3 w-3 shrink-0" />
+        {c.summary}
+      </p>
+    </div>
+  );
+}
+
+// ─── Journey roadmap (interactive, gamified) ───────────────────────────────────
+
+// Luxury easing — slow-out cubic used by premium editorial sites
+const LUXE_EASE = [0.22, 1, 0.36, 1] as const;
+
+// Cinematic scroll-coupled 3D: each phase travels through real depth as the
+// page scrolls — flying in from far away, locking sharp + face-on at the
+// centre (the "camera"), then receding as it passes. Continuous, not one-shot.
+function Phase3D({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+
+  // 0 = entering bottom of screen · ~0.5 = centred · 1 = leaving top
+  const z = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [-520, 0, 0, 120]);
+  const rotateX = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [24, 0, 0, -12]);
+  const scale = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [0.8, 1, 1, 0.96]);
+  const opacity = useTransform(
+    scrollYProgress,
+    [0, 0.18, 0.42, 0.8, 1],
+    [0, 0.5, 1, 1, 0.55],
+  );
+  const blurPx = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [9, 0, 0, 4]);
+  const filter = useMotionTemplate`blur(${blurPx}px)`;
+
+  return (
+    <motion.div
+      ref={ref}
+      style={{
+        transformPerspective: 1100,
+        transformOrigin: "center",
+        transformStyle: "preserve-3d",
+        z,
+        rotateX,
+        scale,
+        opacity,
+        filter,
+        willChange: "transform, filter, opacity",
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// Clip-mask line reveal — text emerges from behind an invisible mask.
+function LineReveal({
+  text,
+  className,
+  delay = 0,
+}: {
+  text: string;
+  className?: string;
+  delay?: number;
+}) {
+  return (
+    <span className="block overflow-hidden">
+      <motion.span
+        initial={{ y: "115%" }}
+        whileInView={{ y: 0 }}
+        viewport={{ once: true, margin: "-70px" }}
+        transition={{ duration: 0.65, ease: LUXE_EASE, delay }}
+        className={`block ${className ?? ""}`}
+      >
+        {text}
+      </motion.span>
+    </span>
+  );
+}
+
+function ProgressRing({ percent, dark }: { percent: number; dark?: boolean }) {
+  const r = 30;
+  const circ = 2 * Math.PI * r;
+  return (
+    <div className="relative h-[72px] w-[72px] shrink-0">
+      <svg viewBox="0 0 72 72" className="h-[72px] w-[72px] -rotate-90">
+        <circle
+          cx="36"
+          cy="36"
+          r={r}
+          fill="none"
+          stroke={dark ? "rgba(255,255,255,0.14)" : "rgb(241 245 249)"}
+          strokeWidth="7"
+        />
+        <motion.circle
+          cx="36"
+          cy="36"
+          r={r}
+          fill="none"
+          stroke="url(#journeyGrad)"
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          initial={{ strokeDashoffset: circ }}
+          animate={{ strokeDashoffset: circ - (circ * percent) / 100 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          style={{ filter: "drop-shadow(0 0 4px rgba(233,115,22,0.5))" }}
+        />
+        <defs>
+          <linearGradient id="journeyGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#e97316" />
+            <stop offset="100%" stopColor="#34d399" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className={`text-base font-black ${dark ? "text-white" : "text-slate-800"}`}>
+          {percent}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function AmbientStars() {
+  const stars = [
+    { top: "14%", left: "8%", d: 0, s: 2 },
+    { top: "30%", left: "22%", d: 0.6, s: 1.5 },
+    { top: "62%", left: "12%", d: 1.1, s: 2 },
+    { top: "20%", left: "46%", d: 0.3, s: 1.5 },
+    { top: "74%", left: "38%", d: 0.9, s: 1.5 },
+    { top: "40%", left: "66%", d: 0.5, s: 2 },
+    { top: "16%", left: "82%", d: 1.3, s: 1.5 },
+    { top: "66%", left: "76%", d: 0.2, s: 2 },
+    { top: "82%", left: "60%", d: 0.8, s: 1.5 },
+  ];
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      {stars.map((st, i) => (
+        <motion.span
+          key={i}
+          className="absolute rounded-full bg-white"
+          style={{ top: st.top, left: st.left, width: st.s, height: st.s }}
+          animate={{ opacity: [0.15, 0.9, 0.15], scale: [1, 1.4, 1] }}
+          transition={{ repeat: Infinity, duration: 2.4, delay: st.d, ease: "easeInOut" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CelebrationBurst() {
+  const bits = Array.from({ length: 30 });
+  const colors = [
+    "bg-power-orange",
+    "bg-emerald-400",
+    "bg-amber-400",
+    "bg-sky-400",
+    "bg-violet-400",
+    "bg-rose-400",
+  ];
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center overflow-hidden">
+      {bits.map((_, i) => {
+        const angle = (i / bits.length) * Math.PI * 2 + (i % 3) * 0.4;
+        const dist = 90 + (i % 6) * 30;
+        return (
+          <motion.span
+            key={i}
+            initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+            animate={{
+              opacity: 0,
+              x: Math.cos(angle) * dist,
+              y: Math.sin(angle) * dist - 20,
+              scale: 0.2,
+              rotate: i % 2 ? 220 : -220,
+            }}
+            transition={{ duration: 1.4, ease: "easeOut" }}
+            className={`absolute ${i % 2 ? "h-3 w-1.5" : "h-2.5 w-2.5"} rounded-sm ${colors[i % colors.length]}`}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function buildFallbackJourney(r: GuidanceResponse): JourneyPhase[] {
+  const splitActions = (s?: string) =>
+    (s || "")
+      .split(/(?<=\.)\s+|;\s*/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+  const phases: JourneyPhase[] = [];
+  const actions = splitActions(r.recommendedPlatformActions);
+  phases.push({
+    title: "Get Set Up",
+    timeframe: "Weeks 1–2",
+    focus: "Lay the groundwork and start with a clear structure.",
+    milestones: actions.length
+      ? actions.slice(0, 4)
+      : ["Choose a coach or academy", "Set a weekly schedule"],
+    outcome: "Training has a clear structure and you're enrolled.",
+  });
+  phases.push({
+    title: "Build the Weekly Rhythm",
+    timeframe: "Weeks 3–8",
+    focus: "Turn the plan into a sustainable weekly habit.",
+    milestones: [
+      `Training: ${r.weeklyBlueprint.trainingHours}`,
+      `Free play: ${r.weeklyBlueprint.freePlayHours}`,
+      `Rest: ${r.weeklyBlueprint.restDays}`,
+    ],
+    outcome: "A balanced, repeatable weekly routine the child enjoys.",
+  });
+  if (r.mentalSkillsRoadmap) {
+    phases.push({
+      title: "Strengthen the Mind",
+      timeframe: "Month 2–3",
+      focus: r.mentalSkillsRoadmap.currentFocus,
+      milestones: r.mentalSkillsRoadmap.skills
+        .map((s) => `${s.skill}: ${s.howToDevelop}`)
+        .slice(0, 4),
+      outcome: "Noticeably more composed and focused under pressure.",
+    });
+  }
+  if (r.talentIdentifiers?.length) {
+    phases.push({
+      title: "Track Real Progress",
+      timeframe: "Ongoing",
+      focus: "Watch for genuine signs of aptitude and growth.",
+      milestones: r.talentIdentifiers.slice(0, 4),
+      outcome: "Clear, observable evidence the child is developing.",
+    });
+  }
+  return phases;
+}
+
+function JourneyMap({
+  phases,
+  submissionId,
+  goal,
+  goalDetail,
+  assessment,
+}: {
+  phases: JourneyPhase[];
+  submissionId: string;
+  goal: string;
+  goalDetail?: string;
+  assessment?: GoalAssessment;
+}) {
+  const storageKey = `pms-journey-${submissionId}`;
+  const [done, setDone] = useState<Set<string>>(new Set());
+  const [celebrate, setCelebrate] = useState(false);
+  const [xpPops, setXpPops] = useState<number[]>([]);
+
+  const NODE_ICONS = [Sprout, Dumbbell, Brain, Crosshair, TrendingUp, Award];
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) setDone(new Set<string>(JSON.parse(raw)));
+      else setDone(new Set());
+    } catch {
+      setDone(new Set());
+    }
+  }, [storageKey]);
+
+  const allKeys: string[] = [];
+  phases.forEach((p, pi) =>
+    p.milestones.forEach((_, mi) => allKeys.push(`${pi}:${mi}`)),
+  );
+  const total = allKeys.length;
+  const completed = allKeys.filter((k) => done.has(k)).length;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+
+  const phaseDone = (pi: number) =>
+    phases[pi].milestones.length > 0 &&
+    phases[pi].milestones.every((_, mi) => done.has(`${pi}:${mi}`));
+  const currentPhase = phases.findIndex((_, pi) => !phaseDone(pi));
+
+  const toggle = (key: string) => {
+    const next = new Set(done);
+    const adding = !next.has(key);
+    if (adding) next.add(key);
+    else next.delete(key);
+    setDone(next);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify([...next]));
+    } catch {
+      /* ignore */
+    }
+    if (adding) {
+      const id = Date.now() + Math.floor(Math.random() * 1000);
+      setXpPops((p) => [...p, id]);
+      setTimeout(() => setXpPops((p) => p.filter((x) => x !== id)), 900);
+    }
+    if (adding && total > 0 && allKeys.filter((k) => next.has(k)).length === total) {
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 1600);
+    }
+  };
+
+  const completedPhases = phases.filter((_, pi) => phaseDone(pi)).length;
+  const currentDisplay = currentPhase === -1 ? phases.length : currentPhase + 1;
+  const headline =
+    percent === 100
+      ? "Mission complete — incredible work! 🎉"
+      : percent === 0
+        ? "Your mission starts now"
+        : `Phase ${currentDisplay} of ${phases.length} — keep climbing`;
+
+  return (
+    <div className="space-y-5">
+      {/* ── Cinematic mission banner ── */}
+      <motion.div
+        initial={{ opacity: 0, rotateX: 26, y: 50, z: -200, filter: "blur(12px)" }}
+        animate={{ opacity: 1, rotateX: 0, y: 0, z: 0, filter: "blur(0px)" }}
+        transition={{ duration: 1.15, ease: LUXE_EASE }}
+        style={{
+          transformPerspective: 1300,
+          transformOrigin: "center top",
+          willChange: "transform, filter, opacity",
+        }}
+        className="relative overflow-hidden rounded-3xl p-px shadow-[0_24px_60px_-24px_rgba(233,115,22,0.5)]"
+      >
+        {/* slowly rotating gradient-light rim */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -inset-[120%] bg-[conic-gradient(from_0deg,transparent_0deg,rgba(233,115,22,0.85)_40deg,transparent_130deg,transparent_220deg,rgba(52,211,153,0.7)_260deg,transparent_340deg)]"
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 9, ease: "linear" }}
+        />
+        <div className="relative overflow-hidden rounded-[23px] bg-gradient-to-br from-slate-900 via-slate-900 to-[#3a1d05] p-5 text-white sm:p-6">
+        <AmbientStars />
+        <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-power-orange/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 left-1/4 h-40 w-40 rounded-full bg-emerald-500/20 blur-3xl" />
+        {celebrate && <CelebrationBurst />}
+
+        <div className="relative z-10 flex items-center gap-5">
+          <div className="relative">
+            <ProgressRing percent={percent} dark />
+            <AnimatePresence>
+              {xpPops.map((id) => (
+                <motion.span
+                  key={id}
+                  initial={{ opacity: 0, y: 0, scale: 0.6 }}
+                  animate={{ opacity: 1, y: -30, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.9, ease: "easeOut" }}
+                  className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 text-xs font-black text-emerald-300"
+                >
+                  +10 XP
+                </motion.span>
+              ))}
+            </AnimatePresence>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-power-orange">
+                Mission Roadmap
+              </p>
+              <span className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                <Zap className="h-3 w-3" /> {completed * 10} XP
+              </span>
+            </div>
+            <h3 className="font-title text-xl font-bold leading-tight">{headline}</h3>
+            <p className="mt-0.5 text-xs text-white/60">
+              <Flag className="mr-1 inline h-3 w-3 text-emerald-400" />
+              Destination: <span className="font-semibold text-white/90">{goal}</span>
+            </p>
+            {/* phase pips */}
+            <div className="mt-3 flex gap-1.5">
+              {phases.map((_, i) => (
+                <motion.span
+                  key={i}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.1 + i * 0.05 }}
+                  className={`h-1.5 flex-1 origin-left rounded-full ${
+                    i < completedPhases
+                      ? "bg-emerald-400"
+                      : i === currentPhase
+                        ? "bg-power-orange"
+                        : "bg-white/15"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        {/* premium sheen sweep */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          initial={{ x: "-160%" }}
+          animate={{ x: "160%" }}
+          transition={{ repeat: Infinity, duration: 3.6, repeatDelay: 4, ease: "easeInOut" }}
+        />
+        </div>
+      </motion.div>
+
+      {/* ── Honest goal verdict + benchmark ── */}
+      {assessment && <GoalAssessmentCard a={assessment} />}
+
+      {/* ── Timeline ── */}
+      <div className="relative">
+        {/* spine track */}
+        <div className="absolute left-[22px] top-6 bottom-6 w-1 rounded-full bg-slate-100" />
+        {/* spine fill + traveling shimmer */}
+        <motion.div
+          className="absolute left-[22px] top-6 w-1 overflow-hidden rounded-full bg-gradient-to-b from-power-orange to-emerald-400"
+          initial={{ height: 0 }}
+          animate={{ height: `${percent}%` }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          style={{ maxHeight: "calc(100% - 48px)" }}
+        >
+          <motion.div
+            className="absolute inset-x-0 h-10 bg-gradient-to-b from-transparent via-white/80 to-transparent"
+            animate={{ y: ["-40px", "260px"] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          />
+        </motion.div>
+
+        {/* Start node */}
+        <div className="relative flex items-center gap-4 pb-6">
+          <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-power-orange to-orange-500 text-white shadow-[0_8px_20px_-6px_rgba(233,115,22,0.6)]">
+            <Rocket className="h-5 w-5" />
+            <motion.span
+              className="absolute inset-0 rounded-2xl ring-2 ring-power-orange/40"
+              animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
+              transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+            />
+          </div>
+          <div>
+            <p className="font-bold text-slate-800">Today — the starting line</p>
+            <p className="text-xs text-slate-500">
+              Tap milestones as you complete them to earn XP
+            </p>
+          </div>
+        </div>
+
+        {/* Phases */}
+        {phases.map((p, pi) => {
+          const complete = phaseDone(pi);
+          const isCurrent = pi === currentPhase;
+          const NodeIcon = NODE_ICONS[pi % NODE_ICONS.length]!;
+          return (
+            <Phase3D key={pi} className="relative pb-6 pl-16">
+              {/* node */}
+              <div
+                className={`absolute left-0 top-0 z-10 flex h-12 w-12 items-center justify-center rounded-2xl border-2 shadow-md ${
+                  complete
+                    ? "border-emerald-500 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white"
+                    : isCurrent
+                      ? "border-power-orange bg-gradient-to-br from-power-orange to-orange-500 text-white"
+                      : "border-slate-200 bg-white text-slate-400"
+                }`}
+              >
+                {complete ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : (
+                  <NodeIcon className="h-5 w-5" />
+                )}
+                {isCurrent && (
+                  <>
+                    <span className="absolute inset-0 rounded-2xl ring-4 ring-power-orange/25 animate-pulse" />
+                    <motion.div
+                      className="absolute -top-7 left-0 flex w-12 justify-center"
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+                    >
+                      <span className="rounded-full bg-power-orange px-2 py-0.5 text-[8px] font-black uppercase tracking-wide text-white shadow-md">
+                        You
+                      </span>
+                    </motion.div>
+                  </>
+                )}
+              </div>
+
+              <div
+                className={`rounded-2xl border bg-white p-4 transition-shadow duration-300 hover:shadow-[0_26px_55px_-20px_rgba(15,23,42,0.32)] ${
+                  isCurrent
+                    ? "border-power-orange/40 shadow-md"
+                    : complete
+                      ? "border-emerald-200"
+                      : "border-slate-200"
+                }`}
+              >
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    {p.timeframe}
+                  </span>
+                  {p.estimatedCost && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                      <Wallet className="h-3 w-3" />
+                      {p.estimatedCost}
+                    </span>
+                  )}
+                  {isCurrent && (
+                    <span className="rounded-full bg-power-orange/10 px-2 py-0.5 text-[10px] font-bold text-power-orange">
+                      In progress
+                    </span>
+                  )}
+                  {complete && (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+                      Cleared
+                    </span>
+                  )}
+                </div>
+                <LineReveal
+                  text={p.title}
+                  delay={0.12}
+                  className="font-title font-bold text-slate-900"
+                />
+                <p className="mt-0.5 mb-3 text-xs text-slate-500">{p.focus}</p>
+
+                <ul className="space-y-1.5">
+                  {p.milestones.map((m, mi) => {
+                    const key = `${pi}:${mi}`;
+                    const checked = done.has(key);
+                    return (
+                      <li key={mi}>
+                        <button
+                          type="button"
+                          onClick={() => toggle(key)}
+                          className="group flex w-full items-start gap-2.5 text-left"
+                        >
+                          <motion.span
+                            whileTap={{ scale: 0.8 }}
+                            animate={checked ? { scale: [1, 1.25, 1] } : {}}
+                            transition={{ duration: 0.3 }}
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition ${
+                              checked
+                                ? "border-emerald-500 bg-emerald-500 text-white"
+                                : "border-slate-300 group-hover:border-power-orange"
+                            }`}
+                          >
+                            {checked && <CheckCircle2 className="h-3.5 w-3.5" />}
+                          </motion.span>
+                          <span
+                            className={`text-xs leading-relaxed ${
+                              checked
+                                ? "text-slate-400 line-through"
+                                : "text-slate-700"
+                            }`}
+                          >
+                            {m}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2">
+                  <Trophy className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  <p className="text-[11px] text-emerald-800">
+                    <span className="font-bold">Reward:</span> {p.outcome}
+                  </p>
+                </div>
+              </div>
+            </Phase3D>
+          );
+        })}
+
+        {/* Goal node */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: LUXE_EASE, delay: 0.2 }}
+          className="relative flex items-center gap-4"
+        >
+          <div
+            className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-md ${
+              percent === 100
+                ? "bg-gradient-to-br from-emerald-400 to-emerald-600"
+                : "bg-slate-800"
+            }`}
+          >
+            <Flag className="h-5 w-5" />
+            {percent === 100 && (
+              <span className="absolute inset-0 rounded-2xl ring-4 ring-emerald-400/30 animate-pulse" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-slate-800">
+              {percent === 100 ? "🏆 Goal reached: " : "Goal: "}
+              {goal}
+            </p>
+            {goalDetail && (
+              <p className="line-clamp-2 max-w-md text-xs text-slate-500">
+                {goalDetail}
+              </p>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Results ──────────────────────────────────────────────────────────────────
 
 function ResultsView({ submission }: { submission: GuidanceSubmission }) {
+  const r = submission.response;
+
   const fitnessInfo = (() => {
     const lvl = submission.query.current_fitness_level;
     if (lvl === "Low")
@@ -1104,17 +1903,43 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
     return { pct: "100%", color: "bg-violet-500", label: "Advanced" };
   })();
 
+  // Build tabs dynamically — only show sections that have content
+  const hasSports = !!r.recommendedSports && r.recommendedSports.length > 0;
+  const hasMind =
+    !!r.mentalSkillsRoadmap ||
+    (!!r.talentIdentifiers && r.talentIdentifiers.length > 0);
+  const hasWellbeing =
+    (!!r.burnoutRisk && r.burnoutRisk.level !== "low") ||
+    !!r.multiSportAdvisory;
+
+  // Time-phased roadmap from the AI, or synthesised from existing fields
+  const journeyPhases =
+    r.journeyPhases && r.journeyPhases.length > 0
+      ? r.journeyPhases
+      : buildFallbackJourney(r);
+
+  type TabId = "journey" | "plan" | "coaching" | "mind" | "wellbeing";
+  const tabs: Array<{ id: TabId; label: string; icon: typeof Compass }> = [
+    { id: "journey", label: "Journey", icon: Route },
+    { id: "plan", label: "Plan", icon: BarChart3 },
+    { id: "coaching", label: "Coaching", icon: UserCircle2 },
+    ...(hasMind
+      ? [{ id: "mind" as TabId, label: "Mind", icon: Brain }]
+      : []),
+    ...(hasWellbeing
+      ? [{ id: "wellbeing" as TabId, label: "Wellbeing", icon: ShieldCheck }]
+      : []),
+  ];
+
+  const [tab, setTab] = useState<TabId>("journey");
+
   return (
-    <motion.div
-      variants={stagger}
-      initial="hidden"
-      animate="visible"
-      className="space-y-5"
-    >
-      {/* Hero card */}
+    <div className="space-y-5">
+      {/* Hero card — always visible */}
       <motion.div
-        custom={0}
-        variants={fadeUp}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 26 }}
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-power-orange/5 via-amber-50 to-white border border-power-orange/20 p-6"
       >
         <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-power-orange/5" />
@@ -1162,162 +1987,283 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
           </div>
 
           <p className="text-sm leading-7 text-slate-700">
-            {submission.response.profileAnalysis}
+            {r.profileAnalysis}
           </p>
         </div>
       </motion.div>
 
-      {/* Weekly blueprint */}
-      <motion.div custom={1} variants={fadeUp}>
-        <div className="flex items-center gap-2 mb-3">
-          <BarChart3 className="h-4 w-4 text-slate-600" />
-          <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
-            Weekly Blueprint
-          </h3>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            {
-              icon: Dumbbell,
-              label: "Training",
-              value: submission.response.weeklyBlueprint.trainingHours,
-              color: "text-emerald-600",
-              bg: "bg-emerald-50",
-              border: "border-emerald-100",
-            },
-            {
-              icon: Zap,
-              label: "Free Play",
-              value: submission.response.weeklyBlueprint.freePlayHours,
-              color: "text-sky-600",
-              bg: "bg-sky-50",
-              border: "border-sky-100",
-            },
-            {
-              icon: Timer,
-              label: "Rest",
-              value: submission.response.weeklyBlueprint.restDays,
-              color: "text-violet-600",
-              bg: "bg-violet-50",
-              border: "border-violet-100",
-            },
-          ].map(({ icon: Icon, label, value, color, bg, border }) => (
-            <div
-              key={label}
-              className={`rounded-2xl border ${border} ${bg} p-4`}
+      {/* Tab navigation */}
+      <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+        {tabs.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-colors ${
+                active ? "text-power-orange" : "text-slate-500 hover:text-slate-700"
+              }`}
             >
-              <Icon className={`h-5 w-5 ${color} mb-2`} />
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                {label}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800 leading-snug">
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </motion.div>
+              {active && (
+                <motion.div
+                  layoutId="guidance-tab-pill"
+                  className="absolute inset-0 rounded-xl bg-white shadow-sm"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
+              )}
+              <t.icon className="relative z-10 h-3.5 w-3.5 shrink-0" />
+              <span className="relative z-10 truncate">{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Recommended Sports */}
-      {submission.response.recommendedSports && submission.response.recommendedSports.length > 0 && (
-        <motion.div custom={2} variants={fadeUp} className="mb-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Trophy className="h-4 w-4 text-power-orange" />
-            <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
-              Top Recommended Sports
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {submission.response.recommendedSports.map((sport, idx) => (
-              <div key={idx} className="flex items-center gap-3 rounded-xl border border-power-orange/20 bg-power-orange/5 p-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-power-orange font-bold shadow-sm">
-                  #{idx + 1}
+      {/* Tab content */}
+      <div className="min-h-[280px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="space-y-5"
+          >
+            {tab === "journey" && (
+              <JourneyMap
+                phases={journeyPhases}
+                submissionId={submission.id}
+                goal={submission.query.primary_objective}
+                goalDetail={submission.query.parent_specific_question}
+                assessment={r.goalAssessment}
+              />
+            )}
+
+            {tab === "plan" && (
+              <>
+                {/* Profile snapshot — at a glance */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    {
+                      icon: Activity,
+                      label: "Sport",
+                      value: submission.query.sport?.trim() || "Flexible",
+                    },
+                    {
+                      icon: Timer,
+                      label: "Per week",
+                      value: `${submission.query.weekly_time_commitment}h`,
+                    },
+                    {
+                      icon: Wallet,
+                      label: "Budget",
+                      value: submission.query.budget_tier,
+                    },
+                    {
+                      icon: MapPin,
+                      label: "Location",
+                      value: submission.query.location || "—",
+                    },
+                  ].map(({ icon: Icon, label, value }, i) => (
+                    <motion.div
+                      key={label}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3"
+                    >
+                      <Icon className="h-4 w-4 text-slate-400" />
+                      <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        {label}
+                      </p>
+                      <p className="text-sm font-bold text-slate-800 truncate" title={value}>
+                        {value}
+                      </p>
+                    </motion.div>
+                  ))}
                 </div>
-                <p className="font-semibold text-slate-800 leading-tight">{sport}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
 
-      {/* Coaching style */}
-      <motion.div
-        custom={3}
-        variants={fadeUp}
-        className="rounded-2xl border border-slate-200 bg-white p-5"
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
-            <UserCircle2 className="h-4 w-4 text-purple-600" />
-          </div>
-          <h3 className="font-title font-semibold text-slate-900">
-            Ideal Coaching Style
-          </h3>
-        </div>
-        <p className="text-sm leading-7 text-slate-600">
-          {submission.response.idealCoachingStyle}
-        </p>
-      </motion.div>
+                {/* Investment / cost breakdown */}
+                {r.costBreakdown && <CostBreakdownCard c={r.costBreakdown} />}
 
-      {/* Next objectives */}
-      <motion.div
-        custom={4}
-        variants={fadeUp}
-        className="rounded-2xl border-2 border-emerald-400 bg-emerald-50/50 p-5 relative overflow-hidden"
-      >
-        <div className="absolute -right-10 -bottom-10 opacity-[0.06] pointer-events-none">
-          <ShieldCheck className="h-40 w-40 text-emerald-900" />
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
-              <Crosshair className="h-4 w-4 text-emerald-700" />
-            </div>
-            <h3 className="font-title font-semibold text-emerald-900">
-              Next Objectives
-            </h3>
-            <TrendingUp className="ml-auto h-4 w-4 text-emerald-500" />
-          </div>
-          <p className="text-sm leading-7 text-emerald-900/80 font-medium">
-            {submission.response.recommendedPlatformActions}
-          </p>
-        </div>
-      </motion.div>
+                {/* Weekly blueprint */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="h-4 w-4 text-slate-600" />
+                    <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Weekly Blueprint
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      {
+                        icon: Dumbbell,
+                        label: "Training",
+                        value: r.weeklyBlueprint.trainingHours,
+                        color: "text-emerald-600",
+                        bg: "bg-emerald-50",
+                        border: "border-emerald-100",
+                      },
+                      {
+                        icon: Zap,
+                        label: "Free Play",
+                        value: r.weeklyBlueprint.freePlayHours,
+                        color: "text-sky-600",
+                        bg: "bg-sky-50",
+                        border: "border-sky-100",
+                      },
+                      {
+                        icon: Timer,
+                        label: "Rest",
+                        value: r.weeklyBlueprint.restDays,
+                        color: "text-violet-600",
+                        bg: "bg-violet-50",
+                        border: "border-violet-100",
+                      },
+                    ].map(({ icon: Icon, label, value, color, bg, border }, i) => (
+                      <motion.div
+                        key={label}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.07 }}
+                        whileHover={{ y: -3 }}
+                        className={`rounded-2xl border ${border} ${bg} p-4 transition-shadow hover:shadow-md`}
+                      >
+                        <span className={`mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 ${color}`}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                          {label}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-800 leading-snug">
+                          {value}
+                        </p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
 
-      {/* ── Burnout Risk ── */}
-      {submission.response.burnoutRisk && (
-        <motion.div custom={5} variants={fadeUp}>
-          <BurnoutRiskCard risk={submission.response.burnoutRisk} />
-        </motion.div>
-      )}
+                {/* Recommended Sports */}
+                {hasSports && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Trophy className="h-4 w-4 text-power-orange" />
+                      <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                        Top Recommended Sports
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {r.recommendedSports!.map((sport, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.07 }}
+                          whileHover={{ y: -3 }}
+                          className="flex items-center gap-3 rounded-2xl border border-power-orange/20 bg-gradient-to-br from-power-orange/[0.07] to-amber-50/60 p-3 transition-shadow hover:shadow-md"
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-power-orange font-bold shadow-sm">
+                            #{idx + 1}
+                          </div>
+                          <p className="font-semibold text-slate-800 leading-tight">
+                            {sport}
+                          </p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-      {/* ── Multi-Sport Advisory ── */}
-      {submission.response.multiSportAdvisory && (
-        <motion.div custom={6} variants={fadeUp}>
-          <MultiSportAdvisoryCard advisory={submission.response.multiSportAdvisory} />
-        </motion.div>
-      )}
+                {/* Personality traits */}
+                {submission.query.personality_tags.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="h-4 w-4 text-violet-500" />
+                      <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                        Personality Profile
+                      </h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {submission.query.personality_tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
-      {/* ── Mental Skills ── */}
-      {submission.response.mentalSkillsRoadmap && (
-        <motion.div custom={7} variants={fadeUp}>
-          <MentalSkillsCard roadmap={submission.response.mentalSkillsRoadmap} />
-        </motion.div>
-      )}
+            {tab === "coaching" && (
+              <>
+                {/* Coaching style */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
+                      <UserCircle2 className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <h3 className="font-title font-semibold text-slate-900">
+                      Ideal Coaching Style
+                    </h3>
+                  </div>
+                  <p className="text-sm leading-7 text-slate-600">
+                    {r.idealCoachingStyle}
+                  </p>
+                </div>
 
-      {/* ── Talent Identifiers ── */}
-      {submission.response.talentIdentifiers && submission.response.talentIdentifiers.length > 0 && (
-        <motion.div custom={8} variants={fadeUp}>
-          <TalentIdentifiersCard identifiers={submission.response.talentIdentifiers} />
-        </motion.div>
-      )}
+                {/* Next objectives */}
+                <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50/50 p-5 relative overflow-hidden">
+                  <div className="absolute -right-10 -bottom-10 opacity-[0.06] pointer-events-none">
+                    <ShieldCheck className="h-40 w-40 text-emerald-900" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
+                        <Crosshair className="h-4 w-4 text-emerald-700" />
+                      </div>
+                      <h3 className="font-title font-semibold text-emerald-900">
+                        Next Objectives
+                      </h3>
+                      <TrendingUp className="ml-auto h-4 w-4 text-emerald-500" />
+                    </div>
+                    <p className="text-sm leading-7 text-emerald-900/80 font-medium">
+                      {r.recommendedPlatformActions}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
-      {/* ── CTA Buttons ── */}
-      <motion.div
-        custom={9}
-        variants={fadeUp}
-        className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2"
-      >
+            {tab === "mind" && (
+              <>
+                {r.mentalSkillsRoadmap && (
+                  <MentalSkillsCard roadmap={r.mentalSkillsRoadmap} />
+                )}
+                {r.talentIdentifiers && r.talentIdentifiers.length > 0 && (
+                  <TalentIdentifiersCard identifiers={r.talentIdentifiers} />
+                )}
+              </>
+            )}
+
+            {tab === "wellbeing" && (
+              <>
+                {r.burnoutRisk && <BurnoutRiskCard risk={r.burnoutRisk} />}
+                {r.multiSportAdvisory && (
+                  <MultiSportAdvisoryCard advisory={r.multiSportAdvisory} />
+                )}
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* ── CTA Buttons — always visible ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
         <a
           href={process.env.NEXT_PUBLIC_MAIN_APP_URL || "http://localhost:3000"}
           className="flex items-center justify-center gap-2 rounded-xl bg-power-orange px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition-all hover:bg-orange-600 active:scale-[0.98]"
@@ -1332,8 +2278,8 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
           <Users className="h-4 w-4" />
           View Roadmap
         </a>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
@@ -1351,6 +2297,7 @@ export default function GuidancePage() {
   const [achievement, setAchievement] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [autofillFields, setAutofillFields] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1431,6 +2378,25 @@ export default function GuidancePage() {
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
+  const handleDeleteRoadmap = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await api.delete(`/guidance/${id}`);
+      setHistory((prev) => prev.filter((h) => h.id !== id));
+      if (submission?.id === id) {
+        setSubmission(null);
+        setShowResults(false);
+      }
+      toast.success("Roadmap deleted");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Unable to delete roadmap.";
+      toast.error(msg);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const loadPastSubmission = (past: GuidanceSubmission) => {
     setSubmission(past);
     setForm(past.query);
@@ -1442,7 +2408,7 @@ export default function GuidancePage() {
           behavior: "smooth",
           block: "start",
         }),
-      100,
+      350,
     );
   };
 
@@ -1492,12 +2458,29 @@ export default function GuidancePage() {
     setSelectedProfileId("");
   };
 
+  const editInputs = () => {
+    setShowResults(false);
+    if (typeof window !== "undefined")
+      window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const mode: "results" | "input" =
+    showResults && submission && !loading ? "results" : "input";
+
   return (
-    <div className="min-h-screen px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+    <div className="relative min-h-screen px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      {/* Ambient background — fixed so it never clips the sticky wizard */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
+        <div className="absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full bg-power-orange/10 blur-3xl" />
+        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/30 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-indigo-200/20 blur-3xl" />
+      </div>
+
       <div className="mx-auto w-full max-w-6xl">
         {/* ── Header ── */}
-        <section className="pb-10 lg:pb-14">
-          <div className="mb-8">
+        <section className="pb-8 lg:pb-10">
+          <div className="mb-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-500 shadow-sm backdrop-blur">
                 <BrainCircuit className="h-4 w-4 text-power-orange" />
@@ -1508,6 +2491,8 @@ export default function GuidancePage() {
                   <PastRoadmapsDropdown
                     history={history}
                     onSelect={loadPastSubmission}
+                    onDelete={handleDeleteRoadmap}
+                    deletingId={deletingId}
                   />
                 )}
                 {(showResults || step > 1) && (
@@ -1522,19 +2507,77 @@ export default function GuidancePage() {
                 )}
               </div>
             </div>
-            <h1 className="font-title text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl max-w-3xl">
-              Get a structured sports roadmap for your young athlete.
+            <h1 className="font-title text-2xl font-bold leading-[1.1] tracking-tight sm:text-3xl lg:text-[2.6rem] max-w-3xl">
+              Get a structured sports roadmap for your{" "}
+              <span className="text-power-orange">young athlete.</span>
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-              Answer four quick steps — we'll return personalised guidance on
-              sport, coaching style, weekly schedule, and next actions.
+            <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-slate-600">
+              {mode === "results"
+                ? "Here's the personalised roadmap — switch tabs to explore the plan, coaching, mindset and wellbeing."
+                : "Answer four quick steps — we'll return personalised guidance on sport, coaching style, weekly schedule, and next actions."}
             </p>
           </div>
 
           {/* ── Layout ── */}
-          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <AnimatePresence mode="wait">
+          {mode === "results" && submission ? (
+            <motion.div
+              key="results"
+              ref={resultsRef}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+              className="mx-auto max-w-4xl"
+            >
+              <InputsSummaryBar query={submission.query} onEdit={editInputs} />
+              <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.03] backdrop-blur-sm sm:p-8">
+                <div className="mb-5 flex items-center gap-2">
+                  <Medal className="h-5 w-5 text-amber-500" />
+                  <span className="font-title font-bold text-slate-900">
+                    Your Roadmap
+                  </span>
+                </div>
+                <ResultsView key={submission.id} submission={submission} />
+              </div>
+            </motion.div>
+          ) : loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mx-auto max-w-4xl"
+            >
+              <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.03] backdrop-blur-sm sm:p-8">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-power-orange/10">
+                    <Loader2 className="h-5 w-5 animate-spin text-power-orange" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-900">
+                      Building your roadmap…
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      AI is analyzing the profile
+                    </p>
+                  </div>
+                </div>
+                <ResultSkeleton />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="input"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="mx-auto max-w-4xl"
+            >
             {/* ── Wizard Card ── */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:sticky lg:top-24 z-10">
+            <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.03] backdrop-blur-sm sm:p-8 z-10">
               <StepIndicator
                 current={step}
                 steps={STEPS}
@@ -1636,85 +2679,9 @@ export default function GuidancePage() {
                 {step < 4 && `${STEPS.length - step} more to go`}
               </p>
             </div>
-
-            {/* ── Results Pane ── */}
-            <div
-              ref={resultsRef}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 min-h-[560px] flex flex-col"
-            >
-              {loading ? (
-                <div>
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-power-orange/10">
-                      <Loader2 className="h-5 w-5 animate-spin text-power-orange" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        Building your roadmap…
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        AI is analyzing the profile
-                      </p>
-                    </div>
-                  </div>
-                  <ResultSkeleton />
-                </div>
-              ) : showResults && submission ? (
-                <div>
-                  <div className="mb-5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Medal className="h-5 w-5 text-amber-500" />
-                      <span className="font-title font-bold text-slate-900">
-                        Your Roadmap
-                      </span>
-                    </div>
-                  </div>
-                  <ResultsView submission={submission} />
-                </div>
-              ) : (
-                <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
-                  <motion.div
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 2.5,
-                      ease: "easeInOut",
-                    }}
-                    className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-power-orange/10"
-                  >
-                    <Trophy className="h-8 w-8 text-power-orange" />
-                  </motion.div>
-                  <h3 className="font-title text-xl font-bold text-slate-900 mb-2">
-                    Your roadmap awaits
-                  </h3>
-                  <p className="max-w-xs text-sm text-slate-500 leading-6">
-                    Complete the 4-step wizard on the left to unlock a
-                    personalised sports plan.
-                  </p>
-                  <div className="mt-6 grid grid-cols-2 gap-3 w-full max-w-xs">
-                    {[
-                      { icon: Target, label: "Sport match" },
-                      { icon: Calendar, label: "Weekly plan" },
-                      { icon: Dumbbell, label: "Training guide" },
-                      { icon: Compass, label: "Next actions" },
-                    ].map(({ icon: Icon, label }) => (
-                      <div
-                        key={label}
-                        className="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
-                      >
-                        <div className="text-slate-500"><Icon className="h-4 w-4" /></div>
-                        <span className="font-medium">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-6 flex items-center gap-2 text-xs text-slate-400">
-                    <Users className="h-3.5 w-3.5 text-power-orange" />
-                    Personalised plan will appear here
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+            </motion.div>
+          )}
+          </AnimatePresence>
         </section>
       </div>
 

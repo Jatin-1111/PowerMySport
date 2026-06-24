@@ -80,9 +80,19 @@ export default async function ProductDetailPage({
 
         <section className="space-y-6">
           <div>
-            <p className="inline-flex rounded-full bg-orange-50 px-3 py-1 text-sm font-bold text-orange-700">
-              {product.category}
-            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex rounded-full bg-orange-50 px-3 py-1 text-sm font-bold text-orange-700">
+                {product.category}
+              </span>
+              <span className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${product.condition === "USED" ? "bg-slate-900 text-white" : "bg-emerald-50 text-emerald-700"}`}>
+                {product.condition === "USED" ? "Pre-owned / Used" : "New Gear"}
+              </span>
+              {product.sellerName && (
+                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">
+                  Seller: {product.sellerName} ({product.sellerType || "P2P"})
+                </span>
+              )}
+            </div>
             <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950">
               {product.name}
             </h1>

@@ -1,7 +1,12 @@
 import type { Request, Response } from "express";
+import redis from "../../config/redis";
+import { normalizeStateName } from "../../constants/indianStates";
 
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const isDev = process.env.NODE_ENV === "development";
+
+// Pincodes are stable, so cache resolved lookups for a long time.
+const PINCODE_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 type GeoCacheEntry = {
   expiresAt: number;
@@ -74,6 +79,97 @@ const fetchJson = async (url: string): Promise<any> => {
     throw error;
   } finally {
     clearTimeout(timeout);
+  }
+};
+
+/**
+ * GET /api/geo/pincode/:pincode
+ *
+ * Tier 1 of the address cascade: resolve city + state from a 6-digit Indian
+ * pincode using the FREE India Post API (no key, no cost). Results are cached
+ * in Redis (Tier 2) so repeat lookups never hit the network again. This covers
+ * the large majority of Indian addresses for ₹0, keeping the paid Google layer
+ * (autocompleteLocation, Tier 3) as a last resort.
+ */
+export const lookupPincode = async (req: Request, res: Response) => {
+  const pincode = String(req.params.pincode || "").trim();
+
+  if (!/^\d{6}$/.test(pincode)) {
+    return res.status(400).json({
+      success: false,
+      message: "A valid 6-digit pincode is required",
+      data: null,
+    });
+  }
+
+  const cacheKey = `geo:pincode:${pincode}`;
+
+  // Tier 2 — cache (free after the first lookup)
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.json({
+        success: true,
+        message: "Pincode resolved (cache)",
+        data: JSON.parse(cached),
+      });
+    }
+  } catch {
+    // fail open — proceed to live lookup if Redis is unavailable
+  }
+
+  // Tier 1 — free India Post lookup
+  try {
+    const data: any = await fetchJson(
+      `https://api.postalpincode.in/pincode/${pincode}`,
+    );
+    const entry = Array.isArray(data) ? data[0] : null;
+    const postOffice =
+      entry?.Status === "Success" ? entry?.PostOffice?.[0] : null;
+
+    if (!postOffice) {
+      // Tier 3 extension point: a paid provider (e.g. the Google layer above)
+      // could be consulted here for addresses India Post can't resolve. Left as
+      // free-only to keep cost at zero.
+      return res.json({
+        success: true,
+        message: "No match for pincode",
+        data: null,
+      });
+    }
+
+    const payload = {
+      pincode,
+      city: postOffice.District || postOffice.Block || postOffice.Name || "",
+      state: normalizeStateName(postOffice.State || ""),
+      district: postOffice.District || "",
+    };
+
+    try {
+      await redis.set(
+        cacheKey,
+        JSON.stringify(payload),
+        "EX",
+        PINCODE_CACHE_TTL_SECONDS,
+      );
+    } catch {
+      // fail open — caching is best effort
+    }
+
+    return res.json({
+      success: true,
+      message: "Pincode resolved",
+      data: payload,
+    });
+  } catch (error) {
+    if (isDev) {
+      console.error("[GEO] Pincode lookup error:", error);
+    }
+    return res.status(502).json({
+      success: false,
+      message: "Failed to resolve pincode",
+      data: null,
+    });
   }
 };
 
