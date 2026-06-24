@@ -61,6 +61,12 @@ export const apiRateLimitMiddleware = (
     return;
   }
 
+  // Temporarily disable the rate limiter if explicitly set to "false"
+  if (process.env.ENABLE_RATE_LIMIT === "false") {
+    next();
+    return;
+  }
+
   const maxRequestsPerWindow = parseInt(
     process.env.API_RATE_LIMIT_MAX_REQUESTS || "120",
     10,
