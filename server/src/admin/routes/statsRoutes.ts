@@ -22,6 +22,10 @@ import {
   getGuestActivity,
   clearAnalyticsData,
 } from "../controllers/statsController";
+import {
+  getInfraOverviewController,
+  getInfraMetricsController,
+} from "../controllers/infraController";
 import { authMiddleware, adminMiddleware } from "../../middleware/auth";
 import { funnelEventSchema, guestEventSchema } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
@@ -53,6 +57,10 @@ router.use(adminMiddleware);
 
 router.get("/guests/activity", getGuestActivity);
 router.delete("/analytics", clearAnalyticsData);
+
+// AWS Elastic Beanstalk / CloudWatch infrastructure monitoring
+router.get("/infra/overview", getInfraOverviewController);
+router.get("/infra/metrics", getInfraMetricsController);
 
 router.get("/platform", getPlatformStats);
 router.get("/users/summary", getUserRoleSummary);

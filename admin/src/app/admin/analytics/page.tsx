@@ -15,6 +15,7 @@ import {
   VenueListersAnalytics,
   statsApi,
 } from "@/modules/analytics/services/stats";
+import { ServerMonitoringTab } from "@/modules/analytics/components/ServerMonitoringTab";
 import { Card } from "@/modules/shared/ui/Card";
 import {
   Bar,
@@ -37,8 +38,12 @@ type AnalyticsTab =
   | "FUNNEL"
   | "GUESTS"
   | "FINANCE"
-  | "OBSERVABILITY";
+  | "OBSERVABILITY"
+  | "SERVER";
 const funnelDayOptions = [7, 14, 30, 90] as const;
+
+// How often each tab silently re-fetches its data (real-time auto-refresh).
+const POLL_MS = 15000;
 
 const ROLE_COLORS = {
   PLAYER: "#0ea5e9",
@@ -150,17 +155,12 @@ export default function AdminAnalyticsPage() {
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [loadingFinance, setLoadingFinance] = useState(false);
   const [loadingObservability, setLoadingObservability] = useState(false);
-  const [overviewLoaded, setOverviewLoaded] = useState(false);
-  const [financeLoaded, setFinanceLoaded] = useState(false);
-  const [observabilityLoaded, setObservabilityLoaded] = useState(false);
   const [clearModalOpen, setClearModalOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearResult, setClearResult] = useState<string | null>(null);
 
-  const loadOverview = useCallback(async () => {
-    if (overviewLoaded) return;
-
-    setLoadingOverview(true);
+  const loadOverview = useCallback(async (silent = false) => {
+    if (!silent) setLoadingOverview(true);
     try {
       const [
         platformResponse,
@@ -207,15 +207,13 @@ export default function AdminAnalyticsPage() {
       if (funnelTrendsResponse.success && funnelTrendsResponse.data) {
         setFunnelTrends(funnelTrendsResponse.data);
       }
-
-      setOverviewLoaded(true);
     } finally {
-      setLoadingOverview(false);
+      if (!silent) setLoadingOverview(false);
     }
-  }, [overviewLoaded]);
+  }, []);
 
-  const loadFunnel = useCallback(async () => {
-    setLoadingFunnel(true);
+  const loadFunnel = useCallback(async (silent = false) => {
+    if (!silent) setLoadingFunnel(true);
     try {
       const [summaryResponse, trendResponse] = await Promise.all([
         statsApi.getFunnelSummary(funnelDays),
@@ -230,19 +228,19 @@ export default function AdminAnalyticsPage() {
         setFunnelTrends(trendResponse.data);
       }
     } finally {
-      setLoadingFunnel(false);
+      if (!silent) setLoadingFunnel(false);
     }
   }, [funnelDays]);
 
-  const loadGuests = useCallback(async () => {
-    setLoadingGuests(true);
+  const loadGuests = useCallback(async (silent = false) => {
+    if (!silent) setLoadingGuests(true);
     try {
       const response = await statsApi.getGuestActivity(guestDays);
       if (response.success && response.data) {
         setGuestActivity(response.data);
       }
     } finally {
-      setLoadingGuests(false);
+      if (!silent) setLoadingGuests(false);
     }
   }, [guestDays]);
 
@@ -254,13 +252,13 @@ export default function AdminAnalyticsPage() {
       if (response.success) {
         const deleted = response.data?.deletedCount ?? 0;
         setClearResult(`Cleared ${deleted.toLocaleString()} analytics events.`);
-        // Reset loaded views so they refetch the now-empty dataset.
+        // Refetch the affected views against the now-empty dataset.
         setGuestActivity(null);
         setFunnelRows([]);
         setFunnelTrends(null);
-        setOverviewLoaded(false);
-        if (activeTab === "GUESTS") void loadGuests();
-        if (activeTab === "FUNNEL") void loadFunnel();
+        void loadOverview(true);
+        void loadGuests(true);
+        void loadFunnel(true);
       } else {
         setClearResult(response.message || "Failed to clear analytics data.");
       }
@@ -272,36 +270,33 @@ export default function AdminAnalyticsPage() {
       setClearing(false);
       setClearModalOpen(false);
     }
-  }, [activeTab, loadFunnel, loadGuests]);
+  }, [loadOverview, loadFunnel, loadGuests]);
 
-  const loadFinance = useCallback(async () => {
-    if (financeLoaded) return;
-    setLoadingFinance(true);
+  const loadFinance = useCallback(async (silent = false) => {
+    if (!silent) setLoadingFinance(true);
     try {
       const response = await statsApi.getFinanceReconciliation();
       if (response.success && response.data) {
         setFinance(response.data);
-        setFinanceLoaded(true);
       }
     } finally {
-      setLoadingFinance(false);
+      if (!silent) setLoadingFinance(false);
     }
-  }, [financeLoaded]);
+  }, []);
 
-  const loadObservability = useCallback(async () => {
-    if (observabilityLoaded) return;
-    setLoadingObservability(true);
+  const loadObservability = useCallback(async (silent = false) => {
+    if (!silent) setLoadingObservability(true);
     try {
       const response = await statsApi.getObservabilitySnapshot();
       if (response.success) {
         setObservability(response.data ?? null);
-        setObservabilityLoaded(true);
       }
     } finally {
-      setLoadingObservability(false);
+      if (!silent) setLoadingObservability(false);
     }
-  }, [observabilityLoaded]);
+  }, []);
 
+  // Initial load when a tab is first opened.
   useEffect(() => {
     void loadOverview();
   }, [loadOverview]);
@@ -318,6 +313,47 @@ export default function AdminAnalyticsPage() {
     if (activeTab === "FINANCE") void loadFinance();
     if (activeTab === "OBSERVABILITY") void loadObservability();
   }, [activeTab, loadFinance, loadObservability]);
+
+  // Real-time auto-refresh: silently re-fetch the active tab's data on an
+  // interval. Pauses while the browser tab is hidden to avoid wasted calls.
+  useEffect(() => {
+    const refreshActive = () => {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+      switch (activeTab) {
+        case "OVERVIEW":
+          void loadOverview(true);
+          break;
+        case "FUNNEL":
+          void loadFunnel(true);
+          break;
+        case "GUESTS":
+          void loadGuests(true);
+          break;
+        case "FINANCE":
+          void loadFinance(true);
+          break;
+        case "OBSERVABILITY":
+          void loadObservability(true);
+          break;
+        // SERVER tab manages its own polling.
+      }
+    };
+
+    const id = window.setInterval(refreshActive, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [
+    activeTab,
+    loadOverview,
+    loadFunnel,
+    loadGuests,
+    loadFinance,
+    loadObservability,
+  ]);
 
   const roleDistributionData = useMemo(
     () => [
@@ -455,6 +491,7 @@ export default function AdminAnalyticsPage() {
             { id: "GUESTS", label: "Guests" },
             { id: "FINANCE", label: "Finance" },
             { id: "OBSERVABILITY", label: "Observability" },
+            { id: "SERVER", label: "Server" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -469,12 +506,23 @@ export default function AdminAnalyticsPage() {
             </button>
           ))}
 
+          <span
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+            title={`Auto-refreshing every ${POLL_MS / 1000}s`}
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            Live
+          </span>
+
           <button
             onClick={() => {
               setClearResult(null);
               setClearModalOpen(true);
             }}
-            className="ml-auto rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-100"
+            className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-100"
           >
             Clear analytics data
           </button>
@@ -1245,6 +1293,8 @@ export default function AdminAnalyticsPage() {
             )}
           </div>
         )}
+
+        {activeTab === "SERVER" && <ServerMonitoringTab />}
       </Card>
 
       {clearModalOpen && (

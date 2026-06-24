@@ -259,7 +259,7 @@ const INDIAN_STATES = [
   "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
   "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
   "Delhi", "Jammu & Kashmir", "Chandigarh", "Puducherry",
-];
+].sort((a, b) => a.localeCompare(b));
 
 // Required fields that must be filled before generating
 const REQUIRED_FIELDS: Array<{ key: keyof GuidanceFormState; label: string }> = [

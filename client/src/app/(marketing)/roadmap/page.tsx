@@ -124,7 +124,7 @@ const INDIAN_STATES = [
   "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
   "Andaman & Nicobar", "Chandigarh", "Dadra & Nagar Haveli", "Daman & Diu",
   "Delhi", "Jammu & Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
-];
+].sort((a, b) => a.localeCompare(b));
 
 // Coaching fee tiers derived from parentalCommitment.financial text
 const COACHING_FEE_TIERS: Record<number, { label: string; low: number; high: number }> = {

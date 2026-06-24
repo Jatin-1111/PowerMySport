@@ -18,6 +18,7 @@ import {
   setupBookingSocket,
   setBookingSocketInstance,
 } from "./client/sockets/bookingSocket";
+import { setupInfraSocket } from "./admin/sockets/infraSocket";
 import { setNotificationSocketInstance } from "./client/services/NotificationService";
 import { setCommunityRealtimeSocketInstance } from "./community/services/CommunityRealtimeService";
 import { startExpirationJob } from "./utils/timer";
@@ -127,6 +128,7 @@ const startServer = async () => {
     setupNotificationSocket(io);
     setupPresenceSocket(io);
     setupBookingSocket(io);
+    setupInfraSocket(io);
     setFriendSocketInstance(io);
     setNotificationSocketInstance(io);
     setCommunityRealtimeSocketInstance(io);

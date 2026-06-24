@@ -212,6 +212,78 @@ export interface GuestActivity {
   daily: GuestDailyPoint[];
 }
 
+export interface InfraOverview {
+  available: boolean;
+  error?: string;
+  region: string;
+  environmentName: string;
+  refreshedAt: string;
+  environment: {
+    status?: string;
+    health?: string;
+    healthStatus?: string;
+    color?: string;
+    versionLabel?: string;
+    endpointUrl?: string;
+    dateUpdated?: string;
+    causes: string[];
+  } | null;
+  application: {
+    requestCount: number;
+    durationSec: number;
+    statusCodes: { p2xx: number; p3xx: number; p4xx: number; p5xx: number };
+    latencyMs: { p50: number; p90: number; p99: number };
+  } | null;
+  instanceCounts: Record<string, number>;
+  instances: Array<{
+    instanceId: string;
+    health?: string;
+    color?: string;
+    cpuBusyPct: number;
+    loadAvg: number[];
+    version?: string;
+    launchedAt?: string;
+    causes: string[];
+  }>;
+  events: Array<{ date?: string; severity?: string; message?: string }>;
+  runtime?: RuntimeStats;
+}
+
+export interface RuntimeStats {
+  hostname: string;
+  uptimeSec: number;
+  cpuCount: number;
+  loadAvg: number[];
+  memory: {
+    totalMb: number;
+    usedMb: number;
+    freeMb: number;
+    usedPct: number;
+    processRssMb: number;
+    heapUsedMb: number;
+    heapTotalMb: number;
+  };
+}
+
+export interface InfraMetricPoint {
+  t: string;
+  v: number;
+}
+
+export interface InfraMetrics {
+  available: boolean;
+  error?: string;
+  hours: number;
+  periodSec: number;
+  series: {
+    cpuPct: InfraMetricPoint[];
+    requestCount: InfraMetricPoint[];
+    latencyMs: InfraMetricPoint[];
+    errors4xx: InfraMetricPoint[];
+    errors5xx: InfraMetricPoint[];
+  };
+}
+
 export const statsApi = {
   getPlatformStats: async (): Promise<ApiResponse<PlatformStats>> => {
     const response = await axiosInstance.get("/stats/platform");
@@ -377,6 +449,20 @@ export const statsApi = {
   // Destructive: permanently deletes every analytics event.
   clearAnalytics: async (): Promise<ApiResponse<{ deletedCount: number }>> => {
     const response = await axiosInstance.delete("/stats/analytics");
+    return response.data;
+  },
+
+  getInfraOverview: async (): Promise<ApiResponse<InfraOverview>> => {
+    const response = await axiosInstance.get("/stats/infra/overview");
+    return response.data;
+  },
+
+  getInfraMetrics: async (
+    hours = 6,
+  ): Promise<ApiResponse<InfraMetrics>> => {
+    const response = await axiosInstance.get("/stats/infra/metrics", {
+      params: { hours },
+    });
     return response.data;
   },
 
