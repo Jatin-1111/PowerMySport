@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
 
 const normalizeImageUrl = (value?: string) => {
   if (!value || typeof value !== "string") {
@@ -1478,6 +1479,23 @@ function CoachesPageContent() {
 }
 
 export default function CoachesPage() {
+  const isCoachesLive = process.env.NEXT_PUBLIC_COACHES_IS_LIVE !== "false";
+
+  if (!isCoachesLive) {
+    return (
+      <FeatureWaitlist
+        title="Expert Coaches."
+        subtitle={<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">Coming Soon.</span>}
+        description="Our Coaches platform is almost here. Get ready to connect with experienced professionals who can provide personalized guidance for your child's sports journey."
+        icon={Users}
+        gradientFrom="#3B82F6"
+        gradientTo="#60A5FA"
+        shadowColorClass="shadow-blue-500/30"
+        buttonColorClass="bg-blue-600"
+      />
+    );
+  }
+
   return (
     <Suspense
       fallback={

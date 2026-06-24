@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
 import { clientFollowStore } from "@/modules/shared/lib/followStore";
 import { getCommunityAppUrl } from "@/lib/community/url";
 
@@ -117,6 +118,23 @@ const academyMatchesAgeGroup = (academy: AcademyCard, ageGroup: string) => {
 };
 
 export default function AcademiesPage() {
+  const isAcademiesLive = process.env.NEXT_PUBLIC_ACADEMIES_IS_LIVE !== "false";
+
+  if (!isAcademiesLive) {
+    return (
+      <FeatureWaitlist
+        title="Top Academies."
+        subtitle={<span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-violet-400">Coming Soon.</span>}
+        description="Our Academies platform is almost here. Get ready to discover the best sports academies to help your child excel."
+        icon={BadgeCheck}
+        gradientFrom="#8B5CF6"
+        gradientTo="#A78BFA"
+        shadowColorClass="shadow-violet-500/30"
+        buttonColorClass="bg-violet-600"
+      />
+    );
+  }
+
   const [loading, setLoading] = useState(true);
   const [academies, setAcademies] = useState<AcademyCard[]>([]);
   const [currentPage, setCurrentPage] = useState(1);

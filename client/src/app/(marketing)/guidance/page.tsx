@@ -54,9 +54,6 @@ import { useState, useEffect, useRef, Fragment } from "react";
 import {
   motion,
   AnimatePresence,
-  useScroll,
-  useTransform,
-  useMotionTemplate,
   type Variants,
 } from "framer-motion";
 
@@ -1292,9 +1289,6 @@ function CostBreakdownCard({ c }: { c: CostBreakdown }) {
 // Luxury easing — slow-out cubic used by premium editorial sites
 const LUXE_EASE = [0.22, 1, 0.36, 1] as const;
 
-// Cinematic scroll-coupled 3D: each phase travels through real depth as the
-// page scrolls — flying in from far away, locking sharp + face-on at the
-// centre (the "camera"), then receding as it passes. Continuous, not one-shot.
 function Phase3D({
   children,
   className,
@@ -1302,42 +1296,10 @@ function Phase3D({
   children: React.ReactNode;
   className?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"],
-  });
-
-  // 0 = entering bottom of screen · ~0.5 = centred · 1 = leaving top
-  const z = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [-520, 0, 0, 120]);
-  const rotateX = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [24, 0, 0, -12]);
-  const scale = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [0.8, 1, 1, 0.96]);
-  const opacity = useTransform(
-    scrollYProgress,
-    [0, 0.18, 0.42, 0.8, 1],
-    [0, 0.5, 1, 1, 0.55],
-  );
-  const blurPx = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [9, 0, 0, 4]);
-  const filter = useMotionTemplate`blur(${blurPx}px)`;
-
   return (
-    <motion.div
-      ref={ref}
-      style={{
-        transformPerspective: 1100,
-        transformOrigin: "center",
-        transformStyle: "preserve-3d",
-        z,
-        rotateX,
-        scale,
-        opacity,
-        filter,
-        willChange: "transform, filter, opacity",
-      }}
-      className={className}
-    >
+    <div className={className}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 

@@ -291,7 +291,10 @@ export const Navigation: React.FC<NavProps> = ({
                   "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
               )}
             >
-              Community
+              <div className="flex flex-col items-center">
+                <span>Community</span>
+                <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[8px] font-bold text-power-orange leading-none uppercase mt-0.5">Upcoming</span>
+              </div>
             </Link>
 
             {/* Services Dropdown */}
@@ -300,19 +303,24 @@ export const Navigation: React.FC<NavProps> = ({
                 onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
                 onMouseEnter={() => { setServicesDropdownOpen(true); setExploreDropdownOpen(false); }}
                 className={cn(
-                  "shop-nav-link relative font-medium flex items-center gap-1 focus:outline-none",
+                  "shop-nav-link relative font-medium focus:outline-none",
                   isServicesActive &&
                     "text-power-orange after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-power-orange/70",
                 )}
               >
-                Services
-                <motion.span
-                  animate={{ rotate: servicesDropdownOpen ? 180 : 0 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="inline-flex"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </motion.span>
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-1">
+                    Services
+                    <motion.span
+                      animate={{ rotate: servicesDropdownOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="inline-flex"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.span>
+                  </div>
+                  <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[8px] font-bold text-power-orange leading-none uppercase mt-0.5">Upcoming</span>
+                </div>
               </button>
 
               <AnimatePresence>
@@ -587,14 +595,15 @@ export const Navigation: React.FC<NavProps> = ({
               <Link
                 href="/community"
                 className={cn(
-                  "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
-                  isActive("/community")
-                    ? "text-power-orange bg-orange-50"
-                    : "text-slate-700",
+                  "block px-3 py-2 rounded-md hover:bg-indigo-50 transition-colors",
+                  isActive("/community") ? "bg-orange-50" : "",
                 )}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Community
+                <div className="flex flex-col items-start">
+                  <span className={cn("text-base font-medium", isActive("/community") ? "text-power-orange" : "text-slate-700")}>Community</span>
+                  <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[9px] font-bold text-power-orange leading-none uppercase mt-0.5">Upcoming</span>
+                </div>
               </Link>
 
               {/* Mobile Services Accordion */}
@@ -602,17 +611,18 @@ export const Navigation: React.FC<NavProps> = ({
                 <button
                   onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                   className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors",
-                    isServicesActive
-                      ? "text-power-orange bg-orange-50"
-                      : "text-slate-700 hover:bg-indigo-50",
+                    "w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors",
+                    isServicesActive ? "bg-orange-50" : "hover:bg-indigo-50",
                   )}
                 >
-                  Services
+                  <div className="flex flex-col items-start">
+                    <span className={cn("text-base font-medium", isServicesActive ? "text-power-orange" : "text-slate-700")}>Services</span>
+                    <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[9px] font-bold text-power-orange leading-none uppercase mt-0.5">Upcoming</span>
+                  </div>
                   <motion.span
                     animate={{ rotate: mobileServicesOpen ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
-                    className="inline-flex"
+                    className={cn("inline-flex", isServicesActive ? "text-power-orange" : "text-slate-700")}
                   >
                     <ChevronDown className="w-4 h-4" />
                   </motion.span>

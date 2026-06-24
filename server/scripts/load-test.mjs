@@ -5,7 +5,7 @@
  * ╠══════════════════════════════════════════════════════════════════════╣
  * ║  Target  : Elastic Beanstalk (powermysport-api-docker)               ║
  * ║  Region  : ap-south-1 (Mumbai)                                       ║
- * ║  Instance: t3.small  (Min: 1 / Max: 4 — Auto Scaling)                ║
+ * ║  Instance: t3.medium  (Min: 1 / Max: 4 — Auto Scaling)               ║
  * ║  LB Type : Application Load Balancer (ALB)                           ║
  * ╚══════════════════════════════════════════════════════════════════════╝
  *
@@ -452,10 +452,10 @@ async function main() {
       const match = statusOut.match(new RegExp(`${key}: (.+)`));
       return match ? match[1].trim() : null;
     };
-    
+
     const envNameMatch = statusOut.match(/Environment details for: (.+)/);
     if (envNameMatch) envDetails.Environment = envNameMatch[1].trim();
-    
+
     if (extractStatus("Region")) envDetails.Region = extractStatus("Region");
     if (extractStatus("Health")) envDetails.Health = extractStatus("Health") + (extractStatus("Health") === "Green" ? " ✓" : "");
     if (extractStatus("Status")) envDetails.Status = extractStatus("Status");
@@ -468,7 +468,7 @@ async function main() {
     // Fetch deep config details
     try {
       const { stdout: configOut } = await execAsync(`eb config ${envDetails.Environment} --display`, { cwd: ".." });
-      
+
       const extractConfig = (key) => {
         const match = configOut.match(new RegExp(`${key}:\\s*(.+)`));
         return match ? match[1].trim().replace(/^['"]|['"]$/g, "") : null;
