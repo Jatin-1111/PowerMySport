@@ -51,7 +51,14 @@ import {
   Rocket,
 } from "lucide-react";
 import { useState, useEffect, useRef, Fragment } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+  useMotionTemplate,
+  type Variants,
+} from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -1285,23 +1292,48 @@ function CostBreakdownCard({ c }: { c: CostBreakdown }) {
 // Luxury easing — slow-out cubic used by premium editorial sites
 const LUXE_EASE = [0.22, 1, 0.36, 1] as const;
 
-// Cinematic scroll reveal: blur-to-sharp focus + slide + spring scale.
-// This is the "expensive" entrance premium editorial/SaaS sites use.
-function RevealCard({
+// Cinematic scroll-coupled 3D: each phase travels through real depth as the
+// page scrolls — flying in from far away, locking sharp + face-on at the
+// centre (the "camera"), then receding as it passes. Continuous, not one-shot.
+function Phase3D({
   children,
   className,
-  delay = 0,
 }: {
   children: React.ReactNode;
   className?: string;
-  delay?: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+
+  // 0 = entering bottom of screen · ~0.5 = centred · 1 = leaving top
+  const z = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [-520, 0, 0, 120]);
+  const rotateX = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [24, 0, 0, -12]);
+  const scale = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [0.8, 1, 1, 0.96]);
+  const opacity = useTransform(
+    scrollYProgress,
+    [0, 0.18, 0.42, 0.8, 1],
+    [0, 0.5, 1, 1, 0.55],
+  );
+  const blurPx = useTransform(scrollYProgress, [0, 0.42, 0.72, 1], [9, 0, 0, 4]);
+  const filter = useMotionTemplate`blur(${blurPx}px)`;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 44, scale: 0.95, filter: "blur(14px)" }}
-      whileInView={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-      viewport={{ once: true, margin: "-70px" }}
-      transition={{ duration: 0.8, ease: LUXE_EASE, delay }}
+      ref={ref}
+      style={{
+        transformPerspective: 1100,
+        transformOrigin: "center",
+        transformStyle: "preserve-3d",
+        z,
+        rotateX,
+        scale,
+        opacity,
+        filter,
+        willChange: "transform, filter, opacity",
+      }}
       className={className}
     >
       {children}
@@ -1569,7 +1601,17 @@ function JourneyMap({
   return (
     <div className="space-y-5">
       {/* ── Cinematic mission banner ── */}
-      <div className="relative overflow-hidden rounded-3xl p-px shadow-[0_24px_60px_-24px_rgba(233,115,22,0.5)]">
+      <motion.div
+        initial={{ opacity: 0, rotateX: 26, y: 50, z: -200, filter: "blur(12px)" }}
+        animate={{ opacity: 1, rotateX: 0, y: 0, z: 0, filter: "blur(0px)" }}
+        transition={{ duration: 1.15, ease: LUXE_EASE }}
+        style={{
+          transformPerspective: 1300,
+          transformOrigin: "center top",
+          willChange: "transform, filter, opacity",
+        }}
+        className="relative overflow-hidden rounded-3xl p-px shadow-[0_24px_60px_-24px_rgba(233,115,22,0.5)]"
+      >
         {/* slowly rotating gradient-light rim */}
         <motion.div
           aria-hidden
@@ -1645,7 +1687,7 @@ function JourneyMap({
           transition={{ repeat: Infinity, duration: 3.6, repeatDelay: 4, ease: "easeInOut" }}
         />
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Honest goal verdict + benchmark ── */}
       {assessment && <GoalAssessmentCard a={assessment} />}
@@ -1693,13 +1735,9 @@ function JourneyMap({
           const isCurrent = pi === currentPhase;
           const NodeIcon = NODE_ICONS[pi % NODE_ICONS.length]!;
           return (
-            <div key={pi} className="relative pb-6 pl-16">
+            <Phase3D key={pi} className="relative pb-6 pl-16">
               {/* node */}
-              <motion.div
-                initial={{ scale: 0.4, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ type: "spring", stiffness: 320, damping: 18, delay: pi * 0.04 }}
+              <div
                 className={`absolute left-0 top-0 z-10 flex h-12 w-12 items-center justify-center rounded-2xl border-2 shadow-md ${
                   complete
                     ? "border-emerald-500 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white"
@@ -1727,10 +1765,9 @@ function JourneyMap({
                     </motion.div>
                   </>
                 )}
-              </motion.div>
+              </div>
 
-              <RevealCard
-                delay={0.05}
+              <div
                 className={`rounded-2xl border bg-white p-4 transition-shadow duration-300 hover:shadow-[0_26px_55px_-20px_rgba(15,23,42,0.32)] ${
                   isCurrent
                     ? "border-power-orange/40 shadow-md"
@@ -1811,16 +1848,16 @@ function JourneyMap({
                     <span className="font-bold">Reward:</span> {p.outcome}
                   </p>
                 </div>
-              </RevealCard>
-            </div>
+              </div>
+            </Phase3D>
           );
         })}
 
         {/* Goal node */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: LUXE_EASE, delay: 0.2 }}
           className="relative flex items-center gap-4"
         >
           <div
