@@ -17,6 +17,7 @@ import { getMainAppUrl } from "@/lib/auth/redirect";
 import DynamicCommunityPosts from "@/modules/community/components/page/home/DynamicCommunityPosts";
 import DynamicCommunityPulse from "@/modules/community/components/page/home/DynamicCommunityPulse";
 import DynamicFeaturedQA from "@/modules/community/components/page/home/DynamicFeaturedQA";
+import FeatureWaitlist from "@/components/FeatureWaitlist";
 
 type ValueProp = {
   title: string;
@@ -200,6 +201,23 @@ function CoachMarketplaceCard({ coach }: { coach: CoachCard }) {
 }
 
 export default function CommunityLandingPage() {
+  const isCommunityLive = process.env.NEXT_PUBLIC_COMMUNITY_IS_LIVE !== "false";
+
+  if (!isCommunityLive) {
+    return (
+      <FeatureWaitlist
+        title="Community."
+        subtitle={<span className="text-transparent bg-clip-text bg-gradient-to-r from-power-orange to-amber-500">Coming Soon.</span>}
+        description="Our Community platform is almost here. Get ready to connect with parents, coaches, and sports enthusiasts."
+        icon={Users}
+        gradientFrom="#E97316"
+        gradientTo="#F59E0B"
+        shadowColorClass="shadow-power-orange/30"
+        buttonColorClass="bg-power-orange"
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-full flex-col overflow-x-hidden">
       <main className="relative isolate flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.10),transparent_34%),radial-gradient(circle_at_85%_10%,rgba(16,185,129,0.08),transparent_22%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] text-slate-900">

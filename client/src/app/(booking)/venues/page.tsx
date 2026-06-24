@@ -24,8 +24,26 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
 
 export default function VenuesPage() {
+  const isVenuesLive = process.env.NEXT_PUBLIC_VENUES_IS_LIVE !== "false";
+
+  if (!isVenuesLive) {
+    return (
+      <FeatureWaitlist
+        title="Premium Venues."
+        subtitle={<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-400">Coming Soon.</span>}
+        description="Our Venues platform is almost here. Get ready to discover and book the best sports facilities in your area."
+        icon={Building2}
+        gradientFrom="#10B981"
+        gradientTo="#34D399"
+        shadowColorClass="shadow-emerald-500/30"
+        buttonColorClass="bg-emerald-600"
+      />
+    );
+  }
+
   const [loading, setLoading] = useState(true);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [filteredVenues, setFilteredVenues] = useState<Venue[]>([]);
