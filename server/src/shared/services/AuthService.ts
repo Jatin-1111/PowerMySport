@@ -4,7 +4,66 @@ import { Booking } from "../../client/models/Booking";
 import { Player } from "../../client/models/Player";
 import { User, UserDocument } from "../../client/models/User";
 import { sendPasswordResetEmail, sendWelcomeEmail } from "../../utils/email";
+import { normalizeAddressInput } from "../utils/address";
 import { S3Service } from "./S3Service";
+import { OAuth2Client } from "google-auth-library";
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+export interface VerifiedGoogleIdentity {
+  googleId: string;
+  email: string;
+  name?: string;
+  photoUrl?: string;
+}
+
+/**
+ * Verify a Google ID token ("credential" from Google Identity Services) on the
+ * server. This is the ONLY trustworthy source of the user's Google identity —
+ * never trust googleId/email sent directly by the client, as those can be
+ * forged to impersonate any account.
+ */
+export const verifyGoogleCredential = async (
+  credential: unknown,
+): Promise<VerifiedGoogleIdentity> => {
+  if (!GOOGLE_CLIENT_ID) {
+    throw new Error("Google login is not configured on the server.");
+  }
+  if (!credential || typeof credential !== "string") {
+    throw new Error("Missing Google credential.");
+  }
+
+  let ticket;
+  try {
+    ticket = await googleOAuthClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+  } catch {
+    throw new Error("Invalid Google credential.");
+  }
+
+  const payload = ticket.getPayload();
+  if (!payload || !payload.sub || !payload.email) {
+    throw new Error("Invalid Google credential.");
+  }
+  if (payload.email_verified === false) {
+    throw new Error("Google account email is not verified.");
+  }
+
+  const identity: VerifiedGoogleIdentity = {
+    googleId: payload.sub,
+    email: payload.email,
+  };
+  if (payload.name) {
+    identity.name = payload.name;
+  }
+  if (payload.picture) {
+    identity.photoUrl = payload.picture;
+  }
+  return identity;
+};
 
 export interface RegisterPayload {
   name: string;
@@ -654,16 +713,20 @@ export const addAddress = async (
     user.addresses = [];
   }
 
+  // Canonicalize on write (Tier 0) so the stored value is consistent even if
+  // the request bypassed the UI dropdown.
+  const data = normalizeAddressInput(addressData);
+
   const newAddress: any = {
-    fullName: addressData.fullName,
-    email: addressData.email,
-    phone: addressData.phone,
-    addressLine1: addressData.addressLine1,
-    ...(addressData.addressLine2 !== undefined ? { addressLine2: addressData.addressLine2 } : {}),
-    city: addressData.city,
-    state: addressData.state,
-    postalCode: addressData.postalCode,
-    country: addressData.country || "IN",
+    fullName: data.fullName,
+    email: data.email,
+    phone: data.phone,
+    addressLine1: data.addressLine1,
+    ...(data.addressLine2 !== undefined ? { addressLine2: data.addressLine2 } : {}),
+    city: data.city,
+    state: data.state,
+    postalCode: data.postalCode,
+    country: data.country || "IN",
     isDefault: user.addresses.length === 0, // First address is default
   };
 
@@ -708,17 +771,20 @@ export const updateAddress = async (
     throw new Error("Address not found");
   }
 
+  // Canonicalize provided fields on write (Tier 0).
+  const data = normalizeAddressInput(addressData);
+
   // Update address fields
-  if (addressData.fullName) address.fullName = addressData.fullName;
-  if (addressData.email) address.email = addressData.email;
-  if (addressData.phone) address.phone = addressData.phone;
-  if (addressData.addressLine1) address.addressLine1 = addressData.addressLine1;
-  if (addressData.addressLine2 !== undefined)
-    address.addressLine2 = addressData.addressLine2;
-  if (addressData.city) address.city = addressData.city;
-  if (addressData.state) address.state = addressData.state;
-  if (addressData.postalCode) address.postalCode = addressData.postalCode;
-  if (addressData.country) address.country = addressData.country;
+  if (data.fullName) address.fullName = data.fullName;
+  if (data.email) address.email = data.email;
+  if (data.phone) address.phone = data.phone;
+  if (data.addressLine1) address.addressLine1 = data.addressLine1;
+  if (data.addressLine2 !== undefined)
+    address.addressLine2 = data.addressLine2;
+  if (data.city) address.city = data.city;
+  if (data.state) address.state = data.state;
+  if (data.postalCode) address.postalCode = data.postalCode;
+  if (data.country) address.country = data.country;
 
   address.updatedAt = new Date();
 

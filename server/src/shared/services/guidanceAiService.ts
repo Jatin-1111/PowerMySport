@@ -34,12 +34,16 @@ export const guidanceResponseSchema = z.object({
     freePlayHours: z.string(),
     restDays: z.string(),
   }),
-  recommendedPlatformActions: z.string(),
+  recommendedPlatformActions: z.union([z.string(), z.array(z.string())]).transform((v) => Array.isArray(v) ? v.join(". ") : v),
   recommendedSports: z.array(z.string()).optional(),
-  mentalSkillsRoadmap: z.object({
-    currentFocus: z.string(),
-    skills: z.array(z.object({ skill: z.string(), howToDevelop: z.string() })),
-  }).optional(),
+  mentalSkillsRoadmap: z
+    .object({
+      currentFocus: z.string(),
+      skills: z.array(
+        z.object({ skill: z.string(), howToDevelop: z.string() }),
+      ),
+    })
+    .optional(),
   talentIdentifiers: z.array(z.string()).optional(),
   multiSportAdvisory: z.string().optional(),
   // Server-computed — not from AI, added in controller
@@ -49,10 +53,13 @@ export const guidanceResponseSchema = z.object({
 export type GuidanceRequest = z.infer<typeof guidanceRequestSchema>;
 export type GuidanceResponse = z.infer<typeof guidanceResponseSchema>;
 
-export const getYouthSportsGuidanceSystemPrompt = (hasSport: boolean, age: number) => `You are an expert Youth Sports Consultant advising an Indian parent. You will receive a child's profile strictly in JSON format. ${
+export const getYouthSportsGuidanceSystemPrompt = (
+  hasSport: boolean,
+  age: number,
+) => `You are an expert Youth Sports Consultant advising an Indian parent. You will receive a child's profile strictly in JSON format. ${
   hasSport
     ? 'The profile includes a specific "sport". Focus your analysis on how to progress in that sport. Do NOT include "recommendedSports" in your response.'
-    : "The profile has NO specific sport. Recommend the top 3 sports that best fit the child based on personality, goals, age, and fitness. Include these in the \"recommendedSports\" array."
+    : 'The profile has NO specific sport. Recommend the top 3 sports that best fit the child based on personality, goals, age, and fitness. Include these in the "recommendedSports" array.'
 }
 Return ONLY a valid JSON object — no markdown, no preamble — matching this schema exactly:
 {
@@ -63,8 +70,10 @@ Return ONLY a valid JSON object — no markdown, no preamble — matching this s
     "freePlayHours": "Hours per week for unstructured free play",
     "restDays": "How many rest days and why"
   },
-  "recommendedPlatformActions": "3-4 specific next steps the parent should take on the platform to get started",${
-    hasSport ? "" : '\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"],'
+  "recommendedPlatformActions": "Single string (not array) containing 3-4 specific next steps the parent should take on the platform to get started",${
+    hasSport
+      ? ""
+      : '\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"],'
   }
   "mentalSkillsRoadmap": {
     "currentFocus": "The single most important mental skill for this child to develop right now given their age and objective",
@@ -82,9 +91,10 @@ const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const configuredModelName = process.env.GEMINI_MODEL_NAME?.trim();
 const guidanceModelCandidates = [
   configuredModelName,
+  "gemini-3.1-flash-lite",
+  "gemini-2.5",
   "gemini-3.5-flash",
   "gemini-2.5-flash",
-  "gemini-3.1-flash-lite",
 ].filter((modelName): modelName is string => Boolean(modelName));
 
 const isModelUnavailableError = (errorMessage: string) =>
@@ -119,7 +129,10 @@ export const generateYouthSportsGuidance = async (
         model: modelName,
         contents: JSON.stringify(payload),
         config: {
-          systemInstruction: getYouthSportsGuidanceSystemPrompt(!!payload.sport, payload.child_age),
+          systemInstruction: getYouthSportsGuidanceSystemPrompt(
+            !!payload.sport,
+            payload.child_age,
+          ),
           responseMimeType: "application/json",
           temperature: 0.4,
         },

@@ -1,13 +1,28 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, CreditCard, LockKeyhole, MapPin } from "lucide-react";
+import {
+  CheckCircle2,
+  CreditCard,
+  LockKeyhole,
+  MapPin,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useMemo, useState, useEffect } from "react";
 import { clearShopCart, getShopCartTotals, useShopCart } from "@/lib/shop/cart";
-import { createOrderFromCart } from "@/lib/shop/ecommerce-api";
+import {
+  addUserAddress,
+  createOrderFromCart,
+  getUserAddresses,
+  lookupPincode,
+  type ShippingAddress,
+  type UserAddress,
+} from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
+import { INDIAN_STATES } from "@/lib/shop/indianStates";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { cn } from "@/utils/cn";
 
 const initialForm = {
   fullName: "",
@@ -26,12 +41,64 @@ export function CheckoutClient() {
   const { user } = useAuthStore();
   const [form, setForm] = useState(initialForm);
 
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    null,
+  );
+  const [addingNew, setAddingNew] = useState(false);
+  const [saveNewAddress, setSaveNewAddress] = useState(true);
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+
+  const [status, setStatus] = useState<"idle" | "placing" | "placed" | "error">(
+    "idle",
+  );
+  const [message, setMessage] = useState("");
+
+  // Resolve auth client-side only (avoids SSR/hydration mismatch).
+  const [isAuthed, setIsAuthed] = useState(false);
   useEffect(() => {
+    setIsAuthed(!!localStorage.getItem("token"));
+  }, []);
+
+  // Load the shopper's saved addresses and preselect their default.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAddresses() {
+      if (!isAuthed) {
+        setAddingNew(true);
+        return;
+      }
+      try {
+        const data = await getUserAddresses();
+        if (cancelled) return;
+        setSavedAddresses(data);
+        if (data.length > 0) {
+          const preferred = data.find((a) => a.isDefault) || data[0];
+          setSelectedAddressId(preferred?._id || null);
+          setAddingNew(false);
+        } else {
+          setAddingNew(true);
+        }
+      } catch {
+        if (!cancelled) setAddingNew(true);
+      }
+    }
+
+    loadAddresses();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthed]);
+
+  // Prefill the new-address form from the user's profile when it is shown.
+  useEffect(() => {
+    if (!addingNew) return;
     if (user && user.shippingAddress) {
       setForm({
-        fullName: user.shippingAddress.fullName || "",
-        email: user.shippingAddress.email || "",
-        phone: user.shippingAddress.phone || "",
+        fullName: user.shippingAddress.fullName || user.name || "",
+        email: user.shippingAddress.email || user.email || "",
+        phone: user.shippingAddress.phone || user.phone || "",
         addressLine1: user.shippingAddress.addressLine1 || "",
         addressLine2: user.shippingAddress.addressLine2 || "",
         city: user.shippingAddress.city || "",
@@ -41,29 +108,53 @@ export function CheckoutClient() {
     } else if (user) {
       setForm((current) => ({
         ...current,
-        fullName: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
+        fullName: current.fullName || user.name || "",
+        email: current.email || user.email || "",
+        phone: current.phone || user.phone || "",
       }));
     }
-  }, [user]);
-  const [status, setStatus] = useState<"idle" | "placing" | "placed" | "error">(
-    "idle",
+  }, [addingNew, user]);
+
+  const selectedAddress = useMemo(
+    () => savedAddresses.find((a) => a._id === selectedAddressId) || null,
+    [savedAddresses, selectedAddressId],
   );
-  const [message, setMessage] = useState("");
+
+  const formComplete =
+    !!form.fullName.trim() &&
+    !!form.email.trim() &&
+    !!form.phone.trim() &&
+    !!form.addressLine1.trim() &&
+    !!form.city.trim() &&
+    !!form.state.trim() &&
+    !!form.postalCode.trim();
 
   const canPlace =
-    items.length > 0 &&
-    form.fullName.trim() &&
-    form.email.trim() &&
-    form.phone.trim() &&
-    form.addressLine1.trim() &&
-    form.city.trim() &&
-    form.state.trim() &&
-    form.postalCode.trim();
+    items.length > 0 && (addingNew ? formComplete : !!selectedAddress);
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  // Tier 1: auto-fill city + state from the pincode (free India Post lookup).
+  async function handlePostalChange(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 6);
+    setForm((current) => ({ ...current, postalCode: digits }));
+    if (digits.length !== 6) return;
+
+    setPincodeLoading(true);
+    try {
+      const location = await lookupPincode(digits);
+      if (location) {
+        setForm((current) => ({
+          ...current,
+          city: location.city || current.city,
+          state: location.state || current.state,
+        }));
+      }
+    } finally {
+      setPincodeLoading(false);
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -87,12 +178,30 @@ export function CheckoutClient() {
       return;
     }
 
+    // Resolve the shipping address from the selected saved address or the form.
+    const shippingAddress: ShippingAddress =
+      !addingNew && selectedAddress
+        ? {
+            fullName: selectedAddress.fullName,
+            email: selectedAddress.email,
+            phone: selectedAddress.phone,
+            addressLine1: selectedAddress.addressLine1,
+            addressLine2: selectedAddress.addressLine2 || "",
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            postalCode: selectedAddress.postalCode,
+            country: selectedAddress.country || "IN",
+          }
+        : { ...form, country: "IN" };
+
     try {
+      // Optionally persist a brand-new address to the shopper's address book.
+      if (addingNew && saveNewAddress) {
+        await addUserAddress({ ...form, country: "IN" }).catch(() => undefined);
+      }
+
       const result = await createOrderFromCart({
-        shippingAddress: {
-          ...form,
-          country: "IN",
-        },
+        shippingAddress,
         paymentMethod: "PHONEPE",
       });
       clearShopCart();
@@ -187,51 +296,195 @@ export function CheckoutClient() {
         </div>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-orange-50 text-orange-600">
-              <MapPin className="h-5 w-5" />
-            </span>
-            <h2 className="text-lg font-black text-slate-950">
-              Shipping Address
-            </h2>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-orange-50 text-orange-600">
+                <MapPin className="h-5 w-5" />
+              </span>
+              <h2 className="text-lg font-black text-slate-950">
+                Shipping Address
+              </h2>
+            </div>
+            {isAuthed && (
+              <Link
+                href="/shop/account?tab=address"
+                className="text-xs font-bold text-orange-600 hover:underline"
+              >
+                Manage addresses
+              </Link>
+            )}
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {[
-              ["fullName", "Full name"],
-              ["email", "Email"],
-              ["phone", "Phone"],
-              ["postalCode", "Postal code"],
-              ["city", "City"],
-              ["state", "State"],
-            ].map(([field, label]) => (
-              <input
-                key={field}
-                value={form[field as keyof typeof form]}
-                onChange={(event) =>
-                  updateField(field as keyof typeof form, event.target.value)
-                }
-                placeholder={label}
-                className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
-              />
-            ))}
-            <input
-              value={form.addressLine1}
-              onChange={(event) =>
-                updateField("addressLine1", event.target.value)
-              }
-              placeholder="Address line 1"
-              className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white sm:col-span-2"
-            />
-            <input
-              value={form.addressLine2}
-              onChange={(event) =>
-                updateField("addressLine2", event.target.value)
-              }
-              placeholder="Address line 2"
-              className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white sm:col-span-2"
-            />
-          </div>
+          {/* Saved address picker */}
+          {savedAddresses.length > 0 && !addingNew && (
+            <div className="mt-5 space-y-3">
+              {savedAddresses.map((address) => {
+                const selected = selectedAddressId === address._id;
+                return (
+                  <button
+                    type="button"
+                    key={address._id}
+                    onClick={() => setSelectedAddressId(address._id || null)}
+                    className={cn(
+                      "w-full rounded-xl border-2 p-4 text-left transition-all",
+                      selected
+                        ? "border-orange-500 bg-orange-50/40"
+                        : "border-slate-200 bg-white hover:border-slate-300",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">
+                          {address.fullName}
+                        </span>
+                        {address.isDefault && (
+                          <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          "grid h-5 w-5 place-items-center rounded-full border-2",
+                          selected
+                            ? "border-orange-500 bg-orange-500"
+                            : "border-slate-300 bg-white",
+                        )}
+                      >
+                        {selected && (
+                          <span className="h-2 w-2 rounded-full bg-white" />
+                        )}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {address.addressLine1}
+                      {address.addressLine2 && `, ${address.addressLine2}`}
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      {address.city}, {address.state} {address.postalCode}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {address.phone} • {address.email}
+                    </p>
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setForm(initialForm);
+                  setAddingNew(true);
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+              >
+                <Plus className="h-4 w-4" />
+                Use a new address
+              </button>
+            </div>
+          )}
+
+          {/* New address form */}
+          {addingNew && (
+            <div className="mt-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <input
+                  value={form.fullName}
+                  onChange={(event) =>
+                    updateField("fullName", event.target.value)
+                  }
+                  placeholder="Full name"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                />
+                <input
+                  value={form.email}
+                  onChange={(event) => updateField("email", event.target.value)}
+                  placeholder="Email"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                />
+                <input
+                  value={form.phone}
+                  onChange={(event) => updateField("phone", event.target.value)}
+                  placeholder="Phone"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                />
+                <div>
+                  <input
+                    value={form.postalCode}
+                    onChange={(event) => handlePostalChange(event.target.value)}
+                    placeholder="Postal code"
+                    inputMode="numeric"
+                    maxLength={6}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                  />
+                  {pincodeLoading && (
+                    <p className="mt-1 text-xs text-slate-400">
+                      Looking up city & state…
+                    </p>
+                  )}
+                </div>
+                <input
+                  value={form.city}
+                  onChange={(event) => updateField("city", event.target.value)}
+                  placeholder="City"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                />
+                <select
+                  value={form.state}
+                  onChange={(event) => updateField("state", event.target.value)}
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                >
+                  <option value="">Select state</option>
+                  {form.state && !INDIAN_STATES.includes(form.state) && (
+                    <option value={form.state}>{form.state}</option>
+                  )}
+                  {INDIAN_STATES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={form.addressLine1}
+                  onChange={(event) =>
+                    updateField("addressLine1", event.target.value)
+                  }
+                  placeholder="Address line 1"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white sm:col-span-2"
+                />
+                <input
+                  value={form.addressLine2}
+                  onChange={(event) =>
+                    updateField("addressLine2", event.target.value)
+                  }
+                  placeholder="Address line 2 (optional)"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white sm:col-span-2"
+                />
+              </div>
+
+              {isAuthed && (
+                <label className="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={saveNewAddress}
+                    onChange={(event) => setSaveNewAddress(event.target.checked)}
+                    className="h-4 w-4 accent-orange-500"
+                  />
+                  Save this address to my address book
+                </label>
+              )}
+
+              {savedAddresses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAddingNew(false)}
+                  className="mt-4 text-sm font-bold text-slate-600 hover:underline"
+                >
+                  ← Use a saved address
+                </button>
+              )}
+            </div>
+          )}
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -260,9 +513,7 @@ export function CheckoutClient() {
           <LockKeyhole className="h-4 w-4" />
           Encrypted checkout
         </div>
-        <h2 className="mt-4 text-xl font-black text-slate-950">
-          Order Summary
-        </h2>
+        <h2 className="mt-4 text-xl font-black text-slate-950">Order Summary</h2>
         <div className="mt-5 space-y-3 text-sm text-slate-600">
           {items.map((item) => (
             <div

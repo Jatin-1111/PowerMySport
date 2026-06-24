@@ -18,12 +18,12 @@ const sortOptions = [
   { value: "newest", label: "Newest" },
 ];
 
-export function ShopCatalogClient({ 
+export function ShopCatalogClient({
   products,
-  facets = { brands: [], minPrice: 0, maxPrice: 10000 }
-}: { 
+  facets = { categories: [], brands: [], minPrice: 0, maxPrice: 10000 }
+}: {
   products: Product[];
-  facets?: { brands: string[]; minPrice: number; maxPrice: number; };
+  facets?: { categories?: string[]; brands: string[]; minPrice: number; maxPrice: number; };
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,22 +54,58 @@ export function ShopCatalogClient({
   const cartItems = useShopCart();
   const totals = useMemo(() => getShopCartTotals(cartItems), [cartItems]);
 
+  // Category list comes from the catalog-wide facet (not the filtered result
+  // set) so the shopper can always switch categories. Fall back to whatever is
+  // present in the current products if the facet is unavailable.
   const categories = useMemo(
-    () => ["ALL", ...Array.from(new Set(products.map((item) => item.category)))],
-    [products],
+    () => [
+      "ALL",
+      ...Array.from(
+        new Set([
+          ...(facets.categories || []),
+          ...products.map((item) => item.category),
+        ]),
+      ).filter(Boolean),
+    ],
+    [facets.categories, products],
   );
 
-  // Sync state to URL and fetch
-  const applyFilters = () => {
+  // Sync state to URL and refetch. Accepts overrides so a single filter click
+  // applies immediately without waiting for async state updates.
+  const applyFilters = (
+    overrides: Partial<{
+      search: string;
+      category: string;
+      sort: string;
+      brand: string;
+      rating: number;
+      maxPrice: number;
+      condition: string;
+      sellerType: string;
+    }> = {},
+  ) => {
+    const next = {
+      search,
+      category,
+      sort,
+      brand,
+      rating,
+      maxPrice,
+      condition,
+      sellerType,
+      ...overrides,
+    };
+
     const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (category !== "ALL") params.set("category", category);
-    if (sort !== "featured") params.set("sortBy", sort);
-    if (brand) params.set("brand", brand);
-    if (rating > 0) params.set("rating", rating.toString());
-    if (maxPrice < facets.maxPrice) params.set("maxPrice", maxPrice.toString());
-    if (condition) params.set("condition", condition);
-    if (sellerType) params.set("sellerType", sellerType);
+    if (next.search) params.set("search", next.search);
+    if (next.category !== "ALL") params.set("category", next.category);
+    if (next.sort !== "featured") params.set("sortBy", next.sort);
+    if (next.brand) params.set("brand", next.brand);
+    if (next.rating > 0) params.set("rating", String(next.rating));
+    if (next.maxPrice < (facets.maxPrice || 10000))
+      params.set("maxPrice", String(next.maxPrice));
+    if (next.condition) params.set("condition", next.condition);
+    if (next.sellerType) params.set("sellerType", next.sellerType);
 
     router.push(`/shop?${params.toString()}`);
   };
@@ -229,7 +265,7 @@ export function ShopCatalogClient({
           <div className="relative">
             <select
               value={sort}
-              onChange={(e) => { setSort(e.target.value); setTimeout(applyFilters, 0); }}
+              onChange={(e) => { setSort(e.target.value); applyFilters({ sort: e.target.value }); }}
               className="cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 py-1.5 text-sm font-bold outline-none shadow-sm transition focus:border-[#ff5722]"
             >
               {sortOptions.map((o) => (
@@ -289,7 +325,7 @@ export function ShopCatalogClient({
               {categories.map((item) => (
                 <button
                   key={item}
-                  onClick={() => setCategory(item)}
+                  onClick={() => { setCategory(item); applyFilters({ category: item }); }}
                   className={cn(
                     "flex items-center justify-between rounded-lg px-3 py-2 text-sm font-bold transition-all",
                     category === item
@@ -310,7 +346,7 @@ export function ShopCatalogClient({
             </summary>
             <div className="mt-4 flex flex-col gap-2">
               <button
-                onClick={() => setBrand("")}
+                onClick={() => { setBrand(""); applyFilters({ brand: "" }); }}
                 className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", brand === "" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 All Brands
@@ -318,7 +354,7 @@ export function ShopCatalogClient({
               {facets.brands.map((b) => (
                 <button
                   key={b}
-                  onClick={() => setBrand(b)}
+                  onClick={() => { setBrand(b); applyFilters({ brand: b }); }}
                   className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", brand === b ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
                 >
                   {b}
@@ -358,7 +394,7 @@ export function ShopCatalogClient({
               {[5, 4, 3, 2, 1].map((r) => (
                 <button
                   key={r}
-                  onClick={() => setRating(r === rating ? 0 : r)}
+                  onClick={() => { const nextRating = r === rating ? 0 : r; setRating(nextRating); applyFilters({ rating: nextRating }); }}
                   className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", rating === r ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
                 >
                   {r} Stars & Up
@@ -374,19 +410,19 @@ export function ShopCatalogClient({
             </summary>
             <div className="mt-4 flex flex-col gap-2">
               <button
-                onClick={() => setCondition("")}
+                onClick={() => { setCondition(""); applyFilters({ condition: "" }); }}
                 className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", condition === "" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 All Gear
               </button>
               <button
-                onClick={() => setCondition("NEW")}
+                onClick={() => { setCondition("NEW"); applyFilters({ condition: "NEW" }); }}
                 className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", condition === "NEW" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 New Gear
               </button>
               <button
-                onClick={() => setCondition("USED")}
+                onClick={() => { setCondition("USED"); applyFilters({ condition: "USED" }); }}
                 className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", condition === "USED" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 Used / Pre-owned
@@ -401,25 +437,25 @@ export function ShopCatalogClient({
             </summary>
             <div className="mt-4 flex flex-col gap-2">
               <button
-                onClick={() => setSellerType("")}
+                onClick={() => { setSellerType(""); applyFilters({ sellerType: "" }); }}
                 className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 All Sellers
               </button>
               <button
-                onClick={() => setSellerType("SYSTEM")}
+                onClick={() => { setSellerType("SYSTEM"); applyFilters({ sellerType: "SYSTEM" }); }}
                 className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "SYSTEM" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 PowerMySport Store
               </button>
               <button
-                onClick={() => setSellerType("PARENT")}
+                onClick={() => { setSellerType("PARENT"); applyFilters({ sellerType: "PARENT" }); }}
                 className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "PARENT" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 Parents
               </button>
               <button
-                onClick={() => setSellerType("PLAYER")}
+                onClick={() => { setSellerType("PLAYER"); applyFilters({ sellerType: "PLAYER" }); }}
                 className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "PLAYER" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 Players (P2P)
@@ -428,7 +464,7 @@ export function ShopCatalogClient({
           </details>
 
           <button
-            onClick={applyFilters}
+            onClick={() => applyFilters()}
             className="w-full rounded-xl bg-[#ff5722] py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#e64a19] active:scale-95"
           >
             Apply Filters

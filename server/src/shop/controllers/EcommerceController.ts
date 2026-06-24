@@ -561,6 +561,30 @@ export class EcommerceController {
         return;
       }
 
+      // Enforce ownership before confirming payment (prevents acting on
+      // another user's order — IDOR).
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        res.status(401).json({
+          ok: false,
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
+        });
+        return;
+      }
+
+      const existingOrder = await this.orderService.getOrderById(orderId);
+      if (
+        !existingOrder ||
+        (existingOrder.userId.toString() !== userId &&
+          (req as any).user?.role !== "ADMIN")
+      ) {
+        res.status(404).json({
+          ok: false,
+          error: { code: "NOT_FOUND", message: "Order not found" },
+        });
+        return;
+      }
+
       // Verify payment
       const paymentTx = await this.paymentService.verifyAndConfirmPayment(
         orderId,
@@ -614,6 +638,118 @@ export class EcommerceController {
           code: "PAYMENT_VERIFICATION_FAILED",
           message: error.message,
         },
+      } as ApiResponse<null>);
+    }
+  }
+
+  /**
+   * POST /api/v1/orders/:orderId/sync-payment
+   * Reconcile an order's payment by polling the gateway for the definitive
+   * status. Called by the client after the PhonePe redirect lands back on the
+   * order page, so payment confirmation does not depend solely on the webhook.
+   */
+  async syncPayment(req: Request, res: Response): Promise<void> {
+    try {
+      const orderId = getParam((req.params as Record<string, unknown>).orderId);
+      const userId = (req as any).user?.id;
+
+      if (!orderId) {
+        res.status(400).json({
+          ok: false,
+          error: { code: "INVALID_REQUEST", message: "Order id is required" },
+        });
+        return;
+      }
+
+      const order = await this.orderService.getOrderById(orderId);
+      if (!order) {
+        res.status(404).json({
+          ok: false,
+          error: { code: "NOT_FOUND", message: "Order not found" },
+        });
+        return;
+      }
+
+      // Verify ownership (admins may reconcile any order)
+      if (
+        order.userId.toString() !== userId &&
+        (req as any).user?.role !== "ADMIN"
+      ) {
+        res.status(403).json({
+          ok: false,
+          error: { code: "FORBIDDEN", message: "Access denied" },
+        });
+        return;
+      }
+
+      // Already settled, or not in a state we can reconcile — return as-is.
+      if (
+        order.paymentStatus === PaymentStatus.CAPTURED ||
+        order.status !== OrderStatus.PENDING_PAYMENT
+      ) {
+        res.json({ ok: true, data: order } as ApiResponse<any>);
+        return;
+      }
+
+      // Look up the latest payment transaction for this order.
+      const paymentTx = await PaymentTransactionModel.findOne({
+        orderId,
+      }).sort({ createdAt: -1 });
+
+      if (!paymentTx?.gatewayOrderId) {
+        res.json({ ok: true, data: order } as ApiResponse<any>);
+        return;
+      }
+
+      // Ask the gateway for the definitive status.
+      const gatewayStatus = await this.paymentService
+        .getGatewayService()
+        .getPaymentStatus(paymentTx.gatewayOrderId);
+
+      if (gatewayStatus === PaymentStatus.CAPTURED) {
+        paymentTx.status = PaymentStatus.CAPTURED;
+        if (!paymentTx.gatewayPaymentId) {
+          paymentTx.gatewayPaymentId = paymentTx.gatewayOrderId;
+        }
+        await paymentTx.save();
+
+        const updatedOrder = await this.orderService.confirmPayment(
+          orderId,
+          paymentTx.gatewayPaymentId || paymentTx.gatewayOrderId,
+          paymentTx.gatewayOrderId,
+        );
+
+        NotificationService.send({
+          userId: updatedOrder.userId.toString(),
+          type: "PAYMENT_CONFIRMED",
+          title: "Payment Confirmed",
+          message: `Your payment for order ${updatedOrder.orderNumber} has been confirmed. We are processing your order.`,
+          data: {
+            orderId: updatedOrder._id.toString(),
+            orderNumber: updatedOrder.orderNumber,
+            totalAmount: updatedOrder.totalAmount,
+            confirmedAt: new Date().toISOString(),
+          },
+        }).catch((err: Error) =>
+          console.error(
+            "[EcommerceController] Failed to send payment notification:",
+            err,
+          ),
+        );
+
+        res.json({ ok: true, data: updatedOrder } as ApiResponse<any>);
+        return;
+      }
+
+      // Not captured yet (pending, or a transient gateway error). Leave the
+      // order untouched — the authoritative webhook handles genuine failures,
+      // and the shopper can retry. We never auto-fail here to avoid releasing
+      // inventory on a transient status-check error.
+      res.json({ ok: true, data: order } as ApiResponse<any>);
+    } catch (error: any) {
+      res.status(500).json({
+        ok: false,
+        error: { code: "INTERNAL_ERROR", message: error.message },
       } as ApiResponse<null>);
     }
   }
@@ -842,6 +978,9 @@ export class EcommerceController {
       const invoiceNumber = `INV-${order.orderNumber}`;
       const invoiceDate = new Date(order.createdAt);
 
+      // All monetary values are stored in paise — render them as rupees.
+      const money = (paise: number) => `INR ${(paise / 100).toFixed(2)}`;
+
       // Use PDFKit to generate the invoice
       const PDFDocument = require("pdfkit");
       const doc = new PDFDocument({ margin: 50 });
@@ -917,8 +1056,8 @@ export class EcommerceController {
 
         doc.text(productName, col1X, currentY, { width: 200, ellipsis: true });
         doc.text(String(item.quantity), col2X, currentY);
-        doc.text(`₹${item.unitPrice.toFixed(2)}`, col3X, currentY);
-        doc.text(`₹${item.lineTotal.toFixed(2)}`, col4X, currentY);
+        doc.text(money(item.unitPrice), col3X, currentY);
+        doc.text(money(item.lineTotal), col4X, currentY);
 
         currentY += 20;
       }
@@ -930,25 +1069,25 @@ export class EcommerceController {
       doc.fontSize(10).font("Helvetica");
       doc.text("Subtotal:", col3X, currentY);
       doc.text(
-        `₹${(order.totalAmount - order.taxAmount - (order.shippingAmount || 0)).toFixed(2)}`,
+        money(order.totalAmount - order.taxAmount - (order.shippingAmount || 0)),
         col4X,
         currentY,
       );
 
       currentY += 15;
       doc.text("Tax (GST):", col3X, currentY);
-      doc.text(`₹${order.taxAmount.toFixed(2)}`, col4X, currentY);
+      doc.text(money(order.taxAmount), col4X, currentY);
 
       if (order.shippingAmount && order.shippingAmount > 0) {
         currentY += 15;
         doc.text("Shipping:", col3X, currentY);
-        doc.text(`₹${order.shippingAmount.toFixed(2)}`, col4X, currentY);
+        doc.text(money(order.shippingAmount), col4X, currentY);
       }
 
       currentY += 20;
       doc.fontSize(12).font("Helvetica-Bold");
       doc.text("TOTAL:", col3X, currentY);
-      doc.text(`₹${order.totalAmount.toFixed(2)}`, col4X, currentY);
+      doc.text(money(order.totalAmount), col4X, currentY);
 
       // Footer
       doc.moveDown(2);
@@ -1072,15 +1211,25 @@ export class EcommerceController {
         return;
       }
 
-      // Check if user has purchased this product
+      // Verify the user actually purchased THIS product (a DELIVERED order
+      // containing one of this product's variants) before marking the review a
+      // verified purchase — previously any delivered order of anything counted.
+      const product = await ProductModel.findById(productId).select(
+        "variants._id",
+      );
+      if (!product) {
+        res.status(404).json({
+          ok: false,
+          error: { code: "NOT_FOUND", message: "Product not found" },
+        });
+        return;
+      }
+      const variantIds = product.variants.map((v: any) => v._id);
       const hasPurchased = await OrderModel.findOne({
         userId,
-        status: { $in: [OrderStatus.DELIVERED] },
-        "items.productVariantId": { $exists: true }, // We'll do a basic check here.
+        status: OrderStatus.DELIVERED,
+        "items.productVariantId": { $in: variantIds },
       });
-
-      // Ideally we'd map variantId to productId, but let's assume they can review if they just provide order details or we check if ANY item belongs to the product.
-      // For simplicity, we just allow review for now, but mark it verified if we find an order.
       const isVerified = !!hasPurchased;
 
       const existingReview = await ReviewModel.findOne({

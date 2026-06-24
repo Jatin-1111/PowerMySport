@@ -979,7 +979,20 @@ export const cancelBookingById = async (
       cancellationReason?: string;
     };
 
-    const result = await cancelBooking(bookingId, cancellationReason);
+    const requesterId = req.user?.id;
+    if (!requesterId) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const result = await cancelBooking(
+      bookingId,
+      requesterId,
+      cancellationReason,
+    );
 
     if (!result.booking) {
       res.status(404).json({

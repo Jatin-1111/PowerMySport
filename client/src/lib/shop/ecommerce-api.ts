@@ -286,6 +286,7 @@ export async function listProducts(params?: {
   page: number;
   pages: number;
   facets?: {
+    categories?: string[];
     brands: string[];
     minPrice: number;
     maxPrice: number;
@@ -311,6 +312,7 @@ export async function listProducts(params?: {
       page: 1,
       pages: 1,
       facets: {
+        categories: Array.from(new Set(DEMO_PRODUCTS.map((p) => p.category))),
         brands: ["Nike", "Adidas", "Puma", "Under Armour"],
         minPrice: 0,
         maxPrice: 20000,
@@ -374,11 +376,37 @@ export async function getOrderById(id: string): Promise<Order> {
   return response.data.data;
 }
 
+export async function syncOrderPayment(orderId: string): Promise<Order> {
+  const response = await axios.post<ApiEnvelope<Order>>(
+    `/v1/orders/${orderId}/sync-payment`,
+  );
+  return response.data.data;
+}
+
 export async function downloadOrderInvoice(orderId: string): Promise<Blob> {
-  const response = await axios.get(`/v1/orders/${orderId}/invoice/pdf`, {
-    responseType: "blob",
-  });
-  return response.data as Blob;
+  try {
+    const response = await axios.get(`/v1/orders/${orderId}/invoice/pdf`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
+  } catch (err) {
+    // On error the server replies with a JSON envelope; with responseType
+    // "blob" that arrives as a Blob, so unwrap it to surface a real message.
+    const data = (err as { response?: { data?: unknown } })?.response?.data;
+    if (data instanceof Blob) {
+      const text = await data.text().catch(() => "");
+      let message =
+        "Unable to download invoice. Please ensure the order is paid.";
+      try {
+        const json = JSON.parse(text) as { error?: { message?: string } };
+        if (json?.error?.message) message = json.error.message;
+      } catch {
+        /* keep default message */
+      }
+      throw new Error(message);
+    }
+    throw new Error(err instanceof Error ? err.message : "Unable to download invoice");
+  }
 }
 
 export async function listSellerProducts(): Promise<Product[]> {
@@ -446,6 +474,32 @@ export interface UserAddress {
   isDefault?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface PincodeLocation {
+  pincode: string;
+  city: string;
+  state: string;
+  district: string;
+}
+
+/**
+ * Resolve city + state from a 6-digit Indian pincode (free India Post lookup,
+ * server-cached). Returns null if it can't be resolved — callers should treat
+ * that as "leave the fields for manual entry".
+ */
+export async function lookupPincode(
+  pincode: string,
+): Promise<PincodeLocation | null> {
+  try {
+    const response = await axios.get<{
+      success: boolean;
+      data: PincodeLocation | null;
+    }>(`/geo/pincode/${pincode}`);
+    return response.data.data;
+  } catch {
+    return null;
+  }
 }
 
 export async function getUserAddresses(): Promise<UserAddress[]> {

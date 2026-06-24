@@ -1724,14 +1724,18 @@ export const getBookingPhonePeRefundStatus = async (
  */
 export const cancelBooking = async (
   bookingId: string,
+  requesterId: string,
   cancellationReason?: string,
 ): Promise<{
   booking: BookingDocument | null;
   refundAmount: number;
   refundPercentage: number;
 }> => {
+  // Scope to the booking's organizer so a user can only cancel their OWN
+  // booking (prevents IDOR: cancelling/refunding arbitrary bookings).
   const booking = await Booking.findOne({
     _id: bookingId,
+    organizerId: requesterId,
     status: {
       $in: [
         "PENDING_CONFIRMATION",
@@ -1773,6 +1777,7 @@ export const cancelBooking = async (
   const updatedBooking = await Booking.findOneAndUpdate(
     {
       _id: bookingId,
+      organizerId: requesterId,
       status: {
         $in: [
           "PENDING_CONFIRMATION",

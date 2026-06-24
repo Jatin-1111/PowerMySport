@@ -117,6 +117,16 @@ router.post(
   (req: Request, res: Response) => controller.verifyPayment(req, res),
 );
 
+/**
+ * POST /api/v1/orders/:orderId/sync-payment
+ * Reconcile payment status by polling the gateway (post-redirect fallback)
+ */
+router.post(
+  "/orders/:orderId/sync-payment",
+  authMiddleware,
+  (req: Request, res: Response) => controller.syncPayment(req, res),
+);
+
 // ============ ORDER ROUTES ============
 
 /**

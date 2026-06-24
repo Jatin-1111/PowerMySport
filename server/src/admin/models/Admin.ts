@@ -81,7 +81,7 @@ AdminSchema.pre<IAdmin>("save", async function () {
   }
 
   try {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
     throw error instanceof Error ? error : new Error("Password hashing failed");

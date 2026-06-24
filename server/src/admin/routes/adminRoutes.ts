@@ -65,11 +65,17 @@ import {
   promoCodeStatsHandler,
 } from "../../client/controllers/promoCodeController";
 import { validateRequest } from "../../middleware/validation";
+import { adminLoginRateLimiter } from "../../middleware/rateLimit";
 
 const router = Router();
 
 // Public routes
-router.post("/login", validateRequest(adminLoginSchema), adminLogin);
+router.post(
+  "/login",
+  adminLoginRateLimiter,
+  validateRequest(adminLoginSchema),
+  adminLogin,
+);
 
 // Protected routes (require admin authentication)
 router.post("/logout", authMiddleware, adminLogout);

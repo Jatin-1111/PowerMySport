@@ -554,7 +554,20 @@ export const updateCoachAdminHandler = async (
       return;
     }
 
-    const updates = req.body || {};
+    // Strip fields an admin must not set via the generic coach update — these
+    // are governed by the dedicated verification flow or derived server-side.
+    const updates: Record<string, unknown> = { ...(req.body || {}) };
+    for (const f of [
+      "isVerified",
+      "verificationStatus",
+      "userId",
+      "createdBy",
+      "rating",
+      "reviewCount",
+      "_id",
+    ]) {
+      delete updates[f];
+    }
 
     const updated = await updateCoach(coachId, updates as any);
     if (!updated) {
@@ -1549,8 +1562,7 @@ export const notifyCoachVerificationPending = async (
   res: Response,
 ): Promise<void> => {
   try {
-    // const REMINDER_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-    const REMINDER_COOLDOWN_MS = 1000;
+    const REMINDER_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
     if (!req.user?.id) {
       res.status(401).json({
@@ -1762,6 +1774,11 @@ export const updateVenueAdminHandler = async (
     const updatePayload = { ...req.body } as Record<string, unknown>;
     const convertExistingUser = updatePayload.convertExistingUser === true;
     delete updatePayload.convertExistingUser;
+    // Never allow these to be mass-assigned from the request body — ownerId is
+    // resolved by this handler's provisioning logic; rating/reviews are derived.
+    for (const f of ["_id", "rating", "reviewCount", "totalReviews"]) {
+      delete updatePayload[f];
+    }
 
     const nextApprovalStatus =
       typeof updatePayload.approvalStatus === "string"

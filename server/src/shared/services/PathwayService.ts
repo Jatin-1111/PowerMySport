@@ -5,6 +5,7 @@ import { Tournament } from "../models/Tournament";
 import { Scholarship } from "../models/Scholarship";
 import { University } from "../models/University";
 import { realDataScraperService } from "./RealDataScraperService";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
 
 const isDev = process.env.NODE_ENV !== "production";
 const log = {
@@ -47,10 +48,7 @@ const POPULAR_SPORTS = [
 ];
 
 /** Days before a pathway is considered stale and eligible for background refresh */
-const DEFAULT_STALE_DAYS = parseInt(
-  process.env.PATHWAY_STALE_DAYS || "30",
-  10,
-);
+const DEFAULT_STALE_DAYS = parseInt(process.env.PATHWAY_STALE_DAYS || "30", 10);
 
 // ─── Prompt ───────────────────────────────────────────────────────────────────
 
@@ -334,7 +332,9 @@ export class PathwayService {
     let generated: Awaited<ReturnType<typeof this.generatePathway>>;
 
     if (!knownSport) {
-      log.info(`[PathwayService] Unknown sport — running validate+generate in parallel: ${finalSportName}`);
+      log.info(
+        `[PathwayService] Unknown sport — running validate+generate in parallel: ${finalSportName}`,
+      );
       const [isValid, gen] = await Promise.all([
         this.validateSport(finalSportName),
         this.generatePathway(finalSportName, childAge, childCity),
@@ -350,16 +350,29 @@ export class PathwayService {
       generated = gen;
     } else {
       // ── 5. Known sport — generate directly (no validation round-trip) ────
-      generated = await this.generatePathway(finalSportName, childAge, childCity);
+      generated = await this.generatePathway(
+        finalSportName,
+        childAge,
+        childCity,
+      );
     }
 
     if (!generated) {
       // Graceful fallback: if generation fails for a city/age variant,
       // serve any existing cached pathway for this sport slug.
-      const fallbackDoc = await SportPathway.findOne({ sportSlug: slug }).sort({ lookupCount: -1 });
+      const fallbackDoc = await SportPathway.findOne({ sportSlug: slug }).sort({
+        lookupCount: -1,
+      });
       if (fallbackDoc) {
-        log.warn(`[PathwayService] Generation failed for ${cacheKey} — serving fallback for ${slug}`);
-        const enriched = await this.attachCanonicalEntities(fallbackDoc, slug, finalSportName, childCity);
+        log.warn(
+          `[PathwayService] Generation failed for ${cacheKey} — serving fallback for ${slug}`,
+        );
+        const enriched = await this.attachCanonicalEntities(
+          fallbackDoc,
+          slug,
+          finalSportName,
+          childCity,
+        );
         return {
           pathway: enriched.pathway,
           source: "db",
@@ -374,7 +387,8 @@ export class PathwayService {
       return {
         pathway: null,
         source: "not_a_sport",
-        message: "Could not generate pathway for this sport right now. Please try again in a moment.",
+        message:
+          "Could not generate pathway for this sport right now. Please try again in a moment.",
       };
     }
 
@@ -389,7 +403,12 @@ export class PathwayService {
     const saved = await this.savePathway(slug, cacheKey, generated);
 
     // Attach canonical entities (non-blocking — scraper fires in background if needed)
-    const enriched = await this.attachCanonicalEntities(saved, slug, finalSportName, childCity);
+    const enriched = await this.attachCanonicalEntities(
+      saved,
+      slug,
+      finalSportName,
+      childCity,
+    );
     return {
       pathway: enriched.pathway,
       source: "generated",
@@ -402,7 +421,8 @@ export class PathwayService {
    * Search for pathways by sport name prefix (for autocomplete).
    */
   async searchPathways(query: string): Promise<SportPathwayDocument[]> {
-    const regex = new RegExp(query.trim(), "i");
+    // Escape + length-cap user input to prevent regex injection / ReDoS.
+    const regex = new RegExp(buildSafeSearchRegexSource(query), "i");
     return SportPathway.find({
       $or: [{ sportName: regex }, { sportSlug: regex }],
     })
@@ -416,9 +436,7 @@ export class PathwayService {
    * Tournaments/scholarships/universities continue to be served from canonical collections.
    * Safe to call fire-and-forget — duplicate calls for the same cacheKey are no-ops.
    */
-  async refreshPathway(
-    cacheKey: string,
-  ): Promise<SportPathwayDocument | null> {
+  async refreshPathway(cacheKey: string): Promise<SportPathwayDocument | null> {
     if (this.refreshInProgressSet.has(cacheKey)) {
       log.info(
         `[PathwayService] Refresh already in-progress for ${cacheKey}, skipping.`,
@@ -449,9 +467,15 @@ export class PathwayService {
       const existingDoc = await SportPathway.findOne({ cacheKey })
         .select("sportName")
         .lean();
-      const sportName: string = String((existingDoc as any)?.sportName || sportSlug);
+      const sportName: string = String(
+        (existingDoc as any)?.sportName || sportSlug,
+      );
 
-      const generated = await this.generatePathway(sportName, childAge, childCity);
+      const generated = await this.generatePathway(
+        sportName,
+        childAge,
+        childCity,
+      );
 
       if (!generated) {
         log.warn(
@@ -486,7 +510,10 @@ export class PathwayService {
 
       // Also trigger a scraper refresh for the canonical data
       try {
-        await realDataScraperService.scrapeSport({ sportSlug, sportName: String(sportName) });
+        await realDataScraperService.scrapeSport({
+          sportSlug,
+          sportName: String(sportName),
+        });
       } catch (scraperErr) {
         log.warn(
           `[PathwayService] Scraper refresh after pathway refresh failed for ${sportSlug}:`,
@@ -514,9 +541,7 @@ export class PathwayService {
   async getStalePathways(
     thresholdDays: number = DEFAULT_STALE_DAYS,
   ): Promise<string[]> {
-    const cutoff = new Date(
-      Date.now() - thresholdDays * 24 * 60 * 60 * 1000,
-    );
+    const cutoff = new Date(Date.now() - thresholdDays * 24 * 60 * 60 * 1000);
 
     const staleDocs = await SportPathway.find({
       $or: [
@@ -552,9 +577,7 @@ export class PathwayService {
           .lean();
 
         if (exists) {
-          log.info(
-            `[PathwayService] Pre-warm skipped (cached): ${cacheKey}`,
-          );
+          log.info(`[PathwayService] Pre-warm skipped (cached): ${cacheKey}`);
           continue;
         }
 
@@ -566,7 +589,10 @@ export class PathwayService {
           realDataScraperService
             .scrapeSport({ sportSlug: slug, sportName })
             .catch((err) =>
-              log.warn(`[PathwayService] Pre-warm scrape failed for ${sportName}:`, err),
+              log.warn(
+                `[PathwayService] Pre-warm scrape failed for ${sportName}:`,
+                err,
+              ),
             );
           log.info(`[PathwayService] ✅ Pre-warmed: ${sportName}`);
         }
@@ -642,16 +668,31 @@ export class PathwayService {
     const cityQuery = this.buildCityQuery(childCity);
 
     const [t, s, u] = await Promise.all([
-      Tournament.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
-      Scholarship.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
-      University.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+      Tournament.find({ sportSlug: finalSlug, ...cityQuery })
+        .sort({ updatedAt: -1 })
+        .limit(6)
+        .lean(),
+      Scholarship.find({ sportSlug: finalSlug, ...cityQuery })
+        .sort({ updatedAt: -1 })
+        .limit(6)
+        .lean(),
+      University.find({ sportSlug: finalSlug, ...cityQuery })
+        .sort({ updatedAt: -1 })
+        .limit(6)
+        .lean(),
     ]);
 
     const missingEntities = t.length === 0 || s.length === 0 || u.length === 0;
-    const missingDates = t.length > 0 && (t as any[]).some((doc) => !doc.typicalDates && !doc.registrationDeadline);
+    const missingDates =
+      t.length > 0 &&
+      (t as any[]).some(
+        (doc) => !doc.typicalDates && !doc.registrationDeadline,
+      );
     const needsRefresh = missingEntities || missingDates;
     if (needsRefresh) {
-      log.info(`[PathwayService] getEntities: scraping ${finalSlug} (missingEntities=${missingEntities}, missingDates=${missingDates})...`);
+      log.info(
+        `[PathwayService] getEntities: scraping ${finalSlug} (missingEntities=${missingEntities}, missingDates=${missingDates})...`,
+      );
       try {
         await realDataScraperService.scrapeSport({
           sportSlug: finalSlug,
@@ -659,13 +700,25 @@ export class PathwayService {
           ...(childCity ? { city: childCity } : {}),
         });
       } catch (err) {
-        log.error(`[PathwayService] getEntities scraper failed for ${finalSlug}:`, err);
+        log.error(
+          `[PathwayService] getEntities scraper failed for ${finalSlug}:`,
+          err,
+        );
       }
 
       const [t2, s2, u2] = await Promise.all([
-        Tournament.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
-        Scholarship.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
-        University.find({ sportSlug: finalSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+        Tournament.find({ sportSlug: finalSlug, ...cityQuery })
+          .sort({ updatedAt: -1 })
+          .limit(6)
+          .lean(),
+        Scholarship.find({ sportSlug: finalSlug, ...cityQuery })
+          .sort({ updatedAt: -1 })
+          .limit(6)
+          .lean(),
+        University.find({ sportSlug: finalSlug, ...cityQuery })
+          .sort({ updatedAt: -1 })
+          .limit(6)
+          .lean(),
       ]);
       return { tournaments: t2, scholarships: s2, universities: u2 };
     }
@@ -688,9 +741,18 @@ export class PathwayService {
     const cityQuery = this.buildCityQuery(childCity);
 
     const [tournaments, scholarships, universities] = await Promise.all([
-      Tournament.find({ sportSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
-      Scholarship.find({ sportSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
-      University.find({ sportSlug, ...cityQuery }).sort({ updatedAt: -1 }).limit(6).lean(),
+      Tournament.find({ sportSlug, ...cityQuery })
+        .sort({ updatedAt: -1 })
+        .limit(6)
+        .lean(),
+      Scholarship.find({ sportSlug, ...cityQuery })
+        .sort({ updatedAt: -1 })
+        .limit(6)
+        .lean(),
+      University.find({ sportSlug, ...cityQuery })
+        .sort({ updatedAt: -1 })
+        .limit(6)
+        .lean(),
     ]);
 
     const plain =
@@ -699,10 +761,14 @@ export class PathwayService {
         : pathway;
 
     const missingEntities =
-      tournaments.length === 0 || scholarships.length === 0 || universities.length === 0;
+      tournaments.length === 0 ||
+      scholarships.length === 0 ||
+      universities.length === 0;
     const missingDates =
       tournaments.length > 0 &&
-      (tournaments as any[]).some((t) => !t.typicalDates && !t.registrationDeadline);
+      (tournaments as any[]).some(
+        (t) => !t.typicalDates && !t.registrationDeadline,
+      );
     const needsRefresh = missingEntities || missingDates;
 
     if (needsRefresh && sportName) {
@@ -711,11 +777,25 @@ export class PathwayService {
         `[PathwayService] Stale canonical data for ${sportSlug} (missingEntities=${missingEntities}, missingDates=${missingDates}) — scraper started in background.`,
       );
       realDataScraperService
-        .scrapeSport({ sportSlug, sportName, ...(childCity ? { city: childCity } : {}) })
-        .catch((err) => log.error(`[PathwayService] Background scraper failed for ${sportSlug}:`, err));
+        .scrapeSport({
+          sportSlug,
+          sportName,
+          ...(childCity ? { city: childCity } : {}),
+        })
+        .catch((err) =>
+          log.error(
+            `[PathwayService] Background scraper failed for ${sportSlug}:`,
+            err,
+          ),
+        );
 
       return {
-        pathway: { ...plain, tournaments, scholarships, universities } as SportPathwayDocument,
+        pathway: {
+          ...plain,
+          tournaments,
+          scholarships,
+          universities,
+        } as SportPathwayDocument,
         warnings: [],
         // entitiesReady=false tells the client to call /entities and wait for fresh data
         entitiesReady: !missingEntities && !missingDates,
@@ -723,7 +803,12 @@ export class PathwayService {
     }
 
     return {
-      pathway: { ...plain, tournaments, scholarships, universities } as SportPathwayDocument,
+      pathway: {
+        ...plain,
+        tournaments,
+        scholarships,
+        universities,
+      } as SportPathwayDocument,
       warnings: [],
       entitiesReady: true,
     };
@@ -756,7 +841,7 @@ export class PathwayService {
     if (this.genAI) {
       try {
         const result = await this.genAI.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-2.5",
           contents: prompt,
         });
         const answer = (result.text ?? "").trim().toLowerCase();
@@ -806,6 +891,7 @@ export class PathwayService {
 
     const modelCandidates = [
       process.env.GEMINI_MODEL_NAME,
+      "gemini-2.5",
       "gemini-3.5-flash",
       "gemini-2.5-flash",
       "gemini-2.5-flash-lite",
@@ -845,10 +931,7 @@ export class PathwayService {
           `[PathwayService] Model ${modelName} returned incomplete data — trying next.`,
         );
       } catch (error) {
-        log.error(
-          `[PathwayService] Error with model ${modelName}:`,
-          error,
-        );
+        log.error(`[PathwayService] Error with model ${modelName}:`, error);
       }
     }
 

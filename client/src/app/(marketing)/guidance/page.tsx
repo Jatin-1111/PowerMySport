@@ -44,8 +44,10 @@ import {
   MessageCircle,
   CheckCheck,
   Info,
+  Trash2,
+  Pencil,
 } from "lucide-react";
-import { useState, useEffect, useRef, Fragment, type FormEvent } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -263,25 +265,6 @@ const slideIn: Variants = {
     transition: { type: "spring", stiffness: 340, damping: 28 },
   },
   exit: { opacity: 0, x: -30, transition: { duration: 0.15 } },
-};
-
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      delay: i * 0.08,
-      type: "spring",
-      stiffness: 300,
-      damping: 26,
-    },
-  }),
-};
-
-const stagger: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
 // ─── Autofill badge ───────────────────────────────────────────────────────────
@@ -514,12 +497,12 @@ function SelectCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left rounded-2xl border-2 p-4 transition-all duration-200 ${
+      className={`w-full text-left rounded-2xl border-2 p-4 transition-all duration-200 active:scale-[0.99] ${
         selected
           ? accent
             ? "border-power-orange bg-power-orange/5 shadow-power-orange/10 shadow-lg"
             : "border-power-orange bg-power-orange/5"
-          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+          : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm"
       }`}
     >
       {children}
@@ -565,9 +548,13 @@ function AchievementToast({ label }: { label: string }) {
 function PastRoadmapsDropdown({
   history,
   onSelect,
+  onDelete,
+  deletingId,
 }: {
   history: GuidanceSubmission[];
   onSelect: (h: GuidanceSubmission) => void;
+  onDelete: (id: string) => void;
+  deletingId: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -611,32 +598,52 @@ function PastRoadmapsDropdown({
               {history.length} saved roadmaps
             </p>
             {history.map((h) => (
-              <button
+              <div
                 key={h.id}
-                onClick={() => {
-                  onSelect(h);
-                  setOpen(false);
-                }}
-                className="w-full flex items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-slate-50 transition"
+                className="group flex items-center gap-2 rounded-xl px-2 py-1 transition hover:bg-slate-50"
               >
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-power-orange/10 text-power-orange">
-                  <Trophy className="h-3.5 w-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">
-                    {h.query.primary_objective} · Age {h.query.child_age}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {new Date(h.createdAt).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                    <span className="mx-1">·</span>
-                    {h.query.current_fitness_level}
-                  </p>
-                </div>
-              </button>
+                <button
+                  onClick={() => {
+                    onSelect(h);
+                    setOpen(false);
+                  }}
+                  className="flex flex-1 min-w-0 items-start gap-3 rounded-lg px-1 py-1.5 text-left"
+                >
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-power-orange/10 text-power-orange">
+                    <Trophy className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 truncate">
+                      {h.query.primary_objective} · Age {h.query.child_age}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {new Date(h.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      <span className="mx-1">·</span>
+                      {h.query.current_fitness_level}
+                    </p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Delete roadmap"
+                  disabled={deletingId === h.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(h.id);
+                  }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
+                >
+                  {deletingId === h.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
             ))}
           </motion.div>
         )}
@@ -1092,9 +1099,55 @@ function Step4Details({
   );
 }
 
+// ─── Inputs summary (results mode) ─────────────────────────────────────────────
+
+function InputsSummaryBar({
+  query,
+  onEdit,
+}: {
+  query: GuidanceFormState;
+  onEdit: () => void;
+}) {
+  const chips: Array<{ icon: typeof Compass; label: string }> = [
+    { icon: UserCircle2, label: `Age ${query.child_age}` },
+    { icon: Target, label: query.primary_objective },
+    ...(query.sport?.trim() ? [{ icon: Activity, label: query.sport.trim() }] : []),
+    { icon: Timer, label: `${query.weekly_time_commitment}h / week` },
+    { icon: Wallet, label: query.budget_tier },
+    ...(query.location ? [{ icon: MapPin, label: query.location }] : []),
+  ];
+
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/80 p-3 shadow-sm backdrop-blur-sm">
+      <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        Built for
+      </span>
+      {chips.map((c) => (
+        <span
+          key={c.label}
+          className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+        >
+          <c.icon className="h-3.5 w-3.5 text-slate-400" />
+          {c.label}
+        </span>
+      ))}
+      <button
+        type="button"
+        onClick={onEdit}
+        className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-power-orange/40 hover:text-power-orange"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+        Edit inputs
+      </button>
+    </div>
+  );
+}
+
 // ─── Results ──────────────────────────────────────────────────────────────────
 
 function ResultsView({ submission }: { submission: GuidanceSubmission }) {
+  const r = submission.response;
+
   const fitnessInfo = (() => {
     const lvl = submission.query.current_fitness_level;
     if (lvl === "Low")
@@ -1104,17 +1157,36 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
     return { pct: "100%", color: "bg-violet-500", label: "Advanced" };
   })();
 
+  // Build tabs dynamically — only show sections that have content
+  const hasSports = !!r.recommendedSports && r.recommendedSports.length > 0;
+  const hasMind =
+    !!r.mentalSkillsRoadmap ||
+    (!!r.talentIdentifiers && r.talentIdentifiers.length > 0);
+  const hasWellbeing =
+    (!!r.burnoutRisk && r.burnoutRisk.level !== "low") ||
+    !!r.multiSportAdvisory;
+
+  type TabId = "plan" | "coaching" | "mind" | "wellbeing";
+  const tabs: Array<{ id: TabId; label: string; icon: typeof Compass }> = [
+    { id: "plan", label: "Plan", icon: BarChart3 },
+    { id: "coaching", label: "Coaching", icon: UserCircle2 },
+    ...(hasMind
+      ? [{ id: "mind" as TabId, label: "Mind & Talent", icon: Brain }]
+      : []),
+    ...(hasWellbeing
+      ? [{ id: "wellbeing" as TabId, label: "Wellbeing", icon: ShieldCheck }]
+      : []),
+  ];
+
+  const [tab, setTab] = useState<TabId>("plan");
+
   return (
-    <motion.div
-      variants={stagger}
-      initial="hidden"
-      animate="visible"
-      className="space-y-5"
-    >
-      {/* Hero card */}
+    <div className="space-y-5">
+      {/* Hero card — always visible */}
       <motion.div
-        custom={0}
-        variants={fadeUp}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 26 }}
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-power-orange/5 via-amber-50 to-white border border-power-orange/20 p-6"
       >
         <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-power-orange/5" />
@@ -1162,162 +1234,270 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
           </div>
 
           <p className="text-sm leading-7 text-slate-700">
-            {submission.response.profileAnalysis}
+            {r.profileAnalysis}
           </p>
         </div>
       </motion.div>
 
-      {/* Weekly blueprint */}
-      <motion.div custom={1} variants={fadeUp}>
-        <div className="flex items-center gap-2 mb-3">
-          <BarChart3 className="h-4 w-4 text-slate-600" />
-          <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
-            Weekly Blueprint
-          </h3>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            {
-              icon: Dumbbell,
-              label: "Training",
-              value: submission.response.weeklyBlueprint.trainingHours,
-              color: "text-emerald-600",
-              bg: "bg-emerald-50",
-              border: "border-emerald-100",
-            },
-            {
-              icon: Zap,
-              label: "Free Play",
-              value: submission.response.weeklyBlueprint.freePlayHours,
-              color: "text-sky-600",
-              bg: "bg-sky-50",
-              border: "border-sky-100",
-            },
-            {
-              icon: Timer,
-              label: "Rest",
-              value: submission.response.weeklyBlueprint.restDays,
-              color: "text-violet-600",
-              bg: "bg-violet-50",
-              border: "border-violet-100",
-            },
-          ].map(({ icon: Icon, label, value, color, bg, border }) => (
-            <div
-              key={label}
-              className={`rounded-2xl border ${border} ${bg} p-4`}
+      {/* Tab navigation */}
+      <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+        {tabs.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-colors ${
+                active ? "text-power-orange" : "text-slate-500 hover:text-slate-700"
+              }`}
             >
-              <Icon className={`h-5 w-5 ${color} mb-2`} />
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                {label}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800 leading-snug">
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </motion.div>
+              {active && (
+                <motion.div
+                  layoutId="guidance-tab-pill"
+                  className="absolute inset-0 rounded-xl bg-white shadow-sm"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
+              )}
+              <t.icon className="relative z-10 h-3.5 w-3.5 shrink-0" />
+              <span className="relative z-10 truncate">{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Recommended Sports */}
-      {submission.response.recommendedSports && submission.response.recommendedSports.length > 0 && (
-        <motion.div custom={2} variants={fadeUp} className="mb-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Trophy className="h-4 w-4 text-power-orange" />
-            <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
-              Top Recommended Sports
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {submission.response.recommendedSports.map((sport, idx) => (
-              <div key={idx} className="flex items-center gap-3 rounded-xl border border-power-orange/20 bg-power-orange/5 p-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-power-orange font-bold shadow-sm">
-                  #{idx + 1}
+      {/* Tab content */}
+      <div className="min-h-[280px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="space-y-5"
+          >
+            {tab === "plan" && (
+              <>
+                {/* Profile snapshot — at a glance */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    {
+                      icon: Activity,
+                      label: "Sport",
+                      value: submission.query.sport?.trim() || "Flexible",
+                    },
+                    {
+                      icon: Timer,
+                      label: "Per week",
+                      value: `${submission.query.weekly_time_commitment}h`,
+                    },
+                    {
+                      icon: Wallet,
+                      label: "Budget",
+                      value: submission.query.budget_tier,
+                    },
+                    {
+                      icon: MapPin,
+                      label: "Location",
+                      value: submission.query.location || "—",
+                    },
+                  ].map(({ icon: Icon, label, value }, i) => (
+                    <motion.div
+                      key={label}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3"
+                    >
+                      <Icon className="h-4 w-4 text-slate-400" />
+                      <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        {label}
+                      </p>
+                      <p className="text-sm font-bold text-slate-800 truncate" title={value}>
+                        {value}
+                      </p>
+                    </motion.div>
+                  ))}
                 </div>
-                <p className="font-semibold text-slate-800 leading-tight">{sport}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
 
-      {/* Coaching style */}
-      <motion.div
-        custom={3}
-        variants={fadeUp}
-        className="rounded-2xl border border-slate-200 bg-white p-5"
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
-            <UserCircle2 className="h-4 w-4 text-purple-600" />
-          </div>
-          <h3 className="font-title font-semibold text-slate-900">
-            Ideal Coaching Style
-          </h3>
-        </div>
-        <p className="text-sm leading-7 text-slate-600">
-          {submission.response.idealCoachingStyle}
-        </p>
-      </motion.div>
+                {/* Weekly blueprint */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="h-4 w-4 text-slate-600" />
+                    <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Weekly Blueprint
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      {
+                        icon: Dumbbell,
+                        label: "Training",
+                        value: r.weeklyBlueprint.trainingHours,
+                        color: "text-emerald-600",
+                        bg: "bg-emerald-50",
+                        border: "border-emerald-100",
+                      },
+                      {
+                        icon: Zap,
+                        label: "Free Play",
+                        value: r.weeklyBlueprint.freePlayHours,
+                        color: "text-sky-600",
+                        bg: "bg-sky-50",
+                        border: "border-sky-100",
+                      },
+                      {
+                        icon: Timer,
+                        label: "Rest",
+                        value: r.weeklyBlueprint.restDays,
+                        color: "text-violet-600",
+                        bg: "bg-violet-50",
+                        border: "border-violet-100",
+                      },
+                    ].map(({ icon: Icon, label, value, color, bg, border }, i) => (
+                      <motion.div
+                        key={label}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.07 }}
+                        whileHover={{ y: -3 }}
+                        className={`rounded-2xl border ${border} ${bg} p-4 transition-shadow hover:shadow-md`}
+                      >
+                        <span className={`mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 ${color}`}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                          {label}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-800 leading-snug">
+                          {value}
+                        </p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
 
-      {/* Next objectives */}
-      <motion.div
-        custom={4}
-        variants={fadeUp}
-        className="rounded-2xl border-2 border-emerald-400 bg-emerald-50/50 p-5 relative overflow-hidden"
-      >
-        <div className="absolute -right-10 -bottom-10 opacity-[0.06] pointer-events-none">
-          <ShieldCheck className="h-40 w-40 text-emerald-900" />
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
-              <Crosshair className="h-4 w-4 text-emerald-700" />
-            </div>
-            <h3 className="font-title font-semibold text-emerald-900">
-              Next Objectives
-            </h3>
-            <TrendingUp className="ml-auto h-4 w-4 text-emerald-500" />
-          </div>
-          <p className="text-sm leading-7 text-emerald-900/80 font-medium">
-            {submission.response.recommendedPlatformActions}
-          </p>
-        </div>
-      </motion.div>
+                {/* Recommended Sports */}
+                {hasSports && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Trophy className="h-4 w-4 text-power-orange" />
+                      <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                        Top Recommended Sports
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {r.recommendedSports!.map((sport, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.07 }}
+                          whileHover={{ y: -3 }}
+                          className="flex items-center gap-3 rounded-2xl border border-power-orange/20 bg-gradient-to-br from-power-orange/[0.07] to-amber-50/60 p-3 transition-shadow hover:shadow-md"
+                        >
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-power-orange font-bold shadow-sm">
+                            #{idx + 1}
+                          </div>
+                          <p className="font-semibold text-slate-800 leading-tight">
+                            {sport}
+                          </p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-      {/* ── Burnout Risk ── */}
-      {submission.response.burnoutRisk && (
-        <motion.div custom={5} variants={fadeUp}>
-          <BurnoutRiskCard risk={submission.response.burnoutRisk} />
-        </motion.div>
-      )}
+                {/* Personality traits */}
+                {submission.query.personality_tags.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="h-4 w-4 text-violet-500" />
+                      <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                        Personality Profile
+                      </h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {submission.query.personality_tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
-      {/* ── Multi-Sport Advisory ── */}
-      {submission.response.multiSportAdvisory && (
-        <motion.div custom={6} variants={fadeUp}>
-          <MultiSportAdvisoryCard advisory={submission.response.multiSportAdvisory} />
-        </motion.div>
-      )}
+            {tab === "coaching" && (
+              <>
+                {/* Coaching style */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
+                      <UserCircle2 className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <h3 className="font-title font-semibold text-slate-900">
+                      Ideal Coaching Style
+                    </h3>
+                  </div>
+                  <p className="text-sm leading-7 text-slate-600">
+                    {r.idealCoachingStyle}
+                  </p>
+                </div>
 
-      {/* ── Mental Skills ── */}
-      {submission.response.mentalSkillsRoadmap && (
-        <motion.div custom={7} variants={fadeUp}>
-          <MentalSkillsCard roadmap={submission.response.mentalSkillsRoadmap} />
-        </motion.div>
-      )}
+                {/* Next objectives */}
+                <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50/50 p-5 relative overflow-hidden">
+                  <div className="absolute -right-10 -bottom-10 opacity-[0.06] pointer-events-none">
+                    <ShieldCheck className="h-40 w-40 text-emerald-900" />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
+                        <Crosshair className="h-4 w-4 text-emerald-700" />
+                      </div>
+                      <h3 className="font-title font-semibold text-emerald-900">
+                        Next Objectives
+                      </h3>
+                      <TrendingUp className="ml-auto h-4 w-4 text-emerald-500" />
+                    </div>
+                    <p className="text-sm leading-7 text-emerald-900/80 font-medium">
+                      {r.recommendedPlatformActions}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
-      {/* ── Talent Identifiers ── */}
-      {submission.response.talentIdentifiers && submission.response.talentIdentifiers.length > 0 && (
-        <motion.div custom={8} variants={fadeUp}>
-          <TalentIdentifiersCard identifiers={submission.response.talentIdentifiers} />
-        </motion.div>
-      )}
+            {tab === "mind" && (
+              <>
+                {r.mentalSkillsRoadmap && (
+                  <MentalSkillsCard roadmap={r.mentalSkillsRoadmap} />
+                )}
+                {r.talentIdentifiers && r.talentIdentifiers.length > 0 && (
+                  <TalentIdentifiersCard identifiers={r.talentIdentifiers} />
+                )}
+              </>
+            )}
 
-      {/* ── CTA Buttons ── */}
-      <motion.div
-        custom={9}
-        variants={fadeUp}
-        className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2"
-      >
+            {tab === "wellbeing" && (
+              <>
+                {r.burnoutRisk && <BurnoutRiskCard risk={r.burnoutRisk} />}
+                {r.multiSportAdvisory && (
+                  <MultiSportAdvisoryCard advisory={r.multiSportAdvisory} />
+                )}
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* ── CTA Buttons — always visible ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
         <a
           href={process.env.NEXT_PUBLIC_MAIN_APP_URL || "http://localhost:3000"}
           className="flex items-center justify-center gap-2 rounded-xl bg-power-orange px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition-all hover:bg-orange-600 active:scale-[0.98]"
@@ -1332,8 +1512,8 @@ function ResultsView({ submission }: { submission: GuidanceSubmission }) {
           <Users className="h-4 w-4" />
           View Roadmap
         </a>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
@@ -1351,6 +1531,7 @@ export default function GuidancePage() {
   const [achievement, setAchievement] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [autofillFields, setAutofillFields] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1431,6 +1612,25 @@ export default function GuidancePage() {
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
+  const handleDeleteRoadmap = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await api.delete(`/guidance/${id}`);
+      setHistory((prev) => prev.filter((h) => h.id !== id));
+      if (submission?.id === id) {
+        setSubmission(null);
+        setShowResults(false);
+      }
+      toast.success("Roadmap deleted");
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Unable to delete roadmap.";
+      toast.error(msg);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const loadPastSubmission = (past: GuidanceSubmission) => {
     setSubmission(past);
     setForm(past.query);
@@ -1442,7 +1642,7 @@ export default function GuidancePage() {
           behavior: "smooth",
           block: "start",
         }),
-      100,
+      350,
     );
   };
 
@@ -1492,12 +1692,29 @@ export default function GuidancePage() {
     setSelectedProfileId("");
   };
 
+  const editInputs = () => {
+    setShowResults(false);
+    if (typeof window !== "undefined")
+      window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const mode: "results" | "input" =
+    showResults && submission && !loading ? "results" : "input";
+
   return (
-    <div className="min-h-screen px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+    <div className="relative min-h-screen px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      {/* Ambient background — fixed so it never clips the sticky wizard */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
+        <div className="absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full bg-power-orange/10 blur-3xl" />
+        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/30 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-indigo-200/20 blur-3xl" />
+      </div>
+
       <div className="mx-auto w-full max-w-6xl">
         {/* ── Header ── */}
-        <section className="pb-10 lg:pb-14">
-          <div className="mb-8">
+        <section className="pb-8 lg:pb-10">
+          <div className="mb-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-500 shadow-sm backdrop-blur">
                 <BrainCircuit className="h-4 w-4 text-power-orange" />
@@ -1508,6 +1725,8 @@ export default function GuidancePage() {
                   <PastRoadmapsDropdown
                     history={history}
                     onSelect={loadPastSubmission}
+                    onDelete={handleDeleteRoadmap}
+                    deletingId={deletingId}
                   />
                 )}
                 {(showResults || step > 1) && (
@@ -1522,19 +1741,77 @@ export default function GuidancePage() {
                 )}
               </div>
             </div>
-            <h1 className="font-title text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl max-w-3xl">
-              Get a structured sports roadmap for your young athlete.
+            <h1 className="font-title text-2xl font-bold leading-[1.1] tracking-tight sm:text-3xl lg:text-[2.6rem] max-w-3xl">
+              Get a structured sports roadmap for your{" "}
+              <span className="text-power-orange">young athlete.</span>
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-              Answer four quick steps — we'll return personalised guidance on
-              sport, coaching style, weekly schedule, and next actions.
+            <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-slate-600">
+              {mode === "results"
+                ? "Here's the personalised roadmap — switch tabs to explore the plan, coaching, mindset and wellbeing."
+                : "Answer four quick steps — we'll return personalised guidance on sport, coaching style, weekly schedule, and next actions."}
             </p>
           </div>
 
           {/* ── Layout ── */}
-          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <AnimatePresence mode="wait">
+          {mode === "results" && submission ? (
+            <motion.div
+              key="results"
+              ref={resultsRef}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+              className="mx-auto max-w-4xl"
+            >
+              <InputsSummaryBar query={submission.query} onEdit={editInputs} />
+              <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.03] backdrop-blur-sm sm:p-8">
+                <div className="mb-5 flex items-center gap-2">
+                  <Medal className="h-5 w-5 text-amber-500" />
+                  <span className="font-title font-bold text-slate-900">
+                    Your Roadmap
+                  </span>
+                </div>
+                <ResultsView key={submission.id} submission={submission} />
+              </div>
+            </motion.div>
+          ) : loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mx-auto max-w-4xl"
+            >
+              <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.03] backdrop-blur-sm sm:p-8">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-power-orange/10">
+                    <Loader2 className="h-5 w-5 animate-spin text-power-orange" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-900">
+                      Building your roadmap…
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      AI is analyzing the profile
+                    </p>
+                  </div>
+                </div>
+                <ResultSkeleton />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="input"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="mx-auto max-w-4xl"
+            >
             {/* ── Wizard Card ── */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:sticky lg:top-24 z-10">
+            <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.03] backdrop-blur-sm sm:p-8 z-10">
               <StepIndicator
                 current={step}
                 steps={STEPS}
@@ -1636,85 +1913,9 @@ export default function GuidancePage() {
                 {step < 4 && `${STEPS.length - step} more to go`}
               </p>
             </div>
-
-            {/* ── Results Pane ── */}
-            <div
-              ref={resultsRef}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 min-h-[560px] flex flex-col"
-            >
-              {loading ? (
-                <div>
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-power-orange/10">
-                      <Loader2 className="h-5 w-5 animate-spin text-power-orange" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-900">
-                        Building your roadmap…
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        AI is analyzing the profile
-                      </p>
-                    </div>
-                  </div>
-                  <ResultSkeleton />
-                </div>
-              ) : showResults && submission ? (
-                <div>
-                  <div className="mb-5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Medal className="h-5 w-5 text-amber-500" />
-                      <span className="font-title font-bold text-slate-900">
-                        Your Roadmap
-                      </span>
-                    </div>
-                  </div>
-                  <ResultsView submission={submission} />
-                </div>
-              ) : (
-                <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
-                  <motion.div
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 2.5,
-                      ease: "easeInOut",
-                    }}
-                    className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-power-orange/10"
-                  >
-                    <Trophy className="h-8 w-8 text-power-orange" />
-                  </motion.div>
-                  <h3 className="font-title text-xl font-bold text-slate-900 mb-2">
-                    Your roadmap awaits
-                  </h3>
-                  <p className="max-w-xs text-sm text-slate-500 leading-6">
-                    Complete the 4-step wizard on the left to unlock a
-                    personalised sports plan.
-                  </p>
-                  <div className="mt-6 grid grid-cols-2 gap-3 w-full max-w-xs">
-                    {[
-                      { icon: Target, label: "Sport match" },
-                      { icon: Calendar, label: "Weekly plan" },
-                      { icon: Dumbbell, label: "Training guide" },
-                      { icon: Compass, label: "Next actions" },
-                    ].map(({ icon: Icon, label }) => (
-                      <div
-                        key={label}
-                        className="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500"
-                      >
-                        <div className="text-slate-500"><Icon className="h-4 w-4" /></div>
-                        <span className="font-medium">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-6 flex items-center gap-2 text-xs text-slate-400">
-                    <Users className="h-3.5 w-3.5 text-power-orange" />
-                    Personalised plan will appear here
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+            </motion.div>
+          )}
+          </AnimatePresence>
         </section>
       </div>
 

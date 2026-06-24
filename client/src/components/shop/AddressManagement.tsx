@@ -4,10 +4,12 @@ import {
   addUserAddress,
   deleteUserAddress,
   getUserAddresses,
+  lookupPincode,
   setDefaultUserAddress,
   updateUserAddress,
   type UserAddress,
 } from "@/lib/shop/ecommerce-api";
+import { INDIAN_STATES } from "@/lib/shop/indianStates";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { cn } from "@/utils/cn";
 import { Edit2, MapPin, Plus, Trash2 } from "lucide-react";
@@ -34,6 +36,26 @@ export function AddressManagement() {
   const [state, setState] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("IN");
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+
+  // Tier 1: when a full 6-digit pincode is entered, auto-fill city + state from
+  // the free India Post lookup so they stay consistent without manual typing.
+  const handlePostalChange = async (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 6);
+    setPostalCode(digits);
+    if (digits.length !== 6) return;
+
+    setPincodeLoading(true);
+    try {
+      const location = await lookupPincode(digits);
+      if (location) {
+        if (location.city) setCity(location.city);
+        if (location.state) setState(location.state);
+      }
+    } finally {
+      setPincodeLoading(false);
+    }
+  };
 
   // Load addresses on mount
   useEffect(() => {
@@ -371,14 +393,23 @@ export function AddressManagement() {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 State
               </label>
-              <input
+              <select
                 required
-                type="text"
-                placeholder="State"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-              />
+              >
+                <option value="">Select state</option>
+                {/* Preserve a legacy/non-canonical value so editing still shows it */}
+                {state && !INDIAN_STATES.includes(state) && (
+                  <option value={state}>{state}</option>
+                )}
+                {INDIAN_STATES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -388,25 +419,35 @@ export function AddressManagement() {
               <input
                 required
                 type="text"
+                inputMode="numeric"
+                maxLength={6}
                 placeholder="6-digit ZIP code"
                 value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
+                onChange={(e) => handlePostalChange(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
               />
+              {pincodeLoading && (
+                <p className="mt-1 text-xs text-slate-400">
+                  Looking up city & state…
+                </p>
+              )}
             </div>
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                 Country
               </label>
-              <input
+              <select
                 required
-                type="text"
-                placeholder="Country"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-              />
+              >
+                {country && country !== "IN" && (
+                  <option value={country}>{country}</option>
+                )}
+                <option value="IN">India</option>
+              </select>
             </div>
           </div>
 

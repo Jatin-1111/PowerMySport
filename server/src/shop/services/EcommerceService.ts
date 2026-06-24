@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { User as UserModel } from "../../client/models/User";
+import OutboxMessage from "../../shared/models/OutboxMessage";
 import { getPhonePeOrderStatus } from "../../shared/services/PhonePeService";
 import {
   FulfillmentStatus,
@@ -579,33 +580,100 @@ export class OrderService {
       throw new Error("Order not found");
     }
 
-    // Validate state transition
-    if (order.status !== OrderStatus.PENDING_PAYMENT) {
-      throw new Error(
-        `Cannot confirm payment for order in ${order.status} state`,
-      );
+    // Idempotency guard: confirmPayment can be invoked by both the PhonePe
+    // webhook reconciler and the client-side payment sync. If the order is
+    // already confirmed (or no longer awaiting payment), return it as-is
+    // instead of throwing — re-running the side effects would double-deduct
+    // inventory and re-send emails.
+    if (
+      order.paymentStatus === PaymentStatus.CAPTURED ||
+      order.status !== OrderStatus.PENDING_PAYMENT
+    ) {
+      return order;
     }
 
-    // Update order
+    // SECURITY: independently verify with PhonePe (using the merchantOrderId WE
+    // stored, not any client/webhook-supplied value) that this order was
+    // actually captured for the EXACT order amount before confirming. This is
+    // the single chokepoint every confirmation path flows through (client
+    // verify, sync, webhook, recovery), so it guards them all against
+    // confirming an unpaid or underpaid order.
+    const paymentTx = await PaymentTransactionModel.findOne({
+      orderId: order._id,
+    }).sort({ createdAt: -1 });
+
+    if (!paymentTx?.gatewayOrderId) {
+      throw new Error("Payment transaction not found for order");
+    }
+
+    const gatewayStatus = await getPhonePeOrderStatus(paymentTx.gatewayOrderId);
+    if (gatewayStatus.state !== "COMPLETED") {
+      throw new Error("Payment not completed at gateway");
+    }
+    if (
+      typeof gatewayStatus.amount !== "number" ||
+      gatewayStatus.amount !== order.totalAmount
+    ) {
+      throw new Error("Payment amount mismatch");
+    }
+
+    // 1) Persist the payment confirmation FIRST so the status is durable even
+    // if a downstream side effect (inventory/cart/email) fails.
     order.status = OrderStatus.PAYMENT_CONFIRMED;
     order.paymentStatus = PaymentStatus.CAPTURED;
-    order.paymentGatewayPaymentId = paymentGatewayPaymentId;
-    order.fulfillmentStatus = FulfillmentStatus.PENDING;
-
-    // Confirm inventory deduction for each item
-    for (const item of order.items) {
-      await this.inventoryService.confirmInventoryDeduction(
-        item.productVariantId.toString(),
-        item.quantity,
-      );
+    if (paymentGatewayPaymentId) {
+      order.paymentGatewayPaymentId = paymentGatewayPaymentId;
     }
-
+    order.fulfillmentStatus = FulfillmentStatus.PENDING;
     await order.save();
 
-    // Clear user's cart after successful order
-    await this.cartService.clearCart(order.userId.toString());
+    // 2) Confirm inventory deduction for each item (best effort — a reservation
+    // mismatch must never roll back a confirmed payment).
+    for (const item of order.items) {
+      try {
+        await this.inventoryService.confirmInventoryDeduction(
+          item.productVariantId.toString(),
+          item.quantity,
+        );
+      } catch (err) {
+        console.error("[order] inventory deduction failed (non-fatal)", {
+          orderId,
+          productVariantId: item.productVariantId.toString(),
+          error: (err as Error)?.message || String(err),
+        });
+      }
+    }
 
-    // Queue order confirmation email via outbox system with retry logic
+    // 3) Clear user's cart after successful order (best effort).
+    try {
+      await this.cartService.clearCart(order.userId.toString());
+    } catch (err) {
+      console.error("[order] cart clear failed (non-fatal)", {
+        orderId,
+        error: (err as Error)?.message || String(err),
+      });
+    }
+
+    // 4) Queue order confirmation email via the outbox worker (best effort).
+    try {
+      await this.queueOrderConfirmationEmail(order);
+    } catch (err) {
+      console.error("[order] failed to queue confirmation email (non-fatal)", {
+        orderId,
+        error: (err as Error)?.message || String(err),
+      });
+    }
+
+    return order;
+  }
+
+  /**
+   * Build and enqueue the order confirmation email for the outbox worker.
+   * Kept separate so checkout flows never fail on email-side errors.
+   */
+  private async queueOrderConfirmationEmail(
+    order: OrderDocument,
+  ): Promise<void> {
     const user = await UserModel.findById(order.userId);
     if (user && user.email) {
       const emailHtml = `
@@ -621,7 +689,7 @@ export class OrderService {
             <h3>Order Details</h3>
             <p><strong>Order Number:</strong> ${order.orderNumber}</p>
             <p><strong>Order Date:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Total Amount:</strong> ₹${order.totalAmount.toFixed(2)}</p>
+            <p><strong>Total Amount:</strong> ₹${(order.totalAmount / 100).toFixed(2)}</p>
             
             <h3>Items Ordered</h3>
             <table style="width: 100%; border-collapse: collapse;">
@@ -633,7 +701,7 @@ export class OrderService {
                   <tr>
                     <td style="padding: 8px; border: 1px solid #ddd;">${item.productName}${item.variantLabel ? ` (${item.variantLabel})` : ""}</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.quantity}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">₹${item.lineTotal.toFixed(2)}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">₹${(item.lineTotal / 100).toFixed(2)}</td>
                   </tr>
                 `,
                   )
@@ -661,8 +729,6 @@ export class OrderService {
         </html>
       `;
 
-      // Import OutboxMessage here to avoid circular dependencies
-      const OutboxMessage = require("../models/OutboxMessage").default;
       await OutboxMessage.create({
         type: "send_email",
         payload: {
@@ -674,12 +740,10 @@ export class OrderService {
         attempts: 0,
       });
       console.info("[order] queued confirmation email for", {
-        orderId,
+        orderId: order._id.toString(),
         email: user.email,
       });
     }
-
-    return order;
   }
 
   /**
@@ -969,35 +1033,47 @@ export class ProductService {
 
     const total = await ProductModel.countDocuments(query);
 
-    // Get facets (available brands and price range) for the current filtered (or unfiltered) set
-    // This allows dynamic filter sidebars
-    const facets = await ProductModel.aggregate([
+    // Facets power the filter sidebar. Categories are computed across the whole
+    // active catalog (never scoped by the current category) so the shopper can
+    // always switch between categories; brands and price range reflect the
+    // current category/condition/seller context.
+    const facetResult = await ProductModel.aggregate([
+      { $match: { isActive: true } },
       {
-        $match: {
-          isActive: true,
-          ...(category ? { category } : {}),
-          ...(condition ? { condition } : {}),
-          ...(sellerType ? { sellerType } : {}),
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          brands: { $addToSet: "$brand" },
-          minPrice: { $min: "$basePrice" },
-          maxPrice: { $max: "$basePrice" },
+        $facet: {
+          categories: [{ $group: { _id: "$category" } }, { $sort: { _id: 1 } }],
+          scoped: [
+            {
+              $match: {
+                ...(category ? { category } : {}),
+                ...(condition ? { condition } : {}),
+                ...(sellerType ? { sellerType } : {}),
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                brands: { $addToSet: "$brand" },
+                minPrice: { $min: "$basePrice" },
+                maxPrice: { $max: "$basePrice" },
+              },
+            },
+          ],
         },
       },
     ]);
 
-    const availableFacets =
-      facets.length > 0
-        ? {
-            brands: facets[0].brands.filter(Boolean).sort(),
-            minPrice: facets[0].minPrice || 0,
-            maxPrice: facets[0].maxPrice || 10000,
-          }
-        : { brands: [], minPrice: 0, maxPrice: 10000 };
+    const facetData = facetResult[0] || { categories: [], scoped: [] };
+    const scopedFacets = facetData.scoped?.[0] || {};
+    const availableFacets = {
+      categories: (facetData.categories || [])
+        .map((entry: { _id: string }) => entry._id)
+        .filter(Boolean)
+        .sort(),
+      brands: (scopedFacets.brands || []).filter(Boolean).sort(),
+      minPrice: scopedFacets.minPrice || 0,
+      maxPrice: scopedFacets.maxPrice || 10000,
+    };
 
     return {
       products,

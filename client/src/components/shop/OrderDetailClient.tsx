@@ -3,6 +3,7 @@
 import {
   downloadOrderInvoice,
   getOrderById,
+  syncOrderPayment,
   type Order,
 } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
@@ -28,20 +29,56 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
   );
   const [message, setMessage] = useState("");
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [syncingPayment, setSyncingPayment] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
+    // After the PhonePe redirect the order can still read PENDING_PAYMENT until
+    // the gateway settles (and webhooks may lag or not reach local dev). Poll
+    // our sync endpoint a few times so the status updates without a manual step.
+    async function reconcilePendingPayment() {
+      setSyncingPayment(true);
+      try {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const updated = await syncOrderPayment(orderId);
+          if (cancelled) return;
+          setOrder(updated);
+          if (updated.status !== "PENDING_PAYMENT") break;
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+        }
+      } catch {
+        // Non-fatal — the shopper can refresh the page to retry.
+      } finally {
+        if (!cancelled) setSyncingPayment(false);
+      }
+    }
+
     async function load() {
       try {
         const data = await getOrderById(orderId);
+        if (cancelled) return;
         setOrder(data);
         setStatus("ready");
+        if (data.status === "PENDING_PAYMENT") {
+          void reconcilePendingPayment();
+        }
       } catch (err: any) {
+        if (cancelled) return;
         setMessage(err.message || "Failed to load order.");
         setStatus("error");
       }
     }
     load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [orderId]);
+
+  // Backend marks captured payments as "CAPTURED"; treat legacy "PAID" the same.
+  const isPaid =
+    order?.paymentStatus === "PAID" || order?.paymentStatus === "CAPTURED";
 
   const handleDownloadInvoice = async () => {
     if (!order) return;
@@ -103,15 +140,13 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
     {
       id: "payment",
       name: "Payment Confirmed",
-      description:
-        order.paymentStatus === "PAID"
-          ? "Payment received successfully"
+      description: isPaid
+        ? "Payment received successfully"
+        : syncingPayment
+          ? "Confirming your payment…"
           : "Pending or failed",
       icon: CheckCircle2,
-      status:
-        order.paymentStatus === "PAID"
-          ? ("complete" as const)
-          : ("current" as const),
+      status: isPaid ? ("complete" as const) : ("current" as const),
     },
     {
       id: "shipped",
@@ -124,8 +159,7 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
         order.fulfillmentStatus === "SHIPPED" ||
         order.fulfillmentStatus === "DELIVERED"
           ? ("complete" as const)
-          : order.fulfillmentStatus === "PROCESSING" &&
-              order.paymentStatus === "PAID"
+          : order.fulfillmentStatus === "PROCESSING" && isPaid
             ? ("current" as const)
             : ("upcoming" as const),
     },
@@ -169,11 +203,8 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
           </span>
           <button
             onClick={handleDownloadInvoice}
-            disabled={
-              downloadingInvoice ||
-              (order.paymentStatus !== "PAID" &&
-                order.paymentStatus !== "CAPTURED")
-            }
+            disabled={downloadingInvoice || !isPaid}
+            title={!isPaid ? "Invoice is available once payment is confirmed" : ""}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="h-4 w-4" />{" "}
@@ -181,6 +212,13 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
           </button>
         </div>
       </div>
+
+      {syncingPayment && !isPaid && (
+        <div className="mt-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+          <Clock className="h-4 w-4 animate-pulse" />
+          Confirming your payment with the gateway…
+        </div>
+      )}
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_400px]">
         {/* Left Column: Tracking & Items */}
@@ -349,12 +387,12 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
                 <span className="font-medium">Status:</span>{" "}
                 <span
                   className={
-                    order.paymentStatus === "PAID"
+                    isPaid
                       ? "text-emerald-600 font-bold"
                       : "text-amber-600 font-bold"
                   }
                 >
-                  {order.paymentStatus}
+                  {isPaid ? "PAID" : order.paymentStatus}
                 </span>
               </p>
             </div>

@@ -14,12 +14,6 @@ import {
   listOrders,
   type Product,
   type Order,
-  getUserAddresses,
-  addUserAddress,
-  updateUserAddress,
-  deleteUserAddress,
-  setDefaultUserAddress,
-  type UserAddress
 } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -28,7 +22,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useWishlistStore } from "@/lib/shop/wishlistStore";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { authApi } from "@/modules/auth/services/auth";
+import { AddressManagement } from "@/components/shop/AddressManagement";
 
 const tabs = [
   { id: "orders", name: "Orders", icon: Package },
@@ -110,7 +104,7 @@ export default function AccountPage() {
               {activeTab === "orders" && <OrdersView />}
               {activeTab === "balance" && <BalanceView />}
               {activeTab === "saved" && <SavedItemsView />}
-              {activeTab === "address" && <AddressView />}
+              {activeTab === "address" && <AddressManagement />}
               {activeTab === "contact" && <ContactView />}
               {activeTab === "selling" && <SellerDashboardView />}
             </motion.div>
@@ -354,201 +348,6 @@ function SavedItemsView() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function AddressView() {
-  const { user, setUser } = useAuthStore();
-  const [loading, setLoading] = useState(false);
-  
-  const [fullName, setFullName] = useState(user?.shippingAddress?.fullName || "");
-  const [email, setEmail] = useState(user?.shippingAddress?.email || "");
-  const [phone, setPhone] = useState(user?.shippingAddress?.phone || "");
-  const [addressLine1, setAddressLine1] = useState(user?.shippingAddress?.addressLine1 || "");
-  const [addressLine2, setAddressLine2] = useState(user?.shippingAddress?.addressLine2 || "");
-  const [city, setCity] = useState(user?.shippingAddress?.city || "");
-  const [state, setState] = useState(user?.shippingAddress?.state || "");
-  const [postalCode, setPostalCode] = useState(user?.shippingAddress?.postalCode || "");
-  const [country, setCountry] = useState(user?.shippingAddress?.country || "IN");
-
-  useEffect(() => {
-    if (user?.shippingAddress) {
-      setFullName(user.shippingAddress.fullName || "");
-      setEmail(user.shippingAddress.email || "");
-      setPhone(user.shippingAddress.phone || "");
-      setAddressLine1(user.shippingAddress.addressLine1 || "");
-      setAddressLine2(user.shippingAddress.addressLine2 || "");
-      setCity(user.shippingAddress.city || "");
-      setState(user.shippingAddress.state || "");
-      setPostalCode(user.shippingAddress.postalCode || "");
-      setCountry(user.shippingAddress.country || "IN");
-    } else if (user) {
-      setFullName(user.name || "");
-      setEmail(user.email || "");
-      setPhone(user.phone || "");
-    }
-  }, [user]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const response = await authApi.updateProfile({
-        shippingAddress: {
-          fullName,
-          email,
-          phone,
-          addressLine1,
-          addressLine2,
-          city,
-          state,
-          postalCode,
-          country,
-        },
-      });
-
-      if (response.success && response.data) {
-        setUser(response.data);
-        toast.success("Shipping address saved successfully!");
-      } else {
-        throw new Error(response.message || "Failed to save address");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save shipping address");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!user) return null;
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-black text-slate-900">Shipping Address</h2>
-        <p className="text-sm text-slate-500">Configure your default shipping details for quick checkout.</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl bg-slate-50/50 p-6 sm:p-8 rounded-3xl border border-slate-200/60 shadow-xs">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Recipient Name</label>
-            <input
-              required
-              type="text"
-              placeholder="Full Name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Email Address</label>
-            <input
-              required
-              type="email"
-              placeholder="email@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Phone Number</label>
-            <input
-              required
-              type="tel"
-              placeholder="e.g. +91 99999 99999"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Address Line 1</label>
-            <input
-              required
-              type="text"
-              placeholder="House/Flat No., Building, Street Name"
-              value={addressLine1}
-              onChange={(e) => setAddressLine1(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Address Line 2 (Optional)</label>
-            <input
-              type="text"
-              placeholder="Landmark, Area, Locality"
-              value={addressLine2}
-              onChange={(e) => setAddressLine2(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">City</label>
-            <input
-              required
-              type="text"
-              placeholder="City"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">State</label>
-            <input
-              required
-              type="text"
-              placeholder="State"
-              value={state}
-              onChange={(e) => setState(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Postal / ZIP Code</label>
-            <input
-              required
-              type="text"
-              placeholder="6-digit ZIP code"
-              value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Country</label>
-            <input
-              required
-              type="text"
-              placeholder="Country"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full md:w-auto px-6 py-3 rounded-xl bg-[#ff5722] hover:bg-[#e64a19] text-sm font-bold text-white transition-all active:scale-95 shadow-md shadow-[#ff5722]/15 disabled:opacity-50"
-        >
-          {loading ? "Saving Address..." : "Save Shipping Address"}
-        </button>
-      </form>
     </div>
   );
 }
