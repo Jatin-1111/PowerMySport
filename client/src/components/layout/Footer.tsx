@@ -1,4 +1,4 @@
-﻿import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -12,7 +12,6 @@ export const Footer: React.FC = () => {
         { label: "About Us", href: "/about" },
         { label: "How It Works", href: "/how-it-works" },
         { label: "Contact", href: "/contact" },
-        { label: "Careers", href: "/careers" },
       ],
     },
     services: {

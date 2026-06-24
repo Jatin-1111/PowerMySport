@@ -155,9 +155,9 @@ export function AboutPageContent() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto"
           >
             {[
-              { name: "Amit Mehta", role: "Founder & CEO", desc: "Former national-level badminton player with 10+ years in tech.", img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80" },
-              { name: "Priya Sharma", role: "Co-Founder & CTO", desc: "Tech entrepreneur passionate about building scalable platforms.", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=300&q=80" },
-              { name: "Rohan Kapoor", role: "Head of Operations", desc: "Sports facility management expert with an MBA from IIM.", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80" }
+              { name: "Jatin", role: "Full Stack Web Dev & DevOps", desc: "Driving core development, AWS infrastructure, and CI/CD." },
+              { name: "Rakshak Phogat", role: "Full Stack Web Dev", desc: "Building robust web features and seamless user interfaces." },
+              { name: "Vanshika Narang", role: "Full Stack Web Dev & DevOps", desc: "Powering full stack architecture and reliable deployments." }
             ].map((member, i) => (
               <motion.div 
                 key={i}
@@ -166,8 +166,8 @@ export function AboutPageContent() {
                 transition={SPRING_STIFF}
                 className="group relative bg-white/80 border border-white/70 backdrop-blur-md premium-shadow rounded-3xl p-8 text-center transition-all hover:border-white/90"
               >
-                <div className="w-28 h-28 mx-auto rounded-full shadow-lg overflow-hidden mb-6 transform group-hover:scale-110 transition-transform duration-300 ring-4 ring-white">
-                  <img src={member.img} alt={member.name} className="w-full h-full object-cover" />
+                <div className="w-28 h-28 mx-auto rounded-full shadow-lg overflow-hidden mb-6 transform group-hover:scale-110 transition-transform duration-300 ring-4 ring-white bg-slate-100 flex items-center justify-center">
+                  <span className="text-5xl font-bold text-power-orange">{member.name.charAt(0)}</span>
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-1">{member.name}</h3>
                 <p className="text-sm font-semibold text-power-orange mb-3">{member.role}</p>
