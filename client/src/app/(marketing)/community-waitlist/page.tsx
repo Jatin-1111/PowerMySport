@@ -1,3 +1,5 @@
+"use client";
+
 import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
 import { Users } from "lucide-react";
 

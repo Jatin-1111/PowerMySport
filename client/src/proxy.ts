@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const isCommunityLive = process.env.NEXT_PUBLIC_COMMUNITY_IS_LIVE !== "false";
   
   if (!isCommunityLive) {
     const path = request.nextUrl.pathname;
     
-    // Rewrite all paths to root where the waitlist is shown, except the root itself
-    if (path !== "/") {
+    // Block all /community routes by rewriting to a waitlist page
+    if (path.startsWith("/community")) {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = "/community-waitlist";
       return NextResponse.rewrite(url);
     }
   }
