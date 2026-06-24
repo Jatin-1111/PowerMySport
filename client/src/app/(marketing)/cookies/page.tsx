@@ -23,9 +23,12 @@ export default function CookiePolicy() {
             <p>
               PowerMySport ("we," "us," "our," or "Company") uses essential
               cookies to keep you signed in and protect the platform. We do not
-              use advertising or tracking cookies. When you first visit, we show
-              a brief notice so you can acknowledge this policy. This Cookie
-              Policy explains how we use cookies and your choices regarding them.
+              use advertising cookies. We also collect anonymous, aggregated
+              usage analytics (such as which pages are opened) using a random
+              visitor id that contains no personal information. When you first
+              visit, we show a brief notice so you can acknowledge this policy.
+              This Cookie Policy explains how we use cookies and your choices
+              regarding them.
             </p>
           </section>
 
@@ -66,6 +69,20 @@ export default function CookiePolicy() {
               Payment providers may set their own cookies during checkout to
               secure transactions. These cookies are controlled by the provider
               and are governed by their policies.
+            </p>
+            <h3 className="text-xl font-semibold mt-6 mb-3">
+              3.3 Anonymous Analytics
+            </h3>
+            <p>
+              To understand which pages and features are useful, we collect
+              anonymous, aggregated usage data—for example, how many visitors
+              open a page, which links they click, and how far they scroll. To
+              count visitors without identifying them, we store a randomly
+              generated id in your browser's local storage (key{" "}
+              <code>pms-guest-id</code>). This id is not linked to your name,
+              email, or any personal detail, and we do not build advertising
+              profiles or sell this data. You can clear it any time by clearing
+              your browser's site data.
             </p>
           </section>
 

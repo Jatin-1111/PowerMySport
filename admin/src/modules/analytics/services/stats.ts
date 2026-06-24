@@ -178,6 +178,40 @@ export interface ObservabilitySnapshot {
   generatedAt: string;
 }
 
+export interface GuestActivityTotals {
+  events: number;
+  uniqueGuests: number;
+  pageViews: number;
+  avgScrollPct: number;
+  avgTimeOnPageSec: number;
+}
+
+export interface GuestTopPage {
+  path: string;
+  views: number;
+  uniqueGuests: number;
+}
+
+export interface GuestTopEvent {
+  eventName: string;
+  count: number;
+  uniqueGuests: number;
+}
+
+export interface GuestDailyPoint {
+  label: string;
+  views: number;
+  uniqueGuests: number;
+}
+
+export interface GuestActivity {
+  days: number;
+  totals: GuestActivityTotals;
+  topPages: GuestTopPage[];
+  topEvents: GuestTopEvent[];
+  daily: GuestDailyPoint[];
+}
+
 export const statsApi = {
   getPlatformStats: async (): Promise<ApiResponse<PlatformStats>> => {
     const response = await axiosInstance.get("/stats/platform");
@@ -328,6 +362,21 @@ export const statsApi = {
     ApiResponse<ObservabilitySnapshot>
   > => {
     const response = await axiosInstance.get("/stats/observability");
+    return response.data;
+  },
+
+  getGuestActivity: async (
+    days = 30,
+  ): Promise<ApiResponse<GuestActivity>> => {
+    const response = await axiosInstance.get("/stats/guests/activity", {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  // Destructive: permanently deletes every analytics event.
+  clearAnalytics: async (): Promise<ApiResponse<{ deletedCount: number }>> => {
+    const response = await axiosInstance.delete("/stats/analytics");
     return response.data;
   },
 

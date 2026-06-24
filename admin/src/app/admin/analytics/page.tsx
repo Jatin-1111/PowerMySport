@@ -5,6 +5,7 @@ import {
   FinanceReconciliation,
   FunnelSummaryRow,
   FunnelTrends,
+  GuestActivity,
   PlayersAnalytics,
   CoachesAnalytics,
   PlatformStats,
@@ -31,7 +32,12 @@ import {
 } from "recharts";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type AnalyticsTab = "OVERVIEW" | "FUNNEL" | "FINANCE" | "OBSERVABILITY";
+type AnalyticsTab =
+  | "OVERVIEW"
+  | "FUNNEL"
+  | "GUESTS"
+  | "FINANCE"
+  | "OBSERVABILITY";
 const funnelDayOptions = [7, 14, 30, 90] as const;
 
 const ROLE_COLORS = {
@@ -134,13 +140,22 @@ export default function AdminAnalyticsPage() {
   const [finance, setFinance] = useState<FinanceReconciliation | null>(null);
   const [observability, setObservability] =
     useState<ObservabilitySnapshot | null>(null);
+  const [guestActivity, setGuestActivity] = useState<GuestActivity | null>(
+    null,
+  );
+  const [guestDays, setGuestDays] =
+    useState<(typeof funnelDayOptions)[number]>(30);
   const [loadingOverview, setLoadingOverview] = useState(true);
   const [loadingFunnel, setLoadingFunnel] = useState(true);
+  const [loadingGuests, setLoadingGuests] = useState(true);
   const [loadingFinance, setLoadingFinance] = useState(false);
   const [loadingObservability, setLoadingObservability] = useState(false);
   const [overviewLoaded, setOverviewLoaded] = useState(false);
   const [financeLoaded, setFinanceLoaded] = useState(false);
   const [observabilityLoaded, setObservabilityLoaded] = useState(false);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [clearResult, setClearResult] = useState<string | null>(null);
 
   const loadOverview = useCallback(async () => {
     if (overviewLoaded) return;
@@ -219,6 +234,46 @@ export default function AdminAnalyticsPage() {
     }
   }, [funnelDays]);
 
+  const loadGuests = useCallback(async () => {
+    setLoadingGuests(true);
+    try {
+      const response = await statsApi.getGuestActivity(guestDays);
+      if (response.success && response.data) {
+        setGuestActivity(response.data);
+      }
+    } finally {
+      setLoadingGuests(false);
+    }
+  }, [guestDays]);
+
+  const handleClearAnalytics = useCallback(async () => {
+    setClearing(true);
+    setClearResult(null);
+    try {
+      const response = await statsApi.clearAnalytics();
+      if (response.success) {
+        const deleted = response.data?.deletedCount ?? 0;
+        setClearResult(`Cleared ${deleted.toLocaleString()} analytics events.`);
+        // Reset loaded views so they refetch the now-empty dataset.
+        setGuestActivity(null);
+        setFunnelRows([]);
+        setFunnelTrends(null);
+        setOverviewLoaded(false);
+        if (activeTab === "GUESTS") void loadGuests();
+        if (activeTab === "FUNNEL") void loadFunnel();
+      } else {
+        setClearResult(response.message || "Failed to clear analytics data.");
+      }
+    } catch (error) {
+      setClearResult(
+        error instanceof Error ? error.message : "Failed to clear analytics data.",
+      );
+    } finally {
+      setClearing(false);
+      setClearModalOpen(false);
+    }
+  }, [activeTab, loadFunnel, loadGuests]);
+
   const loadFinance = useCallback(async () => {
     if (financeLoaded) return;
     setLoadingFinance(true);
@@ -254,6 +309,10 @@ export default function AdminAnalyticsPage() {
   useEffect(() => {
     if (activeTab === "FUNNEL") void loadFunnel();
   }, [activeTab, loadFunnel]);
+
+  useEffect(() => {
+    if (activeTab === "GUESTS") void loadGuests();
+  }, [activeTab, loadGuests]);
 
   useEffect(() => {
     if (activeTab === "FINANCE") void loadFinance();
@@ -393,6 +452,7 @@ export default function AdminAnalyticsPage() {
           {[
             { id: "OVERVIEW", label: "Overview" },
             { id: "FUNNEL", label: "Funnel" },
+            { id: "GUESTS", label: "Guests" },
             { id: "FINANCE", label: "Finance" },
             { id: "OBSERVABILITY", label: "Observability" },
           ].map((tab) => (
@@ -408,7 +468,21 @@ export default function AdminAnalyticsPage() {
               {tab.label}
             </button>
           ))}
+
+          <button
+            onClick={() => {
+              setClearResult(null);
+              setClearModalOpen(true);
+            }}
+            className="ml-auto rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition hover:bg-red-100"
+          >
+            Clear analytics data
+          </button>
         </div>
+
+        {clearResult ? (
+          <p className="text-sm font-medium text-slate-600">{clearResult}</p>
+        ) : null}
 
         {activeTab === "OVERVIEW" && (
           <div className="space-y-6">
@@ -742,6 +816,187 @@ export default function AdminAnalyticsPage() {
           </div>
         )}
 
+        {activeTab === "GUESTS" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-700">
+                Window:
+              </span>
+              <select
+                value={guestDays}
+                onChange={(event) =>
+                  setGuestDays(
+                    Number(
+                      event.target.value,
+                    ) as (typeof funnelDayOptions)[number],
+                  )
+                }
+                className="rounded border border-slate-300 px-3 py-1.5 text-sm"
+              >
+                {funnelDayOptions.map((days) => (
+                  <option key={days} value={days}>
+                    Last {days} days
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Anonymous activity from not-signed-in visitors. No personal data —
+              visitors are counted with a random id only.
+            </p>
+
+            {loadingGuests ? (
+              <div className="py-10 text-center text-slate-500">
+                Loading guest activity...
+              </div>
+            ) : !guestActivity || guestActivity.totals.events === 0 ? (
+              <div className="py-10 text-center text-slate-500">
+                No guest activity recorded yet.
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                  <MetricCard
+                    label="Unique Visitors"
+                    value={formatNumber(guestActivity.totals.uniqueGuests)}
+                    detail="Distinct anonymous guests"
+                    accentClassName="border-slate-200"
+                  />
+                  <MetricCard
+                    label="Page Views"
+                    value={formatNumber(guestActivity.totals.pageViews)}
+                    detail="Total pages opened"
+                    accentClassName="border-slate-200"
+                  />
+                  <MetricCard
+                    label="Total Events"
+                    value={formatNumber(guestActivity.totals.events)}
+                    detail="Views, clicks & scrolls"
+                    accentClassName="border-slate-200"
+                  />
+                  <MetricCard
+                    label="Avg. Time / Page"
+                    value={`${guestActivity.totals.avgTimeOnPageSec}s`}
+                    detail="Across tracked pages"
+                    accentClassName="border-slate-200"
+                  />
+                  <MetricCard
+                    label="Avg. Scroll Depth"
+                    value={`${guestActivity.totals.avgScrollPct}%`}
+                    detail="How far visitors scroll"
+                    accentClassName="border-slate-200"
+                  />
+                </div>
+
+                <ChartCard
+                  title="Daily guest activity"
+                  description="Page views and unique visitors across the selected window."
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={guestActivity.daily}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: "#475569", fontSize: 12 }}
+                      />
+                      <YAxis tick={{ fill: "#475569", fontSize: 12 }} />
+                      <Tooltip
+                        formatter={(value) => formatNumber(Number(value))}
+                      />
+                      <Legend />
+                      <Bar dataKey="views" fill="#f97316" name="Page views" />
+                      <Bar
+                        dataKey="uniqueGuests"
+                        fill="#0ea5e9"
+                        name="Unique visitors"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      Top pages
+                    </h3>
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Page
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Views
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Unique
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {guestActivity.topPages.map((page) => (
+                            <tr key={page.path}>
+                              <td className="px-4 py-3 font-mono text-xs text-slate-800">
+                                {page.path}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">
+                                {formatNumber(page.views)}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">
+                                {formatNumber(page.uniqueGuests)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      Top activity
+                    </h3>
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Activity
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Count
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Unique
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {guestActivity.topEvents.map((event) => (
+                            <tr key={event.eventName}>
+                              <td className="px-4 py-3 text-slate-800">
+                                {event.eventName}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">
+                                {formatNumber(event.count)}
+                              </td>
+                              <td className="px-4 py-3 text-slate-600">
+                                {formatNumber(event.uniqueGuests)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {activeTab === "FINANCE" && (
           <div className="space-y-4">
             {loadingFinance ? (
@@ -991,6 +1246,37 @@ export default function AdminAnalyticsPage() {
           </div>
         )}
       </Card>
+
+      {clearModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Clear all analytics data?
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              This permanently deletes <strong>every</strong> analytics event —
+              funnel events and all guest activity. This action cannot be
+              undone.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setClearModalOpen(false)}
+                disabled={clearing}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleClearAnalytics()}
+                disabled={clearing}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+              >
+                {clearing ? "Clearing..." : "Delete everything"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

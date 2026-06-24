@@ -78,9 +78,9 @@ export function CookieConsentBanner() {
               </div>
 
               <p className="mb-4 text-sm leading-relaxed text-slate-600">
-                We only use essential cookies to keep you signed in and keep
-                PowerMySport secure—no ads or tracking. By continuing, you agree
-                to our{" "}
+                We use essential cookies to keep you signed in and secure, plus
+                anonymous analytics to see which pages help parents most—no ads,
+                and no personal data. By continuing, you agree to our{" "}
                 <Link
                   href="/cookies"
                   className="font-semibold text-power-orange underline-offset-2 hover:underline"

@@ -18,14 +18,27 @@ import {
   getFunnelSummary,
   getObservabilityStats,
   trackFunnelEvent,
+  trackGuestEvents,
+  getGuestActivity,
+  clearAnalyticsData,
 } from "../controllers/statsController";
 import { authMiddleware, adminMiddleware } from "../../middleware/auth";
-import { funnelEventSchema } from "../../middleware/schemas";
+import { funnelEventSchema, guestEventSchema } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
+import { guestTrackRateLimiter } from "../../middleware/rateLimit";
 
 const router = Router();
 
 router.get("/public", getPublicPlatformStats);
+
+// Public, anonymous visitor activity ingest (no auth — not-signed-in guests).
+// Rate-limited and schema-validated; stores no personal data.
+router.post(
+  "/guest/event",
+  guestTrackRateLimiter,
+  validateRequest(guestEventSchema),
+  trackGuestEvents,
+);
 
 // Authenticated events (players/coaches/venue-listers/admins)
 router.use(authMiddleware);
@@ -37,6 +50,9 @@ router.post(
 
 // All routes below require admin authentication
 router.use(adminMiddleware);
+
+router.get("/guests/activity", getGuestActivity);
+router.delete("/analytics", clearAnalyticsData);
 
 router.get("/platform", getPlatformStats);
 router.get("/users/summary", getUserRoleSummary);

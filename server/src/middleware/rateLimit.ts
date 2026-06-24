@@ -81,3 +81,20 @@ export const adminLoginRateLimiter = rateLimit({
     message: "Too many login attempts. Please try again in 15 minutes.",
   },
 });
+
+/**
+ * Limiter for the public, unauthenticated guest-analytics ingest endpoint.
+ * Events are batched client-side, so 60 batches/min per IP is generous for a
+ * real visitor while capping abuse of an open write endpoint. Fails open.
+ */
+export const guestTrackRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisRateLimitStore("rl:track:guest:"),
+  message: {
+    success: false,
+    message: "Too many requests.",
+  },
+});

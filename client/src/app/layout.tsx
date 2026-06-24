@@ -1,3 +1,4 @@
+import { GuestAnalyticsTracker } from "@/components/analytics/GuestAnalyticsTracker";
 import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { NumericInputGuard } from "@/components/layout/NumericInputGuard";
@@ -107,6 +108,7 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} antialiased`}
       >
         <NumericInputGuard />
+        <GuestAnalyticsTracker />
         <HydrationBoundary>
           <FriendSocketProvider>{children}</FriendSocketProvider>
         </HydrationBoundary>

@@ -457,6 +457,24 @@ export const funnelEventSchema = z.object({
   source: z.enum(["WEB", "MOBILE", "SERVER"]).optional().default("WEB"),
 });
 
+// Anonymous, batched activity events from not-signed-in visitors.
+// `guestId` is a random client-generated id (NOT personal data); we never
+// accept names, emails, or any identifier here.
+export const guestEventSchema = z.object({
+  guestId: z.string().trim().min(8).max(64),
+  events: z
+    .array(
+      z.object({
+        eventName: z.string().trim().min(1, "eventName is required").max(80),
+        entityType: z.string().trim().max(80).optional(),
+        entityId: z.string().trim().max(300).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      }),
+    )
+    .min(1, "At least one event is required")
+    .max(50, "Too many events in one batch"),
+});
+
 export const createReviewSchema = z.object({
   bookingId: z.string().min(1, "Booking ID is required"),
   targetType: z.enum(["VENUE", "COACH"]),
