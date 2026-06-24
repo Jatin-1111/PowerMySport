@@ -6,7 +6,7 @@ import {
   Features,
 } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
-import { getCommunityAppUrl } from "@/lib/community/url";
+import { RolloutRoadmap } from "@/modules/marketing/components/marketing/RolloutRoadmap";
 import { motion, Variants } from "framer-motion";
 
 const SPRING_STIFF = { type: "spring", stiffness: 260, damping: 22 } as const;
@@ -27,8 +27,6 @@ const cardReveal: Variants = {
 };
 
 export function AboutPageContent() {
-  const communityUrl = getCommunityAppUrl();
-
   // Core values updated for Parent-Centric approach
   const values = [
     {
@@ -38,43 +36,22 @@ export function AboutPageContent() {
       icon: FeatureIcons.Users,
     },
     {
-      title: "Everything in One Place",
+      title: "One Plan, Not Ten Tabs",
       description:
-        "We bring venues, coaches, and sports academies into one simple platform, so you don't have to jump between apps.",
+        "Your child's roadmap, guidance, and next steps live in one simple place—so you stop juggling notes, groups, and phone calls.",
       icon: FeatureIcons.Lightning,
     },
     {
-      title: "Quality You Can Trust",
+      title: "Honest and Realistic",
       description:
-        "Every coach and academy is checked by us, so you know you're getting the best for your child.",
+        "We tell you what a sport really takes—time, cost, and effort—so you can decide with confidence, not on a hunch.",
       icon: FeatureIcons.Shield,
     },
     {
-      title: "Help from Other Parents",
+      title: "Built for Everyday Parents",
       description:
-        "We use the real experiences of other parents to help you make smarter, faster decisions for your kids.",
+        "No jargon, no pressure. Just simple guidance any parent can act on, whether or not they grew up playing sport.",
       icon: FeatureIcons.Star,
-    },
-  ];
-
-  const communityFeatures = [
-    {
-      title: "Shared answers",
-      description:
-        "Parents and coaches can ask practical questions and get context from people who have successfully navigated the system.",
-      icon: FeatureIcons.Users,
-    },
-    {
-      title: "Local trust signals",
-      description:
-        "Honest reviews and recommendations surface which academies and coaches actually deliver real results.",
-      icon: FeatureIcons.Star,
-    },
-    {
-      title: "Connected ecosystem",
-      description:
-        "Bookings, discussion, and verified pathways sit together so the community can influence every crucial decision.",
-      icon: FeatureIcons.Calendar,
     },
   ];
 
@@ -109,13 +86,13 @@ export function AboutPageContent() {
               
               <motion.div variants={fadeUp} className="space-y-6 text-lg text-slate-600">
                 <p>
-                  PowerMySport started because we noticed how hard it is for parents to manage their kids' sports. <span className="font-semibold text-power-orange">Parents were doing all the hard work</span>—trying to find good coaches, booking venues, and just guessing the right steps to take.
+                  PowerMySport started because we saw how confusing youth sports is for parents. <span className="font-semibold text-power-orange">You&apos;re doing all the hard work</span>—trying to pick the right sport, find the next step, and just guessing whether you&apos;re making the right call.
                 </p>
                 <p>
-                  We built PowerMySport to fix this problem. We put everything into one <span className="font-semibold text-emerald-600">simple, easy-to-use platform</span>. Whether your child is just starting out or aiming to play professionally, we give you the tools and answers you need.
+                  So we started with the hardest part: the plan. Tell us about your child and you get a <span className="font-semibold text-emerald-600">clear, personalised roadmap</span> plus expert and AI guidance—free, and live today. No guesswork, no jargon.
                 </p>
                 <p>
-                  Today, we focus on helping you find the right sports plans, easily book sessions, and connect with other parents—so you can make the best choices for your child without the stress.
+                  And we&apos;re just getting started. We&apos;re building PowerMySport in phases—community, booking, and a gear shop are all on the way—so every part is genuinely useful the day it lands.
                 </p>
               </motion.div>
             </div>
@@ -132,14 +109,11 @@ export function AboutPageContent() {
         </div>
       </section>
 
-      {/* Community System */}
-      <Features
-        title="Our Community System"
-        subtitle="Shared Sports Intelligence"
-        description="PowerMySport is designed to turn experience into useful guidance so players, parents, coaches, and venue partners can all learn from each other."
-        features={communityFeatures}
-        columns={3}
-        variant="centered"
+      {/* Rollout Roadmap: what's live + what's coming */}
+      <RolloutRoadmap
+        subtitle="How We're Building It"
+        title="One step at a time, starting with the plan"
+        description="We'd rather do a few things genuinely well than everything at once. Here's what's live today and what we're building next for your family."
       />
 
       {/* Core Values */}
@@ -263,11 +237,11 @@ export function AboutPageContent() {
       {/* CTA */}
       <CTA
         variant="gradient"
-        title="Be part of the community"
-        description="Join the parents using PowerMySport to share advice, compare options, and make smarter sports decisions together."
+        title="Start your child's plan today"
+        description="See what PowerMySport can do right now. Build a personalised roadmap and get expert guidance for your child—free, in just a few minutes."
         primaryCTA={{
-          label: "Open Community",
-          href: communityUrl,
+          label: "Build a Sports Plan",
+          href: "/roadmap",
         }}
         secondaryCTA={{
           label: "Contact Us",

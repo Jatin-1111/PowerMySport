@@ -23,9 +23,9 @@ export default function CookiePolicy() {
             <p>
               PowerMySport ("we," "us," "our," or "Company") uses essential
               cookies to keep you signed in and protect the platform. We do not
-              use advertising cookies, and there is no cookie consent banner at
-              this time. This Cookie Policy explains how we use cookies and your
-              choices regarding them.
+              use advertising or tracking cookies. When you first visit, we show
+              a brief notice so you can acknowledge this policy. This Cookie
+              Policy explains how we use cookies and your choices regarding them.
             </p>
           </section>
 

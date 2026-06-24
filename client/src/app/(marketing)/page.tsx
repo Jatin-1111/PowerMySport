@@ -4,23 +4,26 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import {
-  FeatureIcons,
-  Features,
-} from "@/modules/marketing/components/marketing/Features";
+import { Features } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
+import { RolloutRoadmap } from "@/modules/marketing/components/marketing/RolloutRoadmap";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Testimonials } from "@/modules/marketing/components/marketing/Testimonials";
 import {
   ArrowRight,
+  BrainCircuit,
   Building2,
   Check,
-  GraduationCap,
+  Clock,
+  Compass,
+  HelpCircle,
+  Map,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Target,
   Trophy,
-  User as UserIcon,
-  Users,
   Users2,
-  Zap
 } from "lucide-react";
 
 import { motion, Variants } from "framer-motion";
@@ -80,90 +83,90 @@ export default function HomePage() {
     },
   };
 
-  const features = [
+  // ── The everyday confusion parents face ──
+  const problems = [
     {
-      label: "Scattered schedules",
-      title: "Everything in One Place",
-      description:
-        "Manage all your kids' sessions, coach chats, and venue bookings from a single dashboard. No more switching between WhatsApp groups and calendar apps.",
-      icon: <Users2 className="h-6 w-6" />,
+      icon: <HelpCircle className="h-5 w-5" />,
+      text: "Which sport actually suits my child?",
     },
     {
-      label: "Unreliable coaches",
-      title: "Tested & Trusted Coaches",
-      description:
-        "Don't guess who is training your child. Read real, verified feedback from other parents in your city before you book any coach.",
-      icon: <GraduationCap className="h-6 w-6" />,
+      icon: <Compass className="h-5 w-5" />,
+      text: "Where do we even begin?",
     },
     {
-      label: "Endless phone calls",
-      title: "Book Venues Instantly",
-      description:
-        "Find and secure top-rated local sports venues instantly. No phone calls, no waiting for confirmations.",
-      icon: <Zap className="h-6 w-6" />,
+      icon: <Search className="h-5 w-5" />,
+      text: "Is this coach or academy any good?",
     },
     {
-      label: "Hidden costs & surprise fees",
-      title: "100% Transparent Pricing",
-      description:
-        "Compare costs upfront. Pay securely through the platform with a full breakdown—zero hidden charges.",
-      icon: FeatureIcons.Shield,
-    },
-    {
-      label: "Missed sessions & last-minute changes",
-      title: "Never Miss a Session",
-      description:
-        "Get instant notifications the moment a coach reschedules a session or a venue updates its availability.",
-      icon: FeatureIcons.Lightning,
-    },
-    {
-      label: "Guessing the right sport",
-      title: "Smart Sports Plans",
-      description:
-        "Not sure which sport fits your child best? Our AI creates a personalised plan based on your child's age, interests, and goals.",
-      icon: <Trophy className="h-6 w-6" />,
+      icon: <Clock className="h-5 w-5" />,
+      text: "Are we wasting time and money?",
     },
   ];
 
-  const communityFeatures = [
+  // ── How the live product solves it (Explore: Roadmap + Guidance) ──
+  const features = [
     {
-      title: "Talk to Other Parents",
+      label: "Which sport is right?",
+      title: "A Plan Made for Your Child",
       description:
-        "Get recommendations from parents in your city who have already sent their kids to specific venues and coaches.",
-      icon: FeatureIcons.Users,
+        "Tell us your child's age, interests, and free time. We build a personalised sports roadmap just for them—no two plans are the same.",
+      icon: <Sparkles className="h-6 w-6" />,
     },
     {
-      title: "Read Honest Reviews",
+      label: "Where do we start?",
+      title: "A Clear Step-by-Step Path",
       description:
-        "See what other parents are saying about coach quality, training style, and whether a venue is safe.",
-      icon: FeatureIcons.Star,
+        "See exactly what to focus on now and what comes next, from the very first session to competing—so you're never guessing the next move.",
+      icon: <Map className="h-6 w-6" />,
     },
     {
-      title: "Help from Real People",
+      label: "Too much conflicting advice",
+      title: "Guidance From Real Experts",
       description:
-        "Stop relying on guesswork. Use real community advice to pick the right sport, coach, and venue.",
-      icon: FeatureIcons.Calendar,
+        "Stuck on a decision? Get answers from sports experts and our AI guide, built around your child's goals—not generic internet tips.",
+      icon: <BrainCircuit className="h-6 w-6" />,
+    },
+    {
+      label: "What does 'good' even look like?",
+      title: "Know What to Aim For",
+      description:
+        "Understand the levels, milestones, and tournaments that matter for your child's sport, so progress finally feels clear.",
+      icon: <Target className="h-6 w-6" />,
+    },
+    {
+      label: "Everything is scattered",
+      title: "It's All in One Place",
+      description:
+        "Your child's plan, guidance, and next steps live in one simple dashboard—no more juggling WhatsApp groups, notes, and phone calls.",
+      icon: <Users2 className="h-6 w-6" />,
+    },
+    {
+      label: "Costs add up fast",
+      title: "Decide Before You Spend",
+      description:
+        "Get a clear picture of the time and money a sport really takes—so you commit with confidence, not on a hunch.",
+      icon: <ShieldCheck className="h-6 w-6" />,
     },
   ];
 
   const testimonials = [
     {
       quote:
-        "Before PowerMySport I was juggling three WhatsApp groups, two spreadsheets, and constant phone calls just to manage my kids' cricket and badminton training. Now I handle everything from one screen in minutes.",
+        "I had no idea where to start with my daughter's badminton. The roadmap laid out exactly what to focus on at her age. For the first time, I actually feel in control instead of guessing.",
       author: "Anjali Patel",
-      role: "Mother of 2 · Cricket & Badminton",
+      role: "Mother of 2 · Badminton",
       rating: 5,
     },
     {
       quote:
-        "I was really nervous about hiring a coach online  you never know who you're trusting with your child. Reading detailed parent reviews on PowerMySport gave me the confidence to book. Best decision we made.",
+        "Everyone gives you different advice about kids' sports. Getting clear guidance built around my son's age and goals saved me weeks of second-guessing. It just made sense.",
       author: "Meera Krishnan",
       role: "Parent · Bengaluru",
       rating: 5,
     },
     {
       quote:
-        "My son wanted to try four different sports before we figured out swimming was his thing. The AI roadmap actually helped me understand what suited his age and temperament. Saved us months of trial and error.",
+        "My son wanted to try four different sports before we figured out swimming was his thing. The roadmap helped me understand what actually suited his age and temperament. Saved us months of trial and error.",
       author: "Rohit Malhotra",
       role: "Father of 1 · Swimming",
       rating: 5,
@@ -209,25 +212,234 @@ export default function HomePage() {
         gradient
       />
 
-      {/* ── Features ── */}
+      {/* ── The Problem ── */}
+      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
+        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[120%] -translate-x-1/2 bg-gradient-to-b from-slate-100/50 to-transparent" />
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            className="mx-auto max-w-2xl text-center"
+          >
+            <motion.div variants={itemVariants} className="mb-4 flex justify-center">
+              <SectionLabel label="Sound Familiar?" color="slate" />
+            </motion.div>
+            <motion.h2
+              variants={itemVariants}
+              className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
+            >
+              Youth sports is confusing. You&apos;re not alone.
+            </motion.h2>
+            <motion.p variants={itemVariants} className="text-lg text-slate-600">
+              Every parent wants the best for their child. But between scattered
+              advice, endless options, and no clear path, it&apos;s hard to know
+              if you&apos;re making the right call.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            variants={sectionVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {problems.map((p) => (
+              <motion.div
+                key={p.text}
+                variants={cardVariants}
+                className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white/70 p-5 backdrop-blur-sm"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                  {p.icon}
+                </span>
+                <p className="text-sm font-medium leading-snug text-slate-700">
+                  &ldquo;{p.text}&rdquo;
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ type: "spring", stiffness: 260, damping: 22 }}
+            className="mx-auto mt-12 max-w-2xl text-center text-lg font-medium text-slate-800"
+          >
+            PowerMySport turns that confusion into one{" "}
+            <span className="text-power-orange">clear, personalised plan</span>{" "}
+            for your child.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* ── How We Solve It (MVP value) ── */}
       <Features
-        title="Real Solutions for Real Parenting Frustrations"
+        title="From Guesswork to a Clear Plan"
         subtitle="Why Parents Choose Us"
-        description="We know how hard it is to manage youth sports. We built PowerMySport to solve the exact problems that make sports logistics a headache."
+        description="We built PowerMySport to take the stress out of your child's sports journey. Here's how we make the hardest decisions simple."
         features={features}
         columns={3}
         variant="centered"
       />
 
-      {/* ── Community Features ── */}
-      <Features
-        title="Don't Guess. Ask the Parents Who Know."
-        subtitle="Parent-to-Parent Support"
-        description="Connect with local parents who have already navigated the sports landscape. Get honest recommendations on the best coaches, safest venues, and right programs for your child's age group."
-        features={communityFeatures}
-        columns={3}
-        variant="centered"
-      />
+      {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
+      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
+        <div className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-orange-100/30 blur-3xl" />
+        <div className="pointer-events-none absolute -right-32 bottom-1/4 h-80 w-80 rounded-full bg-indigo-100/25 blur-3xl" />
+
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
+            {/* Left: copy + capability cards */}
+            <motion.div
+              variants={sectionVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-100px" }}
+            >
+              <motion.div variants={itemVariants} className="mb-3">
+                <SectionLabel label="Available Now" color="green" />
+              </motion.div>
+              <motion.h2
+                variants={itemVariants}
+                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
+              >
+                Start with a clear plan—today
+              </motion.h2>
+              <motion.p
+                variants={itemVariants}
+                className="mb-8 text-lg text-slate-600"
+              >
+                Two simple tools, free to use right now. Get your child&apos;s
+                personalised roadmap and expert guidance before you commit to
+                anything.
+              </motion.p>
+
+              <motion.div variants={sectionVariants} className="space-y-4">
+                {[
+                  {
+                    icon: <Map size={22} />,
+                    title: "Sports Roadmap",
+                    desc: "A step-by-step plan for your child's sport—what to learn, when, and what to aim for.",
+                    color: "bg-orange-100 text-power-orange",
+                    cta: { label: "Build a Sports Plan", href: "/roadmap" },
+                  },
+                  {
+                    icon: <BrainCircuit size={22} />,
+                    title: "Expert Guidance",
+                    desc: "Answers to your toughest questions from sports experts and our AI guide—on call, whenever you need.",
+                    color: "bg-indigo-100 text-indigo-600",
+                    cta: { label: "Get Free Guidance", href: "/guidance" },
+                  },
+                ].map((item) => (
+                  <motion.div
+                    key={item.title}
+                    variants={cardVariants}
+                    whileHover={{ y: -4 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                    className="flex flex-col gap-4 rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow will-change-transform sm:flex-row sm:items-center"
+                  >
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${item.color}`}
+                    >
+                      {item.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="mb-1 font-bold text-slate-900">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-slate-600">
+                        {item.desc}
+                      </p>
+                    </div>
+                    <Link
+                      href={item.cta.href}
+                      className="group inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+                    >
+                      {item.cta.label}
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+
+            {/* Right: clipped image */}
+            <motion.div
+              initial={{ opacity: 0, x: 40, scale: 0.96 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{
+                type: "spring",
+                stiffness: 200,
+                damping: 26,
+                delay: 0.15,
+              }}
+              className="relative hidden h-[520px] lg:block"
+            >
+              <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-orange-400/15 via-transparent to-indigo-400/10 blur-2xl" />
+              <svg
+                viewBox="0 0 200 200"
+                className="pointer-events-none absolute -left-6 -top-6 h-40 w-40 opacity-50"
+                aria-hidden
+              >
+                <polygon
+                  points="8,0 200,0 200,192 192,200 0,200 0,8"
+                  fill="none"
+                  stroke="rgba(233,115,22,0.2)"
+                  strokeWidth="1.5"
+                />
+              </svg>
+
+              <div
+                className="relative h-full w-full overflow-hidden rounded-[2.5rem]"
+                style={{
+                  clipPath:
+                    "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
+                }}
+              >
+                <Image
+                  src="https://images.unsplash.com/photo-1484863137850-59afcfe05386?auto=format&fit=crop&w=900&q=80"
+                  alt="Parent planning their child's sports journey"
+                  fill
+                  sizes="(max-width: 1280px) 50vw, 600px"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-transparent" />
+              </div>
+
+              {/* Floating badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{
+                  delay: 0.6,
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 20,
+                }}
+                className="absolute -right-4 bottom-8 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-xl backdrop-blur-md"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-power-orange">
+                  <Compass size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">
+                    Free to start
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    No card. No commitment.
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
       {/* ── How It Works ── */}
       <section className="relative py-16 sm:py-20 lg:py-24">
@@ -255,12 +467,9 @@ export default function HomePage() {
             >
               Up and Running in 3 Steps
             </motion.h2>
-            <motion.p
-              variants={itemVariants}
-              className="text-lg text-slate-600"
-            >
-              Get personalised AI guidance and community support before you book
-              your child's first session
+            <motion.p variants={itemVariants} className="text-lg text-slate-600">
+              Go from &ldquo;where do I start?&rdquo; to a clear plan for your
+              child in minutes—completely free.
             </motion.p>
           </motion.div>
 
@@ -299,18 +508,18 @@ export default function HomePage() {
               {[
                 {
                   step: 1,
-                  title: "Add Your Child's Profile",
-                  desc: "Tell us your child's age, sports interests, and how many hours a week they can commit. Takes 2 minutes.",
+                  title: "Tell Us About Your Child",
+                  desc: "Share your child's age, sports interests, and how many hours a week they can commit. Takes 2 minutes.",
                 },
                 {
                   step: 2,
                   title: "Get an AI Sports Roadmap",
-                  desc: "Our AI generates a customised sports roadmap  which sports suit your child, which coaches to look for, and what to prioritise.",
+                  desc: "We build a personalised roadmap—which sport suits your child, what to focus on first, and what to aim for.",
                 },
                 {
                   step: 3,
-                  title: "Ask & Book with Confidence",
-                  desc: "Validate your plan with other parents in the community, then book a vetted coach or venue in a few taps.",
+                  title: "Get Guidance on Every Step",
+                  desc: "Stuck on a decision? Lean on expert and AI guidance to move forward with confidence—no guesswork.",
                 },
               ].map(({ step, title, desc }) => (
                 <motion.div
@@ -340,168 +549,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Parent Section: Split with clipped image ── */}
-      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-indigo-100/30 blur-3xl" />
-        <div className="pointer-events-none absolute -right-32 bottom-1/4 h-80 w-80 rounded-full bg-amber-100/25 blur-3xl" />
-
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
-            {/* Left: Cards */}
-            <motion.div
-              variants={sectionVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-100px" }}
-            >
-              <motion.div variants={itemVariants} className="mb-3">
-                <SectionLabel label="Get Started" color="blue" />
-              </motion.div>
-              <motion.h2
-                variants={itemVariants}
-                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-              >
-                Build your child&apos;s Sports Plan
-              </motion.h2>
-              <motion.p
-                variants={itemVariants}
-                className="mb-10 text-lg text-slate-600"
-              >
-                Follow these simple steps to set up your child's sports journey
-                and get personalised recommendations.
-              </motion.p>
-
-              <motion.div variants={sectionVariants} className="space-y-4">
-                {[
-                  {
-                    icon: <UserIcon size={22} />,
-                    title: "Create Profile",
-                    desc: "Set up your child's profile with their details and sports interests to get started.",
-                    color: "bg-indigo-100 text-indigo-600",
-                  },
-                  {
-                    icon: <Trophy size={22} />,
-                    title: "Build Customised Plans",
-                    desc: "Build customised plans for the selected sport tailored specifically to your child.",
-                    color: "bg-orange-100 text-power-orange",
-                  },
-                  {
-                    icon: <Zap size={22} />,
-                    title: "Get Recommendations",
-                    desc: "Get recommendation to start coaching / Book Trial session.",
-                    color: "bg-emerald-100 text-emerald-600",
-                  },
-                  {
-                    icon: <Users size={22} />,
-                    title: "Need Assistance?",
-                    desc: "Need assistance to build a sports plan? Reach out to our community or experts.",
-                    color: "bg-blue-100 text-blue-600",
-                  },
-                ].map((item) => (
-                  <motion.div
-                    key={item.title}
-                    variants={cardVariants}
-                    whileHover={{ y: -4, scale: 1.01 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                    className="flex items-start gap-4 rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow will-change-transform"
-                  >
-                    <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${item.color}`}
-                    >
-                      {item.icon}
-                    </div>
-                    <div>
-                      <h3 className="mb-1 font-bold text-slate-900">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm leading-relaxed text-slate-600">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </motion.div>
-
-            {/* Right: Clipped image */}
-            <motion.div
-              initial={{ opacity: 0, x: 40, scale: 0.96 }}
-              whileInView={{ opacity: 1, x: 0, scale: 1 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{
-                type: "spring",
-                stiffness: 200,
-                damping: 26,
-                delay: 0.15,
-              }}
-              className="relative hidden h-[520px] lg:block"
-            >
-              {/* Glow behind */}
-              <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-indigo-400/15 via-transparent to-orange-400/10 blur-2xl" />
-              {/* Geometric accent */}
-              <svg
-                viewBox="0 0 200 200"
-                className="pointer-events-none absolute -left-6 -top-6 h-40 w-40 opacity-50"
-                aria-hidden
-              >
-                <polygon
-                  points="8,0 200,0 200,192 192,200 0,200 0,8"
-                  fill="none"
-                  stroke="rgba(99,102,241,0.2)"
-                  strokeWidth="1.5"
-                />
-              </svg>
-
-              <div
-                className="relative h-full w-full overflow-hidden rounded-[2.5rem]"
-                style={{
-                  clipPath:
-                    "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
-                }}
-              >
-                <Image
-                  src="https://images.unsplash.com/photo-1484863137850-59afcfe05386?auto=format&fit=crop&w=900&q=80"
-                  alt="Parent managing kids sports activities"
-                  fill
-                  sizes="(max-width: 1280px) 50vw, 600px"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-transparent" />
-              </div>
-
-              {/* Floating badge */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{
-                  delay: 0.6,
-                  type: "spring",
-                  stiffness: 260,
-                  damping: 20,
-                }}
-                className="absolute -right-4 bottom-8 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/90 px-4 py-3 shadow-xl backdrop-blur-md"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
-                  <Users2 size={18} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">
-                    Family Dashboard
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    Manage all profiles in one place
-                  </p>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      {/* ── Rollout Roadmap: what's live + what's coming ── */}
+      <RolloutRoadmap />
 
       {/* ── Testimonials ── */}
       <Testimonials
-        title="What Our Users Say"
+        title="What Parents Say"
         subtitle="Testimonials"
         testimonials={testimonials}
       />
@@ -529,14 +582,14 @@ export default function HomePage() {
                 variants={itemVariants}
                 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl"
               >
-                Join Other Parents Today
+                Start Free Today
               </motion.h2>
               <motion.p
                 variants={itemVariants}
                 className="text-lg text-slate-600"
               >
-                Whether you&apos;re a parent booking for your kids, a coach
-                finding students, or a venue owner growing bookings start today.
+                Parents can build a plan right now. Coaches and venues can
+                register early to get ready for our booking launch.
               </motion.p>
             </motion.div>
 
@@ -547,7 +600,7 @@ export default function HomePage() {
               viewport={{ once: true, margin: "-80px" }}
               className="grid grid-cols-1 gap-6 md:grid-cols-3"
             >
-              {/* Parent Card  Featured */}
+              {/* Parent Card — Featured */}
               <motion.div
                 variants={cardVariants}
                 whileHover={{ y: -6, scale: 1.015 }}
@@ -555,7 +608,7 @@ export default function HomePage() {
                 className="group relative flex flex-col rounded-2xl border-2 border-power-orange/60 bg-gradient-to-b from-orange-50/60 to-white/80 p-8 backdrop-blur-md shadow-[0_8px_40px_-8px_rgba(233,115,22,0.25)] will-change-transform scale-100 md:scale-105"
               >
                 <div className="absolute right-0 top-0 rounded-bl-lg rounded-tr-xl bg-power-orange px-4 py-1 text-xs font-bold text-white">
-                  FOR PARENTS
+                  AVAILABLE NOW
                 </div>
                 <motion.div
                   className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-white shadow-[0_6px_24px_-4px_rgba(233,115,22,0.55)]"
@@ -569,10 +622,10 @@ export default function HomePage() {
                 </h3>
                 <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
                   {[
-                    "Manage all your children's profiles",
-                    "Book vetted coaches & premium venues",
-                    "AI roadmap for your child's sport journey",
-                    "Get smart alerts for every session",
+                    "A personalised roadmap for your child's sport",
+                    "Expert + AI guidance, on call",
+                    "Know what to aim for at every age",
+                    "Free to start—no card needed",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
                       <Check
@@ -584,10 +637,10 @@ export default function HomePage() {
                   ))}
                 </ul>
                 <Link
-                  href="/register?role=PLAYER"
+                  href="/roadmap"
                   className="block w-full rounded-xl bg-power-orange px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-orange-600"
                 >
-                  Create a Family Account
+                  Build a Sports Plan
                 </Link>
               </motion.div>
 
@@ -598,6 +651,11 @@ export default function HomePage() {
                 transition={{ type: "spring", stiffness: 280, damping: 20 }}
                 className="group flex flex-col rounded-2xl border border-white/60 bg-white/80 p-8 backdrop-blur-md premium-shadow will-change-transform"
               >
+                <div className="mb-4 flex justify-center">
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Coming in Phase 2
+                  </span>
+                </div>
                 <motion.div
                   className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white shadow-[0_6px_28px_-4px_rgba(99,102,241,0.4)]"
                   whileHover={{ scale: 1.1, rotate: 4 }}
@@ -610,10 +668,10 @@ export default function HomePage() {
                 </h3>
                 <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
                   {[
-                    "Reach families actively searching for venues",
-                    "Automated booking management",
-                    "Real-time availability tracking",
-                    "Instant payouts & analytics",
+                    "Reach families actively planning their sport",
+                    "Be ready the day bookings go live",
+                    "Simple availability & listing tools",
+                    "Early-partner onboarding support",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
                       <Check
@@ -628,7 +686,7 @@ export default function HomePage() {
                   href="/register?role=VENUE_LISTER"
                   className="block w-full rounded-xl bg-slate-900 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-slate-700"
                 >
-                  List Your Venue
+                  Register Early
                 </Link>
               </motion.div>
 
@@ -639,6 +697,11 @@ export default function HomePage() {
                 transition={{ type: "spring", stiffness: 280, damping: 20 }}
                 className="group flex flex-col rounded-2xl border border-white/60 bg-white/80 p-8 backdrop-blur-md premium-shadow will-change-transform"
               >
+                <div className="mb-4 flex justify-center">
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Coming in Phase 2
+                  </span>
+                </div>
                 <motion.div
                   className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-turf-green text-white shadow-[0_6px_24px_-4px_rgba(34,197,94,0.4)]"
                   whileHover={{ scale: 1.1, rotate: 4 }}
@@ -651,8 +714,8 @@ export default function HomePage() {
                 </h3>
                 <ul className="mb-8 grow space-y-3 text-sm text-slate-600">
                   {[
-                    "Build your coaching profile",
-                    "Connect with serious athletes",
+                    "Build your coaching profile now",
+                    "Connect with serious families at launch",
                     "Set your own rates & schedule",
                     "Grow your coaching business",
                   ].map((item) => (
@@ -669,7 +732,7 @@ export default function HomePage() {
                   href="/register?role=COACH"
                   className="block w-full rounded-xl bg-turf-green px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-green-700"
                 >
-                  Become a Coach
+                  Register Early
                 </Link>
               </motion.div>
             </motion.div>
@@ -677,140 +740,24 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── Explore Section  photo-backed cards ── */}
-      <section className="py-12 sm:py-16 lg:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={sectionVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-10 text-center"
-          >
-            <motion.div
-              variants={itemVariants}
-              className="mb-4 flex justify-center"
-            >
-              <SectionLabel label="Ready to Explore?" color="orange" />
-            </motion.div>
-            <motion.h2
-              variants={itemVariants}
-              className="font-title mb-2 text-3xl font-bold text-slate-900"
-            >
-              Your Child&apos;s Next Training Session Starts Here
-            </motion.h2>
-            <motion.p variants={itemVariants} className="text-slate-600">
-              Browse venues, academies, and coaches to plan your child&apos;s
-              next session with confidence
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            variants={sectionVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="grid gap-5 md:grid-cols-3"
-          >
-            {[
-              {
-                href: "/venues",
-                img: "https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=900&q=80",
-                icon: <Building2 size={22} />,
-                title: "Browse Venues",
-                sub: "Explore premium sports venues in your area",
-                cta: "View All Venues",
-                accent: "from-orange-900/70 via-orange-800/40 to-transparent",
-                badge: "bg-power-orange",
-              },
-              {
-                href: "/academies",
-                img: "https://images.unsplash.com/photo-1555597673-b21d5c935865?auto=format&fit=crop&w=900&q=80",
-                icon: <GraduationCap size={22} />,
-                title: "Browse Academies",
-                sub: "Explore academies built for training, batches, and development",
-                cta: "View All Academies",
-                accent: "from-indigo-900/70 via-indigo-800/40 to-transparent",
-                badge: "bg-indigo-600",
-              },
-              {
-                href: "/coaches",
-                img: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=900&q=80",
-                icon: <Users size={22} />,
-                title: "Find Coaches",
-                sub: "Discover expert coaches for professional training",
-                cta: "View All Coaches",
-                accent: "from-emerald-900/70 via-emerald-800/40 to-transparent",
-                badge: "bg-turf-green",
-              },
-            ].map((card) => (
-              <motion.div
-                key={card.href}
-                variants={cardVariants}
-                whileHover={{ y: -6, scale: 1.015 }}
-                transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                className="will-change-transform"
-              >
-                <Link
-                  href={card.href}
-                  className="group relative block h-56 overflow-hidden rounded-2xl shadow-lg premium-shadow sm:h-64 md:h-72"
-                >
-                  {/* Background image */}
-                  <Image
-                    src={card.img}
-                    alt={card.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-106"
-                  />
-                  {/* Gradient overlay */}
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-t ${card.accent}`}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-                  {/* Content */}
-                  <div className="absolute inset-0 flex flex-col justify-end p-5">
-                    <div
-                      className={`mb-3 inline-flex w-fit items-center gap-1.5 rounded-lg ${card.badge} px-2.5 py-1 text-xs font-bold text-white`}
-                    >
-                      {card.icon}
-                      {card.title}
-                    </div>
-                    <p className="mb-3 text-sm text-white/85">{card.sub}</p>
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-white">
-                      {card.cta}
-                      <ArrowRight
-                        size={14}
-                        className="transition-transform group-hover:translate-x-1"
-                      />
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
       {/* ── Final CTA ── */}
       <CTA
         variant="gradient"
         title={
           user
-            ? "Ready for Your Next Game?"
-            : "Ready to Start Your Sports Journey?"
+            ? "Ready for Your Child's Next Step?"
+            : "Ready to Build Your Child's Sports Plan?"
         }
         description={
           user
-            ? "Book your next venue or coach session and stay in rhythm."
-            : "Join players, coaches, and venue partners who are building better sports experiences with PowerMySport."
+            ? "Jump back into your child's roadmap and get guidance on what comes next."
+            : "Get a clear, personalised roadmap and expert guidance for your child—free, in just a few minutes."
         }
         primaryCTA={{
-          label: user ? "Go to Dashboard" : "Get Started Free",
-          href: getDashboardLink(),
+          label: user ? "Go to Dashboard" : "Build a Sports Plan",
+          href: user ? getDashboardLink() : "/roadmap",
         }}
-        secondaryCTA={{ label: "Learn More", href: "/how-it-works" }}
+        secondaryCTA={{ label: "Get Free Guidance", href: "/guidance" }}
       />
     </main>
   );

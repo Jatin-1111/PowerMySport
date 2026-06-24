@@ -1,15 +1,11 @@
 "use client";
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import {
-  FeatureIcons,
-  Features,
-} from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
+import { RolloutRoadmap } from "@/modules/marketing/components/marketing/RolloutRoadmap";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { getCommunityAppUrl } from "@/lib/community/url";
-import { motion, Variants, useScroll, useTransform } from "framer-motion";
-import { CheckCircle, Play, CreditCard, UserPlus, MapPin } from "lucide-react";
+import { motion, Variants } from "framer-motion";
+import { BrainCircuit, CheckCircle, Map, UserPlus } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
 
@@ -331,54 +327,31 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function HowItWorksPage() {
-  const communityUrl = getCommunityAppUrl();
-
-  const communityFeatures = [
-    {
-      title: "Ask Before Booking",
-      description:
-        "Check with other parents to get real advice on which venues and coaches are best.",
-      icon: FeatureIcons.Users,
-    },
-    {
-      title: "Learn from Others",
-      description:
-        "Read honest reviews to make sure the coach or venue is the right fit for your child.",
-      icon: FeatureIcons.Star,
-    },
-    {
-      title: "Book with Confidence",
-      description:
-        "Once you find the perfect match through the community, book it instantly in the app.",
-      icon: FeatureIcons.Calendar,
-    },
-  ];
-
   const playerSteps: StepRowProps[] = [
     {
       step: 1,
       stepColor: "text-orange-500",
       badgeBg: "bg-gradient-to-r from-orange-500 to-orange-400",
-      title: "Get an AI Sports Roadmap",
+      title: "Tell Us About Your Child",
       description:
-        "Start by finding the right sport. Our AI generates a personalised roadmap based on your child's age, interests, and goals.",
+        "Share your child's age, sports interests, and how much time they can give each week. It takes about two minutes—no jargon, no pressure.",
       checkItems: [
         {
-          text: "Discover the best sport for your child",
+          text: "Simple questions, plain language",
           iconColor: "text-orange-400",
         },
         {
-          text: "Understand time and cost commitments",
+          text: "Add more than one child if you need to",
           iconColor: "text-orange-400",
         },
-        { text: "Get clear next steps for their journey", iconColor: "text-orange-400" },
+        { text: "Free to start—no card required", iconColor: "text-orange-400" },
       ],
       image: {
         src: "https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=800&q=80",
-        alt: "Athlete ready to register",
+        alt: "Parent setting up their child's sports profile",
         clip: "slash-right",
         overlayIcon: <UserPlus size={20} />,
-        overlayLabel: "AI Pathways",
+        overlayLabel: "Your Child's Profile",
         accentColor: "from-orange-500/25",
       },
       imageRight: true,
@@ -387,26 +360,26 @@ export default function HowItWorksPage() {
       step: 2,
       stepColor: "text-blue-500",
       badgeBg: "bg-gradient-to-r from-blue-600 to-blue-500",
-      title: "Ask the Community & AI",
+      title: "Get an AI Sports Roadmap",
       description:
-        "Don't guess. Connect with local parents and our intelligent AI to validate your roadmap, read honest reviews, and get instant answers.",
+        "We build a personalised roadmap for your child—which sport suits them, what to focus on first, and the milestones to aim for along the way.",
       checkItems: [
         {
-          text: "Get instant answers from our sports AI",
+          text: "Know which sport fits your child best",
           iconColor: "text-blue-400",
         },
         {
-          text: "Read honest reviews from other parents",
+          text: "See the time and cost it really takes",
           iconColor: "text-blue-400",
         },
-        { text: "Ask questions about local academies", iconColor: "text-blue-400" },
+        { text: "Clear next steps, not vague advice", iconColor: "text-blue-400" },
       ],
       image: {
-        src: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
-        alt: "Sports venue overview",
+        src: "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=800&q=80",
+        alt: "Young athletes training with a coach",
         clip: "slash-left",
-        overlayIcon: <MapPin size={20} />,
-        overlayLabel: "Community Advice",
+        overlayIcon: <Map size={20} />,
+        overlayLabel: "AI Roadmap",
         accentColor: "from-blue-500/25",
       },
       imageRight: false,
@@ -415,57 +388,29 @@ export default function HowItWorksPage() {
       step: 3,
       stepColor: "text-emerald-500",
       badgeBg: "bg-gradient-to-r from-emerald-600 to-emerald-400",
-      title: "Book Coaches & Venues",
+      title: "Get Guidance on Every Step",
       description:
-        "Once you know what you need, securely book verified coaches and premium training grounds directly on the platform.",
+        "Not sure what to do next? Lean on sports experts and our AI guide for answers built around your child's goals—so every decision feels clear.",
       checkItems: [
         {
-          text: "Search by sport, location, and date",
+          text: "Ask questions, get clear answers",
           iconColor: "text-emerald-400",
         },
-        { text: "Compare 100% transparent pricing", iconColor: "text-emerald-400" },
+        { text: "Guidance built around your child's goals", iconColor: "text-emerald-400" },
         {
-          text: "Pay securely with instant confirmation",
+          text: "Move forward with confidence, not guesswork",
           iconColor: "text-emerald-400",
         },
       ],
       image: {
-        src: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80",
-        alt: "Secure payment on mobile",
+        src: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80",
+        alt: "Coach giving guidance to a young athlete",
         clip: "arch",
-        overlayIcon: <CreditCard size={20} />,
-        overlayLabel: "Book Securely",
+        overlayIcon: <BrainCircuit size={20} />,
+        overlayLabel: "Expert Guidance",
         accentColor: "from-emerald-500/25",
       },
       imageRight: true,
-    },
-    {
-      step: 4,
-      stepColor: "text-indigo-500",
-      badgeBg: "bg-gradient-to-r from-indigo-600 to-indigo-400",
-      title: "Gear Up in Our Shop",
-      description:
-        "Coming Soon: Get ready for the game! Soon you'll be able to purchase authentic, high-quality sports gear directly from our store.",
-      checkItems: [
-        {
-          text: "Find equipment recommended by coaches",
-          iconColor: "text-indigo-400",
-        },
-        {
-          text: "Get exclusive deals for members",
-          iconColor: "text-indigo-400",
-        },
-        { text: "Everything delivered to your door", iconColor: "text-indigo-400" },
-      ],
-      image: {
-        src: "https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=800&q=80",
-        alt: "Athletes playing on a pitch",
-        clip: "slash-left",
-        overlayIcon: <Play size={20} className="fill-white" />,
-        overlayLabel: "Shop Gear",
-        accentColor: "from-indigo-500/25",
-      },
-      imageRight: false,
     },
   ];
 
@@ -479,34 +424,34 @@ export default function HowItWorksPage() {
       desc: "Our team reviews your submission and reaches out within 48 hours to verify details.",
     },
     {
-      title: "Go Live",
-      desc: "Get access to your dashboard. Set up slots, pricing, and start accepting bookings immediately.",
+      title: "Get Set Up",
+      desc: "Access your dashboard and add your slots, pricing, and photos—so you're ready to accept bookings the day we launch.",
     },
   ];
 
   const coachSteps = [
-    { title: "Register", desc: "Sign up as coach with credentials" },
+    { title: "Register", desc: "Sign up as a coach with your credentials" },
     { title: "Build Profile", desc: "Add certifications, experience, rates" },
     { title: "Set Availability", desc: "Define your schedule & service areas" },
-    { title: "Get Clients", desc: "Accept bookings & start coaching" },
+    { title: "Be Ready", desc: "Go live with families the day bookings open" },
   ];
 
   const faqs = [
     {
-      q: "Can I cancel or reschedule a booking?",
-      a: "Yes. Bookings can be cancelled or rescheduled according to the venue's cancellation policy. Most venues allow free cancellation up to 24 hours before the booking time.",
+      q: "What can I use right now?",
+      a: "Today you can build a personalised sports roadmap for your child and get guidance from sports experts and our AI guide. Both are free to use—no card required.",
     },
     {
-      q: "How does payment work?",
-      a: "Payments are processed securely through the platform. If you book a coach with a venue, the payment is split automatically using the agreed rates.",
+      q: "Is it really free?",
+      a: "Yes. Creating your child's profile, building a roadmap, and getting guidance are free. There's nothing to pay to get a clear plan for your child.",
     },
     {
-      q: "What if there's an issue with my booking?",
-      a: "Our support team is here to help. Reach out right away if you run into a booking issue, and we'll work with you and the venue to resolve it quickly.",
+      q: "When will booking and community launch?",
+      a: "We're rolling out in phases. Community comes next, followed by booking coaches and venues, and then our gear shop. Build your plan now and we'll let you know the moment each one goes live.",
     },
     {
-      q: "Are the coaches verified?",
-      a: "Yes. We review certifications, experience, and background before coaches are approved to offer services on the platform.",
+      q: "Do I need to know which sport my child should play?",
+      a: "Not at all. That's exactly what the roadmap helps with. Tell us about your child's age, interests, and time, and we'll suggest sports that genuinely fit—then map out the path.",
     },
   ];
 
@@ -517,17 +462,7 @@ export default function HowItWorksPage() {
         variant="page"
         title="How It Works"
         subtitle="Getting Started"
-        description="See how easy it is to find and book sports activities for your child."
-      />
-
-      {/* ── Community Section ── */}
-      <Features
-        title="Get Help from Other Parents"
-        subtitle="Community Support"
-        description="Ask questions and read reviews from other parents before you spend a single rupee."
-        features={communityFeatures}
-        columns={3}
-        variant="centered"
+        description="See how PowerMySport turns the confusion of youth sports into one clear, personalised plan for your child—starting today, for free."
       />
 
       {/* ── Players Journey ── */}
@@ -558,7 +493,7 @@ export default function HowItWorksPage() {
             >
               Plan Their Journey in{" "}
               <span className="relative inline-block">
-                4 Easy Steps
+                3 Simple Steps
                 <span
                   aria-hidden
                   className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-orange-400 to-orange-200"
@@ -576,7 +511,10 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* ── Venue / Academy Owners ── */}
+      {/* ── Rollout Roadmap: what's live + what's coming ── */}
+      <RolloutRoadmap />
+
+      {/* ── Venue / Academy Owners (Phase 2 early access) ── */}
       <section className="relative overflow-hidden bg-slate-50 py-20 sm:py-24 lg:py-32">
         {/* Decorative SVG grid pattern */}
         <div
@@ -603,20 +541,20 @@ export default function HowItWorksPage() {
               variants={fadeSlideUp}
               className="mb-5 flex justify-center"
             >
-              <SectionLabel label="For Venue & Academy Owners" color="blue" />
+              <SectionLabel label="For Venue & Academy Owners · Phase 2" color="blue" />
             </motion.div>
             <motion.h2
               variants={fadeSlideUp}
               className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
-              List Your Facility & Start Earning
+              Get Listed Before Bookings Go Live
             </motion.h2>
             <motion.p
               variants={fadeSlideUp}
               className="mx-auto mt-4 max-w-xl text-lg text-slate-500"
             >
-              Three steps stand between you and a fully live listing on
-              PowerMySport.
+              Bookings launch in Phase 2. Set up your listing now so families can
+              find and book you the moment we open.
             </motion.p>
           </motion.div>
 
@@ -645,10 +583,10 @@ export default function HowItWorksPage() {
             className="mt-14 text-center"
           >
             <a
-              href="/register"
+              href="/register?role=VENUE_LISTER"
               className="inline-block rounded-2xl bg-slate-900 px-10 py-4 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
             >
-              Get Started
+              Register Early
             </a>
           </motion.div>
         </div>
@@ -671,14 +609,21 @@ export default function HowItWorksPage() {
               variants={fadeSlideUp}
               className="mb-5 flex justify-center"
             >
-              <SectionLabel label="For Coaches" color="green" />
+              <SectionLabel label="For Coaches · Phase 2" color="green" />
             </motion.div>
             <motion.h2
               variants={fadeSlideUp}
               className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
-              Become a Certified Coach
+              Build Your Profile, Be Ready for Launch
             </motion.h2>
+            <motion.p
+              variants={fadeSlideUp}
+              className="mx-auto mt-4 max-w-xl text-lg text-slate-500"
+            >
+              Coach bookings open in Phase 2. Set up your profile now and connect
+              with serious families from day one.
+            </motion.p>
           </motion.div>
 
           {/* Connecting progress line (desktop) */}
@@ -716,7 +661,7 @@ export default function HowItWorksPage() {
               href="/register?role=COACH"
               className="inline-block rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-10 py-4 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
             >
-              Become a Coach
+              Register Early
             </a>
           </motion.div>
         </div>
@@ -774,15 +719,15 @@ export default function HowItWorksPage() {
       {/* ── Final CTA ── */}
       <CTA
         variant="gradient"
-        title="Ready to Get Started?"
-        description="Join players, coaches, and venue partners who are already using the community to book smarter."
+        title="Ready to Build Your Child's Plan?"
+        description="It takes a few minutes and it's completely free. Get a clear roadmap and expert guidance for your child today."
         primaryCTA={{
-          label: "Create Account",
-          href: "/register",
+          label: "Build a Sports Plan",
+          href: "/roadmap",
         }}
         secondaryCTA={{
-          label: "Open Community",
-          href: communityUrl,
+          label: "Get Free Guidance",
+          href: "/guidance",
         }}
       />
     </main>

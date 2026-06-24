@@ -1,3 +1,4 @@
+import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { NumericInputGuard } from "@/components/layout/NumericInputGuard";
 import { FriendSocketProvider } from "@/hooks/useFriendSocket";
@@ -109,6 +110,7 @@ export default function RootLayout({
         <HydrationBoundary>
           <FriendSocketProvider>{children}</FriendSocketProvider>
         </HydrationBoundary>
+        <CookieConsentBanner />
         <Toaster richColors closeButton position="top-right" />
       </body>
     </html>
