@@ -26,6 +26,29 @@ export const burnoutRiskSchema = z.object({
   recommendations: z.array(z.string()),
 });
 
+export const journeyPhaseSchema = z.object({
+  title: z.string(),
+  timeframe: z.string(),
+  focus: z.string(),
+  milestones: z.array(z.string()),
+  outcome: z.string(),
+  estimatedCost: z.string().optional(),
+});
+
+export const goalAssessmentSchema = z.object({
+  statedGoal: z.string(),
+  verdict: z.enum(["On Track", "Achievable", "Ambitious", "Long-Term"]),
+  rationale: z.string(),
+  benchmark: z.string(),
+});
+
+export const costBreakdownSchema = z.object({
+  monthlyCoaching: z.string(),
+  equipment: z.string(),
+  tournaments: z.string(),
+  summary: z.string(),
+});
+
 export const guidanceResponseSchema = z.object({
   profileAnalysis: z.string(),
   idealCoachingStyle: z.string(),
@@ -46,6 +69,9 @@ export const guidanceResponseSchema = z.object({
     .optional(),
   talentIdentifiers: z.array(z.string()).optional(),
   multiSportAdvisory: z.string().optional(),
+  journeyPhases: z.array(journeyPhaseSchema).optional(),
+  goalAssessment: goalAssessmentSchema.optional(),
+  costBreakdown: costBreakdownSchema.optional(),
   // Server-computed — not from AI, added in controller
   burnoutRisk: burnoutRiskSchema.optional(),
 });
@@ -61,6 +87,9 @@ export const getYouthSportsGuidanceSystemPrompt = (
     ? 'The profile includes a specific "sport". Focus your analysis on how to progress in that sport. Do NOT include "recommendedSports" in your response.'
     : 'The profile has NO specific sport. Recommend the top 3 sports that best fit the child based on personality, goals, age, and fitness. Include these in the "recommendedSports" array.'
 }
+Always include a "journeyPhases" plan: a sequential, time-bound roadmap of 4-6 phases that moves the child from their current level toward their goal. If the parent's question names a specific target (e.g. a ranking, a tournament level, or a timeframe like "6 months"), the phases MUST be tailored to reach that exact target and the timeframes MUST add up to it. Each phase builds on the previous one and reads like a clear, motivating roadmap a parent can follow.
+Always include "goalAssessment": directly and HONESTLY answer the parent's specific question (parent_specific_question) and judge how realistic their goal is for THIS child in the stated timeframe — never blindly optimistic. Ground it with a concrete benchmark (what players/children at the target level typically do).
+Always include "costBreakdown" and an "estimatedCost" on every phase: all money MUST be in Indian Rupees (₹), scaled to the child's "budget_tier" and "location" (an Indian state). Give realistic ranges and make clear these are indicative figures that vary by city and academy — do NOT invent precise prices.
 Return ONLY a valid JSON object — no markdown, no preamble — matching this schema exactly:
 {
   "profileAnalysis": "2-3 sentences: how this child's specific profile (personality, fitness, age, goals) positions them for sport",
@@ -75,6 +104,28 @@ Return ONLY a valid JSON object — no markdown, no preamble — matching this s
       ? ""
       : '\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"],'
   }
+  "journeyPhases": [
+    {
+      "title": "Short, motivating phase name (e.g. 'Lock In the Fundamentals')",
+      "timeframe": "Time window for this phase (e.g. 'Weeks 1-4' or 'Month 1-2')",
+      "focus": "One sentence on what this phase is about and why it matters now",
+      "milestones": ["2-4 concrete, checkable actions or checkpoints the parent/child completes in this phase — specific to the sport, age, and goal"],
+      "outcome": "What the child will have achieved or be able to do by the end of this phase",
+      "estimatedCost": "Indicative INR cost for this phase incl. coaching and any gear/tournaments (e.g. '₹10,000–15,000')"
+    }
+  ],
+  "goalAssessment": {
+    "statedGoal": "Restate the parent's goal in one clear line — use parent_specific_question if present, else the primary objective",
+    "verdict": "Exactly one of: On Track | Achievable | Ambitious | Long-Term — your honest read of how realistic the goal is in the stated timeframe",
+    "rationale": "1-2 sentences directly answering the parent's question and justifying the verdict for THIS child's age, level and time commitment",
+    "benchmark": "A concrete reference point — what children/players at the target level typically do (e.g. training hours, tournaments per season, realistic timeline) so the parent has an honest yardstick"
+  },
+  "costBreakdown": {
+    "monthlyCoaching": "Indicative monthly coaching cost range in INR for this budget_tier and location (e.g. '₹6,000–10,000/month')",
+    "equipment": "Indicative equipment & gear cost range in INR (one-time/seasonal)",
+    "tournaments": "Indicative cost range in INR for tournament entries + travel across the plan period",
+    "summary": "One honest sentence on the overall financial commitment; state that figures are indicative and vary by city and academy"
+  },
   "mentalSkillsRoadmap": {
     "currentFocus": "The single most important mental skill for this child to develop right now given their age and objective",
     "skills": [
