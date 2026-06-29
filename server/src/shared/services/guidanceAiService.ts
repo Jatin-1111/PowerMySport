@@ -33,6 +33,7 @@ export const journeyPhaseSchema = z.object({
   milestones: z.array(z.string()),
   outcome: z.string(),
   estimatedCost: z.string().optional(),
+  pathwayLevel: z.number().int().min(1).max(5).optional(),
 });
 
 export const goalAssessmentSchema = z.object({
@@ -90,6 +91,7 @@ export const getYouthSportsGuidanceSystemPrompt = (
 Always include a "journeyPhases" plan: a sequential, time-bound roadmap of 4-6 phases that moves the child from their current level toward their goal. If the parent's question names a specific target (e.g. a ranking, a tournament level, or a timeframe like "6 months"), the phases MUST be tailored to reach that exact target and the timeframes MUST add up to it. Each phase builds on the previous one and reads like a clear, motivating roadmap a parent can follow.
 Always include "goalAssessment": directly and HONESTLY answer the parent's specific question (parent_specific_question) and judge how realistic their goal is for THIS child in the stated timeframe — never blindly optimistic. Ground it with a concrete benchmark (what players/children at the target level typically do).
 Always include "costBreakdown" and an "estimatedCost" on every phase: all money MUST be in Indian Rupees (₹), scaled to the child's "budget_tier" and "location" (an Indian state). Give realistic ranges and make clear these are indicative figures that vary by city and academy — do NOT invent precise prices.
+For each phase include "pathwayLevel": a number 1–5 indicating which sports pathway level this phase targets (1=Grassroots, 2=District, 3=State, 4=National, 5=International). Use current_pathway_level as the anchor for Phase 1 if provided.
 Return ONLY a valid JSON object — no markdown, no preamble — matching this schema exactly:
 {
   "profileAnalysis": "2-3 sentences: how this child's specific profile (personality, fitness, age, goals) positions them for sport",
@@ -111,7 +113,8 @@ Return ONLY a valid JSON object — no markdown, no preamble — matching this s
       "focus": "One sentence on what this phase is about and why it matters now",
       "milestones": ["2-4 concrete, checkable actions or checkpoints the parent/child completes in this phase — specific to the sport, age, and goal"],
       "outcome": "What the child will have achieved or be able to do by the end of this phase",
-      "estimatedCost": "Indicative INR cost for this phase incl. coaching and any gear/tournaments (e.g. '₹10,000–15,000')"
+      "estimatedCost": "Indicative INR cost for this phase incl. coaching and any gear/tournaments (e.g. '₹10,000–15,000')",
+      "pathwayLevel": 1
     }
   ],
   "goalAssessment": {
