@@ -14,6 +14,7 @@ export interface PlayerDocument extends Document {
   primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
+  location?: string;
   paymentHistory?: Array<{
     bookingId: mongoose.Types.ObjectId;
     amount: number;
@@ -80,6 +81,10 @@ const playerSchema = new Schema<PlayerDocument>(
     budgetTier: {
       type: String,
       enum: ["Budget", "Moderate", "Premium"],
+    },
+    location: {
+      type: String,
+      trim: true,
     },
     paymentHistory: [
       {

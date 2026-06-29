@@ -14,7 +14,7 @@ export function useGuidanceHistory({
 }: {
   setSubmission: (s: GuidanceSubmission | null) => void;
   setShowResults: (v: boolean) => void;
-  resultsRef: RefObject<HTMLDivElement>;
+  resultsRef: RefObject<HTMLDivElement | null>;
   currentSubmissionId?: string | null;
   onLoadPast?: (past: GuidanceSubmission) => void;
 }) {

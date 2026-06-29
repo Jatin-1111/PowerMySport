@@ -1,0 +1,1164 @@
+{
+  "target": "https://api.powermysport.com",
+  "scenario": "mixed",
+  "stages": [
+    {
+      "rps": 50,
+      "sec": 5,
+      "warmup": true
+    },
+    {
+      "rps": 50,
+      "sec": 20,
+      "warmup": false
+    },
+    {
+      "rps": 100,
+      "sec": 20,
+      "warmup": false
+    },
+    {
+      "rps": 200,
+      "sec": 30,
+      "warmup": false
+    },
+    {
+      "rps": 400,
+      "sec": 30,
+      "warmup": false
+    }
+  ],
+  "env": {
+    "Environment": "powermysport-api-docker",
+    "Instance": "t3.medium",
+    "AutoScaling": "Min 1 → Max 4 instances",
+    "LoadBalancer": "Application LB (ALB)",
+    "Region": "ap-south-1",
+    "Health": "Green ✓",
+    "Status": "Ready",
+    "Platform": "Docker running on 64bit Amazon Linux 2023/4.13.1",
+    "CNAME": "powermysport-api.eba-rafpcgvu.ap-south-1.elasticbeanstalk.com"
+  },
+  "client": "undici Agent (pool=1600, keep-alive=on)",
+  "durationSec": 105.119,
+  "actualRps": "199.8",
+  "throughputRps": "199.8",
+  "successPct": "100.00",
+  "failPct": "0.00",
+  "total": 21000,
+  "succeeded": 21000,
+  "failed": 0,
+  "rateLimited": 18617,
+  "timedOut": 0,
+  "backpressure": 0,
+  "byStatus": {
+    "200": 2383,
+    "429": 18617
+  },
+  "errKinds": {},
+  "latency": {
+    "service": {
+      "min": 36,
+      "mean": 53,
+      "p50": 46,
+      "p90": 56,
+      "p95": 62,
+      "p99": 243,
+      "max": 755
+    },
+    "corrected": {
+      "min": 39,
+      "mean": 62,
+      "p50": 54,
+      "p90": 69,
+      "p95": 80,
+      "p99": 248,
+      "max": 764
+    }
+  },
+  "byEndpoint": {
+    "Venues Discover": {
+      "total": 2115,
+      "succeeded": 2115,
+      "failed": 0,
+      "limited": 2091,
+      "p50": 46,
+      "p95": 58
+    },
+    "Health": {
+      "total": 2143,
+      "succeeded": 2143,
+      "failed": 0,
+      "limited": 0,
+      "p50": 47,
+      "p95": 65
+    },
+    "Sports List": {
+      "total": 2821,
+      "succeeded": 2821,
+      "failed": 0,
+      "limited": 2781,
+      "p50": 46,
+      "p95": 61
+    },
+    "Venues List": {
+      "total": 3569,
+      "succeeded": 3569,
+      "failed": 0,
+      "limited": 3516,
+      "p50": 46,
+      "p95": 61
+    },
+    "Shop Products": {
+      "total": 1434,
+      "succeeded": 1434,
+      "failed": 0,
+      "limited": 1420,
+      "p50": 46,
+      "p95": 65
+    },
+    "Sports Search": {
+      "total": 1354,
+      "succeeded": 1354,
+      "failed": 0,
+      "limited": 1334,
+      "p50": 47,
+      "p95": 61
+    },
+    "Coaches Discover": {
+      "total": 2033,
+      "succeeded": 2033,
+      "failed": 0,
+      "limited": 2008,
+      "p50": 46,
+      "p95": 61
+    },
+    "Venues (p2)": {
+      "total": 1367,
+      "succeeded": 1367,
+      "failed": 0,
+      "limited": 1354,
+      "p50": 46,
+      "p95": 59
+    },
+    "Venues (p1)": {
+      "total": 2765,
+      "succeeded": 2765,
+      "failed": 0,
+      "limited": 2734,
+      "p50": 46,
+      "p95": 65
+    },
+    "Venues Search": {
+      "total": 1399,
+      "succeeded": 1399,
+      "failed": 0,
+      "limited": 1379,
+      "p50": 46,
+      "p95": 61
+    }
+  },
+  "series": [
+    {
+      "t": 5,
+      "rps": 0,
+      "ok": 0,
+      "fail": 0,
+      "limited": 0,
+      "p50": 0,
+      "p95": 0,
+      "inflight": 2
+    },
+    {
+      "t": 6,
+      "rps": 47,
+      "ok": 47,
+      "fail": 0,
+      "limited": 41,
+      "p50": 51,
+      "p95": 59,
+      "inflight": 3
+    },
+    {
+      "t": 7,
+      "rps": 50,
+      "ok": 97,
+      "fail": 0,
+      "limited": 86,
+      "p50": 51,
+      "p95": 59,
+      "inflight": 4
+    },
+    {
+      "t": 8,
+      "rps": 52,
+      "ok": 149,
+      "fail": 0,
+      "limited": 132,
+      "p50": 49,
+      "p95": 58,
+      "inflight": 1
+    },
+    {
+      "t": 9,
+      "rps": 50,
+      "ok": 199,
+      "fail": 0,
+      "limited": 179,
+      "p50": 50,
+      "p95": 58,
+      "inflight": 2
+    },
+    {
+      "t": 10,
+      "rps": 50,
+      "ok": 249,
+      "fail": 0,
+      "limited": 225,
+      "p50": 49,
+      "p95": 58,
+      "inflight": 2
+    },
+    {
+      "t": 11,
+      "rps": 50,
+      "ok": 299,
+      "fail": 0,
+      "limited": 272,
+      "p50": 51,
+      "p95": 68,
+      "inflight": 2
+    },
+    {
+      "t": 12,
+      "rps": 51,
+      "ok": 350,
+      "fail": 0,
+      "limited": 319,
+      "p50": 49,
+      "p95": 61,
+      "inflight": 2
+    },
+    {
+      "t": 13,
+      "rps": 49,
+      "ok": 399,
+      "fail": 0,
+      "limited": 361,
+      "p50": 51,
+      "p95": 59,
+      "inflight": 3
+    },
+    {
+      "t": 14,
+      "rps": 51,
+      "ok": 450,
+      "fail": 0,
+      "limited": 409,
+      "p50": 50,
+      "p95": 59,
+      "inflight": 2
+    },
+    {
+      "t": 15,
+      "rps": 49,
+      "ok": 499,
+      "fail": 0,
+      "limited": 450,
+      "p50": 50,
+      "p95": 59,
+      "inflight": 3
+    },
+    {
+      "t": 16,
+      "rps": 51,
+      "ok": 550,
+      "fail": 0,
+      "limited": 493,
+      "p50": 51,
+      "p95": 59,
+      "inflight": 3
+    },
+    {
+      "t": 17,
+      "rps": 51,
+      "ok": 601,
+      "fail": 0,
+      "limited": 537,
+      "p50": 50,
+      "p95": 59,
+      "inflight": 2
+    },
+    {
+      "t": 18,
+      "rps": 50,
+      "ok": 651,
+      "fail": 0,
+      "limited": 578,
+      "p50": 51,
+      "p95": 61,
+      "inflight": 2
+    },
+    {
+      "t": 19,
+      "rps": 49,
+      "ok": 700,
+      "fail": 0,
+      "limited": 621,
+      "p50": 51,
+      "p95": 61,
+      "inflight": 4
+    },
+    {
+      "t": 20,
+      "rps": 51,
+      "ok": 751,
+      "fail": 0,
+      "limited": 667,
+      "p50": 50,
+      "p95": 58,
+      "inflight": 3
+    },
+    {
+      "t": 21,
+      "rps": 50,
+      "ok": 801,
+      "fail": 0,
+      "limited": 712,
+      "p50": 50,
+      "p95": 59,
+      "inflight": 3
+    },
+    {
+      "t": 22,
+      "rps": 51,
+      "ok": 852,
+      "fail": 0,
+      "limited": 759,
+      "p50": 51,
+      "p95": 59,
+      "inflight": 3
+    },
+    {
+      "t": 23,
+      "rps": 50,
+      "ok": 902,
+      "fail": 0,
+      "limited": 803,
+      "p50": 51,
+      "p95": 58,
+      "inflight": 3
+    },
+    {
+      "t": 24,
+      "rps": 51,
+      "ok": 953,
+      "fail": 0,
+      "limited": 848,
+      "p50": 51,
+      "p95": 59,
+      "inflight": 2
+    },
+    {
+      "t": 25,
+      "rps": 51,
+      "ok": 1004,
+      "fail": 0,
+      "limited": 891,
+      "p50": 50,
+      "p95": 59,
+      "inflight": 5
+    },
+    {
+      "t": 26,
+      "rps": 101,
+      "ok": 1105,
+      "fail": 0,
+      "limited": 985,
+      "p50": 48,
+      "p95": 59,
+      "inflight": 4
+    },
+    {
+      "t": 27,
+      "rps": 101,
+      "ok": 1206,
+      "fail": 0,
+      "limited": 1079,
+      "p50": 48,
+      "p95": 59,
+      "inflight": 5
+    },
+    {
+      "t": 28,
+      "rps": 100,
+      "ok": 1306,
+      "fail": 0,
+      "limited": 1168,
+      "p50": 48,
+      "p95": 57,
+      "inflight": 5
+    },
+    {
+      "t": 29,
+      "rps": 100,
+      "ok": 1406,
+      "fail": 0,
+      "limited": 1260,
+      "p50": 48,
+      "p95": 56,
+      "inflight": 5
+    },
+    {
+      "t": 30,
+      "rps": 99,
+      "ok": 1505,
+      "fail": 0,
+      "limited": 1349,
+      "p50": 48,
+      "p95": 57,
+      "inflight": 7
+    },
+    {
+      "t": 31,
+      "rps": 102,
+      "ok": 1607,
+      "fail": 0,
+      "limited": 1436,
+      "p50": 48,
+      "p95": 56,
+      "inflight": 5
+    },
+    {
+      "t": 32,
+      "rps": 100,
+      "ok": 1707,
+      "fail": 0,
+      "limited": 1525,
+      "p50": 48,
+      "p95": 54,
+      "inflight": 5
+    },
+    {
+      "t": 33,
+      "rps": 100,
+      "ok": 1807,
+      "fail": 0,
+      "limited": 1611,
+      "p50": 48,
+      "p95": 58,
+      "inflight": 6
+    },
+    {
+      "t": 34,
+      "rps": 101,
+      "ok": 1908,
+      "fail": 0,
+      "limited": 1702,
+      "p50": 46,
+      "p95": 57,
+      "inflight": 5
+    },
+    {
+      "t": 35,
+      "rps": 100,
+      "ok": 2008,
+      "fail": 0,
+      "limited": 1792,
+      "p50": 46,
+      "p95": 56,
+      "inflight": 5
+    },
+    {
+      "t": 36,
+      "rps": 101,
+      "ok": 2109,
+      "fail": 0,
+      "limited": 1885,
+      "p50": 45,
+      "p95": 53,
+      "inflight": 4
+    },
+    {
+      "t": 37,
+      "rps": 100,
+      "ok": 2209,
+      "fail": 0,
+      "limited": 1969,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 5
+    },
+    {
+      "t": 38,
+      "rps": 99,
+      "ok": 2308,
+      "fail": 0,
+      "limited": 2056,
+      "p50": 48,
+      "p95": 57,
+      "inflight": 6
+    },
+    {
+      "t": 39,
+      "rps": 102,
+      "ok": 2410,
+      "fail": 0,
+      "limited": 2148,
+      "p50": 48,
+      "p95": 56,
+      "inflight": 5
+    },
+    {
+      "t": 40,
+      "rps": 100,
+      "ok": 2510,
+      "fail": 0,
+      "limited": 2235,
+      "p50": 47,
+      "p95": 56,
+      "inflight": 5
+    },
+    {
+      "t": 41,
+      "rps": 101,
+      "ok": 2611,
+      "fail": 0,
+      "limited": 2318,
+      "p50": 47,
+      "p95": 75,
+      "inflight": 4
+    },
+    {
+      "t": 42,
+      "rps": 99,
+      "ok": 2710,
+      "fail": 0,
+      "limited": 2405,
+      "p50": 48,
+      "p95": 86,
+      "inflight": 8
+    },
+    {
+      "t": 43,
+      "rps": 102,
+      "ok": 2812,
+      "fail": 0,
+      "limited": 2495,
+      "p50": 47,
+      "p95": 58,
+      "inflight": 6
+    },
+    {
+      "t": 44,
+      "rps": 100,
+      "ok": 2912,
+      "fail": 0,
+      "limited": 2589,
+      "p50": 56,
+      "p95": 111,
+      "inflight": 6
+    },
+    {
+      "t": 45,
+      "rps": 111,
+      "ok": 3023,
+      "fail": 0,
+      "limited": 2691,
+      "p50": 48,
+      "p95": 59,
+      "inflight": 10
+    },
+    {
+      "t": 46,
+      "rps": 202,
+      "ok": 3225,
+      "fail": 0,
+      "limited": 2869,
+      "p50": 47,
+      "p95": 56,
+      "inflight": 10
+    },
+    {
+      "t": 47,
+      "rps": 202,
+      "ok": 3427,
+      "fail": 0,
+      "limited": 3048,
+      "p50": 47,
+      "p95": 57,
+      "inflight": 9
+    },
+    {
+      "t": 48,
+      "rps": 199,
+      "ok": 3626,
+      "fail": 0,
+      "limited": 3219,
+      "p50": 47,
+      "p95": 56,
+      "inflight": 9
+    },
+    {
+      "t": 49,
+      "rps": 201,
+      "ok": 3827,
+      "fail": 0,
+      "limited": 3400,
+      "p50": 45,
+      "p95": 52,
+      "inflight": 9
+    },
+    {
+      "t": 50,
+      "rps": 198,
+      "ok": 4025,
+      "fail": 0,
+      "limited": 3579,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 11
+    },
+    {
+      "t": 51,
+      "rps": 201,
+      "ok": 4226,
+      "fail": 0,
+      "limited": 3761,
+      "p50": 46,
+      "p95": 53,
+      "inflight": 10
+    },
+    {
+      "t": 52,
+      "rps": 201,
+      "ok": 4427,
+      "fail": 0,
+      "limited": 3945,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 9
+    },
+    {
+      "t": 53,
+      "rps": 200,
+      "ok": 4627,
+      "fail": 0,
+      "limited": 4126,
+      "p50": 47,
+      "p95": 52,
+      "inflight": 9
+    },
+    {
+      "t": 54,
+      "rps": 201,
+      "ok": 4828,
+      "fail": 0,
+      "limited": 4307,
+      "p50": 47,
+      "p95": 56,
+      "inflight": 8
+    },
+    {
+      "t": 55,
+      "rps": 201,
+      "ok": 5029,
+      "fail": 0,
+      "limited": 4489,
+      "p50": 46,
+      "p95": 56,
+      "inflight": 10
+    },
+    {
+      "t": 56,
+      "rps": 203,
+      "ok": 5232,
+      "fail": 0,
+      "limited": 4679,
+      "p50": 46,
+      "p95": 58,
+      "inflight": 11
+    },
+    {
+      "t": 57,
+      "rps": 202,
+      "ok": 5434,
+      "fail": 0,
+      "limited": 4861,
+      "p50": 46,
+      "p95": 57,
+      "inflight": 8
+    },
+    {
+      "t": 58,
+      "rps": 201,
+      "ok": 5635,
+      "fail": 0,
+      "limited": 5040,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 10
+    },
+    {
+      "t": 59,
+      "rps": 201,
+      "ok": 5836,
+      "fail": 0,
+      "limited": 5213,
+      "p50": 46,
+      "p95": 53,
+      "inflight": 9
+    },
+    {
+      "t": 60,
+      "rps": 197,
+      "ok": 6033,
+      "fail": 0,
+      "limited": 5353,
+      "p50": 47,
+      "p95": 57,
+      "inflight": 12
+    },
+    {
+      "t": 61,
+      "rps": 204,
+      "ok": 6237,
+      "fail": 0,
+      "limited": 5423,
+      "p50": 50,
+      "p95": 243,
+      "inflight": 10
+    },
+    {
+      "t": 62,
+      "rps": 199,
+      "ok": 6436,
+      "fail": 0,
+      "limited": 5606,
+      "p50": 46,
+      "p95": 56,
+      "inflight": 12
+    },
+    {
+      "t": 63,
+      "rps": 203,
+      "ok": 6639,
+      "fail": 0,
+      "limited": 5794,
+      "p50": 46,
+      "p95": 56,
+      "inflight": 10
+    },
+    {
+      "t": 64,
+      "rps": 197,
+      "ok": 6836,
+      "fail": 0,
+      "limited": 5974,
+      "p50": 45,
+      "p95": 54,
+      "inflight": 13
+    },
+    {
+      "t": 65,
+      "rps": 204,
+      "ok": 7040,
+      "fail": 0,
+      "limited": 6155,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 10
+    },
+    {
+      "t": 66,
+      "rps": 199,
+      "ok": 7239,
+      "fail": 0,
+      "limited": 6333,
+      "p50": 47,
+      "p95": 56,
+      "inflight": 11
+    },
+    {
+      "t": 67,
+      "rps": 203,
+      "ok": 7442,
+      "fail": 0,
+      "limited": 6512,
+      "p50": 46,
+      "p95": 56,
+      "inflight": 8
+    },
+    {
+      "t": 68,
+      "rps": 199,
+      "ok": 7641,
+      "fail": 0,
+      "limited": 6694,
+      "p50": 47,
+      "p95": 54,
+      "inflight": 10
+    },
+    {
+      "t": 69,
+      "rps": 201,
+      "ok": 7842,
+      "fail": 0,
+      "limited": 6876,
+      "p50": 47,
+      "p95": 53,
+      "inflight": 9
+    },
+    {
+      "t": 70,
+      "rps": 199,
+      "ok": 8041,
+      "fail": 0,
+      "limited": 7054,
+      "p50": 47,
+      "p95": 53,
+      "inflight": 11
+    },
+    {
+      "t": 71,
+      "rps": 203,
+      "ok": 8244,
+      "fail": 0,
+      "limited": 7240,
+      "p50": 46,
+      "p95": 56,
+      "inflight": 9
+    },
+    {
+      "t": 72,
+      "rps": 199,
+      "ok": 8443,
+      "fail": 0,
+      "limited": 7424,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 10
+    },
+    {
+      "t": 73,
+      "rps": 200,
+      "ok": 8643,
+      "fail": 0,
+      "limited": 7602,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 10
+    },
+    {
+      "t": 74,
+      "rps": 201,
+      "ok": 8844,
+      "fail": 0,
+      "limited": 7782,
+      "p50": 46,
+      "p95": 57,
+      "inflight": 10
+    },
+    {
+      "t": 75,
+      "rps": 236,
+      "ok": 9080,
+      "fail": 0,
+      "limited": 7967,
+      "p50": 46,
+      "p95": 57,
+      "inflight": 27
+    },
+    {
+      "t": 76,
+      "rps": 409,
+      "ok": 9489,
+      "fail": 0,
+      "limited": 8249,
+      "p50": 47,
+      "p95": 66,
+      "inflight": 17
+    },
+    {
+      "t": 77,
+      "rps": 400,
+      "ok": 9889,
+      "fail": 0,
+      "limited": 8610,
+      "p50": 45,
+      "p95": 54,
+      "inflight": 22
+    },
+    {
+      "t": 78,
+      "rps": 402,
+      "ok": 10291,
+      "fail": 0,
+      "limited": 8975,
+      "p50": 45,
+      "p95": 56,
+      "inflight": 20
+    },
+    {
+      "t": 79,
+      "rps": 405,
+      "ok": 10696,
+      "fail": 0,
+      "limited": 9339,
+      "p50": 45,
+      "p95": 52,
+      "inflight": 19
+    },
+    {
+      "t": 80,
+      "rps": 399,
+      "ok": 11095,
+      "fail": 0,
+      "limited": 9695,
+      "p50": 45,
+      "p95": 53,
+      "inflight": 21
+    },
+    {
+      "t": 81,
+      "rps": 401,
+      "ok": 11496,
+      "fail": 0,
+      "limited": 10059,
+      "p50": 45,
+      "p95": 54,
+      "inflight": 21
+    },
+    {
+      "t": 82,
+      "rps": 401,
+      "ok": 11897,
+      "fail": 0,
+      "limited": 10419,
+      "p50": 46,
+      "p95": 75,
+      "inflight": 21
+    },
+    {
+      "t": 83,
+      "rps": 404,
+      "ok": 12301,
+      "fail": 0,
+      "limited": 10787,
+      "p50": 46,
+      "p95": 56,
+      "inflight": 17
+    },
+    {
+      "t": 84,
+      "rps": 400,
+      "ok": 12701,
+      "fail": 0,
+      "limited": 11144,
+      "p50": 45,
+      "p95": 54,
+      "inflight": 19
+    },
+    {
+      "t": 85,
+      "rps": 401,
+      "ok": 13102,
+      "fail": 0,
+      "limited": 11498,
+      "p50": 45,
+      "p95": 56,
+      "inflight": 19
+    },
+    {
+      "t": 86,
+      "rps": 397,
+      "ok": 13499,
+      "fail": 0,
+      "limited": 11860,
+      "p50": 44,
+      "p95": 53,
+      "inflight": 23
+    },
+    {
+      "t": 87,
+      "rps": 394,
+      "ok": 13893,
+      "fail": 0,
+      "limited": 12217,
+      "p50": 47,
+      "p95": 98,
+      "inflight": 28
+    },
+    {
+      "t": 88,
+      "rps": 412,
+      "ok": 14305,
+      "fail": 0,
+      "limited": 12586,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 18
+    },
+    {
+      "t": 89,
+      "rps": 395,
+      "ok": 14700,
+      "fail": 0,
+      "limited": 12954,
+      "p50": 45,
+      "p95": 53,
+      "inflight": 26
+    },
+    {
+      "t": 90,
+      "rps": 407,
+      "ok": 15107,
+      "fail": 0,
+      "limited": 13317,
+      "p50": 46,
+      "p95": 54,
+      "inflight": 21
+    },
+    {
+      "t": 91,
+      "rps": 404,
+      "ok": 15511,
+      "fail": 0,
+      "limited": 13692,
+      "p50": 45,
+      "p95": 54,
+      "inflight": 20
+    },
+    {
+      "t": 92,
+      "rps": 399,
+      "ok": 15910,
+      "fail": 0,
+      "limited": 14053,
+      "p50": 45,
+      "p95": 56,
+      "inflight": 23
+    },
+    {
+      "t": 93,
+      "rps": 406,
+      "ok": 16316,
+      "fail": 0,
+      "limited": 14429,
+      "p50": 46,
+      "p95": 58,
+      "inflight": 21
+    },
+    {
+      "t": 94,
+      "rps": 404,
+      "ok": 16720,
+      "fail": 0,
+      "limited": 14786,
+      "p50": 46,
+      "p95": 62,
+      "inflight": 17
+    },
+    {
+      "t": 95,
+      "rps": 396,
+      "ok": 17116,
+      "fail": 0,
+      "limited": 15134,
+      "p50": 45,
+      "p95": 52,
+      "inflight": 21
+    },
+    {
+      "t": 96,
+      "rps": 402,
+      "ok": 17518,
+      "fail": 0,
+      "limited": 15494,
+      "p50": 46,
+      "p95": 56,
+      "inflight": 21
+    },
+    {
+      "t": 97,
+      "rps": 406,
+      "ok": 17924,
+      "fail": 0,
+      "limited": 15852,
+      "p50": 44,
+      "p95": 53,
+      "inflight": 15
+    },
+    {
+      "t": 98,
+      "rps": 402,
+      "ok": 18326,
+      "fail": 0,
+      "limited": 16218,
+      "p50": 44,
+      "p95": 57,
+      "inflight": 17
+    },
+    {
+      "t": 99,
+      "rps": 398,
+      "ok": 18724,
+      "fail": 0,
+      "limited": 16579,
+      "p50": 43,
+      "p95": 51,
+      "inflight": 21
+    },
+    {
+      "t": 100,
+      "rps": 402,
+      "ok": 19126,
+      "fail": 0,
+      "limited": 16935,
+      "p50": 44,
+      "p95": 52,
+      "inflight": 19
+    },
+    {
+      "t": 101,
+      "rps": 404,
+      "ok": 19530,
+      "fail": 0,
+      "limited": 17295,
+      "p50": 44,
+      "p95": 53,
+      "inflight": 16
+    },
+    {
+      "t": 102,
+      "rps": 389,
+      "ok": 19919,
+      "fail": 0,
+      "limited": 17655,
+      "p50": 48,
+      "p95": 88,
+      "inflight": 28
+    },
+    {
+      "t": 103,
+      "rps": 391,
+      "ok": 20310,
+      "fail": 0,
+      "limited": 17998,
+      "p50": 48,
+      "p95": 66,
+      "inflight": 40
+    },
+    {
+      "t": 104,
+      "rps": 278,
+      "ok": 20588,
+      "fail": 0,
+      "limited": 18246,
+      "p50": 71,
+      "p95": 314,
+      "inflight": 161
+    }
+  ],
+  "timestamp": "2026-06-25T00:13:57.584Z"
+}

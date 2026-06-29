@@ -45,6 +45,7 @@ export const authApi = {
       primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
       weeklyTimeCommitment?: number;
       budgetTier?: "Budget" | "Moderate" | "Premium";
+      location?: string;
     };
     shippingAddress?: User["shippingAddress"];
   }): Promise<ApiResponse<User>> => {

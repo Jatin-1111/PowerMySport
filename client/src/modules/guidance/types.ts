@@ -86,4 +86,5 @@ export type PlayerProfile = {
   primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
+  location?: string;
 };

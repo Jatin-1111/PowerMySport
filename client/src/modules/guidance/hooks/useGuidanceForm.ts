@@ -78,7 +78,8 @@ export function useGuidanceForm({
       if (player.primaryObjective) { next.primary_objective = player.primaryObjective; filled.add("primary_objective"); }
       if (player.weeklyTimeCommitment) { next.weekly_time_commitment = player.weeklyTimeCommitment; filled.add("weekly_time_commitment"); }
       if (player.budgetTier) { next.budget_tier = player.budgetTier; filled.add("budget_tier"); }
-      if (player.sportsFocus?.length) { next.sport = player.sportsFocus.join(", "); filled.add("sport"); }
+      if (player.sportsFocus?.length && !initialSport) { next.sport = player.sportsFocus.join(", "); filled.add("sport"); }
+      if (player.location) { next.location = player.location; filled.add("location"); }
       return next;
     });
     setAutofillFields(filled);

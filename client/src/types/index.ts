@@ -7,6 +7,7 @@ export interface IPlayerProfile {
   primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
+  location?: string;
 }
 
 export type UserRole =

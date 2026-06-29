@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
+import { INDIAN_STATES } from "@/modules/guidance/constants";
 import {
   DEFAULT_DEPENDENT_RELATION,
   DEPENDENT_RELATIONS,
@@ -29,6 +30,7 @@ interface Dependent {
   primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
+  location?: string;
 }
 
 interface DependentManagementModalProps {
@@ -50,6 +52,7 @@ const EMPTY_FORM: Dependent = {
   primaryObjective: "Recreational",
   weeklyTimeCommitment: 3,
   budgetTier: "Moderate",
+  location: "",
 };
 
 const PERSONALITY_OPTIONS = [
@@ -337,6 +340,18 @@ export default function DependentManagementModal({
                 />
               </ProfileEditField>
             </div>
+
+            <ProfileEditField label="State / Union Territory" htmlFor="dependent-location" hint="Used for local scheme & resource recommendations">
+              <ProfileFormSelect
+                id="dependent-location"
+                value={formData.location || ""}
+                onChange={(value) => handleChange("location", value)}
+                options={[
+                  { value: "", label: "— Select state —" },
+                  ...INDIAN_STATES.map((s) => ({ value: s, label: s })),
+                ]}
+              />
+            </ProfileEditField>
 
             <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
               <Input

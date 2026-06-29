@@ -399,6 +399,7 @@ export interface AddDependentPayload {
   primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
+  location?: string;
 }
 
 function calculateAge(dob: Date): number {
@@ -440,6 +441,7 @@ export const addDependent = async (
     primaryObjective: payload.primaryObjective,
     weeklyTimeCommitment: payload.weeklyTimeCommitment,
     budgetTier: payload.budgetTier,
+    location: payload.location,
   });
 
   await newDependent.save();
@@ -484,6 +486,7 @@ export const updateDependent = async (
   if (payload.weeklyTimeCommitment !== undefined)
     dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
   if (payload.budgetTier) dependent.budgetTier = payload.budgetTier;
+  if (payload.location !== undefined) dependent.location = payload.location;
 
   await dependent.save();
   return dependent;
@@ -530,6 +533,7 @@ export interface UpdateProfilePayload {
     primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
     weeklyTimeCommitment?: number;
     budgetTier?: "Budget" | "Moderate" | "Premium";
+    location?: string;
     pathwayState?: {
       satisfiedPrerequisites?: string[];
       currentGpa?: string;
@@ -604,6 +608,8 @@ export const updateProfile = async (
         payload.playerProfile.weeklyTimeCommitment;
     if (payload.playerProfile.budgetTier)
       selfPlayer.budgetTier = payload.playerProfile.budgetTier;
+    if (payload.playerProfile.location !== undefined)
+      selfPlayer.location = payload.playerProfile.location;
 
     if (payload.playerProfile.pathwayState) {
       if (!selfPlayer.pathwayState) selfPlayer.pathwayState = {};

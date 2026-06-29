@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
+import { INDIAN_STATES } from "@/modules/guidance/constants";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
 import { formatDependentRelation } from "@/modules/player/constants/dependentRelations";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
@@ -145,7 +146,8 @@ export default function ProfilePage() {
     personalityTags: [] as string[],
     primaryObjective: "Recreational" as "Recreational" | "Health" | "Social" | "Competitive",
     weeklyTimeCommitment: 3,
-    budgetTier: "Moderate" as "Budget" | "Moderate" | "Premium"
+    budgetTier: "Moderate" as "Budget" | "Moderate" | "Premium",
+    location: "",
   });
 
   useEffect(() => {
@@ -362,6 +364,7 @@ export default function ProfilePage() {
       primaryObjective: user.playerProfile?.primaryObjective || "Recreational",
       weeklyTimeCommitment: user.playerProfile?.weeklyTimeCommitment || 3,
       budgetTier: user.playerProfile?.budgetTier || "Moderate",
+      location: user.playerProfile?.location || "",
     });
   };
 
@@ -387,6 +390,7 @@ export default function ProfilePage() {
           primaryObjective: playerProfileForm.primaryObjective,
           weeklyTimeCommitment: playerProfileForm.weeklyTimeCommitment,
           budgetTier: playerProfileForm.budgetTier,
+          location: playerProfileForm.location || undefined,
         },
       });
       await fetchProfile();
@@ -742,6 +746,18 @@ export default function ProfilePage() {
                   </ProfileEditField>
                 </div>
 
+                <ProfileEditField label="State / Union Territory" htmlFor="self-location" hint="Used for local scheme & resource recommendations">
+                  <ProfileFormSelect
+                    id="self-location"
+                    value={playerProfileForm.location}
+                    onChange={(value: string) => setPlayerProfileForm(f => ({ ...f, location: value }))}
+                    options={[
+                      { value: "", label: "— Select state —" },
+                      ...INDIAN_STATES.map((s) => ({ value: s, label: s })),
+                    ]}
+                  />
+                </ProfileEditField>
+
                 <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
                   <Input
                     id="weekly-time"
@@ -827,6 +843,7 @@ export default function ProfilePage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <ProfileInfoField label="Primary Objective">{user.playerProfile?.primaryObjective || "Not specified"}</ProfileInfoField>
                   <ProfileInfoField label="Budget">{user.playerProfile?.budgetTier || "Not specified"}</ProfileInfoField>
+                  <ProfileInfoField label="State">{user.playerProfile?.location || "Not specified"}</ProfileInfoField>
                   <ProfileInfoField label="Weekly Time">
                     {user.playerProfile?.weeklyTimeCommitment ? `${user.playerProfile.weeklyTimeCommitment} hours` : "Not specified"}
                   </ProfileInfoField>
