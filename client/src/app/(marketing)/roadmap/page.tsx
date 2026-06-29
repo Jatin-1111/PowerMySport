@@ -85,7 +85,8 @@ import {
   UserCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 
@@ -582,7 +583,7 @@ function ApplicationsTab({
     >
       <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
         <Bell className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-        <span>Status updates will appear here as our team reviews your submission. Documents already uploaded can be reused on new applications.</span>
+        <span>Use this as a personal checklist to track your own applications. Update the status as things progress. Documents already uploaded can be reused on new applications.</span>
       </div>
 
       {applications.map((app) => {
@@ -636,7 +637,7 @@ function ApplicationsTab({
                         onClick={() => onUpdateStatus(app.id, nextStatus)}
                         className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-2 transition"
                       >
-                        Demo: Mark as "{nextStatus}"
+                        Mark as "{nextStatus}"
                       </button>
                     )}
                   </div>
@@ -1270,6 +1271,16 @@ function PathwayLevelDetail({
                   })}
                 </ul>
               </div>
+
+              {sName && (
+                <Link
+                  href={`/guidance?sport=${encodeURIComponent(sName)}&level=${level.level}`}
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-power-orange/30 bg-power-orange/5 px-4 py-2.5 text-sm font-semibold text-power-orange hover:bg-power-orange/10 transition"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Get personalised plan for this level
+                </Link>
+              )}
             </motion.div>
           )}
 
@@ -2017,6 +2028,7 @@ function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
                   {row.coaching}
                 </p>
                 <p className="text-[10px] text-slate-400 mt-0.5">≈ {fmt(row.coachingMid * 10)} / 10 mo.</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Generic estimate — varies by sport</p>
               </div>
               <div className="rounded-xl bg-white/70 p-3">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
@@ -2054,7 +2066,7 @@ function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
           </div>
         </div>
         <p className="text-[11px] text-slate-500 leading-relaxed">
-          ⚠️ These are indicative estimates only. Actual costs vary significantly by city, academy, coaching level, and individual progression speed. Use this as a planning guide, not a quote.
+          ⚠️ These are indicative estimates only. Actual costs vary significantly by city, academy, coaching level, and individual progression speed. Use this as a planning guide, not a quote. Coaching fee ranges are the same across all sports — actual rates vary significantly by sport (e.g. cricket coaching is typically lower due to high coach supply; niche sports may cost more).
         </p>
       </div>
     </motion.div>
@@ -2111,6 +2123,9 @@ function PathwayExplorerSection() {
 
   const { user } = useAuthStore();
   const [dbStories, setDbStories] = useState<AthleteStory[]>([]);
+
+  const searchParams = useSearchParams();
+  const [contextBanner, setContextBanner] = useState<{ age: string; budget: string; state: string } | null>(null);
 
   // Load from DB or fallback to localStorage
   useEffect(() => {
@@ -2271,6 +2286,25 @@ function PathwayExplorerSection() {
     setShowSuggestions(false);
     inputRef.current?.focus();
   };
+
+  // Read URL params on mount and pre-fill sport/level/state/context banner
+  useEffect(() => {
+    const sport = searchParams.get("sport");
+    const level = searchParams.get("level");
+    const state = searchParams.get("state");
+    const age = searchParams.get("age");
+    const budget = searchParams.get("budget");
+
+    if (state) handleStateChange(state);
+    if (sport) {
+      handleSearch(sport).then(() => {
+        if (level) setActiveIdx(Math.max(0, parseInt(level, 10) - 1));
+      });
+    }
+    if (age && budget) {
+      setContextBanner({ age, budget, state: state || "" });
+    }
+  }, []);
 
   const currentLevels = result ? result.pathway.levels : pathwayLevels;
   const selectedLevel = currentLevels[activeIdx] || currentLevels[0];
@@ -2433,6 +2467,23 @@ function PathwayExplorerSection() {
                 </button>
               </span>
               <span className="text-xs text-slate-400">Results will include {selectedState}-specific data</span>
+            </motion.div>
+          )}
+
+          {/* Context banner from URL params */}
+          {contextBanner && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2"
+            >
+              <span className="text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                Personalised view · Age {contextBanner.age} · {contextBanner.budget} tier{contextBanner.state ? ` · ${contextBanner.state}` : ""}
+              </span>
+              <button onClick={() => setContextBanner(null)} className="text-indigo-400 hover:text-indigo-700 transition">
+                <X className="h-3.5 w-3.5" />
+              </button>
             </motion.div>
           )}
 
@@ -3383,7 +3434,9 @@ export default function PathwaysPage() {
       />
 
       {/* ── AI Search Section ── */}
-      <PathwayExplorerSection />
+      <Suspense fallback={null}>
+        <PathwayExplorerSection />
+      </Suspense>
 
       {/* ── Stats Banner ── */}
       <section className="relative py-10 sm:py-16">
