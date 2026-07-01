@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   BrainCircuit,
@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  MessageCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -28,6 +29,9 @@ import { Step3Lifestyle } from "@/modules/guidance/components/wizard/Step3Lifest
 import { Step4Details } from "@/modules/guidance/components/wizard/Step4Details";
 import { ResultsView } from "@/modules/guidance/components/results/ResultsView";
 import { LevelPlanFlow } from "@/modules/guidance/components/level-plan/LevelPlanFlow";
+import { GuidanceChatDrawer } from "@/modules/guidance/components/chat/GuidanceChatDrawer";
+import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 
 // ─── Inner component (needs useSearchParams) ──────────────────────────────────
 
@@ -39,6 +43,10 @@ function GuidancePageInner() {
   const initialMode = searchParams.get("mode") ?? undefined;
   const initialLevelLabel = searchParams.get("levelLabel") ?? undefined;
   const isLevelPlan = initialMode === "level-plan" && !!initialSport && !!initialLevel;
+  // openChat: post-login redirect param — auto-opens chat drawer
+  const openChatParam = searchParams.get("openChat") === "1";
+  // submissionId: if returning from login with an existing submission
+  const submissionIdParam = searchParams.get("submissionId") ?? null;
 
   const {
     form,
@@ -64,6 +72,50 @@ function GuidancePageInner() {
   } = useGuidanceForm({ initialSport, initialLevel });
 
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuthStore();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+
+  // If returning from login with openChat=1 and a submissionId in the URL,
+  // we need to load that submission and auto-open the chat.
+  // We rely on the fact that if the user just logged in, submission state may be empty.
+  // In this case we fire a GET to load the submission details from the history API.
+  useEffect(() => {
+    if (openChatParam && submissionIdParam) {
+      // If we already have the submission in state, open chat immediately
+      if (submission?.id === submissionIdParam) {
+        setChatOpen(true);
+        return;
+      }
+      // Otherwise load it from history
+      import("@/lib/api/axios").then(({ default: api }) => {
+        api
+          .get("/guidance")
+          .then((res) => {
+            if (res.data.success && Array.isArray(res.data.data)) {
+              const found = res.data.data.find(
+                (s: any) => s.id === submissionIdParam,
+              );
+              if (found) {
+                setSubmission(found);
+                setShowResults(true);
+                setTimeout(() => setChatOpen(true), 400);
+              }
+            }
+          })
+          .catch(() => {});
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openChatParam, submissionIdParam]);
+
+  const handleChatClick = () => {
+    if (!user) {
+      setLoginModalOpen(true);
+    } else {
+      setChatOpen(true);
+    }
+  };
 
   const { history, setHistory, deletingId, handleDeleteRoadmap, loadPastSubmission } =
     useGuidanceHistory({
@@ -183,6 +235,25 @@ function GuidancePageInner() {
                       levelLabel: initialLevelLabel,
                     } : undefined}
                   />
+
+                  {/* ── Chat with Coach CTA ── */}
+                  <div className="mt-5 pt-4 border-t border-slate-100">
+                    <button
+                      id="chat-with-coach-btn"
+                      type="button"
+                      onClick={handleChatClick}
+                      className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_20px_-6px_rgba(233,115,22,0.55)] transition-all hover:shadow-[0_6px_24px_-6px_rgba(233,115,22,0.7)] hover:scale-[1.01] active:scale-[0.98]"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Chat with Coach
+                      <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                        Go deeper
+                      </span>
+                    </button>
+                    <p className="mt-2 text-center text-[11px] text-slate-400">
+                      Ask follow-up questions · Get drill suggestions · Adjust your plan
+                    </p>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -340,9 +411,29 @@ function GuidancePageInner() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ── Chat Drawer (authenticated users) ── */}
+      {submission && chatOpen && (
+        <GuidanceChatDrawer
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+          submission={submission}
+        />
+      )}
+
+      {/* ── Login Required Modal (guest users) ── */}
+      {submission && (
+        <LoginRequiredModal
+          isOpen={loginModalOpen}
+          onClose={() => setLoginModalOpen(false)}
+          sport={submission.query.sport}
+          submissionId={submission.id}
+        />
+      )}
     </div>
   );
 }
+
 
 // ─── Default export (wraps inner in Suspense for useSearchParams) ─────────────
 

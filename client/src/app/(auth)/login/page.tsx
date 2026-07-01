@@ -9,11 +9,13 @@ import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || null;
   const { user, setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     email: "",
@@ -23,21 +25,19 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const getDefaultRedirect = (role: string) => {
+    if (role === "PLAYER") return "/dashboard/my-bookings";
+    if (role === "VENUE_LISTER") return "/venue-lister/inventory";
+    if (role === "COACH") return "/coach/verification";
+    if (role === "ACADEMY_OWNER") return "/academy";
+    return "/dashboard/my-bookings";
+  };
+
   useEffect(() => {
     if (user) {
-      if (user.role === "PLAYER") {
-        router.push("/dashboard/my-bookings");
-      } else if (user.role === "VENUE_LISTER") {
-        router.push("/venue-lister/inventory");
-      } else if (user.role === "COACH") {
-        router.push("/coach/verification");
-      } else if (user.role === "ACADEMY_OWNER") {
-        router.push("/academy");
-      } else {
-        router.push("/dashboard/my-bookings");
-      }
+      router.push(redirectTo || getDefaultRedirect(user.role));
     }
-  }, [user, router]);
+  }, [user, router, redirectTo]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,19 +67,7 @@ export default function LoginPage() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
-
-        // Redirect based on role
-        if (response.data.user.role === "PLAYER") {
-          router.push("/dashboard/my-bookings");
-        } else if (response.data.user.role === "VENUE_LISTER") {
-          router.push("/venue-lister/inventory");
-        } else if (response.data.user.role === "COACH") {
-          router.push("/coach/verification");
-        } else if (response.data.user.role === "ACADEMY_OWNER") {
-          router.push("/academy");
-        } else {
-          router.push("/dashboard/my-bookings");
-        }
+        router.push(redirectTo || getDefaultRedirect(response.data.user.role));
       } else {
         toast.error(response.message || "Login failed");
       }
@@ -100,8 +88,6 @@ export default function LoginPage() {
         toast.error("No credential received from Google");
         return;
       }
-      // Send the raw Google credential; the server verifies it and derives
-      // the user's identity from the verified token.
       const response = await authApi.googleLogin({
         credential: credentialResponse.credential,
         action: "login",
@@ -111,19 +97,7 @@ export default function LoginPage() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
-
-        // Redirect based on role
-        if (response.data.user.role === "PLAYER") {
-          router.push("/dashboard/my-bookings");
-        } else if (response.data.user.role === "VENUE_LISTER") {
-          router.push("/venue-lister/inventory");
-        } else if (response.data.user.role === "COACH") {
-          router.push("/coach/verification");
-        } else if (response.data.user.role === "ACADEMY_OWNER") {
-          router.push("/academy");
-        } else {
-          router.push("/dashboard/my-bookings");
-        }
+        router.push(redirectTo || getDefaultRedirect(response.data.user.role));
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -255,5 +229,13 @@ export default function LoginPage() {
         </Card>
       </SlideUp>
     </GoogleOAuthProvider>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

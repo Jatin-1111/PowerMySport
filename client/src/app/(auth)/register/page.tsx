@@ -15,6 +15,7 @@ import React, { Suspense, useState, useEffect } from "react";
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || null;
   const roleParam = searchParams.get("role") || "PLAYER";
   const initialRole =
     roleParam === "PLAYER" ||
@@ -125,7 +126,9 @@ function RegisterContent() {
         }
 
         // Route based on userType
-        if (formData.userType === "Parent") {
+        if (redirectTo) {
+          router.push(redirectTo);
+        } else if (formData.userType === "Parent") {
           router.push("/parent-onboarding");
         } else if (response.data.user.role === "COACH") {
           router.push("/coach/verification");

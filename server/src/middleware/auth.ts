@@ -116,11 +116,57 @@ export const authMiddleware = async (
   }
 };
 
+/**
+ * Optional auth middleware — decodes the JWT if present and populates req.user,
+ * but always calls next() even when no token is provided.
+ * Used on routes that serve both authenticated and guest users (e.g. POST /guidance).
+ */
+export const optionalAuthMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    const bearerToken =
+      typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+        ? authHeader.slice(7).trim()
+        : "";
+    const cookieToken = req.cookies?.token;
+    const token = bearerToken || cookieToken;
+
+    if (!token) {
+      next();
+      return;
+    }
+
+    try {
+      const decoded = verifyToken(token);
+      if (await isTokenRevoked(decoded.jti)) {
+        next();
+        return;
+      }
+      req.user = decoded;
+      if (decoded.id) {
+        touchAuthActivity(decoded.id);
+      }
+    } catch {
+      // Invalid token — treat as guest, don't block
+    }
+
+    next();
+  } catch (error) {
+    // Fail open — this is optional auth
+    next();
+  }
+};
+
 export const onboardingAuthMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
+
   try {
     const authHeader = req.headers.authorization;
     const bearerToken =
