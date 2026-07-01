@@ -451,12 +451,13 @@ export const communityModerationActionSchema = z.object({
 });
 
 // ─── Community Blog ───────────────────────────────────────────────────────────
-const blogBlockSchema = z
-  .object({
-    id: z.string().min(1).max(60),
-    type: z.enum(["heading", "text", "list", "image", "quote"]),
-  })
-  .passthrough();
+// `content` is a rich-text HTML string produced by the Tiptap editor; the
+// client-side DOMPurify allowlist is the sanitization boundary on render, so
+// the server just bounds its size.
+const blogContentSchema = z
+  .string()
+  .max(100_000, "A blog cannot exceed 100,000 characters")
+  .optional();
 
 export const blogCreateSchema = z.object({
   title: z
@@ -471,10 +472,7 @@ export const blogCreateSchema = z.object({
     .array(z.string().trim().min(1).max(40))
     .max(8, "A blog can have at most 8 tags")
     .optional(),
-  content: z
-    .array(blogBlockSchema)
-    .max(200, "A blog cannot have more than 200 blocks")
-    .optional(),
+  content: blogContentSchema,
 });
 
 export const blogUpdateSchema = z.object({
@@ -483,7 +481,7 @@ export const blogUpdateSchema = z.object({
   coverImageKey: z.string().trim().max(300).nullable().optional(),
   topic: z.string().trim().max(60).optional(),
   tags: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
-  content: z.array(blogBlockSchema).max(200).optional(),
+  content: blogContentSchema,
 });
 
 export const blogLikeSchema = z.object({

@@ -270,7 +270,7 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
 
         {/* Content */}
         <div className="mt-7">
-          <BlogContentRenderer blocks={blog.content} />
+          <BlogContentRenderer content={blog.content} />
         </div>
 
         {/* Tags */}

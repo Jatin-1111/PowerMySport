@@ -1,88 +1,98 @@
-/**
- * Minimal HTML sanitizer for user-authored blog rich text. Only inline
- * formatting tags produced by the editor toolbar survive; everything else is
- * unwrapped (kept as text) or dropped, and all attributes are stripped except
- * a safe `background-color` on <span>/<mark> (used by the highlight action).
- *
- * This is the security boundary: it runs wherever another user's content is
- * rendered (blog detail + preview).
- */
-const ALLOWED_TAGS = new Set([
-  "B",
-  "STRONG",
-  "I",
-  "EM",
-  "U",
-  "S",
-  "STRIKE",
-  "DEL",
-  "MARK",
-  "SPAN",
-  "BR",
-  "P",
-  "DIV",
-]);
+import DOMPurify from "dompurify";
 
-const sanitizeStyle = (style: string | null): string => {
-  if (!style) return "";
-  const match = /background-color:\s*(#[0-9a-fA-F]{3,8}|rgb\([^)]*\)|[a-z]+)/i.exec(
-    style,
-  );
-  return match ? `background-color:${match[1]}` : "";
+/**
+ * Sanitizer for user-authored blog rich text (Tiptap HTML output). This is
+ * the security boundary: it runs wherever another user's content is
+ * rendered (blog detail + preview) via dangerouslySetInnerHTML.
+ */
+const ALLOWED_TAGS = [
+  "b",
+  "strong",
+  "i",
+  "em",
+  "u",
+  "s",
+  "strike",
+  "del",
+  "mark",
+  "span",
+  "br",
+  "p",
+  "div",
+  "h1",
+  "h2",
+  "h3",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "a",
+  "img",
+  "hr",
+  "code",
+  "pre",
+];
+
+const ALLOWED_ATTR = ["href", "src", "alt", "style"];
+
+const STYLE_PROPERTY_RE =
+  /(background-color|text-align)\s*:\s*(#[0-9a-fA-F]{3,8}|rgb\([^)]*\)|left|center|right|justify|[a-z]+)/gi;
+
+/** Keep only a small allowlist of CSS properties/values from a style attribute. */
+const sanitizeStyle = (style: string): string => {
+  const kept: string[] = [];
+  STYLE_PROPERTY_RE.lastIndex = 0;
+  let match = STYLE_PROPERTY_RE.exec(style);
+  while (match) {
+    kept.push(`${match[1].toLowerCase()}:${match[2]}`);
+    match = STYLE_PROPERTY_RE.exec(style);
+  }
+  return kept.join(";");
+};
+
+let hooksRegistered = false;
+const registerHooks = () => {
+  if (hooksRegistered) return;
+  hooksRegistered = true;
+
+  // Force-safe link attributes regardless of what the editor/paste produced.
+  DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+    if (node.tagName === "A") {
+      node.setAttribute("target", "_blank");
+      node.setAttribute("rel", "noopener noreferrer");
+    }
+    if (node.hasAttribute("style")) {
+      const cleaned = sanitizeStyle(node.getAttribute("style") || "");
+      if (cleaned) node.setAttribute("style", cleaned);
+      else node.removeAttribute("style");
+    }
+  });
 };
 
 export const sanitizeRichHtml = (html: string): string => {
   if (!html) return "";
-  // SSR / non-DOM fallback: strip all tags.
-  if (typeof window === "undefined" || typeof DOMParser === "undefined") {
+  // SSR / non-DOM fallback: DOMPurify has no window to bind to there.
+  if (typeof window === "undefined" || typeof DOMPurify.sanitize !== "function") {
     return html.replace(/<[^>]*>/g, "");
   }
 
-  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
-  const root = doc.body.firstChild as HTMLElement | null;
-  if (!root) return "";
-
-  const clean = (node: Node) => {
-    // Snapshot children first — the list mutates as we unwrap/remove.
-    for (const child of Array.from(node.childNodes)) {
-      if (child.nodeType === Node.ELEMENT_NODE) {
-        const el = child as HTMLElement;
-        if (!ALLOWED_TAGS.has(el.tagName)) {
-          // Unwrap: keep text content, drop the (possibly dangerous) element.
-          const parent = el.parentNode;
-          if (parent) {
-            while (el.firstChild) parent.insertBefore(el.firstChild, el);
-            parent.removeChild(el);
-          }
-          continue;
-        }
-        const keepStyle =
-          el.tagName === "SPAN" || el.tagName === "MARK"
-            ? sanitizeStyle(el.getAttribute("style"))
-            : "";
-        for (const attr of Array.from(el.attributes)) {
-          el.removeAttribute(attr.name);
-        }
-        if (keepStyle) el.setAttribute("style", keepStyle);
-        clean(el);
-      } else if (child.nodeType !== Node.TEXT_NODE) {
-        node.removeChild(child);
-      }
-    }
-  };
-
-  clean(root);
-  return root.innerHTML;
+  registerHooks();
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR,
+    ALLOW_DATA_ATTR: false,
+  });
 };
 
 /** Plain-text projection of rich HTML (for excerpts / emptiness checks). */
 export const htmlToText = (html: string): string =>
   (html || "")
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div)>/gi, "\n")
+    .replace(/<\/(p|div|h1|h2|h3|li)>/gi, "\n")
     .replace(/<[^>]*>/g, "")
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
+    .replace(/\n{2,}/g, "\n")
     .trim();

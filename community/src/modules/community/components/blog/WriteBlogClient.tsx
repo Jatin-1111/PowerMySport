@@ -5,16 +5,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Eye, Loader2, Send } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
-import { BlogAuthorProfile, BlogBlock } from "@/modules/community/types";
+import { BlogAuthorProfile } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
 import { BLOG_TOPICS } from "@/modules/community/constants/blogTopics";
-import BlockEditor from "./editor/BlockEditor";
+import { htmlToText } from "@/modules/community/utils/sanitizeHtml";
+import RichTextCanvas from "./editor/RichTextCanvas";
 import ImageBlockUploader from "./editor/ImageBlockUploader";
 import BlogPreviewModal from "./BlogPreviewModal";
-import { createBlock, isBlockEmpty } from "./editor/blockUtils";
 
 interface WriteBlogClientProps {
   mode: "create" | "edit";
@@ -29,7 +29,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
   const [tagsInput, setTagsInput] = useState("");
   const [coverImageKey, setCoverImageKey] = useState<string | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
-  const [blocks, setBlocks] = useState<BlogBlock[]>([createBlock("text")]);
+  const [content, setContent] = useState("");
   const [profile, setProfile] = useState<BlogAuthorProfile | null>(null);
 
   const [isLoading, setIsLoading] = useState(mode === "edit");
@@ -67,11 +67,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         setTagsInput((blog.tags || []).join(", "));
         setCoverImageKey(blog.coverImageKey);
         setCoverImageUrl(blog.coverImageUrl);
-        setBlocks(
-          blog.content && blog.content.length
-            ? blog.content
-            : [createBlock("text")],
-        );
+        setContent(blog.content || "");
       }
     } catch (error) {
       toast.error(
@@ -98,8 +94,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
       toast.error("Give your story a title of at least 5 characters.");
       return;
     }
-    const cleanedBlocks = blocks.filter((block) => !isBlockEmpty(block));
-    if (cleanedBlocks.length === 0) {
+    if (!htmlToText(content).trim()) {
       toast.error("Add some content before publishing.");
       return;
     }
@@ -111,7 +106,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         topic,
         tags: parseTags(),
         coverImageKey,
-        content: cleanedBlocks,
+        content,
       };
 
       const result =
@@ -219,8 +214,8 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
 
         <div className="my-5 h-px bg-slate-100" />
 
-        {/* Block editor */}
-        <BlockEditor blocks={blocks} onChange={setBlocks} />
+        {/* Rich text editor */}
+        <RichTextCanvas initialContent={content} onChange={setContent} />
       </div>
 
       {/* Sticky action bar */}
@@ -254,7 +249,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         title={title}
         topic={topic}
         coverImageUrl={coverImageUrl}
-        blocks={blocks.filter((block) => !isBlockEmpty(block))}
+        content={content}
         authorName={profile?.name || "You"}
         authorUsername={profile?.username || ""}
         authorPhotoUrl={profile?.photoUrl}

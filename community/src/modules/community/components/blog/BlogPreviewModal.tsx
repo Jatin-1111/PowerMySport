@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { BlogBlock } from "@/modules/community/types";
 import { getBlogTopic } from "@/modules/community/constants/blogTopics";
 import { formatBlogDate } from "@/modules/community/utils/blogFormat";
 import BlogContentRenderer from "./BlogContentRenderer";
@@ -17,7 +16,7 @@ interface BlogPreviewModalProps {
   title: string;
   topic: string;
   coverImageUrl?: string | null;
-  blocks: BlogBlock[];
+  content: string;
   authorName: string;
   authorUsername: string;
   authorPhotoUrl?: string | null;
@@ -29,7 +28,7 @@ export default function BlogPreviewModal({
   title,
   topic,
   coverImageUrl,
-  blocks,
+  content,
   authorName,
   authorUsername,
   authorPhotoUrl,
@@ -111,7 +110,7 @@ export default function BlogPreviewModal({
                 </div>
 
                 <div className="mt-6">
-                  <BlogContentRenderer blocks={blocks} />
+                  <BlogContentRenderer content={content} />
                 </div>
               </div>
             </div>

@@ -2,29 +2,6 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export type BlogPostStatus = "PUBLISHED" | "DRAFT";
 
-export type BlogBlockType =
-  | "heading"
-  | "text"
-  | "list"
-  | "image"
-  | "quote";
-
-/**
- * A single content block in a blog body. Blocks are stored as loosely typed
- * objects so the block editor can evolve without a schema migration. Common
- * shapes:
- *  - heading: { id, type: "heading", text, level? }
- *  - text:    { id, type: "text", text }
- *  - quote:   { id, type: "quote", text }
- *  - list:    { id, type: "list", items: string[], ordered?: boolean }
- *  - image:   { id, type: "image", imageKey?, imageUrl?, caption? }
- */
-export interface BlogBlock {
-  id: string;
-  type: BlogBlockType;
-  [key: string]: unknown;
-}
-
 export interface BlogPostDocument extends Document {
   authorId: mongoose.Types.ObjectId;
   title: string;
@@ -33,7 +10,8 @@ export interface BlogPostDocument extends Document {
   coverImageUrl?: string | null;
   topic: string;
   tags: string[];
-  content: BlogBlock[];
+  /** Rich-text HTML produced by the Tiptap editor; sanitized on render. */
+  content: string;
   likeCount: number;
   commentCount: number;
   viewCount: number;
@@ -83,10 +61,10 @@ const blogPostSchema = new Schema<BlogPostDocument>(
       },
     },
     content: {
-      // Loosely-typed block array; the block editor evolves without migrations.
-      type: [Schema.Types.Mixed],
-      default: [],
-    } as never,
+      type: String,
+      default: "",
+      maxlength: 100_000,
+    },
     likeCount: { type: Number, default: 0, index: true },
     commentCount: { type: Number, default: 0 },
     viewCount: { type: Number, default: 0 },

@@ -236,26 +236,6 @@ export interface SocialLinks {
   website?: string;
 }
 
-export type BlogBlockType = "heading" | "text" | "list" | "image" | "quote";
-
-export interface BlogBlock {
-  id: string;
-  type: BlogBlockType;
-  /** heading / text / quote */
-  text?: string;
-  /** heading level (defaults to 2) */
-  level?: 1 | 2 | 3;
-  /** list */
-  items?: string[];
-  ordered?: boolean;
-  /** image */
-  imageKey?: string;
-  /** resolved presigned display URL (read-only; not persisted) */
-  imageUrl?: string;
-  caption?: string;
-  [key: string]: unknown;
-}
-
 export interface BlogAuthorSummary {
   id: string;
   name: string;
@@ -280,7 +260,8 @@ export interface BlogListItem {
 }
 
 export interface BlogDetail extends BlogListItem {
-  content: BlogBlock[];
+  /** Sanitized rich-text HTML produced by the Tiptap editor. */
+  content: string;
   updatedAt: string;
   isMine: boolean;
 }

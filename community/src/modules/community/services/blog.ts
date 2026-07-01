@@ -1,7 +1,6 @@
 import axiosInstance from "@/lib/api/axios";
 import {
   BlogAuthorProfile,
-  BlogBlock,
   BlogComment,
   BlogCommentListResponse,
   BlogDetail,
@@ -55,7 +54,7 @@ export const blogService = {
     coverImageKey?: string | null;
     topic?: string;
     tags?: string[];
-    content?: BlogBlock[];
+    content?: string;
   }): Promise<BlogDetail> {
     const response = await axiosInstance.post<ApiResponse<BlogDetail>>(
       "/community/blog/posts",
@@ -72,7 +71,7 @@ export const blogService = {
       coverImageKey?: string | null;
       topic?: string;
       tags?: string[];
-      content?: BlogBlock[];
+      content?: string;
     },
   ): Promise<BlogDetail> {
     const response = await axiosInstance.patch<ApiResponse<BlogDetail>>(

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { BlogPost, BlogBlock } from "../models/BlogPost";
+import { BlogPost } from "../models/BlogPost";
 import { BlogComment } from "../models/BlogComment";
 import { BlogLike, BlogLikeTargetType } from "../models/BlogLike";
 import {
@@ -47,7 +47,7 @@ export interface BlogListItem {
 }
 
 export interface BlogDetail extends BlogListItem {
-  content: BlogBlock[];
+  content: string;
   updatedAt: Date;
   isMine: boolean;
 }
@@ -223,35 +223,124 @@ const stripHtml = (value: string): string =>
 
 const deriveExcerpt = (
   explicit: string | undefined,
-  content: BlogBlock[],
+  content: string,
 ): string => {
   if (explicit && explicit.trim()) {
     return stripHtml(explicit).slice(0, 300);
   }
-  const firstText = content.find(
-    (block) =>
-      (block.type === "text" || block.type === "heading") &&
-      typeof block.text === "string" &&
-      stripHtml(block.text as string).length > 0,
-  );
-  const text = stripHtml((firstText?.text as string) || "");
-  return text.slice(0, 280);
+  return stripHtml(content || "").slice(0, 280);
 };
 
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+interface LegacyBlogBlock {
+  id: string;
+  type: "heading" | "text" | "list" | "image" | "quote";
+  text?: string;
+  level?: 1 | 2 | 3;
+  items?: string[];
+  ordered?: boolean;
+  imageKey?: string;
+  caption?: string;
+  [key: string]: unknown;
+}
+
 /**
- * Strip transient display-only fields (resolved presigned URLs) before
- * persisting — only the S3 `imageKey` is stored; URLs are re-resolved on read.
+ * Posts published before the Tiptap editor stored `content` as an array of
+ * blocks (see git history of BlogPost.ts). `.lean()` reads return whatever
+ * shape is actually persisted, so old documents still surface as arrays here
+ * — convert them to the equivalent HTML on the fly rather than migrating
+ * (and potentially corrupting) other authors' stored content.
  */
-const sanitizeBlocks = (blocks: BlogBlock[]): BlogBlock[] =>
-  blocks.map((block) => {
-    if (block.type === "image") {
-      const { imageUrl: _imageUrl, ...rest } = block as BlogBlock & {
-        imageUrl?: string;
-      };
-      return rest as BlogBlock;
-    }
-    return block;
+const legacyBlocksToHtml = (blocks: LegacyBlogBlock[]): string =>
+  blocks
+    .map((block) => {
+      switch (block.type) {
+        case "heading": {
+          const level = Math.min(Math.max(block.level || 2, 1), 3);
+          return `<h${level}>${block.text || ""}</h${level}>`;
+        }
+        case "quote":
+          return `<blockquote><p>${block.text || ""}</p></blockquote>`;
+        case "list": {
+          const tag = block.ordered ? "ol" : "ul";
+          const items = (block.items || [])
+            .filter((item) => item.trim())
+            .map((item) => `<li>${escapeHtml(item)}</li>`)
+            .join("");
+          return items ? `<${tag}>${items}</${tag}>` : "";
+        }
+        case "image": {
+          if (!block.imageKey) return "";
+          const img = `<img data-key="${escapeAttr(block.imageKey)}" alt="${escapeAttr(block.caption || "")}">`;
+          return block.caption
+            ? `${img}<p><em>${escapeHtml(block.caption)}</em></p>`
+            : img;
+        }
+        case "text":
+        default:
+          return block.text ? `<p>${block.text}</p>` : "";
+      }
+    })
+    .filter(Boolean)
+    .join("");
+
+/** Normalize a post's persisted `content` to HTML, upgrading legacy block arrays. */
+const toContentHtml = (content: unknown): string =>
+  Array.isArray(content) ? legacyBlocksToHtml(content as LegacyBlogBlock[]) : (content as string) || "";
+
+const CONTENT_IMG_RE = /<img\b[^>]*>/gi;
+const DATA_KEY_ATTR_RE = /data-key="([^"]*)"/i;
+const SRC_ATTR_RE = /\ssrc="[^"]*"/i;
+
+const escapeAttr = (value: string): string =>
+  value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+
+/**
+ * Blank the `src` of every content image that carries a `data-key` before
+ * persisting — only the S3 key is stored; the URL is re-resolved fresh on
+ * every read (mirrors cover image / author photo handling).
+ */
+const stripContentImageSrc = (html: string): string =>
+  (html || "").replace(CONTENT_IMG_RE, (tag) => {
+    const key = DATA_KEY_ATTR_RE.exec(tag)?.[1];
+    if (!key) return tag;
+    return SRC_ATTR_RE.test(tag) ? tag.replace(SRC_ATTR_RE, ' src=""') : tag;
   });
+
+/** Re-sign every content image's `src` from its stored `data-key`. */
+const resolveContentImageUrls = async (html: string): Promise<string> => {
+  if (!html) return html;
+  const tags = [...new Set(html.match(CONTENT_IMG_RE) || [])];
+  const entries = tags
+    .map((tag) => ({ tag, key: DATA_KEY_ATTR_RE.exec(tag)?.[1] }))
+    .filter((entry): entry is { tag: string; key: string } => Boolean(entry.key));
+
+  const replacements = await Promise.all(
+    entries.map(async ({ tag, key }) => {
+      const url = await resolveBlogImageUrl(key);
+      if (!url) return null;
+      const safeUrl = escapeAttr(url);
+      const nextTag = SRC_ATTR_RE.test(tag)
+        ? tag.replace(SRC_ATTR_RE, ` src="${safeUrl}"`)
+        : tag.replace(/^<img/i, `<img src="${safeUrl}"`);
+      return { tag, nextTag };
+    }),
+  );
+
+  let result = html;
+  for (const replacement of replacements) {
+    if (replacement) {
+      result = result.split(replacement.tag).join(replacement.nextTag);
+    }
+  }
+  return result;
+};
 
 const toObjectId = (id: string, label = "id"): mongoose.Types.ObjectId => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -432,20 +521,7 @@ export const BlogService = {
     const likedSet = await this.buildLikedSet(userId, "BLOG", [String(post._id)]);
 
     const coverImageUrl = await resolveBlogImageUrl(post.coverImageKey);
-
-    // Resolve presigned URLs for inline image blocks.
-    const rawContent = (post.content as BlogBlock[]) || [];
-    const content = await Promise.all(
-      rawContent.map(async (block) => {
-        if (block.type === "image" && block.imageKey) {
-          return {
-            ...block,
-            imageUrl: await resolveBlogImageUrl(block.imageKey as string),
-          };
-        }
-        return block;
-      }),
-    );
+    const content = await resolveContentImageUrls(toContentHtml(post.content));
 
     return {
       id: String(post._id),
@@ -475,14 +551,12 @@ export const BlogService = {
       coverImageKey?: string | null;
       topic?: string;
       tags?: string[];
-      content?: BlogBlock[];
+      content?: string;
     },
   ): Promise<BlogDetail> {
     await ensureBlogProfile(userId);
 
-    const content = sanitizeBlocks(
-      Array.isArray(payload.content) ? payload.content : [],
-    );
+    const content = stripContentImageSrc(payload.content || "");
     const post = await BlogPost.create({
       authorId: userId,
       title: payload.title.trim(),
@@ -506,7 +580,7 @@ export const BlogService = {
       coverImageKey?: string | null;
       topic?: string;
       tags?: string[];
-      content?: BlogBlock[];
+      content?: string;
     },
   ): Promise<BlogDetail> {
     const id = toObjectId(blogId, "blog id");
@@ -530,8 +604,8 @@ export const BlogService = {
     if (payload.coverImageKey !== undefined) {
       post.coverImageKey = payload.coverImageKey || null;
     }
-    if (Array.isArray(payload.content)) {
-      const cleaned = sanitizeBlocks(payload.content);
+    if (typeof payload.content === "string") {
+      const cleaned = stripContentImageSrc(payload.content);
       post.content = cleaned;
       post.excerpt = deriveExcerpt(payload.excerpt, cleaned);
     } else if (typeof payload.excerpt === "string") {
