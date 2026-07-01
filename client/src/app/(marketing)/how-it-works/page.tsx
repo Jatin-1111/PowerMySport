@@ -2,7 +2,6 @@
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
-import { RolloutRoadmap } from "@/modules/marketing/components/marketing/RolloutRoadmap";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { motion, Variants } from "framer-motion";
 import { BrainCircuit, CheckCircle, Map, UserPlus } from "lucide-react";
@@ -510,9 +509,6 @@ export default function HowItWorksPage() {
           </div>
         </div>
       </section>
-
-      {/* ── Rollout Roadmap: what's live + what's coming ── */}
-      <RolloutRoadmap />
 
       {/* ── Venue / Academy Owners (Phase 2 early access) ── */}
       <section className="relative overflow-hidden bg-slate-50 py-20 sm:py-24 lg:py-32">

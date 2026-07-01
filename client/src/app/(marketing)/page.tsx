@@ -6,7 +6,6 @@ import { getDashboardPathByRole } from "@/utils/roleDashboard";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Features } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
-import { RolloutRoadmap } from "@/modules/marketing/components/marketing/RolloutRoadmap";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Testimonials } from "@/modules/marketing/components/marketing/Testimonials";
 import {
@@ -548,9 +547,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ── Rollout Roadmap: what's live + what's coming ── */}
-      <RolloutRoadmap />
 
       {/* ── Testimonials ── */}
       <Testimonials

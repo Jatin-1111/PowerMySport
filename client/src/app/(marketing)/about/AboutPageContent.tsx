@@ -6,7 +6,6 @@ import {
   Features,
 } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
-import { RolloutRoadmap } from "@/modules/marketing/components/marketing/RolloutRoadmap";
 import { motion, Variants } from "framer-motion";
 
 const SPRING_STIFF = { type: "spring", stiffness: 260, damping: 22 } as const;
@@ -108,13 +107,6 @@ export function AboutPageContent() {
           </motion.div>
         </div>
       </section>
-
-      {/* Rollout Roadmap: what's live + what's coming */}
-      <RolloutRoadmap
-        subtitle="How We're Building It"
-        title="One step at a time, starting with the plan"
-        description="We'd rather do a few things genuinely well than everything at once. Here's what's live today and what we're building next for your family."
-      />
 
       {/* Core Values */}
       <Features
