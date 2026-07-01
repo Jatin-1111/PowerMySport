@@ -7,6 +7,7 @@ import { CoachSubscription } from "../models/CoachSubscription";
 import { User } from "../models/User";
 import { Player } from "../models/Player";
 import { Venue, VenueDocument } from "../models/Venue";
+import Academy from "../../admin/models/Academy";
 import {
   sendBookingLifecycleEmail,
   sendBookingInvitationEmail,
@@ -45,6 +46,7 @@ export interface InitiateBookingPayload {
   userId: string;
   venueId?: string;
   coachId?: string;
+  academyId?: string;
   playerLocation?: {
     type: "Point";
     coordinates: [number, number];
@@ -84,6 +86,7 @@ interface BookingCreatePayload {
   userId: string;
   venueId?: string;
   coachId?: string;
+  academyId?: string;
   sport: string;
   date: Date;
   startTime: string;
@@ -419,6 +422,9 @@ const createBookingAtomically = async (
             : {}),
           ...(payload.coachId
             ? { coachId: new mongoose.Types.ObjectId(payload.coachId) }
+            : {}),
+          ...(payload.academyId
+            ? { academyId: new mongoose.Types.ObjectId(payload.academyId) }
             : {}),
           sport: payload.sport,
           date: payload.date,
@@ -953,7 +959,28 @@ export const initiateBooking = async (
       coachPrice = hours * effectiveCoachRate;
     }
 
-    const subtotal = venuePrice + coachPrice;
+    let academyPrice = 0;
+
+    if (payload.academyId) {
+      if (!mongoose.Types.ObjectId.isValid(payload.academyId)) {
+        throw new Error("Invalid academy ID format");
+      }
+      const academy = await Academy.findById(payload.academyId);
+      if (!academy) {
+        throw new Error("Academy not found");
+      }
+      if (!academy.isApproved) {
+        throw new Error("Academy is not approved for bookings");
+      }
+      // sessionRatePerHour is stored in paise — convert to rupees
+      const rateInRupees = (academy.sessionRatePerHour || 0) / 100;
+      if (rateInRupees <= 0) {
+        throw new Error("Academy pricing is not configured");
+      }
+      academyPrice = hours * rateInRupees;
+    }
+
+    const subtotal = venuePrice + coachPrice + academyPrice;
     const serviceFee = Math.round(subtotal * SERVICE_FEE_RATE);
     const taxAmount = serviceFee > 0 ? Math.round(serviceFee * TAX_RATE) : 0;
     let discountAmount = 0;
@@ -987,7 +1014,7 @@ export const initiateBooking = async (
     const checkInCode = await generateUniqueCheckInCode();
 
     let singlePaymentSplits: any[] = [];
-    if (payload.venueId || payload.coachId) {
+    if (payload.venueId || payload.coachId || payload.academyId) {
       const venueOwnerIdStr = venue?.ownerId
         ? (venue.ownerId as any)._id?.toString() || venue.ownerId.toString()
         : undefined;
@@ -1055,6 +1082,7 @@ export const initiateBooking = async (
       userId: payload.userId,
       ...(payload.venueId ? { venueId: payload.venueId } : {}),
       ...(payload.coachId ? { coachId: payload.coachId } : {}),
+      ...(payload.academyId ? { academyId: payload.academyId } : {}),
       sport: payload.sport,
       date: payload.date,
       startTime: normalizedStartTime,
@@ -1095,7 +1123,7 @@ export const initiateBooking = async (
     );
 
     const booking =
-      payload.venueId || payload.coachId
+      payload.venueId || payload.coachId || payload.academyId
         ? await createBookingAtomically(bookingPayload)
         : await Booking.create({
             userId: new mongoose.Types.ObjectId(bookingPayload.userId),

@@ -452,10 +452,42 @@ function SavedTab({
   };
 
   const typeConfig = {
-    tournament: { label: "Tournaments", icon: <Trophy className="h-4 w-4" />, color: "text-power-orange", bg: "bg-orange-50 border-orange-100" },
-    scholarship: { label: "Scholarships", icon: <Wallet className="h-4 w-4" />, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-100" },
-    university: { label: "Universities", icon: <Landmark className="h-4 w-4" />, color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-100" },
-    career: { label: "Careers", icon: <Briefcase className="h-4 w-4" />, color: "text-blue-600", bg: "bg-blue-50 border-blue-100" },
+    tournament: {
+      label: "Tournaments",
+      icon: <Trophy className="h-4 w-4" />,
+      color: "text-power-orange",
+      bg: "bg-orange-50 border-orange-100",
+      iconBg: "bg-orange-100",
+      accentBar: "bg-gradient-to-b from-orange-400 to-orange-300",
+      countStyle: "border-orange-100 bg-orange-50 text-power-orange",
+    },
+    scholarship: {
+      label: "Scholarships",
+      icon: <Wallet className="h-4 w-4" />,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50 border-emerald-100",
+      iconBg: "bg-emerald-100",
+      accentBar: "bg-gradient-to-b from-emerald-400 to-emerald-300",
+      countStyle: "border-emerald-100 bg-emerald-50 text-emerald-600",
+    },
+    university: {
+      label: "Universities",
+      icon: <Landmark className="h-4 w-4" />,
+      color: "text-indigo-600",
+      bg: "bg-indigo-50 border-indigo-100",
+      iconBg: "bg-indigo-100",
+      accentBar: "bg-gradient-to-b from-indigo-400 to-indigo-300",
+      countStyle: "border-indigo-100 bg-indigo-50 text-indigo-600",
+    },
+    career: {
+      label: "Careers",
+      icon: <Briefcase className="h-4 w-4" />,
+      color: "text-blue-600",
+      bg: "bg-blue-50 border-blue-100",
+      iconBg: "bg-blue-100",
+      accentBar: "bg-gradient-to-b from-blue-400 to-blue-300",
+      countStyle: "border-blue-100 bg-blue-50 text-blue-600",
+    },
   } as const;
 
   if (savedItems.length === 0) {
@@ -464,17 +496,15 @@ function SavedTab({
         key="saved-empty"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center py-20 text-center gap-4"
+        className="flex flex-col items-center justify-center py-16 text-center"
       >
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 border border-rose-100">
-          <Heart className="h-7 w-7 text-rose-300" />
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
+          <Bookmark className="h-7 w-7 text-slate-300" />
         </div>
-        <div>
-          <p className="font-bold text-slate-700 text-lg">No saved items yet</p>
-          <p className="text-sm text-slate-500 mt-1 max-w-xs">
-            Tap the <Heart className="inline h-3.5 w-3.5 text-rose-400" /> on any tournament, scholarship, university, or career card to shortlist it here.
-          </p>
-        </div>
+        <p className="font-title text-lg font-bold text-slate-800">Your shortlist is empty</p>
+        <p className="mt-2 text-sm text-slate-500 max-w-sm leading-relaxed">
+          Save any tournament, scholarship, university, or career from the other tabs to build your shortlist here.
+        </p>
       </motion.div>
     );
   }
@@ -494,36 +524,40 @@ function SavedTab({
         const cfg = typeConfig[type];
         return (
           <div key={type}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className={cfg.color}>{cfg.icon}</span>
-              <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">{cfg.label}</h3>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{items.length}</span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${cfg.iconBg} ${cfg.color}`}>
+                {cfg.icon}
+              </div>
+              <h3 className="font-title text-base font-bold text-slate-900">{cfg.label}</h3>
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${cfg.countStyle}`}>{items.length}</span>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((saved) => (
-                <div
-                  key={saved.id}
-                  className={`relative flex flex-col rounded-2xl border ${cfg.bg} p-4 shadow-sm`}
-                >
-                  <button
-                    onClick={() => onUnsave(saved.id)}
-                    className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 border border-rose-100 text-rose-400 hover:bg-rose-50 transition"
-                    title="Remove from saved"
-                  >
-                    <Heart className="h-3 w-3 fill-rose-400" />
-                  </button>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    {saved.sport} · Saved {new Date(saved.savedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                  </p>
-                  <p className="font-bold text-slate-900 text-sm mb-3 pr-8 break-words">{saved.name}</p>
-                  {type !== "career" && (
+                <div key={saved.id} className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm overflow-hidden">
+                  {/* Colored left accent */}
+                  <div className={`absolute inset-y-0 left-0 w-1 ${cfg.accentBar} rounded-l-2xl`} />
+                  <div className="pl-3">
                     <button
-                      onClick={() => onOpenModal(saved.data, type)}
-                      className="mt-auto flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+                      onClick={() => onUnsave(saved.id)}
+                      className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-slate-50 border border-slate-200 text-slate-400 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-500 transition"
+                      title="Remove from saved"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" /> Open Guide
+                      <X className="h-3 w-3" />
                     </button>
-                  )}
+                    <p className="text-[10px] font-semibold text-slate-400 mb-1">
+                      {saved.sport} · {new Date(saved.savedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                    </p>
+                    <p className="font-bold text-slate-900 text-sm pr-8 break-words mb-3">{saved.name}</p>
+                    {type !== "career" && (
+                      <button
+                        onClick={() => onOpenModal(saved.data, type)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" /> Open Guide
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -557,17 +591,15 @@ function ApplicationsTab({
         key="apps-empty"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center py-20 text-center gap-4"
+        className="flex flex-col items-center justify-center py-16 text-center"
       >
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 border border-slate-100">
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
           <ClipboardList className="h-7 w-7 text-slate-300" />
         </div>
-        <div>
-          <p className="font-bold text-slate-700 text-lg">No applications yet</p>
-          <p className="text-sm text-slate-500 mt-1 max-w-xs">
-            Submit documents through the Sports Pathway Guide on any tournament, scholarship, or university card — they'll appear here.
-          </p>
-        </div>
+        <p className="font-title text-lg font-bold text-slate-800">No applications tracked</p>
+        <p className="mt-2 text-sm text-slate-500 max-w-sm leading-relaxed">
+          Open any tournament, scholarship, or university card and submit documents — your applications will appear here.
+        </p>
       </motion.div>
     );
   }
@@ -581,9 +613,11 @@ function ApplicationsTab({
       transition={{ duration: 0.2 }}
       className="space-y-4"
     >
-      <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-        <Bell className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-        <span>Use this as a personal checklist to track your own applications. Update the status as things progress. Documents already uploaded can be reused on new applications.</span>
+      <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+        <Bell className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+        <p className="text-sm text-blue-700 leading-relaxed">
+          Use this as a personal tracker. Tap any application to see documents and update the status as things progress.
+        </p>
       </div>
 
       {applications.map((app) => {
@@ -593,11 +627,16 @@ function ApplicationsTab({
           app.status === "Submitted" ? "In Review" : app.status === "In Review" ? "Approved" : "Approved";
 
         return (
-          <div key={app.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div key={app.id} className="relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className={`absolute inset-y-0 left-0 w-1 ${
+              app.status === "Approved" ? "bg-emerald-400" :
+              app.status === "In Review" ? "bg-amber-400" :
+              "bg-blue-400"
+            } rounded-l-full`} />
             <button
               type="button"
               onClick={() => setExpanded(isOpen ? null : app.id)}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+              className="w-full flex items-center gap-3 pl-5 pr-4 py-3.5 text-left hover:bg-slate-50 transition"
             >
               <div className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shrink-0 ${sc.bg} ${sc.color}`}>
                 {sc.icon} {sc.label}
@@ -681,7 +720,7 @@ function StoriesTab({ sportName, levels, stories }: { sportName: string; levels:
         <div className="flex flex-wrap gap-2 mt-3">
           <button
             onClick={() => setFilterLevel(null)}
-            className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${!filterLevel ? "bg-slate-800 text-white border-transparent" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+            className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${!filterLevel ? "bg-slate-900 text-white border-transparent" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"}`}
           >
             All Levels
           </button>
@@ -690,7 +729,7 @@ function StoriesTab({ sportName, levels, stories }: { sportName: string; levels:
             const active = filterLevel === lv.level;
             return (
               <button key={lv.level} onClick={() => setFilterLevel(active ? null : lv.level)}
-                className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${active ? `bg-gradient-to-r ${c.gradient} text-white border-transparent shadow` : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>
+                className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${active ? `bg-gradient-to-r ${c.gradient} text-white border-transparent shadow` : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"}`}>
                 {lv.label}
               </button>
             );
@@ -701,49 +740,52 @@ function StoriesTab({ sportName, levels, stories }: { sportName: string; levels:
       {/* Story cards */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {displayStories.length === 0 ? (
-          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-slate-500">
-            <MessageSquareQuote className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-            <p>No stories verified for this level yet.</p>
+          <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-10 text-center">
+            <MessageSquareQuote className="mx-auto mb-3 h-8 w-8 text-slate-200" />
+            <p className="text-sm font-medium text-slate-500">No stories verified for this level yet.</p>
+            <p className="text-xs text-slate-400 mt-1">Check back later as our team reviews more family accounts.</p>
           </div>
         ) : (
           displayStories.map((story) => {
             const c = levelColorMap[story.level];
             return (
-              <div key={story._id || story.name} className={`relative flex flex-col rounded-2xl border ${c.border} bg-gradient-to-br ${c.bg} p-5 shadow-sm overflow-hidden`}>
-                {/* Level badge */}
-                <div className={`absolute top-4 right-4 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${c.badge}`}>
-                  {levels.find((l) => l.level === story.level)?.label}
-                </div>
-
-                {/* Quote */}
-                <Quote className={`h-5 w-5 mb-3 opacity-30 ${c.text}`} />
-                <p className="text-sm leading-relaxed text-slate-700 italic mb-4 flex-1">
-                  "{story.quote}"
-                </p>
-
-                {/* Divider */}
-                <div className={`border-t ${c.border} pt-4 space-y-3`}>
-                  <div>
-                    <p className={`font-bold text-slate-900 text-sm`}>{story.name}</p>
-                    <p className="text-xs text-slate-500">{sportName} · {story.location}</p>
-                  </div>
-                  <div className={`flex items-center gap-1.5 rounded-xl border ${c.badge} px-3 py-1.5 w-fit`}>
-                    <Trophy className={`h-3 w-3 shrink-0 ${c.text}`} />
-                    <span className={`text-[10px] font-bold ${c.text}`}>{story.achievement}</span>
-                  </div>
-                  {story.parentNote && (
-                    <div className="rounded-xl bg-white/70 border border-white px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                        <HeartHandshake className="h-3 w-3" /> Parent's Note
-                      </p>
-                      <p className="text-xs text-slate-600 leading-relaxed italic">"{story.parentNote}"</p>
+              <div key={story._id || story.name} className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm overflow-hidden">
+                {/* Colored left accent */}
+                <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${c.gradient} rounded-l-2xl`} />
+                <div className="pl-3 flex flex-col flex-1">
+                  {/* Header row: level badge + verified */}
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <span className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-[10px] font-bold ${c.badge}`}>
+                      {levels.find((l) => l.level === story.level)?.label ?? `Level ${story.level}`}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="text-[10px] font-bold text-emerald-600">Verified</span>
                     </div>
-                  )}
-                </div>
-                {/* Verified badge */}
-                <div className="mt-3 flex items-center gap-1.5">
-                  <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className="text-[10px] font-bold text-emerald-600">Verified Story</span>
+                  </div>
+                  {/* Quote */}
+                  <p className="text-sm leading-relaxed text-slate-700 italic flex-1 mb-4">
+                    "{story.quote}"
+                  </p>
+                  {/* Footer */}
+                  <div className="border-t border-slate-100 pt-4 space-y-3">
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">{story.name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{sportName} · {story.location}</p>
+                    </div>
+                    <div className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 ${c.badge}`}>
+                      <Trophy className={`h-3 w-3 shrink-0 ${c.text}`} />
+                      <span className={`text-[10px] font-bold ${c.text}`}>{story.achievement}</span>
+                    </div>
+                    {story.parentNote && (
+                      <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
+                          <HeartHandshake className="h-3 w-3" /> Parent's Note
+                        </p>
+                        <p className="text-xs text-slate-500 leading-relaxed italic">"{story.parentNote}"</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -868,18 +910,18 @@ function ProgressTracker({
     : levelColorMap[1];
 
   return (
-    <div className="mb-5 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden shadow-sm">
+    <div className="mb-5 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
       {/* Header */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100">
-          <Pin className="h-4 w-4 text-amber-600" />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+          <Pin className="h-4 w-4 text-slate-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
             Where Is My Child Now?
           </p>
           {progress.currentLevel > 0 ? (
@@ -896,7 +938,7 @@ function ProgressTracker({
         <motion.div
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.2 }}
-          className="shrink-0 text-amber-500"
+          className="shrink-0 text-slate-400"
         >
           <ChevronDown className="h-4 w-4" />
         </motion.div>
@@ -911,7 +953,7 @@ function ProgressTracker({
             transition={{ height: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.18 } }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-4 border-t border-amber-100 pt-3">
+            <div className="px-4 pb-4 space-y-4 border-t border-slate-100 pt-3">
               {/* Level selector */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">
@@ -1077,6 +1119,9 @@ function PathwayLevelCard({
           </p>
           <p className="font-bold text-slate-900 truncate text-sm">{level.label}</p>
           <p className="text-xs text-slate-500 truncate">{level.keyFocus}</p>
+          {level.ageRange && (
+            <p className="mt-0.5 text-[10px] text-slate-400 truncate">{level.ageRange}</p>
+          )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {isCurrentLevel && (
@@ -1274,7 +1319,7 @@ function PathwayLevelDetail({
 
               {sName && (
                 <Link
-                  href={`/guidance?sport=${encodeURIComponent(sName)}&level=${level.level}`}
+                  href={`/guidance?sport=${encodeURIComponent(sName)}&level=${level.level}&mode=level-plan&levelLabel=${encodeURIComponent(level.label)}`}
                   className="mt-4 inline-flex items-center gap-2 rounded-xl border border-power-orange/30 bg-power-orange/5 px-4 py-2.5 text-sm font-semibold text-power-orange hover:bg-power-orange/10 transition"
                 >
                   <Sparkles className="h-4 w-4" />
@@ -1564,17 +1609,8 @@ function PathwayLevelDetail({
         </AnimatePresence>
       </div>
 
-      {/* ── Footer: stories teaser + CTAs ── */}
-      <div className={`border-t border-white/60 p-4 sm:p-5 space-y-3 bg-gradient-to-br ${colors.bg}`}>
-        {sName && onSelectTab && (
-          <button
-            onClick={() => onSelectTab("stories")}
-            className={`w-full flex items-center justify-center gap-1.5 text-xs font-semibold ${colors.text} hover:opacity-80 transition`}
-          >
-            <MessageSquareQuote className="h-4 w-4" />
-            <span>View success story at this level</span>
-          </button>
-        )}
+      {/* ── Footer CTAs ── */}
+      <div className="border-t border-slate-100 p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row gap-2.5">
           <Link
             href={`${communityUrl}/discover?tab=COMMUNITIES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
@@ -1586,7 +1622,7 @@ function PathwayLevelDetail({
             href={`${communityUrl}/discover?tab=COACHES${sName ? `&sport=${encodeURIComponent(sName)}&level=${encodeURIComponent(lLabel)}` : ""}`}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50"
           >
-            <Trophy className="h-4 w-4" /> Find Coaches
+            <Dumbbell className="h-4 w-4" /> Find Coaches
           </Link>
         </div>
       </div>
@@ -1674,9 +1710,6 @@ function ComparePanel({
     return lvl?.parentalCommitment.time || "Daily";
   };
 
-  const colBg = ["bg-orange-50 border-orange-200", "bg-blue-50 border-blue-200", "bg-violet-50 border-violet-200"];
-  const colAccent = ["text-power-orange", "text-blue-600", "text-violet-600"];
-
   return (
     <motion.div
       key="compare"
@@ -1684,12 +1717,12 @@ function ComparePanel({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="space-y-6"
+      className="space-y-4"
     >
-      {/* Add sport */}
+      {/* Search input */}
       {compareList.length < 3 && (
         <div className="relative">
-          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
             <Plus className="h-4 w-4 text-slate-400 shrink-0" />
             <input
               ref={inputRef}
@@ -1720,9 +1753,9 @@ function ComparePanel({
                   <button
                     key={s.slug || s.name}
                     onClick={() => addSport(s.name)}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-800 hover:bg-orange-50 transition"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-800 hover:bg-slate-50 transition"
                   >
-                    <Database className="h-4 w-4 shrink-0 text-power-orange" />
+                    <Database className="h-4 w-4 shrink-0 text-slate-400" />
                     {s.name}
                   </button>
                 ))}
@@ -1732,101 +1765,84 @@ function ComparePanel({
         </div>
       )}
 
-      {/* Comparison grid */}
-      <div className={`grid gap-4 ${compareList.length === 1 ? "grid-cols-1" : compareList.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
-        {compareList.map((pathway, idx) => {
-          const equipCost = getEquipmentCost(pathway);
-          const scholarships = getScholarshipCount(pathway);
-          const careers = getCareerCount(pathway);
-          const fees = COACHING_FEE_TIERS;
+      {/* Comparison table */}
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+        {/* Column headers — fixed 150px metric label, equal-width sport columns */}
+        {(() => {
+          const slotCount = compareList.length + (compareList.length < 3 ? 1 : 0);
+          const colTemplate = `150px repeat(${slotCount}, 1fr)`;
+          const METRICS = [
+            { label: "Equipment Cost", icon: <ShoppingBag className="h-3 w-3" />, getValue: (p: SportPathway) => getEquipmentCost(p).label, getRaw: (p: SportPathway) => getEquipmentCost(p).total, lowerIsBetter: true },
+            { label: "Weekly Commitment", icon: <Clock className="h-3 w-3" />, getValue: (p: SportPathway) => getTimeCommitment(p), getRaw: (_: SportPathway) => 0, lowerIsBetter: false },
+            { label: "Scholarships", icon: <Wallet className="h-3 w-3" />, getValue: (p: SportPathway) => `${getScholarshipCount(p)} available`, getRaw: (p: SportPathway) => getScholarshipCount(p), lowerIsBetter: false },
+            { label: "Career Paths", icon: <Briefcase className="h-3 w-3" />, getValue: (p: SportPathway) => `${getCareerCount(p)} options`, getRaw: (p: SportPathway) => getCareerCount(p), lowerIsBetter: false },
+          ];
           return (
-            <div
-              key={pathway.sportSlug || idx}
-              className={`relative rounded-2xl border ${colBg[idx]} p-5 shadow-sm`}
-            >
-              {idx > 0 && (
-                <button
-                  onClick={() => removeSport(idx)}
-                  className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-white/80 border border-slate-200 text-slate-400 hover:text-rose-500 transition"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              {idx === 0 && (
-                <span className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-widest ${colAccent[idx]} bg-white/80 border border-slate-200 rounded-full px-2 py-0.5`}>
-                  Primary
-                </span>
-              )}
-
-              <h3 className={`font-title text-lg font-bold mb-4 pr-16 break-words ${colAccent[idx]}`}>
-                {pathway.sportName}
-              </h3>
-
-              <div className="space-y-3">
-                {/* Equipment cost */}
-                <div className="rounded-xl bg-white/70 border border-white p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                    <ShoppingBag className="h-3 w-3" /> Equipment Cost
-                  </p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {equipCost.label}
-                    {equipCost.total > 0 && (
-                      <span className="text-[10px] font-normal text-slate-400 ml-1">total across levels</span>
+            <>
+              <div className="grid border-b border-slate-100 bg-slate-50" style={{ gridTemplateColumns: colTemplate }}>
+                <div className="px-4 py-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Metric</p>
+                </div>
+                {compareList.map((pw, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-2 px-4 py-3 border-l border-slate-100 min-w-0">
+                    <p className="font-title font-bold text-slate-900 text-sm truncate">{pw.sportName}</p>
+                    {idx === 0 ? (
+                      <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full">Primary</span>
+                    ) : (
+                      <button onClick={() => removeSport(idx)} className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition">
+                        <X className="h-3 w-3" />
+                      </button>
                     )}
-                  </p>
-                </div>
-
-                {/* Coaching */}
-                <div className="rounded-xl bg-white/70 border border-white p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Weekly Commitment
-                  </p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {getTimeCommitment(pathway)}
-                  </p>
-                </div>
-
-                {/* Scholarships */}
-                <div className="rounded-xl bg-white/70 border border-white p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                    <Wallet className="h-3 w-3" /> Scholarships
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xl font-extrabold ${colAccent[idx]}`}>{scholarships}</span>
-                    <span className="text-xs text-slate-500">available</span>
                   </div>
-                </div>
-
-                {/* Careers */}
-                <div className="rounded-xl bg-white/70 border border-white p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                    <Briefcase className="h-3 w-3" /> Career Paths
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xl font-extrabold ${colAccent[idx]}`}>{careers}</span>
-                    <span className="text-xs text-slate-500">options</span>
+                ))}
+                {compareList.length < 3 && (
+                  <div className="border-l border-dashed border-slate-200 px-4 py-3 flex items-center">
+                    <button onClick={() => inputRef.current?.focus()} className="flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-power-orange transition">
+                      <Plus className="h-3.5 w-3.5" /> Add sport
+                    </button>
                   </div>
-                </div>
+                )}
               </div>
-            </div>
-          );
-        })}
 
-        {/* Empty slot */}
-        {compareList.length < 3 && (
-          <button
-            onClick={() => inputRef.current?.focus()}
-            className="rounded-2xl border-2 border-dashed border-slate-200 p-5 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-slate-300 hover:text-slate-500 transition min-h-[200px]"
-          >
-            <Plus className="h-6 w-6" />
-            <span className="text-xs font-semibold">Add sport</span>
-          </button>
-        )}
+              {METRICS.map((metric, mIdx) => {
+                const raws = compareList.map((p) => metric.getRaw(p));
+                const bestRaw = metric.lowerIsBetter ? Math.min(...raws.filter((v) => v > 0)) : Math.max(...raws);
+                return (
+                  <div key={mIdx} className="grid border-t border-slate-100" style={{ gridTemplateColumns: colTemplate }}>
+                    <div className="flex items-center gap-1.5 px-4 py-3 text-xs text-slate-500 font-medium">
+                      <span className="text-slate-400 shrink-0">{metric.icon}</span>
+                      {metric.label}
+                    </div>
+                    {compareList.map((pw, idx) => {
+                      const raw = metric.getRaw(pw);
+                      const isBest = raw > 0 && raw === bestRaw && compareList.length > 1;
+                      return (
+                        <div key={idx} className={`px-4 py-3 border-l border-slate-100 ${isBest ? "bg-orange-50/40" : ""}`}>
+                          <p className={`text-sm tabular-nums ${isBest ? "font-bold text-slate-900" : "font-semibold text-slate-700"}`}>
+                            {metric.getValue(pw)}
+                          </p>
+                          {isBest && (
+                            <p className="text-[9px] font-bold uppercase tracking-wider text-power-orange mt-0.5">Best</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {compareList.length < 3 && (
+                      <div className="border-l border-dashed border-slate-200 px-4 py-3">
+                        <p className="text-sm text-slate-200">—</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          );
+        })()}
       </div>
 
       {compareList.length > 1 && (
-        <p className="text-center text-xs text-slate-400">
-          Showing data for {compareList.map((p) => p.sportName).join(", ")}. Data sourced from pathway analysis.
+        <p className="text-xs text-slate-400 text-center">
+          Data sourced from pathway analysis for {compareList.map((p) => p.sportName).join(", ")}.
         </p>
       )}
     </motion.div>
@@ -1920,22 +1936,6 @@ function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
     } catch {}
   };
 
-  const colColors = ["emerald", "blue", "violet", "orange", "rose"] as const;
-  const colBgs: Record<number, string> = {
-    1: "bg-emerald-50 border-emerald-100",
-    2: "bg-blue-50 border-blue-100",
-    3: "bg-violet-50 border-violet-100",
-    4: "bg-orange-50 border-orange-100",
-    5: "bg-rose-50 border-rose-100",
-  };
-  const colTexts: Record<number, string> = {
-    1: "text-emerald-600",
-    2: "text-blue-600",
-    3: "text-violet-600",
-    4: "text-orange-600",
-    5: "text-rose-600",
-  };
-
   return (
     <motion.div
       key="budget"
@@ -1943,132 +1943,89 @@ function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="space-y-6"
+      className="space-y-5"
     >
-      {/* Header & level toggles */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-title font-bold text-slate-900 text-lg">
-            {pathway.sportName} — Cost Journey
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Toggle levels to include / exclude from the estimate
-          </p>
+      {/* Summary numbers — the only thing a parent needs to see first */}
+      <div className="grid grid-cols-3 gap-px rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+        <div className="bg-white px-5 py-5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Equipment</p>
+          <p className="text-2xl font-extrabold text-slate-900 tabular-nums leading-none">{fmt(totalEquip)}</p>
         </div>
-        <button
-          onClick={handleExport}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95"
-        >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4 text-emerald-500" /> Copied!
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4" /> Export
-            </>
-          )}
-        </button>
+        <div className="bg-white px-5 py-5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Coaching</p>
+          <p className="text-2xl font-extrabold text-slate-900 tabular-nums leading-none">{fmt(totalCoaching)}</p>
+          <p className="text-[10px] text-slate-400 mt-1.5">10 months / level</p>
+        </div>
+        <div className="bg-white px-5 py-5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-power-orange mb-2">Grand Estimate</p>
+          <p className="text-2xl font-extrabold text-power-orange tabular-nums leading-none">{fmt(grandTotal)}</p>
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Level filters + export */}
+      <div className="flex flex-wrap items-center gap-2">
         {pathwayLevels.map((lv) => {
           const active = selectedLevels.includes(lv.level);
-          const c = levelColorMap[lv.level];
           return (
             <button
               key={lv.level}
               onClick={() => toggleLevel(lv.level)}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                 active
-                  ? `bg-gradient-to-r ${c.gradient} text-white border-transparent shadow`
-                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-400"
               }`}
             >
-              {active ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+              {active && <CheckCircle2 className="h-3 w-3" />}
               {lv.label}
             </button>
           );
         })}
+        <button
+          onClick={handleExport}
+          className="ml-auto flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500 hover:border-slate-400 transition"
+        >
+          {copied ? (
+            <><Check className="h-3 w-3 text-power-orange" /> Copied!</>
+          ) : (
+            <><Copy className="h-3 w-3" /> Export</>
+          )}
+        </button>
       </div>
 
-      {/* Level cards */}
-      <div className="space-y-3">
-        {rows.map((row) => (
-          <div
-            key={row.level}
-            className={`rounded-2xl border ${colBgs[row.level]} p-4`}
-          >
-            <div className="flex flex-wrap items-start gap-3 mb-3">
-              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${levelColorMap[row.level].badge}`}>
-                {levelIconMap[row.level]}
-                Level {row.level} · {row.label}
-              </div>
-              <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                {row.financial}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-xl bg-white/70 p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                  <ShoppingBag className="h-3 w-3" /> Equipment
-                </p>
-                <p className={`text-sm font-bold ${colTexts[row.level]}`}>
-                  {row.equipment}
-                </p>
-                {row.equipmentMid > 0 && (
-                  <p className="text-[10px] text-slate-400 mt-0.5">≈ {fmt(row.equipmentMid)} mid-est.</p>
-                )}
-              </div>
-              <div className="rounded-xl bg-white/70 p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                  <Wallet className="h-3 w-3" /> Coaching Fees
-                </p>
-                <p className={`text-sm font-bold ${colTexts[row.level]}`}>
-                  {row.coaching}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">≈ {fmt(row.coachingMid * 10)} / 10 mo.</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Generic estimate — varies by sport</p>
-              </div>
-              <div className="rounded-xl bg-white/70 p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                  <Map className="h-3 w-3" /> Travel
-                </p>
-                <p className="text-sm font-semibold text-slate-700">{row.travel}</p>
-              </div>
-            </div>
+      {/* Level breakdown — clean table rows */}
+      {rows.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+          {/* Header row */}
+          <div className="grid grid-cols-4 gap-4 border-b border-slate-100 px-5 py-2 bg-slate-50">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Level</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Equipment</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Coaching / mo</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Travel</p>
           </div>
-        ))}
-      </div>
+          {rows.map((row, idx) => (
+            <div
+              key={row.level}
+              className={`grid grid-cols-4 gap-4 px-5 py-3 items-center ${idx < rows.length - 1 ? "border-b border-slate-100" : ""}`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[10px] font-extrabold text-slate-600">
+                  {row.level}
+                </span>
+                <span className="text-sm font-semibold text-slate-800 truncate">{row.label}</span>
+              </div>
+              <p className="text-sm font-semibold text-slate-800 tabular-nums">{row.equipment}</p>
+              <p className="text-sm font-semibold text-slate-800">{row.coaching}</p>
+              <p className="text-sm text-slate-500 leading-snug truncate">{row.travel}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Grand total */}
-      <div className="rounded-2xl border-2 border-power-orange/30 bg-gradient-to-br from-orange-50 to-amber-50 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-power-orange/10">
-            <Calculator className="h-4 w-4 text-power-orange" />
-          </div>
-          <h4 className="font-title font-bold text-slate-900">
-            Journey Total Estimate
-          </h4>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-          <div className="rounded-xl bg-white/80 p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Equipment</p>
-            <p className="text-lg font-extrabold text-slate-900">{fmt(totalEquip)}</p>
-          </div>
-          <div className="rounded-xl bg-white/80 p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Coaching (10 mo/lvl)</p>
-            <p className="text-lg font-extrabold text-slate-900">{fmt(totalCoaching)}</p>
-          </div>
-          <div className="rounded-xl bg-power-orange/10 border border-power-orange/20 p-3 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-power-orange mb-1">Grand Estimate</p>
-            <p className="text-xl font-extrabold text-power-orange">{fmt(grandTotal)}</p>
-          </div>
-        </div>
-        <p className="text-[11px] text-slate-500 leading-relaxed">
-          ⚠️ These are indicative estimates only. Actual costs vary significantly by city, academy, coaching level, and individual progression speed. Use this as a planning guide, not a quote. Coaching fee ranges are the same across all sports — actual rates vary significantly by sport (e.g. cricket coaching is typically lower due to high coach supply; niche sports may cost more).
-        </p>
-      </div>
+      {/* Disclaimer */}
+      <p className="text-xs text-slate-400 leading-relaxed">
+        Indicative estimates only. Actual costs vary by city, academy, and progression speed. Coaching ranges are generic across sports — specialist academies may differ.
+      </p>
     </motion.div>
   );
 }
@@ -2092,19 +2049,29 @@ function PathwayExplorerSection() {
   const [errorMsg, setErrorMsg] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<
-    | "pathway"
-    | "tournaments"
-    | "scholarships"
-    | "universities"
-    | "equipment"
-    | "careers"
-    | "compare"
-    | "budget"
+    | "journey"
+    | "opportunities"
+    | "plan"
+    | "inspire"
     | "saved"
     | "applications"
-    | "calendar"
-    | "stories"
-  >("pathway");
+  >("journey");
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const toggleCard = (key: string) =>
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const [ownedEquipment, setOwnedEquipment] = useState<Set<string>>(new Set());
+  const toggleOwned = (key: string) =>
+    setOwnedEquipment((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   const [modalData, setModalData] = useState<{ item: any; type: "tournament" | "scholarship" | "university" } | null>(null);
   const [detailTournament, setDetailTournament] = useState<any | null>(null);
 
@@ -2149,7 +2116,7 @@ function PathwayExplorerSection() {
 
   useEffect(() => {
     const fetchStories = async () => {
-      if (result && activeTab === "stories") {
+      if (result && activeTab === "inspire") {
         const currentLevels = result.pathway.levels;
         const selectedLevel = currentLevels[activeIdx] || currentLevels[0];
         const fetchedStories = await pathwayProfileApi.getStories(result.pathway.sportSlug, selectedLevel.level);
@@ -2209,7 +2176,7 @@ function PathwayExplorerSection() {
     if (!fuse || query.trim().length < 1) {
       setSuggestions([]);
       setShowSuggestions(false);
-      setActiveTab("pathway");
+      setActiveTab("journey");
       return;
     }
     const results = fuse.search(query).map((r) => r.item);
@@ -2227,7 +2194,9 @@ function PathwayExplorerSection() {
     setErrorMsg("");
     setEntitiesStatus("idle");
     setActiveIdx(0);
-    setActiveTab("pathway");
+    setActiveTab("journey");
+    setExpandedCards(new Set());
+    setOwnedEquipment(new Set());
 
     const city = selectedState || undefined;
 
@@ -2285,6 +2254,9 @@ function PathwayExplorerSection() {
     setSuggestions([]);
     setShowSuggestions(false);
     inputRef.current?.focus();
+    if (savedItems.length > 0) setActiveTab("saved");
+    else if (applications.length > 0) setActiveTab("applications");
+    else setActiveTab("journey");
   };
 
   // Read URL params on mount and pre-fill sport/level/state/context banner
@@ -2308,6 +2280,11 @@ function PathwayExplorerSection() {
 
   const currentLevels = result ? result.pathway.levels : pathwayLevels;
   const selectedLevel = currentLevels[activeIdx] || currentLevels[0];
+  const totalOpportunities = result
+    ? (result.pathway.tournaments?.length || 0) +
+      (result.pathway.scholarships?.length || 0) +
+      (result.pathway.universities?.length || 0)
+    : 0;
 
   return (
     <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
@@ -2330,9 +2307,9 @@ function PathwayExplorerSection() {
             variants={fadeUp}
             className="font-title mx-auto max-w-2xl text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl lg:text-5xl"
           >
-            Find the Right Pathway.
+            Know the Journey
             <span className="relative ml-2 inline-block">
-              Instantly.
+              Before It Begins.
               <span
                 aria-hidden
                 className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-orange-400 to-orange-200"
@@ -2341,10 +2318,9 @@ function PathwayExplorerSection() {
           </motion.h2>
           <motion.p
             variants={fadeUp}
-            className="mx-auto mt-4 max-w-lg text-base text-slate-600 sm:text-lg"
+            className="mx-auto mt-4 max-w-xl text-base text-slate-600 sm:text-lg"
           >
-            Type any sport to see what it takes for your child to excel. We
-            break down the timeline, requirements, and steps needed.
+            Search any sport to see the full development path — from first practice to national stage. Timeline, budget, competitions, and what your child needs at every level.
           </motion.p>
         </motion.div>
 
@@ -2525,26 +2501,80 @@ function PathwayExplorerSection() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            className="mt-5 flex flex-wrap justify-center gap-2 px-2"
+            className="mt-6 flex flex-col items-center gap-3 px-2"
           >
-            {[
-              "Cricket",
-              "Badminton",
-              "Football",
-              "Kabaddi",
-              "Wrestling",
-              "Archery",
-              "Table Tennis",
-              "Boxing",
-            ].map((s) => (
-              <button
-                key={s}
-                onClick={() => handleSearch(s)}
-                className="rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:border-orange-200 hover:bg-orange-50 hover:text-power-orange sm:px-4"
-              >
-                {s}
-              </button>
-            ))}
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Popular in India</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                "Cricket",
+                "Badminton",
+                "Football",
+                "Kabaddi",
+                "Wrestling",
+                "Archery",
+                "Table Tennis",
+                "Boxing",
+              ].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleSearch(s)}
+                  className="rounded-full border border-slate-200 bg-white/90 px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:border-power-orange hover:bg-orange-50 hover:text-power-orange hover:shadow-md"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                {
+                  icon: <Flag className="h-5 w-5" />,
+                  tab: "The Journey",
+                  desc: "5-level map from local club to national stage — with your role at each step.",
+                  iconBg: "bg-orange-100",
+                  iconColor: "text-power-orange",
+                  border: "border-orange-100",
+                  bg: "bg-orange-50/60",
+                },
+                {
+                  icon: <Target className="h-5 w-5" />,
+                  tab: "Opportunities",
+                  desc: "Live tournaments, scholarships, and universities specific to this sport.",
+                  iconBg: "bg-emerald-100",
+                  iconColor: "text-emerald-600",
+                  border: "border-emerald-100",
+                  bg: "bg-emerald-50/60",
+                },
+                {
+                  icon: <Calculator className="h-5 w-5" />,
+                  tab: "The Plan",
+                  desc: "Full budget estimate and gear checklist so you know what to prepare for.",
+                  iconBg: "bg-amber-100",
+                  iconColor: "text-amber-600",
+                  border: "border-amber-100",
+                  bg: "bg-amber-50/60",
+                },
+                {
+                  icon: <Sparkles className="h-5 w-5" />,
+                  tab: "Inspire",
+                  desc: "Real career paths and family stories from parents who walked this road.",
+                  iconBg: "bg-violet-100",
+                  iconColor: "text-violet-600",
+                  border: "border-violet-100",
+                  bg: "bg-violet-50/60",
+                },
+              ].map((item) => (
+                <div
+                  key={item.tab}
+                  className={`flex flex-col rounded-2xl border ${item.border} ${item.bg} p-4`}
+                >
+                  <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${item.iconBg} ${item.iconColor} shrink-0`}>
+                    {item.icon}
+                  </div>
+                  <p className="font-title text-sm font-bold text-slate-800 mb-1">{item.tab}</p>
+                  <p className="text-[12px] text-slate-500 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
           </motion.div>
         )}
 
@@ -2555,27 +2585,23 @@ function PathwayExplorerSection() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="mx-auto mt-12 max-w-lg rounded-3xl border border-orange-100 bg-gradient-to-br from-orange-50 to-amber-50 p-6 sm:p-10 text-center shadow-lg"
+              className="mx-auto mt-12 max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-100"
             >
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-power-orange text-white shadow-lg">
-                <Sparkles className="h-8 w-8 animate-pulse" />
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 ring-8 ring-orange-50/50">
+                <Loader2 className="h-7 w-7 text-power-orange animate-spin" />
               </div>
-              <p className="text-lg font-bold text-slate-900">
-                Generating Pathway…
-              </p>
-              <p className="mt-2 text-sm text-slate-500 break-words">
-                Our AI is researching the{" "}
-                <span className="font-semibold text-power-orange">{query}</span>{" "}
-                development pathway{selectedState ? ` in ${selectedState}` : " in India"}.
+              <p className="font-title text-xl font-bold text-slate-900">Building your pathway</p>
+              <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">
+                Mapping the{" "}
+                <span className="font-semibold text-slate-800">{query}</span>{" "}
+                journey{selectedState ? ` in ${selectedState}` : " across India"} — levels, competitions, costs, and what it all means for your family.
               </p>
               <div className="mt-6 flex items-center justify-center gap-1.5">
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
                     className="h-2 w-2 rounded-full bg-power-orange"
-                    style={{
-                      animation: "bounce 1.2s " + i * 0.2 + "s infinite",
-                    }}
+                    style={{ animation: `bounce 1.2s ${i * 0.2}s infinite` }}
                   />
                 ))}
               </div>
@@ -2608,7 +2634,7 @@ function PathwayExplorerSection() {
 
         {/* ── Explorer View (Default or Result) ── */}
         <AnimatePresence mode="wait">
-          {(status === "idle" || status === "success") && (
+          {(status === "success" || savedItems.length > 0 || applications.length > 0) && (
             <motion.div
               key={result ? "result" : "default"}
               initial={{ opacity: 0, y: 24 }}
@@ -2619,45 +2645,90 @@ function PathwayExplorerSection() {
             >
               {/* Header logic */}
               {result ? (
-                <div className="mb-8">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    {result.source === "generated" && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-power-orange border border-orange-200">
-                        <Sparkles className="h-3 w-3" /> AI Generated
-                      </span>
-                    )}
-                    {selectedState && (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 border border-blue-100">
-                        <MapPin className="h-3 w-3" /> {selectedState}
-                      </span>
-                    )}
-                    {result.pathway.category && (
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 border border-slate-200">
-                        {result.pathway.category}
-                      </span>
-                    )}
+                <div className="mb-8 rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    {/* Left: name + meta + overview */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        {result.source === "generated" && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-power-orange border border-orange-200">
+                            <Sparkles className="h-3 w-3" /> AI Generated
+                          </span>
+                        )}
+                        {selectedState && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 border border-blue-100">
+                            <MapPin className="h-3 w-3" /> {selectedState}
+                          </span>
+                        )}
+                        {result.pathway.category && (
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 border border-slate-200">
+                            {result.pathway.category}
+                          </span>
+                        )}
+                      </div>
+                      <h2 className="font-title text-2xl font-bold text-slate-900 break-words sm:text-3xl">
+                        {result.pathway.sportName}
+                        <span className="ml-2 text-slate-400 font-normal text-xl sm:text-2xl">Pathway</span>
+                      </h2>
+                      {result.pathway.overview && (
+                        <p className="mt-2 max-w-2xl text-sm text-slate-600 leading-relaxed sm:text-base">
+                          {result.pathway.overview}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Right: stat chips */}
+                    {entitiesStatus === "loading" ? (
+                      <div className="flex items-center gap-2 shrink-0 self-start rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                        <div className="h-3.5 w-3.5 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
+                        <span className="text-xs font-medium text-slate-400">Loading opportunities…</span>
+                      </div>
+                    ) : totalOpportunities > 0 ? (
+                      <div className="flex flex-wrap gap-2 shrink-0 self-start">
+                        {(result.pathway.tournaments?.length ?? 0) > 0 && (
+                          <button
+                            onClick={() => setActiveTab("opportunities")}
+                            className="flex flex-col items-center rounded-xl border border-orange-100 bg-orange-50 px-4 py-2.5 min-w-[68px] hover:bg-orange-100 transition group"
+                          >
+                            <span className="text-xl font-extrabold text-power-orange group-hover:scale-110 transition-transform">
+                              {result.pathway.tournaments!.length}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400 mt-0.5 whitespace-nowrap">
+                              Tournaments
+                            </span>
+                          </button>
+                        )}
+                        {(result.pathway.scholarships?.length ?? 0) > 0 && (
+                          <button
+                            onClick={() => setActiveTab("opportunities")}
+                            className="flex flex-col items-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2.5 min-w-[68px] hover:bg-emerald-100 transition group"
+                          >
+                            <span className="text-xl font-extrabold text-emerald-600 group-hover:scale-110 transition-transform">
+                              {result.pathway.scholarships!.length}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mt-0.5 whitespace-nowrap">
+                              Scholarships
+                            </span>
+                          </button>
+                        )}
+                        {(result.pathway.universities?.length ?? 0) > 0 && (
+                          <button
+                            onClick={() => setActiveTab("opportunities")}
+                            className="flex flex-col items-center rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2.5 min-w-[68px] hover:bg-indigo-100 transition group"
+                          >
+                            <span className="text-xl font-extrabold text-indigo-600 group-hover:scale-110 transition-transform">
+                              {result.pathway.universities!.length}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mt-0.5 whitespace-nowrap">
+                              Universities
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
-                  <h2 className="font-title text-2xl font-bold text-slate-900 break-words sm:text-3xl md:text-4xl">
-                    {result.pathway.sportName} Pathway
-                  </h2>
-                  {result.pathway.overview && (
-                    <p className="mt-2 max-w-2xl text-slate-600">
-                      {result.pathway.overview}
-                    </p>
-                  )}
                 </div>
-              ) : (
-                <div className="mb-8 text-center sm:text-left">
-                  <h2 className="font-title text-xl font-bold text-slate-900 sm:text-2xl md:text-3xl">
-                    The General Sports Pathway
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-slate-600 mx-auto sm:mx-0">
-                    Discover the five universal stages of athletic development
-                    in India. Search for a specific sport above to see tailored
-                    insights.
-                  </p>
-                </div>
-              )}
+              ) : null}
 
               {/* Tabs */}
               {(result || savedItems.length > 0 || applications.length > 0) && (
@@ -2665,51 +2736,28 @@ function PathwayExplorerSection() {
                   <div className="inline-flex min-w-max gap-1.5 rounded-2xl bg-slate-100/70 p-1.5 backdrop-blur-md border border-slate-200/60 shadow-inner">
                   {[
                     {
-                      id: "pathway",
-                      label: "Pathway",
+                      id: "journey",
+                      label: "The Journey",
                       icon: <Flag className="h-4 w-4" />,
-                      show: true,
-                    },
-                    {
-                      id: "tournaments",
-                      label: "Tournaments",
-                      icon: <Trophy className="h-4 w-4" />,
                       show: !!result,
                     },
                     {
-                      id: "scholarships",
-                      label: "Scholarships",
-                      icon: <Wallet className="h-4 w-4" />,
+                      id: "opportunities",
+                      label: "Opportunities",
+                      icon: <Target className="h-4 w-4" />,
+                      badge: entitiesStatus === "ready" && totalOpportunities > 0 ? totalOpportunities : undefined,
                       show: !!result,
                     },
                     {
-                      id: "universities",
-                      label: "Universities",
-                      icon: <Landmark className="h-4 w-4" />,
-                      show: !!result,
-                    },
-                    {
-                      id: "equipment",
-                      label: "Equipment",
-                      icon: <ShoppingBag className="h-4 w-4" />,
-                      show: !!result,
-                    },
-                    {
-                      id: "careers",
-                      label: "Careers",
-                      icon: <Briefcase className="h-4 w-4" />,
-                      show: !!result,
-                    },
-                    {
-                      id: "compare",
-                      label: "Compare",
-                      icon: <GitCompare className="h-4 w-4" />,
-                      show: !!result,
-                    },
-                    {
-                      id: "budget",
-                      label: "Budget",
+                      id: "plan",
+                      label: "The Plan",
                       icon: <Calculator className="h-4 w-4" />,
+                      show: !!result,
+                    },
+                    {
+                      id: "inspire",
+                      label: "Inspire",
+                      icon: <Sparkles className="h-4 w-4" />,
                       show: !!result,
                     },
                     {
@@ -2725,12 +2773,6 @@ function PathwayExplorerSection() {
                       badge: applications.length,
                       icon: <ClipboardList className="h-4 w-4" />,
                       show: applications.length > 0,
-                    },
-                    {
-                      id: "stories",
-                      label: "Stories",
-                      icon: <MessageSquareQuote className="h-4 w-4" />,
-                      show: !!result,
                     },
                   ]
                     .filter((t) => t.show)
@@ -2760,13 +2802,13 @@ function PathwayExplorerSection() {
                             {tab.icon}
                           </span>
                           <span className="whitespace-nowrap">{tab.label}</span>
-                          {tab.badge !== undefined && tab.badge > 0 && (
+                          {(tab as any).badge !== undefined && (tab as any).badge > 0 && (
                             <span className={`ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold transition-colors ${
                               activeTab === tab.id
                                 ? "bg-power-orange text-white shadow-sm"
                                 : "bg-slate-200 text-slate-500"
                             }`}>
-                              {tab.badge}
+                              {(tab as any).badge}
                             </span>
                           )}
                         </span>
@@ -2778,15 +2820,53 @@ function PathwayExplorerSection() {
 
               {/* Tab Content */}
               <AnimatePresence mode="wait">
-                {activeTab === "pathway" && (
+                {activeTab === "journey" && (
                   <motion.div
-                    key="pathway"
+                    key="journey"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[340px_1fr] xl:grid-cols-[380px_1fr]"
                   >
+                    {result && entitiesStatus !== "loading" && totalOpportunities > 0 && (
+                      <div className="mb-6 rounded-2xl border border-slate-200/70 bg-white/60 p-4 backdrop-blur-sm">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 w-full sm:w-auto">
+                            Opportunities found
+                          </p>
+                          <div className="flex flex-wrap gap-2 flex-1">
+                            {(result.pathway.tournaments?.length ?? 0) > 0 && (
+                              <div className="flex items-center gap-1.5 rounded-lg border border-orange-100 bg-orange-50 px-3 py-1.5">
+                                <Trophy className="h-3.5 w-3.5 text-power-orange shrink-0" />
+                                <span className="text-sm font-bold text-power-orange">{result.pathway.tournaments!.length}</span>
+                                <span className="text-xs text-orange-400 font-medium">Tournaments</span>
+                              </div>
+                            )}
+                            {(result.pathway.scholarships?.length ?? 0) > 0 && (
+                              <div className="flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5">
+                                <Wallet className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                <span className="text-sm font-bold text-emerald-600">{result.pathway.scholarships!.length}</span>
+                                <span className="text-xs text-emerald-400 font-medium">Scholarships</span>
+                              </div>
+                            )}
+                            {(result.pathway.universities?.length ?? 0) > 0 && (
+                              <div className="flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5">
+                                <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                                <span className="text-sm font-bold text-indigo-600">{result.pathway.universities!.length}</span>
+                                <span className="text-xs text-indigo-400 font-medium">Universities</span>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => setActiveTab("opportunities")}
+                            className="shrink-0 flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-700"
+                          >
+                            View All <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[340px_1fr] xl:grid-cols-[380px_1fr]">
                     {/* Left: level pills */}
                     <div className="space-y-3">
                       {/* P1: Progress Tracker */}
@@ -2796,123 +2876,58 @@ function PathwayExplorerSection() {
                         levels={pathwayLevels}
                       />
 
-                      {/* Visual Pyramid Indicator for Desktop */}
-                      <motion.div
-                        variants={scaleIn}
-                        className="mb-6 hidden lg:block"
-                      >
-                        <svg
-                          viewBox="0 0 300 170"
-                          className="w-full"
-                          aria-hidden
-                        >
-                          {[
-                            {
-                              y: 130,
-                              width: 280,
-                              fill: "rgba(16,185,129,0.12)",
-                              stroke: "rgba(16,185,129,0.4)",
-                              label: "Grassroots",
-                              level: 1,
-                            },
-                            {
-                              y: 104,
-                              width: 224,
-                              fill: "rgba(59,130,246,0.12)",
-                              stroke: "rgba(59,130,246,0.4)",
-                              label: "District",
-                              level: 2,
-                            },
-                            {
-                              y: 78,
-                              width: 168,
-                              fill: "rgba(139,92,246,0.12)",
-                              stroke: "rgba(139,92,246,0.4)",
-                              label: "State",
-                              level: 3,
-                            },
-                            {
-                              y: 52,
-                              width: 112,
-                              fill: "rgba(249,115,22,0.12)",
-                              stroke: "rgba(249,115,22,0.4)",
-                              label: "National",
-                              level: 4,
-                            },
-                            {
-                              y: 26,
-                              width: 56,
-                              fill: "rgba(244,63,94,0.12)",
-                              stroke: "rgba(244,63,94,0.4)",
-                              label: "International",
-                              level: 5,
-                            },
-                          ].map((tier, i) => {
-                            const isCurrentLevel = progress.currentLevel === tier.level;
-                            return (
-                              <g
-                                key={i}
-                                onClick={() => setActiveIdx(i)}
-                                className="cursor-pointer transition-opacity hover:opacity-80"
-                              >
-                                <rect
-                                  x={(300 - tier.width) / 2}
-                                  y={tier.y - 22}
-                                  width={tier.width}
-                                  height={22}
-                                  rx={4}
-                                  fill={
-                                    i === activeIdx
-                                      ? tier.fill.replace("0.12", "0.3")
-                                      : isCurrentLevel
-                                      ? tier.fill.replace("0.12", "0.25")
-                                      : tier.fill
-                                  }
-                                  stroke={isCurrentLevel ? tier.stroke.replace("0.4", "0.9") : tier.stroke}
-                                  strokeWidth={isCurrentLevel ? 2 : i === activeIdx ? 1.5 : 1}
-                                  style={{ transition: "fill 0.3s, stroke 0.3s" }}
-                                />
-                                <text
-                                  x="150"
-                                  y={130 - i * 26 - 8}
-                                  textAnchor="middle"
-                                  fontSize="8"
-                                  fontWeight={i === activeIdx || isCurrentLevel ? "700" : "500"}
-                                  fill={i === activeIdx ? "#0f172a" : isCurrentLevel ? "#0f172a" : "#94a3b8"}
-                                  style={{ transition: "fill 0.3s" }}
+                      <div className="mb-6 hidden lg:block">
+                        <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Level progression</p>
+                        <div className="relative">
+                          <div className="absolute left-4 right-4 top-4 h-0.5 bg-slate-200" />
+                          <div className="relative flex justify-between">
+                            {currentLevels.map((lv, i) => {
+                              const c = levelColorMap[lv.level];
+                              const isActive = i === activeIdx;
+                              const isCurrent = progress.currentLevel === lv.level;
+                              const isCompleted = progress.currentLevel > 0 && lv.level < progress.currentLevel;
+                              return (
+                                <button
+                                  key={lv.level}
+                                  onClick={() => setActiveIdx(i)}
+                                  title={lv.label}
+                                  className="flex flex-col items-center gap-1.5 group"
                                 >
-                                  {tier.label}
-                                </text>
-                                {/* "You Are Here" animated dot */}
-                                {isCurrentLevel && (
-                                  <>
-                                    <circle
-                                      cx={(300 - tier.width) / 2 - 10}
-                                      cy={130 - i * 26 - 11}
-                                      r={4}
-                                      fill={tier.stroke.replace("0.4", "1")}
-                                      style={{ filter: "drop-shadow(0 0 3px rgba(0,0,0,0.3))" }}
-                                    >
-                                      <animate
-                                        attributeName="r"
-                                        values="3;5;3"
-                                        dur="1.5s"
-                                        repeatCount="indefinite"
-                                      />
-                                      <animate
-                                        attributeName="opacity"
-                                        values="1;0.6;1"
-                                        dur="1.5s"
-                                        repeatCount="indefinite"
-                                      />
-                                    </circle>
-                                  </>
-                                )}
-                              </g>
-                            );
-                          })}
-                        </svg>
-                      </motion.div>
+                                  <div
+                                    className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 ${
+                                      isActive
+                                        ? `bg-gradient-to-br ${c.gradient} border-transparent text-white shadow-lg scale-110`
+                                        : isCurrent
+                                        ? `bg-white ${c.border} ${c.text} shadow-sm`
+                                        : isCompleted
+                                        ? `bg-gradient-to-br ${c.gradient} border-transparent text-white opacity-70`
+                                        : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-300"
+                                    }`}
+                                  >
+                                    {isCompleted && !isActive ? (
+                                      <CheckCircle2 className="h-3.5 w-3.5" />
+                                    ) : (
+                                      lv.level
+                                    )}
+                                    {isCurrent && (
+                                      <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-amber-400 ring-2 ring-white">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span
+                                    className={`text-[10px] font-semibold whitespace-nowrap transition-colors ${
+                                      isActive ? c.text : "text-slate-400 group-hover:text-slate-600"
+                                    }`}
+                                  >
+                                    {lv.label}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
 
                       {currentLevels.map((lv, i) => (
                         <div key={lv.level} className="flex flex-col gap-3">
@@ -2973,351 +2988,490 @@ function PathwayExplorerSection() {
                         )}
                       </AnimatePresence>
                     </div>
+                    </div>
                   </motion.div>
                 )}
 
-                {result && activeTab === "tournaments" && (
+                {/* ── Opportunities ── */}
+                {result && activeTab === "opportunities" && (
                   <motion.div
-                    key="tournaments"
+                    key="opportunities"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="space-y-0"
+                    className="space-y-10"
                   >
-                    {/* Entities loading banner */}
                     {entitiesStatus === "loading" && (
-                      <div className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 mb-4">
+                      <div className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3">
                         <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
                         <p className="text-sm font-medium text-violet-700">
-                          Fetching live tournament data — this takes a moment the first time for a new sport.
+                          Fetching live data — this takes a moment for a new sport.
                         </p>
                       </div>
                     )}
-                    {/* Recommendation Panel */}
-                    {result.pathway.tournaments?.length > 0 && (
-                      <TournamentRecommendationPanel
-                        tournaments={result.pathway.tournaments}
-                        currentLevel={progress.currentLevel}
-                        sportName={result.pathway.sportName}
-                        onViewTournament={(t) => setDetailTournament(t)}
-                      />
-                    )}
 
-                    {/* Tournament Grid */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Tournaments */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-power-orange">
+                          <Trophy className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">Tournaments</h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.tournaments?.length > 0 && (
+                          <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-power-orange">{result.pathway.tournaments.length} found</span>
+                        )}
+                      </div>
                       {result.pathway.tournaments?.length > 0 ? (
-                        result.pathway.tournaments.map((t: any, i: number) => (
-                          <div
-                            key={i}
-                            onClick={() => setDetailTournament(t)}
-                            className="flex flex-col justify-between rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-power-orange hover:ring-1 hover:ring-power-orange group cursor-pointer relative"
-                          >
-                            <div>
-                              <div className="mb-3 flex items-start justify-between gap-2">
-                                <h3 className="font-title font-bold text-slate-800 break-words group-hover:text-power-orange transition-colors pr-8">
-                                  {t.name}
-                                </h3>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <span className="shrink-0 rounded-full bg-orange-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-power-orange">
-                                    {t.level}
-                                  </span>
-                                  <SaveButton
-                                    item={t}
-                                    type="tournament"
-                                    sport={result.pathway.sportName}
-                                    savedItems={savedItems}
-                                    onToggle={handleSavedChange}
-                                  />
+                        <>
+                          <TournamentRecommendationPanel
+                            tournaments={result.pathway.tournaments}
+                            currentLevel={progress.currentLevel}
+                            sportName={result.pathway.sportName}
+                            onViewTournament={(t) => setDetailTournament(t)}
+                          />
+                          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {result.pathway.tournaments.map((t: any, i: number) => {
+                              const sid = `tournament:${t.name}:${result.pathway.sportName}`;
+                              const isSaved = savedItems.some((s) => s.id === sid);
+                              return (
+                                <div
+                                  key={i}
+                                  onClick={() => setDetailTournament(t)}
+                                  className="group relative cursor-pointer rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200 hover:-translate-y-0.5"
+                                >
+                                  {/* Thin orange top bar */}
+                                  <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                                  <div className="flex flex-col p-4" style={{ minHeight: "130px" }}>
+                                    {/* Level + save */}
+                                    <div className="mb-3 flex items-start justify-between gap-2">
+                                      <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange">
+                                        {t.level}
+                                      </span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSavedChange(
+                                            isSaved
+                                              ? savedItems.filter((s) => s.id !== sid)
+                                              : [...savedItems, { id: sid, type: "tournament" as const, name: t.name, sport: result.pathway.sportName, data: t, savedAt: new Date().toISOString() }]
+                                          );
+                                        }}
+                                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 transition"
+                                      >
+                                        <Heart className={`h-3.5 w-3.5 transition-colors ${isSaved ? "fill-power-orange text-power-orange" : "text-slate-300"}`} />
+                                      </button>
+                                    </div>
+                                    {/* Name */}
+                                    <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
+                                      {t.name}
+                                    </p>
+                                    {/* Footer */}
+                                    <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                                      <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
+                                        <Users className="h-3 w-3 shrink-0" />
+                                        <span className="truncate">{t.ageGroup}</span>
+                                      </div>
+                                      <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange group-hover:translate-x-0.5 transition-all shrink-0" />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No tournaments found for this sport.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Scholarships */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                          <Wallet className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">Scholarships</h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.scholarships?.length > 0 && (
+                          <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-power-orange">{result.pathway.scholarships.length} found</span>
+                        )}
+                      </div>
+                      {result.pathway.scholarships?.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {result.pathway.scholarships.map((s: any, i: number) => {
+                            const key = `sch-${i}`;
+                            const isOpen = expandedCards.has(key);
+                            return (
+                              <div key={i} className={`rounded-2xl overflow-hidden bg-white border shadow-sm transition-all duration-200 ${isOpen ? "border-slate-300 shadow-md sm:col-span-2 lg:col-span-3" : "border-slate-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200"}`}>
+                                <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                                {/* Card face — click to expand */}
+                                <button
+                                  onClick={() => toggleCard(key)}
+                                  className="w-full flex flex-col p-4 text-left"
+                                  style={{ minHeight: "130px" }}
+                                >
+                                  <div className="mb-3 flex items-start justify-between gap-2">
+                                    <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange">
+                                      Scholarship
+                                    </span>
+                                    <ChevronDown className={`h-4 w-4 shrink-0 text-slate-300 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                                  </div>
+                                  <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
+                                    {s.name}
+                                  </p>
+                                  <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400 min-w-0">
+                                    <Wallet className="h-3 w-3 shrink-0" />
+                                    <span className="truncate">{s.provider}</span>
+                                  </div>
+                                </button>
+                                {/* Expanded detail */}
+                                <div
+                                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                                  style={{ maxHeight: isOpen ? "400px" : "0px", opacity: isOpen ? 1 : 0 }}
+                                >
+                                  <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+                                    <p className="text-sm text-slate-600 leading-relaxed">{s.description}</p>
+                                    {s.eligibility && (
+                                      <div className="flex items-start gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+                                        <CheckCircle className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                                        <p className="text-xs text-slate-600 leading-relaxed">{s.eligibility}</p>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-2 pt-1">
+                                      <SaveButton item={s} type="scholarship" sport={result.pathway.sportName} savedItems={savedItems} onToggle={handleSavedChange} />
+                                      <button
+                                        onClick={() => { toggleCard(key); setModalData({ item: s, type: "scholarship" }); }}
+                                        className="ml-auto flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700 transition"
+                                      >
+                                        Apply <ArrowRight className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              <p className="mb-4 text-sm text-slate-600 line-clamp-3">
-                                {t.description}
-                              </p>
-                            </div>
-                            <div className="flex items-center justify-between border-t border-slate-100 pt-3 gap-2">
-                              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 min-w-0 flex-1">
-                                <Users className="h-4 w-4 text-slate-400 shrink-0" />
-                                <span className="truncate">{t.ageGroup}</span>
-                              </div>
-                              <span className="text-xs font-bold text-power-orange flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 whitespace-nowrap">
-                                View Details <ArrowRight className="h-3 w-3" />
-                              </span>
-                            </div>
-                          </div>
-                        ))
+                            );
+                          })}
+                        </div>
                       ) : (
-                        <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
-                          No specific tournaments found for this sport.
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No scholarships found for this sport.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Universities */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                          <Landmark className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">Universities</h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.universities?.length > 0 && (
+                          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-600">{result.pathway.universities.length} found</span>
+                        )}
+                      </div>
+                      {result.pathway.universities?.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {result.pathway.universities.map((u: any, i: number) => {
+                            const key = `uni-${i}`;
+                            const isOpen = expandedCards.has(key);
+                            return (
+                              <div key={i} className={`rounded-2xl overflow-hidden bg-white border shadow-sm transition-all duration-200 ${isOpen ? "border-slate-300 shadow-md sm:col-span-2 lg:col-span-3" : "border-slate-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200"}`}>
+                                <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                                {/* Card face — click to expand */}
+                                <button
+                                  onClick={() => toggleCard(key)}
+                                  className="w-full flex flex-col p-4 text-left"
+                                  style={{ minHeight: "130px" }}
+                                >
+                                  <div className="mb-3 flex items-start justify-between gap-2">
+                                    <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange">
+                                      University
+                                    </span>
+                                    <ChevronDown className={`h-4 w-4 shrink-0 text-slate-300 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                                  </div>
+                                  <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
+                                    {u.name}
+                                  </p>
+                                  <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400 min-w-0">
+                                    <MapPin className="h-3 w-3 shrink-0" />
+                                    <span className="truncate">{u.location}</span>
+                                  </div>
+                                </button>
+                                {/* Expanded detail */}
+                                <div
+                                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                                  style={{ maxHeight: isOpen ? "500px" : "0px", opacity: isOpen ? 1 : 0 }}
+                                >
+                                  <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+                                    {u.admissionCriteria && (
+                                      <div>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Admission Criteria</p>
+                                        <p className="text-xs text-slate-600 leading-relaxed">{u.admissionCriteria}</p>
+                                      </div>
+                                    )}
+                                    {u.sportsQuotaDetails && (
+                                      <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Sports Quota</p>
+                                        <p className="text-xs text-slate-600 leading-relaxed">{u.sportsQuotaDetails}</p>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-2 pt-1">
+                                      <SaveButton item={u} type="university" sport={result.pathway.sportName} savedItems={savedItems} onToggle={handleSavedChange} />
+                                      <button
+                                        onClick={() => { toggleCard(key); setModalData({ item: u, type: "university" }); }}
+                                        className="ml-auto flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700 transition"
+                                      >
+                                        Learn More <ArrowRight className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No universities found for this sport.
                         </div>
                       )}
                     </div>
                   </motion.div>
                 )}
 
-                {result && activeTab === "scholarships" && (
+                {/* ── The Plan ── */}
+                {result && activeTab === "plan" && (
                   <motion.div
-                    key="scholarships"
+                    key="plan"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+                    className="space-y-10"
                   >
-                    {entitiesStatus === "loading" && (
-                      <div className="col-span-full flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3">
-                        <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
-                        <p className="text-sm font-medium text-violet-700">Fetching live scholarship data...</p>
-                      </div>
-                    )}
-                    {result.pathway.scholarships?.length > 0 ? (
-                      result.pathway.scholarships.map((s: any, i: number) => (
-                        <div
-                          key={i}
-                          onClick={() => setModalData({ item: s, type: "scholarship" })}
-                          className="flex flex-col rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white/60 to-slate-50/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-emerald-200 group cursor-pointer relative"
-                        >
-                          <div className="mb-4 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-inner">
-                                <Wallet className="h-6 w-6" />
-                              </div>
-                              <div className="min-w-0">
-                                <h3 className="font-title font-bold text-slate-800 text-lg leading-tight break-words pr-8">
-                                  {s.name}
-                                </h3>
-                                <p className="text-xs font-semibold text-emerald-600 mt-1">
-                                  {s.provider}
-                                </p>
-                              </div>
-                            </div>
-                            <SaveButton
-                              item={s}
-                              type="scholarship"
-                              sport={result.pathway.sportName}
-                              savedItems={savedItems}
-                              onToggle={handleSavedChange}
-                            />
-                          </div>
-                          <p className="text-sm text-slate-600 leading-relaxed mb-4 flex-1">
-                            {s.description}
-                          </p>
-                          <div className="mt-auto border-t border-slate-100 pt-4 flex items-center justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-1.5">
-                                <CheckCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">
-                                  Eligibility
-                                </span>
-                              </div>
-                              <p className="text-sm font-medium text-slate-700 leading-relaxed truncate">
-                                {s.eligibility}
-                              </p>
-                            </div>
-                            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 whitespace-nowrap">
-                              View Details <ArrowRight className="h-3 w-3" />
-                            </span>
-                          </div>
+                    {/* Budget */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                          <Calculator className="h-4 w-4" />
                         </div>
-                      ))
-                    ) : (
-                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
-                        No specific scholarships found for this sport.
+                        <h3 className="font-title text-lg font-bold text-slate-900">Budget Estimate</h3>
+                        <div className="flex-1 h-px bg-slate-100" />
                       </div>
-                    )}
+                      <BudgetCalculator pathway={result.pathway} />
+                    </div>
+
+                    {/* Equipment */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                          <ShoppingBag className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">Equipment</h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.equipment?.length > 0 && (
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-bold text-slate-500">{result.pathway.equipment.length} levels</span>
+                        )}
+                      </div>
+                      {result.pathway.equipment?.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {result.pathway.equipment.map((e: any, i: number) => (
+                            <div
+                              key={i}
+                              className="flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm"
+                            >
+                              {/* Orange top accent (consistent with other cards) */}
+                              <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                              <div className="flex flex-col p-4 flex-1">
+                                {/* Header: level name + cost */}
+                                <div className="mb-3 flex items-center justify-between gap-2">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{e.level}</p>
+                                  <span className="text-[10px] font-bold text-slate-500">{e.estimatedCost}</span>
+                                </div>
+                                <ul className="space-y-1.5 flex-1">
+                                {e.items.map((item: string, j: number) => {
+                                  const eKey = `equip-${i}-${j}`;
+                                  const isOwned = ownedEquipment.has(eKey);
+                                  return (
+                                    <li key={j}>
+                                      <button
+                                        onClick={() => toggleOwned(eKey)}
+                                        className={`w-full flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors ${
+                                          isOwned ? "bg-orange-50/50" : "hover:bg-slate-50"
+                                        }`}
+                                      >
+                                        <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                                          isOwned
+                                            ? "border-power-orange bg-power-orange"
+                                            : "border-slate-300 bg-white"
+                                        }`}>
+                                          {isOwned && (
+                                            <svg viewBox="0 0 10 8" className="h-2.5 w-2.5 fill-white">
+                                              <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                          )}
+                                        </div>
+                                        <span className={`text-sm leading-relaxed transition-colors ${
+                                          isOwned ? "text-slate-400 line-through" : "text-slate-700"
+                                        }`}>
+                                          {item}
+                                        </span>
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                              {/* Owned progress */}
+                              {e.items.length > 0 && (() => {
+                                const owned = e.items.filter((_: string, j: number) => ownedEquipment.has(`equip-${i}-${j}`)).length;
+                                return owned > 0 ? (
+                                  <div className="mt-4 border-t border-slate-100 pt-3">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ready</span>
+                                      <span className="text-[10px] font-bold text-power-orange">{owned}/{e.items.length}</span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                      <div
+                                        className="h-full bg-power-orange rounded-full transition-all duration-500"
+                                        style={{ width: `${(owned / e.items.length) * 100}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : null;
+                              })()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No equipment data found for this sport.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Compare Sports */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                          <GitCompare className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">Compare Sports</h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                      </div>
+                      <ComparePanel
+                        primaryPathway={result.pathway}
+                        allSports={allSports}
+                      />
+                    </div>
                   </motion.div>
                 )}
 
-                {result && activeTab === "universities" && (
+                {/* ── Inspire ── */}
+                {result && activeTab === "inspire" && (
                   <motion.div
-                    key="universities"
+                    key="inspire"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    className="space-y-10"
                   >
-                    {entitiesStatus === "loading" && (
-                      <div className="col-span-full flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3">
-                        <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
-                        <p className="text-sm font-medium text-violet-700">Fetching live university data...</p>
-                      </div>
-                    )}
-                    {result.pathway.universities?.length > 0 ? (
-                      result.pathway.universities.map((u: any, i: number) => (
-                        <div
-                          key={i}
-                          onClick={() => setModalData({ item: u, type: "university" })}
-                          className="flex flex-col rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-indigo-200 group cursor-pointer"
-                        >
-                          <div className="mb-4 flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-                              <Landmark className="h-5 w-5" />
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="font-title font-bold leading-tight text-slate-800 break-words">
-                                {u.name}
-                              </h3>
-                              <p className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-1">
-                                <MapPin className="h-3 w-3 shrink-0" />{" "}
-                                <span className="truncate">{u.location}</span>
-                              </p>
-                            </div>
-                          </div>
-                          <div className="space-y-3 flex-1">
-                            <div>
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Admission Criteria
-                              </p>
-                              <p className="text-sm text-slate-700">
-                                {u.admissionCriteria}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Sports Quota Details
-                              </p>
-                              <p className="text-sm text-slate-700">
-                                {u.sportsQuotaDetails}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-end">
-                            <span className="text-xs font-bold text-indigo-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 whitespace-nowrap">
-                              View Details <ArrowRight className="h-3 w-3" />
-                            </span>
-                          </div>
+                    {/* Career Paths */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                          <Briefcase className="h-4 w-4" />
                         </div>
-                      ))
-                    ) : (
-                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
-                        No specific universities found for this sport.
+                        <h3 className="font-title text-lg font-bold text-slate-900">Career Paths</h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.careers?.length > 0 && (
+                          <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-power-orange">{result.pathway.careers.length} paths</span>
+                        )}
                       </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {result && activeTab === "equipment" && (
-                  <motion.div
-                    key="equipment"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                  >
-                    {result.pathway.equipment?.length > 0 ? (
-                      result.pathway.equipment.map((e: any, i: number) => (
-                        <div
-                          key={i}
-                          className="flex flex-col rounded-2xl border border-slate-200/60 bg-white/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-power-orange/30"
-                        >
-                          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-                            <span className="inline-block rounded-lg bg-slate-100 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 border border-slate-200 text-left leading-snug max-w-full break-words">
-                              {e.level}
-                            </span>
-                            <div className="flex shrink-0 items-center gap-1.5 text-power-orange bg-orange-50 px-3 py-1.5 rounded-full border border-orange-100">
-                              <Wallet className="h-3.5 w-3.5 shrink-0" />
-                              <span className="text-xs font-bold whitespace-nowrap">
-                                {e.estimatedCost}
-                              </span>
-                            </div>
-                          </div>
-                          <h4 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                            Essential Gear
-                          </h4>
-                          <ul className="space-y-2.5 flex-1 mt-1">
-                            {e.items.map((item: string, j: number) => (
-                              <li key={j} className="flex items-start gap-2.5">
-                                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
-                                <span className="text-sm font-medium text-slate-700 leading-relaxed">
-                                  {item}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
-                        No equipment data found for this sport.
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {result && activeTab === "careers" && (
-                  <motion.div
-                    key="careers"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-                  >
-                    {result.pathway.careers?.length > 0 ? (
-                      result.pathway.careers.map((c: any, i: number) => (
-                        <div
-                          key={i}
-                          className="flex flex-col rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white/60 to-slate-50/60 p-5 shadow-sm backdrop-blur-md transition-all hover:shadow-md hover:border-blue-200 group relative"
-                        >
-                          <div className="mb-4 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-inner">
-                                <Briefcase className="h-6 w-6" />
+                      {result.pathway.careers?.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {result.pathway.careers.map((c: any, i: number) => {
+                            const key = `career-${i}`;
+                            const isOpen = expandedCards.has(key);
+                            return (
+                              <div key={i} className={`group rounded-2xl overflow-hidden bg-white border shadow-sm transition-all duration-200 ${isOpen ? "border-slate-300 shadow-md sm:col-span-2 lg:col-span-3" : "border-slate-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200"}`}>
+                                <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                                <button
+                                  onClick={() => toggleCard(key)}
+                                  className="w-full flex flex-col p-4 text-left"
+                                  style={{ minHeight: "130px" }}
+                                >
+                                  <div className="mb-3 flex items-start justify-between gap-2">
+                                    <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange">
+                                      {c.demand || "Career"}
+                                    </span>
+                                    <ChevronDown className={`h-4 w-4 shrink-0 text-slate-300 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                                  </div>
+                                  <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
+                                    {c.role}
+                                  </p>
+                                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
+                                      <TrendingUp className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">{c.description?.split(".")[0] || "Sports career"}</span>
+                                    </div>
+                                    <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange group-hover:translate-x-0.5 transition-all shrink-0" />
+                                  </div>
+                                </button>
+                                <div
+                                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                                  style={{ maxHeight: isOpen ? "400px" : "0px", opacity: isOpen ? 1 : 0 }}
+                                >
+                                  <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+                                    <p className="text-sm text-slate-600 leading-relaxed">{c.description}</p>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                      <SaveButton
+                                        item={c}
+                                        type="career"
+                                        sport={result.pathway.sportName}
+                                        savedItems={savedItems}
+                                        onToggle={handleSavedChange}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <h3 className="font-title font-bold text-slate-800 text-lg leading-tight break-words pr-8">
-                                  {c.role}
-                                </h3>
-                              </div>
-                            </div>
-                            <SaveButton
-                              item={c}
-                              type="career"
-                              sport={result.pathway.sportName}
-                              savedItems={savedItems}
-                              onToggle={handleSavedChange}
-                            />
-                          </div>
-                          <p className="text-sm text-slate-600 leading-relaxed mb-4 flex-1">
-                            {c.description}
-                          </p>
-                          <div className="mt-auto border-t border-slate-100 pt-4">
-                            <div className="flex items-center gap-1.5 mb-1.5">
-                              <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-500">
-                                Demand
-                              </span>
-                            </div>
-                            <p className="text-sm font-medium text-slate-700 leading-relaxed">
-                              {c.demand}
-                            </p>
-                          </div>
+                            );
+                          })}
                         </div>
-                      ))
-                    ) : (
-                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 py-12 text-center text-slate-500">
-                        No alternative career paths found for this sport.
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No career paths found for this sport.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Athlete Stories */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-500">
+                          <MessageSquareQuote className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">Athlete Stories</h3>
+                        <div className="flex-1 h-px bg-slate-100" />
                       </div>
-                    )}
+                      <StoriesTab
+                        sportName={result.pathway.sportName}
+                        levels={currentLevels}
+                        stories={dbStories}
+                      />
+                    </div>
                   </motion.div>
                 )}
 
-                {/* P3: Compare Tab */}
-                {result && activeTab === "compare" && (
-                  <ComparePanel
-                    primaryPathway={result.pathway}
-                    allSports={allSports}
-                  />
-                )}
-
-                {/* P4: Budget Tab */}
-                {result && activeTab === "budget" && (
-                  <BudgetCalculator pathway={result.pathway} />
-                )}
-
-                {/* P5: Saved Tab */}
+                {/* Saved */}
                 {activeTab === "saved" && (
                   <SavedTab
                     savedItems={savedItems}
@@ -3326,20 +3480,11 @@ function PathwayExplorerSection() {
                   />
                 )}
 
-                {/* P6: Applications Tab */}
+                {/* Applications */}
                 {activeTab === "applications" && (
                   <ApplicationsTab
                     applications={applications}
                     onUpdateStatus={handleUpdateApplicationStatus}
-                  />
-                )}
-
-                {/* P7: Stories Tab */}
-                {result && activeTab === "stories" && (
-                  <StoriesTab
-                    sportName={result.pathway.sportName}
-                    levels={currentLevels}
-                    stories={dbStories}
                   />
                 )}
               </AnimatePresence>

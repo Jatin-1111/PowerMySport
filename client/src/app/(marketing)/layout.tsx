@@ -24,6 +24,7 @@ export default function MarketingLayout({
     <div className="flex min-h-screen flex-col overflow-x-hidden">
       {/* Navigation Header */}
       <Navigation variant="light" sticky />
+      <div className="h-16" aria-hidden />
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col">{children}</main>

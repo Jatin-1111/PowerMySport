@@ -267,6 +267,7 @@ export const bookingSchema = z
   .object({
     venueId: z.string().min(1, "Venue ID is required").optional(),
     coachId: z.string().min(1, "Coach ID is required").optional(),
+    academyId: z.string().min(1, "Academy ID is required").optional(),
     dependentId: z.string().min(1, "Dependent ID is required").optional(),
     playerLocation: geoLocationSchema.optional(),
     sport: z.string().min(1, "Sport is required"),
@@ -285,8 +286,8 @@ export const bookingSchema = z
         "End time must be in HH:mm format",
       ),
   })
-  .refine((data) => data.venueId || data.coachId, {
-    message: "Either venueId or coachId is required",
+  .refine((data) => data.venueId || data.coachId || data.academyId, {
+    message: "Either venueId, coachId, or academyId is required",
     path: ["venueId"],
   })
   .refine(

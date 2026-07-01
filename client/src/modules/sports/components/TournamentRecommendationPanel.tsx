@@ -100,7 +100,7 @@ export function TournamentRecommendationPanel({
   onViewTournament,
 }: TournamentRecommendationPanelProps) {
   const [goalLevel, setGoalLevel] = useState<number>(0);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
   const examples = ASPIRATION_EXAMPLES[sportName] || [];

@@ -30,8 +30,21 @@ import { MentalSkillsCard } from "../shared/MentalSkillsCard";
 import { TalentIdentifiersCard } from "../shared/TalentIdentifiersCard";
 import { BurnoutRiskCard } from "../shared/BurnoutRiskCard";
 import { MultiSportAdvisoryCard } from "../shared/MultiSportAdvisoryCard";
+import { LevelDecisionCard } from "./LevelDecisionCard";
 
-export function ResultsView({ submission }: { submission: GuidanceSubmission }) {
+interface LevelContext {
+  sport: string;
+  level: number;
+  levelLabel: string;
+}
+
+export function ResultsView({
+  submission,
+  levelContext,
+}: {
+  submission: GuidanceSubmission;
+  levelContext?: LevelContext;
+}) {
   const r = submission.response;
 
   const fitnessInfo = (() => {
@@ -72,63 +85,78 @@ export function ResultsView({ submission }: { submission: GuidanceSubmission }) 
   ];
 
   const [tab, setTab] = useState<TabId>("journey");
+  const [profileExpanded, setProfileExpanded] = useState(false);
 
   return (
-    <div className="space-y-5">
-      {/* Hero card — always visible */}
+    <div className="flex flex-col gap-3">
+      {/* Level decision card — shown when entering from roadmap level plan */}
+      {levelContext && submission.response.goalAssessment && (
+        <LevelDecisionCard
+          sport={levelContext.sport}
+          levelLabel={levelContext.levelLabel}
+          assessment={submission.response.goalAssessment}
+          roadmapHref={`/roadmap?sport=${encodeURIComponent(levelContext.sport)}`}
+        />
+      )}
+
+      {/* Hero card — compact with collapsible analysis */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 26 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-power-orange/5 via-amber-50 to-white border border-power-orange/20 p-6"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-power-orange/5 via-amber-50 to-white border border-power-orange/20 p-4"
       >
         <div className="absolute -right-8 -top-8 h-36 w-36 rounded-full bg-power-orange/5" />
         <div className="absolute -right-2 -bottom-10 h-28 w-28 rounded-full bg-amber-100/60" />
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-power-orange/15">
-              <Compass className="h-5 w-5 text-power-orange" />
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-power-orange/15">
+              <Compass className="h-4 w-4 text-power-orange" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-power-orange/70">
                 Scout Report
               </p>
-              <h3 className="font-title text-lg font-bold text-slate-900">
+              <h3 className="font-title text-base font-bold text-slate-900 leading-tight">
                 Player Analysis
               </h3>
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-bold text-power-orange">
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              <span className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-[11px] font-bold text-power-orange">
                 Age {submission.query.child_age}
               </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+              <span className="hidden rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 sm:inline-block">
                 {submission.query.primary_objective}
               </span>
             </div>
           </div>
 
-          <div className="mb-4 rounded-xl border border-white bg-white/70 p-3">
-            <p className="text-[10px] font-bold uppercase text-slate-400 mb-2 flex items-center gap-1">
-              <Activity className="h-3 w-3" /> Fitness Rating
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-white bg-white/70 px-3 py-2">
+            <p className="flex shrink-0 items-center gap-1 text-[10px] font-bold uppercase text-slate-400">
+              <Activity className="h-3 w-3" /> {fitnessInfo.label}
             </p>
-            <div className="flex items-center gap-3">
-              <div className="h-2 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                <motion.div
-                  className={`h-full rounded-full ${fitnessInfo.color}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: fitnessInfo.pct }}
-                  transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
-                />
-              </div>
-              <span className="text-xs font-bold text-slate-700 shrink-0">
-                {fitnessInfo.label}
-              </span>
+            <div className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${fitnessInfo.color}`}
+                initial={{ width: 0 }}
+                animate={{ width: fitnessInfo.pct }}
+                transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
+              />
             </div>
           </div>
 
-          <p className="text-sm leading-7 text-slate-700">
+          <p className={`text-sm leading-6 text-slate-700 ${profileExpanded ? "" : "line-clamp-3"}`}>
             {r.profileAnalysis}
           </p>
+          {r.profileAnalysis && r.profileAnalysis.length > 160 && (
+            <button
+              type="button"
+              onClick={() => setProfileExpanded(!profileExpanded)}
+              className="mt-1 text-xs font-semibold text-power-orange transition hover:text-orange-600"
+            >
+              {profileExpanded ? "Show less" : "Read full analysis →"}
+            </button>
+          )}
         </div>
       </motion.div>
 
@@ -160,7 +188,7 @@ export function ResultsView({ submission }: { submission: GuidanceSubmission }) 
       </div>
 
       {/* Tab content */}
-      <div className="min-h-[280px]">
+      <div className="min-h-[220px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
@@ -168,7 +196,7 @@ export function ResultsView({ submission }: { submission: GuidanceSubmission }) 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
-            className="space-y-5"
+            className="flex flex-col gap-4"
           >
             {tab === "journey" && (
               <>
@@ -425,8 +453,8 @@ export function ResultsView({ submission }: { submission: GuidanceSubmission }) 
         </AnimatePresence>
       </div>
 
-      {/* ── CTA Buttons — always visible ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+      {/* ── CTA Buttons ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
         <a
           href={process.env.NEXT_PUBLIC_MAIN_APP_URL || "http://localhost:3000"}
           className="flex items-center justify-center gap-2 rounded-xl bg-power-orange px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition-all hover:bg-orange-600 active:scale-[0.98]"

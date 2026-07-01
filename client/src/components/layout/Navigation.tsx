@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BrainCircuit,
   Building2,
+  CalendarCheck,
   ChevronDown,
   GraduationCap,
   LayoutDashboard,
@@ -38,24 +39,6 @@ const servicesItems = [
     label: "Experts",
     description: "Guidance for your sports plan",
     icon: Users,
-  },
-  {
-    href: "/venues",
-    label: "Venues",
-    description: "Find & book sports venues",
-    icon: MapPin,
-  },
-  {
-    href: "/coaches",
-    label: "Coaches",
-    description: "Connect with expert coaches",
-    icon: GraduationCap,
-  },
-  {
-    href: "/academies",
-    label: "Academies",
-    description: "Join top sports academies",
-    icon: Building2,
   },
   {
     href: "/shop",
@@ -137,7 +120,10 @@ export const Navigation: React.FC<NavProps> = ({
   const isExploreActive = exploreItems.some((item) => pathname === item.href);
 
   const isActive = (path: string) => pathname === path;
-  const isServicesActive = servicesItems.some((item) => pathname === item.href);
+  const isBookingActive = pathname === "/booking";
+  const isServicesActive =
+    isBookingActive ||
+    servicesItems.some((item) => pathname === item.href.split("?")[0]);
 
   const handleLogout = async () => {
     try {
@@ -161,7 +147,7 @@ export const Navigation: React.FC<NavProps> = ({
     <nav
       className={cn(
         "border-b border-white/60 bg-white/75 backdrop-blur-xl text-slate-900 transition-all duration-300",
-        sticky && "sticky top-0 z-50 shadow-sm",
+        sticky && "fixed inset-x-0 top-0 z-50 w-full shadow-sm",
         variant === "dark" && "bg-white/80 text-slate-900",
       )}
     >
@@ -291,10 +277,7 @@ export const Navigation: React.FC<NavProps> = ({
                   "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
               )}
             >
-              <div className="flex flex-col items-center">
-                <span>Community</span>
-                <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[8px] font-bold text-power-orange leading-none uppercase mt-0.5">Upcoming</span>
-              </div>
+              Community
             </Link>
 
             {/* Services Dropdown */}
@@ -319,7 +302,6 @@ export const Navigation: React.FC<NavProps> = ({
                       <ChevronDown className="w-4 h-4" />
                     </motion.span>
                   </div>
-                  <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[8px] font-bold text-power-orange leading-none uppercase mt-0.5">Upcoming</span>
                 </div>
               </button>
 
@@ -337,6 +319,50 @@ export const Navigation: React.FC<NavProps> = ({
                     <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
 
                     <div className="py-2">
+                      {/* Book entry */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0, duration: 0.15, ease: "easeOut" }}
+                      >
+                        <Link
+                          href="/booking"
+                          onClick={() => setServicesDropdownOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-3 group transition-colors hover:bg-orange-50",
+                            isBookingActive && "bg-orange-50",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
+                              isBookingActive
+                                ? "bg-power-orange text-white"
+                                : "bg-slate-100 text-slate-500 group-hover:bg-power-orange/10 group-hover:text-power-orange",
+                            )}
+                          >
+                            <CalendarCheck className="w-4 h-4" />
+                          </span>
+                          <div>
+                            <p
+                              className={cn(
+                                "text-sm font-medium leading-none mb-0.5",
+                                isBookingActive
+                                  ? "text-power-orange"
+                                  : "text-slate-800 group-hover:text-power-orange",
+                              )}
+                            >
+                              Book
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              Venues · Coaches · Academies
+                            </p>
+                          </div>
+                        </Link>
+                      </motion.div>
+
+                      <div className="mx-3 mb-1 border-t border-slate-100" />
+
                       {servicesItems.map((item, index) => {
                         const Icon = item.icon;
                         return (
@@ -345,7 +371,7 @@ export const Navigation: React.FC<NavProps> = ({
                             initial={{ opacity: 0, x: -6 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{
-                              delay: index * 0.05,
+                              delay: (index + 1) * 0.05,
                               duration: 0.15,
                               ease: "easeOut",
                             }}
@@ -600,10 +626,7 @@ export const Navigation: React.FC<NavProps> = ({
                 )}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <div className="flex flex-col items-start">
-                  <span className={cn("text-base font-medium", isActive("/community") ? "text-power-orange" : "text-slate-700")}>Community</span>
-                  <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[9px] font-bold text-power-orange leading-none uppercase mt-0.5">Upcoming</span>
-                </div>
+                <span className={cn("text-base font-medium", isActive("/community") ? "text-power-orange" : "text-slate-700")}>Community</span>
               </Link>
 
               {/* Mobile Services Accordion */}
@@ -615,10 +638,7 @@ export const Navigation: React.FC<NavProps> = ({
                     isServicesActive ? "bg-orange-50" : "hover:bg-indigo-50",
                   )}
                 >
-                  <div className="flex flex-col items-start">
-                    <span className={cn("text-base font-medium", isServicesActive ? "text-power-orange" : "text-slate-700")}>Services</span>
-                    <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[9px] font-bold text-power-orange leading-none uppercase mt-0.5">Upcoming</span>
-                  </div>
+                  <span className={cn("text-base font-medium", isServicesActive ? "text-power-orange" : "text-slate-700")}>Services</span>
                   <motion.span
                     animate={{ rotate: mobileServicesOpen ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
@@ -638,6 +658,24 @@ export const Navigation: React.FC<NavProps> = ({
                       className="overflow-hidden"
                     >
                       <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
+                        {/* Book link */}
+                        <Link
+                          href="/booking"
+                          onClick={() => {
+                            setMobileServicesOpen(false);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                            isBookingActive
+                              ? "text-power-orange bg-orange-50"
+                              : "text-slate-600 hover:bg-orange-50 hover:text-power-orange",
+                          )}
+                        >
+                          <CalendarCheck className="w-4 h-4 shrink-0" />
+                          Book
+                        </Link>
+
                         {servicesItems.map((item) => {
                           const Icon = item.icon;
                           return (

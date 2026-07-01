@@ -64,6 +64,7 @@ export interface Dependent {
   primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
+  location?: string;
 }
 
 export interface UserShippingAddress {
@@ -457,6 +458,7 @@ export interface Availability {
     endTime: string;
   }>;
   alternateSlots?: string[];
+  allSlots?: string[];
 }
 
 export interface DiscoveryResponse {

@@ -27,6 +27,7 @@ export interface BookingDocument extends Document {
   userId: mongoose.Types.ObjectId;
   venueId?: mongoose.Types.ObjectId;
   coachId?: mongoose.Types.ObjectId;
+  academyId?: mongoose.Types.ObjectId;
   sport: string;
   date: Date;
   startTime: string;
@@ -74,6 +75,10 @@ const bookingSchema = new Schema<BookingDocument>(
     coachId: {
       type: Schema.Types.ObjectId,
       ref: "Coach",
+    },
+    academyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Academy",
     },
     sport: {
       type: String,

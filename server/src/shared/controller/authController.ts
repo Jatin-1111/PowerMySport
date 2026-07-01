@@ -168,6 +168,7 @@ export const getProfile = async (
         primaryObjective: p.primaryObjective,
         weeklyTimeCommitment: p.weeklyTimeCommitment,
         budgetTier: p.budgetTier,
+        location: p.location,
       }));
 
     const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
@@ -178,6 +179,7 @@ export const getProfile = async (
           primaryObjective: selfPlayer.primaryObjective,
           weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
           budgetTier: selfPlayer.budgetTier,
+          location: selfPlayer.location,
         }
       : undefined;
 

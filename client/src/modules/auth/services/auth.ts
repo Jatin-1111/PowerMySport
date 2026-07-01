@@ -113,6 +113,7 @@ export const authApi = {
     primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
     weeklyTimeCommitment?: number;
     budgetTier?: "Budget" | "Moderate" | "Premium";
+    location?: string;
   }): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.post("/auth/dependents", data);
     return response.data;
@@ -130,6 +131,7 @@ export const authApi = {
       primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
       weeklyTimeCommitment?: number;
       budgetTier?: "Budget" | "Moderate" | "Premium";
+      location?: string;
     },
   ): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.put(

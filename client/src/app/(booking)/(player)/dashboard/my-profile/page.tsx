@@ -263,6 +263,7 @@ export default function ProfilePage() {
     primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
     weeklyTimeCommitment?: number;
     budgetTier?: "Budget" | "Moderate" | "Premium";
+    location?: string;
   }) => {
     try {
       if (dependentModalMode === "add") {
@@ -395,7 +396,7 @@ export default function ProfilePage() {
       });
       await fetchProfile();
       setIsEditingSports(false);
-      toast.success("Sports updated successfully!");
+      toast.success("Player profile updated successfully!");
     } catch (error: unknown) {
       toast.error(getErrorMessage(error) || "Failed to update sports");
     } finally {

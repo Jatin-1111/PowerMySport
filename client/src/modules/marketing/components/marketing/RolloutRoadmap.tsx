@@ -56,7 +56,7 @@ export const ROLLOUT_PHASES: Phase[] = [
     ],
   },
   {
-    status: "upcoming",
+    status: "live",
     tag: "Phase 1",
     name: "Community",
     title: "Talk to parents who've been there",
@@ -71,7 +71,7 @@ export const ROLLOUT_PHASES: Phase[] = [
     accent: "blue",
   },
   {
-    status: "upcoming",
+    status: "live",
     tag: "Phase 2",
     name: "Booking",
     title: "Book trusted coaches & venues",

@@ -14,6 +14,7 @@ export const bookingApi = {
   initiateBooking: async (data: {
     venueId?: string;
     coachId?: string;
+    academyId?: string;
     playerLocation?: {
       type: "Point";
       coordinates: [number, number];
