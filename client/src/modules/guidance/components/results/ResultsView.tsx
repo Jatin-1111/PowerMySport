@@ -161,7 +161,7 @@ export function ResultsView({
       </motion.div>
 
       {/* Tab navigation */}
-      <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar rounded-2xl border border-slate-200 bg-slate-50 p-1.5 whitespace-nowrap">
         {tabs.map((t) => {
           const active = tab === t.id;
           return (

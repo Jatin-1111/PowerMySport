@@ -141,9 +141,9 @@ export default function AcademiesTab() {
       <div className="border-b border-slate-100 bg-white">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <form onSubmit={handleApplySearch}>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col xl:flex-row xl:items-center gap-3">
               {/* City search */}
-              <div className="relative min-w-0 flex-1 basis-40">
+              <div className="relative min-w-0 w-full xl:flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
                 <input
                   type="text" value={cityInput} onChange={(e) => setCityInput(e.target.value)}
@@ -155,46 +155,52 @@ export default function AcademiesTab() {
                 )}
               </div>
 
-              {/* Sport */}
-              <select value={sportFilter} onChange={(e) => { setSportFilter(e.target.value); setCurrentPage(1); }}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none">
-                <option value="">Sport</option>
-                {SPORT_OPTIONS.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
-              </select>
+              {/* Filters container */}
+              <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
+                {/* Sport */}
+                <select value={sportFilter} onChange={(e) => { setSportFilter(e.target.value); setCurrentPage(1); }}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none flex-1 sm:flex-none min-w-[100px]">
+                  <option value="">Sport</option>
+                  {SPORT_OPTIONS.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
+                </select>
 
-              {/* Age group */}
-              <select value={ageGroupFilter} onChange={(e) => setAgeGroupFilter(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none">
-                {AGE_GROUP_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
+                {/* Age group */}
+                <select value={ageGroupFilter} onChange={(e) => setAgeGroupFilter(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none flex-1 sm:flex-none min-w-[100px]">
+                  {AGE_GROUP_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
 
-              {/* Price range */}
-              <input type="number" min="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min ₹"
-                className="w-24 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none" />
-              <input type="number" min="0" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max ₹"
-                className="w-24 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none" />
+                {/* Price range */}
+                <div className="flex items-center gap-1 flex-1 sm:flex-none min-w-[120px]">
+                  <input type="number" min="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min ₹"
+                    className="w-full sm:w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none" />
+                  <span className="text-slate-400">-</span>
+                  <input type="number" min="0" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max ₹"
+                    className="w-full sm:w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none" />
+                </div>
 
-              {/* Verified toggle */}
-              <button type="button" onClick={() => setVerifiedOnly((v) => !v)}
-                className={cn(
-                  "rounded-lg border px-3 py-2 text-sm font-medium transition",
-                  verifiedOnly ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600",
-                )}>
-                {verifiedOnly ? "✓ Verified" : "Verified"}
-              </button>
+                {/* Verified toggle */}
+                <button type="button" onClick={() => setVerifiedOnly((v) => !v)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm font-medium transition flex-1 sm:flex-none min-w-[90px]",
+                    verifiedOnly ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600",
+                  )}>
+                  {verifiedOnly ? "✓ Verified" : "Verified"}
+                </button>
 
-              <button type="submit" className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">
-                Search
-              </button>
-              {hasFilters && (
-                <button type="button" onClick={handleClearFilters} className="text-sm font-medium text-slate-500 hover:text-slate-800">Clear</button>
-              )}
+                <button type="submit" className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 flex-1 sm:flex-none">
+                  Search
+                </button>
+                {hasFilters && (
+                  <button type="button" onClick={handleClearFilters} className="text-sm font-medium text-slate-500 hover:text-slate-800 px-2">Clear</button>
+                )}
 
-              {!loading && (
-                <span className="ml-auto text-xs font-medium text-slate-400">
-                  {displayedAcademies.length} academi{displayedAcademies.length !== 1 ? "es" : "y"}
-                </span>
-              )}
+                {!loading && (
+                  <span className="ml-auto text-xs font-medium text-slate-400 w-full sm:w-auto text-right sm:text-left mt-1 sm:mt-0">
+                    {displayedAcademies.length} academi{displayedAcademies.length !== 1 ? "es" : "y"}
+                  </span>
+                )}
+              </div>
             </div>
           </form>
         </div>

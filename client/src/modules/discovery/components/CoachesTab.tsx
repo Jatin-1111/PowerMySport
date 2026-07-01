@@ -267,9 +267,9 @@ function CoachesTabContent() {
       <div className="border-b border-slate-100 bg-white">
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <form onSubmit={handleSearch}>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col xl:flex-row xl:items-center gap-3">
               {/* Search input */}
-              <div className="relative min-w-0 flex-1 basis-48">
+              <div className="relative min-w-0 w-full xl:flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
                 <input
                   type="text" value={sportInput} onChange={(e) => setSportInput(e.target.value)}
@@ -281,51 +281,56 @@ function CoachesTabContent() {
                 )}
               </div>
 
-              {/* Mode */}
-              <select value={serviceModeFilter} onChange={(e) => setServiceModeFilter(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none">
-                <option value="ALL">Mode</option>
-                <option value="OWN_VENUE">Own Venue</option>
-                <option value="FREELANCE">Freelance</option>
-                <option value="HYBRID">Hybrid</option>
-              </select>
+              {/* Filters container */}
+              <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
+                {/* Mode */}
+                <select value={serviceModeFilter} onChange={(e) => setServiceModeFilter(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none flex-1 sm:flex-none min-w-[100px]">
+                  <option value="ALL">Mode</option>
+                  <option value="OWN_VENUE">Own Venue</option>
+                  <option value="FREELANCE">Freelance</option>
+                  <option value="HYBRID">Hybrid</option>
+                </select>
 
-              {/* Max rate */}
-              <input type="number" min="0" value={maxRate} onChange={(e) => setMaxRate(e.target.value)} placeholder="Max ₹/hr"
-                className="w-28 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none" />
+                {/* Max rate */}
+                <input type="number" min="0" value={maxRate} onChange={(e) => setMaxRate(e.target.value)} placeholder="Max ₹/hr"
+                  className="w-full sm:w-28 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none flex-1 sm:flex-none min-w-[100px]" />
 
-              {/* Min rating */}
-              <select value={minRating} onChange={(e) => setMinRating(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none">
-                <option value="0">Rating</option>
-                <option value="3">3+ ★</option>
-                <option value="4">4+ ★</option>
-                <option value="4.5">4.5+ ★</option>
-              </select>
+                {/* Min rating */}
+                <select value={minRating} onChange={(e) => setMinRating(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none flex-1 sm:flex-none min-w-[90px]">
+                  <option value="0">Rating</option>
+                  <option value="3">3+ ★</option>
+                  <option value="4">4+ ★</option>
+                  <option value="4.5">4.5+ ★</option>
+                </select>
 
-              {/* Sort */}
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none">
-                <option value="relevance">Sort</option>
-                <option value="nearest">Nearest</option>
-                <option value="priceAsc">Price ↑</option>
-                <option value="priceDesc">Price ↓</option>
-                <option value="ratingDesc">Top Rated</option>
-              </select>
+                {/* Sort */}
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none flex-1 sm:flex-none min-w-[90px]">
+                  <option value="relevance">Sort</option>
+                  <option value="nearest">Nearest</option>
+                  <option value="priceAsc">Price ↑</option>
+                  <option value="priceDesc">Price ↓</option>
+                  <option value="ratingDesc">Top Rated</option>
+                </select>
 
-              <button type="submit"
-                className="rounded-lg bg-turf-green px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-600">
-                Search
-              </button>
-              {hasFilters && (
-                <button type="button" onClick={handleClear} className="text-sm font-medium text-slate-500 hover:text-slate-800">Clear</button>
-              )}
-
-              {!loading && (
-                <span className="ml-auto text-xs font-medium text-slate-400">
-                  {filteredCoaches.length} coach{filteredCoaches.length !== 1 ? "es" : ""}
-                </span>
-              )}
+                <button type="submit"
+                  className="rounded-lg bg-turf-green px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-600 flex-1 sm:flex-none">
+                  Search
+                </button>
+                {hasFilters && (
+                  <button type="button" onClick={handleClear} className="text-sm font-medium text-slate-500 hover:text-slate-800 px-2">
+                    Clear
+                  </button>
+                )}
+                {/* Result count */}
+                {!loading && (
+                  <span className="ml-auto text-xs font-medium text-slate-400 w-full sm:w-auto text-right sm:text-left mt-1 sm:mt-0">
+                    {filteredCoaches.length} coach{filteredCoaches.length !== 1 ? "es" : ""}
+                  </span>
+                )}
+              </div>
             </div>
           </form>
 

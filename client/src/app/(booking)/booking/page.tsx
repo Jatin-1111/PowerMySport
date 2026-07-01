@@ -26,7 +26,7 @@ function TabBar({
   return (
     <div className="sticky top-16 z-40 border-b border-slate-200 bg-white shadow-sm">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex">
+        <div className="flex overflow-x-auto no-scrollbar whitespace-nowrap">
           {TABS.map(({ id, label, icon: Icon, sub }) => {
             const isActive = activeTab === id;
             return (
