@@ -25,6 +25,7 @@ import {
   BrainCircuit,
   Heart,
   Compass,
+  Newspaper,
 } from "lucide-react";
 
 // ─── Additional Settings dropdown items ────────────────────────────────────
@@ -151,6 +152,13 @@ export default function CommunityTopNav() {
               Knowledge
             </Link>
 
+            <Link
+              href="/blog"
+              className={navLinkCls(pathname.startsWith("/blog"))}
+            >
+              <Newspaper size={16} />
+              Blog
+            </Link>
 
             <Link
               href="/contributors"
@@ -343,6 +351,7 @@ export default function CommunityTopNav() {
                       { href: "/chats?sidebar=conversations",           icon: MessagesSquare, label: "Chats"        },
                       { href: "/discover",        icon: Compass,        label: "Discover"     },
                       { href: "/q",               icon: MessageSquare,  label: "Knowledge"    },
+                      { href: "/blog",            icon: Newspaper,      label: "Blog"         },
                       { href: "/contributors",    icon: Trophy,         label: "Contributors" },
                       { href: "/following",       icon: Heart,          label: "Following"    },
                     ].map(({ href, icon: Icon, label }) => (

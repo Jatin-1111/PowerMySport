@@ -35,6 +35,7 @@ import venueRoutes from "./client/routes/venueRoutes";
 import calendarRoutes from "./client/routes/calendarRoutes";
 import walletRoutes from "./client/routes/walletRoutes";
 import communityRoutes from "./community/routes/communityRoutes";
+import blogRoutes from "./community/routes/blogRoutes";
 import authRoutes from "./shared/routes/authRoutes";
 import geoRoutes from "./shared/routes/geoRoutes";
 import phonepeWebhook from "./shared/routes/phonepeWebhook";
@@ -169,6 +170,7 @@ app.use("/api/pathway-profile", pathwayProfileRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/wallet", walletRoutes);
 // Community Domain
+app.use("/api/community/blog", blogRoutes);
 app.use("/api/community", communityRoutes);
 
 // Admin Domain

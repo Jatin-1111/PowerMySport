@@ -148,3 +148,25 @@
         @apply border border-white/60 bg-white/80 backdrop-blur-md;
     }
 }
+
+/* ── Blog rich-text editor ─────────────────────────────────────────────── */
+/* Neutral light-grey selection inside the editor (overrides the orange tint) */
+.blog-rich::selection,
+.blog-rich *::selection {
+    background: #e2e8f0;
+    color: inherit;
+}
+
+/* Placeholder for empty contentEditable blocks */
+[contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: #cbd5e1;
+    pointer-events: none;
+}
+
+/* Highlight applied via the selection toolbar */
+.blog-rich mark,
+.blog-rich span[style*="background"] {
+    border-radius: 2px;
+    padding: 0 1px;
+}
