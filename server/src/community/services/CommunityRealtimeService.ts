@@ -11,6 +11,13 @@ export type CommunityQnaEventName =
   | "community:qnaAnswerDeleted"
   | "community:qnaVoteUpdated";
 
+export type CommunityBlogEventName =
+  | "community:blogCreated"
+  | "community:blogUpdated"
+  | "community:blogDeleted"
+  | "community:blogLiked"
+  | "community:blogCommented";
+
 export type CommunityGroupEventName = "community:groupMembersUpdated";
 
 export type CommunityUserEventName = "community:reportUpdated";
@@ -21,6 +28,20 @@ export const setCommunityRealtimeSocketInstance = (io: Server) => {
 
 export const emitCommunityQnaEvent = (
   eventName: CommunityQnaEventName,
+  payload: Record<string, unknown>,
+): void => {
+  if (!socketInstance) {
+    return;
+  }
+
+  socketInstance.of("/community").emit(eventName, {
+    ...payload,
+    timestamp: new Date().toISOString(),
+  });
+};
+
+export const emitCommunityBlogEvent = (
+  eventName: CommunityBlogEventName,
   payload: Record<string, unknown>,
 ): void => {
   if (!socketInstance) {

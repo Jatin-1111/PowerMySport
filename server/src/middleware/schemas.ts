@@ -450,6 +450,84 @@ export const communityModerationActionSchema = z.object({
   resolutionNote: z.string().trim().max(1000).optional(),
 });
 
+// ─── Community Blog ───────────────────────────────────────────────────────────
+// `content` is a rich-text HTML string produced by the Tiptap editor; the
+// client-side DOMPurify allowlist is the sanitization boundary on render, so
+// the server just bounds its size.
+const blogContentSchema = z
+  .string()
+  .max(100_000, "A blog cannot exceed 100,000 characters")
+  .optional();
+
+export const blogCreateSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(5, "Title must be at least 5 characters")
+    .max(200, "Title cannot exceed 200 characters"),
+  excerpt: z.string().trim().max(300).optional(),
+  coverImageKey: z.string().trim().max(300).nullable().optional(),
+  topic: z.string().trim().max(60).optional(),
+  tags: z
+    .array(z.string().trim().min(1).max(40))
+    .max(8, "A blog can have at most 8 tags")
+    .optional(),
+  content: blogContentSchema,
+});
+
+export const blogUpdateSchema = z.object({
+  title: z.string().trim().min(5).max(200).optional(),
+  excerpt: z.string().trim().max(300).optional(),
+  coverImageKey: z.string().trim().max(300).nullable().optional(),
+  topic: z.string().trim().max(60).optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
+  content: blogContentSchema,
+});
+
+export const blogLikeSchema = z.object({
+  targetType: z.enum(["BLOG", "COMMENT"]),
+  targetId: z.string().min(1, "Target ID is required"),
+});
+
+export const blogCommentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Comment cannot be empty")
+    .max(2000, "Comment cannot exceed 2000 characters"),
+  parentId: z.string().min(1).optional(),
+});
+
+const socialHandle = z.string().trim().max(200).optional();
+
+export const blogProfileUpdateSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(
+      /^[a-z0-9_]{3,30}$/,
+      "Username must be 3–30 characters: letters, numbers, or underscores",
+    )
+    .optional(),
+  bio: z.string().trim().max(300).optional(),
+  socialLinks: z
+    .object({
+      youtube: socialHandle,
+      instagram: socialHandle,
+      facebook: socialHandle,
+      twitter: socialHandle,
+      github: socialHandle,
+      website: socialHandle,
+    })
+    .partial()
+    .optional(),
+});
+
+export const blogUploadUrlSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+
 export const funnelEventSchema = z.object({
   eventName: z.string().trim().min(1, "eventName is required").max(80),
   entityType: z.string().trim().max(80).optional(),

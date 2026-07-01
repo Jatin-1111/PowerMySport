@@ -526,6 +526,48 @@ export class S3Service {
   }
 
   /**
+   * Generate a presigned PUT upload URL for blog cover / inline images.
+   * Uses the same private images bucket + presigned-PUT flow as profile and
+   * venue photos (so it reuses the bucket's existing CORS config). The object
+   * is later served via a presigned GET (generateDownloadUrl).
+   * @param userId - Used as a folder prefix (owner scoping)
+   * @param contentType - MIME type (must be jpeg/png/webp, validated by caller)
+   */
+  async generateBlogImageUploadUrl(
+    userId: string,
+    contentType: "image/jpeg" | "image/png" | "image/webp",
+  ): Promise<UploadUrlResponse> {
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    };
+    const ext = extMap[contentType] || "jpg";
+    const key = `blog/${userId}/${uuidv4()}.${ext}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, {
+      expiresIn: 3600,
+    });
+
+    const getCommand = new GetObjectCommand({
+      Bucket: this.imagesBucket,
+      Key: key,
+    });
+
+    const downloadUrl = await getSignedUrl(this.s3Client, getCommand, {
+      expiresIn: 604800,
+    });
+
+    return { uploadUrl, downloadUrl, fileName: `${uuidv4()}.${ext}`, key };
+  }
+
+  /**
    * Generate presigned download URL for existing file
    * @param key - S3 object key
    * @param bucketType - Type of bucket ("verification" for venues/documents, "images" for user profiles)

@@ -226,6 +226,82 @@ export interface CommunityVoteResult {
   downvoteCount: number;
 }
 
+// ─── Blog ─────────────────────────────────────────────────────────────────
+export interface SocialLinks {
+  youtube?: string;
+  instagram?: string;
+  facebook?: string;
+  twitter?: string;
+  github?: string;
+  website?: string;
+}
+
+export interface BlogAuthorSummary {
+  id: string;
+  name: string;
+  username: string;
+  photoUrl: string | null;
+}
+
+export interface BlogListItem {
+  id: string;
+  title: string;
+  excerpt: string;
+  coverImageKey: string | null;
+  coverImageUrl: string | null;
+  topic: string;
+  tags: string[];
+  likeCount: number;
+  commentCount: number;
+  viewCount: number;
+  likedByMe: boolean;
+  createdAt: string;
+  author: BlogAuthorSummary;
+}
+
+export interface BlogDetail extends BlogListItem {
+  /** Sanitized rich-text HTML produced by the Tiptap editor. */
+  content: string;
+  updatedAt: string;
+  isMine: boolean;
+}
+
+export interface BlogComment {
+  id: string;
+  blogId: string;
+  content: string;
+  parentId: string | null;
+  likeCount: number;
+  likedByMe: boolean;
+  createdAt: string;
+  author: BlogAuthorSummary;
+  replies: BlogComment[];
+  isMine: boolean;
+}
+
+export interface BlogAuthorProfile {
+  userId: string;
+  username: string;
+  name: string;
+  photoUrl: string | null;
+  bio: string;
+  socialLinks: SocialLinks;
+  joinedAt: string;
+  blogCount: number;
+  totalLikes: number;
+  isMe: boolean;
+}
+
+export interface BlogListResponse {
+  items: BlogListItem[];
+  pagination: { total: number; page: number; totalPages: number };
+}
+
+export interface BlogCommentListResponse {
+  items: BlogComment[];
+  pagination: { total: number; page: number; totalPages: number };
+}
+
 export interface CommunityActivityItem {
   id: string;
   title: string;
