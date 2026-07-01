@@ -15,11 +15,17 @@ import {
   ChevronRight,
   MapPin,
   MessageCircle,
-  Search,
   Star,
   Users,
   X,
+  Car,
+  Bath,
+  Droplets,
+  HeartPulse,
+  Coffee,
+  Dumbbell,
 } from "lucide-react";
+import { FilterBar, ActiveFilter } from "@/modules/discovery/components/FilterBar";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -43,6 +49,15 @@ const AGE_GROUP_OPTIONS = [
   { value: "teens", label: "Teens (13-17)" },
   { value: "adults", label: "Adults (18+)" },
   { value: "all", label: "All Ages" },
+];
+
+const AMENITIES_OPTIONS = [
+  { id: "Parking", label: "Parking", icon: Car },
+  { id: "Washroom", label: "Washrooms", icon: Bath },
+  { id: "Drinking Water", label: "Drinking Water", icon: Droplets },
+  { id: "First Aid", label: "First Aid", icon: HeartPulse },
+  { id: "Cafe", label: "Cafe/Snacks", icon: Coffee },
+  { id: "Equipment", label: "Equipment", icon: Dumbbell },
 ];
 
 const normalizeImageUrl = (value?: string) => {
@@ -80,6 +95,7 @@ export default function AcademiesTab() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalAcademies, setTotalAcademies] = useState(0);
   const [followedAcademyIds, setFollowedAcademyIds] = useState<string[]>([]);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [cityInput, setCityInput] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [sportFilter, setSportFilter] = useState("");
@@ -87,6 +103,7 @@ export default function AcademiesTab() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
   const communityUrl = useMemo(() => getCommunityAppUrl({
     searchParams: { sidebar: "inbox", directory: "groups", panel: "discover", q: cityFilter || sportFilter || undefined },
@@ -126,85 +143,162 @@ export default function AcademiesTab() {
       if (!academyMatchesAgeGroup(academy, ageGroupFilter)) return false;
       if (parsedMin !== undefined && !isNaN(parsedMin) && (rupees ?? 0) < parsedMin) return false;
       if (parsedMax !== undefined && !isNaN(parsedMax) && (rupees ?? 0) > parsedMax) return false;
+      
+      if (selectedAmenities.length > 0) {
+        const acAmenities = (academy as any).amenities || [];
+        const hasAllAmenities = selectedAmenities.every(a => acAmenities.some((va: string) => va.toLowerCase().includes(a.toLowerCase())));
+        if (!hasAllAmenities) return false;
+      }
+      
       return true;
     });
-  }, [academies, ageGroupFilter, minPrice, maxPrice, verifiedOnly]);
+  }, [academies, ageGroupFilter, minPrice, maxPrice, verifiedOnly, selectedAmenities]);
 
   const hasFilters = cityFilter.length > 0 || sportFilter.length > 0 || ageGroupFilter.length > 0 || minPrice.length > 0 || maxPrice.length > 0 || !verifiedOnly;
 
-  const handleApplySearch = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); setCurrentPage(1); setCityFilter(cityInput.trim()); };
-  const handleClearFilters = () => { setCityInput(""); setCityFilter(""); setSportFilter(""); setAgeGroupFilter(""); setMinPrice(""); setMaxPrice(""); setVerifiedOnly(true); setCurrentPage(1); };
+  const handleApplySearch = (e: React.FormEvent) => { e.preventDefault(); setCurrentPage(1); setCityFilter(cityInput.trim()); };
+  const handleClearFilters = () => { setCityInput(""); setCityFilter(""); setSportFilter(""); setAgeGroupFilter(""); setMinPrice(""); setMaxPrice(""); setVerifiedOnly(true); setSelectedAmenities([]); setCurrentPage(1); };
+
+  const activeFilters: ActiveFilter[] = [];
+  if (sportFilter) {
+    activeFilters.push({ id: "sport", label: sportFilter, onRemove: () => { setSportFilter(""); setCurrentPage(1); } });
+  }
+  if (ageGroupFilter) {
+    activeFilters.push({ id: "age", label: `Age: ${AGE_GROUP_OPTIONS.find(o => o.value === ageGroupFilter)?.label || ageGroupFilter}`, onRemove: () => setAgeGroupFilter("") });
+  }
+  if (minPrice || maxPrice) {
+    activeFilters.push({ id: "price", label: `${minPrice ? `₹${minPrice}` : "₹0"} - ${maxPrice ? `₹${maxPrice}` : "Max"}`, onRemove: () => { setMinPrice(""); setMaxPrice(""); } });
+  }
+  if (verifiedOnly) {
+    activeFilters.push({ id: "verified", label: "Verified", onRemove: () => setVerifiedOnly(false), badgeClassName: "bg-emerald-50 border-emerald-100 text-emerald-700", iconClassName: "hover:text-emerald-900" });
+  }
+  selectedAmenities.forEach(am => {
+    activeFilters.push({ 
+      id: `amenity-${am}`, 
+      label: am, 
+      onRemove: () => setSelectedAmenities(prev => prev.filter(a => a !== am)),
+      badgeClassName: "bg-blue-50 border-blue-100 text-blue-700",
+      iconClassName: "hover:text-blue-900"
+    });
+  });
 
   return (
     <div>
-      {/* ── Compact filter bar ──────────────────────────────────── */}
-      <div className="border-b border-slate-100 bg-white">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <form onSubmit={handleApplySearch}>
-            <div className="flex flex-col xl:flex-row xl:items-center gap-3">
-              {/* City search */}
-              <div className="relative min-w-0 w-full xl:flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
-                <input
-                  type="text" value={cityInput} onChange={(e) => setCityInput(e.target.value)}
-                  placeholder="City (Mumbai, Bengaluru…)"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:bg-white focus:outline-none focus:ring-1 focus:ring-power-orange/30"
-                />
-                {cityInput && (
-                  <button type="button" onClick={() => { setCityInput(""); setCityFilter(""); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"><X size={13} /></button>
-                )}
-              </div>
-
-              {/* Filters container */}
-              <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
-                {/* Sport */}
-                <select value={sportFilter} onChange={(e) => { setSportFilter(e.target.value); setCurrentPage(1); }}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none flex-1 sm:flex-none min-w-[100px]">
-                  <option value="">Sport</option>
-                  {SPORT_OPTIONS.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
-                </select>
-
-                {/* Age group */}
-                <select value={ageGroupFilter} onChange={(e) => setAgeGroupFilter(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none flex-1 sm:flex-none min-w-[100px]">
-                  {AGE_GROUP_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-
-                {/* Price range */}
-                <div className="flex items-center gap-1 flex-1 sm:flex-none min-w-[120px]">
-                  <input type="number" min="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="Min ₹"
-                    className="w-full sm:w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none" />
-                  <span className="text-slate-400">-</span>
-                  <input type="number" min="0" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="Max ₹"
-                    className="w-full sm:w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none" />
-                </div>
-
-                {/* Verified toggle */}
-                <button type="button" onClick={() => setVerifiedOnly((v) => !v)}
-                  className={cn(
-                    "rounded-lg border px-3 py-2 text-sm font-medium transition flex-1 sm:flex-none min-w-[90px]",
-                    verifiedOnly ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600",
-                  )}>
-                  {verifiedOnly ? "✓ Verified" : "Verified"}
-                </button>
-
-                <button type="submit" className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 flex-1 sm:flex-none">
-                  Search
-                </button>
-                {hasFilters && (
-                  <button type="button" onClick={handleClearFilters} className="text-sm font-medium text-slate-500 hover:text-slate-800 px-2">Clear</button>
-                )}
-
-                {!loading && (
-                  <span className="ml-auto text-xs font-medium text-slate-400 w-full sm:w-auto text-right sm:text-left mt-1 sm:mt-0">
-                    {displayedAcademies.length} academi{displayedAcademies.length !== 1 ? "es" : "y"}
-                  </span>
-                )}
-              </div>
-            </div>
-          </form>
+      <FilterBar
+        searchValue={cityInput}
+        onSearchChange={setCityInput}
+        searchPlaceholder="Search cities (Mumbai, Bengaluru…)"
+        onSearchClear={() => { setCityInput(""); setCityFilter(""); }}
+        onSubmit={handleApplySearch}
+        isModalOpen={isFilterModalOpen}
+        onModalOpenChange={setIsFilterModalOpen}
+        activeFilters={activeFilters}
+        onClearAll={handleClearFilters}
+      >
+        {/* Sport */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Sport</label>
+          <select value={sportFilter} onChange={(e) => { setSportFilter(e.target.value); setCurrentPage(1); }}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none">
+            <option value="">All Sports</option>
+            {SPORT_OPTIONS.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
+          </select>
         </div>
-      </div>
+
+        {/* Age Group */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Age Group</label>
+          <div className="grid grid-cols-2 gap-2">
+            {AGE_GROUP_OPTIONS.slice(1).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setAgeGroupFilter(opt.value)}
+                className={cn(
+                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
+                  ageGroupFilter === opt.value
+                    ? "border-power-orange bg-orange-50 text-power-orange"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Price range */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Price Range (₹/hr)</label>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+              <input
+                type="number" min="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)}
+                placeholder="Min"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+              />
+            </div>
+            <div className="h-0.5 w-4 bg-slate-300 rounded-full" />
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+              <input
+                type="number" min="0" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder="Max"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Amenities */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Facilities</label>
+          <div className="grid grid-cols-2 gap-2">
+            {AMENITIES_OPTIONS.map((amenity) => {
+              const isSelected = selectedAmenities.includes(amenity.id);
+              return (
+                <button
+                  key={amenity.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedAmenities(prev => 
+                      isSelected ? prev.filter(a => a !== amenity.id) : [...prev, amenity.id]
+                    );
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 rounded-xl border py-2.5 px-3 text-left text-sm font-semibold transition-all",
+                    isSelected
+                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  <amenity.icon size={16} />
+                  {amenity.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Verified toggle */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Trust</label>
+          <button
+            type="button"
+            onClick={() => setVerifiedOnly((v) => !v)}
+            className={cn(
+              "w-full flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
+              verifiedOnly
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            )}
+          >
+            {verifiedOnly && <BadgeCheck size={18} className="text-emerald-500" />}
+            {verifiedOnly ? "Verified Academies Only" : "Show All Academies"}
+          </button>
+        </div>
+      </FilterBar>
 
       {/* ── Content ─────────────────────────────────────────────── */}
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -254,7 +348,7 @@ export default function AcademiesTab() {
                 return (
                   <div
                     key={academy.id || academy.slug || academy.name}
-                    className="group cursor-pointer overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+                    className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
                     onClick={() => router.push(detailsHref)}
                   >
                     {/* Image */}
@@ -266,73 +360,53 @@ export default function AcademiesTab() {
                           <Building2 size={44} className="text-slate-300" />
                         </div>
                       )}
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
-
-                      {/* Sport chip */}
-                      {(academy.sports || [])[0] && (
-                        <div className="absolute bottom-3 left-3">
-                          <span className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm ring-1 ring-white/20">
-                            {academy.sports![0]}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Bookmark */}
+                      {/* Subtle Bookmark */}
                       <button
                         type="button" onClick={onToggleFollow}
                         className={cn(
-                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full shadow transition",
-                          isFollowed ? "bg-power-orange text-white" : "bg-white/85 text-slate-600 backdrop-blur-sm hover:bg-white",
+                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
+                          isFollowed ? "border-white bg-white text-power-orange" : "border-white/20 bg-black/20 text-white hover:bg-black/40",
                         )}
                         aria-label={isFollowed ? "Unsave academy" : "Save academy"}
                       >
                         <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
                       </button>
-
-                      {/* Rating */}
-                      {typeof academy.rating === "number" && (
-                        <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-slate-800 shadow backdrop-blur-sm">
-                          <Star size={11} className="fill-yellow-400 text-yellow-400" />
-                          {academy.rating.toFixed(1)}
-                        </div>
-                      )}
                     </div>
 
                     {/* Card body */}
-                    <div className="p-4">
-                      <h3 className="truncate text-[15px] font-bold text-slate-900">{academy.name}</h3>
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold tracking-tight text-slate-900">{academy.name}</h3>
 
-                      <p className="mt-1 flex items-start gap-1.5 text-xs text-slate-500">
-                        <MapPin size={12} className="mt-0.5 shrink-0 text-slate-400" />
+                      <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
+                        <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
                         <span className="line-clamp-1">{academy.city || "Location unavailable"}</span>
                       </p>
 
-                      {/* Sport tags */}
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {(academy.sports || []).slice(0, 4).map((sport, i) => (
-                          <span key={i} className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-100">{sport}</span>
-                        ))}
-                        {(academy.sports || []).length > 4 && (
-                          <span className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-100">+{(academy.sports || []).length - 4}</span>
-                        )}
-                      </div>
-
-                      {/* Badges */}
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {verified && (
-                          <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">
-                            <BadgeCheck size={10} />Verified
+                      {/* Sport tags & Badges */}
+                      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                        {typeof academy.rating === "number" && (
+                          <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
+                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
+                            {academy.rating.toFixed(1)}
                           </span>
+                        )}
+                        {verified && (
+                          <span className="flex items-center gap-1 rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-100/50">
+                            <BadgeCheck size={12} />Verified
+                          </span>
+                        )}
+                        {(academy.sports || [])[0] && (
+                          <span className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">{academy.sports![0]}</span>
                         )}
                       </div>
 
                       {/* Price + CTA */}
-                      <div className="mt-4 flex items-center justify-between border-t border-slate-50 pt-4">
+                      <div className="mt-5 flex items-center justify-between border-t border-slate-50 pt-4">
                         <div>
                           {typeof rupees === "number" ? (
                             <>
-                              <span className="text-lg font-black text-slate-900">₹{rupees}</span>
-                              <span className="ml-1 text-xs font-medium text-slate-400">/hr</span>
+                              <span className="text-xl font-black text-slate-900">₹{rupees}</span>
+                              <span className="ml-1 text-sm font-medium text-slate-400">/hr</span>
                             </>
                           ) : (
                             <span className="text-sm font-bold text-slate-500">Price on request</span>
@@ -341,9 +415,9 @@ export default function AcademiesTab() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); router.push(detailsHref); }}
-                          className="flex items-center gap-1 rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+                          className="flex items-center gap-1.5 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
                         >
-                          View <ArrowRight size={13} />
+                          View <ArrowRight size={14} />
                         </button>
                       </div>
                     </div>

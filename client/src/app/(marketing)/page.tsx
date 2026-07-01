@@ -7,7 +7,7 @@ import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Features } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { Testimonials } from "@/modules/marketing/components/marketing/Testimonials";
+import { TrustMarquee } from "@/modules/marketing/components/marketing/TrustMarquee";
 import {
   ArrowRight,
   BrainCircuit,
@@ -148,30 +148,6 @@ export default function HomePage() {
     },
   ];
 
-  const testimonials = [
-    {
-      quote:
-        "I had no idea where to start with my daughter's badminton. The roadmap laid out exactly what to focus on at her age. For the first time, I actually feel in control instead of guessing.",
-      author: "Anjali Patel",
-      role: "Mother of 2 · Badminton",
-      rating: 5,
-    },
-    {
-      quote:
-        "Everyone gives you different advice about kids' sports. Getting clear guidance built around my son's age and goals saved me weeks of second-guessing. It just made sense.",
-      author: "Meera Krishnan",
-      role: "Parent · Bengaluru",
-      rating: 5,
-    },
-    {
-      quote:
-        "My son wanted to try four different sports before we figured out swimming was his thing. The roadmap helped me understand what actually suited his age and temperament. Saved us months of trial and error.",
-      author: "Rohit Malhotra",
-      role: "Father of 1 · Swimming",
-      rating: 5,
-    },
-  ];
-
   const getDashboardLink = () => {
     if (!user) return "/register?role=PLAYER";
     return getDashboardPathByRole(user.role);
@@ -281,8 +257,7 @@ export default function HomePage() {
         subtitle="Why Parents Choose Us"
         description="We built PowerMySport to take the stress out of your child's sports journey. Here's how we make the hardest decisions simple."
         features={features}
-        columns={3}
-        variant="centered"
+        variant="bento"
       />
 
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
@@ -549,11 +524,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <Testimonials
-        title="What Parents Say"
-        subtitle="Testimonials"
-        testimonials={testimonials}
-      />
+      <TrustMarquee />
 
       {/* ── Multi-Role Join Section ── */}
       {!user && (

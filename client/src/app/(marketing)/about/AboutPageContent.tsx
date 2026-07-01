@@ -6,6 +6,9 @@ import {
   Features,
 } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
+import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
+import { TestimonialSpotlight } from "@/modules/marketing/components/marketing/TestimonialSpotlight";
+import { parentTestimonials } from "@/modules/marketing/data/testimonials";
 import { motion, Variants } from "framer-motion";
 
 const SPRING_STIFF = { type: "spring", stiffness: 260, damping: 22 } as const;
@@ -117,6 +120,23 @@ export function AboutPageContent() {
         columns={2}
         variant="centered"
       />
+
+      {/* Testimonial Spotlight */}
+      <section className="relative py-16 sm:py-20 lg:py-24 overflow-hidden">
+        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[120%] -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={orchestrator}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-80px" }}
+            className="mb-10 flex justify-center"
+          >
+            <SectionLabel label="Hear From Parents" color="orange" />
+          </motion.div>
+          <TestimonialSpotlight testimonials={parentTestimonials} />
+        </div>
+      </section>
 
       {/* Team Section */}
       <section className="relative py-16 sm:py-20 lg:py-28 bg-slate-50 overflow-hidden">

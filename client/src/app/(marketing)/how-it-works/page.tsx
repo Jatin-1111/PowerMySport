@@ -3,6 +3,8 @@
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
+import { Timeline, type TimelineEntry } from "@/modules/marketing/components/marketing/Timeline";
+import { cn } from "@/utils/cn";
 import { motion, Variants } from "framer-motion";
 import { BrainCircuit, CheckCircle, Map, UserPlus } from "lucide-react";
 import Image from "next/image";
@@ -51,18 +53,6 @@ function AmbientBlob({ className }: { className: string }) {
       aria-hidden
       className={`pointer-events-none absolute rounded-full blur-3xl will-change-transform ${className}`}
     />
-  );
-}
-
-/** Step badge pill */
-function StepBadge({ label, color }: { label: string; color: string }) {
-  return (
-    <motion.div
-      variants={fadeSlideUp}
-      className={`mb-5 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white shadow-md ${color}`}
-    >
-      {label}
-    </motion.div>
   );
 }
 
@@ -170,9 +160,6 @@ interface StepRowProps {
 }
 
 function StepRow({
-  step,
-  stepColor,
-  badgeBg,
   title,
   description,
   checkItems,
@@ -194,7 +181,6 @@ function StepRow({
         viewport={{ once: true, margin: "-100px" }}
         className={imageRight ? "order-2 lg:order-1" : "order-2"}
       >
-        <StepBadge label={`Step ${step}`} color={badgeBg} />
         <motion.h3
           variants={fadeSlideUp}
           className="mb-4 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl lg:text-4xl"
@@ -501,12 +487,17 @@ export default function HowItWorksPage() {
             </motion.h2>
           </motion.div>
 
-          {/* Step rows */}
-          <div className="space-y-24 lg:space-y-36">
-            {playerSteps.map((step) => (
-              <StepRow key={step.step} {...step} />
-            ))}
-          </div>
+          {/* Step timeline: sticky step numbers + scroll-tracking beam */}
+          <Timeline
+            data={playerSteps.map<TimelineEntry>((step) => ({
+              title: (
+                <span className={cn("font-title", step.stepColor)}>
+                  {step.step}
+                </span>
+              ),
+              content: <StepRow {...step} />,
+            }))}
+          />
         </div>
       </section>
 

@@ -15,10 +15,16 @@ import {
   ChevronRight,
   MapPin,
   MessageCircle,
-  Search,
   Star,
   X,
+  Car,
+  Bath,
+  Droplets,
+  HeartPulse,
+  Coffee,
+  Dumbbell,
 } from "lucide-react";
+import { FilterBar, ActiveFilter } from "@/modules/discovery/components/FilterBar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCommunityAppUrl } from "@/lib/community/url";
@@ -38,7 +44,18 @@ export default function VenuesTab() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalVenues, setTotalVenues] = useState(0);
   const [followedVenueIds, setFollowedVenueIds] = useState<string[]>([]);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const router = useRouter();
+  
+  const AMENITIES_OPTIONS = [
+    { id: "Parking", label: "Parking", icon: Car },
+    { id: "Washroom", label: "Washrooms", icon: Bath },
+    { id: "Drinking Water", label: "Drinking Water", icon: Droplets },
+    { id: "First Aid", label: "First Aid", icon: HeartPulse },
+    { id: "Cafe", label: "Cafe/Snacks", icon: Coffee },
+    { id: "Equipment", label: "Equipment", icon: Dumbbell },
+  ];
 
   const communityUrl = getCommunityAppUrl({
     searchParams: {
@@ -104,6 +121,13 @@ export default function VenuesTab() {
       if (parsedMin !== undefined && !isNaN(parsedMin) && price < parsedMin) return false;
       if (parsedMax !== undefined && !isNaN(parsedMax) && price > parsedMax) return false;
       if ((v.rating || 0) < parsedRating) return false;
+      
+      if (selectedAmenities.length > 0) {
+        const venueAmenities = v.amenities || [];
+        const hasAllAmenities = selectedAmenities.every(a => venueAmenities.some(va => va.toLowerCase().includes(a.toLowerCase())));
+        if (!hasAllAmenities) return false;
+      }
+      
       return true;
     });
     if (sortBy === "priceAsc") next = [...next].sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b));
@@ -119,108 +143,152 @@ export default function VenuesTab() {
   };
 
   const handleClear = () => {
-    setSportInput(""); setAppliedSportFilter(""); setMinPrice(""); setMaxPrice(""); setMinRating("0"); setSortBy("relevance"); setCurrentPage(1);
+    setSportInput(""); setAppliedSportFilter(""); setMinPrice(""); setMaxPrice(""); setMinRating("0"); setSortBy("relevance"); setSelectedAmenities([]); setCurrentPage(1);
   };
 
-  const hasFilters = appliedSportFilter || minPrice || maxPrice || Number(minRating) > 0 || sortBy !== "relevance";
+  const activeFilters: ActiveFilter[] = [];
+  if (minPrice || maxPrice) {
+    activeFilters.push({ id: "price", label: `${minPrice ? `₹${minPrice}` : "₹0"} - ${maxPrice ? `₹${maxPrice}` : "Max"}`, onRemove: () => { setMinPrice(""); setMaxPrice(""); } });
+  }
+  if (Number(minRating) > 0) {
+    activeFilters.push({ id: "rating", label: `${minRating}+ ★`, onRemove: () => setMinRating("0") });
+  }
+  if (sortBy !== "relevance") {
+    activeFilters.push({ id: "sort", label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : "Top Rated"}`, onRemove: () => setSortBy("relevance") });
+  }
+  selectedAmenities.forEach(am => {
+    activeFilters.push({ 
+      id: `amenity-${am}`, 
+      label: am, 
+      onRemove: () => setSelectedAmenities(prev => prev.filter(a => a !== am)),
+      badgeClassName: "bg-blue-50 border-blue-100 text-blue-700",
+      iconClassName: "hover:text-blue-900"
+    });
+  });
+
+  const hasFilters = activeFilters.length > 0 || appliedSportFilter !== "";
 
   return (
     <div className="min-h-[60vh]">
-      {/* ── Compact filter bar ──────────────────────────────────── */}
-      <div className="border-b border-slate-100 bg-white">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <form onSubmit={handleSearch}>
-            <div className="flex flex-col xl:flex-row xl:items-center gap-3">
-              {/* Search input */}
-              <div className="relative min-w-0 w-full xl:flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
-                <input
-                  type="text"
-                  value={sportInput}
-                  onChange={(e) => setSportInput(e.target.value)}
-                  placeholder="Sport or venue name…"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:bg-white focus:outline-none focus:ring-1 focus:ring-power-orange/30"
-                />
-                {sportInput && (
-                  <button type="button" onClick={() => setSportInput("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-
-              {/* Filters container */}
-              <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
-                {/* Sport dropdown */}
-                <select
-                  value={sportInput}
-                  onChange={(e) => setSportInput(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none flex-1 sm:flex-none min-w-[100px]"
-                >
-                  <option value="">Sport</option>
-                  {sportOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-
-                {/* Price range */}
-                <div className="flex items-center gap-1 flex-1 sm:flex-none min-w-[120px]">
-                  <input
-                    type="number" min="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)}
-                    placeholder="Min ₹"
-                    className="w-full sm:w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none"
-                  />
-                  <span className="text-slate-400">-</span>
-                  <input
-                    type="number" min="0" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="Max ₹"
-                    className="w-full sm:w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none"
-                  />
-                </div>
-
-                {/* Rating */}
-                <select
-                  value={minRating} onChange={(e) => setMinRating(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none flex-1 sm:flex-none min-w-[90px]"
-                >
-                  <option value="0">Rating</option>
-                  <option value="3">3+ ★</option>
-                  <option value="4">4+ ★</option>
-                  <option value="4.5">4.5+ ★</option>
-                </select>
-
-                {/* Sort */}
-                <select
-                  value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-power-orange focus:outline-none flex-1 sm:flex-none min-w-[90px]"
-                >
-                  <option value="relevance">Sort</option>
-                  <option value="priceAsc">Price ↑</option>
-                  <option value="priceDesc">Price ↓</option>
-                  <option value="ratingDesc">Top Rated</option>
-                </select>
-
-                {/* Actions */}
-                <button
-                  type="submit"
-                  className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 flex-1 sm:flex-none"
-                >
-                  Search
-                </button>
-                {hasFilters && (
-                  <button type="button" onClick={handleClear} className="text-sm font-medium text-slate-500 hover:text-slate-800 px-2">
-                    Clear
-                  </button>
-                )}
-
-                {/* Result count */}
-                {!loading && (
-                  <span className="ml-auto text-xs font-medium text-slate-400 w-full sm:w-auto text-right sm:text-left mt-1 sm:mt-0">
-                    {filteredVenues.length} venue{filteredVenues.length !== 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
+      <FilterBar
+        searchValue={sportInput}
+        onSearchChange={setSportInput}
+        searchPlaceholder="Search sports or venue names…"
+        onSearchClear={() => setSportInput("")}
+        onSubmit={handleSearch}
+        isModalOpen={isFilterModalOpen}
+        onModalOpenChange={setIsFilterModalOpen}
+        activeFilters={activeFilters}
+        onClearAll={handleClear}
+      >
+        {/* Price range */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Price Range (₹/hr)</label>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+              <input
+                type="number" min="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)}
+                placeholder="Min"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+              />
             </div>
-          </form>
+            <div className="h-0.5 w-4 bg-slate-300 rounded-full" />
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+              <input
+                type="number" min="0" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder="Max"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
-      </div>
+
+        {/* Rating */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Minimum Rating</label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { val: "0", label: "Any" },
+              { val: "3", label: "3+ ★" },
+              { val: "4", label: "4+ ★" },
+              { val: "4.5", label: "4.5+ ★" }
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setMinRating(opt.val)}
+                className={cn(
+                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
+                  minRating === opt.val
+                    ? "border-power-orange bg-orange-50 text-power-orange"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Amenities */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Amenities</label>
+          <div className="grid grid-cols-2 gap-2">
+            {AMENITIES_OPTIONS.map((amenity) => {
+              const isSelected = selectedAmenities.includes(amenity.id);
+              return (
+                <button
+                  key={amenity.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedAmenities(prev => 
+                      isSelected ? prev.filter(a => a !== amenity.id) : [...prev, amenity.id]
+                    );
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 rounded-xl border py-2.5 px-3 text-left text-sm font-semibold transition-all",
+                    isSelected
+                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  )}
+                >
+                  <amenity.icon size={16} />
+                  {amenity.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sort */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Sort By</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { val: "relevance", label: "Recommended" },
+              { val: "ratingDesc", label: "Top Rated" },
+              { val: "priceAsc", label: "Price (Low to High)" },
+              { val: "priceDesc", label: "Price (High to Low)" }
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setSortBy(opt.val)}
+                className={cn(
+                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
+                  sortBy === opt.val
+                    ? "border-power-orange bg-orange-50 text-power-orange"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </FilterBar>
 
       {/* ── Content ─────────────────────────────────────────────── */}
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -273,7 +341,7 @@ export default function VenuesTab() {
                 return (
                   <div
                     key={venueId || `${venue.name}-${index}`}
-                    className="group cursor-pointer overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+                    className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
                     onClick={() => router.push(`/venues/${venueId}`)}
                   >
                     {/* Image */}
@@ -285,80 +353,59 @@ export default function VenuesTab() {
                           <Building2 size={44} className="text-slate-300" />
                         </div>
                       )}
-                      {/* Gradient overlay for sport chip */}
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
-                      {/* Sport chip */}
-                      {venue.sports[0] && (
-                        <div className="absolute bottom-3 left-3">
-                          <span className="rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm ring-1 ring-white/20">
-                            {venue.sports[0]}
-                          </span>
-                        </div>
-                      )}
-                      {/* Bookmark button */}
+                      {/* Subtle Bookmark button */}
                       <button
                         type="button"
                         onClick={onToggleFollow}
                         className={cn(
-                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full shadow transition",
-                          isFollowed ? "bg-power-orange text-white" : "bg-white/85 text-slate-600 backdrop-blur-sm hover:bg-white",
+                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
+                          isFollowed ? "border-white bg-white text-power-orange" : "border-white/20 bg-black/20 text-white hover:bg-black/40",
                         )}
                         aria-label={isFollowed ? "Unsave venue" : "Save venue"}
                       >
                         <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
                       </button>
-                      {/* Rating badge */}
-                      {venue.rating && venue.rating > 0 && (
-                        <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-slate-800 shadow backdrop-blur-sm">
-                          <Star size={11} className="fill-yellow-400 text-yellow-400" />
-                          {venue.rating.toFixed(1)}
-                        </div>
-                      )}
                     </div>
 
                     {/* Card body */}
-                    <div className="p-4">
-                      <h3 className="truncate text-[15px] font-bold text-slate-900">{venue.name}</h3>
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold tracking-tight text-slate-900">{venue.name}</h3>
 
                       {(venue.address || venue.location) && (
-                        <p className="mt-1 flex items-start gap-1.5 text-xs text-slate-500">
-                          <MapPin size={12} className="mt-0.5 shrink-0 text-slate-400" />
+                        <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
+                          <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
                           <span className="line-clamp-1">
                             {venue.address || `${venue.location?.coordinates[1].toFixed(3)}°N, ${venue.location?.coordinates[0].toFixed(3)}°E`}
                           </span>
                         </p>
                       )}
 
-                      {/* Sport tags */}
-                      <div className="mt-3 flex flex-wrap gap-1">
-                        {venue.sports.slice(0, 4).map((s, i) => (
-                          <span key={i} className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-100">{s}</span>
-                        ))}
-                        {venue.sports.length > 4 && (
-                          <span className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-100">+{venue.sports.length - 4}</span>
+                      {/* Sport tags & Badges */}
+                      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                        {venue.rating && venue.rating > 0 && (
+                          <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
+                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
+                            {venue.rating.toFixed(1)}
+                          </span>
                         )}
-                      </div>
-
-                      {/* Badges */}
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">Verified</span>
-                        {knownInCommunity && (
-                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700 ring-1 ring-blue-100">Community known</span>
+                        <span className="rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-100/50">Verified</span>
+                        {venue.sports[0] && (
+                          <span className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">{venue.sports[0]}</span>
                         )}
                       </div>
 
                       {/* Price + CTA */}
-                      <div className="mt-4 flex items-center justify-between border-t border-slate-50 pt-4">
+                      <div className="mt-5 flex items-center justify-between border-t border-slate-50 pt-4">
                         <div>
-                          <span className="text-lg font-black text-slate-900">₹{getDisplayPrice(venue)}</span>
-                          <span className="ml-1 text-xs font-medium text-slate-400">/hr</span>
+                          <span className="text-xl font-black text-slate-900">₹{getDisplayPrice(venue)}</span>
+                          <span className="ml-1 text-sm font-medium text-slate-400">/hr</span>
                         </div>
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); router.push(`/checkout?type=venue&venueId=${venueId}`); }}
-                          className="flex items-center gap-1 rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+                          className="flex items-center gap-1.5 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
                         >
-                          Book <ArrowRight size={13} />
+                          Book <ArrowRight size={14} />
                         </button>
                       </div>
                     </div>

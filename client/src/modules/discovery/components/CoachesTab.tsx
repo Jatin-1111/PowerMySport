@@ -20,11 +20,11 @@ import {
   ImageIcon,
   MapPin,
   MessageCircle,
-  Search,
   Star,
   Users,
   X,
 } from "lucide-react";
+import { FilterBar, ActiveFilter } from "@/modules/discovery/components/FilterBar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
@@ -71,7 +71,7 @@ const parseCoordinates = (value: unknown) => {
   return null;
 };
 
-const QUICK_SPORTS = ["Cricket", "Football", "Badminton", "Tennis", "Basketball", "Swimming"];
+
 const SERVICE_MODE_OPTIONS = ["ALL", "OWN_VENUE", "FREELANCE", "HYBRID"];
 const MIN_RATING_OPTIONS = ["0", "3", "4", "4.5"];
 const SORT_OPTIONS = ["relevance", "nearest", "priceAsc", "priceDesc", "ratingDesc"];
@@ -99,6 +99,9 @@ function CoachesTabContent() {
   const [sportInput, setSportInput] = useState("");
   const [appliedSportFilter, setAppliedSportFilter] = useState("");
   const [serviceModeFilter, setServiceModeFilter] = useState("ALL");
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [certifiedOnly, setCertifiedOnly] = useState(false);
   const [maxRate, setMaxRate] = useState("");
   const [minRating, setMinRating] = useState("0");
   const [sortBy, setSortBy] = useState("relevance");
@@ -191,7 +194,9 @@ function CoachesTabContent() {
       const matchMode = serviceModeFilter === "ALL" || coach.serviceMode === serviceModeFilter;
       const rate = getComparableRate(coach);
       const matchRate = parsedMax === undefined || isNaN(parsedMax) || (rate !== null && rate <= parsedMax);
-      return matchSearch && matchMode && matchRate && (coach.rating || 0) >= parsedRating;
+      const matchVerified = !verifiedOnly || coach.isVerified || coach.verificationStatus === "VERIFIED";
+      const matchCertified = !certifiedOnly || (coach.certifications && coach.certifications.length > 0);
+      return matchSearch && matchMode && matchRate && (coach.rating || 0) >= parsedRating && matchVerified && matchCertified;
     });
     if (sortBy === "priceAsc") {
       next = [...next].sort((a, b) => { const ra = getComparableRate(a); const rb = getComparableRate(b); if (ra === null) return 1; if (rb === null) return -1; return ra - rb; });
@@ -227,7 +232,7 @@ function CoachesTabContent() {
     if (SORT_OPTIONS.includes(sort)) setSortBy(sort);
   }, [searchParams]);
 
-  useEffect(() => { applyFilters(coaches); }, [coaches, appliedSportFilter, serviceModeFilter, maxRate, minRating, sortBy, userLocation]);
+  useEffect(() => { applyFilters(coaches); }, [coaches, appliedSportFilter, serviceModeFilter, maxRate, minRating, sortBy, userLocation, verifiedOnly, certifiedOnly]);
 
   useEffect(() => {
     if (sortBy !== "nearest" || userLocation || !navigator.geolocation) {
@@ -257,104 +262,178 @@ function CoachesTabContent() {
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setAppliedSportFilter(normalizeSearchTerm(sportInput)); };
   const handleQuickFilter = (sport: string) => { setSportInput(sport); setAppliedSportFilter(normalizeSearchTerm(sport)); };
-  const handleClear = () => { setSportInput(""); setAppliedSportFilter(""); setServiceModeFilter("ALL"); setMaxRate(""); setMinRating("0"); setSortBy("relevance"); };
+  const handleClear = () => { setSportInput(""); setAppliedSportFilter(""); setServiceModeFilter("ALL"); setMaxRate(""); setMinRating("0"); setSortBy("relevance"); setVerifiedOnly(false); setCertifiedOnly(false); };
 
-  const hasFilters = appliedSportFilter || serviceModeFilter !== "ALL" || maxRate || Number(minRating) > 0;
+  const activeFilters: ActiveFilter[] = [];
+  if (serviceModeFilter !== "ALL") {
+    activeFilters.push({ id: "mode", label: serviceModeFilter === "OWN_VENUE" ? "Own Venue" : serviceModeFilter === "FREELANCE" ? "Freelance" : "Hybrid", onRemove: () => setServiceModeFilter("ALL"), badgeClassName: "bg-green-50 border-green-100 text-turf-green", iconClassName: "hover:text-green-700" });
+  }
+  if (maxRate) {
+    activeFilters.push({ id: "rate", label: `Max ₹${maxRate}/hr`, onRemove: () => setMaxRate(""), badgeClassName: "bg-green-50 border-green-100 text-turf-green", iconClassName: "hover:text-green-700" });
+  }
+  if (Number(minRating) > 0) {
+    activeFilters.push({ id: "rating", label: `${minRating}+ ★`, onRemove: () => setMinRating("0"), badgeClassName: "bg-green-50 border-green-100 text-turf-green", iconClassName: "hover:text-green-700" });
+  }
+  if (sortBy !== "relevance") {
+    activeFilters.push({ id: "sort", label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : sortBy === "nearest" ? "Nearest" : "Top Rated"}`, onRemove: () => setSortBy("relevance"), badgeClassName: "bg-green-50 border-green-100 text-turf-green", iconClassName: "hover:text-green-700" });
+  }
+  if (verifiedOnly) {
+    activeFilters.push({ id: "verified", label: "Verified", onRemove: () => setVerifiedOnly(false), badgeClassName: "bg-emerald-50 border-emerald-100 text-emerald-700", iconClassName: "hover:text-emerald-900" });
+  }
+  if (certifiedOnly) {
+    activeFilters.push({ id: "certified", label: "Certified", onRemove: () => setCertifiedOnly(false), badgeClassName: "bg-indigo-50 border-indigo-100 text-indigo-700", iconClassName: "hover:text-indigo-900" });
+  }
+
+  const hasFilters = activeFilters.length > 0 || appliedSportFilter !== "";
 
   return (
     <div>
-      {/* ── Compact filter bar ──────────────────────────────────── */}
-      <div className="border-b border-slate-100 bg-white">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <form onSubmit={handleSearch}>
-            <div className="flex flex-col xl:flex-row xl:items-center gap-3">
-              {/* Search input */}
-              <div className="relative min-w-0 w-full xl:flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={15} />
-                <input
-                  type="text" value={sportInput} onChange={(e) => setSportInput(e.target.value)}
-                  placeholder="Sport or coach name…"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-8 text-sm text-slate-900 placeholder:text-slate-400 focus:border-turf-green focus:bg-white focus:outline-none focus:ring-1 focus:ring-turf-green/30"
-                />
-                {sportInput && (
-                  <button type="button" onClick={() => setSportInput("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"><X size={13} /></button>
-                )}
-              </div>
-
-              {/* Filters container */}
-              <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
-                {/* Mode */}
-                <select value={serviceModeFilter} onChange={(e) => setServiceModeFilter(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none flex-1 sm:flex-none min-w-[100px]">
-                  <option value="ALL">Mode</option>
-                  <option value="OWN_VENUE">Own Venue</option>
-                  <option value="FREELANCE">Freelance</option>
-                  <option value="HYBRID">Hybrid</option>
-                </select>
-
-                {/* Max rate */}
-                <input type="number" min="0" value={maxRate} onChange={(e) => setMaxRate(e.target.value)} placeholder="Max ₹/hr"
-                  className="w-full sm:w-28 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none flex-1 sm:flex-none min-w-[100px]" />
-
-                {/* Min rating */}
-                <select value={minRating} onChange={(e) => setMinRating(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none flex-1 sm:flex-none min-w-[90px]">
-                  <option value="0">Rating</option>
-                  <option value="3">3+ ★</option>
-                  <option value="4">4+ ★</option>
-                  <option value="4.5">4.5+ ★</option>
-                </select>
-
-                {/* Sort */}
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-turf-green focus:outline-none flex-1 sm:flex-none min-w-[90px]">
-                  <option value="relevance">Sort</option>
-                  <option value="nearest">Nearest</option>
-                  <option value="priceAsc">Price ↑</option>
-                  <option value="priceDesc">Price ↓</option>
-                  <option value="ratingDesc">Top Rated</option>
-                </select>
-
-                <button type="submit"
-                  className="rounded-lg bg-turf-green px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-600 flex-1 sm:flex-none">
-                  Search
-                </button>
-                {hasFilters && (
-                  <button type="button" onClick={handleClear} className="text-sm font-medium text-slate-500 hover:text-slate-800 px-2">
-                    Clear
-                  </button>
-                )}
-                {/* Result count */}
-                {!loading && (
-                  <span className="ml-auto text-xs font-medium text-slate-400 w-full sm:w-auto text-right sm:text-left mt-1 sm:mt-0">
-                    {filteredCoaches.length} coach{filteredCoaches.length !== 1 ? "es" : ""}
-                  </span>
-                )}
-              </div>
-            </div>
-          </form>
-
-          {/* Quick sport pills */}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {QUICK_SPORTS.map((s) => (
-              <button key={s} type="button" onClick={() => handleQuickFilter(s)}
+      <FilterBar
+        searchValue={sportInput}
+        onSearchChange={setSportInput}
+        searchPlaceholder="Search sports or coach names…"
+        onSearchClear={() => setSportInput("")}
+        onSubmit={handleSearch}
+        isModalOpen={isFilterModalOpen}
+        onModalOpenChange={setIsFilterModalOpen}
+        activeFilters={activeFilters}
+        onClearAll={handleClear}
+      >
+        {/* Service Mode */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Service Mode</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { val: "ALL", label: "Any" },
+              { val: "OWN_VENUE", label: "Own Venue" },
+              { val: "FREELANCE", label: "Freelance" },
+              { val: "HYBRID", label: "Hybrid" }
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setServiceModeFilter(opt.val)}
                 className={cn(
-                  "rounded-full border px-2.5 py-1 text-xs font-semibold transition",
-                  appliedSportFilter === normalizeSearchTerm(s)
-                    ? "border-turf-green bg-turf-green text-white"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
-                )}>
-                {s}
+                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
+                  serviceModeFilter === opt.val
+                    ? "border-turf-green bg-green-50 text-turf-green"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                {opt.label}
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Max Rate */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Maximum Hourly Rate (₹)</label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+            <input
+              type="number" min="0" value={maxRate} onChange={(e) => setMaxRate(e.target.value)}
+              placeholder="Max ₹/hr"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-turf-green focus:bg-white focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Industry Grade Filters: Verified and Certified */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Trust & Qualifications</label>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setVerifiedOnly(!verifiedOnly)}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
+                verifiedOnly
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+              )}
+            >
+              {verifiedOnly && <span className="text-emerald-500 font-bold">✓</span>}
+              Verified Coaches Only
+            </button>
+            <button
+              type="button"
+              onClick={() => setCertifiedOnly(!certifiedOnly)}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
+                certifiedOnly
+                  ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+              )}
+            >
+              {certifiedOnly && <span className="text-indigo-500 font-bold">✓</span>}
+              Certified Coaches Only
+            </button>
+          </div>
+        </div>
+
+        {/* Rating */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Minimum Rating</label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { val: "0", label: "Any" },
+              { val: "3", label: "3+ ★" },
+              { val: "4", label: "4+ ★" },
+              { val: "4.5", label: "4.5+ ★" }
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setMinRating(opt.val)}
+                className={cn(
+                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
+                  minRating === opt.val
+                    ? "border-turf-green bg-green-50 text-turf-green"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Sort */}
+        <div>
+          <label className="block text-sm font-bold text-slate-900 mb-3">Sort By</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { val: "relevance", label: "Recommended" },
+              { val: "nearest", label: "Nearest" },
+              { val: "priceAsc", label: "Price (Low to High)" },
+              { val: "priceDesc", label: "Price (High to Low)" },
+              { val: "ratingDesc", label: "Top Rated" }
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setSortBy(opt.val)}
+                className={cn(
+                  "rounded-xl border py-2.5 text-sm font-semibold transition-all col-span-1",
+                  opt.val === "ratingDesc" && "col-span-2 sm:col-span-1",
+                  sortBy === opt.val
+                    ? "border-turf-green bg-green-50 text-turf-green"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </FilterBar>
+
+
 
           {sortBy === "nearest" && hasLocationDenied && (
             <p className="mt-2 text-xs text-slate-500">Location access is off — showing all coaches.</p>
           )}
-        </div>
-      </div>
-
       {/* ── Content ─────────────────────────────────────────────── */}
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
@@ -414,8 +493,8 @@ function CoachesTabContent() {
 
                 return (
                   <StaggerItem key={key} className="h-full">
-                    <Card
-                      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-turf-green/30 hover:shadow-md"
+                    <div
+                      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
                       onClick={() => router.push(coachRoute)}
                       role="button" tabIndex={0}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(coachRoute); } }}
@@ -423,88 +502,67 @@ function CoachesTabContent() {
                     >
                       <div className="relative aspect-3/4 w-full overflow-hidden bg-slate-100">
                         <CoachImageWithFallback sources={getCoachImages(coach)} alt={name} fallbackLabel={initials} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/25 to-transparent" />
 
-                        {/* Bookmark */}
+                        {/* Subtle Bookmark */}
                         <button
                           type="button" onClick={onToggleFollow}
                           className={cn(
-                            "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full shadow transition",
-                            isFollowed ? "bg-power-orange text-white" : "bg-white/85 text-slate-600 backdrop-blur-sm hover:bg-white",
+                            "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
+                            isFollowed ? "border-white bg-white text-power-orange" : "border-white/20 bg-black/20 text-white hover:bg-black/40",
                           )}
                           aria-label={isFollowed ? "Unsave coach" : "Save coach"}
                         >
                           <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
                         </button>
-
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <h4 className="line-clamp-1 text-xl font-extrabold tracking-tight text-white drop-shadow">{name}</h4>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-white/80">
-                            {city && <span className="flex items-center gap-1"><MapPin size={11} className="text-white/60" />{city}</span>}
-                            {showDist && <span className="font-semibold text-turf-green">{formatDistanceKm(dist!)}</span>}
-                          </div>
-                        </div>
                       </div>
 
-                      <div className="flex flex-1 flex-col p-4">
-                        <div className="mb-3 flex flex-wrap items-center gap-2">
-                          <span className="rounded-lg bg-turf-green px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">{primarySport}</span>
-                          {badge.label === "Verified" && (
-                            <span className="flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-600">
-                              <Award size={10} />Verified
+                      <div className="flex flex-1 flex-col p-5">
+                        <h3 className="text-lg font-bold tracking-tight text-slate-900">{name}</h3>
+                        
+                        {city && (
+                          <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
+                            <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
+                            <span className="line-clamp-1">{city} {showDist && <span className="font-semibold text-turf-green ml-1">({formatDistanceKm(dist!)})</span>}</span>
+                          </p>
+                        )}
+
+                        {/* Badges */}
+                        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                          {Number.isFinite(Number(coach.rating)) && Number(coach.rating) > 0 && (
+                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
+                              <Star size={12} className="fill-amber-400 text-amber-400" />
+                              {Number(coach.rating).toFixed(1)}
                             </span>
                           )}
-                          {knownInCommunity && (
-                            <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Community known</span>
+                          {badge.label === "Verified" && (
+                            <span className="flex items-center gap-1 rounded-full bg-blue-50/50 px-2.5 py-1 text-xs font-semibold text-blue-600 ring-1 ring-inset ring-blue-100/50">
+                              <Award size={12} />Verified
+                            </span>
                           )}
+                          <span className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">{primarySport}</span>
                         </div>
 
-                        <p className="line-clamp-2 text-sm leading-relaxed text-slate-500">
+                        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">
                           {typeof coach.bio === "string" && coach.bio.trim() ? coach.bio.trim() : "Professional coach available for focused skill development and training sessions."}
                         </p>
 
-                        {coach.sports.length > 1 && (
-                          <div className="mt-3 flex flex-wrap gap-1.5">
-                            {coach.sports.filter((s) => s !== primarySport).map((s) => (
-                              <span key={s} className="rounded-md bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 ring-1 ring-slate-100">{s}</span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="mt-auto pt-3 grid grid-cols-3 gap-2">
-                          {[
-                            { label: "Rating", value: Number.isFinite(Number(coach.rating)) && Number(coach.rating) > 0 ? Number(coach.rating).toFixed(1) : "New", icon: <Star size={11} className="fill-amber-400 text-amber-400" /> },
-                            { label: "Reviews", value: Number.isFinite(Number(coach.reviewCount)) && Number(coach.reviewCount) > 0 ? String(coach.reviewCount) : "New" },
-                            { label: "Mode", value: (coach.serviceMode || "Flexible").replace(/_/g, " ") },
-                          ].map(({ label, value, icon }) => (
-                            <div key={label} className="flex flex-col items-center justify-center rounded-lg border border-slate-100 bg-slate-50 px-2 py-2.5">
-                              <div className="flex items-center gap-1">
-                                {icon}<span className="text-sm font-bold text-slate-800">{value}</span>
-                              </div>
-                              <span className="mt-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-3">
-                        <div className="flex items-center justify-between">
+                        <div className="mt-auto pt-5 flex items-center justify-between border-t border-slate-50">
                           <div>
                             {hasRate ? (
                               <div className="flex items-baseline gap-1">
-                                <span className="text-lg font-black text-slate-900">₹{startingRate}</span>
-                                <span className="text-xs font-medium text-slate-400">/hr</span>
+                                <span className="text-xl font-black text-slate-900">₹{startingRate}</span>
+                                <span className="text-sm font-medium text-slate-400">/hr</span>
                               </div>
                             ) : (
                               <p className="text-sm font-bold text-slate-700">Contact Us</p>
                             )}
                           </div>
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 shadow-sm transition-all group-hover:-rotate-45 group-hover:bg-turf-green group-hover:text-white">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:bg-turf-green group-hover:text-white">
                             <ArrowRight size={17} strokeWidth={2.5} />
                           </div>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   </StaggerItem>
                 );
               })}

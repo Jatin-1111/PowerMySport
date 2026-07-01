@@ -32,7 +32,7 @@ export interface FeaturesProps {
   description?: string;
   features: Feature[];
   columns?: 2 | 3 | 4;
-  variant?: "default" | "centered";
+  variant?: "default" | "centered" | "bento";
 }
 
 // ─── Motion variants ───────────────────────────────────────────────────────────
@@ -134,6 +134,89 @@ function FeatureCard({
   );
 }
 
+// ─── Bento variant ─────────────────────────────────────────────────────────────
+
+const bentoSpans = [
+  "md:col-span-2 md:row-span-2",
+  "",
+  "",
+  "md:col-span-2",
+  "",
+  "",
+];
+
+function BentoFeatureCard({
+  feature,
+  index,
+}: {
+  feature: Feature;
+  index: number;
+}) {
+  const colorClass = iconBgColors[index % iconBgColors.length];
+  const span = bentoSpans[index % bentoSpans.length];
+  const isHero = span.includes("row-span-2");
+
+  return (
+    <motion.div
+      variants={cardVariants}
+      whileHover={{ y: -6 }}
+      transition={{ type: "spring", stiffness: 280, damping: 20 }}
+      className={cn(
+        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md will-change-transform premium-shadow hover:border-white/90 hover:bg-white/90",
+        span,
+      )}
+    >
+      {/* Ambient gradient header block, taller for the hero tile */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-br opacity-[0.15]",
+          isHero ? "h-2/3" : "h-1/2",
+          index % 2 === 0
+            ? "from-power-orange to-transparent"
+            : "from-turf-green to-transparent",
+        )}
+      />
+
+      <div className="relative">
+        {feature.icon && (
+          <motion.div
+            className={cn(
+              "mb-5 flex shrink-0 items-center justify-center rounded-xl will-change-transform",
+              isHero ? "h-14 w-14" : "h-12 w-12",
+              colorClass,
+            )}
+            whileHover={{ rotate: 8, scale: 1.15 }}
+            transition={{ type: "spring", stiffness: 300, damping: 16 }}
+          >
+            {feature.icon}
+          </motion.div>
+        )}
+        {feature.label && (
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+            {feature.label}
+          </p>
+        )}
+        <h3
+          className={cn(
+            "mb-2.5 font-bold text-slate-900",
+            isHero ? "text-2xl" : "text-lg",
+          )}
+        >
+          {feature.title}
+        </h3>
+        <p
+          className={cn(
+            "leading-relaxed text-slate-600",
+            isHero ? "text-base" : "text-sm",
+          )}
+        >
+          {feature.description}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export const Features: React.FC<FeaturesProps> = ({
@@ -199,11 +282,18 @@ export const Features: React.FC<FeaturesProps> = ({
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
-          className={cn("grid grid-cols-1 gap-5 sm:gap-6", gridCols[columns])}
+          className={cn(
+            "grid grid-cols-1 gap-5 sm:gap-6",
+            variant === "bento" ? "md:grid-cols-3 md:auto-rows-[14rem]" : gridCols[columns],
+          )}
         >
-          {features.map((feature, index) => (
-            <FeatureCard key={index} feature={feature} index={index} />
-          ))}
+          {features.map((feature, index) =>
+            variant === "bento" ? (
+              <BentoFeatureCard key={index} feature={feature} index={index} />
+            ) : (
+              <FeatureCard key={index} feature={feature} index={index} />
+            ),
+          )}
         </motion.div>
       </div>
     </section>

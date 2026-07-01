@@ -1,5 +1,6 @@
 "use client";
 
+import { BackgroundBeams } from "@/modules/shared/ui/BackgroundBeams";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
 import { motion, useScroll, useTransform, Variants } from "framer-motion";
@@ -104,6 +105,9 @@ function HomeHero({
       <div className="pointer-events-none absolute -right-32 -top-32 h-[480px] w-[480px] rounded-full bg-sky-300/20 blur-[120px]" />
       <div className="pointer-events-none absolute -bottom-40 left-0 h-[400px] w-[400px] rounded-full bg-amber-200/25 blur-[100px]" />
       <div className="pointer-events-none absolute left-1/2 top-1/3 h-56 w-56 -translate-x-1/2 rounded-full bg-orange-200/15 blur-[80px]" />
+
+      {/* Animated beam accent */}
+      <BackgroundBeams className="opacity-70" />
 
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 px-4 py-16 sm:gap-12 sm:px-6 sm:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:py-28 lg:px-8">
         {/* ── Left: Text column ── */}
