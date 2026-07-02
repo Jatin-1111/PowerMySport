@@ -3,12 +3,23 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
+import {
+  AdminDataTable,
+  AdminDataTableColumn,
+} from "@/modules/shared/ui/AdminDataTable";
+import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import {
+  DetailDrawer,
+  DetailRow,
+  DetailSection,
+} from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
 import { Coach, CoachVerificationStatus } from "@/types";
-import { ChevronLeft, ChevronRight, MapPin, Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const VERIFICATION_STATUSES: CoachVerificationStatus[] = [
   "UNVERIFIED",
@@ -30,23 +41,34 @@ interface PaginationData {
   totalPages: number;
 }
 
-type SortBy = "joined_desc" | "joined_asc" | "name_asc" | "rating_desc";
+type SortColumn = "name" | "joined" | "rating";
+type SortDirection = "asc" | "desc";
+
+const getCoachUser = (coach: Coach): Record<string, unknown> | null =>
+  typeof coach.userId === "object" && coach.userId !== null
+    ? (coach.userId as Record<string, unknown>)
+    : null;
 
 const getCoachName = (coach: Coach): string => {
-  const userInfo =
-    typeof coach.userId === "object" && coach.userId !== null
-      ? (coach.userId as Record<string, unknown>)
-      : null;
-  return typeof userInfo?.name === "string" ? userInfo.name : "Unnamed coach";
+  const user = getCoachUser(coach);
+  return typeof user?.name === "string" ? user.name : "Unnamed coach";
 };
 
 const getCoachEmail = (coach: Coach): string => {
-  const userInfo =
-    typeof coach.userId === "object" && coach.userId !== null
-      ? (coach.userId as Record<string, unknown>)
-      : null;
-  return typeof userInfo?.email === "string" ? userInfo.email : "";
+  const user = getCoachUser(coach);
+  return typeof user?.email === "string" ? user.email : "";
 };
+
+const getCoachId = (coach: Coach): string => coach.id || coach._id || "";
+
+const formatDate = (value?: string): string =>
+  value
+    ? new Date(value).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
 
 export default function AdminCoachesPage() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
@@ -59,8 +81,10 @@ export default function AdminCoachesPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortBy>("joined_desc");
-  const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
+  const [sortColumn, setSortColumn] = useState<SortColumn>("joined");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
+  const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<CoachEditForm>({
     bio: "",
     hourlyRate: 0,
@@ -77,15 +101,11 @@ export default function AdminCoachesPage() {
         page: currentPage,
         limit: PAGE_SIZE,
       });
-
       if (response.success && response.data) {
         setCoaches(response.data);
-        if (response.pagination) {
-          setPagination(response.pagination);
-        }
+        if (response.pagination) setPagination(response.pagination);
         return;
       }
-
       setError(response.message || "Failed to load coaches.");
     } catch (loadError) {
       console.error("Failed to load coaches:", loadError);
@@ -99,8 +119,9 @@ export default function AdminCoachesPage() {
     loadCoaches();
   }, [loadCoaches]);
 
-  const openEdit = (coach: Coach) => {
-    setEditingCoach(coach);
+  const openCoach = (coach: Coach) => {
+    setSelectedCoach(coach);
+    setEditing(false);
     setEditForm({
       bio: coach.bio || "",
       hourlyRate: coach.hourlyRate || 0,
@@ -108,13 +129,14 @@ export default function AdminCoachesPage() {
     });
   };
 
-  const closeEdit = () => {
-    setEditingCoach(null);
+  const closeCoach = () => {
+    setSelectedCoach(null);
+    setEditing(false);
   };
 
   const saveEdit = async () => {
-    if (!editingCoach) return;
-    const coachId = editingCoach.id || editingCoach._id;
+    if (!selectedCoach) return;
+    const coachId = getCoachId(selectedCoach);
     if (!coachId) return;
 
     setSaving(true);
@@ -122,7 +144,8 @@ export default function AdminCoachesPage() {
       const response = await adminApi.updateCoach(coachId, { ...editForm });
       if (response.success) {
         toast.success("Coach updated.");
-        closeEdit();
+        setEditing(false);
+        setSelectedCoach(null);
         await loadCoaches();
       } else {
         toast.error(response.message || "Failed to update coach.");
@@ -135,9 +158,108 @@ export default function AdminCoachesPage() {
     }
   };
 
-  if (loading) {
-    return <div className="py-12 text-center">Loading coaches...</div>;
-  }
+  const onSortChange = (column: string) => {
+    const col = column as SortColumn;
+    if (sortColumn === col) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(col);
+      setSortDirection(col === "name" ? "asc" : "desc");
+    }
+  };
+
+  const visibleCoaches = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = coaches.filter((coach) => {
+      if (!query) return true;
+      return (
+        getCoachName(coach).toLowerCase().includes(query) ||
+        getCoachEmail(coach).toLowerCase().includes(query) ||
+        (coach.sports || []).join(" ").toLowerCase().includes(query)
+      );
+    });
+
+    const factor = sortDirection === "asc" ? 1 : -1;
+    return [...filtered].sort((left, right) => {
+      if (sortColumn === "name") {
+        return factor * getCoachName(left).localeCompare(getCoachName(right));
+      }
+      if (sortColumn === "rating") {
+        return factor * ((left.rating ?? 0) - (right.rating ?? 0));
+      }
+      return (
+        factor *
+        (new Date(left.createdAt || 0).getTime() -
+          new Date(right.createdAt || 0).getTime())
+      );
+    });
+  }, [coaches, searchQuery, sortColumn, sortDirection]);
+
+  const columns: AdminDataTableColumn<Coach>[] = [
+    {
+      key: "name",
+      header: "Coach",
+      sortable: true,
+      render: (c) => (
+        <EntityBadge name={getCoachName(c)} email={getCoachEmail(c)} />
+      ),
+    },
+    {
+      key: "verification",
+      header: "Verification",
+      render: (c) => <StatusBadge status={c.verificationStatus || "UNVERIFIED"} />,
+    },
+    {
+      key: "sports",
+      header: "Sports",
+      render: (c) =>
+        c.sports?.length ? (
+          <div className="flex flex-wrap gap-1">
+            {c.sports.slice(0, 2).map((sport) => (
+              <span
+                key={sport}
+                className="rounded-full bg-power-orange/10 px-2 py-0.5 text-xs font-medium text-power-orange"
+              >
+                {sport}
+              </span>
+            ))}
+            {c.sports.length > 2 && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                +{c.sports.length - 2}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-slate-400">—</span>
+        ),
+    },
+    {
+      key: "rate",
+      header: "Rate",
+      align: "right",
+      render: (c) => <span className="text-slate-700">₹{c.hourlyRate}</span>,
+    },
+    {
+      key: "rating",
+      header: "Rating",
+      sortable: true,
+      align: "right",
+      render: (c) => (
+        <span className="text-slate-700">
+          {(c.rating ?? 0).toFixed(1)}{" "}
+          <span className="text-slate-400">({c.reviewCount ?? 0})</span>
+        </span>
+      ),
+    },
+    {
+      key: "joined",
+      header: "Joined",
+      sortable: true,
+      render: (c) => (
+        <span className="text-slate-600">{formatDate(c.createdAt)}</span>
+      ),
+    },
+  ];
 
   if (error) {
     return (
@@ -162,74 +284,50 @@ export default function AdminCoachesPage() {
     );
   }
 
-  const visibleCoaches = [...coaches]
-    .filter((coach) => {
-      const query = searchQuery.trim().toLowerCase();
-      if (!query) return true;
-      const name = getCoachName(coach).toLowerCase();
-      const email = getCoachEmail(coach).toLowerCase();
-      const sports = (coach.sports || []).join(" ").toLowerCase();
-      return (
-        name.includes(query) || email.includes(query) || sports.includes(query)
-      );
-    })
-    .sort((left, right) => {
-      if (sortBy === "name_asc") {
-        return getCoachName(left).localeCompare(getCoachName(right));
-      }
-      if (sortBy === "joined_asc") {
-        return (
-          new Date(left.createdAt || 0).getTime() -
-          new Date(right.createdAt || 0).getTime()
-        );
-      }
-      if (sortBy === "rating_desc") {
-        return (right.rating ?? 0) - (left.rating ?? 0);
-      }
-      return (
-        new Date(right.createdAt || 0).getTime() -
-        new Date(left.createdAt || 0).getTime()
-      );
-    });
-
   return (
     <div className="space-y-6">
       <AdminPageHeader
         badge="Admin"
         title="Coaches"
         subtitle="Browse and manage coach accounts on the platform."
+        action={
+          <Link
+            href="/admin/coaches/add"
+            className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          >
+            <Plus size={16} /> Add coach
+          </Link>
+        }
       />
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-slate-600">
-          {pagination.total} coach{pagination.total === 1 ? "" : "es"} found
-        </p>
-        <Link
-          href="/admin/coaches/add"
-          className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-        >
-          <Plus size={16} /> Add coach
-        </Link>
-      </div>
-
-      <Card className="bg-white">
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-          <input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search by name, email, or sport (this page)"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-          <select
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as SortBy)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="joined_desc">Newest joined first</option>
-            <option value="joined_asc">Oldest joined first</option>
-            <option value="name_asc">Name (A-Z)</option>
-            <option value="rating_desc">Rating (High-Low)</option>
-          </select>
+      <AdminDataTable<Coach>
+        columns={columns}
+        rows={visibleCoaches}
+        getRowKey={(c) => getCoachId(c) || getCoachName(c)}
+        loading={loading}
+        emptyMessage={
+          coaches.length === 0
+            ? "Coach accounts created from the admin portal will appear here."
+            : "No coaches match your search on this page."
+        }
+        onRowClick={openCoach}
+        search={{
+          value: searchQuery,
+          onChange: setSearchQuery,
+          placeholder: "Search this page by name, email, or sport",
+        }}
+        sort={{
+          column: sortColumn,
+          direction: sortDirection,
+          onChange: onSortChange,
+        }}
+        pagination={{
+          page: currentPage,
+          totalPages: pagination.totalPages,
+          total: pagination.total,
+          onPageChange: setCurrentPage,
+        }}
+        toolbarExtra={
           <ExportCsvButton
             filename="coaches.csv"
             rows={visibleCoaches}
@@ -247,243 +345,32 @@ export default function AdminCoachesPage() {
               { header: "Reviews", value: (c) => c.reviewCount ?? 0 },
               {
                 header: "Joined",
-                value: (c) => (c.createdAt ? new Date(c.createdAt).toISOString() : ""),
+                value: (c) =>
+                  c.createdAt ? new Date(c.createdAt).toISOString() : "",
               },
             ]}
           />
-        </div>
-      </Card>
+        }
+      />
 
-      {visibleCoaches.length === 0 ? (
-        <Card className="bg-white">
-          <div className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
-              {coaches.length === 0 ? "No coaches yet" : "No matches on this page"}
-            </div>
-            <p className="max-w-md text-slate-600">
-              {coaches.length === 0
-                ? "Coach accounts created from the admin portal will appear here."
-                : "Try a different search term, or clear the search to see all coaches on this page."}
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {visibleCoaches.map((coach, coachIndex) => {
-            const coachKey =
-              coach.id ||
-              coach._id ||
-              `${coach.bio}-${coach.createdAt}-${coachIndex}`;
-            const userInfo =
-              typeof coach.userId === "object" && coach.userId !== null
-                ? (coach.userId as Record<string, unknown>)
-                : null;
-            const displayName =
-              typeof userInfo?.name === "string"
-                ? userInfo.name
-                : "Unnamed coach";
-
-            return (
-              <Card
-                key={coachKey}
-                className="bg-white transition-shadow hover:shadow-lg"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        {displayName}
-                      </h3>
-                      <p className="text-sm text-slate-500">
-                        {typeof userInfo?.email === "string"
-                          ? userInfo.email
-                          : "No email"}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
-                        {coach.verificationStatus || "UNVERIFIED"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="line-clamp-3 text-sm text-slate-600">
-                    {coach.bio || "No bio provided."}
-                  </p>
-
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin size={16} />
-                    <span>
-                      {coach.serviceMode}
-                      {coach.ownVenueDetails?.address
-                        ? ` • ${coach.ownVenueDetails.address}`
-                        : ""}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {coach.sports?.length ? (
-                      coach.sports.map((sport) => (
-                        <span
-                          key={`${coachKey}-${sport}`}
-                          className="rounded-full bg-power-orange/10 px-2 py-1 text-xs font-medium text-power-orange"
-                        >
-                          {sport}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-sm text-slate-500">No sports</span>
-                    )}
-                  </div>
-
-                  <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-                    <p>
-                      Rate:{" "}
-                      <span className="font-semibold">₹{coach.hourlyRate}</span>
-                    </p>
-                    <p>
-                      Rating:{" "}
-                      <span className="font-semibold">{coach.rating ?? 0}</span>
-                    </p>
-                    <p>
-                      Reviews:{" "}
-                      <span className="font-semibold">
-                        {coach.reviewCount ?? 0}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {pagination.totalPages > 1 ? (
-        <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-center text-sm text-slate-600 sm:text-left">
-            Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-            {Math.min(currentPage * PAGE_SIZE, pagination.total)} of{" "}
-            {pagination.total} coaches
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-              .slice(
-                Math.max(0, currentPage - 2),
-                Math.min(pagination.totalPages, currentPage + 1),
-              )
-              .map((page) => (
+      <DetailDrawer
+        open={Boolean(selectedCoach)}
+        onClose={closeCoach}
+        title={selectedCoach ? getCoachName(selectedCoach) : "Coach"}
+        subtitle={selectedCoach ? getCoachEmail(selectedCoach) : undefined}
+        headerExtra={
+          selectedCoach ? (
+            <StatusBadge
+              status={selectedCoach.verificationStatus || "UNVERIFIED"}
+            />
+          ) : null
+        }
+        footer={
+          selectedCoach ? (
+            editing ? (
+              <div className="flex justify-end gap-2">
                 <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
-                    currentPage === page
-                      ? "bg-power-orange text-white"
-                      : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-            <button
-              onClick={() =>
-                setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))
-              }
-              disabled={currentPage === pagination.totalPages}
-              className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {editingCoach && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
-          onClick={closeEdit}
-        >
-          <div
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-start justify-between">
-              <h2 className="text-lg font-bold text-slate-900">Edit coach</h2>
-              <button
-                onClick={closeEdit}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Bio
-                </label>
-                <textarea
-                  rows={4}
-                  value={editForm.bio}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({ ...prev, bio: e.target.value }))
-                  }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Hourly rate (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={editForm.hourlyRate}
-                    onChange={(e) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        hourlyRate: Number(e.target.value),
-                      }))
-                    }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Verification status
-                  </label>
-                  <select
-                    value={editForm.verificationStatus}
-                    onChange={(e) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        verificationStatus: e.target.value as CoachVerificationStatus,
-                      }))
-                    }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  >
-                    {VERIFICATION_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  onClick={closeEdit}
+                  onClick={() => setEditing(false)}
                   disabled={saving}
                   className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                 >
@@ -497,10 +384,172 @@ export default function AdminCoachesPage() {
                   {saving ? "Saving..." : "Save changes"}
                 </button>
               </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                >
+                  Edit coach
+                </button>
+              </div>
+            )
+          ) : null
+        }
+      >
+        {selectedCoach && !editing && (
+          <>
+            <DetailSection title="Overview">
+              <DetailRow
+                label="Service mode"
+                value={selectedCoach.serviceMode || "—"}
+              />
+              <DetailRow
+                label="Hourly rate"
+                value={`₹${selectedCoach.hourlyRate}`}
+              />
+              <DetailRow
+                label="Rating"
+                value={`${(selectedCoach.rating ?? 0).toFixed(1)} (${selectedCoach.reviewCount ?? 0} reviews)`}
+              />
+              <DetailRow label="Joined" value={formatDate(selectedCoach.createdAt)} />
+              {selectedCoach.ownVenueDetails?.address && (
+                <DetailRow
+                  label="Own venue"
+                  value={selectedCoach.ownVenueDetails.address}
+                />
+              )}
+            </DetailSection>
+
+            <DetailSection title="Bio">
+              <p className="text-sm leading-relaxed text-slate-700">
+                {selectedCoach.bio || "No bio provided."}
+              </p>
+            </DetailSection>
+
+            <DetailSection title="Sports">
+              {selectedCoach.sports?.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedCoach.sports.map((sport) => (
+                    <span
+                      key={sport}
+                      className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-medium text-power-orange"
+                    >
+                      {sport}
+                      {selectedCoach.sportPricing?.[sport] != null
+                        ? ` · ₹${selectedCoach.sportPricing[sport]}`
+                        : ""}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">No sports listed.</p>
+              )}
+            </DetailSection>
+
+            <DetailSection title="Certifications">
+              {selectedCoach.certifications?.length ? (
+                <ul className="list-inside list-disc space-y-1 text-sm text-slate-700">
+                  {selectedCoach.certifications.map((cert, index) => (
+                    <li key={`${cert}-${index}`}>{cert}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  No certifications listed.
+                </p>
+              )}
+            </DetailSection>
+
+            <DetailSection title="Verification">
+              <DetailRow
+                label="Status"
+                value={
+                  <StatusBadge
+                    status={selectedCoach.verificationStatus || "UNVERIFIED"}
+                  />
+                }
+              />
+              <DetailRow
+                label="Documents"
+                value={selectedCoach.verificationDocuments?.length ?? 0}
+              />
+              <DetailRow
+                label="Submitted"
+                value={formatDate(selectedCoach.verificationSubmittedAt)}
+              />
+              <DetailRow
+                label="Verified"
+                value={formatDate(selectedCoach.verifiedAt)}
+              />
+              {selectedCoach.verificationNotes && (
+                <DetailRow
+                  label="Notes"
+                  value={selectedCoach.verificationNotes}
+                />
+              )}
+            </DetailSection>
+          </>
+        )}
+
+        {selectedCoach && editing && (
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Bio
+              </label>
+              <textarea
+                rows={5}
+                value={editForm.bio}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, bio: e.target.value }))
+                }
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Hourly rate (₹)
+                </label>
+                <input
+                  type="number"
+                  value={editForm.hourlyRate}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      hourlyRate: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Verification status
+                </label>
+                <select
+                  value={editForm.verificationStatus}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      verificationStatus: e.target
+                        .value as CoachVerificationStatus,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                >
+                  {VERIFICATION_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </DetailDrawer>
     </div>
   );
 }
