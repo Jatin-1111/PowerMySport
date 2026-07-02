@@ -79,6 +79,17 @@ The `admin` project is a standalone Next.js frontend. It communicates with the `
 - Components meant exclusively for admins are prefixed with `Admin` (e.g., `AdminVenueApprovalPanel`, `AdminPageHeader`).
 - API calls are encapsulated in typed service files (`src/services/admin.ts`).
 
+### Shared list-page UI pattern (`src/modules/shared/ui`)
+List/management pages follow one consistent pattern built from shared, presentational components — reuse these rather than hand-rolling tables, pills, or modals:
+
+- **`AdminDataTable`** — the standard list table: search box, sortable column headers, pagination footer. Pages own their data fetching/filtering and pass columns + rows.
+- **`StatusBadge`** — semantic, colour-coded status pill with one central status→tone map (booking, verification, approval, payment). Pass a raw status string; override with `tone` for custom categories (e.g. audit-log action verbs). Keeps every status the same colour everywhere.
+- **`EntityBadge`** — avatar + name + email for a resolved user/admin reference (degrades to an "Unresolved" chip instead of showing a raw ObjectId).
+- **`DetailDrawer`** (+ `DetailSection`, `DetailRow`) — right-anchored slide-out panel for a row's full detail (backdrop/Esc close, scroll lock). The standard "row click → detail" surface; also hosts row-scoped actions (e.g. refund/dispute forms, coach edit).
+- **`ExportCsvButton`** — page-level CSV export, passed to the table's `toolbarExtra`.
+
+Pages using this pattern: `users`, `coaches`, `bookings`, `venues`, `audit-log`. When building or updating an admin list page, follow the same shape (table + `onRowClick` → `DetailDrawer`) for consistency.
+
 ## Known Gotchas
 - **Session Expiry**: Because auth relies on HTTP-only cookies, an expired session will result in 401 errors from Axios. The admin app usually intercepts these and redirects to `/admin/login`.
 - **Image Uploads**: Manual onboarding of coaches/venues requires direct uploads to S3, bypassing standard user workflows, so the admin must ensure images meet size restrictions.
