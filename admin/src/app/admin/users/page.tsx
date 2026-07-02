@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import {
@@ -15,7 +15,8 @@ import {
 import { Card } from "@/modules/shared/ui/Card";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { io } from "socket.io-client";
 
 interface PaginationData {
@@ -53,7 +54,47 @@ interface PresenceUpdateEvent {
 }
 
 export default function AdminUsersPage() {
-  const [activeTab, setActiveTab] = useState<UsersTabRole>("PLAYER");
+  return (
+    <Suspense fallback={<div className="text-center py-12">Loading users...</div>}>
+      <AdminUsersPageContent />
+    </Suspense>
+  );
+}
+
+function AdminUsersPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const tabParam = searchParams.get("tab") as UsersTabRole;
+  const activeTab = (tabParam === "PLAYER" || tabParam === "COACH" || tabParam === "VENUE_LISTER")
+    ? tabParam
+    : "PLAYER";
+
+  const pageParam = Number(searchParams.get("page"));
+  const currentPage = !isNaN(pageParam) && pageParam > 0 ? pageParam : 1;
+
+  const updateQueryParams = (params: Record<string, string | number | null>) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null || value === undefined) {
+        current.delete(key);
+      } else {
+        current.set(key, String(value));
+      }
+    });
+
+    const search = current.toString();
+    const query = search ? `?${search}` : "";
+    
+    router.replace(`${pathname}${query}`, { scroll: false });
+  };
+
+  const setCurrentPage = (page: number) => {
+    updateQueryParams({ page });
+  };
+
   const [users, setUsers] = useState<UsersRow[]>([]);
   const [summary, setSummary] = useState<UsersRoleSummary>(DEFAULT_SUMMARY);
   const [playersAnalytics, setPlayersAnalytics] =
@@ -63,7 +104,6 @@ export default function AdminUsersPage() {
   const [venueListersAnalytics, setVenueListersAnalytics] =
     useState<VenueListersAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationData>({
     total: 0,
     page: 1,
@@ -167,8 +207,10 @@ export default function AdminUsersPage() {
   }, [activeTab, currentPage]);
 
   const switchTab = (tab: UsersTabRole): void => {
-    setActiveTab(tab);
-    setCurrentPage(1);
+    updateQueryParams({
+      tab,
+      page: 1,
+    });
     setSearchQuery("");
     setSortBy("joined_desc");
   };
@@ -263,6 +305,85 @@ export default function AdminUsersPage() {
       </div>
     );
   }
+
+  const renderPageButtons = () => {
+    const total = pagination.totalPages;
+    const current = currentPage;
+
+    // Calculate visible range (up to 5 pages)
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, current + 2);
+
+    // Adjust range if we have fewer than 5 pages but more are available
+    if (end - start + 1 < 5) {
+      if (start === 1) {
+        end = Math.min(total, start + 4);
+      } else if (end === total) {
+        start = Math.max(1, end - 4);
+      }
+    }
+
+    const buttons = [];
+
+    // Always show page 1
+    if (start > 1) {
+      buttons.push(
+        <button
+          key={1}
+          onClick={() => setCurrentPage(1)}
+          className="px-3 py-2 rounded-lg font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          1
+        </button>
+      );
+      if (start > 2) {
+        buttons.push(
+          <span key="dots-start" className="px-2 text-slate-400 self-center">
+            ...
+          </span>
+        );
+      }
+    }
+
+    // Show middle range
+    for (let page = start; page <= end; page++) {
+      buttons.push(
+        <button
+          key={page}
+          onClick={() => setCurrentPage(page)}
+          className={`px-3 py-2 rounded-lg font-semibold transition-colors ${
+            current === page
+              ? "bg-power-orange text-white"
+              : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+          }`}
+        >
+          {page}
+        </button>
+      );
+    }
+
+    // Always show last page
+    if (end < total) {
+      if (end < total - 1) {
+        buttons.push(
+          <span key="dots-end" className="px-2 text-slate-400 self-center">
+            ...
+          </span>
+        );
+      }
+      buttons.push(
+        <button
+          key={total}
+          onClick={() => setCurrentPage(total)}
+          className="px-3 py-2 rounded-lg font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          {total}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
 
   return (
     <div className="space-y-6">
@@ -737,27 +858,7 @@ export default function AdminUsersPage() {
                     <ChevronLeft size={18} />
                   </button>
 
-                  {Array.from(
-                    { length: pagination.totalPages },
-                    (_, i) => i + 1,
-                  )
-                    .slice(
-                      Math.max(0, currentPage - 2),
-                      Math.min(pagination.totalPages, currentPage + 1),
-                    )
-                    .map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-2 rounded-lg font-semibold transition-colors ${
-                          currentPage === page
-                            ? "bg-power-orange text-white"
-                            : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
+                  {renderPageButtons()}
 
                   <button
                     onClick={() =>

@@ -3,6 +3,7 @@ import { Booking } from "../../client/models/Booking";
 import { Coach } from "../../client/models/Coach";
 import { AnalyticsEvent } from "../models/AnalyticsEvent";
 import { User } from "../../client/models/User";
+import { Player } from "../../client/models/Player";
 import { Venue } from "../../client/models/Venue";
 import VenueInquiry from "../../client/models/VenueInquiry";
 import { Dispute } from "../../client/models/Dispute";
@@ -413,10 +414,38 @@ export const getPlayersUsers = async (
         .lean(),
     ]);
 
+    const userIds = users.map((user) => user._id);
+    const playerProfiles = await Player.find({ userId: { $in: userIds } }).lean();
+
+    const profilesByUserId = new Map<string, any[]>();
+    for (const profile of playerProfiles) {
+      const uidStr = profile.userId.toString();
+      if (!profilesByUserId.has(uidStr)) {
+        profilesByUserId.set(uidStr, []);
+      }
+      profilesByUserId.get(uidStr)!.push(profile);
+    }
+
     const data = await Promise.all(
       users.map(async (user) => {
-        const sports: string[] = [];
-        const dependents: any[] = [];
+        const userProfiles = profilesByUserId.get(user._id.toString()) || [];
+        
+        const selfProfile = userProfiles.find((p) => p.type === "SELF");
+        const dependentsProfiles = userProfiles.filter((p) => p.type === "DEPENDENT");
+
+        const sports = selfProfile?.sportsFocus || [];
+        const sportsCount = sports.length;
+        const dependentsCount = dependentsProfiles.length;
+        const hasSportsProfile = sportsCount > 0;
+
+        const dependents = dependentsProfiles.map((d) => ({
+          id: d._id.toString(),
+          name: d.name,
+          age: d.age,
+          gender: d.gender,
+          sports: d.sportsFocus || [],
+          skillLevel: d.skillLevel,
+        }));
 
         return {
           id: user._id.toString(),
@@ -428,7 +457,10 @@ export const getPlayersUsers = async (
           lastActiveAt: user.lastActiveAt || user.createdAt,
           isOnlineNow: await isUserOnline(user._id.toString()),
           sports,
+          sportsCount,
+          hasSportsProfile,
           dependents,
+          dependentsCount,
         };
       })
     );

@@ -66,6 +66,90 @@ export function AdminDataTable<T>({
 }: AdminDataTableProps<T>) {
   const hasToolbar = Boolean(search || toolbarExtra);
 
+  const renderPageButtons = () => {
+    if (!pagination) return null;
+    const total = pagination.totalPages;
+    const current = pagination.page;
+
+    // Calculate visible range (up to 5 pages)
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, current + 2);
+
+    // Adjust range if we have fewer than 5 pages but more are available
+    if (end - start + 1 < 5) {
+      if (start === 1) {
+        end = Math.min(total, start + 4);
+      } else if (end === total) {
+        start = Math.max(1, end - 4);
+      }
+    }
+
+    const buttons = [];
+
+    // Always show page 1
+    if (start > 1) {
+      buttons.push(
+        <button
+          key={1}
+          type="button"
+          onClick={() => pagination.onPageChange(1)}
+          className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          1
+        </button>
+      );
+      if (start > 2) {
+        buttons.push(
+          <span key="dots-start" className="px-1 text-slate-400 self-center">
+            ...
+          </span>
+        );
+      }
+    }
+
+    // Show middle range
+    for (let p = start; p <= end; p++) {
+      buttons.push(
+        <button
+          key={p}
+          type="button"
+          onClick={() => pagination.onPageChange(p)}
+          className={cn(
+            "px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors",
+            current === p
+              ? "bg-power-orange text-white"
+              : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+          )}
+        >
+          {p}
+        </button>
+      );
+    }
+
+    // Always show last page
+    if (end < total) {
+      if (end < total - 1) {
+        buttons.push(
+          <span key="dots-end" className="px-1 text-slate-400 self-center">
+            ...
+          </span>
+        );
+      }
+      buttons.push(
+        <button
+          key={total}
+          type="button"
+          onClick={() => pagination.onPageChange(total)}
+          className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          {total}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
+
   return (
     <div className="space-y-3">
       {hasToolbar && (
@@ -168,21 +252,23 @@ export function AdminDataTable<T>({
       </div>
 
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-slate-500">
+        <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border border-slate-200 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-slate-500 text-center sm:text-left">
             Page {pagination.page} of {pagination.totalPages}
             {typeof pagination.total === "number" && ` · ${pagination.total} total`}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
               disabled={pagination.page <= 1}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
-              Previous
             </button>
+            
+            {renderPageButtons()}
+
             <button
               type="button"
               onClick={() =>
@@ -191,9 +277,8 @@ export function AdminDataTable<T>({
                 )
               }
               disabled={pagination.page >= pagination.totalPages}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Next
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>

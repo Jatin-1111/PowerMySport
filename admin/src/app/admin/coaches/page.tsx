@@ -6,7 +6,7 @@ import { Card } from "@/modules/shared/ui/Card";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
 import { Coach, CoachVerificationStatus } from "@/types";
-import { ChevronLeft, ChevronRight, MapPin, Pencil, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -304,12 +304,6 @@ export default function AdminCoachesPage() {
                       <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
                         {coach.verificationStatus || "UNVERIFIED"}
                       </span>
-                      <button
-                        onClick={() => openEdit(coach)}
-                        className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-power-orange"
-                      >
-                        <Pencil size={12} /> Edit
-                      </button>
                     </div>
                   </div>
 
