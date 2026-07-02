@@ -56,45 +56,6 @@ const syncCoachSubscriptionSummary = async (params: {
   });
 };
 
-export const listCoachPlans = async (options?: {
-  isActive?: boolean;
-}): Promise<any[]> => {
-  // Legacy method - kept for backward compatibility
-  // New system uses CoachSubscriptionPackage instead
-  return [];
-};
-
-export const createCoachPlan = async (payload: any): Promise<any> => {
-  // Legacy method - kept for backward compatibility
-  // New system uses CoachSubscriptionPackage instead
-  throw new Error(
-    "Coach plans are deprecated. Use CoachSubscriptionPackage instead",
-  );
-};
-
-export const updateCoachPlan = async (
-  planId: string,
-  payload: any,
-): Promise<any> => {
-  // Legacy method - kept for backward compatibility
-  throw new Error(
-    "Coach plans are deprecated. Use CoachSubscriptionPackage instead",
-  );
-};
-
-export const getMyCoachSubscription = async (
-  userId: string,
-): Promise<(CoachSubscriptionDocument & { package?: any }) | null> => {
-  const coach = await Coach.findOne({ userId }).select("_id");
-  if (!coach) {
-    throw new Error("Coach profile not found");
-  }
-
-  return CoachSubscription.findOne({ coachId: coach._id })
-    .sort({ createdAt: -1 })
-    .populate("packageId");
-};
-
 /**
  * New method: Subscribe user to a coach's subscription package
  */
@@ -376,49 +337,6 @@ export const cleanupExpiredCoachSubscriptions = async (): Promise<number> => {
   }
 
   return expired.length;
-};
-
-export const listCoachSubscriptionsForAdmin = async (filters?: {
-  status?: string;
-  coachId?: string;
-  userId?: string;
-  page?: number;
-  limit?: number;
-}) => {
-  const page = Math.max(1, Number(filters?.page) || 1);
-  const limit = Math.min(100, Math.max(1, Number(filters?.limit) || 20));
-
-  const query: Record<string, unknown> = {};
-  if (filters?.status) {
-    query.status = filters.status;
-  }
-  if (filters?.coachId) {
-    query.coachId = toObjectId(filters.coachId);
-  }
-  if (filters?.userId) {
-    query.userId = toObjectId(filters.userId);
-  }
-
-  const [subscriptions, total] = await Promise.all([
-    CoachSubscription.find(query)
-      .populate("packageId")
-      .populate("coachId", "userId sports verificationStatus")
-      .populate("userId", "name email")
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit),
-    CoachSubscription.countDocuments(query),
-  ]);
-
-  return {
-    subscriptions,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
 };
 
 /**

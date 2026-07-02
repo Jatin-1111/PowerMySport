@@ -110,6 +110,8 @@ export default function HomePage() {
       description:
         "Tell us your child's age, interests, and free time. We build a personalised sports roadmap just for them—no two plans are the same.",
       icon: <Sparkles className="h-6 w-6" />,
+      image:
+        "https://images.unsplash.com/photo-1505250469679-203ad9ced0cb?auto=format&fit=crop&w=1200&q=80",
     },
     {
       label: "Where do we start?",
@@ -117,6 +119,8 @@ export default function HomePage() {
       description:
         "See exactly what to focus on now and what comes next, from the very first session to competing—so you're never guessing the next move.",
       icon: <Map className="h-6 w-6" />,
+      image:
+        "https://images.unsplash.com/photo-1584415942461-0b87dda9cc2b?auto=format&fit=crop&w=800&q=80",
     },
     {
       label: "Too much conflicting advice",
@@ -124,6 +128,8 @@ export default function HomePage() {
       description:
         "Stuck on a decision? Get answers from sports experts and our AI guide, built around your child's goals—not generic internet tips.",
       icon: <BrainCircuit className="h-6 w-6" />,
+      image:
+        "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=800&q=80",
     },
     {
       label: "What does 'good' even look like?",
@@ -131,6 +137,8 @@ export default function HomePage() {
       description:
         "Understand the levels, milestones, and tournaments that matter for your child's sport, so progress finally feels clear.",
       icon: <Target className="h-6 w-6" />,
+      image:
+        "https://images.unsplash.com/photo-1507626614093-a8b16cfbfd00?auto=format&fit=crop&w=800&q=80",
     },
     {
       label: "Everything is scattered",
@@ -138,6 +146,8 @@ export default function HomePage() {
       description:
         "Your child's plan, guidance, and next steps live in one simple dashboard—no more juggling WhatsApp groups, notes, and phone calls.",
       icon: <Users2 className="h-6 w-6" />,
+      image:
+        "https://images.unsplash.com/photo-1531347118459-c3ea7a5ac61e?auto=format&fit=crop&w=800&q=80",
     },
     {
       label: "Costs add up fast",
@@ -145,6 +155,8 @@ export default function HomePage() {
       description:
         "Get a clear picture of the time and money a sport really takes—so you commit with confidence, not on a hunch.",
       icon: <ShieldCheck className="h-6 w-6" />,
+      image:
+        "https://images.unsplash.com/photo-1503486579284-2418f27ccaf7?auto=format&fit=crop&w=800&q=80",
     },
   ];
 

@@ -139,7 +139,6 @@ export type CoachVerificationStatus =
   | "VERIFIED"
   | "REJECTED";
 
-export type CoachPlanBillingCycle = "MONTHLY" | "YEARLY";
 export type CoachSubscriptionPackageFrequency =
   | "MONTHLY"
   | "QUARTERLY"
@@ -149,37 +148,14 @@ export type CoachSubscriptionStatus =
   | "PAST_DUE"
   | "CANCELLED"
   | "EXPIRED";
-export type CoachSubscriptionOverrideStatus =
-  | "PENDING"
-  | "APPROVED"
-  | "REJECTED";
-
-export interface CoachPlan {
-  id?: string;
-  _id?: string;
-  code: string;
-  name: string;
-  description?: string;
-  pricing: {
-    monthly?: number;
-    yearly?: number;
-  };
-  features: string[];
-  isActive: boolean;
-  supportsOverrides: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface CoachSubscription {
   id?: string;
   _id?: string;
   coachId: string;
   userId: string;
-  planId: string | CoachPlan;
   packageId?: string | CoachSubscriptionPackage | null;
   status: CoachSubscriptionStatus;
-  billingCycle: CoachPlanBillingCycle;
   currentPeriodStart: string;
   currentPeriodEnd: string;
   nextBillingDate: string;
@@ -187,22 +163,6 @@ export interface CoachSubscription {
   gracePeriodEndsAt?: string | null;
   cancelledAt?: string | null;
   cancellationReason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CoachSubscriptionOverrideRequest {
-  id?: string;
-  _id?: string;
-  coachId: string;
-  userId: string;
-  currentPlanId?: string | CoachPlan | null;
-  requestedPlanId?: string | CoachPlan | null;
-  note: string;
-  status: CoachSubscriptionOverrideStatus;
-  reviewedBy?: string | null;
-  reviewedAt?: string | null;
-  reviewNote?: string;
   createdAt: string;
   updatedAt: string;
 }

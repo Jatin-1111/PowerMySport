@@ -4,38 +4,53 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import PermissionSelector from "@/modules/admin/components/PermissionSelector";
 import { Admin, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
+import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
-import { ChevronLeft, ChevronRight, Mail } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Mail, Pencil } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { RoleTemplate } from "@/types";
+
+const formatLastLogin = (value?: string) => {
+  if (!value) return "Never logged in";
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return "Never logged in";
+  }
+};
 
 const PERMISSION_LABELS: Record<string, string> = {
   // Users
   "users:view": "View Users",
   "users:manage": "Manage Users",
-  "users:delete": "Delete Users",
   // Venues
   "venues:view": "View Venues",
   "venues:manage": "Manage Venues",
-  "venues:delete": "Delete Venues",
-  "venues:approve": "Approve Venues",
+  "venues:create": "Create Venues",
   // Bookings
   "bookings:view": "View Bookings",
   "bookings:manage": "Manage Bookings",
-  "bookings:cancel": "Cancel Bookings",
   "bookings:refund": "Process Refunds",
   // Coaches
   "coaches:view": "View Coaches",
   "coaches:manage": "Manage Coaches",
   "coaches:verify": "Verify Coaches",
-  "coaches:delete": "Delete Coaches",
+  "coaches:create": "Create Coaches",
+  // Academies
+  "academies:view": "View Academies",
+  "academies:manage": "Manage Academies",
   // Inquiries
   "inquiries:view": "View Inquiries",
   "inquiries:manage": "Manage Inquiries",
-  "inquiries:delete": "Delete Inquiries",
   // Disputes
   "disputes:view": "View Disputes",
-  "disputes:manage": "Manage Disputes",
   "disputes:resolve": "Resolve Disputes",
   // Analytics
   "analytics:view": "View Analytics",
@@ -43,14 +58,9 @@ const PERMISSION_LABELS: Record<string, string> = {
   // Admins
   "admins:view": "View Admins",
   "admins:manage": "Manage Admins",
-  "admins:delete": "Delete Admins",
-  // Settings
-  "settings:view": "View Settings",
-  "settings:manage": "Manage Settings",
   // Reviews
   "reviews:view": "View Reviews",
   "reviews:manage": "Manage Reviews",
-  "reviews:delete": "Delete Reviews",
   // Products
   "products:view": "View Products",
   "products:create": "Create Products",
@@ -59,13 +69,6 @@ const PERMISSION_LABELS: Record<string, string> = {
   "orders:view": "View Orders",
   "orders:manage": "Manage Orders",
   "orders:refund": "Refund Orders",
-  // Coach Subscriptions
-  "coach-subscriptions:view": "View Coach Subscriptions",
-  "coach-subscriptions:create": "Create Coach Plans",
-  "coach-subscriptions:manage": "Manage Coach Plans",
-  "coach-subscriptions:cancel": "Cancel Coach Subscriptions",
-  "coach-subscriptions:refund": "Refund Coach Subscriptions",
-  "coach-subscriptions:override-review": "Review Coach Plan Overrides",
 };
 
 const formatPermissionLabel = (permission: string): string => {
@@ -103,21 +106,46 @@ export default function AdminsManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 8;
 
-  const canManageAdmins = useMemo(() => {
-    if (typeof window === "undefined") return false;
+  const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    role: "",
+    permissions: [] as string[],
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<Admin | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
+
+  // Reading localStorage synchronously in useMemo would return a different
+  // value during SSR (no window) vs. the client's first render, causing a
+  // hydration mismatch. useSyncExternalStore is React's supported fix: the
+  // server/first-paint snapshot is always null, then it syncs to the real
+  // client value in a passive effect after hydration completes.
+  const storedAdminRaw = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === "undefined") return () => {};
+      window.addEventListener("storage", onStoreChange);
+      return () => window.removeEventListener("storage", onStoreChange);
+    },
+    () => (typeof window === "undefined" ? null : localStorage.getItem("admin")),
+    () => null,
+  );
+
+  const storedAdmin = useMemo(() => {
+    if (!storedAdminRaw) return null;
     try {
-      const raw = localStorage.getItem("admin");
-      if (!raw) return false;
-      const parsed = JSON.parse(raw) as { role?: string };
-      return (
-        parsed.role === "SYSTEM_ADMIN" ||
-        parsed.role === "SUPER_ADMIN" ||
-        parsed.role === "ADMIN"
-      );
+      return JSON.parse(storedAdminRaw) as { id?: string; role?: string };
     } catch {
-      return false;
+      return null;
     }
-  }, []);
+  }, [storedAdminRaw]);
+
+  const canManageAdmins =
+    storedAdmin?.role === "SYSTEM_ADMIN" ||
+    storedAdmin?.role === "SUPER_ADMIN" ||
+    storedAdmin?.role === "ADMIN";
+
+  const currentAdminId = storedAdmin?.id || null;
 
   const loadAdmins = useCallback(async () => {
     if (!canManageAdmins) {
@@ -200,6 +228,83 @@ export default function AdminsManagementPage() {
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openEdit = (admin: Admin) => {
+    setEditingAdmin(admin);
+    setEditForm({
+      name: admin.name,
+      role: admin.role,
+      permissions: [...admin.permissions],
+    });
+  };
+
+  const closeEdit = () => {
+    setEditingAdmin(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingAdmin) return;
+    if (!editForm.name.trim()) {
+      toast.error("Name is required.");
+      return;
+    }
+    if (!editForm.role) {
+      toast.error("Please select a role.");
+      return;
+    }
+
+    setEditSaving(true);
+    try {
+      if (editForm.name.trim() !== editingAdmin.name) {
+        await adminApi.updateAdminProfile(editingAdmin.id, editForm.name.trim());
+      }
+      if (editForm.role !== editingAdmin.role) {
+        await adminApi.updateAdminRole(editingAdmin.id, editForm.role);
+      }
+      await adminApi.updateAdminPermissions(
+        editingAdmin.id,
+        editForm.permissions,
+      );
+
+      toast.success("Admin updated successfully.");
+      closeEdit();
+      await loadAdmins();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update admin.",
+      );
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const confirmStatusChange = async () => {
+    if (!statusTarget) return;
+
+    setStatusBusy(true);
+    try {
+      const response = await adminApi.updateAdminStatus(
+        statusTarget.id,
+        !statusTarget.isActive,
+      );
+      if (!response.success) {
+        toast.error(response.message || "Failed to update admin status.");
+        return;
+      }
+
+      toast.success(
+        `Admin ${statusTarget.isActive ? "deactivated" : "activated"} successfully.`,
+      );
+      setStatusTarget(null);
+      await loadAdmins();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update admin status.",
+      );
+    } finally {
+      setStatusBusy(false);
     }
   };
 
@@ -396,6 +501,25 @@ export default function AdminsManagementPage() {
             <option value="email">Email (A-Z)</option>
           </select>
         </div>
+        {visibleAdmins.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <ExportCsvButton
+              filename="admins.csv"
+              rows={visibleAdmins}
+              columns={[
+                { header: "Name", value: (a) => a.name },
+                { header: "Email", value: (a) => a.email },
+                { header: "Role", value: (a) => a.role },
+                { header: "Status", value: (a) => (a.isActive ? "Active" : "Inactive") },
+                { header: "Last Login", value: (a) => a.lastLogin || "" },
+                {
+                  header: "Permissions",
+                  value: (a) => a.permissions.join("; "),
+                },
+              ]}
+            />
+          </div>
+        )}
         {visibleAdmins.length === 0 ? (
           <p className="text-slate-600">No admin accounts found.</p>
         ) : (
@@ -403,16 +527,64 @@ export default function AdminsManagementPage() {
             {paginatedAdmins.map((admin) => (
               <div
                 key={admin.id}
-                className="rounded-lg border border-slate-200 p-4"
+                className={`rounded-lg border p-4 ${
+                  admin.isActive
+                    ? "border-slate-200"
+                    : "border-red-200 bg-red-50/40"
+                }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-semibold text-slate-900">{admin.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-900">
+                        {admin.name}
+                      </p>
+                      {!admin.isActive && (
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                          Inactive
+                        </span>
+                      )}
+                      {admin.id === currentAdminId && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                          You
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-slate-600">{admin.email}</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Last login: {formatLastLogin(admin.lastLogin)}
+                    </p>
                   </div>
-                  <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange">
-                    {admin.role}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange">
+                      {admin.role}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEdit(admin)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                      >
+                        <Pencil size={12} />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setStatusTarget(admin)}
+                        disabled={admin.id === currentAdminId}
+                        title={
+                          admin.id === currentAdminId
+                            ? "You cannot deactivate your own account"
+                            : undefined
+                        }
+                        className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                          admin.isActive
+                            ? "border-red-300 text-red-700 hover:bg-red-50"
+                            : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        }`}
+                      >
+                        {admin.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {admin.permissions?.length ? (
@@ -497,6 +669,85 @@ export default function AdminsManagementPage() {
           </div>
         )}
       </Card>
+
+      {editingAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Edit {editingAdmin.name}
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">{editingAdmin.email}</p>
+
+            <div className="mt-4 space-y-5">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Full name
+                </label>
+                <input
+                  value={editForm.name}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      name: event.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+                />
+              </div>
+
+              <PermissionSelector
+                roleTemplates={roleTemplates}
+                selectedRole={editForm.role}
+                selectedPermissions={editForm.permissions}
+                onRoleChange={(role) =>
+                  setEditForm((prev) => ({ ...prev, role }))
+                }
+                onPermissionsChange={(permissions) =>
+                  setEditForm((prev) => ({ ...prev, permissions }))
+                }
+                disabled={editSaving}
+              />
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                onClick={closeEdit}
+                disabled={editSaving}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={editSaving}
+                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                {editSaving ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal
+        open={statusTarget !== null}
+        title={
+          statusTarget?.isActive
+            ? `Deactivate ${statusTarget?.name}?`
+            : `Activate ${statusTarget?.name}?`
+        }
+        description={
+          statusTarget?.isActive
+            ? "This admin will immediately lose access to the panel. You can reactivate them later."
+            : "This admin will regain access to the panel with their existing role and permissions."
+        }
+        confirmLabel={statusTarget?.isActive ? "Deactivate" : "Activate"}
+        cancelLabel="Cancel"
+        variant={statusTarget?.isActive ? "danger" : "default"}
+        loading={statusBusy}
+        onConfirm={confirmStatusChange}
+        onCancel={() => setStatusTarget(null)}
+      />
     </div>
   );
 }

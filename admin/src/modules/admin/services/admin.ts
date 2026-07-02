@@ -1,10 +1,7 @@
 import axiosInstance from "@/lib/api/axios";
 import {
   ApiResponse,
-  CoachPlan,
   CoachVerificationDocument,
-  CoachSubscriptionOverrideRequestRecord,
-  CoachSubscriptionRecord,
   Coach,
   CoachVerificationStatus,
   RoleTemplate,
@@ -101,6 +98,16 @@ interface AcademyPendingQueueResponse {
   totalPages: number;
 }
 
+export interface AdminAuditLogEntry {
+  id: string;
+  admin: { id: string; name?: string; email: string } | null;
+  action: string;
+  targetType: string;
+  targetId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface Admin {
   id: string;
   _id?: string;
@@ -116,7 +123,9 @@ export interface Admin {
 export interface ModerationReview {
   _id: string;
   bookingId: string;
+  userId: string | { _id?: string; id?: string; name?: string; email?: string };
   targetType: "VENUE" | "COACH";
+  targetId: string | { _id?: string; id?: string; name?: string };
   rating: number;
   review?: string;
   moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
@@ -141,14 +150,16 @@ export interface UserSafetyRecord {
 
 export interface CommunityReportRecord {
   id: string;
-  reporterUserId: string;
+  reporterUserId: { id: string; name: string; email: string };
   targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
   targetId: string;
+  targetPreview: string;
+  targetDeleted: boolean;
   reason: string;
   details?: string;
   status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
   resolutionNote?: string;
-  reviewedBy?: string | null;
+  reviewedBy?: { id: string; name: string } | null;
   reviewedAt?: string | null;
   createdAt: string;
 }
@@ -178,6 +189,8 @@ export interface PromoCodeStats {
   uniqueUsers: number;
   recentUsages: Array<{
     userId: string;
+    userName: string;
+    userEmail: string;
     discountApplied: number;
     usedAt: string;
   }>;
@@ -239,15 +252,6 @@ export interface PayoutSummary {
   vendorEmail: string;
   vendorPhone: string;
   payoutMethod: any | null;
-}
-
-interface PaginationResult<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    totalPages: number;
-  };
 }
 
 const normalizeAdmin = (admin: Partial<Admin> | null | undefined): Admin => {
@@ -338,6 +342,16 @@ export const adminApi = {
     return response.data;
   },
 
+  getAuditLogs: async (params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<AdminAuditLogEntry[]>> => {
+    const response = await axiosInstance.get("/admin/audit-logs", {
+      params,
+    });
+    return response.data;
+  },
+
   getRoleTemplates: async (): Promise<ApiResponse<RoleTemplate[]>> => {
     const response = await axiosInstance.get("/admin/role-templates");
     return response.data;
@@ -362,6 +376,32 @@ export const adminApi = {
   ): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.put(`/admin/${adminId}/role`, {
       role,
+    });
+    if (response.data?.data) {
+      response.data.data = normalizeAdmin(response.data.data);
+    }
+    return response.data;
+  },
+
+  updateAdminProfile: async (
+    adminId: string,
+    name: string,
+  ): Promise<ApiResponse<Admin>> => {
+    const response = await axiosInstance.patch(`/admin/${adminId}/profile`, {
+      name,
+    });
+    if (response.data?.data) {
+      response.data.data = normalizeAdmin(response.data.data);
+    }
+    return response.data;
+  },
+
+  updateAdminStatus: async (
+    adminId: string,
+    isActive: boolean,
+  ): Promise<ApiResponse<Admin>> => {
+    const response = await axiosInstance.patch(`/admin/${adminId}/status`, {
+      isActive,
     });
     if (response.data?.data) {
       response.data.data = normalizeAdmin(response.data.data);
@@ -446,117 +486,6 @@ export const adminApi = {
   ): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post(
       `/admin/coaches/${coachId}/notify`,
-    );
-    return response.data;
-  },
-
-  listCoachPlans: async (params?: {
-    isActive?: boolean;
-  }): Promise<ApiResponse<{ plans: CoachPlan[] }>> => {
-    const query = new URLSearchParams();
-    if (typeof params?.isActive === "boolean") {
-      query.append("isActive", String(params.isActive));
-    }
-
-    const response = await axiosInstance.get(
-      `/admin/coach-plans${query.toString() ? `?${query.toString()}` : ""}`,
-    );
-    return response.data;
-  },
-
-  createCoachPlan: async (payload: {
-    code: string;
-    name: string;
-    description?: string;
-    pricing: {
-      monthly?: number;
-      yearly?: number;
-    };
-    features?: string[];
-    isActive?: boolean;
-    supportsOverrides?: boolean;
-  }): Promise<ApiResponse<{ plan: CoachPlan }>> => {
-    const response = await axiosInstance.post("/admin/coach-plans", payload);
-    return response.data;
-  },
-
-  updateCoachPlan: async (
-    planId: string,
-    payload: Partial<{
-      name: string;
-      description: string;
-      pricing: {
-        monthly?: number;
-        yearly?: number;
-      };
-      features: string[];
-      isActive: boolean;
-      supportsOverrides: boolean;
-    }>,
-  ): Promise<ApiResponse<{ plan: CoachPlan }>> => {
-    const response = await axiosInstance.patch(
-      `/admin/coach-plans/${planId}`,
-      payload,
-    );
-    return response.data;
-  },
-
-  listCoachSubscriptions: async (params?: {
-    status?: string;
-    planId?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<
-    ApiResponse<{
-      subscriptions: CoachSubscriptionRecord[];
-      pagination: PaginationResult<CoachSubscriptionRecord>["pagination"];
-    }>
-  > => {
-    const query = new URLSearchParams();
-    if (params?.status) query.append("status", params.status);
-    if (params?.planId) query.append("planId", params.planId);
-    if (params?.page) query.append("page", String(params.page));
-    if (params?.limit) query.append("limit", String(params.limit));
-
-    const response = await axiosInstance.get(
-      `/admin/coach-subscriptions${query.toString() ? `?${query.toString()}` : ""}`,
-    );
-    return response.data;
-  },
-
-  listCoachSubscriptionOverrides: async (params?: {
-    status?: "PENDING" | "APPROVED" | "REJECTED";
-    page?: number;
-    limit?: number;
-  }): Promise<
-    ApiResponse<{
-      requests: CoachSubscriptionOverrideRequestRecord[];
-      pagination: PaginationResult<CoachSubscriptionOverrideRequestRecord>["pagination"];
-    }>
-  > => {
-    const query = new URLSearchParams();
-    if (params?.status) query.append("status", params.status);
-    if (params?.page) query.append("page", String(params.page));
-    if (params?.limit) query.append("limit", String(params.limit));
-
-    const response = await axiosInstance.get(
-      `/admin/coach-subscription-overrides${query.toString() ? `?${query.toString()}` : ""}`,
-    );
-    return response.data;
-  },
-
-  reviewCoachSubscriptionOverride: async (
-    requestId: string,
-    payload: {
-      status: "APPROVED" | "REJECTED";
-      reviewNote?: string;
-    },
-  ): Promise<
-    ApiResponse<{ request: CoachSubscriptionOverrideRequestRecord }>
-  > => {
-    const response = await axiosInstance.patch(
-      `/admin/coach-subscription-overrides/${requestId}/review`,
-      payload,
     );
     return response.data;
   },
@@ -704,6 +633,18 @@ export const adminApi = {
   > => {
     const response = await axiosInstance.patch(
       `/admin/community/reports/${reportId}`,
+      payload,
+    );
+    return response.data;
+  },
+
+  bulkReviewCommunityReports: async (payload: {
+    reportIds: string[];
+    status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+    resolutionNote?: string;
+  }): Promise<ApiResponse<{ modifiedCount: number }>> => {
+    const response = await axiosInstance.patch(
+      `/admin/community/reports/bulk-review`,
       payload,
     );
     return response.data;
@@ -1023,6 +964,26 @@ export const adminApi = {
     bookingIds: string[];
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/payouts/mark-paid", data);
+    return response.data;
+  },
+
+  getDisputes: async (): Promise<ApiResponse<any[]>> => {
+    const response = await axiosInstance.get("/admin/disputes");
+    return response.data;
+  },
+
+  getWebhookErrors: async (): Promise<ApiResponse<any[]>> => {
+    const response = await axiosInstance.get("/admin/webhook-errors");
+    return response.data;
+  },
+
+  retryWebhookError: async (key: string): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.post(`/admin/webhook-errors/${key}/retry`);
+    return response.data;
+  },
+
+  reconcileOrder: async (type: string, orderId: string): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.post(`/admin/reconcile/${type}/${orderId}`);
     return response.data;
   },
 };

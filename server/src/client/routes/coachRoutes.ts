@@ -18,12 +18,6 @@ import {
   unblockCoachDateHandler,
 } from "../controllers/coachController";
 import {
-  cancelMyCoachSubscriptionHandler,
-  createOrUpdateMyCoachSubscriptionHandler,
-  getMyCoachSubscriptionHandler,
-  listCoachPlansHandler,
-} from "../controllers/coachSubscriptionController";
-import {
   createCoachPackageHandler,
   getCoachPackagesHandler,
   getCoachPublicPackagesHandler,
@@ -39,9 +33,6 @@ import {
 } from "../controllers/coachSubscriptionPackageController";
 import { authMiddleware } from "../../middleware/auth";
 import {
-  coachSubscriptionCancelSchema,
-  coachSubscriptionCreateSchema,
-  coachSubscriptionOverrideRequestSchema,
   coachVerificationStep1Schema,
   coachVerificationStep2Schema,
   coachVerificationStep3Schema,
@@ -142,28 +133,7 @@ router.post(
   submitCoachVerificationHandler,
 );
 
-// Coach subscription routes
-router.get("/subscription/plans", authMiddleware, listCoachPlansHandler);
-router.get(
-  "/subscription/my-subscription",
-  authMiddleware,
-  getMyCoachSubscriptionHandler,
-);
-router.post(
-  "/subscription/subscribe",
-  authMiddleware,
-  validateRequest(coachSubscriptionCreateSchema),
-  createOrUpdateMyCoachSubscriptionHandler,
-);
-router.post(
-  "/subscription/cancel",
-  authMiddleware,
-  validateRequest(coachSubscriptionCancelSchema),
-  cancelMyCoachSubscriptionHandler,
-);
-// Override requests deprecated in new package model
-
-// NEW: Coach subscription packages (flexible coach-owned packages)
+// Coach subscription packages (flexible coach-owned packages)
 // Create package (Coach only)
 router.post(
   "/subscription-packages",

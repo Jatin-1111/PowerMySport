@@ -19,7 +19,11 @@ import {
   createSubscriptionPlanHandler,
   createSessionPackageHandler,
 } from "../../client/controllers/academyOnboardingController";
-import { authMiddleware, adminMiddleware } from "../../middleware/auth";
+import {
+  authMiddleware,
+  adminMiddleware,
+  requirePermission,
+} from "../../middleware/auth";
 import { getAcademyEarningsHandler, getAcademyAnalyticsHandler } from "../../client/controllers/academyAnalyticsController";
 import { validateRequest } from "../../middleware/validation";
 import {
@@ -177,6 +181,7 @@ router.get(
   "/admin/pending",
   authMiddleware,
   adminMiddleware,
+  requirePermission("academies:view"),
   listPendingAcademiesHandler,
 );
 
@@ -188,6 +193,7 @@ router.get(
   "/admin/:academyId/review",
   authMiddleware,
   adminMiddleware,
+  requirePermission("academies:view"),
   getAcademyReviewDetailsHandler,
 );
 
@@ -199,6 +205,7 @@ router.put(
   "/admin/:academyId/approve",
   authMiddleware,
   adminMiddleware,
+  requirePermission("academies:manage"),
   approveAcademyHandler,
 );
 
@@ -211,6 +218,7 @@ router.put(
   "/admin/:academyId/reject",
   authMiddleware,
   adminMiddleware,
+  requirePermission("academies:manage"),
   rejectAcademyHandler,
 );
 
@@ -222,6 +230,7 @@ router.put(
   "/admin/:academyId/kyc-verify",
   authMiddleware,
   adminMiddleware,
+  requirePermission("academies:manage"),
   markKycVerifiedHandler,
 );
 
@@ -234,6 +243,7 @@ router.put(
   "/admin/:academyId/suspend",
   authMiddleware,
   adminMiddleware,
+  requirePermission("academies:manage"),
   suspendAcademyHandler,
 );
 

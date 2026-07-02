@@ -9,6 +9,17 @@ export interface PlatformStats {
   revenue: number;
 }
 
+export interface PendingCounts {
+  academyOnboarding: number;
+  coachVerification: number;
+  venueApprovals: number;
+  communityReports: number;
+  disputes: number;
+  supportTickets: number;
+  conciergeRequests: number;
+  webhookErrors: number;
+}
+
 export interface UserData {
   id: string;
   name: string;
@@ -290,6 +301,11 @@ export const statsApi = {
     return response.data;
   },
 
+  getPendingCounts: async (): Promise<ApiResponse<PendingCounts>> => {
+    const response = await axiosInstance.get("/stats/pending-counts");
+    return response.data;
+  },
+
   getAllUsers: async (pagination?: {
     page?: number;
     limit?: number;
@@ -382,10 +398,12 @@ export const statsApi = {
   getAllVenues: async (pagination?: {
     page?: number;
     limit?: number;
+    search?: string;
   }): Promise<ApiResponse<Venue[]>> => {
     const params = new URLSearchParams();
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
+    if (pagination?.search) params.append("search", pagination.search);
 
     const response = await axiosInstance.get(
       `/stats/venues?${params.toString()}`,

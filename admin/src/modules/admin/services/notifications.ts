@@ -28,15 +28,13 @@ export interface SchedulerHealth {
 export interface FailedReminder {
   _id: string;
   userId: string;
+  userName: string;
+  userEmail: string;
   bookingId?: string;
   interval: "24h" | "1h" | "15min";
-  scheduledFor: string;
-  status: string;
+  failedAt: string;
   failureReason?: string;
   retryCount: number;
-  createdAt: string;
-  updatedAt: string;
-  lastAttempt?: string;
 }
 
 export interface MonitoringStats {

@@ -1,6 +1,8 @@
 "use client";
 
 import { adminApi } from "@/modules/admin/services/admin";
+import { PendingCounts, statsApi } from "@/modules/analytics/services/stats";
+import { CommandPalette } from "@/modules/shared/ui/CommandPalette";
 import {
   BarChart2,
   Bell,
@@ -17,6 +19,8 @@ import {
   Package,
   Plus,
   ReceiptText,
+  ScrollText,
+  Search,
   ShieldAlert,
   ShieldCheck,
   ShoppingBag,
@@ -58,6 +62,26 @@ type NavGroup = {
 const isAdminRouteActive = (pathname: string, href: string) =>
   href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
+const NAV_BADGE_KEYS: Record<string, keyof PendingCounts> = {
+  "/admin/academy-onboarding": "academyOnboarding",
+  "/admin/coach-verification": "coachVerification",
+  "/admin/venue-approval": "venueApprovals",
+  "/admin/community-reports": "communityReports",
+  "/admin/disputes": "disputes",
+  "/admin/support-tickets": "supportTickets",
+  "/admin/concierge-requests": "conciergeRequests",
+  "/admin/webhook-recovery": "webhookErrors",
+};
+
+const getNavBadgeCount = (
+  href: string,
+  pendingCounts: PendingCounts | null,
+): number => {
+  if (!pendingCounts) return 0;
+  const key = NAV_BADGE_KEYS[href];
+  return key ? pendingCounts[key] : 0;
+};
+
 export default function AdminLayout({
   children,
 }: {
@@ -69,7 +93,10 @@ export default function AdminLayout({
   const isLoginPage = pathname === "/admin/login";
   const isChangePasswordPage = pathname === "/admin/change-password";
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [pendingAcademyCount, setPendingAcademyCount] = useState(0);
+  const [pendingCounts, setPendingCounts] = useState<PendingCounts | null>(
+    null,
+  );
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const storedAdminRaw = useSyncExternalStore(
     (onStoreChange) => {
@@ -180,22 +207,6 @@ export default function AdminLayout({
         ],
       },
       {
-        title: "Programs",
-        items: [
-          { href: "/admin/coach-plans", label: "Coach Plans", icon: Package },
-          {
-            href: "/admin/coach-subscriptions",
-            label: "Coach Subscriptions",
-            icon: Calendar,
-          },
-          {
-            href: "/admin/coach-subscription-overrides",
-            label: "Override Reviews",
-            icon: ShieldAlert,
-          },
-        ],
-      },
-      {
         title: "Trust & Support",
         items: [
           {
@@ -230,12 +241,40 @@ export default function AdminLayout({
     if (isSuperAdmin) {
       groups.push({
         title: "System",
-        items: [{ href: "/admin/admins", label: "Admins", icon: ShieldCheck }],
+        items: [
+          { href: "/admin/admins", label: "Admins", icon: ShieldCheck },
+          { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText },
+        ],
       });
     }
 
     return groups;
   }, [isSuperAdmin]);
+
+  const commandPaletteItems = useMemo(
+    () =>
+      navGroups.flatMap((group) =>
+        group.items.map((item) => ({
+          href: item.href,
+          label: item.label,
+          group: group.title,
+          icon: item.icon,
+        })),
+      ),
+    [navGroups],
+  );
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!isLoginPage) {
@@ -265,26 +304,22 @@ export default function AdminLayout({
   useEffect(() => {
     let isCancelled = false;
 
-    const loadAcademyCount = async () => {
+    const loadPendingCounts = async () => {
       try {
-        const response = await adminApi.getPendingAcademies({
-          page: 1,
-          limit: 1,
-          filter: "pending",
-        });
+        const response = await statsApi.getPendingCounts();
 
         if (!isCancelled && response.success && response.data) {
-          setPendingAcademyCount(response.data.total || 0);
+          setPendingCounts(response.data);
         }
       } catch {
         if (!isCancelled) {
-          setPendingAcademyCount(0);
+          setPendingCounts(null);
         }
       }
     };
 
     if (!isLoginPage && !isChangePasswordPage) {
-      void loadAcademyCount();
+      void loadPendingCounts();
     }
 
     return () => {
@@ -431,12 +466,12 @@ export default function AdminLayout({
                                 <span className="text-sm font-semibold">
                                   {item.label}
                                 </span>
-                                {item.href === "/admin/academy-onboarding" &&
-                                  pendingAcademyCount > 0 && (
-                                    <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">
-                                      {pendingAcademyCount}
-                                    </span>
-                                  )}
+                                {getNavBadgeCount(item.href, pendingCounts) >
+                                  0 && (
+                                  <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">
+                                    {getNavBadgeCount(item.href, pendingCounts)}
+                                  </span>
+                                )}
                               </Link>
                             );
                           })}
@@ -471,6 +506,20 @@ export default function AdminLayout({
                   </div>
                 </div>
 
+                <div className="px-6 pb-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCommandPaletteOpen(true)}
+                    className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100"
+                  >
+                    <Search size={15} />
+                    <span className="flex-1 text-left">Search pages...</span>
+                    <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                      ⌘K
+                    </kbd>
+                  </button>
+                </div>
+
                 <nav className="mt-2 space-y-5 px-4 pb-6">
                   {navGroups.map((group) => (
                     <div key={group.title}>
@@ -499,12 +548,12 @@ export default function AdminLayout({
                               <span className="text-sm font-semibold">
                                 {item.label}
                               </span>
-                              {item.href === "/admin/academy-onboarding" &&
-                                pendingAcademyCount > 0 && (
-                                  <span className="ml-auto rounded-full bg-power-orange px-2 py-0.5 text-[11px] font-bold text-white">
-                                    {pendingAcademyCount}
-                                  </span>
-                                )}
+                              {getNavBadgeCount(item.href, pendingCounts) >
+                                0 && (
+                                <span className="ml-auto rounded-full bg-power-orange px-2 py-0.5 text-[11px] font-bold text-white">
+                                  {getNavBadgeCount(item.href, pendingCounts)}
+                                </span>
+                              )}
                             </Link>
                           );
                         })}
@@ -534,6 +583,15 @@ export default function AdminLayout({
           </div>
         </main>
       </div>
+
+      {!isLoginPage && !isChangePasswordPage && (
+        <CommandPalette
+          open={isCommandPaletteOpen}
+          items={commandPaletteItems}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          onNavigate={(href) => router.push(href)}
+        />
+      )}
     </div>
   );
 }

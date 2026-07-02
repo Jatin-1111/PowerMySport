@@ -6,22 +6,19 @@
 export const USERS_PERMISSIONS = {
   VIEW: "users:view",
   MANAGE: "users:manage",
-  DELETE: "users:delete",
 } as const;
 
 // Venues Module
 export const VENUES_PERMISSIONS = {
   VIEW: "venues:view",
   MANAGE: "venues:manage",
-  DELETE: "venues:delete",
-  APPROVE: "venues:approve",
+  CREATE: "venues:create",
 } as const;
 
 // Bookings Module
 export const BOOKINGS_PERMISSIONS = {
   VIEW: "bookings:view",
   MANAGE: "bookings:manage",
-  CANCEL: "bookings:cancel",
   REFUND: "bookings:refund",
 } as const;
 
@@ -30,20 +27,24 @@ export const COACHES_PERMISSIONS = {
   VIEW: "coaches:view",
   MANAGE: "coaches:manage",
   VERIFY: "coaches:verify",
-  DELETE: "coaches:delete",
+  CREATE: "coaches:create",
+} as const;
+
+// Academies Module
+export const ACADEMIES_PERMISSIONS = {
+  VIEW: "academies:view",
+  MANAGE: "academies:manage",
 } as const;
 
 // Inquiries Module
 export const INQUIRIES_PERMISSIONS = {
   VIEW: "inquiries:view",
   MANAGE: "inquiries:manage",
-  DELETE: "inquiries:delete",
 } as const;
 
 // Disputes & Refunds Module
 export const DISPUTES_PERMISSIONS = {
   VIEW: "disputes:view",
-  MANAGE: "disputes:manage",
   RESOLVE: "disputes:resolve",
 } as const;
 
@@ -57,20 +58,12 @@ export const ANALYTICS_PERMISSIONS = {
 export const ADMINS_PERMISSIONS = {
   VIEW: "admins:view",
   MANAGE: "admins:manage",
-  DELETE: "admins:delete",
-} as const;
-
-// Settings Module
-export const SETTINGS_PERMISSIONS = {
-  VIEW: "settings:view",
-  MANAGE: "settings:manage",
 } as const;
 
 // Reviews Module
 export const REVIEWS_PERMISSIONS = {
   VIEW: "reviews:view",
   MANAGE: "reviews:manage",
-  DELETE: "reviews:delete",
 } as const;
 
 // Ecommerce Module
@@ -86,30 +79,20 @@ export const ORDERS_PERMISSIONS = {
   REFUND: "orders:refund",
 } as const;
 
-export const COACH_SUBSCRIPTIONS_PERMISSIONS = {
-  VIEW: "coach-subscriptions:view",
-  CREATE: "coach-subscriptions:create",
-  MANAGE: "coach-subscriptions:manage",
-  CANCEL: "coach-subscriptions:cancel",
-  REFUND: "coach-subscriptions:refund",
-  OVERRIDE_REVIEW: "coach-subscriptions:override-review",
-} as const;
-
 // Flatten all permissions into a single array for validation
 export const ALL_PERMISSIONS = [
   ...Object.values(USERS_PERMISSIONS),
   ...Object.values(VENUES_PERMISSIONS),
   ...Object.values(BOOKINGS_PERMISSIONS),
   ...Object.values(COACHES_PERMISSIONS),
+  ...Object.values(ACADEMIES_PERMISSIONS),
   ...Object.values(INQUIRIES_PERMISSIONS),
   ...Object.values(DISPUTES_PERMISSIONS),
   ...Object.values(ANALYTICS_PERMISSIONS),
   ...Object.values(ADMINS_PERMISSIONS),
-  ...Object.values(SETTINGS_PERMISSIONS),
   ...Object.values(REVIEWS_PERMISSIONS),
   ...Object.values(PRODUCTS_PERMISSIONS),
   ...Object.values(ORDERS_PERMISSIONS),
-  ...Object.values(COACH_SUBSCRIPTIONS_PERMISSIONS),
 ] as const;
 
 // ============================================
@@ -127,29 +110,27 @@ export const SUPPORT_ADMIN_PERMISSIONS = [
   REVIEWS_PERMISSIONS.MANAGE,
 ] as const;
 
-// Operations Admin - Manages venues, bookings, and coaches
+// Operations Admin - Manages venues, academies, bookings, and coaches
 export const OPERATIONS_ADMIN_PERMISSIONS = [
   VENUES_PERMISSIONS.VIEW,
   VENUES_PERMISSIONS.MANAGE,
-  VENUES_PERMISSIONS.APPROVE,
+  VENUES_PERMISSIONS.CREATE,
   BOOKINGS_PERMISSIONS.VIEW,
   BOOKINGS_PERMISSIONS.MANAGE,
-  BOOKINGS_PERMISSIONS.CANCEL,
   ORDERS_PERMISSIONS.VIEW,
   ORDERS_PERMISSIONS.MANAGE,
   COACHES_PERMISSIONS.VIEW,
   COACHES_PERMISSIONS.MANAGE,
   COACHES_PERMISSIONS.VERIFY,
+  COACHES_PERMISSIONS.CREATE,
+  ACADEMIES_PERMISSIONS.VIEW,
+  ACADEMIES_PERMISSIONS.MANAGE,
   USERS_PERMISSIONS.VIEW,
   INQUIRIES_PERMISSIONS.VIEW,
   REVIEWS_PERMISSIONS.VIEW,
   PRODUCTS_PERMISSIONS.VIEW,
   PRODUCTS_PERMISSIONS.CREATE,
   PRODUCTS_PERMISSIONS.MANAGE,
-  COACH_SUBSCRIPTIONS_PERMISSIONS.VIEW,
-  COACH_SUBSCRIPTIONS_PERMISSIONS.CREATE,
-  COACH_SUBSCRIPTIONS_PERMISSIONS.MANAGE,
-  COACH_SUBSCRIPTIONS_PERMISSIONS.OVERRIDE_REVIEW,
 ] as const;
 
 // Finance Admin - Handles refunds, disputes, and financial matters
@@ -159,14 +140,10 @@ export const FINANCE_ADMIN_PERMISSIONS = [
   ORDERS_PERMISSIONS.VIEW,
   ORDERS_PERMISSIONS.REFUND,
   DISPUTES_PERMISSIONS.VIEW,
-  DISPUTES_PERMISSIONS.MANAGE,
   DISPUTES_PERMISSIONS.RESOLVE,
   USERS_PERMISSIONS.VIEW,
   VENUES_PERMISSIONS.VIEW,
   ANALYTICS_PERMISSIONS.VIEW,
-  COACH_SUBSCRIPTIONS_PERMISSIONS.VIEW,
-  COACH_SUBSCRIPTIONS_PERMISSIONS.CANCEL,
-  COACH_SUBSCRIPTIONS_PERMISSIONS.REFUND,
 ] as const;
 
 // Analytics Admin - View-only access to reports and analytics
@@ -212,7 +189,7 @@ export const ROLE_TEMPLATES: Record<string, RoleTemplate> = {
   [ADMIN_ROLES.OPERATIONS_ADMIN]: {
     role: ADMIN_ROLES.OPERATIONS_ADMIN,
     name: "Operations Admin",
-    description: "Manages venues, bookings, and coach verifications",
+    description: "Manages venues, academies, bookings, and coach verifications",
     permissions: OPERATIONS_ADMIN_PERMISSIONS,
   },
   [ADMIN_ROLES.FINANCE_ADMIN]: {
@@ -258,6 +235,10 @@ export const PERMISSION_MODULES = {
     name: "Coach Management",
     permissions: Object.values(COACHES_PERMISSIONS),
   },
+  academies: {
+    name: "Academy Management",
+    permissions: Object.values(ACADEMIES_PERMISSIONS),
+  },
   inquiries: {
     name: "Inquiry Management",
     permissions: Object.values(INQUIRIES_PERMISSIONS),
@@ -274,10 +255,6 @@ export const PERMISSION_MODULES = {
     name: "Admin Management",
     permissions: Object.values(ADMINS_PERMISSIONS),
   },
-  settings: {
-    name: "System Settings",
-    permissions: Object.values(SETTINGS_PERMISSIONS),
-  },
   reviews: {
     name: "Review Management",
     permissions: Object.values(REVIEWS_PERMISSIONS),
@@ -290,10 +267,6 @@ export const PERMISSION_MODULES = {
     name: "Order Management",
     permissions: Object.values(ORDERS_PERMISSIONS),
   },
-  coachSubscriptions: {
-    name: "Coach Subscriptions",
-    permissions: Object.values(COACH_SUBSCRIPTIONS_PERMISSIONS),
-  },
 } as const;
 
 // Permission labels for display
@@ -301,34 +274,33 @@ export const PERMISSION_LABELS: Record<string, string> = {
   // Users
   "users:view": "View Users",
   "users:manage": "Manage Users",
-  "users:delete": "Delete Users",
 
   // Venues
   "venues:view": "View Venues",
   "venues:manage": "Manage Venues",
-  "venues:delete": "Delete Venues",
-  "venues:approve": "Approve Venues",
+  "venues:create": "Create Venues",
 
   // Bookings
   "bookings:view": "View Bookings",
   "bookings:manage": "Manage Bookings",
-  "bookings:cancel": "Cancel Bookings",
   "bookings:refund": "Process Refunds",
 
   // Coaches
   "coaches:view": "View Coaches",
   "coaches:manage": "Manage Coaches",
   "coaches:verify": "Verify Coaches",
-  "coaches:delete": "Delete Coaches",
+  "coaches:create": "Create Coaches",
+
+  // Academies
+  "academies:view": "View Academies",
+  "academies:manage": "Manage Academies",
 
   // Inquiries
   "inquiries:view": "View Inquiries",
   "inquiries:manage": "Manage Inquiries",
-  "inquiries:delete": "Delete Inquiries",
 
   // Disputes
   "disputes:view": "View Disputes",
-  "disputes:manage": "Manage Disputes",
   "disputes:resolve": "Resolve Disputes",
 
   // Analytics
@@ -338,16 +310,10 @@ export const PERMISSION_LABELS: Record<string, string> = {
   // Admins
   "admins:view": "View Admins",
   "admins:manage": "Manage Admins",
-  "admins:delete": "Delete Admins",
-
-  // Settings
-  "settings:view": "View Settings",
-  "settings:manage": "Manage Settings",
 
   // Reviews
   "reviews:view": "View Reviews",
   "reviews:manage": "Manage Reviews",
-  "reviews:delete": "Delete Reviews",
 
   // Products
   "products:view": "View Products",
@@ -358,14 +324,6 @@ export const PERMISSION_LABELS: Record<string, string> = {
   "orders:view": "View Orders",
   "orders:manage": "Manage Orders",
   "orders:refund": "Refund Orders",
-
-  // Coach subscriptions
-  "coach-subscriptions:view": "View Coach Subscriptions",
-  "coach-subscriptions:create": "Create Coach Plans",
-  "coach-subscriptions:manage": "Manage Coach Plans",
-  "coach-subscriptions:cancel": "Cancel Coach Subscriptions",
-  "coach-subscriptions:refund": "Refund Coach Subscriptions",
-  "coach-subscriptions:override-review": "Review Coach Plan Override Requests",
 };
 
 // Legacy support (for backward compatibility during migration)

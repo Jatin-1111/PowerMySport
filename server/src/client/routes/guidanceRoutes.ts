@@ -21,7 +21,7 @@ const chatBurstLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip || "anon",
+  keyGenerator: (req) => req.user?.id || "anon",
   store: createRedisRateLimitStore("rl:guidance-chat:burst:"),
   message: {
     success: false,

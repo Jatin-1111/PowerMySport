@@ -1,4 +1,5 @@
 import { PromoCode, PromoCodeDocument } from "../../shared/models/PromoCode";
+import { User } from "../models/User";
 
 export interface CreatePromoCodePayload {
   code: string;
@@ -280,6 +281,8 @@ export const getPromoCodeStats = async (
   uniqueUsers: number;
   recentUsages: Array<{
     userId: string;
+    userName: string;
+    userEmail: string;
     discountApplied: number;
     usedAt: Date;
   }>;
@@ -298,14 +301,25 @@ export const getPromoCodeStats = async (
   const uniqueUsers = new Set(promoCode.usedBy.map((u) => u.userId.toString()))
     .size;
 
-  const recentUsages = promoCode.usedBy
-    .slice(-10)
-    .reverse()
-    .map((usage) => ({
+  const recentRaw = promoCode.usedBy.slice(-10).reverse();
+
+  const users = await User.find({
+    _id: { $in: recentRaw.map((usage) => usage.userId) },
+  })
+    .select("name email")
+    .lean();
+  const userById = new Map(users.map((user) => [String(user._id), user]));
+
+  const recentUsages = recentRaw.map((usage) => {
+    const user = userById.get(usage.userId.toString());
+    return {
       userId: usage.userId.toString(),
+      userName: user?.name || "Unknown user",
+      userEmail: user?.email || "",
       discountApplied: usage.discountApplied,
       usedAt: usage.usedAt,
-    }));
+    };
+  });
 
   return {
     code: promoCode.code,

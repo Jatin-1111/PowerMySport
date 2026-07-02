@@ -8,6 +8,7 @@ import {
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { Booking } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -300,6 +301,31 @@ export default function AdminBookingsPage() {
         </button>
       </div>
 
+      <div className="flex justify-end">
+        <ExportCsvButton
+          filename="bookings.csv"
+          rows={filteredBookings}
+          label="Export Page CSV"
+          columns={[
+            {
+              header: "Booking ID",
+              value: (b) => getBookingId(b),
+            },
+            { header: "Status", value: (b) => b.status },
+            { header: "Type", value: (b) => (b.coachId ? "COACH" : "VENUE") },
+            { header: "Date", value: (b) => b.date },
+            { header: "Start Time", value: (b) => b.startTime },
+            { header: "End Time", value: (b) => b.endTime },
+            {
+              header: "Venue/Coach",
+              value: (b) => (b.coachId ? b.coachName || "" : b.venueName || ""),
+            },
+            { header: "Player", value: (b) => b.playerName || "" },
+            { header: "Total Amount (INR)", value: (b) => b.totalAmount },
+          ]}
+        />
+      </div>
+
       {filteredBookings.length === 0 ? (
         <Card className="bg-white">
           <div className="flex flex-col items-center gap-4 py-10 text-center">
@@ -336,31 +362,8 @@ export default function AdminBookingsPage() {
               >
                 {(() => {
                   const isCoachBooking = !!booking.coachId;
-                  const venueName =
-                    booking.venueName ||
-                    (typeof booking.venueId === "object"
-                      ? booking.venueId?.name
-                      : undefined) ||
-                    "Unknown venue";
-                  const coachRecord =
-                    typeof booking.coachId === "object" && booking.coachId
-                      ? booking.coachId
-                      : typeof booking.coach === "object"
-                        ? booking.coach
-                        : undefined;
-                  const coachUser =
-                    coachRecord &&
-                    typeof (coachRecord as any).userId === "object"
-                      ? ((coachRecord as any).userId as {
-                          name?: string;
-                          email?: string;
-                        })
-                      : undefined;
-                  const coachName =
-                    coachUser?.name ||
-                    coachUser?.email ||
-                    (coachRecord as any)?.name ||
-                    "Unknown coach";
+                  const venueName = booking.venueName || "Unknown venue";
+                  const coachName = booking.coachName || "Unknown coach";
                   const playerName = booking.playerName || "Unknown player";
 
                   return (

@@ -13,6 +13,7 @@ import {
   VenueListersAnalytics,
 } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { io } from "socket.io-client";
@@ -484,8 +485,92 @@ export default function AdminUsersPage() {
           );
         });
 
+        const exportColumns =
+          activeTab === "PLAYER"
+            ? [
+                { header: "Name", value: (u: UsersRow) => u.name },
+                { header: "Email", value: (u: UsersRow) => u.email },
+                {
+                  header: "Sports Count",
+                  value: (u: UsersRow) =>
+                    u.role === "PLAYER" ? u.sportsCount : "",
+                },
+                {
+                  header: "Dependents",
+                  value: (u: UsersRow) =>
+                    u.role === "PLAYER" ? u.dependentsCount : "",
+                },
+                { header: "Created At", value: (u: UsersRow) => u.createdAt },
+                {
+                  header: "Last Active",
+                  value: (u: UsersRow) => u.lastActiveAt,
+                },
+              ]
+            : activeTab === "COACH"
+              ? [
+                  { header: "Name", value: (u: UsersRow) => u.name },
+                  { header: "Email", value: (u: UsersRow) => u.email },
+                  {
+                    header: "Verification Status",
+                    value: (u: UsersRow) =>
+                      u.role === "COACH" ? u.verificationStatus : "",
+                  },
+                  {
+                    header: "Service Mode",
+                    value: (u: UsersRow) =>
+                      u.role === "COACH" ? u.serviceMode || "" : "",
+                  },
+                  {
+                    header: "Rating",
+                    value: (u: UsersRow) => (u.role === "COACH" ? u.rating : ""),
+                  },
+                  { header: "Created At", value: (u: UsersRow) => u.createdAt },
+                  {
+                    header: "Last Active",
+                    value: (u: UsersRow) => u.lastActiveAt,
+                  },
+                ]
+              : [
+                  { header: "Name", value: (u: UsersRow) => u.name },
+                  { header: "Email", value: (u: UsersRow) => u.email },
+                  {
+                    header: "Business Name",
+                    value: (u: UsersRow) =>
+                      u.role === "VENUE_LISTER" ? u.businessName || "" : "",
+                  },
+                  {
+                    header: "Total Venues",
+                    value: (u: UsersRow) =>
+                      u.role === "VENUE_LISTER" ? u.venueCount : "",
+                  },
+                  {
+                    header: "Approved Venues",
+                    value: (u: UsersRow) =>
+                      u.role === "VENUE_LISTER" ? u.approvedVenueCount : "",
+                  },
+                  {
+                    header: "Pending Venues",
+                    value: (u: UsersRow) =>
+                      u.role === "VENUE_LISTER" ? u.pendingVenueCount : "",
+                  },
+                  { header: "Created At", value: (u: UsersRow) => u.createdAt },
+                  {
+                    header: "Last Active",
+                    value: (u: UsersRow) => u.lastActiveAt,
+                  },
+                ];
+
         return (
           <>
+            <div className="flex justify-end">
+              <ExportCsvButton
+                filename={`${activeTab.toLowerCase()}-users.csv`}
+                rows={visibleUsers}
+                label="Export Page CSV"
+                columns={exportColumns}
+              />
+            </div>
+
             <Card className="p-0 bg-white overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-full">

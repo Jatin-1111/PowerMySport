@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { S3Service } from "../../shared/services/S3Service";
-import { listCoachSubscriptionsAdminHandler } from "../../client/controllers/coachSubscriptionController";
 import {
   listPendingPayouts,
   markPayoutsAsPaid,
@@ -20,6 +19,10 @@ import {
   getCoachVerificationDetails,
   getAdminProfile,
   handleDispute,
+  listDisputes,
+  listWebhookErrors,
+  retryWebhookError,
+  reconcileOrderAdmin,
   listAdmins,
   listCoachVerifications,
   listUsersForSafety,
@@ -29,6 +32,7 @@ import {
   getRefundStatus,
   rejectCoachVerification,
   reviewCommunityReport,
+  bulkReviewCommunityReports,
   listCommunityReports,
   listRefunds,
   updateVenueAdminHandler,
@@ -36,6 +40,9 @@ import {
   getRoleTemplates,
   updateAdminPermissionsHandler,
   updateAdminRoleHandler,
+  updateAdminProfileHandler,
+  updateAdminStatusHandler,
+  listAuditLogsHandler,
 } from "../controllers/adminController";
 import {
   getAllConciergeRequests,
@@ -53,7 +60,6 @@ import {
   adminCreateCoachSchema,
   adminCreateSchema,
   adminCreateVenueSchema,
-  adminReviewCoachOverrideSchema,
   adminLoginSchema,
   communityModerationActionSchema,
   promoCreateSchema,
@@ -239,18 +245,6 @@ router.post(
   submitCoachVerificationAdminHandler,
 );
 
-// Admin coach-plans removed — coaches create packages now
-
-// Coach subscriptions operations
-router.get(
-  "/coach-subscriptions",
-  authMiddleware,
-  adminMiddleware,
-  requirePermission("coach-subscriptions:view"),
-  listCoachSubscriptionsAdminHandler,
-);
-// Coach subscription override admin endpoints removed (deprecated)
-
 // Refund & dispute handling
 router.get(
   "/refunds",
@@ -273,12 +267,42 @@ router.get(
   requirePermission("bookings:refund"),
   getRefundStatus,
 );
+router.get(
+  "/disputes",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("disputes:view"),
+  listDisputes,
+);
 router.post(
   "/disputes/:bookingId",
   authMiddleware,
   adminMiddleware,
   requirePermission("disputes:resolve"),
   handleDispute,
+);
+
+// Webhook Recovery & Reconciliations
+router.get(
+  "/webhook-errors",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"), // finance/ops-sensitive, same tier as payouts
+  listWebhookErrors,
+);
+router.post(
+  "/webhook-errors/:key/retry",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  retryWebhookError,
+);
+router.post(
+  "/reconcile/:type/:orderId",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("bookings:refund"),
+  reconcileOrderAdmin,
 );
 
 // Payouts & Settlements
@@ -318,6 +342,13 @@ router.get(
   adminMiddleware,
   requirePermission("users:view"),
   listCommunityReports,
+);
+router.patch(
+  "/community/reports/bulk-review",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("users:manage"),
+  bulkReviewCommunityReports,
 );
 router.patch(
   "/community/reports/:reportId",
@@ -376,6 +407,13 @@ router.get(
   listAdmins,
 );
 router.get(
+  "/audit-logs",
+  authMiddleware,
+  adminMiddleware,
+  superAdminMiddleware,
+  listAuditLogsHandler,
+);
+router.get(
   "/role-templates",
   authMiddleware,
   adminMiddleware,
@@ -394,6 +432,20 @@ router.put(
   adminMiddleware,
   requirePermission("admins:manage"),
   updateAdminRoleHandler,
+);
+router.patch(
+  "/:adminId/profile",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:manage"),
+  updateAdminProfileHandler,
+);
+router.patch(
+  "/:adminId/status",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("admins:manage"),
+  updateAdminStatusHandler,
 );
 
 // Concierge Requests management

@@ -5,6 +5,12 @@ import { AnalyticsEvent } from "../models/AnalyticsEvent";
 import { User } from "../../client/models/User";
 import { Venue } from "../../client/models/Venue";
 import VenueInquiry from "../../client/models/VenueInquiry";
+import { Dispute } from "../../client/models/Dispute";
+import { SupportTicket } from "../../client/models/SupportTicket";
+import { CommunityReport } from "../../community/models/CommunityReport";
+import { ConciergeRequest } from "../../shared/models/ConciergeRequest";
+import Academy from "../models/Academy";
+import { WebhookRecoveryService } from "../../shared/controllers/WebhookController";
 import { getObservabilitySnapshot } from "../../middleware/observability";
 import { transformDocuments } from "../../middleware/responseTransform";
 import { isUserOnline } from "../../shared/services/UserPresenceService";
@@ -912,9 +918,15 @@ export const getAllVenues = async (
       20,
       100,
     );
+    const search =
+      typeof req.query.search === "string" ? req.query.search : undefined;
 
     // Using the service method matching the new signature
-    const result = await getAllVenuesService({}, page, limit);
+    const result = await getAllVenuesService(
+      search ? { search } : {},
+      page,
+      limit,
+    );
 
     res.status(200).json({
       success: true,
@@ -1003,6 +1015,14 @@ export const getAllBookings = async (
         plain.venueId && typeof plain.venueId === "object"
           ? (plain.venueId as { name?: string })
           : null;
+      const coachRecord =
+        plain.coachId && typeof plain.coachId === "object"
+          ? (plain.coachId as { userId?: unknown; name?: string })
+          : null;
+      const coachUserRecord =
+        coachRecord?.userId && typeof coachRecord.userId === "object"
+          ? (coachRecord.userId as { name?: string; email?: string })
+          : null;
 
       return {
         ...plain,
@@ -1012,6 +1032,11 @@ export const getAllBookings = async (
         coachId: normalizeEntity(plain.coachId),
         playerName: playerRecord?.name || playerRecord?.email || "",
         venueName: venueRecord?.name || "",
+        coachName:
+          coachUserRecord?.name ||
+          coachUserRecord?.email ||
+          coachRecord?.name ||
+          "",
       };
     });
 
@@ -1506,6 +1531,58 @@ export const clearAnalyticsData = async (
         error instanceof Error
           ? error.message
           : "Failed to clear analytics data",
+    });
+  }
+};
+
+/**
+ * Lightweight actionable-item counts for admin nav badges. Each count mirrors
+ * the exact filter its own list page treats as "still needs admin action".
+ */
+export const getPendingCounts = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const [
+      academyOnboarding,
+      coachVerification,
+      venueApprovals,
+      communityReports,
+      disputes,
+      supportTickets,
+      conciergeRequests,
+    ] = await Promise.all([
+      Academy.countDocuments({ onboardingCompleted: true, isApproved: false }),
+      Coach.countDocuments({ verificationStatus: "PENDING" }),
+      Venue.countDocuments({ approvalStatus: "PENDING" }),
+      CommunityReport.countDocuments({ status: "OPEN" }),
+      Dispute.countDocuments({ status: "OPEN" }),
+      SupportTicket.countDocuments({ status: "OPEN" }),
+      ConciergeRequest.countDocuments({ status: "pending" }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: "Pending counts retrieved",
+      data: {
+        academyOnboarding,
+        coachVerification,
+        venueApprovals,
+        communityReports,
+        disputes,
+        supportTickets,
+        conciergeRequests,
+        webhookErrors: WebhookRecoveryService.listErrors().length,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve pending counts",
     });
   }
 };

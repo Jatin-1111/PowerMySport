@@ -70,49 +70,6 @@ const STATUS_COLORS: Record<DisputeStatus, string> = {
   RESOLVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
-const MOCK_DISPUTES: Dispute[] = [
-  {
-    id: "d1",
-    bookingId: "BK-20240601-001",
-    playerName: "Rahul Sharma",
-    playerEmail: "rahul.sharma@email.com",
-    venueName: "Green Valley Sports Complex",
-    amount: 1500,
-    disputeType: "NO_SHOW",
-    status: "OPEN",
-    description: "Venue was closed when I arrived for my booking. No one was there. I had confirmation email.",
-    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: "d2",
-    bookingId: "BK-20240530-014",
-    playerName: "Priya Mehta",
-    playerEmail: "priya.mehta@email.com",
-    venueName: "City Cricket Arena",
-    amount: 2400,
-    disputeType: "POOR_QUALITY",
-    status: "UNDER_REVIEW",
-    description: "The pitch was in terrible condition. Wickets were broken and the ground had standing water.",
-    evidence: "Photos submitted via email to support@powermysport.com",
-    createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
-  {
-    id: "d3",
-    bookingId: "BK-20240528-007",
-    playerName: "Amit Verma",
-    playerEmail: "amit.verma@email.com",
-    venueName: "Delhi Football Ground",
-    amount: 800,
-    disputeType: "PAYMENT_ISSUE",
-    status: "RESOLVED",
-    description: "Was charged twice for the same booking.",
-    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-    resolvedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-    resolution: "FULL_REFUND",
-    refundAmount: 800,
-  },
-];
-
 export default function AdminDisputesPage() {
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,6 +83,14 @@ export default function AdminDisputesPage() {
     reason: "",
     evidence: "",
   });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkForm, setBulkForm] = useState({
+    resolution: "FULL_REFUND" as Resolution,
+    reason: "",
+    evidence: "",
+  });
 
   useEffect(() => {
     loadDisputes();
@@ -134,13 +99,32 @@ export default function AdminDisputesPage() {
   const loadDisputes = async () => {
     setLoading(true);
     try {
-      // In production: fetch from /admin/disputes endpoint
-      // For now, use mock data since the backend endpoint returns bookings with disputes
-      await new Promise((r) => setTimeout(r, 600));
-      setDisputes(MOCK_DISPUTES);
+      const response = await adminApi.getDisputes();
+      if (response.success && response.data) {
+        // Map backend Dispute model to frontend UI model
+        const mappedDisputes = response.data.map((d: any) => ({
+          id: d._id || d.id,
+          bookingId: d.bookingId?._id || d.bookingId || "",
+          playerName: d.userId ? `${d.userId.firstName || ""} ${d.userId.lastName || ""}`.trim() : "Unknown User",
+          playerEmail: d.userId?.email || "N/A",
+          venueName: d.bookingId?.venueId?.name || "N/A",
+          amount: d.bookingId?.totalAmount || 0,
+          disputeType: d.disputeType,
+          status: d.status,
+          description: d.disputeDetails || d.reasoning || "",
+          evidence: d.evidence || "",
+          createdAt: d.createdAt,
+          resolvedAt: d.status === "RESOLVED" ? d.updatedAt : undefined,
+          resolution: d.recommendedAction,
+          refundAmount: d.refundPercentage ? ((d.bookingId?.totalAmount || 0) * (d.refundPercentage / 100)) : 0,
+        }));
+        setDisputes(mappedDisputes);
+      } else {
+        setDisputes([]);
+      }
     } catch {
       toast.error("Failed to load disputes");
-      setDisputes(MOCK_DISPUTES);
+      setDisputes([]);
     } finally {
       setLoading(false);
     }
@@ -190,6 +174,85 @@ export default function AdminDisputesPage() {
     }
   };
 
+  const toggleSelected = (disputeId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(disputeId)) {
+        next.delete(disputeId);
+      } else {
+        next.add(disputeId);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkResolve = async () => {
+    if (!bulkForm.reason.trim()) {
+      toast.error("Please provide a resolution reason");
+      return;
+    }
+
+    const targets = disputes.filter((d) => selectedIds.has(d.id));
+    if (targets.length === 0) return;
+
+    setBulkBusy(true);
+    try {
+      const results = await Promise.allSettled(
+        targets.map((d) =>
+          adminApi.handleDispute(d.bookingId, {
+            disputeType: d.disputeType,
+            resolution: bulkForm.resolution,
+            evidence: bulkForm.evidence || undefined,
+          }),
+        ),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      const succeeded = targets.length - failed;
+      const resolvedIds = new Set(
+        targets
+          .filter((_, index) => results[index].status === "fulfilled")
+          .map((d) => d.id),
+      );
+
+      if (succeeded > 0) {
+        toast.success(
+          `Resolved ${succeeded} dispute${succeeded === 1 ? "" : "s"} — ${bulkForm.resolution.replace(/_/g, " ").toLowerCase()} applied`,
+        );
+        setDisputes((prev) =>
+          prev.map((d) =>
+            resolvedIds.has(d.id)
+              ? {
+                  ...d,
+                  status: "RESOLVED",
+                  resolution: bulkForm.resolution,
+                  resolvedAt: new Date().toISOString(),
+                  refundAmount:
+                    bulkForm.resolution === "FULL_REFUND"
+                      ? d.amount
+                      : bulkForm.resolution === "PARTIAL_REFUND"
+                        ? Math.round(d.amount * 0.5)
+                        : 0,
+                }
+              : d,
+          ),
+        );
+      }
+      if (failed > 0) {
+        toast.error(`Failed to resolve ${failed} dispute${failed === 1 ? "" : "s"}`);
+      }
+
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        resolvedIds.forEach((id) => next.delete(id));
+        return next;
+      });
+      setBulkModalOpen(false);
+      setBulkForm({ resolution: "FULL_REFUND", reason: "", evidence: "" });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const filtered = disputes.filter((d) => {
     const matchesSearch =
       !searchQuery ||
@@ -199,6 +262,16 @@ export default function AdminDisputesPage() {
     const matchesStatus = statusFilter === "ALL" || d.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const actionableFiltered = filtered.filter((d) => d.status !== "RESOLVED");
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) =>
+      prev.size === actionableFiltered.length
+        ? new Set()
+        : new Set(actionableFiltered.map((d) => d.id)),
+    );
+  };
 
   const stats = {
     open: disputes.filter((d) => d.status === "OPEN").length,
@@ -269,6 +342,42 @@ export default function AdminDisputesPage() {
         </button>
       </div>
 
+      {actionableFiltered.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={
+                selectedIds.size > 0 &&
+                selectedIds.size === actionableFiltered.length
+              }
+              onChange={toggleSelectAll}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Select all actionable ({actionableFiltered.length})
+          </label>
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-indigo-700">
+                {selectedIds.size} selected
+              </span>
+              <button
+                onClick={() => setBulkModalOpen(true)}
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              >
+                Resolve Selected
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Disputes List */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -294,6 +403,14 @@ export default function AdminDisputesPage() {
               >
                 {/* Header row */}
                 <div className="flex items-start gap-4 p-5">
+                  {dispute.status !== "RESOLVED" && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(dispute.id)}
+                      onChange={() => toggleSelected(dispute.id)}
+                      className="mt-3 h-4 w-4 shrink-0 rounded border-slate-300"
+                    />
+                  )}
                   <div className="shrink-0 rounded-xl bg-slate-100 p-2.5">
                     <TypeIcon className="h-5 w-5 text-slate-600" />
                   </div>
@@ -478,6 +595,102 @@ export default function AdminDisputesPage() {
                 ) : (
                   <Gavel className="h-4 w-4" />
                 )}
+                Confirm Resolution
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Resolution Modal */}
+      {bulkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-slate-100 px-6 py-5">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-indigo-100 p-2.5">
+                  <Gavel className="h-5 w-5 text-indigo-700" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Resolve {selectedIds.size} Dispute{selectedIds.size === 1 ? "" : "s"}
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    The same resolution will be applied to every selected dispute.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 px-6 py-4">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Resolution</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      { value: "FULL_REFUND", label: "Full Refund", icon: BadgeCheck, color: "border-emerald-300 bg-emerald-50 text-emerald-800" },
+                      { value: "PARTIAL_REFUND", label: "Partial Refund", icon: SplitSquareHorizontal, color: "border-amber-300 bg-amber-50 text-amber-800" },
+                      { value: "NO_REFUND", label: "No Refund", icon: XCircle, color: "border-red-300 bg-red-50 text-red-800" },
+                    ] as const
+                  ).map(({ value, label, icon: Icon, color }) => (
+                    <button
+                      key={value}
+                      onClick={() => setBulkForm((f) => ({ ...f, resolution: value }))}
+                      className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all ${
+                        bulkForm.resolution === value
+                          ? color + " ring-2 ring-offset-1 ring-current/30 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-xs font-semibold">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                  Resolution Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Explain why this resolution was chosen…"
+                  value={bulkForm.reason}
+                  onChange={(e) => setBulkForm((f) => ({ ...f, reason: e.target.value }))}
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Evidence Notes (optional)</label>
+                <input
+                  type="text"
+                  placeholder="Reference to attached evidence…"
+                  value={bulkForm.evidence}
+                  onChange={(e) => setBulkForm((f) => ({ ...f, evidence: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+              <button
+                onClick={() => {
+                  setBulkModalOpen(false);
+                  setBulkForm({ resolution: "FULL_REFUND", reason: "", evidence: "" });
+                }}
+                disabled={bulkBusy}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkResolve}
+                disabled={bulkBusy || !bulkForm.reason.trim()}
+                className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {bulkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gavel className="h-4 w-4" />}
                 Confirm Resolution
               </button>
             </div>

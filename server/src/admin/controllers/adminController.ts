@@ -7,16 +7,25 @@ import { Coach } from "../../client/models/Coach";
 import { Venue } from "../../client/models/Venue";
 import Admin from "../models/Admin";
 import { CommunityReport } from "../../community/models/CommunityReport";
+import { CommunityMessage } from "../../community/models/CommunityMessage";
+import { CommunityGroup } from "../../community/models/CommunityGroup";
+import { CommunityPost } from "../../community/models/CommunityPost";
+import { CommunityAnswer } from "../../community/models/CommunityAnswer";
+import { Dispute } from "../../client/models/Dispute";
+import { WebhookRecoveryService } from "../../shared/controllers/WebhookController";
 import {
   changeAdminPassword,
   createAdmin,
   getAdminById,
   getAllAdmins,
   loginAdmin,
+  setAdminActiveStatus,
+  updateAdmin,
   updateAdminPermissions,
   updateAdminRole,
   getRoleTemplatesData,
 } from "../services/AdminService";
+import { recordAuditLog, listAuditLogs } from "../services/AuditLogService";
 import {
   getCoachById,
   listCoachVerificationRequests,
@@ -37,6 +46,13 @@ import {
 } from "../../utils/email";
 import { NotificationService } from "../../client/services/NotificationService";
 import { isPhonePeGatewayError } from "../../shared/services/PhonePeService";
+
+const auditContext = (
+  req: Request,
+): { adminId: string; adminEmail: string } | null => {
+  if (!req.user?.id || !req.user.email) return null;
+  return { adminId: req.user.id, adminEmail: req.user.email };
+};
 
 const normalizeAdminResponse = (admin: unknown) => {
   if (!admin || typeof admin !== "object") {
@@ -180,6 +196,17 @@ export const createAdminAccount = async (
       ...(Array.isArray(permissions) ? { permissions } : {}),
     });
 
+    const audit = auditContext(req);
+    if (audit) {
+      void recordAuditLog({
+        ...audit,
+        action: "admin.create",
+        targetType: "Admin",
+        targetId: admin._id.toString(),
+        metadata: { name, email, role: admin.role },
+      });
+    }
+
     res.status(201).json({
       success: true,
       message:
@@ -307,6 +334,48 @@ export const listAdmins = async (
 };
 
 /**
+ * Admin: List audit log entries (Super Admin only)
+ * GET /api/admin/audit-logs?page=1&limit=25
+ */
+export const listAuditLogsHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    const adminId =
+      typeof req.query.adminId === "string" ? req.query.adminId : undefined;
+    const targetType =
+      typeof req.query.targetType === "string"
+        ? req.query.targetType
+        : undefined;
+
+    const result = await listAuditLogs(page, limit, {
+      ...(adminId ? { adminId } : {}),
+      ...(targetType ? { targetType } : {}),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Audit logs retrieved successfully",
+      data: result.logs,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to get audit logs",
+    });
+  }
+};
+
+/**
  * Admin: List coaches
  * GET /api/admin/coaches
  */
@@ -409,6 +478,17 @@ export const updateAdminPermissionsHandler = async (
       permissions as string[],
     );
 
+    const audit = auditContext(req);
+    if (audit) {
+      void recordAuditLog({
+        ...audit,
+        action: "admin.updatePermissions",
+        targetType: "Admin",
+        targetId: adminId as string,
+        metadata: { permissions },
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Admin permissions updated successfully",
@@ -445,6 +525,17 @@ export const updateAdminRoleHandler = async (
       role as string,
     );
 
+    const audit = auditContext(req);
+    if (audit) {
+      void recordAuditLog({
+        ...audit,
+        action: "admin.updateRole",
+        targetType: "Admin",
+        targetId: adminId as string,
+        metadata: { role },
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Admin role updated successfully",
@@ -454,6 +545,114 @@ export const updateAdminRoleHandler = async (
     res.status(400).json({
       success: false,
       message: error instanceof Error ? error.message : "Failed to update role",
+    });
+  }
+};
+
+// Update admin name
+export const updateAdminProfileHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { adminId } = req.params;
+    const { name } = req.body;
+
+    if (typeof name !== "string" || !name.trim()) {
+      res.status(400).json({
+        success: false,
+        message: "Name is required",
+      });
+      return;
+    }
+
+    const updatedAdmin = await updateAdmin(adminId as string, {
+      name: name.trim(),
+    });
+
+    if (!updatedAdmin) {
+      res.status(404).json({
+        success: false,
+        message: "Admin not found",
+      });
+      return;
+    }
+
+    const audit = auditContext(req);
+    if (audit) {
+      void recordAuditLog({
+        ...audit,
+        action: "admin.updateProfile",
+        targetType: "Admin",
+        targetId: adminId as string,
+        metadata: { name: name.trim() },
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Admin profile updated successfully",
+      data: normalizeAdminResponse(updatedAdmin),
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update profile",
+    });
+  }
+};
+
+// Activate or deactivate an admin account
+export const updateAdminStatusHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { adminId } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== "boolean") {
+      res.status(400).json({
+        success: false,
+        message: "isActive must be a boolean",
+      });
+      return;
+    }
+
+    if (!isActive && req.user?.id === adminId) {
+      res.status(400).json({
+        success: false,
+        message: "You cannot deactivate your own account",
+      });
+      return;
+    }
+
+    const updatedAdmin = await setAdminActiveStatus(
+      adminId as string,
+      isActive,
+    );
+
+    const audit = auditContext(req);
+    if (audit) {
+      void recordAuditLog({
+        ...audit,
+        action: isActive ? "admin.activate" : "admin.deactivate",
+        targetType: "Admin",
+        targetId: adminId as string,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Admin ${isActive ? "activated" : "deactivated"} successfully`,
+      data: normalizeAdminResponse(updatedAdmin),
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update status",
     });
   }
 };
@@ -585,6 +784,90 @@ export const updateCoachAdminHandler = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to update coach",
+    });
+  }
+};
+
+// ============ WEBHOOK RECOVERY ============
+
+/**
+ * List webhook errors
+ * GET /api/admin/webhook-errors
+ */
+export const listWebhookErrors = async (req: Request, res: Response) => {
+  try {
+    const errors = WebhookRecoveryService.listErrors();
+    res.status(200).json({
+      success: true,
+      data: errors,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to fetch webhook errors",
+    });
+  }
+};
+
+/**
+ * Retry webhook error
+ * POST /api/admin/webhook-errors/:key/retry
+ */
+export const retryWebhookError = async (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+    
+    // We instantiate the service and call retryFailedWebhook
+    const recoveryService = new WebhookRecoveryService();
+    await recoveryService.retryFailedWebhook(key as string);
+
+    res.status(200).json({
+      success: true,
+      message: "Webhook retry executed",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to retry webhook",
+    });
+  }
+};
+
+/**
+ * Reconcile order
+ * POST /api/admin/reconcile/:type/:orderId
+ */
+export const reconcileOrderAdmin = async (req: Request, res: Response) => {
+  try {
+    const type = req.params.type as string;
+    const orderId = req.params.orderId as string;
+
+    const recoveryService = new WebhookRecoveryService();
+    let consistent = false;
+    let details = {};
+
+    if (type === "booking" || type === "payment") {
+      consistent = await recoveryService.reconcileOrderPayment(orderId);
+      details = { status: "CHECKED_PAYMENT" };
+    } else if (type === "refund") {
+      consistent = await recoveryService.reconcileOrderRefund(orderId);
+      details = { status: "CHECKED_REFUND" };
+    } else {
+      res.status(400).json({ success: false, message: "Invalid reconciliation type" });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        isConsistent: consistent,
+        details,
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to reconcile order",
     });
   }
 };
@@ -806,6 +1089,17 @@ export const updateUserSafetyStatus = async (
       return;
     }
 
+    const auditSafety = auditContext(req);
+    if (auditSafety) {
+      void recordAuditLog({
+        ...auditSafety,
+        action: `user.${action.toLowerCase()}`,
+        targetType: "User",
+        targetId: userId,
+        metadata: { reason },
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: `User ${action.toLowerCase()} successful`,
@@ -825,6 +1119,93 @@ export const updateUserSafetyStatus = async (
   }
 };
 
+const TARGET_PREVIEW_MAX_LENGTH = 140;
+
+const truncatePreview = (value: string): string =>
+  value.length > TARGET_PREVIEW_MAX_LENGTH
+    ? `${value.slice(0, TARGET_PREVIEW_MAX_LENGTH)}…`
+    : value;
+
+const resolveCommunityReportTargets = async (
+  reports: Array<{ targetType: string; targetId: mongoose.Types.ObjectId }>,
+): Promise<
+  Map<string, { preview: string; deleted: boolean } | null>
+> => {
+  const idsByType: Record<
+    "MESSAGE" | "GROUP" | "POST" | "ANSWER",
+    mongoose.Types.ObjectId[]
+  > = {
+    MESSAGE: [],
+    GROUP: [],
+    POST: [],
+    ANSWER: [],
+  };
+
+  for (const report of reports) {
+    if (report.targetType in idsByType) {
+      idsByType[report.targetType as keyof typeof idsByType].push(
+        report.targetId,
+      );
+    }
+  }
+
+  const result = new Map<string, { preview: string; deleted: boolean } | null>();
+
+  const [messages, groups, posts, answers] = await Promise.all([
+    idsByType.MESSAGE.length
+      ? CommunityMessage.find({ _id: { $in: idsByType.MESSAGE } })
+          .select("content isDeleted")
+          .lean()
+      : Promise.resolve([]),
+    idsByType.GROUP.length
+      ? CommunityGroup.find({ _id: { $in: idsByType.GROUP } })
+          .select("name")
+          .lean()
+      : Promise.resolve([]),
+    idsByType.POST.length
+      ? CommunityPost.find({ _id: { $in: idsByType.POST } })
+          .select("title isDeleted")
+          .lean()
+      : Promise.resolve([]),
+    idsByType.ANSWER.length
+      ? CommunityAnswer.find({ _id: { $in: idsByType.ANSWER } })
+          .select("content isDeleted")
+          .lean()
+      : Promise.resolve([]),
+  ]);
+
+  for (const message of messages) {
+    result.set(String(message._id), {
+      preview: message.isDeleted
+        ? "[message deleted]"
+        : truncatePreview(message.content),
+      deleted: Boolean(message.isDeleted),
+    });
+  }
+  for (const group of groups) {
+    result.set(String(group._id), {
+      preview: group.name,
+      deleted: false,
+    });
+  }
+  for (const post of posts) {
+    result.set(String(post._id), {
+      preview: post.isDeleted ? "[post deleted]" : truncatePreview(post.title),
+      deleted: Boolean(post.isDeleted),
+    });
+  }
+  for (const answer of answers) {
+    result.set(String(answer._id), {
+      preview: answer.isDeleted
+        ? "[answer deleted]"
+        : truncatePreview(answer.content),
+      deleted: Boolean(answer.isDeleted),
+    });
+  }
+
+  return result;
+};
+
 export const listCommunityReports = async (
   req: Request,
   res: Response,
@@ -842,6 +1223,8 @@ export const listCommunityReports = async (
 
     const [reports, total] = await Promise.all([
       CommunityReport.find(query)
+        .populate("reporterUserId", "name email")
+        .populate("reviewedBy", "name")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -849,22 +1232,49 @@ export const listCommunityReports = async (
       CommunityReport.countDocuments(query),
     ]);
 
+    const targetPreviews = await resolveCommunityReportTargets(reports);
+
     res.status(200).json({
       success: true,
       message: "Community reports fetched",
-      data: reports.map((report) => ({
-        id: String(report._id),
-        reporterUserId: String(report.reporterUserId),
-        targetType: report.targetType,
-        targetId: String(report.targetId),
-        reason: report.reason,
-        details: report.details || "",
-        status: report.status,
-        resolutionNote: report.resolutionNote || "",
-        reviewedBy: report.reviewedBy ? String(report.reviewedBy) : null,
-        reviewedAt: report.reviewedAt || null,
-        createdAt: report.createdAt,
-      })),
+      data: reports.map((report) => {
+        const reporter = report.reporterUserId as unknown as
+          | { _id: mongoose.Types.ObjectId; name?: string; email?: string }
+          | mongoose.Types.ObjectId;
+        const reviewer = report.reviewedBy as unknown as
+          | { _id: mongoose.Types.ObjectId; name?: string }
+          | mongoose.Types.ObjectId
+          | undefined;
+        const target = targetPreviews.get(String(report.targetId)) || null;
+
+        return {
+          id: String(report._id),
+          reporterUserId:
+            reporter && typeof reporter === "object" && "name" in reporter
+              ? {
+                  id: String(reporter._id),
+                  name: reporter.name || "Unknown user",
+                  email: reporter.email || "",
+                }
+              : { id: String(reporter), name: "Unknown user", email: "" },
+          targetType: report.targetType,
+          targetId: String(report.targetId),
+          targetPreview: target
+            ? target.preview
+            : "[content not found — may have been removed]",
+          targetDeleted: target ? target.deleted : true,
+          reason: report.reason,
+          details: report.details || "",
+          status: report.status,
+          resolutionNote: report.resolutionNote || "",
+          reviewedBy:
+            reviewer && typeof reviewer === "object" && "name" in reviewer
+              ? { id: String(reviewer._id), name: reviewer.name || "Unknown admin" }
+              : null,
+          reviewedAt: report.reviewedAt || null,
+          createdAt: report.createdAt,
+        };
+      }),
       pagination: {
         total,
         page,
@@ -921,6 +1331,15 @@ export const reviewCommunityReport = async (
       return;
     }
 
+    void recordAuditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email || "",
+      action: "communityReport.review",
+      targetType: "CommunityReport",
+      targetId: reportId,
+      metadata: { status, resolutionNote },
+    });
+
     res.status(200).json({
       success: true,
       message: "Report updated",
@@ -937,6 +1356,82 @@ export const reviewCommunityReport = async (
         error instanceof Error
           ? error.message
           : "Failed to update community report",
+    });
+  }
+};
+
+/**
+ * Bulk-review community reports (resolve/reject several at once)
+ * PATCH /api/admin/community/reports/bulk-review
+ */
+export const bulkReviewCommunityReports = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { reportIds, status, resolutionNote } = req.body as {
+      reportIds: string[];
+      status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+      resolutionNote?: string;
+    };
+
+    if (!Array.isArray(reportIds) || reportIds.length === 0) {
+      res
+        .status(400)
+        .json({ success: false, message: "reportIds must be a non-empty array" });
+      return;
+    }
+
+    const validIds = reportIds.filter((id) =>
+      mongoose.Types.ObjectId.isValid(id),
+    );
+    if (validIds.length === 0) {
+      res.status(400).json({ success: false, message: "No valid report ids" });
+      return;
+    }
+
+    if (!["UNDER_REVIEW", "RESOLVED", "REJECTED"].includes(status)) {
+      res.status(400).json({ success: false, message: "Invalid status" });
+      return;
+    }
+
+    const result = await CommunityReport.updateMany(
+      { _id: { $in: validIds } },
+      {
+        $set: {
+          status,
+          resolutionNote: resolutionNote?.trim() || "",
+          reviewedBy: req.user.id,
+          reviewedAt: new Date(),
+        },
+      },
+    );
+
+    void recordAuditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email || "",
+      action: "communityReport.bulkReview",
+      targetType: "CommunityReport",
+      metadata: { reportIds: validIds, status, modifiedCount: result.modifiedCount },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `${result.modifiedCount} report(s) updated`,
+      data: { modifiedCount: result.modifiedCount },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to bulk-update community reports",
     });
   }
 };
@@ -971,6 +1466,17 @@ export const processRefund = async (
       refundPercentage,
       reason.trim(),
     );
+
+    const auditRefund = auditContext(req);
+    if (auditRefund) {
+      void recordAuditLog({
+        ...auditRefund,
+        action: "booking.refund",
+        targetType: "Booking",
+        targetId: bookingId,
+        metadata: { refundType, reason: reason.trim(), refundPercentage },
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -1125,6 +1631,37 @@ export const getRefundStatus = async (
 };
 
 /**
+ * List all disputes
+ * GET /api/admin/disputes
+ */
+export const listDisputes = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const disputes = await Dispute.find()
+      .populate({
+        path: "bookingId",
+        populate: { path: "venueId", select: "name" },
+      })
+      .populate("userId", "firstName lastName email phone")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Disputes retrieved successfully",
+      data: disputes,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to fetch disputes",
+    });
+  }
+};
+
+/**
  * Handle dispute for a booking (STUB - requires payment gateway integration)
  * POST /api/admin/disputes/:bookingId
  *
@@ -1225,6 +1762,17 @@ export const handleDispute = async (
       }
     } catch (notifError) {
       console.error("[handleDispute] Failed to send dispute notification:", notifError);
+    }
+
+    const auditDispute = auditContext(req);
+    if (auditDispute) {
+      void recordAuditLog({
+        ...auditDispute,
+        action: "dispute.resolve",
+        targetType: "Booking",
+        targetId: bookingId,
+        metadata: { disputeType, resolution, reason: disputeReason },
+      });
     }
 
     res.status(200).json({
@@ -1386,6 +1934,14 @@ export const approveCoachVerification = async (
       console.error("Failed to send coach verification email:", emailError);
     }
 
+    void recordAuditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email || "",
+      action: "coach.verify",
+      targetType: "Coach",
+      targetId: coachId,
+    });
+
     res.status(200).json({
       success: true,
       message: "Coach verified successfully",
@@ -1464,6 +2020,15 @@ export const rejectCoachVerification = async (
     } catch (emailError) {
       console.error("Failed to send coach verification email:", emailError);
     }
+
+    void recordAuditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email || "",
+      action: "coach.reject",
+      targetType: "Coach",
+      targetId: coachId,
+      metadata: { reason },
+    });
 
     res.status(200).json({
       success: true,
@@ -1882,6 +2447,18 @@ export const updateVenueAdminHandler = async (
         console.error("Failed to send venue credentials email:", emailError);
       }
     }
+
+    void recordAuditLog({
+      adminId: req.user.id,
+      adminEmail: req.user.email || "",
+      action:
+        updatedVenue.approvalStatus !== venue.approvalStatus
+          ? `venue.approvalStatus.${updatedVenue.approvalStatus.toLowerCase()}`
+          : "venue.update",
+      targetType: "Venue",
+      targetId: venueId,
+      metadata: { approvalStatus: updatedVenue.approvalStatus },
+    });
 
     res.status(200).json({
       success: true,

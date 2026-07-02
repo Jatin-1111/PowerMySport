@@ -16,6 +16,7 @@ import {
   Zap,
   LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import React from "react";
 import { SectionLabel } from "./SectionLabel";
 
@@ -24,6 +25,7 @@ export interface Feature {
   description: string;
   icon?: React.ReactNode;
   label?: string;
+  image?: string;
 }
 
 export interface FeaturesProps {
@@ -136,14 +138,10 @@ function FeatureCard({
 
 // ─── Bento variant ─────────────────────────────────────────────────────────────
 
-const bentoSpans = [
-  "md:col-span-2 md:row-span-2",
-  "",
-  "",
-  "md:col-span-2",
-  "",
-  "",
-];
+// One hero tile (2x2) + five equal tiles fills a 3-column grid with zero
+// leftover cells (4 + 1*5 = 9 = 3x3) — any other split leaves an orphaned
+// card dangling in its own row.
+const bentoSpans = ["md:col-span-2 md:row-span-2", "", "", "", "", ""];
 
 function BentoFeatureCard({
   feature,
@@ -152,7 +150,6 @@ function BentoFeatureCard({
   feature: Feature;
   index: number;
 }) {
-  const colorClass = iconBgColors[index % iconBgColors.length];
   const span = bentoSpans[index % bentoSpans.length];
   const isHero = span.includes("row-span-2");
 
@@ -162,28 +159,31 @@ function BentoFeatureCard({
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 280, damping: 20 }}
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md will-change-transform premium-shadow hover:border-white/90 hover:bg-white/90",
+        "group relative flex min-h-[280px] flex-col justify-end overflow-hidden rounded-2xl border border-white/10 shadow-sm will-change-transform premium-shadow md:min-h-0",
         span,
       )}
     >
-      {/* Ambient gradient header block, taller for the hero tile */}
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-br opacity-[0.15]",
-          isHero ? "h-2/3" : "h-1/2",
-          index % 2 === 0
-            ? "from-power-orange to-transparent"
-            : "from-turf-green to-transparent",
-        )}
-      />
+      {/* Background photo */}
+      {feature.image && (
+        <Image
+          src={feature.image}
+          alt=""
+          aria-hidden="true"
+          fill
+          sizes={isHero ? "(min-width: 768px) 66vw, 100vw" : "(min-width: 768px) 33vw, 100vw"}
+          className="scale-105 object-cover transition-transform duration-700 will-change-transform group-hover:scale-115"
+        />
+      )}
 
-      <div className="relative">
+      {/* Dark overlay for text legibility */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
+
+      <div className="relative p-6">
         {feature.icon && (
           <motion.div
             className={cn(
-              "mb-5 flex shrink-0 items-center justify-center rounded-xl will-change-transform",
+              "mb-5 flex shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-md will-change-transform",
               isHero ? "h-14 w-14" : "h-12 w-12",
-              colorClass,
             )}
             whileHover={{ rotate: 8, scale: 1.15 }}
             transition={{ type: "spring", stiffness: 300, damping: 16 }}
@@ -192,13 +192,13 @@ function BentoFeatureCard({
           </motion.div>
         )}
         {feature.label && (
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
             {feature.label}
           </p>
         )}
         <h3
           className={cn(
-            "mb-2.5 font-bold text-slate-900",
+            "mb-2.5 font-bold text-white",
             isHero ? "text-2xl" : "text-lg",
           )}
         >
@@ -206,7 +206,7 @@ function BentoFeatureCard({
         </h3>
         <p
           className={cn(
-            "leading-relaxed text-slate-600",
+            "leading-relaxed text-white/85",
             isHero ? "text-base" : "text-sm",
           )}
         >

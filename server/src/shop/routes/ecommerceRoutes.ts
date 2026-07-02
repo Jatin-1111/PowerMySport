@@ -261,6 +261,17 @@ router.get(
 );
 
 /**
+ * GET /api/v1/admin/orders/:orderId
+ * Get a single order's full detail for admin drill-down
+ */
+router.get(
+  "/admin/orders/:orderId",
+  authMiddleware,
+  requirePermission("orders:view"),
+  (req: Request, res: Response) => adminController.getOrderDetail(req, res),
+);
+
+/**
  * PATCH /api/v1/admin/orders/:orderId/fulfillment-status
  * Update order fulfillment status
  */

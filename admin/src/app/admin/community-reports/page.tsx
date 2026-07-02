@@ -24,6 +24,8 @@ export default function AdminCommunityReportsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -62,6 +64,47 @@ export default function AdminCommunityReportsPage() {
     }
   };
 
+  const actionableReports = reports.filter(
+    (r) => r.status === "OPEN" || r.status === "UNDER_REVIEW",
+  );
+
+  const toggleSelected = (reportId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(reportId)) {
+        next.delete(reportId);
+      } else {
+        next.add(reportId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) =>
+      prev.size === actionableReports.length
+        ? new Set()
+        : new Set(actionableReports.map((r) => r.id)),
+    );
+  };
+
+  const handleBulkReview = async (status: "RESOLVED" | "REJECTED") => {
+    if (selectedIds.size === 0) return;
+    setBulkBusy(true);
+    try {
+      const response = await adminApi.bulkReviewCommunityReports({
+        reportIds: Array.from(selectedIds),
+        status,
+      });
+      if (response.success) {
+        setSelectedIds(new Set());
+        await loadReports();
+      }
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -71,22 +114,68 @@ export default function AdminCommunityReportsPage() {
       />
 
       <Card className="bg-white space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-700">Filter:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as typeof statusFilter)
-            }
-            className="rounded border border-slate-300 px-3 py-1.5 text-sm"
-          >
-            <option value="ALL">All</option>
-            <option value="OPEN">Open</option>
-            <option value="UNDER_REVIEW">Under Review</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-700">Filter:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as typeof statusFilter)
+              }
+              className="rounded border border-slate-300 px-3 py-1.5 text-sm"
+            >
+              <option value="ALL">All</option>
+              <option value="OPEN">Open</option>
+              <option value="UNDER_REVIEW">Under Review</option>
+              <option value="RESOLVED">Resolved</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
+
+          {actionableReports.length > 0 && (
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={
+                  selectedIds.size > 0 &&
+                  selectedIds.size === actionableReports.length
+                }
+                onChange={toggleSelectAll}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Select all actionable
+            </label>
+          )}
         </div>
+
+        {selectedIds.size > 0 && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+            <span className="text-sm font-semibold text-orange-800">
+              {selectedIds.size} selected
+            </span>
+            <button
+              disabled={bulkBusy}
+              onClick={() => handleBulkReview("RESOLVED")}
+              className="rounded bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-200 disabled:opacity-50"
+            >
+              Resolve Selected
+            </button>
+            <button
+              disabled={bulkBusy}
+              onClick={() => handleBulkReview("REJECTED")}
+              className="rounded bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50"
+            >
+              Reject Selected
+            </button>
+            <button
+              disabled={bulkBusy}
+              onClick={() => setSelectedIds(new Set())}
+              className="rounded border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white disabled:opacity-50"
+            >
+              Clear
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="py-10 text-center text-slate-500">
@@ -109,6 +198,15 @@ export default function AdminCommunityReportsPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
+                        {(report.status === "OPEN" ||
+                          report.status === "UNDER_REVIEW") && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(report.id)}
+                            onChange={() => toggleSelected(report.id)}
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                        )}
                         <span
                           className={`rounded px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[report.status] ?? "bg-slate-100 text-slate-500"}`}
                         >
@@ -126,11 +224,22 @@ export default function AdminCommunityReportsPage() {
                           {report.details}
                         </p>
                       )}
+                      <p
+                        className={`mt-2 text-sm italic ${report.targetDeleted ? "text-slate-400" : "text-slate-600"}`}
+                      >
+                        &ldquo;{report.targetPreview}&rdquo;
+                      </p>
                       <p className="mt-1 text-xs text-slate-400">
-                        Reported by {report.reporterUserId.slice(-6)} •{" "}
-                        {new Date(report.createdAt).toLocaleDateString()}
+                        Reported by{" "}
+                        {report.reporterUserId.name}
+                        {report.reporterUserId.email &&
+                          ` (${report.reporterUserId.email})`}{" "}
+                        • {new Date(report.createdAt).toLocaleDateString()}
                         {report.resolutionNote && (
                           <> • Note: {report.resolutionNote}</>
+                        )}
+                        {report.reviewedBy && (
+                          <> • Reviewed by {report.reviewedBy.name}</>
                         )}
                       </p>
                     </div>

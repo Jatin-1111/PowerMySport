@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { User as UserModel } from "../../client/models/User";
 import OutboxMessage from "../../shared/models/OutboxMessage";
 import { getPhonePeOrderStatus } from "../../shared/services/PhonePeService";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
 import {
   FulfillmentStatus,
   OrderStatus,
@@ -851,6 +852,7 @@ export class OrderService {
     }
 
     await order.save();
+    await order.populate("userId", "name email");
     return order;
   }
 
@@ -859,6 +861,15 @@ export class OrderService {
    */
   async getOrderById(orderId: string): Promise<OrderDocument | null> {
     return OrderModel.findById(orderId);
+  }
+
+  /**
+   * Get order by ID with customer populated, for the admin detail drill-down.
+   * Separate from getOrderById() because callers of that method compare
+   * order.userId as a raw ObjectId string — populating there would break them.
+   */
+  async getOrderByIdForAdmin(orderId: string): Promise<OrderDocument | null> {
+    return OrderModel.findById(orderId).populate("userId", "name email");
   }
 
   /**
@@ -905,6 +916,9 @@ export class OrderService {
       status?: OrderStatus;
       dateFrom?: string;
       dateTo?: string;
+      search?: string;
+      sortBy?: "createdAt" | "totalAmount" | "orderNumber";
+      sortOrder?: "asc" | "desc";
     },
   ) {
     const query: any = {};
@@ -923,10 +937,20 @@ export class OrderService {
       }
     }
 
+    if (options?.search) {
+      query.orderNumber = {
+        $regex: buildSafeSearchRegexSource(options.search),
+        $options: "i",
+      };
+    }
+
     const skip = (page - 1) * limit;
+    const sortField = options?.sortBy || "createdAt";
+    const sortDir = options?.sortOrder === "asc" ? 1 : -1;
 
     const orders = await OrderModel.find(query)
-      .sort({ createdAt: -1 })
+      .populate("userId", "name email")
+      .sort({ [sortField]: sortDir })
       .skip(skip)
       .limit(limit);
 
@@ -1081,6 +1105,54 @@ export class ProductService {
       page,
       pages: Math.ceil(total / limit),
       facets: availableFacets,
+    };
+  }
+
+  /**
+   * List products for the admin catalog view — unlike listProducts(), this
+   * includes inactive products and supports admin-relevant search/sort.
+   */
+  async listProductsForAdmin(
+    page: number = 1,
+    limit: number = 20,
+    options?: {
+      search?: string;
+      isActive?: boolean;
+      sortBy?: "name" | "basePrice" | "totalStock" | "createdAt";
+      sortOrder?: "asc" | "desc";
+    },
+  ) {
+    const query: any = {};
+
+    if (typeof options?.isActive === "boolean") {
+      query.isActive = options.isActive;
+    }
+
+    if (options?.search) {
+      const safeSearch = buildSafeSearchRegexSource(options.search);
+      query.$or = [
+        { name: { $regex: safeSearch, $options: "i" } },
+        { sku: { $regex: safeSearch, $options: "i" } },
+      ];
+    }
+
+    const sortField = options?.sortBy || "createdAt";
+    const sortDir = options?.sortOrder === "asc" ? 1 : -1;
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await Promise.all([
+      ProductModel.find(query)
+        .sort({ [sortField]: sortDir })
+        .skip(skip)
+        .limit(limit),
+      ProductModel.countDocuments(query),
+    ]);
+
+    return {
+      products,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
     };
   }
 

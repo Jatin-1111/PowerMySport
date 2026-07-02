@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { toast } from "@/lib/toast";
+import { adminApi } from "@/modules/admin/services/admin";
 import {
   Activity,
   AlertOctagon,
@@ -41,36 +42,6 @@ const EVENT_COLORS: Record<string, string> = {
   "refund.failed": "bg-orange-100 text-orange-700 border-orange-200",
 };
 
-const MOCK_ERRORS: WebhookError[] = [
-  {
-    key: "payment.captured:order_123:2026-06-06T08:10:00.000Z",
-    timestamp: new Date(Date.now() - 2 * 3600000).toISOString(),
-    eventType: "payment.captured",
-    reference: "64f8c9a2e3b4a5d6c7e8f901",
-    errorMessage: "Order not found in database",
-    retryCount: 1,
-    payloadSummary: { event: "payment.captured", entityId: "pay_MKG8XqzP" },
-  },
-  {
-    key: "refund.failed:order_456:2026-06-05T14:22:00.000Z",
-    timestamp: new Date(Date.now() - 18 * 3600000).toISOString(),
-    eventType: "refund.failed",
-    reference: "64f8c9a2e3b4a5d6c7e8f902",
-    errorMessage: "Refund gateway timeout",
-    retryCount: 0,
-    payloadSummary: { event: "refund.failed", entityId: "rfnd_MKH2YsP" },
-  },
-  {
-    key: "payment.failed:order_789:2026-06-04T09:45:00.000Z",
-    timestamp: new Date(Date.now() - 42 * 3600000).toISOString(),
-    eventType: "payment.failed",
-    reference: "64f8c9a2e3b4a5d6c7e8f903",
-    errorMessage: "Duplicate idempotency key conflict",
-    retryCount: 2,
-    payloadSummary: { event: "payment.failed", entityId: "pay_MKJ4WrT" },
-  },
-];
-
 interface ReconcileFormState {
   orderId: string;
   type: "payment" | "refund";
@@ -97,12 +68,15 @@ export default function AdminWebhookRecoveryPage() {
   const loadErrors = async () => {
     setLoading(true);
     try {
-      // In production: GET /admin/webhook-errors → calls WebhookRecoveryService.listErrors()
-      await new Promise((r) => setTimeout(r, 500));
-      setErrors(MOCK_ERRORS);
+      const response = await adminApi.getWebhookErrors();
+      if (response.success && response.data) {
+        setErrors(response.data);
+      } else {
+        setErrors([]);
+      }
     } catch {
       toast.error("Failed to load webhook errors");
-      setErrors(MOCK_ERRORS);
+      setErrors([]);
     } finally {
       setLoading(false);
     }
@@ -111,10 +85,13 @@ export default function AdminWebhookRecoveryPage() {
   const handleRetry = async (errorKey: string) => {
     setRetrying(errorKey);
     try {
-      // In production: POST /admin/webhook-errors/:key/retry
-      await new Promise((r) => setTimeout(r, 1500));
-      toast.success("Webhook event retried successfully");
-      setErrors((prev) => prev.filter((e) => e.key !== errorKey));
+      const response = await adminApi.retryWebhookError(errorKey);
+      if (response.success) {
+        toast.success("Webhook event retried successfully");
+        setErrors((prev) => prev.filter((e) => e.key !== errorKey));
+      } else {
+        throw new Error("Retry failed");
+      }
     } catch {
       toast.error("Retry failed — event may need manual processing");
       setErrors((prev) =>
@@ -135,17 +112,21 @@ export default function AdminWebhookRecoveryPage() {
 
     setReconcile((r) => ({ ...r, loading: true, result: null }));
     try {
-      // In production: POST /admin/reconcile/:type/:orderId
-      await new Promise((r) => setTimeout(r, 1200));
-      const isConsistent = Math.random() > 0.3;
-      const msg = isConsistent
-        ? `✅ ${reconcile.type === "payment" ? "Payment" : "Refund"} status is consistent for order ${reconcile.orderId}`
-        : `⚠️ Discrepancy found and fixed for order ${reconcile.orderId}`;
-      setReconcile((r) => ({ ...r, result: msg }));
-      toast.success("Reconciliation complete");
-    } catch {
-      toast.error("Reconciliation failed");
-      setReconcile((r) => ({ ...r, result: "❌ Reconciliation failed" }));
+      const response = await adminApi.reconcileOrder(reconcile.type, reconcile.orderId);
+      if (response.success) {
+        const isConsistent = response.data?.isConsistent ?? true;
+        const msg = isConsistent
+          ? `✅ ${reconcile.type === "payment" ? "Payment" : "Refund"} status is consistent for order ${reconcile.orderId}`
+          : `⚠️ Discrepancy found and fixed for order ${reconcile.orderId}`;
+        setReconcile((r) => ({ ...r, result: msg }));
+        toast.success("Reconciliation complete");
+      } else {
+        throw new Error(response.message || "Failed");
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || "Failed to reconcile order";
+      toast.error(errorMsg);
+      setReconcile((r) => ({ ...r, result: `❌ ${errorMsg}` }));
     } finally {
       setReconcile((r) => ({ ...r, loading: false }));
     }

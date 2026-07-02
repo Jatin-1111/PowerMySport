@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { ScheduledNotification } from "../models/ScheduledNotification";
 import { sendEmail } from "../../utils/email";
 
@@ -21,8 +22,10 @@ interface SchedulerHealthStatus {
 }
 
 interface FailedReminderInfo {
-  reminderId: string;
+  _id: string;
   userId: string;
+  userName: string;
+  userEmail: string;
   bookingId: string;
   interval: string;
   failedAt: Date;
@@ -170,17 +173,27 @@ export class ReminderMonitoringService {
     })
       .sort({ failedAt: -1 })
       .limit(limit)
-      .select("userId bookingId interval failedAt failureReason retryCount");
+      .select("userId bookingId interval failedAt failureReason retryCount")
+      .populate("userId", "name email");
 
-    return failedReminders.map((reminder) => ({
-      reminderId: reminder._id.toString(),
-      userId: reminder.userId.toString(),
-      bookingId: reminder.bookingId?.toString() || "unknown",
-      interval: reminder.interval,
-      failedAt: reminder.failedAt!,
-      failureReason: reminder.failureReason || "Unknown error",
-      retryCount: reminder.retryCount || 0,
-    }));
+    return failedReminders.map((reminder) => {
+      const user = reminder.userId as unknown as
+        | { _id: unknown; name?: string; email?: string }
+        | mongoose.Types.ObjectId;
+      const isPopulated = typeof user === "object" && "name" in user;
+
+      return {
+        _id: reminder._id.toString(),
+        userId: isPopulated ? String((user as { _id: unknown })._id) : String(user),
+        userName: isPopulated ? (user as { name?: string }).name || "Unknown user" : "Unknown user",
+        userEmail: isPopulated ? (user as { email?: string }).email || "" : "",
+        bookingId: reminder.bookingId?.toString() || "unknown",
+        interval: reminder.interval,
+        failedAt: reminder.failedAt!,
+        failureReason: reminder.failureReason || "Unknown error",
+        retryCount: reminder.retryCount || 0,
+      };
+    });
   }
 
   /**

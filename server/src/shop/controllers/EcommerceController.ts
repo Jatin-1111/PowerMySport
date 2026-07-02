@@ -1422,11 +1422,39 @@ export class AdminEcommerceController {
    */
   async listAllProducts(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 1, limit = 20 } = req.query;
+      const { page = 1, limit = 20, search, isActive, sortBy, sortOrder } = req.query;
 
-      const result = await this.productService.listProducts(
+      const options: {
+        search?: string;
+        isActive?: boolean;
+        sortBy?: "name" | "basePrice" | "totalStock" | "createdAt";
+        sortOrder?: "asc" | "desc";
+      } = {};
+
+      if (typeof search === "string") {
+        options.search = search;
+      }
+      if (isActive === "true") {
+        options.isActive = true;
+      } else if (isActive === "false") {
+        options.isActive = false;
+      }
+      if (
+        sortBy === "name" ||
+        sortBy === "basePrice" ||
+        sortBy === "totalStock" ||
+        sortBy === "createdAt"
+      ) {
+        options.sortBy = sortBy;
+      }
+      if (sortOrder === "asc" || sortOrder === "desc") {
+        options.sortOrder = sortOrder;
+      }
+
+      const result = await this.productService.listProductsForAdmin(
         Number(page),
         Number(limit),
+        options,
       );
 
       res.json({
@@ -1527,12 +1555,24 @@ export class AdminEcommerceController {
    */
   async listAllOrders(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 1, limit = 20, status, dateFrom, dateTo } = req.query;
+      const {
+        page = 1,
+        limit = 20,
+        status,
+        dateFrom,
+        dateTo,
+        search,
+        sortBy,
+        sortOrder,
+      } = req.query;
 
       const filters: {
         status?: OrderStatus;
         dateFrom?: string;
         dateTo?: string;
+        search?: string;
+        sortBy?: "createdAt" | "totalAmount" | "orderNumber";
+        sortOrder?: "asc" | "desc";
       } = {};
 
       if (typeof status === "string") {
@@ -1543,6 +1583,15 @@ export class AdminEcommerceController {
       }
       if (typeof dateTo === "string") {
         filters.dateTo = dateTo;
+      }
+      if (typeof search === "string") {
+        filters.search = search;
+      }
+      if (sortBy === "createdAt" || sortBy === "totalAmount" || sortBy === "orderNumber") {
+        filters.sortBy = sortBy;
+      }
+      if (sortOrder === "asc" || sortOrder === "desc") {
+        filters.sortOrder = sortOrder;
       }
 
       const result = await this.orderService.listAllOrders(
@@ -1562,6 +1611,44 @@ export class AdminEcommerceController {
           code: "INTERNAL_ERROR",
           message: error.message,
         },
+      } as ApiResponse<null>);
+    }
+  }
+
+  /**
+   * GET /api/v1/admin/orders/:orderId
+   * Get a single order's full detail (line items + status) for admin drill-down
+   */
+  async getOrderDetail(req: Request, res: Response): Promise<void> {
+    try {
+      const orderId = getParam((req.params as Record<string, unknown>).orderId);
+
+      if (!orderId) {
+        res.status(400).json({
+          ok: false,
+          error: { code: "INVALID_REQUEST", message: "Order id is required" },
+        });
+        return;
+      }
+
+      const order = await this.orderService.getOrderByIdForAdmin(orderId);
+
+      if (!order) {
+        res.status(404).json({
+          ok: false,
+          error: { code: "NOT_FOUND", message: "Order not found" },
+        });
+        return;
+      }
+
+      res.json({
+        ok: true,
+        data: { order },
+      } as ApiResponse<any>);
+    } catch (error: any) {
+      res.status(500).json({
+        ok: false,
+        error: { code: "INTERNAL_ERROR", message: error.message },
       } as ApiResponse<null>);
     }
   }

@@ -76,6 +76,10 @@ export default function AdminAcademiesPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [suspendReason, setSuspendReason] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState("");
+  const [showBulkRejectInput, setShowBulkRejectInput] = useState(false);
 
   const loadAcademies = useCallback(async () => {
     setLoading(true);
@@ -127,6 +131,7 @@ export default function AdminAcademiesPage() {
 
   useEffect(() => {
     loadAcademies();
+    setSelectedIds(new Set());
   }, [loadAcademies]);
 
   useEffect(() => {
@@ -190,6 +195,66 @@ export default function AdminAcademiesPage() {
     }
   };
 
+  const toggleSelected = (academyId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(academyId)) {
+        next.delete(academyId);
+      } else {
+        next.add(academyId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) =>
+      prev.size === academies.length
+        ? new Set()
+        : new Set(academies.map((a) => a.id)),
+    );
+  };
+
+  const runBulkAction = async (mode: "APPROVE" | "REJECT") => {
+    if (selectedIds.size === 0) return;
+    if (mode === "REJECT" && !bulkRejectReason.trim()) {
+      toast.error("Please enter a rejection reason.");
+      return;
+    }
+
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          mode === "APPROVE"
+            ? adminApi.approveAcademy(id)
+            : adminApi.rejectAcademy(id, bulkRejectReason.trim()),
+        ),
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      const succeeded = ids.length - failed;
+
+      if (succeeded > 0) {
+        toast.success(
+          `${mode === "APPROVE" ? "Approved" : "Rejected"} ${succeeded} ${succeeded === 1 ? "academy" : "academies"}.`,
+        );
+      }
+      if (failed > 0) {
+        toast.error(
+          `Failed to process ${failed} ${failed === 1 ? "academy" : "academies"}.`,
+        );
+      }
+
+      setShowBulkRejectInput(false);
+      setBulkRejectReason("");
+      setSelectedIds(new Set());
+      await loadAcademies();
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const selectedQueueItem = currentSelection;
 
   return (
@@ -235,6 +300,66 @@ export default function AdminAcademiesPage() {
         </div>
       </div>
 
+      {filter === "pending" && selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-semibold text-orange-800">
+              {selectedIds.size} selected
+            </span>
+            <button
+              disabled={bulkBusy}
+              onClick={() => runBulkAction("APPROVE")}
+              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+            >
+              Approve Selected
+            </button>
+            <button
+              disabled={bulkBusy}
+              onClick={() =>
+                setShowBulkRejectInput((prev) => {
+                  const next = !prev;
+                  if (!next) setBulkRejectReason("");
+                  return next;
+                })
+              }
+              className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+            >
+              Reject Selected
+            </button>
+            <button
+              disabled={bulkBusy}
+              onClick={() => {
+                setSelectedIds(new Set());
+                setShowBulkRejectInput(false);
+                setBulkRejectReason("");
+              }}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white disabled:opacity-50"
+            >
+              Clear
+            </button>
+          </div>
+
+          {showBulkRejectInput && (
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+              <textarea
+                rows={1}
+                value={bulkRejectReason}
+                onChange={(event) => setBulkRejectReason(event.target.value)}
+                placeholder="Rejection reason applied to all selected academies..."
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+              />
+              <button
+                disabled={bulkBusy}
+                onClick={() => runBulkAction("REJECT")}
+                className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                Confirm Reject
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {error ? (
         <Card className="bg-white">
           <div className="py-10 text-center space-y-3">
@@ -259,8 +384,24 @@ export default function AdminAcademiesPage() {
                   Click a row to review full submission details.
                 </p>
               </div>
-              <div className="text-sm text-slate-500">
-                Page {pagination.page} of {pagination.totalPages}
+              <div className="flex items-center gap-3">
+                {filter === "pending" && academies.length > 0 && (
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedIds.size > 0 &&
+                        selectedIds.size === academies.length
+                      }
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    Select all
+                  </label>
+                )}
+                <div className="text-sm text-slate-500">
+                  Page {pagination.page} of {pagination.totalPages}
+                </div>
               </div>
             </div>
 
@@ -278,48 +419,60 @@ export default function AdminAcademiesPage() {
                 {academies.map((academy) => {
                   const isSelected = academy.id === selectedAcademyId;
                   return (
-                    <button
+                    <div
                       key={academy.id}
-                      type="button"
-                      onClick={() => setSelectedAcademyId(academy.id)}
-                      className={`w-full rounded-2xl border p-4 text-left transition ${
+                      className={`flex w-full items-start gap-3 rounded-2xl border p-4 transition ${
                         isSelected
                           ? "border-power-orange bg-orange-50"
                           : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
                       }`}
                     >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-semibold text-slate-900">
-                              {academy.name}
-                            </h3>
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(academy)}`}
-                            >
-                              {academy.rejectionReason
-                                ? "Rejected"
-                                : academy.isActive
-                                  ? "Live"
-                                  : academy.isApproved
-                                    ? "Approved"
-                                    : "Pending"}
-                            </span>
+                      {filter === "pending" && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(academy.id)}
+                          onChange={() => toggleSelected(academy.id)}
+                          className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAcademyId(academy.id)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold text-slate-900">
+                                {academy.name}
+                              </h3>
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(academy)}`}
+                              >
+                                {academy.rejectionReason
+                                  ? "Rejected"
+                                  : academy.isActive
+                                    ? "Live"
+                                    : academy.isApproved
+                                      ? "Approved"
+                                      : "Pending"}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-sm text-slate-600">
+                              {academy.city || "Location unavailable"} •{" "}
+                              {academy.sports.join(", ") || "No sports listed"}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Owner: {academy.ownerEmail || "N/A"}
+                            </p>
                           </div>
-                          <p className="mt-1 text-sm text-slate-600">
-                            {academy.city || "Location unavailable"} •{" "}
-                            {academy.sports.join(", ") || "No sports listed"}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            Owner: {academy.ownerEmail || "N/A"}
-                          </p>
+                          <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <Eye size={16} />
+                            Review
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-500">
-                          <Eye size={16} />
-                          Review
-                        </div>
-                      </div>
-                    </button>
+                      </button>
+                    </div>
                   );
                 })}
               </div>

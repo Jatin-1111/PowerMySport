@@ -7,7 +7,8 @@ import {
   adminApi,
 } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
-import { useCallback, useEffect, useState } from "react";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
+import { Fragment, useCallback, useEffect, useState } from "react";
 
 const emptyForm = {
   code: "",
@@ -408,7 +409,41 @@ export default function AdminPromoCodesPage() {
             No promo codes yet.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <ExportCsvButton
+                filename="promo-codes.csv"
+                rows={codes}
+                columns={[
+                  { header: "Code", value: (pc) => pc.code },
+                  { header: "Description", value: (pc) => pc.description },
+                  { header: "Discount Type", value: (pc) => pc.discountType },
+                  { header: "Discount Value", value: (pc) => pc.discountValue },
+                  { header: "Applies To", value: (pc) => pc.applicableTo },
+                  {
+                    header: "Valid From",
+                    value: (pc) => new Date(pc.validFrom).toISOString(),
+                  },
+                  {
+                    header: "Valid Until",
+                    value: (pc) => new Date(pc.validUntil).toISOString(),
+                  },
+                  {
+                    header: "Usage",
+                    value: (pc) => pc.currentUsageCount,
+                  },
+                  {
+                    header: "Max Usage Total",
+                    value: (pc) => pc.maxUsageTotal ?? "",
+                  },
+                  {
+                    header: "Status",
+                    value: (pc) => (pc.isActive ? "Active" : "Inactive"),
+                  },
+                ]}
+              />
+            </div>
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
@@ -433,8 +468,8 @@ export default function AdminPromoCodesPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {codes.map((pc) => (
-                  <>
-                    <tr key={pc._id}>
+                  <Fragment key={pc._id}>
+                    <tr>
                       <td className="px-4 py-3 text-sm font-mono font-semibold text-slate-900">
                         {pc.code}
                       </td>
@@ -537,7 +572,8 @@ export default function AdminPromoCodesPage() {
                                 {selectedStats.stats.recentUsages.map(
                                   (u, i) => (
                                     <li key={i}>
-                                      User {u.userId.slice(-6)} — ₹
+                                      {u.userName}
+                                      {u.userEmail && ` (${u.userEmail})`} — ₹
                                       {u.discountApplied} on{" "}
                                       {new Date(u.usedAt).toLocaleDateString()}
                                     </li>
@@ -549,10 +585,11 @@ export default function AdminPromoCodesPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </Card>

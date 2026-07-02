@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Venue, VenueDocument } from "../models/Venue";
 import { IGeoLocation } from "../../types/index";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
@@ -277,6 +278,7 @@ export const getAllVenues = async (
   filters?: {
     sports?: string[];
     approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+    search?: string;
   },
   page: number = 1,
   limit: number = 20,
@@ -294,6 +296,13 @@ export const getAllVenues = async (
 
   if (filters?.approvalStatus) {
     query.approvalStatus = filters.approvalStatus;
+  }
+
+  if (filters?.search) {
+    query.name = {
+      $regex: buildSafeSearchRegexSource(filters.search),
+      $options: "i",
+    };
   }
 
   const skip = (page - 1) * limit;

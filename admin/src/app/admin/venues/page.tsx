@@ -3,6 +3,7 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { Venue } from "@/types";
 import { ChevronLeft, ChevronRight, MapPin, Star, Calendar, ImageIcon, ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -15,6 +16,8 @@ interface PaginationData {
   totalPages: number;
 }
 
+type SortBy = "newest" | "rating_desc" | "price_asc" | "price_desc";
+
 export default function AdminVenuesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +28,8 @@ export default function AdminVenuesPage() {
     totalPages: 1,
   });
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("newest");
   const PAGE_SIZE = 12;
 
   const loadVenues = useCallback(async () => {
@@ -34,6 +39,7 @@ export default function AdminVenuesPage() {
       const response = await statsApi.getAllVenues({
         page: currentPage,
         limit: PAGE_SIZE,
+        search: search || undefined,
       });
       if (response.success && response.data) {
         setVenues(response.data);
@@ -50,11 +56,26 @@ export default function AdminVenuesPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, search]);
 
   useEffect(() => {
-    loadVenues();
-  }, [loadVenues]);
+    const t = setTimeout(loadVenues, search ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [loadVenues, search]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const visibleVenues = [...venues].sort((left, right) => {
+    if (sortBy === "rating_desc") return (right.rating ?? 0) - (left.rating ?? 0);
+    if (sortBy === "price_asc") return left.pricePerHour - right.pricePerHour;
+    if (sortBy === "price_desc") return right.pricePerHour - left.pricePerHour;
+    return (
+      new Date(right.createdAt || 0).getTime() -
+      new Date(left.createdAt || 0).getTime()
+    );
+  });
 
   if (loading) {
     return (
@@ -95,21 +116,69 @@ export default function AdminVenuesPage() {
         subtitle="Browse and manage all venues listed on the platform."
       />
 
-      {venues.length === 0 ? (
+      <Card className="bg-white">
+        <div className="grid gap-3 md:grid-cols-2">
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search venues by name..."
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value as SortBy)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="newest">Newest first</option>
+            <option value="rating_desc">Rating (High-Low)</option>
+            <option value="price_asc">Price (Low-High)</option>
+            <option value="price_desc">Price (High-Low)</option>
+          </select>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <ExportCsvButton
+            filename="venues.csv"
+            rows={visibleVenues}
+            label="Export Page CSV"
+            columns={[
+              { header: "Name", value: (v) => v.name },
+              { header: "Address", value: (v) => v.address || "" },
+              { header: "Price Per Hour", value: (v) => v.pricePerHour },
+              { header: "Rating", value: (v) => v.rating ?? 0 },
+              {
+                header: "Sports",
+                value: (v) => (v.sports || []).join("; "),
+              },
+              {
+                header: "Approval Status",
+                value: (v) => v.approvalStatus || "",
+              },
+              {
+                header: "Created",
+                value: (v) => (v.createdAt ? new Date(v.createdAt).toISOString() : ""),
+              },
+            ]}
+          />
+        </div>
+      </Card>
+
+      {visibleVenues.length === 0 ? (
         <Card className="bg-white">
           <div className="flex flex-col items-center gap-4 py-16 text-center">
             <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
               No venues yet
             </div>
             <p className="max-w-md text-slate-600">
-              Approved venues will appear here once they complete onboarding.
+              {venues.length === 0
+                ? "Approved venues will appear here once they complete onboarding."
+                : "No venues match your search."}
             </p>
           </div>
         </Card>
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {venues.map((venue, venueIndex) => {
+            {visibleVenues.map((venue, venueIndex) => {
               const venueKey =
                 venue.id ||
                 venue._id ||
