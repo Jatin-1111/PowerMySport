@@ -15,7 +15,8 @@ import {
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
 import { X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 function formatInr(paise: number): string {
   return new Intl.NumberFormat("en-IN", {
@@ -44,12 +45,32 @@ const STATUS_OPTIONS = [
 type SortBy = "createdAt" | "totalAmount" | "orderNumber";
 
 export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-12">Loading orders...</div>}>
+      <AdminOrdersPageContent />
+    </Suspense>
+  );
+}
+
+function AdminOrdersPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const pageParam = Number(searchParams.get("page"));
+  const page = !isNaN(pageParam) && pageParam > 0 ? pageParam : 1;
+
+  const setPage = (newPage: number) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    current.set("page", String(newPage));
+    router.replace(`${pathname}?${current.toString()}`, { scroll: false });
+  };
+
   const [orders, setOrders] = useState<AdminOrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState<SortBy>("createdAt");

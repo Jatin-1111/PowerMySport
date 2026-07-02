@@ -9,3 +9,6 @@ _*.ps1
 .env.*
 !.env.example
 .claude
+
+CLAUDE.md
+PROJECT_CONTEXT.md
