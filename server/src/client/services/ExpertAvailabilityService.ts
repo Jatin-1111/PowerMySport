@@ -26,8 +26,14 @@ const toDateKey = (d: Date): string =>
   `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 
 const parseHHmm = (v: string): number => {
-  const [h, m] = v.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
+  const parts = v.split(":").map(Number);
+  return (parts[0] || 0) * 60 + (parts[1] || 0);
+};
+
+/** Parse "YYYY-MM-DD" into a [year, month, day] number tuple (no undefined). */
+const parseDateKey = (dateKey: string): [number, number, number] => {
+  const p = dateKey.split("-").map(Number);
+  return [p[0] ?? 1970, p[1] ?? 1, p[2] ?? 1];
 };
 
 /** Minutes that `tz` is ahead of UTC at the given instant. */
@@ -66,7 +72,7 @@ const tzOffsetMinutes = (tz: string, at: Date): number => {
 
 /** Convert a local "YYYY-MM-DD" + minutes-from-midnight in `tz` to a UTC Date. */
 const zonedToUtc = (dateKey: string, minutesFromMidnight: number, tz: string): Date => {
-  const [y, m, d] = dateKey.split("-").map(Number);
+  const [y, m, d] = parseDateKey(dateKey);
   const hh = Math.floor(minutesFromMidnight / 60);
   const mm = minutesFromMidnight % 60;
   const utcGuess = Date.UTC(y, m - 1, d, hh, mm);
@@ -76,12 +82,12 @@ const zonedToUtc = (dateKey: string, minutesFromMidnight: number, tz: string): D
 
 /** Weekday (0=Sun..6=Sat) of a calendar date, tz-independent. */
 const weekdayOfDateKey = (dateKey: string): number => {
-  const [y, m, d] = dateKey.split("-").map(Number);
+  const [y, m, d] = parseDateKey(dateKey);
   return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
 };
 
 const addDaysKey = (dateKey: string, days: number): string => {
-  const [y, m, d] = dateKey.split("-").map(Number);
+  const [y, m, d] = parseDateKey(dateKey);
   return toDateKey(new Date(Date.UTC(y, m - 1, d + days)));
 };
 

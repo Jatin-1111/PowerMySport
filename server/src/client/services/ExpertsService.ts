@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { User } from "../models/User";
-import { Expert, ExpertDocument } from "../models/ExpertProfile";
+import { Expert } from "../models/ExpertProfile";
 import {
   ExpertSession,
   ExpertSessionDocument,
@@ -437,7 +437,7 @@ const applyExpertPaymentSuccess = async (
 ): Promise<ExpertSessionDocument> => {
   const wasPaid = session.paymentStatus === "COMPLETED";
   session.paymentStatus = "COMPLETED";
-  session.holdExpiresAt = undefined;
+  session.set("holdExpiresAt", undefined);
   if (session.status === "PENDING_PAYMENT") {
     session.status = session.scheduledAt ? "SCHEDULED" : "PAID";
   }
@@ -591,8 +591,8 @@ export const setSessionMeetingLink = async (params: {
 export const cancelExpertSession = async (params: {
   sessionId: string;
   actorUserId: string;
-  role?: string;
-  reason?: string;
+  role?: string | undefined;
+  reason?: string | undefined;
 }) => {
   const session = await ExpertSession.findById(params.sessionId);
   if (!session) throw new Error("Session not found");
