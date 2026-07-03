@@ -3,6 +3,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
 import { LucideIcon, Pencil, X } from "lucide-react";
 import { ReactNode } from "react";
+import { ProfileCompletionRing } from "./ProfileCompletionRing";
 
 type ProfileSectionHeaderProps = {
   icon: LucideIcon;
@@ -16,6 +17,8 @@ type ProfileSectionHeaderProps = {
   saveLabel?: string;
   action?: ReactNode;
   className?: string;
+  /** 0-100. When provided, wraps the icon in a profile-completion ring. */
+  completionPercent?: number;
 };
 
 export function ProfileSectionHeader({
@@ -30,7 +33,20 @@ export function ProfileSectionHeader({
   saveLabel = "Save Changes",
   action,
   className,
+  completionPercent,
 }: ProfileSectionHeaderProps) {
+  const iconBox = (
+    <div
+      className={cn(
+        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+        isEditing
+          ? "bg-power-orange text-white"
+          : "bg-power-orange/10 text-power-orange",
+      )}
+    >
+      <Icon className="h-5 w-5" />
+    </div>
+  );
   return (
     <div
       className={cn(
@@ -42,16 +58,13 @@ export function ProfileSectionHeader({
       )}
     >
       <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-            isEditing
-              ? "bg-power-orange text-white"
-              : "bg-power-orange/10 text-power-orange",
-          )}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
+        {completionPercent !== undefined ? (
+          <ProfileCompletionRing percent={completionPercent} size={48} strokeWidth={3}>
+            {iconBox}
+          </ProfileCompletionRing>
+        ) : (
+          iconBox
+        )}
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-semibold text-slate-900 sm:text-lg">
@@ -60,6 +73,11 @@ export function ProfileSectionHeader({
             {isEditing && (
               <Badge className="border-orange-200 bg-white text-orange-700 hover:bg-white">
                 Editing
+              </Badge>
+            )}
+            {!isEditing && completionPercent !== undefined && completionPercent < 100 && (
+              <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
+                {completionPercent}% complete
               </Badge>
             )}
           </div>

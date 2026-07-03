@@ -164,6 +164,7 @@ export const getProfile = async (
         age: p.age,
         sports: p.sportsFocus || [],
         skillLevel: p.skillLevel,
+        yearsPlaying: p.yearsPlaying,
         personalityTags: p.personalityTags,
         primaryObjective: p.primaryObjective,
         weeklyTimeCommitment: p.weeklyTimeCommitment,
@@ -175,6 +176,7 @@ export const getProfile = async (
     const playerProfile = selfPlayer
       ? {
           sports: selfPlayer.sportsFocus || [],
+          yearsPlaying: selfPlayer.yearsPlaying,
           personalityTags: selfPlayer.personalityTags,
           primaryObjective: selfPlayer.primaryObjective,
           weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,

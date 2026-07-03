@@ -10,8 +10,9 @@ export interface PlayerDocument extends Document {
   relation?: string;
   sportsFocus: string[];
   skillLevel?: string;
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
@@ -68,12 +69,17 @@ const playerSchema = new Schema<PlayerDocument>(
     skillLevel: {
       type: String,
     },
+    yearsPlaying: {
+      type: Number,
+      min: 0,
+      max: 20,
+    },
     personalityTags: {
       type: [String],
     },
     primaryObjective: {
       type: String,
-      enum: ["Recreational", "Health", "Social", "Competitive"],
+      enum: ["Recreational", "Fitness", "Compete"],
     },
     weeklyTimeCommitment: {
       type: Number,

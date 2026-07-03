@@ -6,12 +6,7 @@ export const guidanceRequestSchema = z.object({
   child_gender: z.enum(["male", "female"]),
   current_fitness_level: z.enum(["Low", "Moderate", "High"]),
   personality_tags: z.array(z.string().trim().min(1)).default([]),
-  primary_objective: z.enum([
-    "Recreational",
-    "Health",
-    "Social",
-    "Competitive",
-  ]),
+  primary_objective: z.enum(["Recreational", "Fitness", "Compete"]),
   weekly_time_commitment: z.number().min(0).max(40),
   budget_tier: z.enum(["Budget", "Moderate", "Premium"]),
   parent_specific_question: z.string().trim().max(1000).optional(),

@@ -3,8 +3,9 @@
 // ============================================
 export interface IPlayerProfile {
   sports?: string[];
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
@@ -61,8 +62,9 @@ export interface Dependent {
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   sports?: string[];
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;

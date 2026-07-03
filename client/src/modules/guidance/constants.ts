@@ -42,18 +42,12 @@ export const OBJECTIVES = [
     desc: "Play and enjoy sport casually",
   },
   {
-    value: "Health",
+    value: "Fitness",
     label: "Get Fit",
     icon: Activity,
     desc: "Build strength and stamina",
   },
-  {
-    value: "Social",
-    label: "Make Friends",
-    icon: Users,
-    desc: "Connect through sport",
-  },
-  { value: "Competitive", label: "Compete", icon: Trophy, desc: "Train to win" },
+  { value: "Compete", label: "Compete", icon: Trophy, desc: "Train to win" },
 ] as const;
 
 export const FITNESS_LEVELS = [

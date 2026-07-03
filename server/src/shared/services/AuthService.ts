@@ -406,8 +406,9 @@ export interface AddDependentPayload {
   sportsFocus?: string[];
   sports?: string[];
   skillLevel?: string;
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
@@ -448,6 +449,7 @@ export const addDependent = async (
     relation: payload.relation,
     sportsFocus: payload.sportsFocus || payload.sports || [],
     skillLevel: payload.skillLevel || "",
+    yearsPlaying: payload.yearsPlaying,
     personalityTags: payload.personalityTags,
     primaryObjective: payload.primaryObjective,
     weeklyTimeCommitment: payload.weeklyTimeCommitment,
@@ -490,6 +492,8 @@ export const updateDependent = async (
   if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
   if (payload.sports) dependent.sportsFocus = payload.sports;
   if (payload.skillLevel) dependent.skillLevel = payload.skillLevel;
+  if (payload.yearsPlaying !== undefined)
+    dependent.yearsPlaying = payload.yearsPlaying;
   if (payload.personalityTags)
     dependent.personalityTags = payload.personalityTags;
   if (payload.primaryObjective)
@@ -540,8 +544,9 @@ export interface UpdateProfilePayload {
   dob?: string | Date;
   playerProfile?: {
     sports?: string[];
+    yearsPlaying?: number;
     personalityTags?: string[];
-    primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+    primaryObjective?: "Recreational" | "Fitness" | "Compete";
     weeklyTimeCommitment?: number;
     budgetTier?: "Budget" | "Moderate" | "Premium";
     location?: string;
@@ -610,6 +615,8 @@ export const updateProfile = async (
         selfPlayer.sportsFocus = payload.playerProfile.sports;
     }
 
+    if (payload.playerProfile.yearsPlaying !== undefined)
+      selfPlayer.yearsPlaying = payload.playerProfile.yearsPlaying;
     if (payload.playerProfile.personalityTags)
       selfPlayer.personalityTags = payload.playerProfile.personalityTags;
     if (payload.playerProfile.primaryObjective)

@@ -32,7 +32,7 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       primary_objective: {
         type: String,
         required: true,
-        enum: ["Recreational", "Health", "Social", "Competitive"],
+        enum: ["Recreational", "Fitness", "Compete"],
       },
       weekly_time_commitment: {
         type: Number,

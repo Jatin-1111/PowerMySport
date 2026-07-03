@@ -47,7 +47,7 @@ type GuidanceFormState = {
   child_gender: "male" | "female";
   current_fitness_level: "Low" | "Moderate" | "High";
   personality_tags: string[];
-  primary_objective: "Recreational" | "Health" | "Social" | "Competitive";
+  primary_objective: "Recreational" | "Fitness" | "Compete";
   weekly_time_commitment: number;
   budget_tier: "Budget" | "Moderate" | "Premium";
   parent_specific_question: string;
@@ -82,7 +82,7 @@ type PlayerProfile = {
   sportsFocus: string[];
   skillLevel?: string;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
 };
@@ -108,18 +108,12 @@ const OBJECTIVES = [
     desc: "Play and enjoy sport casually",
   },
   {
-    value: "Health",
+    value: "Fitness",
     label: "Get Fit",
     icon: Activity,
     desc: "Build strength and stamina",
   },
-  {
-    value: "Social",
-    label: "Make Friends",
-    icon: Users,
-    desc: "Connect through sport",
-  },
-  { value: "Competitive", label: "Compete", icon: Trophy, desc: "Train to win" },
+  { value: "Compete", label: "Compete", icon: Trophy, desc: "Train to win" },
 ] as const;
 
 const FITNESS_LEVELS = [
