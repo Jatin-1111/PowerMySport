@@ -1,11 +1,13 @@
 import { Suspense } from "react";
-import { Metadata } from "next";
 import DiscoverPageClient from "@/modules/community/components/discover/DiscoverPageClient";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Discover - PowerMySport Community",
-  description: "Discover new communities and players on PowerMySport.",
-};
+export const metadata = buildMetadata({
+  title: "Discover Groups, Topics & Players",
+  description:
+    "Discover sports groups, trending topics, and players to connect with on the PowerMySport community.",
+  path: "/discover",
+});
 
 export default function DiscoverPage() {
   return (

@@ -18,6 +18,19 @@ import DynamicCommunityPosts from "@/modules/community/components/page/home/Dyna
 import DynamicCommunityPulse from "@/modules/community/components/page/home/DynamicCommunityPulse";
 import DynamicFeaturedQA from "@/modules/community/components/page/home/DynamicFeaturedQA";
 import FeatureWaitlist from "@/components/FeatureWaitlist";
+import {
+  JsonLd,
+  organizationSchema,
+  websiteSchema,
+} from "@/modules/community/components/seo/JsonLd";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata({
+  title: "Youth Sports Community for Parents, Players & Coaches",
+  description:
+    "A parent-first youth sports community. Find vetted coaches and trusted venues, ask questions, read expert blogs, and get AI guidance to choose the right next step for your child.",
+  path: "/",
+});
 
 type ValueProp = {
   title: string;
@@ -220,6 +233,7 @@ export default function CommunityLandingPage() {
 
   return (
     <div className="flex min-h-full flex-col overflow-x-hidden">
+      <JsonLd data={[organizationSchema, websiteSchema]} />
       <main className="relative isolate flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.10),transparent_34%),radial-gradient(circle_at_85%_10%,rgba(16,185,129,0.08),transparent_22%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] text-slate-900">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.85),transparent_22%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.55),transparent_18%)]" />
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">

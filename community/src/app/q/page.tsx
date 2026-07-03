@@ -1,5 +1,13 @@
 import QnAFeedClient from "@/modules/community/components/page/QnAFeedClient";
 import { Suspense } from "react";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata({
+  title: "Sports Q&A — Ask & Answer Community Questions",
+  description:
+    "Ask sports questions and get answers from players, coaches, and parents. Browse advice on coaching, training, equipment, injuries, nutrition, and tournaments.",
+  path: "/q",
+});
 
 export default function CommunityQnAPage() {
   return (
