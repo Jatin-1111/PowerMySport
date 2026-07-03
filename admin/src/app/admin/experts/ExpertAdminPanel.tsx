@@ -5,9 +5,11 @@ import {
   DetailSection,
 } from "@/modules/shared/ui/DetailDrawer";
 import CoachPhotoUpload from "@/modules/admin/components/CoachPhotoUpload";
+import { AvailabilityEditor } from "@/modules/expert/components/AvailabilityEditor";
 import {
   expertAdminApi,
   type AdminExpert,
+  type AdminExpertAvailabilityWindow,
   type AdminExpertSessionsResult,
 } from "@/modules/expert/services/expert";
 import { toast } from "@/lib/toast";
@@ -45,6 +47,10 @@ export function ExpertAdminPanel({
     photoUrl: expert.photoUrl || "",
   });
   const [photoKey, setPhotoKey] = useState<string | null>(expert.photoKey || null);
+  const [windows, setWindows] = useState<AdminExpertAvailabilityWindow[]>(
+    expert.weeklyAvailability || [],
+  );
+  const [blackout, setBlackout] = useState<string[]>(expert.blackoutDates || []);
   const set = (k: keyof typeof form, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   const id = expert.id || expert._id || "";
@@ -70,6 +76,12 @@ export function ExpertAdminPanel({
       toast.error("Enter a valid session fee.");
       return;
     }
+    for (const w of windows) {
+      if (w.start >= w.end) {
+        toast.error("An availability window has an invalid time range.");
+        return;
+      }
+    }
     setBusy(true);
     try {
       const res = await expertAdminApi.update(id, {
@@ -82,6 +94,8 @@ export function ExpertAdminPanel({
         sessionMode: form.sessionMode,
         sessionFee: fee,
         sessionDurationMinutes: Number(form.sessionDurationMinutes) || 60,
+        weeklyAvailability: windows,
+        blackoutDates: blackout,
         photoUrl: form.photoUrl || undefined,
         photoKey: photoKey || undefined,
       });
@@ -189,6 +203,21 @@ export function ExpertAdminPanel({
             <input type="number" min={15} step={15} className={field} value={form.sessionDurationMinutes} onChange={(e) => set("sessionDurationMinutes", e.target.value)} />
           </div>
         </div>
+        <div className="border-t border-slate-100 pt-4">
+          <h4 className="text-sm font-bold text-slate-900">Weekly availability</h4>
+          <p className="mt-1 text-xs text-slate-500">
+            Clients can only book slots inside these windows.
+          </p>
+          <div className="mt-3">
+            <AvailabilityEditor
+              windows={windows}
+              blackout={blackout}
+              onWindowsChange={setWindows}
+              onBlackoutChange={setBlackout}
+            />
+          </div>
+        </div>
+
         <div className="flex gap-2 pt-2">
           <button onClick={saveEdit} disabled={busy} className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60">
             {busy ? "Saving..." : "Save"}

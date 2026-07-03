@@ -44,6 +44,8 @@ export interface CreateExpertPayload {
   sessionFee: number;
   sessionMode?: "ONLINE" | "IN_PERSON" | "BOTH";
   sessionDurationMinutes?: number;
+  weeklyAvailability?: AdminExpertAvailabilityWindow[];
+  blackoutDates?: string[];
   city?: string;
   languages?: string[];
   photoUrl?: string;
@@ -62,6 +64,8 @@ export type UpdateExpertPayload = Partial<
     | "sessionMode"
     | "sessionFee"
     | "sessionDurationMinutes"
+    | "weeklyAvailability"
+    | "blackoutDates"
     | "photoUrl"
     | "photoKey"
     | "isActive"

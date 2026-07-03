@@ -134,6 +134,9 @@ export interface CreateExpertPayload {
   sessionFee: number;
   sessionMode?: "ONLINE" | "IN_PERSON" | "BOTH" | undefined;
   sessionDurationMinutes?: number | undefined;
+  timezone?: string | undefined;
+  weeklyAvailability?: { dayOfWeek: number; start: string; end: string }[] | undefined;
+  blackoutDates?: string[] | undefined;
   city?: string | undefined;
   languages?: string[] | undefined;
   photoUrl?: string | undefined;
@@ -169,6 +172,9 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
     sessionFee: payload.sessionFee,
     sessionMode: payload.sessionMode || "ONLINE",
     ...(payload.sessionDurationMinutes ? { sessionDurationMinutes: payload.sessionDurationMinutes } : {}),
+    ...(payload.timezone ? { timezone: payload.timezone } : {}),
+    ...(Array.isArray(payload.weeklyAvailability) ? { weeklyAvailability: payload.weeklyAvailability } : {}),
+    ...(Array.isArray(payload.blackoutDates) ? { blackoutDates: payload.blackoutDates } : {}),
     city: payload.city?.trim(),
     languages: payload.languages || [],
     photoUrl: payload.photoUrl,

@@ -1,8 +1,12 @@
 "use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import { expertAdminApi } from "@/modules/expert/services/expert";
+import {
+  expertAdminApi,
+  type AdminExpertAvailabilityWindow,
+} from "@/modules/expert/services/expert";
 import CoachPhotoUpload from "@/modules/admin/components/CoachPhotoUpload";
+import { AvailabilityEditor } from "@/modules/expert/components/AvailabilityEditor";
 import { toast } from "@/lib/toast";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -33,6 +37,9 @@ export default function AddExpertPage() {
     photoUrl: "",
   });
   const [photoKey, setPhotoKey] = useState<string | null>(null);
+  const [duration, setDuration] = useState("60");
+  const [windows, setWindows] = useState<AdminExpertAvailabilityWindow[]>([]);
+  const [blackout, setBlackout] = useState<string[]>([]);
 
   const set = (k: keyof typeof form, v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
@@ -46,6 +53,12 @@ export default function AddExpertPage() {
     if (!fee || fee <= 0) {
       toast.error("Enter a valid session fee.");
       return;
+    }
+    for (const w of windows) {
+      if (w.start >= w.end) {
+        toast.error("An availability window has an invalid time range.");
+        return;
+      }
     }
     setSaving(true);
     try {
@@ -63,6 +76,9 @@ export default function AddExpertPage() {
         achievements: form.achievements.trim() || undefined,
         photoUrl: form.photoUrl.trim() || undefined,
         photoKey: photoKey || undefined,
+        sessionDurationMinutes: Number(duration) || 60,
+        weeklyAvailability: windows,
+        blackoutDates: blackout,
       });
       if (res.success) {
         toast.success("Expert created — login credentials emailed.");
@@ -165,6 +181,32 @@ export default function AddExpertPage() {
         <div className="mt-4">
           <label className={label}>Achievements</label>
           <textarea rows={3} className={field} value={form.achievements} onChange={(e) => set("achievements", e.target.value)} />
+        </div>
+
+        <div className="mt-6 border-t border-slate-100 pt-6">
+          <h3 className="text-sm font-bold text-slate-900">Availability</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Set the expert&apos;s weekly hours so clients can book right away. You can leave this blank and let the expert set it themselves later — but they won&apos;t be bookable until availability is published.
+          </p>
+          <div className="mt-4 max-w-xs">
+            <label className={label}>Session length (minutes)</label>
+            <input
+              type="number"
+              min={15}
+              step={15}
+              className={field}
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+            />
+          </div>
+          <div className="mt-4">
+            <AvailabilityEditor
+              windows={windows}
+              blackout={blackout}
+              onWindowsChange={setWindows}
+              onBlackoutChange={setBlackout}
+            />
+          </div>
         </div>
 
         <div className="mt-6 flex justify-end gap-2">

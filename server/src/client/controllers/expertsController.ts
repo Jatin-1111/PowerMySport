@@ -83,6 +83,16 @@ export const createExpert = async (req: Request, res: Response): Promise<void> =
       achievements: req.body.achievements,
       sessionFee: Number(sessionFee),
       sessionMode: req.body.sessionMode,
+      sessionDurationMinutes: req.body.sessionDurationMinutes
+        ? Number(req.body.sessionDurationMinutes)
+        : undefined,
+      timezone: req.body.timezone,
+      weeklyAvailability: Array.isArray(req.body.weeklyAvailability)
+        ? req.body.weeklyAvailability
+        : undefined,
+      blackoutDates: Array.isArray(req.body.blackoutDates)
+        ? req.body.blackoutDates
+        : undefined,
       city: req.body.city,
       languages: req.body.languages,
       photoUrl: req.body.photoUrl,
