@@ -7,7 +7,7 @@ PowerMySport is a comprehensive platform connecting athletes, coaches, and sport
 | Project | Folder | Purpose | Who Uses It |
 |---------|--------|---------|-------------|
 | **Server** | `/server` | Central REST API, WebSocket hub, background workers | All frontends (Client, Admin, Community) |
-| **Client** | `/client` | Primary consumer app (Bookings, Wallet, Discovery, Shop) | Players, Parents, Coaches, Venue Listers |
+| **Client** | `/client` | Primary consumer app (Bookings, Wallet, Discovery, Expert Sessions, Shop) | Players, Parents, Coaches, Venue Listers |
 | **Community** | `/community` | Social hub (Q&A, DMs, Groups, Activity Feeds) | Players, Coaches |
 | **Admin** | `/admin` | Back-office dashboard (Verification, Analytics, Moderation) | Platform Administrators |
 
@@ -48,6 +48,12 @@ Instead, "shared infrastructure" exists logically at the root and via convention
 3. **Server**: Triggers `NotificationService` which creates a MongoDB Notification and fires a Socket.IO event.
 4. **Client / Community**: The Coach (who could be logged into `client` or `community`) receives the real-time notification socket event and the UI updates the unread bell icon.
 5. **Admin**: An admin can log into the `admin` app and see the transaction reflected in `/admin/stats` and `/admin/bookings`.
+
+**Example 3: A player books a 1:1 expert guidance session**
+1. **Client**: Player opens `/experts` (browse all active experts, filter by sport / session mode / fee / rating), opens an expert at `/experts/[expertId]`, and pays the session fee via PhonePe.
+2. **Server**: Confirms payment (`/api/experts/sessions/:id/reconcile`) and marks the `ExpertSession` as `PAID`.
+3. **Client**: Player schedules a time at `/experts/sessions/[sessionId]`; after the session is `COMPLETED`, they leave a star rating + written feedback, which updates the expert's aggregate `rating`/`reviewCount`.
+4. **Expert**: Sees the booking, schedule, and reviews on their own dashboard at `/expert/dashboard`. The player can review all their sessions at `/experts/sessions`.
 
 **Example 2: A user is banned by an admin**
 1. **Admin**: Administrator navigates to `/admin/user-safety`, selects a reported user, and issues a "Ban".
@@ -120,4 +126,5 @@ To run the entire platform locally, you will need 4 separate terminal windows.
 - **Type Duplication**: Because there are no shared NPM workspaces, modifying a Mongoose schema in `server` requires manually updating the TypeScript interfaces in `client/src/types`, `admin/src/types`, and `community/src/types`.
 
 ## Last Updated
+2026-07-03 — Documented the client Expert Sessions journey (browse `/experts` → book & pay `/experts/[expertId]` → schedule & rate `/experts/sessions/[sessionId]`), with the expert-side dashboard at `/expert/dashboard`.
 2026-06-22 — Initial documentation generated.

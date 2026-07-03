@@ -28,6 +28,7 @@ export default function ExpertSessionPage() {
   const [scheduledAt, setScheduledAt] = useState("");
   const [saving, setSaving] = useState(false);
   const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
 
   const init = useCallback(async () => {
@@ -125,10 +126,10 @@ export default function ExpertSessionPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-2xl px-6 py-10">
         <Link
-          href="/experts"
+          href="/experts/sessions"
           className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-power-orange"
         >
-          <ArrowLeft className="h-4 w-4" /> All experts
+          <ArrowLeft className="h-4 w-4" /> My sessions
         </Link>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -204,19 +205,26 @@ export default function ExpertSessionPage() {
               <h2 className="text-sm font-semibold text-slate-900">
                 Rate your session
               </h2>
-              <div className="mt-2 flex gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setRating(i + 1)}
-                    aria-label={`${i + 1} star`}
-                  >
-                    <Star
-                      className={`h-7 w-7 ${i < rating ? "fill-amber-500 text-amber-500" : "text-slate-300"}`}
-                    />
-                  </button>
-                ))}
+              <div
+                className="mt-2 flex gap-1"
+                onMouseLeave={() => setHoverRating(0)}
+              >
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const active = i < (hoverRating || rating);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setRating(i + 1)}
+                      onMouseEnter={() => setHoverRating(i + 1)}
+                      aria-label={`${i + 1} star`}
+                    >
+                      <Star
+                        className={`h-8 w-8 transition-colors ${active ? "fill-amber-500 text-amber-500" : "text-slate-300 hover:text-amber-300"}`}
+                      />
+                    </button>
+                  );
+                })}
               </div>
               <textarea
                 rows={3}

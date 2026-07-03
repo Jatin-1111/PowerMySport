@@ -10,6 +10,7 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { toast } from "sonner";
 import {
   Award,
+  CalendarCheck,
   MapPin,
   Star,
   Globe,
@@ -118,12 +119,20 @@ export default function ExpertDetailPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-5xl px-6 py-8">
-        <Link
-          href="/experts"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-power-orange"
-        >
-          <ArrowLeft className="h-4 w-4" /> All experts
-        </Link>
+        <div className="mb-6 flex items-center justify-between">
+          <Link
+            href="/experts"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-power-orange"
+          >
+            <ArrowLeft className="h-4 w-4" /> All experts
+          </Link>
+          <Link
+            href="/experts/sessions"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-power-orange"
+          >
+            <CalendarCheck className="h-4 w-4" /> My sessions
+          </Link>
+        </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           {/* Profile */}
