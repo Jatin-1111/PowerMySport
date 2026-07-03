@@ -1,5 +1,13 @@
 import { Suspense } from "react";
 import CommunityHomeClient from "@/modules/community/components/page/CommunityHomeClient";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata = buildMetadata({
+  title: "Chats",
+  description: "Your direct messages and group chats in the PowerMySport community.",
+  path: "/chats",
+  noindex: true,
+});
 
 export default function ChatsPage() {
     return (

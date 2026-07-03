@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
 import { Geist_Mono, Space_Grotesk, Syne } from "next/font/google";
 import { Toaster } from "sonner";
 import CommunityNotificationToastListener from "@/modules/community/components/layout/CommunityNotificationToastListener";
 import CommunityTopNav from "@/modules/community/components/layout/CommunityTopNav";
+import { rootMetadata } from "@/lib/seo";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -21,10 +21,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "PowerMySport Community",
-  description: "Anonymous-first player community chat",
-};
+export const metadata = rootMetadata;
 
 export const viewport = {
   width: "device-width",
