@@ -6,10 +6,15 @@ import {
   buildChatSystemPrompt,
   streamGuidanceChatResponse,
 } from "../../shared/services/guidanceChatService";
+import {
+  DAILY_MESSAGE_CAP,
+  getDailyMessageCount,
+  incrementDailyMessageCount,
+  decrementDailyMessageCount,
+} from "../../shared/services/chatRateLimitService";
 
 // ─── Rate-limit constants (§10) ───────────────────────────────────────────────
 
-const DAILY_MESSAGE_CAP = 30;
 const LIFETIME_MESSAGE_CAP = 150;
 
 // ─── Opening assistant message ────────────────────────────────────────────────
@@ -95,13 +100,15 @@ export const getGuidanceChat = async (
       session = newSession.toObject();
     }
 
+    const dailyMessageCount = await getDailyMessageCount(req.user.id);
+
     res.status(200).json({
       success: true,
       data: {
         messages: session.messages,
-        dailyMessageCount: session.dailyMessageCount,
+        dailyMessageCount,
         totalMessageCount: session.totalMessageCount,
-        dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - (session.dailyMessageCount || 0)),
+        dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
         lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0)),
       },
     });
@@ -183,21 +190,13 @@ export const sendGuidanceChatMessage = async (
       });
     }
 
-    // ── Daily counter reset ──────────────────────────────────────────────────
-    const now = new Date();
-    const resetAt = session.dailyResetAt;
-    const dayHasPassed =
-      now.getFullYear() !== resetAt.getFullYear() ||
-      now.getMonth() !== resetAt.getMonth() ||
-      now.getDate() !== resetAt.getDate();
-
-    if (dayHasPassed) {
-      session.dailyMessageCount = 0;
-      session.dailyResetAt = now;
-    }
-
     // ── Rate limit checks (§10) ──────────────────────────────────────────────
-    if (session.dailyMessageCount >= DAILY_MESSAGE_CAP) {
+    // Daily cap is global per user (across all their guidance submissions), not
+    // per session — reserved atomically via Redis so concurrent requests can't
+    // both slip past the cap.
+    const dailyCount = await incrementDailyMessageCount(req.user.id);
+    if (dailyCount > DAILY_MESSAGE_CAP) {
+      await decrementDailyMessageCount(req.user.id);
       res.status(429).json({
         success: false,
         message: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow to continue the conversation!`,
@@ -207,6 +206,7 @@ export const sendGuidanceChatMessage = async (
     }
 
     if (session.totalMessageCount >= LIFETIME_MESSAGE_CAP) {
+      await decrementDailyMessageCount(req.user.id); // this message never went through
       res.status(429).json({
         success: false,
         message: `You've had an in-depth coaching conversation for this guidance plan! Consider generating a fresh roadmap to continue your journey.`,
@@ -245,6 +245,7 @@ export const sendGuidanceChatMessage = async (
         res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
       }
     } catch (aiError) {
+      await decrementDailyMessageCount(req.user.id); // the message never actually went through
       res.write(
         `data: ${JSON.stringify({ error: aiError instanceof Error ? aiError.message : "AI error" })}\n\n`,
       );
@@ -265,7 +266,6 @@ export const sendGuidanceChatMessage = async (
     };
 
     session.messages.push(userTurn, assistantTurn);
-    session.dailyMessageCount += 1;
     session.totalMessageCount += 1;
     await session.save();
   } catch (error) {

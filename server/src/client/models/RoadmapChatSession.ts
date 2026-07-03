@@ -1,14 +1,9 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { ChatMessage } from "./GuidanceChatSession";
 
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  createdAt: Date;
-}
-
-export interface GuidanceChatSessionDocument extends Document {
-  submissionId: mongoose.Types.ObjectId;
+export interface RoadmapChatSessionDocument extends Document {
   userId: mongoose.Types.ObjectId;
+  sportSlug: string;
   messages: ChatMessage[];
   totalMessageCount: number;
   createdAt: Date;
@@ -24,31 +19,24 @@ const chatMessageSchema = new Schema<ChatMessage>(
   { _id: false },
 );
 
-const guidanceChatSessionSchema = new Schema<GuidanceChatSessionDocument>(
+const roadmapChatSessionSchema = new Schema<RoadmapChatSessionDocument>(
   {
-    submissionId: {
-      type: Schema.Types.ObjectId,
-      ref: "GuidanceSubmission",
-      required: true,
-    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+    sportSlug: { type: String, required: true },
     messages: { type: [chatMessageSchema], default: [] },
     totalMessageCount: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
 
-// Unique: one chat thread per (submission, user)
-guidanceChatSessionSchema.index(
-  { submissionId: 1, userId: 1 },
-  { unique: true },
-);
+// One running conversation per (user, sport) — spans every level of that sport
+roadmapChatSessionSchema.index({ userId: 1, sportSlug: 1 }, { unique: true });
 
-export const GuidanceChatSession = mongoose.model<GuidanceChatSessionDocument>(
-  "GuidanceChatSession",
-  guidanceChatSessionSchema,
+export const RoadmapChatSession = mongoose.model<RoadmapChatSessionDocument>(
+  "RoadmapChatSession",
+  roadmapChatSessionSchema,
 );

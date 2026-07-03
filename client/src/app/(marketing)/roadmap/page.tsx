@@ -14,6 +14,8 @@ import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConcie
 import { TournamentModal } from "@/modules/sports/components/TournamentDetailModal";
 import { TournamentRecommendationPanel } from "@/modules/sports/components/TournamentRecommendationPanel";
 import { pathwayProfileApi, AthleteStory } from "@/modules/sports/services/pathwayProfileApi";
+import { RoadmapChatDrawer } from "@/modules/sports/components/RoadmapChatDrawer";
+import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import Fuse from "fuse.js";
 import { motion, Variants, AnimatePresence } from "framer-motion";
@@ -372,17 +374,32 @@ function saveApplications(items: ApplicationRecord[]) { lsSet("pms_applications"
 
 // Stories are now fetched from the backend
 
+// ─── Search autocomplete helper ────────────────────────────────────────────────
+
+function highlightMatch(text: string, query: string): React.ReactNode {
+  const q = query.trim();
+  if (!q) return text;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <span className="font-bold text-power-orange">{text.slice(idx, idx + q.length)}</span>
+      {text.slice(idx + q.length)}
+    </>
+  );
+}
+
 // ─── P9: Deep-link helper ──────────────────────────────────────────────────────
 
-function buildDiscoveryUrl(objective: string, sportName: string, levelLabel: string): string {
-  const base = "/discover";
+function buildDiscoveryUrl(objective: string, sportName: string): string | null {
   const lower = objective.toLowerCase();
-  let tab = "VENUES";
-  if (lower.includes("coach") || lower.includes("training")) tab = "COACHES";
-  else if (lower.includes("club") || lower.includes("community") || lower.includes("school")) tab = "VENUES";
-  else if (lower.includes("tournament") || lower.includes("compet") || lower.includes("trial")) tab = "EVENTS";
-  const params = new URLSearchParams({ tab, sport: sportName, level: levelLabel });
-  return `${base}?${params.toString()}`;
+  let tab: "coaches" | "academies" | "venues";
+  if (lower.includes("academy") || lower.includes("academies")) tab = "academies";
+  else if (lower.includes("coach") || lower.includes("training")) tab = "coaches";
+  else if (lower.includes("tournament") || lower.includes("compet") || lower.includes("trial")) return null; // no matching tab on the booking page
+  else tab = "venues";
+  return `/booking?${new URLSearchParams({ tab, sport: sportName }).toString()}`;
 }
 
 // ─── P5: Save Button ──────────────────────────────────────────────────────────
@@ -867,7 +884,7 @@ function ProgressTracker({
 }: {
   progress: ProgressState;
   onChange: (p: ProgressState) => void;
-  levels: typeof pathwayLevels;
+  levels: PathwayLevel[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -925,10 +942,14 @@ function ProgressTracker({
             Where Is My Child Now?
           </p>
           {progress.currentLevel > 0 ? (
-            <p className="text-sm font-bold text-slate-900 truncate">
-              Level {progress.currentLevel} · {currentLevelData?.label} —{" "}
-              {completedCount}/{totalSteps} objectives done
-            </p>
+            <div className="flex min-w-0 items-baseline gap-1.5">
+              <p className="min-w-0 truncate text-sm font-bold text-slate-900">
+                Level {progress.currentLevel} · {currentLevelData?.label}
+              </p>
+              <span className="shrink-0 text-xs font-semibold text-slate-500">
+                {completedCount}/{totalSteps} done
+              </span>
+            </div>
           ) : (
             <p className="text-sm font-semibold text-slate-500">
               Tap to mark your child's current level
@@ -1186,8 +1207,10 @@ function PathwayLevelDetail({
   const sName = sportName && sportName !== "General" ? sportName : "";
   const lLabel = level.label || `Level ${level.level}`;
   const communityUrl = getCommunityAppUrl();
+  const { user } = useAuthStore();
 
   const [innerTab, setInnerTab] = useState("overview");
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   useEffect(() => { setInnerTab("overview"); }, [level.level]);
 
   const hasDevelop = !!(level.benchmarks || level.injuryRisks);
@@ -1300,7 +1323,7 @@ function PathwayLevelDetail({
                 </h4>
                 <ul className="space-y-2">
                   {level.steps.map((step: string, i: number) => {
-                    const discUrl = sName ? buildDiscoveryUrl(step, sName, lLabel) : null;
+                    const discUrl = sName ? buildDiscoveryUrl(step, sName) : null;
                     return (
                       <li key={i} className="flex items-start gap-2.5 group">
                         <CheckCircle className={"mt-0.5 h-4 w-4 shrink-0 " + colors.text} />
@@ -1317,15 +1340,36 @@ function PathwayLevelDetail({
                 </ul>
               </div>
 
-              {sName && (
-                <Link
-                  href={`/guidance?sport=${encodeURIComponent(sName)}&level=${level.level}&mode=level-plan&levelLabel=${encodeURIComponent(level.label)}`}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-power-orange/30 bg-power-orange/5 px-4 py-2.5 text-sm font-semibold text-power-orange hover:bg-power-orange/10 transition"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Get personalised plan for this level
-                </Link>
-              )}
+              {sName && (() => {
+                const guidanceHref = `/guidance?sport=${encodeURIComponent(sName)}&level=${level.level}&mode=level-plan&levelLabel=${encodeURIComponent(level.label)}`;
+                return user ? (
+                  <Link
+                    href={guidanceHref}
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl border border-power-orange/30 bg-power-orange/5 px-4 py-2.5 text-sm font-semibold text-power-orange hover:bg-power-orange/10 transition"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Get personalised plan for this level
+                  </Link>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setLoginModalOpen(true)}
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl border border-power-orange/30 bg-power-orange/5 px-4 py-2.5 text-sm font-semibold text-power-orange hover:bg-power-orange/10 transition"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Get personalised plan for this level
+                    </button>
+                    <LoginRequiredModal
+                      isOpen={loginModalOpen}
+                      onClose={() => setLoginModalOpen(false)}
+                      sport={sName}
+                      redirectPath={guidanceHref}
+                      variant="plan"
+                    />
+                  </>
+                );
+              })()}
             </motion.div>
           )}
 
@@ -1869,7 +1913,7 @@ function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
     return Number(nums[0]);
   };
 
-  const levelData = pathwayLevels.filter((l) => selectedLevels.includes(l.level));
+  const levelData = pathway.levels.filter((l) => selectedLevels.includes(l.level));
 
   type RowData = {
     level: number;
@@ -1887,6 +1931,12 @@ function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
       e.level.toLowerCase().includes(lv.label.toLowerCase())
     ) || pathway.equipment?.[lv.level - 1];
     const fees = COACHING_FEE_TIERS[lv.level];
+    const commitment = pathwayLevels.find((l) => l.level === lv.level)?.parentalCommitment || {
+      time: "Varies",
+      financial: "Varies",
+      travel: "Varies",
+      role: "Supportive Parent",
+    };
     return {
       level: lv.level,
       label: lv.label,
@@ -1894,8 +1944,8 @@ function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
       equipmentMid: equip ? parseCostMid(equip.estimatedCost) : 0,
       coaching: fees.label,
       coachingMid: (fees.low + fees.high) / 2,
-      travel: lv.parentalCommitment.travel,
-      financial: lv.parentalCommitment.financial,
+      travel: commitment.travel,
+      financial: commitment.financial,
     };
   });
 
@@ -1964,7 +2014,7 @@ function BudgetCalculator({ pathway }: { pathway: SportPathway }) {
 
       {/* Level filters + export */}
       <div className="flex flex-wrap items-center gap-2">
-        {pathwayLevels.map((lv) => {
+        {pathway.levels.map((lv) => {
           const active = selectedLevels.includes(lv.level);
           return (
             <button
@@ -2038,6 +2088,7 @@ function PathwayExplorerSection() {
   const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
   const [suggestions, setSuggestions] = useState<Sport[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
@@ -2090,6 +2141,8 @@ function PathwayExplorerSection() {
 
   const { user } = useAuthStore();
   const [dbStories, setDbStories] = useState<AthleteStory[]>([]);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatLoginModalOpen, setChatLoginModalOpen] = useState(false);
 
   const searchParams = useSearchParams();
   const [contextBanner, setContextBanner] = useState<{ age: string; budget: string; state: string } | null>(null);
@@ -2173,6 +2226,7 @@ function PathwayExplorerSection() {
 
   // Filter suggestions instantly
   useEffect(() => {
+    setActiveSuggestionIndex(-1);
     if (!fuse || query.trim().length < 1) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -2181,7 +2235,9 @@ function PathwayExplorerSection() {
     }
     const results = fuse.search(query).map((r) => r.item);
     setSuggestions(results.slice(0, 5));
-    setShowSuggestions(results.length > 0);
+    // Keep the dropdown open even with zero matches so we can show a helpful
+    // "no sport found" hint instead of the panel silently vanishing.
+    setShowSuggestions(true);
   }, [query, fuse]);
 
   const handleSearch = async (sportName: string) => {
@@ -2277,6 +2333,23 @@ function PathwayExplorerSection() {
       setContextBanner({ age, budget, state: state || "" });
     }
   }, []);
+
+  // Auto-open the chat drawer after a login redirect (?openChat=1) once the
+  // pathway has loaded and the user session is available.
+  const openChatParam = searchParams.get("openChat") === "1";
+  useEffect(() => {
+    if (openChatParam && result && user) {
+      setChatOpen(true);
+    }
+  }, [openChatParam, result, user]);
+
+  const handleChatCtaClick = () => {
+    if (!user) {
+      setChatLoginModalOpen(true);
+    } else {
+      setChatOpen(true);
+    }
+  };
 
   const currentLevels = result ? result.pathway.levels : pathwayLevels;
   const selectedLevel = currentLevels[activeIdx] || currentLevels[0];
@@ -2397,15 +2470,39 @@ function PathwayExplorerSection() {
                   setStatus("idle");
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearch(query);
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    if (!showSuggestions && suggestions.length > 0) setShowSuggestions(true);
+                    setActiveSuggestionIndex((i) =>
+                      suggestions.length === 0 ? -1 : (i + 1) % suggestions.length,
+                    );
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveSuggestionIndex((i) =>
+                      suggestions.length === 0 ? -1 : (i - 1 + suggestions.length) % suggestions.length,
+                    );
+                  } else if (e.key === "Enter") {
+                    const picked =
+                      showSuggestions && activeSuggestionIndex >= 0
+                        ? suggestions[activeSuggestionIndex]
+                        : null;
+                    handleSearch(picked ? picked.name : query);
+                  } else if (e.key === "Escape") {
+                    setShowSuggestions(false);
+                    setActiveSuggestionIndex(-1);
                   }
-                  if (e.key === "Escape") setShowSuggestions(false);
                 }}
-                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onFocus={() => query.trim().length > 0 && setShowSuggestions(true)}
                 placeholder="e.g. Cricket, Badminton..."
                 className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none sm:px-0 sm:text-base"
                 aria-label="Search sport pathway"
+                role="combobox"
+                aria-expanded={showSuggestions}
+                aria-controls="sport-suggestions-listbox"
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  activeSuggestionIndex >= 0 ? `sport-suggestion-${activeSuggestionIndex}` : undefined
+                }
               />
               {query && (
                 <button
@@ -2475,20 +2572,64 @@ function PathwayExplorerSection() {
                 style={{ top: "100%", marginTop: "8px" }}
               >
                 <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
-                <div className="py-1.5">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s.slug || s.name}
-                      onClick={() => handleSearch(s.name)}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-orange-50"
-                    >
-                      <Database className="h-4 w-4 shrink-0 text-power-orange" />
-                      <span className="text-sm font-medium text-slate-800">
-                        {s.name}
+                {suggestions.length > 0 ? (
+                  <>
+                    <ul id="sport-suggestions-listbox" role="listbox" className="py-1.5">
+                      {suggestions.map((s, idx) => {
+                        const active = idx === activeSuggestionIndex;
+                        return (
+                          <li key={s.slug || s.name} role="presentation">
+                            <button
+                              id={`sport-suggestion-${idx}`}
+                              role="option"
+                              aria-selected={active}
+                              onClick={() => handleSearch(s.name)}
+                              onMouseEnter={() => setActiveSuggestionIndex(idx)}
+                              className={`group relative flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                                active ? "bg-orange-50" : "hover:bg-orange-50"
+                              }`}
+                            >
+                              {active && (
+                                <span className="absolute inset-y-1 left-0 w-1 rounded-r-full bg-power-orange" />
+                              )}
+                              <Search className={`h-3.5 w-3.5 shrink-0 ${active ? "text-power-orange" : "text-slate-300"}`} />
+                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
+                                {highlightMatch(s.name, query)}
+                              </span>
+                              {s.category && (
+                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                                  {s.category}
+                                </span>
+                              )}
+                              <ChevronRight className={`h-3.5 w-3.5 shrink-0 text-slate-300 transition-transform ${active ? "translate-x-0.5 text-power-orange" : ""}`} />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <div className="hidden items-center gap-3 border-t border-slate-100 px-4 py-1.5 sm:flex">
+                      <span className="text-[10px] text-slate-400">
+                        <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 font-sans">↑↓</kbd> Navigate
                       </span>
-                    </button>
-                  ))}
-                </div>
+                      <span className="text-[10px] text-slate-400">
+                        <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 font-sans">↵</kbd> Select
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 font-sans">Esc</kbd> Close
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5 px-4 py-6 text-center">
+                    <Search className="h-5 w-5 text-slate-200" />
+                    <p className="text-sm font-semibold text-slate-600">
+                      No sport matches &ldquo;{query}&rdquo;
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Press Enter to search anyway — we&apos;ll check if it&apos;s a valid sport.
+                    </p>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -2650,10 +2791,16 @@ function PathwayExplorerSection() {
                     {/* Left: name + meta + overview */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-3">
-                        {result.source === "generated" && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-power-orange border border-orange-200">
-                            <Sparkles className="h-3 w-3" /> AI Generated
+                        {result.pathway.isVerified ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
+                            <BadgeCheck className="h-3 w-3" /> Verified by Expert
                           </span>
+                        ) : (
+                          result.source === "generated" && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-power-orange border border-orange-200">
+                              <Sparkles className="h-3 w-3" /> AI Generated
+                            </span>
+                          )
                         )}
                         {selectedState && (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 border border-blue-100">
@@ -2873,7 +3020,7 @@ function PathwayExplorerSection() {
                       <ProgressTracker
                         progress={progress}
                         onChange={handleProgressChange}
-                        levels={pathwayLevels}
+                        levels={currentLevels}
                       />
 
                       <div className="mb-6 hidden lg:block">
@@ -2891,7 +3038,7 @@ function PathwayExplorerSection() {
                                   key={lv.level}
                                   onClick={() => setActiveIdx(i)}
                                   title={lv.label}
-                                  className="flex flex-col items-center gap-1.5 group"
+                                  className="flex min-w-0 max-w-[120px] flex-1 flex-col items-center gap-1.5 group"
                                 >
                                   <div
                                     className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 ${
@@ -2916,7 +3063,7 @@ function PathwayExplorerSection() {
                                     )}
                                   </div>
                                   <span
-                                    className={`text-[10px] font-semibold whitespace-nowrap transition-colors ${
+                                    className={`line-clamp-2 text-center text-[10px] font-semibold leading-tight transition-colors ${
                                       isActive ? c.text : "text-slate-400 group-hover:text-slate-600"
                                     }`}
                                   >
@@ -3529,6 +3676,45 @@ function PathwayExplorerSection() {
             }}
           />
         )}
+
+        {/* Floating "Ask AI Coach" CTA — always visible, no scrolling needed */}
+        {result && !chatOpen && (
+          <motion.button
+            type="button"
+            onClick={handleChatCtaClick}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="fixed bottom-5 right-5 z-30 flex items-center gap-2 rounded-full bg-power-orange px-4 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-8px_rgba(233,115,22,0.6)] transition hover:bg-orange-600 sm:bottom-6 sm:right-6"
+          >
+            <MessageSquareQuote className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Got a quick question? Ask our AI Coach</span>
+            <span className="sm:hidden">Ask AI Coach</span>
+          </motion.button>
+        )}
+
+        {/* Roadmap chat drawer — opens inline, no navigation away from this page */}
+        {result && (
+          <RoadmapChatDrawer
+            isOpen={chatOpen}
+            onClose={() => setChatOpen(false)}
+            sportSlug={result.pathway.sportSlug}
+            sportName={result.pathway.sportName}
+            level={selectedLevel?.level}
+            levelLabel={selectedLevel?.label}
+          />
+        )}
+
+        {/* Login required before chatting (guests) */}
+        {result && (
+          <LoginRequiredModal
+            isOpen={chatLoginModalOpen}
+            onClose={() => setChatLoginModalOpen(false)}
+            sport={result.pathway.sportName}
+            redirectPath={`/roadmap?sport=${encodeURIComponent(result.pathway.sportName)}&openChat=1`}
+          />
+        )}
       </div>
     </section>
   );
@@ -3571,12 +3757,12 @@ export default function PathwaysPage() {
   return (
     <main className="overflow-x-hidden">
       {/* ── Hero ── */}
-      <Hero
+      {/* <Hero
         variant="page"
         title="Plan Your Child's Sports Journey"
         subtitle="A Simple Guide for Parents"
         description="From playing in the local park to reaching the highest level in sports. Find out exactly how much time, money, and effort it takes to support your child's dream."
-      />
+      /> */}
 
       {/* ── AI Search Section ── */}
       <Suspense fallback={null}>

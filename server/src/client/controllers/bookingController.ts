@@ -33,7 +33,11 @@ import {
   validatePhonePeCallback,
 } from "../../shared/services/PhonePeService";
 import { generateDynamicSlots } from "../../utils/booking";
-import { isWithinOpeningHours } from "../../utils/openingHours";
+import {
+  isWithinOpeningHours,
+  combineDateAndTimeIST,
+  IST_OFFSET_MINUTES,
+} from "../../utils/openingHours";
 import { getPaginationParams } from "../../utils/pagination";
 import { transformDocument } from "../../middleware/responseTransform";
 
@@ -766,7 +770,10 @@ export const getVenueAvailability = async (
       "friday",
       "saturday",
     ] as const;
-    const dayName = dayNames[targetDate.getDay()];
+    // targetDate is UTC-midnight-anchored (parsed from "YYYY-MM-DD") — use
+    // the UTC day-of-week so this is correct regardless of the server
+    // process's local timezone (see openingHours.ts for the same fix).
+    const dayName = dayNames[targetDate.getUTCDay()];
     const dayHours = dayName ? venue.openingHours?.[dayName] : null;
 
     let allSlots: string[] = [];
@@ -806,10 +813,13 @@ export const getVenueAvailability = async (
     }
 
     const now = new Date();
-    const isToday =
-      targetDate.getFullYear() === now.getFullYear() &&
-      targetDate.getMonth() === now.getMonth() &&
-      targetDate.getDate() === now.getDate();
+    // "Today" in IST terms, not the server's local date — a slot's date and
+    // "now" are compared as real UTC instants below regardless.
+    const nowIstDateKey = new Date(now.getTime() + IST_OFFSET_MINUTES * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const targetIstDateKey = targetDate.toISOString().slice(0, 10);
+    const isToday = nowIstDateKey === targetIstDateKey;
 
     const availableSlots = allSlots.filter((slot) => {
       const slotParts = slot.split(":");
@@ -817,9 +827,7 @@ export const getVenueAvailability = async (
       const nextHour = String(slotHour + 1).padStart(2, "0") + ":00";
 
       if (isToday) {
-        const slotStart = new Date(targetDate);
-        const slotMinute = parseInt(slotParts[1] || "0", 10);
-        slotStart.setHours(slotHour, slotMinute, 0, 0);
+        const slotStart = combineDateAndTimeIST(targetDate, slot);
 
         if (slotStart <= now) {
           return false;

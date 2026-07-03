@@ -53,6 +53,7 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       sport: { type: String, trim: true },
       location: { type: String, trim: true },
       current_pathway_level: { type: Number, min: 1, max: 5 },
+      years_playing: { type: Number, min: 0, max: 20 },
     },
     response: {
       profileAnalysis: { type: String, required: true },

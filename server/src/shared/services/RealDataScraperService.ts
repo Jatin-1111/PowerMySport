@@ -91,8 +91,8 @@ function buildGroundingPrompt(type: EntityType, ctx: ScrapeContext): string {
     : "";
 
   if (type === "tournament") {
-    return `Use Google Search to research REAL, CURRENTLY ACTIVE tennis tournaments in
-India for the sport "${ctx.sportName}"${cityClause}. I need at least 6 DIFFERENT tournament series or
+    return `Use Google Search to research REAL, CURRENTLY ACTIVE ${ctx.sportName} tournaments in
+India${cityClause}. I need at least 6 DIFFERENT tournament series or
 events, not 6 city editions of the same series.
 
 Rules:

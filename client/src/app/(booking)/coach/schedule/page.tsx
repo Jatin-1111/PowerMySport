@@ -119,6 +119,7 @@ const STATUS_DOT: Record<string, string> = {
   IN_PROGRESS: "bg-blue-400",
   COMPLETED: "bg-slate-300",
   NO_SHOW: "bg-rose-300",
+  EXPIRED: "bg-red-300",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -128,6 +129,7 @@ const STATUS_LABEL: Record<string, string> = {
   COMPLETED: "Completed",
   NO_SHOW: "No Show",
   CANCELLED: "Cancelled",
+  EXPIRED: "Expired — Refunded",
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -137,6 +139,7 @@ const STATUS_BADGE: Record<string, string> = {
   COMPLETED: "bg-slate-100 text-slate-600 border border-slate-200",
   NO_SHOW: "bg-rose-50 text-rose-600 border border-rose-200",
   CANCELLED: "bg-red-50 text-red-600 border border-red-200",
+  EXPIRED: "bg-red-50 text-red-600 border border-red-200",
 };
 
 const BOOKING_BLOCK: Record<string, string> = {
@@ -145,6 +148,7 @@ const BOOKING_BLOCK: Record<string, string> = {
   IN_PROGRESS: "bg-blue-100 border-blue-300 text-blue-800",
   COMPLETED: "bg-slate-100 border-slate-200 text-slate-600",
   NO_SHOW: "bg-rose-100 border-rose-200 text-rose-700",
+  EXPIRED: "bg-red-100 border-red-200 text-red-700",
 };
 
 // ─── Session Detail Modal ──────────────────────────────────────────────────────

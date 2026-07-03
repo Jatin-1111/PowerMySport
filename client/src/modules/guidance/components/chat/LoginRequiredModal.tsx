@@ -1,14 +1,18 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, LogIn, UserPlus, MessageCircle } from "lucide-react";
+import { X, LogIn, UserPlus, MessageCircle, Sparkles } from "lucide-react";
 
 interface LoginRequiredModalProps {
   isOpen: boolean;
   onClose: () => void;
   childName?: string;
   sport?: string;
-  submissionId: string;
+  /** Path (with query string) to return to after login, e.g. "/guidance?submissionId=X&openChat=1" */
+  redirectPath: string;
+  /** What triggered this modal — swaps the icon/title/copy to match. Defaults to "chat". */
+  variant?: "chat" | "plan";
 }
 
 export function LoginRequiredModal({
@@ -16,10 +20,10 @@ export function LoginRequiredModal({
   onClose,
   childName,
   sport,
-  submissionId,
+  redirectPath,
+  variant = "chat",
 }: LoginRequiredModalProps) {
-  const redirectUrl = `/guidance?submissionId=${submissionId}&openChat=1`;
-  const encodedRedirect = encodeURIComponent(redirectUrl);
+  const encodedRedirect = encodeURIComponent(redirectPath);
 
   const loginHref = `/login?redirect=${encodedRedirect}`;
   const registerHref = `/register?redirect=${encodedRedirect}`;
@@ -30,7 +34,31 @@ export function LoginRequiredModal({
     ? `${childName}'s guidance`
     : "your guidance";
 
-  return (
+  const copy =
+    variant === "plan"
+      ? {
+          icon: <Sparkles className="h-7 w-7 text-power-orange" />,
+          title: "Log in to get your personalised plan",
+          description: `Create a free account or log in to unlock a personalised plan for ${
+            sport ? sport : "this level"
+          }.`,
+          footerNote: "Personalised plans require a free account.",
+        }
+      : {
+          icon: <MessageCircle className="h-7 w-7 text-power-orange" />,
+          title: "Log in to chat with your coach",
+          description: `Create a free account or log in to get personalized coaching advice about ${subjectLabel}.`,
+          footerNote: "Coaching chat requires a free account.",
+        };
+
+  // Rendered via a portal to <body> — an ancestor with a CSS transform (e.g.
+  // a Framer Motion scale/translate animation) would otherwise turn this
+  // modal's `position: fixed` into a containing-block-relative position,
+  // clipping the backdrop/dialog to that ancestor's box instead of the
+  // viewport.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -72,18 +100,17 @@ export function LoginRequiredModal({
               {/* Header */}
               <div className="flex flex-col items-center px-6 pt-7 pb-5 text-center">
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 ring-1 ring-orange-100">
-                  <MessageCircle className="h-7 w-7 text-power-orange" />
+                  {copy.icon}
                 </div>
 
                 <h2
                   id="login-modal-title"
                   className="text-lg font-bold text-slate-900 leading-snug"
                 >
-                  Log in to chat with your coach
+                  {copy.title}
                 </h2>
                 <p className="mt-2 text-sm text-slate-500 leading-relaxed">
-                  Create a free account or log in to get personalized coaching
-                  advice about {subjectLabel}.
+                  {copy.description}
                 </p>
               </div>
 
@@ -111,13 +138,14 @@ export function LoginRequiredModal({
                 <p className="text-center text-[11px] text-slate-400">
                   Your guidance and roadmap are always free — no account required.
                   <br />
-                  Coaching chat requires a free account.
+                  {copy.footerNote}
                 </p>
               </div>
             </div>
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

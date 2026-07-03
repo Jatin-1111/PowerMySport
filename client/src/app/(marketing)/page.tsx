@@ -189,7 +189,7 @@ export default function HomePage() {
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
             : {
                 label: user ? "Go to Dashboard" : "Build a Sports Plan",
-                href: getDashboardLink(),
+                href: user ? getDashboardLink() : "/roadmap",
               }
         }
         secondaryCTA={{
@@ -210,16 +210,22 @@ export default function HomePage() {
             viewport={{ once: true, margin: "-80px" }}
             className="mx-auto max-w-2xl text-center"
           >
-            <motion.div variants={itemVariants} className="mb-4 flex justify-center">
+            <motion.div
+              variants={itemVariants}
+              className="mb-4 flex justify-center"
+            >
               <SectionLabel label="Sound Familiar?" color="slate" />
             </motion.div>
             <motion.h2
               variants={itemVariants}
               className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
             >
-              Youth sports is confusing. You&apos;re not alone.
+              Youth sports is challenging. You&apos;re not alone.
             </motion.h2>
-            <motion.p variants={itemVariants} className="text-lg text-slate-600">
+            <motion.p
+              variants={itemVariants}
+              className="text-lg text-slate-600"
+            >
               Every parent wants the best for their child. But between scattered
               advice, endless options, and no clear path, it&apos;s hard to know
               if you&apos;re making the right call.
@@ -453,7 +459,10 @@ export default function HomePage() {
             >
               Up and Running in 3 Steps
             </motion.h2>
-            <motion.p variants={itemVariants} className="text-lg text-slate-600">
+            <motion.p
+              variants={itemVariants}
+              className="text-lg text-slate-600"
+            >
               Go from &ldquo;where do I start?&rdquo; to a clear plan for your
               child in minutes—completely free.
             </motion.p>

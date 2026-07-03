@@ -42,6 +42,7 @@ export default function SavedPage() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_52%,#fff8ee_100%)] flex flex-col">
       <Navigation sticky />
+      <div className="h-16" aria-hidden />
       <main className="flex-1 py-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-sm">

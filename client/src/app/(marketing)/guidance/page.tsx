@@ -71,6 +71,11 @@ function GuidancePageInner() {
     editInputs,
   } = useGuidanceForm({ initialSport, initialLevel });
 
+  // Mirrors LevelPlanFlow's "Already here" toggle (which sets
+  // current_pathway_level = initialLevel) so the header/subtitle framing
+  // matches whether this is a "should we start" or "how do we progress" plan.
+  const alreadyAtLevel = isLevelPlan && form.current_pathway_level === initialLevel;
+
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuthStore();
   const [chatOpen, setChatOpen] = useState(false);
@@ -184,7 +189,11 @@ function GuidancePageInner() {
 
           <h1 className="font-title text-xl font-bold leading-tight tracking-tight sm:text-2xl">
             {isLevelPlan ? (
-              <>Your {initialLevelLabel} level{" "}<span className="text-power-orange">decision guide.</span></>
+              alreadyAtLevel ? (
+                <>Your {initialLevelLabel} level{" "}<span className="text-power-orange">progress plan.</span></>
+              ) : (
+                <>Your {initialLevelLabel} level{" "}<span className="text-power-orange">decision guide.</span></>
+              )
             ) : (
               <>Get a structured sports roadmap for your{" "}<span className="text-power-orange">young athlete.</span></>
             )}
@@ -202,7 +211,9 @@ function GuidancePageInner() {
           {mode === "input" && (
             <p className="mt-1 text-xs leading-relaxed text-slate-500">
               {isLevelPlan
-                ? `Answer 3 quick questions and we'll tell you if ${initialLevelLabel} ${initialSport} is right for your child — and what the first 90 days look like.`
+                ? alreadyAtLevel
+                  ? `Tell us a little about your child and we'll map out what to focus on next at ${initialLevelLabel} ${initialSport} — and what progress should look like.`
+                  : `Tell us a little about your child and we'll tell you if ${initialLevelLabel} ${initialSport} is right for them — and what the first 90 days look like.`
                 : "Answer four quick steps — we'll return personalised guidance on sport, coaching style, weekly schedule, and next actions."}
             </p>
           )}
@@ -427,7 +438,7 @@ function GuidancePageInner() {
           isOpen={loginModalOpen}
           onClose={() => setLoginModalOpen(false)}
           sport={submission.query.sport}
-          submissionId={submission.id}
+          redirectPath={`/guidance?submissionId=${submission.id}&openChat=1`}
         />
       )}
     </div>

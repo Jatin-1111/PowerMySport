@@ -66,6 +66,12 @@ export const REVIEWS_PERMISSIONS = {
   MANAGE: "reviews:manage",
 } as const;
 
+// Sport Pathways Module
+export const PATHWAYS_PERMISSIONS = {
+  VIEW: "pathways:view",
+  MANAGE: "pathways:manage",
+} as const;
+
 // Ecommerce Module
 export const PRODUCTS_PERMISSIONS = {
   VIEW: "products:view",
@@ -93,6 +99,7 @@ export const ALL_PERMISSIONS = [
   ...Object.values(REVIEWS_PERMISSIONS),
   ...Object.values(PRODUCTS_PERMISSIONS),
   ...Object.values(ORDERS_PERMISSIONS),
+  ...Object.values(PATHWAYS_PERMISSIONS),
 ] as const;
 
 // ============================================
@@ -131,6 +138,8 @@ export const OPERATIONS_ADMIN_PERMISSIONS = [
   PRODUCTS_PERMISSIONS.VIEW,
   PRODUCTS_PERMISSIONS.CREATE,
   PRODUCTS_PERMISSIONS.MANAGE,
+  PATHWAYS_PERMISSIONS.VIEW,
+  PATHWAYS_PERMISSIONS.MANAGE,
 ] as const;
 
 // Finance Admin - Handles refunds, disputes, and financial matters
@@ -267,6 +276,10 @@ export const PERMISSION_MODULES = {
     name: "Order Management",
     permissions: Object.values(ORDERS_PERMISSIONS),
   },
+  pathways: {
+    name: "Sport Pathway Management",
+    permissions: Object.values(PATHWAYS_PERMISSIONS),
+  },
 } as const;
 
 // Permission labels for display
@@ -324,6 +337,10 @@ export const PERMISSION_LABELS: Record<string, string> = {
   "orders:view": "View Orders",
   "orders:manage": "Manage Orders",
   "orders:refund": "Refund Orders",
+
+  // Sport Pathways
+  "pathways:view": "View Sport Pathways",
+  "pathways:manage": "Edit & Verify Sport Pathways",
 };
 
 // Legacy support (for backward compatibility during migration)

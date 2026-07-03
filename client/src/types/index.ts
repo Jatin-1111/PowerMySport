@@ -24,7 +24,8 @@ export type BookingStatus =
   | "IN_PROGRESS"
   | "COMPLETED"
   | "NO_SHOW"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "EXPIRED";
 
 export type PaymentUserType = "PLAYER" | "VENUE_LISTER" | "COACH";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";

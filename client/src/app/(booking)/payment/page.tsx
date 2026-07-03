@@ -267,6 +267,7 @@ function PaymentPageContent() {
     return (
       <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff8ee_100%)] flex flex-col">
         <Navigation sticky />
+        <div className="h-16" aria-hidden />
         <main className="flex-1 py-10">
           <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
             <Card className="space-y-5 rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-sm backdrop-blur-sm sm:p-8">
@@ -377,6 +378,7 @@ function PaymentPageContent() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff8ee_100%)] flex flex-col">
       <Navigation sticky />
+      <div className="h-16" aria-hidden />
       <main className="flex-1 py-10">
         <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="space-y-4 rounded-3xl border border-slate-200/70 bg-white/95 p-6 text-center shadow-sm backdrop-blur-sm sm:p-8">

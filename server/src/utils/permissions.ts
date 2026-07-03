@@ -45,6 +45,9 @@ const PERMISSION_HIERARCHY: Record<string, string[]> = {
   // Reviews Module
   "reviews:delete": ["reviews:manage", "reviews:view"],
   "reviews:manage": ["reviews:view"],
+
+  // Sport Pathways Module
+  "pathways:manage": ["pathways:view"],
 };
 
 /**

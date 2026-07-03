@@ -13,10 +13,18 @@ export function useGuidanceForm({
   initialSport?: string;
   initialLevel?: number;
 } = {}) {
+  // NOTE: current_pathway_level intentionally does NOT default to initialLevel
+  // here. initialLevel is "which level's plan/roadmap page the parent is
+  // viewing", not "which level the child is currently at" — those are
+  // different questions. Defaulting them to the same value used to make the
+  // backend assume every level-plan request was for a child ALREADY playing
+  // at that level, contradicting the "are we ready to start?" framing shown
+  // to parents who haven't started yet. LevelPlanFlow's explicit
+  // "already here" vs "not there yet" toggle is now the only place that sets
+  // current_pathway_level.
   const [form, setForm] = useState<GuidanceFormState>({
     ...initialForm,
     ...(initialSport ? { sport: initialSport } : {}),
-    ...(initialLevel ? { current_pathway_level: initialLevel } : {}),
   });
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);

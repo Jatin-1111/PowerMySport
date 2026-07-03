@@ -2,9 +2,9 @@ import mongoose, { Document, Schema } from "mongoose";
 
 /** A single level in the progression pyramid */
 export interface PathwayLevel {
-  level: number; // 1 = Grassroots … 5 = International
-  label: string; // e.g. "District"
-  title: string; // e.g. "District & Zonal Level"
+  level: number; // 1 = entry tier … 5 = elite/global tier (ascending, sport-agnostic)
+  label: string; // always one of: Beginner, Intermediate, Advanced, National, International
+  title: string; // short, plain-English, sport-specific phrase, e.g. "Playing District-Level Cricket Matches"
   description: string;
   keyFocus: string;
   ageRange: string;
@@ -118,8 +118,12 @@ export interface SportPathwayDocument extends Document {
   universities: University[];
   equipment: Equipment[];
   careers: Career[];
-  /** false = AI-generated, pending admin review */
+  /** false = AI-generated, pending admin review. true = an admin has reviewed/edited this against expert input */
   isVerified: boolean;
+  /** When an admin last marked this pathway verified (cleared when unverified) */
+  verifiedAt?: Date;
+  /** Which admin last marked this pathway verified (cleared when unverified) */
+  verifiedBy?: mongoose.Types.ObjectId;
   /** Number of times this pathway has been looked up */
   lookupCount: number;
   /** Timestamp of last Gemini-powered refresh (distinct from updatedAt which fires on lookupCount increments) */
@@ -272,6 +276,8 @@ const sportPathwaySchema = new Schema<SportPathwayDocument>(
     equipment: { type: [equipmentSchema], default: [] },
     careers: { type: [careerSchema], default: [] },
     isVerified: { type: Boolean, default: false },
+    verifiedAt: { type: Date, default: null },
+    verifiedBy: { type: Schema.Types.ObjectId, ref: "Admin", default: null },
     lookupCount: { type: Number, default: 1 },
     lastRefreshedAt: { type: Date, default: null },
     refreshInProgress: { type: Boolean, default: false },

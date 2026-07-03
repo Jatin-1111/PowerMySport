@@ -551,7 +551,7 @@ function CoachesTabContent() {
                             {hasRate ? (
                               <div className="flex items-baseline gap-1">
                                 <span className="text-xl font-black text-slate-900">₹{startingRate}</span>
-                                <span className="text-sm font-medium text-slate-400">/hr</span>
+                                <span className="text-sm font-medium text-slate-500">/hr</span>
                               </div>
                             ) : (
                               <p className="text-sm font-bold text-slate-700">Contact Us</p>

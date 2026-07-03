@@ -23,6 +23,100 @@ type OpeningHours = {
   sunday: OpeningHoursDay;
 };
 
+// ─── Sport Pathways ─────────────────────────────────────────────────────────
+
+export interface AdminPathwayBenchmarkMetric {
+  metric: string;
+  target: string;
+}
+
+export interface AdminPathwayGovernmentScheme {
+  name: string;
+  body: string;
+  eligibility: string;
+  benefit: string;
+  howToApply: string;
+}
+
+export interface AdminPathwayLevel {
+  level: number;
+  label: string;
+  title: string;
+  description: string;
+  keyFocus: string;
+  ageRange: string;
+  competitions: string;
+  steps: string[];
+  governingBody?: string;
+  localResources?: {
+    academies?: string[];
+    facilities?: string[];
+    governingBodies?: string[];
+  };
+  benchmarks?: {
+    description?: string;
+    metrics?: AdminPathwayBenchmarkMetric[];
+  };
+  trialInfo?: {
+    typicalMonths?: string;
+    registrationProcess?: string;
+    eligibilityAge?: string;
+    selectionCriteria?: string[];
+    tips?: string[];
+  };
+  injuryRisks?: {
+    commonInjuries?: string[];
+    preventionTips?: string[];
+    warningSignsToWatch?: string[];
+  };
+  talentSignals?: {
+    physicalMarkers?: string[];
+    cognitiveMarkers?: string[];
+    behavioralMarkers?: string[];
+  };
+  mentalSkillsFocus?: string[];
+  coachSelectionGuide?: {
+    mustHave?: string[];
+    niceToHave?: string[];
+    redFlags?: string[];
+    questionsToAsk?: string[];
+  };
+  governmentSchemes?: AdminPathwayGovernmentScheme[];
+  academicIntegration?: string;
+  proactiveDocuments?: string[];
+}
+
+export interface AdminPathwayEquipment {
+  level: string;
+  items: string[];
+  estimatedCost: string;
+}
+
+export interface AdminPathwayCareer {
+  role: string;
+  description: string;
+  demand: string;
+}
+
+export interface AdminSportPathway {
+  _id: string;
+  sportSlug: string;
+  sportName: string;
+  cacheKey?: string;
+  category?: string;
+  overview: string;
+  levels: AdminPathwayLevel[];
+  equipment: AdminPathwayEquipment[];
+  careers: AdminPathwayCareer[];
+  isVerified: boolean;
+  verifiedAt?: string;
+  verifiedBy?: string | { _id: string; name?: string; email?: string };
+  lookupCount: number;
+  lastRefreshedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface AcademyAdminQueueRecord {
   id: string;
   name: string;
@@ -984,6 +1078,50 @@ export const adminApi = {
 
   reconcileOrder: async (type: string, orderId: string): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.post(`/admin/reconcile/${type}/${orderId}`);
+    return response.data;
+  },
+
+  // ─── Sport Pathways ───────────────────────────────────────────────────────
+
+  getPathways: async (params?: {
+    search?: string;
+    isVerified?: "true" | "false";
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<AdminSportPathway[]>> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append("search", params.search);
+    if (params?.isVerified) query.append("isVerified", params.isVerified);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+    const response = await axiosInstance.get(
+      `/admin/sport-pathways${query.toString() ? `?${query.toString()}` : ""}`,
+    );
+    return response.data;
+  },
+
+  getPathwayById: async (id: string): Promise<ApiResponse<AdminSportPathway>> => {
+    const response = await axiosInstance.get(`/admin/sport-pathways/${id}`);
+    return response.data;
+  },
+
+  updatePathway: async (
+    id: string,
+    data: Partial<
+      Pick<AdminSportPathway, "overview" | "category" | "levels" | "equipment" | "careers">
+    >,
+  ): Promise<ApiResponse<AdminSportPathway>> => {
+    const response = await axiosInstance.patch(`/admin/sport-pathways/${id}`, data);
+    return response.data;
+  },
+
+  setPathwayVerified: async (
+    id: string,
+    verified: boolean,
+  ): Promise<ApiResponse<AdminSportPathway>> => {
+    const response = await axiosInstance.post(`/admin/sport-pathways/${id}/verify`, {
+      verified,
+    });
     return response.data;
   },
 };
