@@ -24,7 +24,10 @@
     "test:community-policy": "npm run build && node --test dist/tests/communityPolicy.test.js",
     "test:community": "npm run build && node --test dist/tests/communityQnaUtils.test.js dist/tests/communityPolicy.test.js",
     "test:coach-subscriptions": "npm run build && node --test dist/tests/coachSubscriptionRoutes.integration.test.js",
-    "test:security": "npm run build && node --test --test-force-exit dist/tests/security.unit.test.js dist/tests/security.integration.test.js"
+    "test:security": "npm run build && node --test --test-force-exit dist/tests/security.unit.test.js dist/tests/security.integration.test.js",
+    "test:email": "npm run build && node --test dist/tests/email.unit.test.js",
+    "email:verify": "ts-node src/scripts/verifyEmail.ts",
+    "email:test-all": "ts-node src/scripts/testAllEmails.ts"
   },
   "keywords": [],
   "author": "",

@@ -2,6 +2,8 @@ import { Booking } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { Review, ReviewDocument } from "../models/Review";
 import { Venue } from "../models/Venue";
+import { User } from "../models/User";
+import { sendReviewReceivedEmail } from "../../utils/email";
 
 export interface CreateReviewPayload {
   bookingId: string;
@@ -88,6 +90,50 @@ export const createReview = async (
   } else if (payload.targetType === "COACH") {
     await updateCoachRating(targetId.toString());
   }
+
+  // Notify the provider of the new review (fire-and-forget).
+  void (async () => {
+    try {
+      const reviewer = await User.findById(payload.userId)
+        .select("name")
+        .lean();
+      let providerEmail: string | undefined;
+      let providerName: string | undefined;
+      if (payload.targetType === "VENUE") {
+        const venue = await Venue.findById(targetId)
+          .populate("ownerId", "name email")
+          .lean();
+        const owner = venue?.ownerId as unknown as {
+          name?: string;
+          email?: string;
+        } | null;
+        providerEmail = owner?.email;
+        providerName = owner?.name;
+      } else {
+        const coach = await Coach.findById(targetId)
+          .populate("userId", "name email")
+          .lean();
+        const coachUser = coach?.userId as unknown as {
+          name?: string;
+          email?: string;
+        } | null;
+        providerEmail = coachUser?.email;
+        providerName = coachUser?.name;
+      }
+      if (providerEmail) {
+        await sendReviewReceivedEmail({
+          name: providerName,
+          email: providerEmail,
+          rating: payload.rating,
+          review: payload.review,
+          reviewerName: reviewer?.name,
+          targetType: payload.targetType,
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send review email:", emailError);
+    }
+  })();
 
   return review;
 };

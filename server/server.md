@@ -77,7 +77,7 @@ The `server` project is the central backend API for the entire PowerMySport plat
 ## API & External Services
 - **PhonePe**: Used for processing payments. Called in `bookingRoutes.ts` and `ecommerceRoutes.ts`. Webhook authenticated via HMAC.
 - **AWS S3**: Used for uploading venue images, coach photos, and chat attachments via presigned URLs (`getPresignedUploadUrl`).
-- **Nodemailer**: Connects via SMTP (`EMAIL_HOST`) to send booking confirmations and password resets.
+- **Nodemailer**: Connects via SMTP (`EMAIL_HOST`/`EMAIL_PORT`/`EMAIL_USER`/`EMAIL_PASSWORD`/`EMAIL_FROM`) for all transactional email. Every message goes through a single `sendEmail()` in `src/utils/email.ts` (which swallows transport errors so mail never breaks a request; some mail is also delivered reliably via the Outbox worker). Templates cover: welcome, password reset, **password-changed confirmation**, booking lifecycle/confirmation/reminder/invitation, friend request + accepted, coach verification (+reminder), credentials (coach/venue/admin), refund, venue onboarding/inquiry, concierge, order confirmation, shop launch, academy onboarding, **support ticket received + status change**, **payout processed**, **dispute raised + resolved**, **booking-waitlist slot available**, **coach subscription purchased + cancelled**, **review received**, and **account suspended/deactivated/reactivated**. Test with `npm run test:email` (mocked) or `npm run email:verify` / `npm run email:test-all -- --send --to you@example.com` (live).
 - **Gemini AI**: Used via `@google/genai` to generate/refresh AI sports pathways.
 
 ## Routes

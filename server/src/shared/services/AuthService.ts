@@ -3,7 +3,11 @@ import mongoose from "mongoose";
 import { Booking } from "../../client/models/Booking";
 import { Player } from "../../client/models/Player";
 import { User, UserDocument } from "../../client/models/User";
-import { sendPasswordResetEmail, sendWelcomeEmail } from "../../utils/email";
+import {
+  sendPasswordResetEmail,
+  sendWelcomeEmail,
+  sendPasswordChangedEmail,
+} from "../../utils/email";
 import { normalizeAddressInput } from "../utils/address";
 import { S3Service } from "./S3Service";
 import { OAuth2Client } from "google-auth-library";
@@ -198,6 +202,13 @@ export const resetPassword = async (
   delete user.resetPasswordExpires;
 
   await user.save();
+
+  // Security confirmation that the password was changed (fire-and-forget).
+  if (user.email) {
+    sendPasswordChangedEmail({ name: user.name, email: user.email }).catch(
+      (error) => console.error("Failed to send password-changed email:", error),
+    );
+  }
 };
 
 export interface GoogleLoginPayload {

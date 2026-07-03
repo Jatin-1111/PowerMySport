@@ -88,3 +88,6 @@ It integrates loosely with the `client` project: unauthenticated users attemptin
 - **Socket Disconnections**: If the Redis server on the backend drops, the Socket.IO server falls back to single-instance mode. Messages might not sync across multiple backend instances.
 - **Login Redirects**: Because `community` lacks its own auth UI, the `redirect.ts` utility relies on `NEXT_PUBLIC_MAIN_APP_URL`. If this is misconfigured locally, login loops or dead-ends will occur.
 - **IndexedDB Stale Data**: `chatDB` caches messages to make the app feel instant. If the local IndexedDB diverges significantly from the server, users might see outdated messages until a hard refresh.
+
+## 404 / Not Found
+A custom `src/app/not-found.tsx` renders for unmatched routes, shown inside the community shell (top nav) as a centred card with "Community home" and "Browse Q&A" links.

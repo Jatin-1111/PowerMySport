@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { SupportTicket } from "../models/SupportTicket";
+import { User } from "../models/User";
+import {
+  sendSupportTicketReceivedEmail,
+  sendSupportTicketStatusEmail,
+} from "../../utils/email";
 
 const parsePagination = (pageRaw: unknown, limitRaw: unknown) => {
   const page = Math.max(1, Number(pageRaw) || 1);
@@ -134,6 +139,33 @@ const createTicketFromRequest = async (
       ? { lastUpdatedBy: new mongoose.Types.ObjectId(options.authorId) }
       : {}),
   });
+
+  // Acknowledge the ticket by email (fire-and-forget). Prefer the explicit
+  // requester email; fall back to the authenticated user's account email.
+  void (async () => {
+    try {
+      let toEmail = ticket.requesterEmail;
+      let toName = ticket.requesterName;
+      if (!toEmail && ticket.userId) {
+        const owner = await User.findById(ticket.userId)
+          .select("name email")
+          .lean();
+        toEmail = owner?.email;
+        toName = toName || owner?.name;
+      }
+      if (toEmail) {
+        await sendSupportTicketReceivedEmail({
+          name: toName,
+          email: toEmail,
+          ticketId: String(ticket._id),
+          subject: ticket.subject,
+          category: ticket.category,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to send support ticket received email:", error);
+    }
+  })();
 
   res.status(201).json({
     success: true,
@@ -326,6 +358,28 @@ export const updateSupportTicketByAdmin = async (
     if (!ticket) {
       res.status(404).json({ success: false, message: "Ticket not found" });
       return;
+    }
+
+    // Notify the requester when the status changes (fire-and-forget).
+    if (status) {
+      const populatedUser = ticket.userId as unknown as {
+        name?: string;
+        email?: string;
+      } | null;
+      const toEmail = ticket.requesterEmail || populatedUser?.email;
+      const toName = ticket.requesterName || populatedUser?.name;
+      if (toEmail) {
+        sendSupportTicketStatusEmail({
+          name: toName,
+          email: toEmail,
+          ticketId: String(ticket._id),
+          subject: ticket.subject,
+          status,
+          note: note?.trim() || undefined,
+        }).catch((error) =>
+          console.error("Failed to send support ticket status email:", error),
+        );
+      }
     }
 
     res.status(200).json({

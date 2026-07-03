@@ -1910,3 +1910,379 @@ export const sendOrderConfirmationEmail = async (
 };
 
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// Additional transactional templates
+// (support tickets, payouts, disputes, waitlist, coach subscriptions,
+//  reviews, account safety, password-change). Added 2026-07.
+// ════════════════════════════════════════════════════════════════════════════
+
+const emailFrontendUrl = (): string =>
+  process.env.FRONTEND_URL || "http://localhost:3000";
+
+const formatInr = (n: number): string =>
+  `₹${Number(n || 0).toLocaleString("en-IN")}`;
+
+const renderEmailShell = (opts: {
+  heading: string;
+  intro?: string;
+  bodyHtml?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  accent?: string;
+}): string => {
+  const accent = opts.accent || "#ff6b35";
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
+<body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:linear-gradient(135deg,${accent} 0%,#f7931e 100%);color:#fff;padding:24px 30px;border-radius:10px 10px 0 0;">
+    <h1 style="margin:0;font-size:22px;">${opts.heading}</h1>
+  </div>
+  <div style="background:#f9f9f9;padding:30px;border-radius:0 0 10px 10px;">
+    ${opts.intro ? `<p>${opts.intro}</p>` : ""}
+    ${opts.bodyHtml || ""}
+    ${
+      opts.ctaLabel && opts.ctaUrl
+        ? `<p style="margin:24px 0;"><a href="${opts.ctaUrl}" style="display:inline-block;padding:12px 28px;background:${accent};color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">${opts.ctaLabel}</a></p>`
+        : ""
+    }
+    <p style="color:#666;font-size:13px;margin-top:28px;">This is an automated message from PowerMySport.</p>
+  </div>
+</body></html>`;
+};
+
+const detailTable = (rows: Array<[string, string]>): string =>
+  `<table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:bold;background:#fff;">${k}</td><td style="padding:8px 12px;border:1px solid #e5e7eb;background:#fff;">${v}</td></tr>`,
+    )
+    .join("")}</table>`;
+
+interface SupportTicketReceivedOptions {
+  name?: string | undefined;
+  email: string;
+  ticketId: string;
+  subject: string;
+  category?: string | undefined;
+}
+
+export const sendSupportTicketReceivedEmail = async (
+  options: SupportTicketReceivedOptions,
+): Promise<void> => {
+  const html = renderEmailShell({
+    heading: "We've received your request",
+    intro: `Hi ${options.name || "there"}, thanks for reaching out. Our support team has received your ticket and will get back to you soon.`,
+    bodyHtml: detailTable([
+      ["Ticket", `#${options.ticketId.slice(-8)}`],
+      ["Subject", options.subject],
+      ...(options.category ? ([["Category", options.category]] as [string, string][]) : []),
+    ]),
+    ctaLabel: "View my tickets",
+    ctaUrl: `${emailFrontendUrl()}/dashboard`,
+  });
+  await sendEmail({
+    to: options.email,
+    subject: `We've received your support request (#${options.ticketId.slice(-8)})`,
+    html,
+  });
+};
+
+interface SupportTicketStatusOptions {
+  name?: string | undefined;
+  email: string;
+  ticketId: string;
+  subject: string;
+  status: string;
+  note?: string | undefined;
+}
+
+export const sendSupportTicketStatusEmail = async (
+  options: SupportTicketStatusOptions,
+): Promise<void> => {
+  const resolved = ["RESOLVED", "CLOSED"].includes(options.status.toUpperCase());
+  const html = renderEmailShell({
+    heading: resolved ? "Your support ticket was updated" : "Update on your support ticket",
+    intro: `Hi ${options.name || "there"}, there's an update on your support ticket.`,
+    bodyHtml:
+      detailTable([
+        ["Ticket", `#${options.ticketId.slice(-8)}`],
+        ["Subject", options.subject],
+        ["New status", options.status.replace(/_/g, " ")],
+      ]) + (options.note ? `<p style="margin-top:8px;"><strong>Note from our team:</strong><br/>${options.note}</p>` : ""),
+    ctaLabel: "View ticket",
+    ctaUrl: `${emailFrontendUrl()}/dashboard`,
+    accent: resolved ? "#16a34a" : "#ff6b35",
+  });
+  await sendEmail({
+    to: options.email,
+    subject: `Support ticket #${options.ticketId.slice(-8)} — ${options.status.replace(/_/g, " ")}`,
+    html,
+  });
+};
+
+interface PayoutProcessedOptions {
+  name?: string | undefined;
+  email: string;
+  amount: number;
+  bookingCount: number;
+  role: "COACH" | "VENUE_LISTER";
+}
+
+export const sendPayoutProcessedEmail = async (
+  options: PayoutProcessedOptions,
+): Promise<void> => {
+  const html = renderEmailShell({
+    heading: "You've been paid 🎉",
+    intro: `Hi ${options.name || "there"}, a payout has been processed to your account.`,
+    bodyHtml: detailTable([
+      ["Amount", formatInr(options.amount)],
+      ["Bookings settled", String(options.bookingCount)],
+      ["Account type", options.role === "COACH" ? "Coach" : "Venue owner"],
+    ]),
+    ctaLabel: "View earnings",
+    ctaUrl: `${emailFrontendUrl()}/${options.role === "COACH" ? "coach" : "venue-lister"}/earnings`,
+    accent: "#16a34a",
+  });
+  await sendEmail({
+    to: options.email,
+    subject: `Payout processed: ${formatInr(options.amount)} — PowerMySport`,
+    html,
+  });
+};
+
+interface DisputeStatusOptions {
+  name?: string | undefined;
+  email: string;
+  disputeType: string;
+  status: "OPEN" | "RESOLVED" | "CLOSED";
+  bookingId: string;
+  resolution?: string | undefined;
+  refundAmount?: number | undefined;
+}
+
+export const sendDisputeStatusEmail = async (
+  options: DisputeStatusOptions,
+): Promise<void> => {
+  const isResolved = options.status !== "OPEN";
+  const html = renderEmailShell({
+    heading: isResolved ? "Your dispute has been resolved" : "We've received your dispute",
+    intro: isResolved
+      ? `Hi ${options.name || "there"}, your dispute has been reviewed and resolved.`
+      : `Hi ${options.name || "there"}, your dispute has been logged and our team will review it.`,
+    bodyHtml: detailTable([
+      ["Booking", `#${options.bookingId.slice(-8)}`],
+      ["Type", options.disputeType.replace(/_/g, " ")],
+      ["Status", options.status],
+      ...(options.resolution ? ([["Resolution", options.resolution.replace(/_/g, " ")]] as [string, string][]) : []),
+      ...(options.refundAmount ? ([["Refund", formatInr(options.refundAmount)]] as [string, string][]) : []),
+    ]),
+    ctaLabel: "View booking",
+    ctaUrl: `${emailFrontendUrl()}/dashboard/my-bookings`,
+    accent: isResolved ? "#16a34a" : "#ff6b35",
+  });
+  await sendEmail({
+    to: options.email,
+    subject: isResolved
+      ? `Your dispute for booking #${options.bookingId.slice(-8)} was resolved`
+      : `We've received your dispute for booking #${options.bookingId.slice(-8)}`,
+    html,
+  });
+};
+
+interface WaitlistSlotAvailableOptions {
+  name?: string | undefined;
+  email: string;
+  venueName: string;
+  sport: string;
+  date: Date | string;
+  startTime: string;
+  endTime: string;
+}
+
+export const sendWaitlistSlotAvailableEmail = async (
+  options: WaitlistSlotAvailableOptions,
+): Promise<void> => {
+  const dateStr = new Date(options.date).toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const html = renderEmailShell({
+    heading: "A slot just opened up! ⚡",
+    intro: `Hi ${options.name || "there"}, good news — a slot you were waiting for is now available. These go fast, so book soon.`,
+    bodyHtml: detailTable([
+      ["Venue", options.venueName],
+      ["Sport", options.sport],
+      ["Date", dateStr],
+      ["Time", `${options.startTime} – ${options.endTime}`],
+    ]),
+    ctaLabel: "Book now",
+    ctaUrl: `${emailFrontendUrl()}/booking`,
+  });
+  await sendEmail({
+    to: options.email,
+    subject: `A ${options.sport} slot opened up at ${options.venueName} — book now`,
+    html,
+  });
+};
+
+interface CoachSubscriptionPurchasedOptions {
+  name?: string | undefined;
+  email: string;
+  packageName: string;
+  price: number;
+  counterpartName: string;
+  recipientRole: "PLAYER" | "COACH";
+}
+
+export const sendCoachSubscriptionPurchasedEmail = async (
+  options: CoachSubscriptionPurchasedOptions,
+): Promise<void> => {
+  const forPlayer = options.recipientRole === "PLAYER";
+  const html = renderEmailShell({
+    heading: forPlayer ? "Your coaching plan is active 🏆" : "You have a new subscriber 🎉",
+    intro: forPlayer
+      ? `Hi ${options.name || "there"}, your subscription to ${options.counterpartName}'s coaching plan is now active.`
+      : `Hi ${options.name || "there"}, ${options.counterpartName} just subscribed to your coaching plan.`,
+    bodyHtml: detailTable([
+      ["Plan", options.packageName],
+      ["Price", formatInr(options.price)],
+      [forPlayer ? "Coach" : "Subscriber", options.counterpartName],
+    ]),
+    ctaLabel: forPlayer ? "View my subscriptions" : "View my clients",
+    ctaUrl: `${emailFrontendUrl()}/${forPlayer ? "dashboard" : "coach/clients"}`,
+    accent: "#16a34a",
+  });
+  await sendEmail({
+    to: options.email,
+    subject: forPlayer
+      ? `Your coaching plan with ${options.counterpartName} is active`
+      : `${options.counterpartName} subscribed to your coaching plan`,
+    html,
+  });
+};
+
+interface CoachSubscriptionCancelledOptions {
+  name?: string | undefined;
+  email: string;
+  packageName: string;
+  counterpartName: string;
+  recipientRole: "PLAYER" | "COACH";
+}
+
+export const sendCoachSubscriptionCancelledEmail = async (
+  options: CoachSubscriptionCancelledOptions,
+): Promise<void> => {
+  const forPlayer = options.recipientRole === "PLAYER";
+  const html = renderEmailShell({
+    heading: "Subscription cancelled",
+    intro: forPlayer
+      ? `Hi ${options.name || "there"}, your subscription to ${options.counterpartName}'s coaching plan has been cancelled.`
+      : `Hi ${options.name || "there"}, ${options.counterpartName} has cancelled their subscription to your coaching plan.`,
+    bodyHtml: detailTable([
+      ["Plan", options.packageName],
+      [forPlayer ? "Coach" : "Subscriber", options.counterpartName],
+    ]),
+    ctaLabel: forPlayer ? "Explore coaches" : "View dashboard",
+    ctaUrl: `${emailFrontendUrl()}/${forPlayer ? "coaches" : "coach/clients"}`,
+    accent: "#64748b",
+  });
+  await sendEmail({
+    to: options.email,
+    subject: "Coaching subscription cancelled — PowerMySport",
+    html,
+  });
+};
+
+interface ReviewReceivedOptions {
+  name?: string | undefined;
+  email: string;
+  rating: number;
+  review?: string | undefined;
+  reviewerName?: string | undefined;
+  targetType: "VENUE" | "COACH";
+}
+
+export const sendReviewReceivedEmail = async (
+  options: ReviewReceivedOptions,
+): Promise<void> => {
+  const stars = "★".repeat(Math.max(0, Math.min(5, Math.round(options.rating)))) +
+    "☆".repeat(5 - Math.max(0, Math.min(5, Math.round(options.rating))));
+  const html = renderEmailShell({
+    heading: "You received a new review",
+    intro: `Hi ${options.name || "there"}, ${options.reviewerName || "a player"} left a review for your ${options.targetType === "COACH" ? "coaching" : "venue"}.`,
+    bodyHtml:
+      detailTable([
+        ["Rating", `${stars} (${options.rating}/5)`],
+      ]) + (options.review ? `<p style="margin-top:8px;"><strong>Their comment:</strong><br/>"${options.review}"</p>` : ""),
+    ctaLabel: "View reviews",
+    ctaUrl: `${emailFrontendUrl()}/${options.targetType === "COACH" ? "coach/reviews" : "venue-lister/reviews"}`,
+  });
+  await sendEmail({
+    to: options.email,
+    subject: `You received a ${options.rating}★ review on PowerMySport`,
+    html,
+  });
+};
+
+interface AccountStatusOptions {
+  name?: string | undefined;
+  email: string;
+  action: "SUSPEND" | "DEACTIVATE" | "REACTIVATE";
+  reason?: string | undefined;
+}
+
+export const sendAccountStatusEmail = async (
+  options: AccountStatusOptions,
+): Promise<void> => {
+  const reactivated = options.action === "REACTIVATE";
+  const heading = reactivated
+    ? "Your account has been reactivated"
+    : options.action === "DEACTIVATE"
+      ? "Your account has been deactivated"
+      : "Your account has been suspended";
+  const html = renderEmailShell({
+    heading,
+    intro: reactivated
+      ? `Hi ${options.name || "there"}, your PowerMySport account has been reactivated and you can log in again.`
+      : `Hi ${options.name || "there"}, your PowerMySport account has been ${options.action === "DEACTIVATE" ? "deactivated" : "suspended"} by our team.`,
+    bodyHtml: options.reason
+      ? detailTable([["Reason", options.reason]]) +
+        `<p style="margin-top:8px;">If you believe this was a mistake, please reply to this email or contact support.</p>`
+      : `<p>If you believe this was a mistake, please contact support.</p>`,
+    ctaLabel: reactivated ? "Log in" : "Contact support",
+    ctaUrl: `${emailFrontendUrl()}/${reactivated ? "login" : "contact"}`,
+    accent: reactivated ? "#16a34a" : "#ef4444",
+  });
+  await sendEmail({
+    to: options.email,
+    subject: reactivated
+      ? "Your PowerMySport account has been reactivated"
+      : `Your PowerMySport account has been ${options.action === "DEACTIVATE" ? "deactivated" : "suspended"}`,
+    html,
+  });
+};
+
+interface PasswordChangedOptions {
+  name?: string | undefined;
+  email: string;
+}
+
+export const sendPasswordChangedEmail = async (
+  options: PasswordChangedOptions,
+): Promise<void> => {
+  const html = renderEmailShell({
+    heading: "Your password was changed",
+    intro: `Hi ${options.name || "there"}, this is a confirmation that the password for your PowerMySport account was just changed.`,
+    bodyHtml: `<p>If you made this change, no action is needed. <strong>If you did not change your password</strong>, please reset it immediately and contact support — your account may be at risk.</p>`,
+    ctaLabel: "Reset password",
+    ctaUrl: `${emailFrontendUrl()}/forgot-password`,
+    accent: "#ef4444",
+  });
+  await sendEmail({
+    to: options.email,
+    subject: "Your PowerMySport password was changed",
+    html,
+  });
+};

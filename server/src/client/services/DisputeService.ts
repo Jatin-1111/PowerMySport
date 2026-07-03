@@ -1,6 +1,8 @@
 import { Booking } from "../models/Booking";
 import { Review } from "../models/Review";
 import { Dispute } from "../models/Dispute";
+import { User } from "../models/User";
+import { sendDisputeStatusEmail } from "../../utils/email";
 
 /**
  * Automatic dispute resolution based on predefined rules
@@ -84,6 +86,26 @@ export const openDispute = async (
     confidence: analysis.confidence,
     requiresManualReview: analysis.requiresManualReview,
   });
+
+  // Notify the user their dispute was logged (fire-and-forget).
+  void (async () => {
+    try {
+      const disputeUser = await User.findById(userId)
+        .select("name email")
+        .lean();
+      if (disputeUser?.email) {
+        await sendDisputeStatusEmail({
+          name: disputeUser.name,
+          email: disputeUser.email,
+          disputeType,
+          status: dispute.status as "OPEN" | "RESOLVED" | "CLOSED",
+          bookingId,
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send dispute email:", emailError);
+    }
+  })();
 
   return dispute;
 };

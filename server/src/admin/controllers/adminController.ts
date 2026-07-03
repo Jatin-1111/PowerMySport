@@ -43,6 +43,8 @@ import {
   sendCoachVerificationStatusEmail,
   sendCoachAdminCredentialsEmail,
   sendVenueAdminCredentialsEmail,
+  sendAccountStatusEmail,
+  sendDisputeStatusEmail,
 } from "../../utils/email";
 import { NotificationService } from "../../client/services/NotificationService";
 import { isPhonePeGatewayError } from "../../shared/services/PhonePeService";
@@ -1089,6 +1091,18 @@ export const updateUserSafetyStatus = async (
       return;
     }
 
+    // Notify the user their account status changed (fire-and-forget).
+    if (user.email) {
+      sendAccountStatusEmail({
+        name: user.name,
+        email: user.email,
+        action,
+        reason: reason?.trim() || undefined,
+      }).catch((error) =>
+        console.error("Failed to send account status email:", error),
+      );
+    }
+
     const auditSafety = auditContext(req);
     if (auditSafety) {
       void recordAuditLog({
@@ -1738,8 +1752,26 @@ export const handleDispute = async (
     // Send notification to player
     try {
       const { Booking } = await import("../../client/models/Booking");
+      const { User } = await import("../../client/models/User");
       const booking = await Booking.findById(bookingId);
       if (booking?.userId) {
+        const disputeUser = await User.findById(booking.userId)
+          .select("name email")
+          .lean();
+        if (disputeUser?.email) {
+          sendDisputeStatusEmail({
+            name: disputeUser.name,
+            email: disputeUser.email,
+            disputeType,
+            status: "RESOLVED",
+            bookingId,
+            resolution,
+            refundAmount: refundResult?.refundAmount,
+          }).catch((error) =>
+            console.error("Failed to send dispute email:", error),
+          );
+        }
+
         const notifMessages: Record<string, string> = {
           FULL_REFUND: `Your dispute for booking has been resolved. A full refund of ₹${refundResult?.refundAmount ?? 0} is being processed.`,
           PARTIAL_REFUND: `Your dispute for booking has been resolved. A partial refund of ₹${refundResult?.refundAmount ?? 0} is being processed.`,

@@ -90,3 +90,6 @@ The `client` application communicates exclusively with the `server` project's RE
 ## Known Gotchas
 - **CORS & Cookies**: For local development, if you access the client via `127.0.0.1` instead of `localhost`, cookies might not attach correctly because the backend explicitly allows `localhost` origins.
 - **Stripe/PhonePe Redirection**: The checkout flow relies on external redirects. If testing locally, PhonePe sandbox callbacks might not reach your local machine without a tunnel (like ngrok).
+
+## 404 / Not Found
+A custom `src/app/not-found.tsx` renders for unmatched routes, styled to match the client marketing/brand look (Syne heading, power-orange CTAs) with "Back to home" and "Explore venues & coaches" links.

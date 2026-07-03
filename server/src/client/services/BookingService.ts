@@ -11,6 +11,7 @@ import Academy from "../../admin/models/Academy";
 import {
   sendBookingLifecycleEmail,
   sendBookingInvitationEmail,
+  sendWaitlistSlotAvailableEmail,
 } from "../../utils/email";
 import { getBookingExpirationTime } from "../../utils/timer";
 import { validatePromoCode, applyPromoCode } from "./PromoCodeService";
@@ -1937,6 +1938,9 @@ export const cancelBooking = async (
       refundAmount,
       refundPercentage,
     });
+
+    // A slot just freed up — alert anyone on the waitlist (fire-and-forget).
+    void notifyWaitlistForFreedSlot(updatedBooking);
   }
 
   return {
@@ -3479,4 +3483,68 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
 
   await transaction.save();
   return transaction;
+};
+
+/**
+ * When a booking is cancelled, alert users waiting on the same slot (same
+ * coach/venue + date + start time) by email, then mark their waitlist entry
+ * NOTIFIED so they are not pinged repeatedly. Best-effort; never throws.
+ */
+const notifyWaitlistForFreedSlot = async (
+  booking: BookingDocument,
+): Promise<void> => {
+  try {
+    const match: Record<string, unknown> = {
+      status: "ACTIVE",
+      date: booking.date,
+      startTime: booking.startTime,
+    };
+    if (booking.coachId) {
+      match.coachId = booking.coachId;
+    } else if (booking.venueId) {
+      match.venueId = booking.venueId;
+    } else {
+      return;
+    }
+
+    const entries = await BookingWaitlist.find(match).limit(50);
+    if (entries.length === 0) {
+      return;
+    }
+
+    let venueName = "your coach";
+    if (booking.venueId) {
+      const venue = await Venue.findById(booking.venueId).select("name").lean();
+      venueName = venue?.name || "the venue";
+    }
+
+    for (const entry of entries) {
+      try {
+        const user = await User.findById(entry.userId)
+          .select("name email")
+          .lean();
+        if (user?.email) {
+          await sendWaitlistSlotAvailableEmail({
+            name: user.name,
+            email: user.email,
+            venueName,
+            sport: booking.sport,
+            date: booking.date,
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+          });
+        }
+        entry.status = "NOTIFIED";
+        await entry.save();
+      } catch (perEntryError) {
+        console.error(
+          "Failed to notify waitlist entry",
+          entry._id?.toString(),
+          perEntryError,
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Failed to notify waitlist for freed slot:", error);
+  }
 };

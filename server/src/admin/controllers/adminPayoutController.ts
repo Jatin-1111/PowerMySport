@@ -3,6 +3,7 @@ import { Booking } from "../../client/models/Booking";
 import { Coach, IPayoutMethod } from "../../client/models/Coach";
 import { Venue } from "../../client/models/Venue";
 import { User } from "../../client/models/User";
+import { sendPayoutProcessedEmail } from "../../utils/email";
 import mongoose from "mongoose";
 
 const getPrimaryPayoutMethod = (
@@ -161,6 +162,43 @@ export const markPayoutsAsPaid = async (
       }
 
       await session.commitTransaction();
+
+      // Notify the vendor of the payout (fire-and-forget).
+      void (async () => {
+        try {
+          const vendorUser = await User.findById(vendorId)
+            .select("name email")
+            .lean();
+          if (vendorUser?.email) {
+            const paidBookings = await Booking.find({
+              _id: { $in: bookingIds },
+            })
+              .select("payments")
+              .lean();
+            let total = 0;
+            for (const b of paidBookings) {
+              for (const p of b.payments || []) {
+                if (
+                  p.userId?.toString() === vendorId &&
+                  p.userType === vendorRole &&
+                  p.status === "PAID"
+                ) {
+                  total += p.amount || 0;
+                }
+              }
+            }
+            await sendPayoutProcessedEmail({
+              name: vendorUser.name,
+              email: vendorUser.email,
+              amount: total,
+              bookingCount: bookingIds.length,
+              role: vendorRole as "COACH" | "VENUE_LISTER",
+            });
+          }
+        } catch (emailError) {
+          console.error("Failed to send payout email:", emailError);
+        }
+      })();
 
       res.status(200).json({
         success: true,

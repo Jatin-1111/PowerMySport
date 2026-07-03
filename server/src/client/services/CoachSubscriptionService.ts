@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 import { Coach } from "../models/Coach";
+import { User } from "../models/User";
+import {
+  sendCoachSubscriptionPurchasedEmail,
+  sendCoachSubscriptionCancelledEmail,
+} from "../../utils/email";
 import {
   CoachSubscription,
   CoachSubscriptionDocument,
@@ -151,6 +156,45 @@ export const subscribeToCoachPackage = async (params: {
     subscriptionExpiresAt: populated.currentPeriodEnd,
   });
 
+  // Notify both parties of the new subscription (fire-and-forget).
+  void (async () => {
+    try {
+      const player = await User.findById(params.userId)
+        .select("name email")
+        .lean();
+      const coach = await Coach.findById(params.coachId)
+        .populate("userId", "name email")
+        .lean();
+      const coachUser = coach?.userId as unknown as {
+        name?: string;
+        email?: string;
+      } | null;
+      const priceRupees = (packageDoc.price || 0) / 100;
+      if (player?.email) {
+        await sendCoachSubscriptionPurchasedEmail({
+          name: player.name,
+          email: player.email,
+          packageName: packageDoc.name,
+          price: priceRupees,
+          counterpartName: coachUser?.name || "your coach",
+          recipientRole: "PLAYER",
+        });
+      }
+      if (coachUser?.email) {
+        await sendCoachSubscriptionPurchasedEmail({
+          name: coachUser.name,
+          email: coachUser.email,
+          packageName: packageDoc.name,
+          price: priceRupees,
+          counterpartName: player?.name || "A player",
+          recipientRole: "COACH",
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send subscription purchased email:", emailError);
+    }
+  })();
+
   return populated;
 };
 
@@ -228,6 +272,33 @@ export const cancelCoachSubscriptionByUser = async (params: {
     subscriptionStatus: "CANCELLED",
     subscriptionExpiresAt: subscription.currentPeriodEnd,
   });
+
+  // Notify the subscriber their plan was cancelled (fire-and-forget).
+  void (async () => {
+    try {
+      const player = await User.findById(subscription.userId)
+        .select("name email")
+        .lean();
+      const coach = await Coach.findById(subscription.coachId)
+        .populate("userId", "name")
+        .lean();
+      const pkg = await CoachSubscriptionPackage.findById(subscription.packageId)
+        .select("name")
+        .lean();
+      const coachUser = coach?.userId as unknown as { name?: string } | null;
+      if (player?.email) {
+        await sendCoachSubscriptionCancelledEmail({
+          name: player.name,
+          email: player.email,
+          packageName: pkg?.name || "coaching plan",
+          counterpartName: coachUser?.name || "your coach",
+          recipientRole: "PLAYER",
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send subscription cancelled email:", emailError);
+    }
+  })();
 
   return subscription;
 };

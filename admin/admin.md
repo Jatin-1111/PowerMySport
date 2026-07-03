@@ -93,3 +93,6 @@ Pages using this pattern: `users`, `coaches`, `bookings`, `venues`, `audit-log`.
 ## Known Gotchas
 - **Session Expiry**: Because auth relies on HTTP-only cookies, an expired session will result in 401 errors from Axios. The admin app usually intercepts these and redirects to `/admin/login`.
 - **Image Uploads**: Manual onboarding of coaches/venues requires direct uploads to S3, bypassing standard user workflows, so the admin must ensure images meet size restrictions.
+
+## 404 / Not Found
+A custom `src/app/not-found.tsx` renders for unmatched routes, styled as a slate admin panel with a "Go to dashboard" link.
