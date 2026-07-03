@@ -15,7 +15,11 @@ import {
 } from "../../utils/email";
 import { getBookingExpirationTime } from "../../utils/timer";
 import { validatePromoCode, applyPromoCode } from "./PromoCodeService";
-import { isWithinOpeningHours } from "../../utils/openingHours";
+import {
+  isWithinOpeningHours,
+  combineDateAndTimeIST,
+  IST_OFFSET_MINUTES,
+} from "../../utils/openingHours";
 import friendService from "./FriendService";
 import BookingInvitation from "../models/BookingInvitation";
 import {
@@ -142,31 +146,23 @@ const normalizeTimeToHHmm = (value: string): string => {
   return `${hour}:${minutes}`;
 };
 
-const combineDateAndTime = (date: Date, time: string): Date => {
-  const [hourPart, minutePart] = time.split(":");
-  const hour = parseInt(hourPart || "0", 10);
-  const minute = parseInt(minutePart || "0", 10);
-
-  const slotDateTime = new Date(date);
-  slotDateTime.setHours(hour, minute, 0, 0);
-
-  return slotDateTime;
-};
-
+// toDayRange/getDateKey below derive day boundaries from a UTC-midnight-
+// anchored booking `date` — using UTC accessors keeps them correct
+// regardless of the server process's local timezone (see combineDateAndTimeIST
+// in utils/openingHours.ts, used below, for the fuller explanation).
 const toDayRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+  const start = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
   return { start, end };
 };
 
 const getDateKey = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -632,11 +628,11 @@ export const initiateBooking = async (
     const normalizedStartTime = normalizeTimeToHHmm(payload.startTime);
     const normalizedEndTime = normalizeTimeToHHmm(payload.endTime);
 
-    const requestedStartAt = combineDateAndTime(
+    const requestedStartAt = combineDateAndTimeIST(
       payload.date,
       normalizedStartTime,
     );
-    const requestedEndAt = combineDateAndTime(payload.date, normalizedEndTime);
+    const requestedEndAt = combineDateAndTimeIST(payload.date, normalizedEndTime);
     const now = new Date();
 
     if (requestedEndAt <= requestedStartAt) {
@@ -693,8 +689,13 @@ export const initiateBooking = async (
 
     // Clean up any existing abandoned booking for this exact same slot by this user
     // This allows them to "try again" immediately without hitting "Coach/Venue is not available"
-    const startOfDay = new Date(payload.date);
-    startOfDay.setHours(0, 0, 0, 0);
+    const startOfDay = new Date(
+      Date.UTC(
+        payload.date.getUTCFullYear(),
+        payload.date.getUTCMonth(),
+        payload.date.getUTCDate(),
+      ),
+    );
 
     const cleanupQuery: any = {
       userId: user._id,
@@ -1259,11 +1260,13 @@ export const getVenueBookingsForDate = async (
   venueId: string,
   date: Date,
 ): Promise<BookingDocument[]> => {
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
+  // UTC accessors — see toDayRange above / combineDateAndTimeIST for why:
+  // `date` is UTC-midnight-anchored and Date#setHours reads/writes in the
+  // server process's local timezone.
+  const startOfDay = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+  const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
   return Booking.find({
     venueId,
@@ -1779,10 +1782,8 @@ export const cancelBooking = async (
     throw new Error("Booking not found or already cancelled");
   }
 
-  // Calculate booking start time
-  const [hours, minutes] = booking.startTime.split(":").map(Number);
-  const bookingStartTime = new Date(booking.date);
-  bookingStartTime.setHours(hours || 0, minutes || 0, 0, 0);
+  // Calculate booking start time (UTC-safe — see combineDateAndTimeIST)
+  const bookingStartTime = combineDateAndTimeIST(booking.date, booking.startTime);
 
   const now = new Date();
   const hoursUntilBooking =
@@ -1997,7 +1998,6 @@ export const checkInBookingByCode = async (
   }
 
   const now = new Date();
-  const bookingDateTime = new Date(booking.date);
   const timeParts = booking.startTime.split(":").map(Number);
   const startHour = timeParts[0];
   const startMin = timeParts[1];
@@ -2011,7 +2011,8 @@ export const checkInBookingByCode = async (
     throw new Error("Invalid booking time format");
   }
 
-  bookingDateTime.setHours(startHour, startMin, 0, 0);
+  // UTC-safe — see combineDateAndTimeIST
+  const bookingDateTime = combineDateAndTimeIST(booking.date, booking.startTime);
 
   // Check-in window: 15 minutes before start time
   const checkInWindow = new Date(bookingDateTime.getTime() - 15 * 60 * 1000);
@@ -2022,12 +2023,7 @@ export const checkInBookingByCode = async (
   }
 
   // Check-in code expiration: exactly at booking end time
-  const endParts = booking.endTime.split(":").map(Number);
-  const endHour = endParts[0] ?? 0;
-  const endMin = endParts[1] ?? 0;
-
-  const bookingEndDateTime = new Date(booking.date);
-  bookingEndDateTime.setHours(endHour, endMin, 0, 0);
+  const bookingEndDateTime = combineDateAndTimeIST(booking.date, booking.endTime);
 
   if (now > bookingEndDateTime) {
     throw new Error(
@@ -2081,7 +2077,7 @@ const checkCoachAvailabilityForBooking = async (
   const coach = await Coach.findById(coachId);
   if (!coach) return false;
 
-  const dayOfWeek = date.getDay();
+  const dayOfWeek = date.getUTCDay(); // date is UTC-midnight-anchored — see combineDateAndTimeIST
 
   // Resolve slots: prefer sport-specific availability, fall back to generic availability.
   // availabilityBySport is stored as a Mongoose Map — always use Map API.
@@ -2126,11 +2122,12 @@ const checkCoachAvailabilityForBooking = async (
   if (!isWithinAnySlot) return false;
 
   // Check for conflicting bookings on the same day.
+  const { start: dayStart, end: dayEnd } = toDayRange(date);
   const existingBooking = await Booking.findOne({
     coachId,
     date: {
-      $gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-      $lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
+      $gte: dayStart,
+      $lt: dayEnd,
     },
     status: {
       $in: [
@@ -3342,9 +3339,12 @@ export const createBooking = initiateBooking;
  * Can be called periodically via cron job
  */
 export const cleanupStaleBookingLocks = async (): Promise<number> => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayKey = today.toISOString().split("T")[0] || "";
+  // "Today" in IST — dateKey values are IST calendar dates (see
+  // combineDateAndTimeIST), so the cutoff must be computed the same way
+  // rather than the server process's local midnight.
+  const todayKey = new Date(Date.now() + IST_OFFSET_MINUTES * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
   // Delete locks with dateKey < today (past dates)
   const result = await BookingSlotLock.deleteMany({

@@ -16,12 +16,14 @@ import {
 
 import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
+import pathwayAdminRoutes from "./admin/routes/pathwayAdminRoutes";
 import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
 import statsRoutes from "./admin/routes/statsRoutes";
 import bookingRoutes from "./client/routes/bookingRoutes";
 import coachRoutes from "./client/routes/coachRoutes";
 import friendRoutes from "./client/routes/friendRoutes";
 import guidanceRoutes from "./client/routes/guidanceRoutes";
+import roadmapChatRoutes from "./client/routes/roadmapChatRoutes";
 import pathwayProfileRoutes from "./client/routes/pathwayProfileRoutes";
 import notificationRoutes from "./client/routes/notificationRoutes";
 import payoutRoutes from "./client/routes/payoutRoutes";
@@ -166,6 +168,7 @@ app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/refund-methods", refundMethodRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/guidance", guidanceRoutes);
+app.use("/api/roadmap-chat", roadmapChatRoutes);
 app.use("/api/pathway-profile", pathwayProfileRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/wallet", walletRoutes);
@@ -175,6 +178,7 @@ app.use("/api/community", communityRoutes);
 
 // Admin Domain
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/sport-pathways", pathwayAdminRoutes);
 app.use("/api/academies", academyOnboardingRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/payout-methods", payoutMethodsRoutes);

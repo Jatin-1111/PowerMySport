@@ -406,7 +406,7 @@ export default function AcademiesTab() {
                           {typeof rupees === "number" ? (
                             <>
                               <span className="text-xl font-black text-slate-900">₹{rupees}</span>
-                              <span className="ml-1 text-sm font-medium text-slate-400">/hr</span>
+                              <span className="ml-1 text-sm font-medium text-slate-500">/hr</span>
                             </>
                           ) : (
                             <span className="text-sm font-bold text-slate-500">Price on request</span>
@@ -453,7 +453,7 @@ export default function AcademiesTab() {
             )}
 
             {totalAcademies > 0 && (
-              <p className="mt-4 text-center text-xs text-slate-400">
+              <p className="mt-4 text-center text-xs text-slate-500">
                 Showing {(currentPage - 1) * 12 + 1}–{Math.min(currentPage * 12, totalAcademies)} of {totalAcademies} academies
               </p>
             )}

@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Booking } from "@/types";
-import { formatDate, formatTime } from "@/utils/format";
+import { formatDate, formatTime, formatTimestampTime } from "@/utils/format";
 import {
   Calendar,
   Clock,
@@ -47,6 +47,7 @@ const STATUS_STYLES: Record<string, string> = {
   COMPLETED: "bg-slate-50 text-slate-600 border-slate-200",
   CANCELLED: "bg-red-50 text-red-700 border-red-200",
   NO_SHOW: "bg-red-50 text-red-700 border-red-200",
+  EXPIRED: "bg-red-50 text-red-700 border-red-200",
 };
 
 function getStatusStyle(status: string) {
@@ -458,7 +459,7 @@ export default function BookingsPage() {
                         {booking.createdAt && (
                           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-xs text-slate-400">
                             <Clock className="h-3 w-3" />
-                            Booked on {formatDate(booking.createdAt)} at {formatTime(booking.createdAt)}
+                            Booked on {formatDate(booking.createdAt)} at {formatTimestampTime(booking.createdAt)}
                           </div>
                         )}
                       </div>

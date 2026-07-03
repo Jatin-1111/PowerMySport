@@ -116,6 +116,7 @@ export function buildChatSystemPrompt(
 - Budget tier: ${request.budget_tier}
 - Location: ${request.location || "Not specified"}
 - Pathway level: ${request.current_pathway_level ?? "Not specified"}
+- Years already playing this sport: ${request.years_playing ?? "Not specified"}
 - ${parentQuestion}
 
 ## AI Guidance Summary (already given to parent)

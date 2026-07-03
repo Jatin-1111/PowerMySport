@@ -140,12 +140,13 @@ const bookingSchema = new Schema<BookingDocument>(
         "COMPLETED",
         "CANCELLED",
         "NO_SHOW",
+        "EXPIRED",
       ],
       default: "PENDING_CONFIRMATION",
     },
     expiresAt: {
       type: Date,
-      required: false, // Only required for PENDING_PAYMENT bookings
+      required: false, // Only set for PENDING_CONFIRMATION bookings — see utils/timer.ts
     },
     checkInCode: {
       type: String,

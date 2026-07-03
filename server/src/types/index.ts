@@ -34,7 +34,8 @@ export type BookingStatus =
   | "IN_PROGRESS" // Booking started, check-in completed
   | "COMPLETED" // Booking finished successfully
   | "NO_SHOW" // User didn't show up
-  | "CANCELLED";
+  | "CANCELLED"
+  | "EXPIRED"; // Not confirmed by the venue/coach before expiresAt — auto-refunded
 
 // ============================================
 // USER TYPES

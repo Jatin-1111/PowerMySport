@@ -1,5 +1,32 @@
 import { OpeningHours } from "../types/index";
 
+/** UTC+05:30 — every "HH:mm" booking time string is always an IST wall-clock time. */
+export const IST_OFFSET_MINUTES = 5 * 60 + 30;
+
+/**
+ * Combines a UTC-midnight-anchored booking date (parsed from "YYYY-MM-DD",
+ * which the spec always treats as UTC) with an IST wall-clock "HH:mm" time
+ * into the correct UTC instant — via pure UTC millisecond arithmetic, so the
+ * result does NOT depend on the server process's local timezone. Using
+ * Date#setHours here instead would silently shift the result by up to 5.5
+ * hours on any server not running in IST (e.g. a cloud server left at its
+ * UTC default), which is a real, if intermittent, source of "wrong booking
+ * time" bugs.
+ */
+export const combineDateAndTimeIST = (date: Date, time: string): Date => {
+  const [hourPart, minutePart] = time.split(":");
+  const hour = parseInt(hourPart || "0", 10);
+  const minute = parseInt(minutePart || "0", 10);
+
+  const utcMidnight = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+  );
+  const minutesSinceUtcMidnight = hour * 60 + minute - IST_OFFSET_MINUTES;
+  return new Date(utcMidnight + minutesSinceUtcMidnight * 60 * 1000);
+};
+
 /**
  * Validate if a booking time falls within venue opening hours
  */
@@ -19,10 +46,14 @@ export const isWithinOpeningHours = (
     "saturday",
   ] as const;
 
-  const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  // Booking dates are always UTC-midnight-anchored (parsed from a plain
+  // "YYYY-MM-DD" string). Using the UTC day-of-week keeps this correct
+  // regardless of the server process's local timezone — .getDay() would
+  // read the wrong day-of-week on any server not running in IST.
+  const dayOfWeek = bookingDate.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
   const dayName = dayNames[dayOfWeek];
 
-  // Safety check (should never happen as getDay() returns 0-6)
+  // Safety check (should never happen as getUTCDay() returns 0-6)
   if (!dayName) {
     return {
       isValid: false,
@@ -99,5 +130,6 @@ export const getDayName = (date: Date): string => {
     "Friday",
     "Saturday",
   ];
-  return dayNames[date.getDay()] || "Unknown";
+  // See isWithinOpeningHours above — UTC day-of-week for the same reason.
+  return dayNames[date.getUTCDay()] || "Unknown";
 };

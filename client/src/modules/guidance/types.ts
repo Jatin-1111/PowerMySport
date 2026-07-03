@@ -12,6 +12,8 @@ export type GuidanceFormState = {
   sport: string;
   location: string;
   current_pathway_level?: number;
+  /** How long the child has already been playing this sport, in years (0 = brand new) */
+  years_playing?: number;
 };
 
 export type BurnoutRisk = {
@@ -49,7 +51,7 @@ export type JourneyPhase = {
   milestones: string[];
   outcome: string;
   estimatedCost?: string;
-  pathwayLevel?: number; // 1=Grassroots, 2=District, 3=State, 4=National, 5=International
+  pathwayLevel?: number; // 1-5, ascending from entry tier to elite/global tier — actual tier names are sport-specific (see /roadmap)
 };
 
 export type GoalAssessment = {

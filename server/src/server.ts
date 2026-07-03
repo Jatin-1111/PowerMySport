@@ -178,6 +178,11 @@ const startServer = async () => {
           // Start outbox worker to handle message notification delivery and retries
           stopOutboxWorker = startOutboxWorker();
           console.log("📨 Outbox worker started");
+
+          // Weekly Lane-B scrapers + every-2-days Lane-A tournament calendar
+          // extraction. (Was imported but never invoked before — the weekly
+          // scraper cron had silently never been running.)
+          initializeScraperScheduler();
         }
       });
 

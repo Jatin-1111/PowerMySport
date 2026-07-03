@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Landmark,
+  Map,
   Menu,
   MessageSquareWarning,
   Package,
@@ -204,6 +205,16 @@ export default function AdminLayout({
           { href: "/admin/disputes", label: "Disputes", icon: Gavel },
           { href: "/admin/reviews", label: "Reviews", icon: Star },
           { href: "/admin/promo-codes", label: "Promo Codes", icon: Tag },
+        ],
+      },
+      {
+        title: "Content",
+        items: [
+          {
+            href: "/admin/sport-pathways",
+            label: "Sport Pathways",
+            icon: Map,
+          },
         ],
       },
       {

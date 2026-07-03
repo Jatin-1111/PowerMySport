@@ -398,7 +398,7 @@ export default function VenuesTab() {
                       <div className="mt-5 flex items-center justify-between border-t border-slate-50 pt-4">
                         <div>
                           <span className="text-xl font-black text-slate-900">₹{getDisplayPrice(venue)}</span>
-                          <span className="ml-1 text-sm font-medium text-slate-400">/hr</span>
+                          <span className="ml-1 text-sm font-medium text-slate-500">/hr</span>
                         </div>
                         <button
                           type="button"
@@ -435,7 +435,7 @@ export default function VenuesTab() {
                 </Button>
               </div>
             )}
-            <p className="mt-4 text-center text-xs text-slate-400">
+            <p className="mt-4 text-center text-xs text-slate-500">
               Showing {(currentPage - 1) * 20 + 1}–{Math.min(currentPage * 20, totalVenues)} of {totalVenues} venues
             </p>
           </>

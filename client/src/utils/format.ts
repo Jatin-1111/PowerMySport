@@ -10,14 +10,35 @@ export const formatTime = (timeStr: string): string => {
 };
 
 /**
+ * Format a real timestamp's (e.g. createdAt) time-of-day for display, pinned
+ * to IST. Unlike formatTime, this takes an actual Date/ISO timestamp — not a
+ * wall-clock "HH:mm" string — so it needs a real timezone conversion instead
+ * of a string split.
+ */
+export const formatTimestampTime = (date: Date | string): string => {
+  const d = new Date(date);
+  return d.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  });
+};
+
+/**
  * Format date for display
  */
 export const formatDate = (date: Date | string): string => {
   const d = new Date(date);
-  return d.toLocaleDateString("en-US", {
+  // Booking dates are calendar dates for an India-only platform — pin the
+  // timezone so the displayed day never depends on the viewer's/server's
+  // local timezone (a UTC-midnight-stored date could otherwise render as
+  // the previous day for anyone west of UTC).
+  return d.toLocaleDateString("en-IN", {
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: "Asia/Kolkata",
   });
 };
 

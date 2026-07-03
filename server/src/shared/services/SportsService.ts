@@ -1,6 +1,7 @@
 import { Sport, SportDocument } from "../models/Sport";
 import { GoogleGenAI } from "@google/genai";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
+import redis from "../../config/redis";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -141,10 +142,31 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
         addedBy: coachId,
       });
 
-      return await sport.save();
+      const saved = await sport.save();
+
+      // Invalidate the cached /sports listing + search results so the new
+      // sport shows up immediately instead of waiting out the 1-hour TTL.
+      if (isVerified) {
+        await this.invalidateSportsCache();
+      }
+
+      return saved;
     } catch (error) {
       console.error("Error adding custom sport:", error);
       throw new Error("Failed to add custom sport");
+    }
+  }
+
+  /**
+   * Clears cached responses for the /sports listing and search endpoints.
+   * Fails open — a Redis hiccup here should never block sport creation.
+   */
+  private async invalidateSportsCache(): Promise<void> {
+    try {
+      const keys = await redis.keys("cache:/api/sports*");
+      if (keys.length) await redis.del(...keys);
+    } catch (error) {
+      console.warn("Failed to invalidate sports cache:", error);
     }
   }
 
