@@ -181,6 +181,7 @@ export default function AdminLayout({
             label: "Academy Onboarding",
             icon: CheckCircle,
           },
+          { href: "/admin/experts", label: "Experts", icon: ShieldCheck },
         ],
       },
       {

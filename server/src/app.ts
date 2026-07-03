@@ -20,6 +20,7 @@ import pathwayAdminRoutes from "./admin/routes/pathwayAdminRoutes";
 import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
 import statsRoutes from "./admin/routes/statsRoutes";
 import bookingRoutes from "./client/routes/bookingRoutes";
+import expertsRoutes from "./client/routes/expertsRoutes";
 import coachRoutes from "./client/routes/coachRoutes";
 import friendRoutes from "./client/routes/friendRoutes";
 import guidanceRoutes from "./client/routes/guidanceRoutes";
@@ -172,6 +173,7 @@ app.use("/api/roadmap-chat", roadmapChatRoutes);
 app.use("/api/pathway-profile", pathwayProfileRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/wallet", walletRoutes);
+app.use("/api/experts", expertsRoutes);
 // Community Domain
 app.use("/api/community/blog", blogRoutes);
 app.use("/api/community", communityRoutes);
