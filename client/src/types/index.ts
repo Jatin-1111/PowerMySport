@@ -15,6 +15,7 @@ export type UserRole =
   | "VENUE_LISTER"
   | "COACH"
   | "ACADEMY_OWNER"
+  | "EXPERT"
   | "ADMIN";
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =

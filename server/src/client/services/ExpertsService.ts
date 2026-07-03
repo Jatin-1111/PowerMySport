@@ -75,17 +75,17 @@ export interface CreateExpertPayload {
   name: string;
   email: string;
   phone: string;
-  bio?: string;
-  sports?: string[];
-  expertise?: string[];
-  achievements?: string;
+  bio?: string | undefined;
+  sports?: string[] | undefined;
+  expertise?: string[] | undefined;
+  achievements?: string | undefined;
   sessionFee: number;
-  sessionMode?: "ONLINE" | "IN_PERSON" | "BOTH";
-  city?: string;
-  languages?: string[];
-  photoUrl?: string;
-  photoKey?: string;
-  createdBy?: string;
+  sessionMode?: "ONLINE" | "IN_PERSON" | "BOTH" | undefined;
+  city?: string | undefined;
+  languages?: string[] | undefined;
+  photoUrl?: string | undefined;
+  photoKey?: string | undefined;
+  createdBy?: string | undefined;
 }
 
 export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
@@ -126,7 +126,7 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
   return { user, expert, temporaryPassword };
 };
 
-export const listExpertsForAdmin = async (params: { page?: number; limit?: number }) => {
+export const listExpertsForAdmin = async (params: { page?: number | undefined; limit?: number | undefined }) => {
   const page = Math.max(1, params.page || 1);
   const limit = Math.min(100, Math.max(1, params.limit || 20));
   const [experts, total] = await Promise.all([
@@ -141,10 +141,10 @@ export const listExpertsForAdmin = async (params: { page?: number; limit?: numbe
 };
 
 export const listActiveExperts = async (params: {
-  sport?: string;
-  search?: string;
-  page?: number;
-  limit?: number;
+  sport?: string | undefined;
+  search?: string | undefined;
+  page?: number | undefined;
+  limit?: number | undefined;
 }) => {
   const page = Math.max(1, params.page || 1);
   const limit = Math.min(60, Math.max(1, params.limit || 30));

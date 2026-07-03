@@ -6,6 +6,7 @@ export type UserRole =
   | "VENUE_LISTER"
   | "COACH"
   | "ACADEMY_OWNER"
+  | "EXPERT"
   | "ADMIN"
   | "VENUE_ONBOARDING";
 

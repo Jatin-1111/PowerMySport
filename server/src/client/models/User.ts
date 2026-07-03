@@ -100,7 +100,7 @@ const userSchema = new Schema<UserDocument>(
     },
     role: {
       type: String,
-      enum: ["PLAYER", "VENUE_LISTER", "COACH", "ACADEMY_OWNER", "ADMIN"],
+      enum: ["PLAYER", "VENUE_LISTER", "COACH", "ACADEMY_OWNER", "EXPERT", "ADMIN"],
       default: "PLAYER",
     },
     userType: {

@@ -73,6 +73,13 @@ const roleSettingsLinks: Record<
       description: "Review booking activity and handle escalations.",
     },
   ],
+  EXPERT: [
+    {
+      href: "/expert",
+      label: "Expert Sessions",
+      description: "Manage client sessions booked with you.",
+    },
+  ],
 };
 
 export default function SettingsPage() {

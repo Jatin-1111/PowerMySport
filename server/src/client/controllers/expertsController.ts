@@ -85,7 +85,7 @@ export const createExpert = async (req: Request, res: Response): Promise<void> =
       email: user.email,
       password: temporaryPassword,
       loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
-    }).catch((err) => console.error("Failed to send expert credentials email:", err));
+    }).catch((err: unknown) => console.error("Failed to send expert credentials email:", err));
 
     res.status(201).json({ success: true, message: "Expert created and credentials emailed", data: expert });
   } catch (e) {

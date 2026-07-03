@@ -1,5 +1,5 @@
 import axiosInstance from "@/lib/api/axios";
-import { ApiResponse } from "@/types";
+import { ApiResponse, PaginationMetadata } from "@/types";
 
 export type ExpertSessionMode = "ONLINE" | "IN_PERSON";
 
@@ -58,8 +58,11 @@ export interface ExpertReview {
   reviewedAt?: string;
 }
 
-interface Paginated<T> extends ApiResponse<T> {
-  pagination?: { total: number; page: number; totalPages: number };
+interface Paginated<T> {
+  success: boolean;
+  message: string;
+  data?: T;
+  pagination?: PaginationMetadata;
 }
 
 export const expertApi = {

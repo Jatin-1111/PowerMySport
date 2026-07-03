@@ -1,7 +1,7 @@
-﻿// ============================================
+// ============================================
 // USER & AUTH TYPES
 // ============================================
-export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
+export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "EXPERT" | "ADMIN";
 
 // Admin role types
 export type AdminRole =

@@ -78,6 +78,7 @@ export const authMiddleware = async (
       "COACH",
       "VENUE_LISTER",
       "ACADEMY_OWNER",
+      "EXPERT",
       "ADMIN",
     ];
 

@@ -1142,6 +1142,13 @@ interface VenueAdminCredentialsEmailOptions {
   loginUrl: string;
 }
 
+interface ExpertAdminCredentialsEmailOptions {
+  name: string;
+  email: string;
+  password: string;
+  loginUrl: string;
+}
+
 export const sendCoachAdminCredentialsEmail = async (
   options: CoachAdminCredentialsEmailOptions,
 ): Promise<void> => {
@@ -1314,6 +1321,88 @@ export const sendVenueAdminCredentialsEmail = async (
   await sendEmail({
     to: options.email,
     subject: "Your PowerMySport Venue Listing Is Ready",
+    html,
+  });
+};
+
+export const sendExpertAdminCredentialsEmail = async (
+  options: ExpertAdminCredentialsEmailOptions,
+): Promise<void> => {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;">
+    Your expert account is ready. Use the temporary credentials to sign in and access your expert dashboard.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dbe3ee;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#4f46e5 0%,#3b82f6 100%);padding:30px 28px 24px;text-align:center;">
+              <div style="display:inline-block;background:#312e81;border:1px solid #818cf8;color:#e0e7ff;padding:6px 12px;border-radius:9999px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Expert</div>
+              <h1 style="margin:14px 0 0;font-size:30px;line-height:34px;color:#ffffff;font-weight:800;">Expert Account Created</h1>
+              <p style="margin:10px 0 0;font-size:15px;line-height:22px;color:#e0e7ff;">Temporary credentials are ready for first login.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px;background-color:#ffffff;">
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Your expert profile has been created by the admin team. Use the details below to sign in and access your dashboard.</p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e0e7ff;border-radius:12px;background-color:#f5f7ff;margin:0 0 16px;">
+                <tr>
+                  <td style="padding:14px 16px;border-bottom:1px solid #e0e7ff;">
+                    <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#4f46e5;">Email</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.email}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:14px 16px;">
+                    <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#4f46e5;">Temporary Password</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;font-family:monospace;">${options.password}</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${options.loginUrl}" target="_blank" style="display:inline-block;padding:14px 32px;background-color:#4f46e5;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;text-align:center;box-shadow:0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);">Sign In to Dashboard</a>
+                  </td>
+                </tr>
+              </table>
+
+              <hr style="border:0;border-top:1px solid #e2e8f0;margin:28px 0;" />
+
+              <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Security Notice</p>
+              <p style="margin:0;font-size:13px;line-height:20px;color:#64748b;">Please change your password immediately after logging in for the first time. Keep your credentials secure.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#f8fafc;padding:24px 28px;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:12px;line-height:18px;color:#94a3b8;">&copy; ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  await sendEmail({
+    to: options.email,
+    subject: "Your PowerMySport Expert Account Is Ready",
     html,
   });
 };
