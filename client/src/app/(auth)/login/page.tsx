@@ -30,7 +30,8 @@ function LoginContent() {
     if (role === "VENUE_LISTER") return "/venue-lister/inventory";
     if (role === "COACH") return "/coach/verification";
     if (role === "ACADEMY_OWNER") return "/academy";
-    if (role === "EXPERT") return "/expert";
+    if (role === "EXPERT") return "/expert/dashboard";
+    if (role === "ADMIN") return "/admin/users";
     return "/dashboard/my-bookings";
   };
 

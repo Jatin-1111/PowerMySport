@@ -75,7 +75,7 @@ const roleSettingsLinks: Record<
   ],
   EXPERT: [
     {
-      href: "/expert",
+      href: "/expert/dashboard",
       label: "Expert Sessions",
       description: "Manage client sessions booked with you.",
     },

@@ -50,6 +50,10 @@ function RegisterContent() {
         router.push("/coach/verification");
       } else if (user.role === "ACADEMY_OWNER") {
         router.push("/academy");
+      } else if (user.role === "EXPERT") {
+        router.push("/expert/dashboard");
+      } else if (user.role === "ADMIN") {
+        router.push("/admin/users");
       } else {
         router.push("/dashboard/my-bookings");
       }
@@ -134,6 +138,10 @@ function RegisterContent() {
           router.push("/coach/verification");
         } else if (response.data.user.role === "VENUE_LISTER") {
           router.push("/venue-lister/inventory");
+        } else if (response.data.user.role === "EXPERT") {
+          router.push("/expert/dashboard");
+        } else if (response.data.user.role === "ADMIN") {
+          router.push("/admin/users");
         } else {
           router.push("/dashboard/my-bookings");
         }
@@ -200,6 +208,10 @@ function RegisterContent() {
           router.push("/coach/verification");
         } else if (response.data.user.role === "VENUE_LISTER") {
           router.push("/venue-lister/inventory");
+        } else if (response.data.user.role === "EXPERT") {
+          router.push("/expert/dashboard");
+        } else if (response.data.user.role === "ADMIN") {
+          router.push("/admin/users");
         } else {
           router.push("/dashboard/my-bookings");
         }
