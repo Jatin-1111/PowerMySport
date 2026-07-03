@@ -17,6 +17,12 @@ export default function robots(): MetadataRoute.Robots {
           "/coaches",
           "/venues",
           "/academies",
+          // Community app paths
+          "/community",
+          "/community/blog",
+          "/community/q",
+          "/community/discover",
+          "/community/ai-guidance",
         ],
         disallow: [
           "/dashboard/",
@@ -27,10 +33,26 @@ export default function robots(): MetadataRoute.Robots {
           "/onboarding",
           "/login",
           "/register",
+          // Community app paths
+          "/community/chats",
+          "/community/notifications",
+          "/community/following",
+          "/community/reports",
+          "/community/safety",
+          "/community/privacy",
+          "/community/contributors",
+          "/community/members/",
+          "/community/join/",
+          "/community/blog/account",
+          "/community/blog/write",
+          "/community/blog/edit/",
         ],
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    sitemap: [
+      `${siteUrl}/sitemap.xml`,
+      `${siteUrl}/community/sitemap.xml`
+    ],
     host: siteUrl,
   };
 }
