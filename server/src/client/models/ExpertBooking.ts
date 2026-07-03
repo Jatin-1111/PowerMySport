@@ -2,8 +2,10 @@ import mongoose, { Document, Schema } from "mongoose";
 
 /**
  * A paid 1:1 session between a client (User) and an Expert.
- * Flow: PENDING_PAYMENT → (PhonePe) PAID → (client picks time) SCHEDULED →
+ * Flow: PENDING_PAYMENT (slot held) → (PhonePe) SCHEDULED (slot confirmed) →
  * COMPLETED → client can leave a rating/review (stored on this document).
+ * Unpaid holds expire (→ CANCELLED) so the slot frees up; scheduled sessions
+ * auto-complete once their end time passes.
  * (File is named ExpertBooking.ts; the Mongoose model name is "ExpertSession".)
  */
 export type ExpertSessionStatus =
@@ -12,6 +14,9 @@ export type ExpertSessionStatus =
   | "SCHEDULED"
   | "COMPLETED"
   | "CANCELLED";
+
+export type ExpertSessionCanceller = "CLIENT" | "EXPERT" | "ADMIN" | "SYSTEM";
+export type ExpertRefundStatus = "NONE" | "REQUIRED" | "MANUAL_DONE";
 
 export interface ExpertSessionDocument extends Document {
   expertId: mongoose.Types.ObjectId;
@@ -22,13 +27,26 @@ export interface ExpertSessionDocument extends Document {
   merchantOrderId: string;
   phonepeOrderId?: string;
   scheduledAt?: Date;
+  durationMinutes: number;
+  holdExpiresAt?: Date; // while PENDING_PAYMENT, the slot hold expiry
   mode?: "ONLINE" | "IN_PERSON";
   meetingLink?: string;
   clientNote?: string;
+  callbackPayload?: unknown;
+  // Cancellation
+  cancelledAt?: Date;
+  cancelledBy?: ExpertSessionCanceller;
+  cancelReason?: string;
+  refundStatus: ExpertRefundStatus;
+  autoCompleted?: boolean;
+  // Review
   reviewed: boolean;
   rating?: number;
   review?: string;
+  reviewAnonymous?: boolean;
+  reviewHidden?: boolean;
   reviewedAt?: Date;
+  reviewReminderSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,20 +70,38 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
     },
     merchantOrderId: { type: String, required: true, unique: true, index: true },
     phonepeOrderId: { type: String },
-    scheduledAt: { type: Date },
+    scheduledAt: { type: Date, index: true },
+    durationMinutes: { type: Number, default: 60, min: 15, max: 480 },
+    holdExpiresAt: { type: Date },
     mode: { type: String, enum: ["ONLINE", "IN_PERSON"] },
-    meetingLink: { type: String },
+    meetingLink: { type: String, trim: true },
     clientNote: { type: String, trim: true, maxlength: 1000 },
+    callbackPayload: { type: Schema.Types.Mixed },
+    cancelledAt: { type: Date },
+    cancelledBy: { type: String, enum: ["CLIENT", "EXPERT", "ADMIN", "SYSTEM"] },
+    cancelReason: { type: String, trim: true, maxlength: 1000 },
+    refundStatus: {
+      type: String,
+      enum: ["NONE", "REQUIRED", "MANUAL_DONE"],
+      default: "NONE",
+      index: true,
+    },
+    autoCompleted: { type: Boolean, default: false },
     reviewed: { type: Boolean, default: false },
     rating: { type: Number, min: 1, max: 5 },
     review: { type: String, trim: true, maxlength: 2000 },
+    reviewAnonymous: { type: Boolean, default: false },
+    reviewHidden: { type: Boolean, default: false },
     reviewedAt: { type: Date },
+    reviewReminderSentAt: { type: Date },
   },
   { timestamps: true },
 );
 
 expertSessionSchema.index({ expertId: 1, status: 1, createdAt: -1 });
 expertSessionSchema.index({ userId: 1, createdAt: -1 });
+// Supports slot-conflict lookups for a given expert around a time.
+expertSessionSchema.index({ expertId: 1, scheduledAt: 1, status: 1 });
 
 export const ExpertSession =
   mongoose.models.ExpertSession ||

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import {
   Award,
   CalendarCheck,
+  CalendarClock,
   MapPin,
   Star,
   Globe,
@@ -18,6 +19,7 @@ import {
   ShieldCheck,
   ArrowLeft,
 } from "lucide-react";
+import { SlotPicker } from "@/modules/expert/components/SlotPicker";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
@@ -38,6 +40,7 @@ export default function ExpertDetailPage() {
   const [connecting, setConnecting] = useState(false);
   const [mode, setMode] = useState<ExpertSessionMode>("ONLINE");
   const [note, setNote] = useState("");
+  const [slot, setSlot] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -70,9 +73,14 @@ export default function ExpertDetailPage() {
       router.push(`/login?redirect=/experts/${expertId}`);
       return;
     }
+    if (!slot) {
+      toast.error("Please pick a session time first.");
+      return;
+    }
     setConnecting(true);
     try {
       const res = await expertApi.initiateSession(expertId, {
+        scheduledAt: slot,
         mode: expert?.sessionMode === "BOTH" ? mode : undefined,
         clientNote: note.trim() || undefined,
       });
@@ -276,8 +284,19 @@ export default function ExpertDetailPage() {
                 {formatInr(expert.sessionFee)}
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Pay securely, then pick a time that suits you.
+                Pick a time and pay securely to confirm your session.
               </p>
+
+              <div className="mt-4">
+                <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <CalendarClock className="h-3.5 w-3.5" /> Choose a time
+                </label>
+                <SlotPicker
+                  expertId={expertId}
+                  value={slot}
+                  onChange={setSlot}
+                />
+              </div>
 
               {expert.sessionMode === "BOTH" && (
                 <div className="mt-4">
@@ -310,12 +329,14 @@ export default function ExpertDetailPage() {
 
               <button
                 onClick={handleConnect}
-                disabled={connecting}
+                disabled={connecting || !slot}
                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-power-orange px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {connecting
                   ? "Redirecting to payment..."
-                  : `Connect — Pay ${formatInr(expert.sessionFee)}`}
+                  : slot
+                    ? `Book — Pay ${formatInr(expert.sessionFee)}`
+                    : "Select a time to continue"}
               </button>
               <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate-400">
                 <ShieldCheck className="h-3.5 w-3.5" /> Secure payment via PhonePe

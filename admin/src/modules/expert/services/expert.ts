@@ -1,6 +1,12 @@
 import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, PaginationMetadata } from "@/types";
 
+export interface AdminExpertAvailabilityWindow {
+  dayOfWeek: number;
+  start: string;
+  end: string;
+}
+
 export interface AdminExpert {
   id: string;
   _id?: string;
@@ -12,9 +18,15 @@ export interface AdminExpert {
   achievements?: string;
   sessionFee: number;
   sessionMode: "ONLINE" | "IN_PERSON" | "BOTH";
+  sessionDurationMinutes?: number;
+  timezone?: string;
+  hasAvailability?: boolean;
+  weeklyAvailability?: AdminExpertAvailabilityWindow[];
+  blackoutDates?: string[];
   city?: string;
   languages?: string[];
   photoUrl?: string;
+  photoKey?: string;
   isActive: boolean;
   rating: number;
   reviewCount: number;
@@ -31,9 +43,57 @@ export interface CreateExpertPayload {
   achievements?: string;
   sessionFee: number;
   sessionMode?: "ONLINE" | "IN_PERSON" | "BOTH";
+  sessionDurationMinutes?: number;
   city?: string;
   languages?: string[];
   photoUrl?: string;
+  photoKey?: string;
+}
+
+export type UpdateExpertPayload = Partial<
+  Pick<
+    AdminExpert,
+    | "bio"
+    | "achievements"
+    | "sports"
+    | "expertise"
+    | "languages"
+    | "city"
+    | "sessionMode"
+    | "sessionFee"
+    | "sessionDurationMinutes"
+    | "photoUrl"
+    | "photoKey"
+    | "isActive"
+  >
+>;
+
+export interface AdminExpertSession {
+  id: string;
+  _id?: string;
+  amount: number;
+  status: string;
+  paymentStatus: string;
+  scheduledAt?: string;
+  mode?: string;
+  clientName?: string;
+  refundStatus?: "NONE" | "REQUIRED" | "MANUAL_DONE";
+  reviewed?: boolean;
+  rating?: number;
+  review?: string;
+  reviewHidden?: boolean;
+  createdAt: string;
+}
+
+export interface AdminExpertSessionsResult {
+  sessions: AdminExpertSession[];
+  summary: {
+    total: number;
+    completed: number;
+    upcoming: number;
+    grossEarnings: number;
+    refundsPending: number;
+  };
 }
 
 interface Paginated<T> {
@@ -59,6 +119,51 @@ export const expertAdminApi = {
     payload: CreateExpertPayload,
   ): Promise<ApiResponse<AdminExpert>> => {
     const res = await axiosInstance.post(`/experts/admin`, payload);
+    return res.data;
+  },
+
+  update: async (
+    expertId: string,
+    payload: UpdateExpertPayload,
+  ): Promise<ApiResponse<AdminExpert>> => {
+    const res = await axiosInstance.patch(`/experts/admin/${expertId}`, payload);
+    return res.data;
+  },
+
+  setActive: async (
+    expertId: string,
+    isActive: boolean,
+  ): Promise<ApiResponse<AdminExpert>> => {
+    const res = await axiosInstance.patch(`/experts/admin/${expertId}/active`, {
+      isActive,
+    });
+    return res.data;
+  },
+
+  getSessions: async (
+    expertId: string,
+  ): Promise<ApiResponse<AdminExpertSessionsResult>> => {
+    const res = await axiosInstance.get(`/experts/admin/${expertId}/sessions`);
+    return res.data;
+  },
+
+  markRefundDone: async (
+    sessionId: string,
+  ): Promise<ApiResponse<AdminExpertSession>> => {
+    const res = await axiosInstance.post(
+      `/experts/sessions/${sessionId}/refund-done`,
+    );
+    return res.data;
+  },
+
+  hideReview: async (
+    sessionId: string,
+    hidden: boolean,
+  ): Promise<ApiResponse<AdminExpertSession>> => {
+    const res = await axiosInstance.post(
+      `/experts/sessions/${sessionId}/hide-review`,
+      { hidden },
+    );
     return res.data;
   },
 };

@@ -50,10 +50,10 @@ Instead, "shared infrastructure" exists logically at the root and via convention
 5. **Admin**: An admin can log into the `admin` app and see the transaction reflected in `/admin/stats` and `/admin/bookings`.
 
 **Example 3: A player books a 1:1 expert guidance session**
-1. **Client**: Player opens `/experts` (browse all active experts, filter by sport / session mode / fee / rating), opens an expert at `/experts/[expertId]`, and pays the session fee via PhonePe.
-2. **Server**: Confirms payment (`/api/experts/sessions/:id/reconcile`) and marks the `ExpertSession` as `PAID`.
-3. **Client**: Player schedules a time at `/experts/sessions/[sessionId]`; after the session is `COMPLETED`, they leave a star rating + written feedback, which updates the expert's aggregate `rating`/`reviewCount`.
-4. **Expert**: Sees the booking, schedule, and reviews on their own dashboard at `/expert/dashboard`. The player can review all their sessions at `/experts/sessions`.
+1. **Client**: Player opens `/experts` (browse all active experts, filter by sport / session mode / fee / rating), opens an expert at `/experts/[expertId]`, picks an open slot from the expert's published availability, and pays the session fee via PhonePe.
+2. **Server**: Payment settles via the PhonePe webhook (idempotent, `EXP_` merchant-order prefix, reconciled through the Outbox worker) — with a client-side reconcile fallback on redirect — and the `ExpertSession` becomes `SCHEDULED`. Both parties are notified.
+3. **Client**: Player can reschedule to another open slot or cancel at `/experts/sessions/[sessionId]`; once the session is `COMPLETED` (marked by the expert, or auto-completed after its end time), they leave a star rating + written feedback (optionally anonymous), updating the expert's aggregate `rating`/`reviewCount`.
+4. **Expert**: On `/expert/dashboard` the `EXPERT`-role user manages sessions (add meeting link, mark complete, cancel) and edits their profile + weekly availability. **Admin**: manages experts under `/admin/experts` (create, edit, activate/deactivate, per-expert earnings, and review moderation). Unpaid holds expire and review reminders are sent by background jobs. *(Automated expert payouts are not yet implemented.)*
 
 **Example 2: A user is banned by an admin**
 1. **Admin**: Administrator navigates to `/admin/user-safety`, selects a reported user, and issues a "Ban".
@@ -126,5 +126,6 @@ To run the entire platform locally, you will need 4 separate terminal windows.
 - **Type Duplication**: Because there are no shared NPM workspaces, modifying a Mongoose schema in `server` requires manually updating the TypeScript interfaces in `client/src/types`, `admin/src/types`, and `community/src/types`.
 
 ## Last Updated
+2026-07-03 — Completed the Expert Sessions feature end-to-end: availability + slot booking, reliable PhonePe settlement (webhook + reconcile), full session lifecycle (schedule/reschedule/complete/cancel), notifications, expert self-service profile/availability, and admin management (edit, activate, earnings, review moderation). Expert payouts deferred.
 2026-07-03 — Documented the client Expert Sessions journey (browse `/experts` → book & pay `/experts/[expertId]` → schedule & rate `/experts/sessions/[sessionId]`), with the expert-side dashboard at `/expert/dashboard`.
 2026-06-22 — Initial documentation generated.

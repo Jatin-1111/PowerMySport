@@ -4,6 +4,7 @@ import {
   expertApi,
   type ExpertSession,
 } from "@/modules/expert/services/expert";
+import { SlotPicker } from "@/modules/expert/components/SlotPicker";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -11,6 +12,7 @@ import {
   CheckCircle2,
   Clock,
   Star,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -25,11 +27,13 @@ export default function ExpertSessionPage() {
   const [session, setSession] = useState<ExpertSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [scheduledAt, setScheduledAt] = useState("");
   const [saving, setSaving] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [newSlot, setNewSlot] = useState<string | null>(null);
 
   const init = useCallback(async () => {
     try {
@@ -50,24 +54,53 @@ export default function ExpertSessionPage() {
     if (sessionId) init();
   }, [sessionId, init]);
 
-  const handleSchedule = async () => {
-    if (!scheduledAt) {
-      toast.error("Please pick a date and time.");
+  const handleReschedule = async () => {
+    if (!newSlot) {
+      toast.error("Please pick a new time.");
       return;
     }
     setSaving(true);
     try {
-      const res = await expertApi.scheduleSession(sessionId, {
-        scheduledAt: new Date(scheduledAt).toISOString(),
-      });
+      const res = await expertApi.scheduleSession(sessionId, { scheduledAt: newSlot });
       if (res.success && res.data) {
         setSession(res.data);
+        setRescheduleOpen(false);
+        setNewSlot(null);
         toast.success("Session scheduled!");
       } else {
         toast.error(res.message || "Could not schedule.");
       }
-    } catch {
-      toast.error("Could not schedule the session.");
+    } catch (err: unknown) {
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Could not schedule the session.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (
+      !window.confirm(
+        "Cancel this session? If you paid, our team will process a refund manually.",
+      )
+    )
+      return;
+    setSaving(true);
+    try {
+      const res = await expertApi.cancelSession(sessionId);
+      if (res.success && res.data) {
+        setSession(res.data);
+        toast.success("Session cancelled.");
+      } else {
+        toast.error(res.message || "Could not cancel.");
+      }
+    } catch (err: unknown) {
+      toast.error(
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Could not cancel the session.",
+      );
     } finally {
       setSaving(false);
     }
@@ -83,6 +116,7 @@ export default function ExpertSessionPage() {
       const res = await expertApi.reviewSession(sessionId, {
         rating,
         review: reviewText.trim() || undefined,
+        anonymous,
       });
       if (res.success && res.data) {
         setSession(res.data);
@@ -121,6 +155,7 @@ export default function ExpertSessionPage() {
 
   const paid = session.paymentStatus === "COMPLETED";
   const expertName = session.expert?.name || "your expert";
+  const canManage = ["PAID", "SCHEDULED"].includes(session.status);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -133,7 +168,16 @@ export default function ExpertSessionPage() {
         </Link>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          {paid ? (
+          {session.status === "CANCELLED" ? (
+            <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              <XCircle className="h-5 w-5" /> Session cancelled
+              {session.refundStatus === "REQUIRED"
+                ? " · refund pending"
+                : session.refundStatus === "MANUAL_DONE"
+                  ? " · refunded"
+                  : ""}
+            </div>
+          ) : paid ? (
             <div className="mb-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
               <CheckCircle2 className="h-5 w-5" /> Payment received ·{" "}
               {formatInr(session.amount)}
@@ -155,39 +199,20 @@ export default function ExpertSessionPage() {
             Status: {session.status.replace(/_/g, " ")}
           </p>
 
-          {paid && session.status === "PAID" && (
-            <div className="mt-6">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <CalendarClock className="h-4 w-4 text-power-orange" /> Pick a
-                date &amp; time
-              </h2>
-              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-                <input
-                  type="datetime-local"
-                  value={scheduledAt}
-                  onChange={(e) => setScheduledAt(e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-                <button
-                  onClick={handleSchedule}
-                  disabled={saving}
-                  className="rounded-lg bg-power-orange px-6 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
-                >
-                  {saving ? "Saving..." : "Schedule"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {session.status === "SCHEDULED" && session.scheduledAt && (
+          {/* Scheduled time + meeting link */}
+          {session.scheduledAt && session.status !== "CANCELLED" && (
             <div className="mt-6 rounded-xl bg-slate-50 p-4">
               <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <CalendarClock className="h-4 w-4 text-power-orange" /> Scheduled
+                <CalendarClock className="h-4 w-4 text-power-orange" />{" "}
+                {session.status === "COMPLETED" ? "Session time" : "Scheduled"}
               </p>
               <p className="mt-1 text-sm text-slate-700">
-                {new Date(session.scheduledAt).toLocaleString()}
+                {new Date(session.scheduledAt).toLocaleString("en-IN")}
+                {session.mode
+                  ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}`
+                  : ""}
               </p>
-              {session.meetingLink && (
+              {session.meetingLink ? (
                 <a
                   href={session.meetingLink}
                   target="_blank"
@@ -196,10 +221,72 @@ export default function ExpertSessionPage() {
                 >
                   Join meeting link
                 </a>
+              ) : (
+                session.mode === "ONLINE" &&
+                session.status === "SCHEDULED" && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Your expert will add a meeting link before the session.
+                  </p>
+                )
               )}
             </div>
           )}
 
+          {/* Reschedule + cancel */}
+          {canManage && (
+            <div className="mt-6 border-t border-slate-100 pt-6">
+              {!rescheduleOpen ? (
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setRescheduleOpen(true)}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    {session.scheduledAt ? "Reschedule" : "Pick a time"}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    disabled={saving}
+                    className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                  >
+                    Cancel session
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <CalendarClock className="h-4 w-4 text-power-orange" /> Pick a
+                    new time
+                  </h2>
+                  <SlotPicker
+                    expertId={session.expertId}
+                    value={newSlot}
+                    onChange={setNewSlot}
+                    className="mt-3"
+                  />
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={handleReschedule}
+                      disabled={saving || !newSlot}
+                      className="rounded-lg bg-power-orange px-6 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+                    >
+                      {saving ? "Saving..." : "Confirm time"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRescheduleOpen(false);
+                        setNewSlot(null);
+                      }}
+                      className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Review */}
           {session.status === "COMPLETED" && !session.reviewed && (
             <div className="mt-6 border-t border-slate-100 pt-6">
               <h2 className="text-sm font-semibold text-slate-900">
@@ -233,6 +320,15 @@ export default function ExpertSessionPage() {
                 placeholder="Share how the session went (optional)"
                 className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
+              <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={anonymous}
+                  onChange={(e) => setAnonymous(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-power-orange focus:ring-power-orange"
+                />
+                Post anonymously
+              </label>
               <button
                 onClick={handleReview}
                 disabled={saving}

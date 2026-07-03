@@ -1,5 +1,6 @@
 import { reconcileBookingPaymentFromWebhookPayload } from "../../client/services/BookingService";
 import { reconcileCoachSubscriptionPaymentFromWebhookPayload } from "../../client/services/CoachSubscriptionPaymentService";
+import { reconcileExpertSessionPaymentFromWebhookPayload } from "../../client/services/ExpertsService";
 import { NotificationService } from "../../client/services/NotificationService";
 import { reconcileEcommerceOrderFromWebhookPayload } from "../../shop/services/EcommerceService";
 import { sendEmail } from "../../utils/email";
@@ -96,6 +97,10 @@ export const startOutboxWorker = () => {
               // Also try e-commerce order reconciliation — the webhook may be
               // for a shop order (merchantOrderId prefix "O_").
               await reconcileEcommerceOrderFromWebhookPayload(event.payload);
+
+              // Also try expert session reconciliation — the webhook may be
+              // for an expert session (merchantOrderId prefix "EXP_").
+              await reconcileExpertSessionPaymentFromWebhookPayload(event.payload);
 
               event.status = "DONE";
               event.processedAt = new Date();

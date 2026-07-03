@@ -7,28 +7,17 @@ import {
 } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
-import {
-  DetailDrawer,
-  DetailRow,
-  DetailSection,
-} from "@/modules/shared/ui/DetailDrawer";
+import { DetailDrawer } from "@/modules/shared/ui/DetailDrawer";
 import {
   expertAdminApi,
   type AdminExpert,
 } from "@/modules/expert/services/expert";
+import { ExpertAdminPanel } from "./ExpertAdminPanel";
 import { Plus, Star } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
-const formatDate = (v?: string) =>
-  v
-    ? new Date(v).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "—";
 
 export default function AdminExpertsPage() {
   const [experts, setExperts] = useState<AdminExpert[]>([]);
@@ -54,6 +43,15 @@ export default function AdminExpertsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const applyUpdate = useCallback((updated: AdminExpert) => {
+    setExperts((list) =>
+      list.map((e) => ((e.id || e._id) === (updated.id || updated._id) ? { ...e, ...updated } : e)),
+    );
+    setSelected((prev) =>
+      prev && (prev.id || prev._id) === (updated.id || updated._id) ? { ...prev, ...updated } : prev,
+    );
+  }, []);
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -193,63 +191,7 @@ export default function AdminExpertsPage() {
         }
       >
         {selected && (
-          <>
-            <DetailSection title="Overview">
-              <DetailRow label="Session fee" value={formatInr(selected.sessionFee)} />
-              <DetailRow
-                label="Mode"
-                value={
-                  selected.sessionMode === "BOTH"
-                    ? "Online / In-person"
-                    : selected.sessionMode === "ONLINE"
-                      ? "Online"
-                      : "In-person"
-                }
-              />
-              <DetailRow
-                label="Rating"
-                value={`${selected.rating.toFixed(1)} (${selected.reviewCount} reviews)`}
-              />
-              <DetailRow label="City" value={selected.city || "—"} />
-              <DetailRow label="Joined" value={formatDate(selected.createdAt)} />
-            </DetailSection>
-
-            <DetailSection title="Sports & expertise">
-              <div className="flex flex-wrap gap-1.5">
-                {(selected.sports || []).map((s) => (
-                  <span
-                    key={s}
-                    className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-medium text-power-orange"
-                  >
-                    {s}
-                  </span>
-                ))}
-                {(selected.expertise || []).map((s) => (
-                  <span
-                    key={s}
-                    className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            </DetailSection>
-
-            {selected.bio && (
-              <DetailSection title="Bio">
-                <p className="text-sm leading-relaxed text-slate-700">
-                  {selected.bio}
-                </p>
-              </DetailSection>
-            )}
-            {selected.achievements && (
-              <DetailSection title="Achievements">
-                <p className="text-sm leading-relaxed text-slate-700">
-                  {selected.achievements}
-                </p>
-              </DetailSection>
-            )}
-          </>
+          <ExpertAdminPanel expert={selected} onUpdated={applyUpdate} />
         )}
       </DetailDrawer>
     </div>

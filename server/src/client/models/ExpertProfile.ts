@@ -2,7 +2,8 @@ import mongoose, { Document, Schema } from "mongoose";
 
 /**
  * Expert = an admin-vetted expert player who offers paid 1:1 sessions.
- * Profiles are created ONLY via the admin panel (experts cannot self-register).
+ * Profiles are created ONLY via the admin panel (experts cannot self-register),
+ * but the expert can subsequently edit their own profile + availability.
  * The linked User (role EXPERT) logs into the client app with emailed credentials.
  * (File is named ExpertProfile.ts; the Mongoose model name is "Expert".)
  */
@@ -18,6 +19,16 @@ export interface ExpertPayoutMethod {
   addedAt?: Date;
 }
 
+/**
+ * A recurring weekly availability window. `dayOfWeek` is 0 (Sunday) – 6 (Saturday).
+ * `start`/`end` are local "HH:mm" 24h times interpreted in the expert's `timezone`.
+ */
+export interface ExpertAvailabilityWindow {
+  dayOfWeek: number; // 0-6
+  start: string; // "HH:mm"
+  end: string; // "HH:mm"
+}
+
 export interface ExpertDocument extends Document {
   userId: mongoose.Types.ObjectId;
   bio: string;
@@ -26,6 +37,10 @@ export interface ExpertDocument extends Document {
   achievements?: string;
   sessionFee: number;
   sessionMode: "ONLINE" | "IN_PERSON" | "BOTH";
+  sessionDurationMinutes: number;
+  timezone: string;
+  weeklyAvailability: ExpertAvailabilityWindow[];
+  blackoutDates: string[]; // "YYYY-MM-DD" the expert is unavailable
   city?: string;
   languages?: string[];
   photoUrl?: string;
@@ -39,6 +54,15 @@ export interface ExpertDocument extends Document {
   updatedAt: Date;
 }
 
+const availabilityWindowSchema = new Schema<ExpertAvailabilityWindow>(
+  {
+    dayOfWeek: { type: Number, required: true, min: 0, max: 6 },
+    start: { type: String, required: true }, // "HH:mm"
+    end: { type: String, required: true }, // "HH:mm"
+  },
+  { _id: false },
+);
+
 const expertSchema = new Schema<ExpertDocument>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
@@ -48,6 +72,10 @@ const expertSchema = new Schema<ExpertDocument>(
     achievements: { type: String, trim: true },
     sessionFee: { type: Number, required: true, min: 0 },
     sessionMode: { type: String, enum: ["ONLINE", "IN_PERSON", "BOTH"], default: "ONLINE" },
+    sessionDurationMinutes: { type: Number, default: 60, min: 15, max: 480 },
+    timezone: { type: String, default: "Asia/Kolkata" },
+    weeklyAvailability: { type: [availabilityWindowSchema], default: [] },
+    blackoutDates: { type: [String], default: [] },
     city: { type: String, trim: true, index: true },
     languages: { type: [String], default: [] },
     photoUrl: { type: String },
@@ -77,6 +105,8 @@ const expertSchema = new Schema<ExpertDocument>(
 );
 
 expertSchema.index({ isActive: 1, rating: -1 });
+// Text index to support server-side search across name-adjacent fields.
+expertSchema.index({ bio: "text", expertise: "text", sports: "text", city: "text" });
 
 export const Expert =
   mongoose.models.Expert ||

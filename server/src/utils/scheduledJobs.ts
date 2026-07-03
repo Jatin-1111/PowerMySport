@@ -150,6 +150,23 @@ export const runScheduledCleanup = async (): Promise<void> => {
 
     await processWaitlistNotifications();
 
+    // ── Expert sessions ──────────────────────────────────────────────────────
+    try {
+      const {
+        expireUnpaidExpertHolds,
+        autoCompleteExpertSessions,
+        sendExpertReviewReminders,
+      } = await import("../client/services/ExpertsService");
+      const expiredHolds = await expireUnpaidExpertHolds();
+      if (expiredHolds > 0) console.log(`✅ Expired ${expiredHolds} unpaid expert hold(s)`);
+      const autoCompleted = await autoCompleteExpertSessions();
+      if (autoCompleted > 0) console.log(`✅ Auto-completed ${autoCompleted} expert session(s)`);
+      const reminded = await sendExpertReviewReminders();
+      if (reminded > 0) console.log(`✅ Sent ${reminded} expert review reminder(s)`);
+    } catch (expertErr) {
+      console.error("❌ Expert session maintenance failed:", expertErr);
+    }
+
     console.log("✅ Scheduled cleanup completed successfully");
   } catch (error) {
     console.error("❌ Error during scheduled cleanup:", error);

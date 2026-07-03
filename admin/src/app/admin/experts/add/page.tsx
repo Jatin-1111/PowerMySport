@@ -2,6 +2,7 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { expertAdminApi } from "@/modules/expert/services/expert";
+import CoachPhotoUpload from "@/modules/admin/components/CoachPhotoUpload";
 import { toast } from "@/lib/toast";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -31,6 +32,7 @@ export default function AddExpertPage() {
     achievements: "",
     photoUrl: "",
   });
+  const [photoKey, setPhotoKey] = useState<string | null>(null);
 
   const set = (k: keyof typeof form, v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
@@ -60,6 +62,7 @@ export default function AddExpertPage() {
         bio: form.bio.trim() || undefined,
         achievements: form.achievements.trim() || undefined,
         photoUrl: form.photoUrl.trim() || undefined,
+        photoKey: photoKey || undefined,
       });
       if (res.success) {
         toast.success("Expert created — login credentials emailed.");
@@ -144,8 +147,14 @@ export default function AddExpertPage() {
             <input className={field} value={form.languages} onChange={(e) => set("languages", e.target.value)} placeholder="English, Hindi" />
           </div>
           <div>
-            <label className={label}>Photo URL</label>
-            <input className={field} value={form.photoUrl} onChange={(e) => set("photoUrl", e.target.value)} />
+            <label className={label}>Profile photo</label>
+            <CoachPhotoUpload
+              currentPhotoUrl={form.photoUrl || undefined}
+              onPhotoReady={(url, key) => {
+                set("photoUrl", url || "");
+                setPhotoKey(key);
+              }}
+            />
           </div>
         </div>
 

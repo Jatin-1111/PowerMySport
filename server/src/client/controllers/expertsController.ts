@@ -5,14 +5,24 @@ import {
   listActiveExperts,
   getExpertById,
   getExpertReviews,
+  getExpertOpenSlots,
   initiateExpertSession,
   reconcileExpertSession,
   scheduleExpertSession,
   completeExpertSession,
   reviewExpertSession,
+  cancelExpertSession,
+  setSessionMeetingLink,
   getExpertSessionForUser,
   listUserExpertSessions,
   listExpertOwnSessions,
+  getMyExpertProfile,
+  updateMyExpertProfile,
+  updateExpertByAdmin,
+  setExpertActive,
+  getExpertSessionsForAdmin,
+  markSessionRefundDone,
+  setReviewHidden,
 } from "../services/ExpertsService";
 import { sendExpertAdminCredentialsEmail } from "../../utils/email";
 
@@ -114,9 +124,14 @@ export const initiateSession = async (req: Request, res: Response): Promise<void
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
+    if (!req.body?.scheduledAt) {
+      res.status(400).json({ success: false, message: "scheduledAt is required" });
+      return;
+    }
     const data = await initiateExpertSession({
       expertId: req.params.expertId as string,
       userId,
+      scheduledAt: String(req.body.scheduledAt),
       clientNote: req.body?.clientNote,
       mode: req.body?.mode,
     });
@@ -196,6 +211,7 @@ export const reviewSession = async (req: Request, res: Response): Promise<void> 
       userId,
       rating: Number(req.body?.rating),
       review: req.body?.review,
+      anonymous: Boolean(req.body?.anonymous),
     });
     res.json({ success: true, message: "Review submitted", data: session });
   } catch (e) {
@@ -222,5 +238,131 @@ export const expertSessions = async (req: Request, res: Response): Promise<void>
     res.json({ success: true, message: "Sessions retrieved", data });
   } catch (e) {
     fail(res, e, 500);
+  }
+};
+
+export const getAvailability = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const data = await getExpertOpenSlots(
+      req.params.expertId as string,
+      typeof req.query.from === "string" ? req.query.from : undefined,
+      typeof req.query.to === "string" ? req.query.to : undefined,
+    );
+    res.json({ success: true, message: "Availability retrieved", data });
+  } catch (e) {
+    fail(res, e, 404);
+  }
+};
+
+export const cancelSession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const session = await cancelExpertSession({
+      sessionId: req.params.sessionId as string,
+      actorUserId: userId,
+      role: req.user?.role,
+      reason: req.body?.reason,
+    });
+    res.json({ success: true, message: "Session cancelled", data: session });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+export const updateMeetingLink = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    if (typeof req.body?.meetingLink !== "string") {
+      res.status(400).json({ success: false, message: "meetingLink is required" });
+      return;
+    }
+    const session = await setSessionMeetingLink({
+      sessionId: req.params.sessionId as string,
+      actorUserId: userId,
+      isAdmin: req.user?.role === "ADMIN",
+      meetingLink: req.body.meetingLink,
+    });
+    res.json({ success: true, message: "Meeting link updated", data: session });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+// ── Expert self-service ──────────────────────────────────────────────────────
+
+export const getMyProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const data = await getMyExpertProfile(userId);
+    res.json({ success: true, message: "Profile retrieved", data });
+  } catch (e) {
+    fail(res, e, 404);
+  }
+};
+
+export const updateMyProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const data = await updateMyExpertProfile(userId, req.body || {});
+    res.json({ success: true, message: "Profile updated", data });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+// ── Admin management ─────────────────────────────────────────────────────────
+
+export const updateExpertAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const data = await updateExpertByAdmin(req.params.expertId as string, req.body || {});
+    res.json({ success: true, message: "Expert updated", data });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+export const setExpertActiveAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const data = await setExpertActive(
+      req.params.expertId as string,
+      Boolean(req.body?.isActive),
+    );
+    res.json({ success: true, message: "Expert status updated", data });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+export const expertSessionsAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const data = await getExpertSessionsForAdmin(req.params.expertId as string);
+    res.json({ success: true, message: "Sessions retrieved", data });
+  } catch (e) {
+    fail(res, e, 500);
+  }
+};
+
+export const refundDoneAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const session = await markSessionRefundDone(req.params.sessionId as string);
+    res.json({ success: true, message: "Refund marked as done", data: session });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+export const hideReviewAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const session = await setReviewHidden(
+      req.params.sessionId as string,
+      req.body?.hidden !== false,
+    );
+    res.json({ success: true, message: "Review visibility updated", data: session });
+  } catch (e) {
+    fail(res, e);
   }
 };
