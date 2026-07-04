@@ -49,7 +49,7 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
       // Only release payee entries (VENUE_LISTER / COACH).
       // The PLAYER entry is already marked PAID by updatePaymentStatus().
       booking.payments = booking.payments.map((payment: any) => {
-        if (payment.status === "PENDING" && payment.userType !== "PLAYER") {
+        if (payment.status === "PENDING" && payment.userType !== "Player") {
           payment.status = "PAID";
           payment.paidAt = now;
         }
@@ -216,16 +216,7 @@ export const initializeScheduledJobs = (): void => {
   );
 
   // ── Pathway pre-warm (once at startup) ───────────────────────────────────
-  // Runs 15s after startup so the DB connection is ready.
-  // Only generates pathways for sports that don't have a cached entry yet.
-  const preWarmHandle = setTimeout(async () => {
-    try {
-      await pathwayService.preWarmPopularSports();
-    } catch (error) {
-      console.error("❌ Pathway pre-warm failed:", error);
-    }
-  }, 15_000);
-  preWarmHandle.unref();
+  // Pre-warming of 'any' locality generic sports is disabled.
 
   // ── Pathway stale-refresh (periodic) ─────────────────────────────────────
   // Configurable via PATHWAY_REFRESH_INTERVAL_HOURS (default: 24h).

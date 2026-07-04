@@ -28,7 +28,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 interface PayoutMethodManagerProps {
   /** Who owns this payout method UI */
-  ownerType: "COACH" | "VENUE";
+  ownerType: "Coach" | "VENUE";
   /** Load the existing payout method from backend */
   onLoad: () => Promise<IPayoutMethod | null>;
   /** Save (upsert) the payout method */
@@ -286,7 +286,7 @@ export function PayoutMethodManager({
     );
   }
 
-  const ownerLabel = ownerType === "COACH" ? "coach" : "venue";
+  const ownerLabel = ownerType === "Coach" ? "coach" : "venue";
 
   return (
     <div className="space-y-6">

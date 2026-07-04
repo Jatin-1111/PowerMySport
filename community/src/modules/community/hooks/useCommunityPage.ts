@@ -519,7 +519,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
       const session = await communityService.ensureSession();
       if (!isCommunityEligibleRole(session.role)) {
         toast.error(
-          "Community chat is available only for player and coach accounts",
+          "Community chat is available only for player, coach, and parent accounts",
         );
         redirectToMainLogin();
         return;

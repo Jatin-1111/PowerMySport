@@ -108,7 +108,7 @@ const createTicketFromRequest = async (
         {
           authorType: options.requireAuth
             ? ("USER" as const)
-            : ("ADMIN" as const),
+            : ("Admin" as const),
           authorId: options.authorId
             ? new mongoose.Types.ObjectId(options.authorId)
             : new mongoose.Types.ObjectId(),
@@ -341,7 +341,7 @@ export const updateSupportTicketByAdmin = async (
           ? {
               $push: {
                 notes: {
-                  authorType: "ADMIN",
+                  authorType: "Admin",
                   authorId: new mongoose.Types.ObjectId(req.user.id),
                   message: note.trim(),
                   createdAt: new Date(),

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { pathwayService } from "../services/PathwayService";
 import { AthleteStory } from "../models/AthleteStory";
+import { INDIAN_STATES_AND_UTS } from "../utils/states";
 
 /**
  * GET /api/pathways?sport=cricket&age=12&city=Mumbai
@@ -12,7 +13,7 @@ export const getPathway = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { sport, age, city } = req.query;
+    const { sport, state } = req.query;
 
     if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
       res.status(400).json({
@@ -22,22 +23,17 @@ export const getPathway = async (
       return;
     }
 
-    const rawAge = age && typeof age === "string" ? parseInt(age, 10) : NaN;
-    const childAge =
-      !isNaN(rawAge) && rawAge >= 4 && rawAge <= 25 ? rawAge : undefined;
-    const rawCity = city && typeof city === "string" ? city.trim() : "";
-    // Strip everything except letters, spaces, hyphens, commas and dots.
-    // Caps at 80 characters to prevent oversized injections.
-    const childCity =
-      rawCity
-        .replace(/[^a-zA-Z\u0900-\u097F\s,.\-]/g, "")
-        .slice(0, 80)
-        .trim() || undefined;
+    if (!state || typeof state !== "string" || !INDIAN_STATES_AND_UTS.includes(state as any)) {
+      res.status(400).json({
+        success: false,
+        message: "Please provide a valid Indian state or UT.",
+      });
+      return;
+    }
 
     const result = await pathwayService.getOrGeneratePathway(
       sport.trim(),
-      childAge,
-      childCity,
+      state,
     );
 
     if (result.source === "not_a_sport") {
@@ -47,6 +43,8 @@ export const getPathway = async (
       });
       return;
     }
+
+
 
     res.json({
       success: true,
@@ -76,18 +74,16 @@ export const getPathwayEntities = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { sport, city } = req.query;
+    const { sport, state } = req.query;
     if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
       res.status(400).json({ success: false, message: "Provide a sport name." });
       return;
     }
-    const rawCity = city && typeof city === "string" ? city.trim() : "";
-    const childCity = rawCity
-      .replace(/[^a-zA-Zऀ-ॿ\s,.\-]/g, "")
-      .slice(0, 80)
-      .trim() || undefined;
-
-    const entities = await pathwayService.getEntities(sport.trim(), childCity);
+    if (!state || typeof state !== "string" || !INDIAN_STATES_AND_UTS.includes(state as any)) {
+      res.status(400).json({ success: false, message: "Provide a valid Indian state or UT." });
+      return;
+    }
+    const entities = await pathwayService.getEntities(sport.trim(), state);
     res.json({ success: true, data: entities });
   } catch (error) {
     console.error("Error fetching pathway entities:", error);

@@ -18,10 +18,11 @@ export interface PathwayLevel {
   };
   benchmarks?: {
     description: string;
-    metrics: Array<{ metric: string; target: string }>;
+    metrics: Array<{ metric: string; target: string; checkpointMonth?: number }>;
   };
   trialInfo?: {
     typicalMonths: string;
+    precisionLevel?: "exact" | "approximate";
     registrationProcess: string;
     eligibilityAge: string;
     selectionCriteria: string[];
@@ -50,6 +51,8 @@ export interface PathwayLevel {
     eligibility: string;
     benefit: string;
     howToApply: string;
+    sourceURL?: string;
+    verifiedAsOf?: Date;
   }>;
   academicIntegration?: string;
   proactiveDocuments?: string[];
@@ -105,7 +108,7 @@ export interface SportPathwayDocument extends Document {
   sportSlug: string;
   /** Display name, e.g. "Cricket" */
   sportName: string;
-  /** Composite cache key: sportSlug_age_city e.g. "cricket_12_ludhiana" */
+  /** Composite cache key: sportSlug_state e.g. "cricket_punjab" */
   cacheKey?: string;
   /** Category the AI determined */
   category?: string;
@@ -118,6 +121,9 @@ export interface SportPathwayDocument extends Document {
   universities: University[];
   equipment: Equipment[];
   careers: Career[];
+  tournamentsVerifiedEmpty?: boolean;
+  scholarshipsVerifiedEmpty?: boolean;
+  universitiesVerifiedEmpty?: boolean;
   /** false = AI-generated, pending admin review. true = an admin has reviewed/edited this against expert input */
   isVerified: boolean;
   /** When an admin last marked this pathway verified (cleared when unverified) */
@@ -126,10 +132,14 @@ export interface SportPathwayDocument extends Document {
   verifiedBy?: mongoose.Types.ObjectId;
   /** Number of times this pathway has been looked up */
   lookupCount: number;
-  /** Timestamp of last Gemini-powered refresh (distinct from updatedAt which fires on lookupCount increments) */
-  lastRefreshedAt?: Date;
-  /** Whether a background refresh is currently in-progress (prevents duplicate refresh jobs) */
-  refreshInProgress?: boolean;
+  /** Timestamp of last Gemini-powered refresh for slow-changing content */
+  contentRefreshedAt?: Date;
+  /** Timestamp of last Gemini-powered refresh for fast-changing financial data */
+  financialDataRefreshedAt?: Date;
+  /** Whether a background refresh is currently in-progress for content */
+  contentRefreshInProgress?: boolean;
+  /** Whether a background refresh is currently in-progress for financial data */
+  financialRefreshInProgress?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -152,10 +162,11 @@ const pathwayLevelSchema = new Schema<PathwayLevel>(
     },
     benchmarks: {
       description: { type: String },
-      metrics: [{ metric: { type: String }, target: { type: String }, _id: false }],
+      metrics: [{ metric: { type: String }, target: { type: String }, checkpointMonth: { type: Number }, _id: false }],
     },
     trialInfo: {
       typicalMonths: { type: String },
+      precisionLevel: { type: String, enum: ["exact", "approximate"] },
       registrationProcess: { type: String },
       eligibilityAge: { type: String },
       selectionCriteria: [{ type: String }],
@@ -185,6 +196,8 @@ const pathwayLevelSchema = new Schema<PathwayLevel>(
         eligibility: { type: String },
         benefit: { type: String },
         howToApply: { type: String },
+        sourceURL: { type: String },
+        verifiedAsOf: { type: Date },
         _id: false,
       },
     ],
@@ -265,7 +278,7 @@ const sportPathwaySchema = new Schema<SportPathwayDocument>(
       index: true,
     },
     sportName: { type: String, required: true, trim: true },
-    // Composite cache key: sportSlug_age_city — unique per age+city combo
+    // Composite cache key: sportSlug_state — unique per state combo
     cacheKey: { type: String, index: true, sparse: true },
     category: { type: String, default: "Other" },
     overview: { type: String, default: "" },
@@ -275,12 +288,17 @@ const sportPathwaySchema = new Schema<SportPathwayDocument>(
     universities: { type: [universitySchema], default: [] },
     equipment: { type: [equipmentSchema], default: [] },
     careers: { type: [careerSchema], default: [] },
+    tournamentsVerifiedEmpty: { type: Boolean, default: false },
+    scholarshipsVerifiedEmpty: { type: Boolean, default: false },
+    universitiesVerifiedEmpty: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     verifiedAt: { type: Date, default: null },
     verifiedBy: { type: Schema.Types.ObjectId, ref: "Admin", default: null },
     lookupCount: { type: Number, default: 1 },
-    lastRefreshedAt: { type: Date, default: null },
-    refreshInProgress: { type: Boolean, default: false },
+    contentRefreshedAt: { type: Date, default: null },
+    financialDataRefreshedAt: { type: Date, default: null },
+    contentRefreshInProgress: { type: Boolean, default: false },
+    financialRefreshInProgress: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

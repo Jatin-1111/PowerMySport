@@ -71,7 +71,7 @@ export const getVenueListerAnalytics = async (
   paidBookings.forEach((booking) => {
     const venuePayment = booking.payments.find(
       (payment: BookingPayment) =>
-        payment.userType === "VENUE_LISTER" && payment.status === "PAID",
+        payment.userType === "VenueLister" && payment.status === "PAID",
     );
     if (venuePayment) {
       totalRevenue += venuePayment.amount;
@@ -87,7 +87,7 @@ export const getVenueListerAnalytics = async (
     const revenue = venueBookings.reduce((sum, booking) => {
       const payment = booking.payments.find(
         (p: BookingPayment) =>
-          p.userType === "VENUE_LISTER" && p.status === "PAID",
+          p.userType === "VenueLister" && p.status === "PAID",
       );
       return sum + (payment?.amount || 0);
     }, 0);
@@ -107,7 +107,7 @@ export const getVenueListerAnalytics = async (
     const monthKey = booking.date.toISOString().slice(0, 7); // YYYY-MM
     const venuePayment = booking.payments.find(
       (p: BookingPayment) =>
-        p.userType === "VENUE_LISTER" && p.status === "PAID",
+        p.userType === "VenueLister" && p.status === "PAID",
     );
 
     if (!monthlyData.has(monthKey)) {
@@ -180,7 +180,7 @@ export const getCoachAnalytics = async (
   const paidBookings = [...completedBookings, ...noShowBookings];
   paidBookings.forEach((booking) => {
     const coachPayment = booking.payments.find(
-      (p: BookingPayment) => p.userType === "COACH" && p.status === "PAID",
+      (p: BookingPayment) => p.userType === "Coach" && p.status === "PAID",
     );
     if (coachPayment) {
       totalRevenue += coachPayment.amount;
@@ -193,7 +193,7 @@ export const getCoachAnalytics = async (
   paidBookings.forEach((booking) => {
     const monthKey = booking.date.toISOString().slice(0, 7); // YYYY-MM
     const coachPayment = booking.payments.find(
-      (p: BookingPayment) => p.userType === "COACH" && p.status === "PAID",
+      (p: BookingPayment) => p.userType === "Coach" && p.status === "PAID",
     );
 
     if (!monthlyData.has(monthKey)) {

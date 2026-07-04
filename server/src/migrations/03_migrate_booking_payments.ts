@@ -59,7 +59,7 @@ const migrateBookingPayments = async () => {
         (booking as any).payments = [
           {
             userId: venue.ownerId,
-            userType: "VENUE_LISTER",
+            userType: "VenueLister",
             amount: booking.totalAmount,
             status: newPaymentStatus,
             paidAt: newPaymentStatus === "PAID" ? booking.createdAt : undefined,

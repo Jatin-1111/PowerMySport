@@ -90,7 +90,7 @@ const cases: Case[] = [
     category: "Welcome",
     expectedTo: to("player@example.com"),
     run: () =>
-      email.sendWelcomeEmail({ name: "Asha", email: to("player@example.com"), role: "PLAYER" }),
+      email.sendWelcomeEmail({ name: "Asha", email: to("player@example.com"), role: "Player" }),
     expect: ["Asha"],
   },
   {
@@ -107,7 +107,7 @@ const cases: Case[] = [
       email.sendBookingLifecycleEmail({
         email: to("lifecycle@example.com"), name: "Asha", venueName: "Turf Arena", sport: "Football",
         date: D, startTime: "18:00", endTime: "19:00", totalAmount: 500,
-        state: "PENDING_CONFIRMATION", recipientRole: "PLAYER",
+        state: "PENDING_CONFIRMATION", recipientRole: "Player",
       }),
     expect: ["Turf Arena", "Football"],
   },
@@ -118,7 +118,7 @@ const cases: Case[] = [
       email.sendBookingLifecycleEmail({
         email: to("lifecycle@example.com"), name: "Asha", venueName: "Turf Arena", sport: "Football",
         date: D, startTime: "18:00", endTime: "19:00", totalAmount: 500,
-        state: "CONFIRMED", recipientRole: "PLAYER", checkInCode: "PMS-7788",
+        state: "CONFIRMED", recipientRole: "Player", checkInCode: "PMS-7788",
       }),
     expect: ["PMS-7788"],
   },
@@ -253,7 +253,7 @@ const cases: Case[] = [
     category: "Payout processed",
     expectedTo: to("payout@example.com"),
     run: () =>
-      email.sendPayoutProcessedEmail({ name: "Coach K", email: to("payout@example.com"), amount: 4500, bookingCount: 3, role: "COACH" }),
+      email.sendPayoutProcessedEmail({ name: "Coach K", email: to("payout@example.com"), amount: 4500, bookingCount: 3, role: "Coach" }),
     expect: ["4,500"],
   },
   {
@@ -281,28 +281,28 @@ const cases: Case[] = [
     category: "Coach subscription purchased (player)",
     expectedTo: to("subplayer@example.com"),
     run: () =>
-      email.sendCoachSubscriptionPurchasedEmail({ name: "Asha", email: to("subplayer@example.com"), packageName: "Pro Monthly", price: 999, counterpartName: "Coach K", recipientRole: "PLAYER" }),
+      email.sendCoachSubscriptionPurchasedEmail({ name: "Asha", email: to("subplayer@example.com"), packageName: "Pro Monthly", price: 999, counterpartName: "Coach K", recipientRole: "Player" }),
     expect: ["Pro Monthly", "Coach K"],
   },
   {
     category: "Coach subscription purchased (coach)",
     expectedTo: to("subcoach@example.com"),
     run: () =>
-      email.sendCoachSubscriptionPurchasedEmail({ name: "Coach K", email: to("subcoach@example.com"), packageName: "Pro Monthly", price: 999, counterpartName: "Asha", recipientRole: "COACH" }),
+      email.sendCoachSubscriptionPurchasedEmail({ name: "Coach K", email: to("subcoach@example.com"), packageName: "Pro Monthly", price: 999, counterpartName: "Asha", recipientRole: "Coach" }),
     expect: ["Pro Monthly"],
   },
   {
     category: "Coach subscription cancelled",
     expectedTo: to("subcancel@example.com"),
     run: () =>
-      email.sendCoachSubscriptionCancelledEmail({ name: "Asha", email: to("subcancel@example.com"), packageName: "Pro Monthly", counterpartName: "Coach K", recipientRole: "PLAYER" }),
+      email.sendCoachSubscriptionCancelledEmail({ name: "Asha", email: to("subcancel@example.com"), packageName: "Pro Monthly", counterpartName: "Coach K", recipientRole: "Player" }),
     expect: ["Pro Monthly"],
   },
   {
     category: "Review received",
     expectedTo: to("review@example.com"),
     run: () =>
-      email.sendReviewReceivedEmail({ name: "Coach K", email: to("review@example.com"), rating: 5, review: "Excellent session!", reviewerName: "Asha", targetType: "COACH" }),
+      email.sendReviewReceivedEmail({ name: "Coach K", email: to("review@example.com"), rating: 5, review: "Excellent session!", reviewerName: "Asha", targetType: "Coach" }),
     expect: ["Excellent session!"],
   },
   {

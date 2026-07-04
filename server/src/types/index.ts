@@ -2,12 +2,13 @@
 // ROLE & ENUM TYPES
 // ============================================
 export type UserRole =
-  | "PLAYER"
-  | "VENUE_LISTER"
-  | "COACH"
-  | "ACADEMY_OWNER"
+  | "Player"
+  | "Parent"
+  | "VenueLister"
+  | "Coach"
+  | "Academy"
   | "EXPERT"
-  | "ADMIN"
+  | "Admin"
   | "VENUE_ONBOARDING";
 
 // Admin role types
@@ -330,7 +331,7 @@ export interface IPendingVenue {
 // ============================================
 // BOOKING TYPES
 // ============================================
-export type PaymentUserType = "VENUE_LISTER" | "COACH" | "PLAYER";
+export type PaymentUserType = "VenueLister" | "Coach" | "Player";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {

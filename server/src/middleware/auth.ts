@@ -74,12 +74,12 @@ export const authMiddleware = async (
     }
 
     const userRolesNeedingStatusCheck: Array<IUserPayload["role"]> = [
-      "PLAYER",
-      "COACH",
-      "VENUE_LISTER",
-      "ACADEMY_OWNER",
+      "Player",
+      "Coach",
+      "VenueLister",
+      "Academy",
       "EXPERT",
-      "ADMIN",
+      "Admin",
     ];
 
     if (userRolesNeedingStatusCheck.includes(decoded.role)) {
@@ -232,7 +232,7 @@ export const venueListerMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "VENUE_LISTER") {
+  if (req.user?.role !== "VenueLister") {
     res.status(403).json({
       success: false,
       message:
@@ -248,7 +248,7 @@ export const playerOnlyMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "PLAYER") {
+  if (req.user?.role !== "Player") {
     res.status(403).json({
       success: false,
       message: "Booking is available for player accounts only.",
@@ -303,7 +303,7 @@ export const coachVerificationCompletedMiddleware = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    if (req.user?.role !== "COACH" || !req.user.id) {
+    if (req.user?.role !== "Coach" || !req.user.id) {
       next();
       return;
     }
@@ -356,7 +356,7 @@ export const coachVerifiedMiddleware = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    if (req.user?.role !== "COACH" || !req.user.id) {
+    if (req.user?.role !== "Coach" || !req.user.id) {
       next();
       return;
     }

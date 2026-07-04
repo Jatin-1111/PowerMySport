@@ -453,7 +453,7 @@ function CoachesTabContent() {
             <div className="mt-5 flex items-center justify-center gap-3">
               {hasFilters && <Button variant="secondary" onClick={handleClear}>Clear filters</Button>}
               <Button asChild variant="outline">
-                <a href={communityUrl} target="_blank" rel="noreferrer" onClick={() => statsApi.trackFunnelEventNonBlocking({ eventName: "community_cta_click", entityType: "COACH", metadata: communityIntent.analyticsMetadata, source: "WEB" })}>
+                <a href={communityUrl} target="_blank" rel="noreferrer" onClick={() => statsApi.trackFunnelEventNonBlocking({ eventName: "community_cta_click", entityType: "Coach", metadata: communityIntent.analyticsMetadata, source: "WEB" })}>
                   <MessageCircle size={14} className="mr-1.5" />Ask community
                 </a>
               </Button>

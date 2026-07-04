@@ -15,7 +15,11 @@ import React, { useState, useEffect, Suspense } from "react";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || null;
+  // "next" is what the community app (and other satellite apps) send when
+  // bouncing an unauthenticated user back to login; "redirect" is used
+  // internally within this app.
+  const redirectTo =
+    searchParams.get("redirect") || searchParams.get("next") || null;
   const { user, setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     email: "",
@@ -26,18 +30,28 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
 
   const getDefaultRedirect = (role: string) => {
-    if (role === "PLAYER") return "/dashboard/my-bookings";
-    if (role === "VENUE_LISTER") return "/venue-lister/inventory";
-    if (role === "COACH") return "/coach/verification";
-    if (role === "ACADEMY_OWNER") return "/academy";
+    if (role === "VenueLister") return "/venue-lister/inventory";
+    if (role === "Coach") return "/coach/verification";
+    if (role === "Academy") return "/academy";
     if (role === "EXPERT") return "/expert/dashboard";
-    if (role === "ADMIN") return "/admin/users";
-    return "/dashboard/my-bookings";
+    if (role === "Admin") return "/admin/users";
+    return "/";
+  };
+
+  // router.push only handles internal app routes. A redirect target from an
+  // external origin (e.g. community.powermysport.com) needs a full navigation
+  // so the browser actually leaves this app and carries the auth cookie along.
+  const goToRedirect = (target: string) => {
+    if (/^https?:\/\//i.test(target)) {
+      window.location.href = target;
+      return;
+    }
+    router.push(target);
   };
 
   useEffect(() => {
     if (user) {
-      router.push(redirectTo || getDefaultRedirect(user.role));
+      goToRedirect(redirectTo || getDefaultRedirect(user.role));
     }
   }, [user, router, redirectTo]);
 
@@ -69,7 +83,7 @@ function LoginContent() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
-        router.push(redirectTo || getDefaultRedirect(response.data.user.role));
+        goToRedirect(redirectTo || getDefaultRedirect(response.data.user.role));
       } else {
         toast.error(response.message || "Login failed");
       }
@@ -99,7 +113,7 @@ function LoginContent() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
-        router.push(redirectTo || getDefaultRedirect(response.data.user.role));
+        goToRedirect(redirectTo || getDefaultRedirect(response.data.user.role));
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };

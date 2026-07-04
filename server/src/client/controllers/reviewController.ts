@@ -11,7 +11,7 @@ import {
   moderateReview as moderateReviewByAction,
 } from "../services/ReviewService";
 
-type ReviewTargetType = "VENUE" | "COACH";
+type ReviewTargetType = "VENUE" | "Coach";
 
 const toObjectIdString = (value: unknown): string | null => {
   if (!value) return null;
@@ -72,7 +72,7 @@ const recomputeCoachRating = async (coachId: string): Promise<void> => {
   const [stats] = await Review.aggregate([
     {
       $match: {
-        targetType: "COACH",
+        targetType: "Coach",
         targetId: new mongoose.Types.ObjectId(coachId),
       },
     },
@@ -339,7 +339,7 @@ export const getVenueReviews = async (
 export const getCoachReviews = async (
   req: Request,
   res: Response,
-): Promise<void> => listReviewsByTarget(req, res, "COACH");
+): Promise<void> => listReviewsByTarget(req, res, "Coach");
 
 export const getReviewEligibility = async (
   req: Request,
@@ -356,7 +356,7 @@ export const getReviewEligibility = async (
       targetId?: string;
     };
 
-    if (!targetType || !targetId || !["VENUE", "COACH"].includes(targetType)) {
+    if (!targetType || !targetId || !["VENUE", "Coach"].includes(targetType)) {
       res.status(400).json({
         success: false,
         message: "targetType and targetId are required",

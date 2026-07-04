@@ -96,7 +96,7 @@ export default function BookCoachPage() {
       const userResponse = await authApi.getProfile();
       if (userResponse.success && userResponse.data) {
         setUser(userResponse.data);
-        if (userResponse.data.role !== "PLAYER") {
+        if (userResponse.data.role !== "Player") {
           toast.error("Only player accounts can create bookings.");
           router.replace(getDashboardPathByRole(userResponse.data.role));
           return;
@@ -166,7 +166,7 @@ export default function BookCoachPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (user && user.role !== "PLAYER") {
+    if (user && user.role !== "Player") {
       toast.error("Only player accounts can create bookings.");
       return;
     }

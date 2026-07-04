@@ -42,18 +42,13 @@ export const OBJECTIVES = [
     desc: "Play and enjoy sport casually",
   },
   {
-    value: "Health",
+    value: "Fitness",
     label: "Get Fit",
     icon: Activity,
     desc: "Build strength and stamina",
   },
-  {
-    value: "Social",
-    label: "Make Friends",
-    icon: Users,
-    desc: "Connect through sport",
-  },
-  { value: "Competitive", label: "Compete", icon: Trophy, desc: "Train to win" },
+  { value: "Compete", label: "Compete", icon: Trophy, desc: "Train to win" },
+  { value: "Elite", label: "Reach Next Level", icon: Diamond, desc: "Take performance to the highest level" },
 ] as const;
 
 export const FITNESS_LEVELS = [
@@ -152,6 +147,19 @@ export function isFormValid(form: GuidanceFormState): boolean {
     !!form.primary_objective &&
     !!form.location
   );
+}
+
+// Templated parent_specific_question for the roadmap-entry ("level plan") flow —
+// pre-fills Step4's free-text field so the AI's goalAssessment answers the
+// level-plan framing directly instead of the parent having to phrase it.
+export function buildLevelPlanQuestion(
+  sport: string,
+  levelLabel: string,
+  alreadyAtLevel: boolean,
+): string {
+  return alreadyAtLevel
+    ? `My child is already playing ${sport} at the ${levelLabel} level. Based on their profile, what's realistic for us to focus on and achieve over the next 3 months, and what would tell us they're ready to progress to the next level?`
+    : `We are exploring starting ${sport} at the ${levelLabel} level. Based on my child's profile, is this the right time to begin? What will the first 3 months realistically look like for our family, and what are the 3 most important first steps?`;
 }
 
 export function getMissingFields(form: GuidanceFormState): string[] {

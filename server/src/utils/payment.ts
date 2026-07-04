@@ -21,7 +21,7 @@ export const calculateSplitAmounts = (
   if (venueOwnerId) {
     payments.push({
       userId: venueOwnerId,
-      userType: "VENUE_LISTER",
+      userType: "VenueLister",
       amount: venuePrice,
       status: "PENDING",
     });
@@ -30,7 +30,7 @@ export const calculateSplitAmounts = (
   if (coachPrice && coachUserId) {
     payments.push({
       userId: coachUserId,
-      userType: "COACH",
+      userType: "Coach",
       amount: coachPrice,
       status: "PENDING",
     });
@@ -42,7 +42,7 @@ export const calculateSplitAmounts = (
   if (payerUserId) {
     payments.push({
       userId: payerUserId,
-      userType: "PLAYER",
+      userType: "Player",
       amount: totalAmount ?? (venuePrice + (coachPrice || 0)),
       status: "PENDING",
     });
@@ -74,7 +74,7 @@ export const calculateGroupPaymentSplits = (
   // Add venue owner payment
   payments.push({
     userId: venueOwnerId,
-    userType: "VENUE_LISTER",
+    userType: "VenueLister",
     amount: venuePrice,
     status: "PENDING",
   });
@@ -83,7 +83,7 @@ export const calculateGroupPaymentSplits = (
   if (coachPrice && coachUserId) {
     payments.push({
       userId: coachUserId,
-      userType: "COACH",
+      userType: "Coach",
       amount: coachPrice,
       status: "PENDING",
     });
@@ -107,7 +107,7 @@ export const calculateGroupPaymentSplits = (
   participantIds.forEach((userId, index) => {
     payments.push({
       userId,
-      userType: "PLAYER",
+      userType: "Player",
       amount:
         index === numParticipants - 1 ? lastPersonAmount : amountPerPerson,
       status: "PENDING",

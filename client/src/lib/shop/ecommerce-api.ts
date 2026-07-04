@@ -31,8 +31,8 @@ export interface Product {
   sellerType?:
     | "MERCHANT"
     | "PARENT"
-    | "PLAYER"
-    | "COACH"
+    | "Player"
+    | "Coach"
     | "ACADEMY"
     | "SYSTEM";
   condition?: "NEW" | "USED";

@@ -29,12 +29,12 @@ export interface UserData {
   createdAt: string;
 }
 
-export type UsersTabRole = "PLAYER" | "COACH" | "VENUE_LISTER";
+export type UsersTabRole = "Player" | "Coach" | "VenueLister";
 
 export interface UsersRoleSummary {
-  PLAYER: number;
-  COACH: number;
-  VENUE_LISTER: number;
+  Player: number;
+  Coach: number;
+  VenueLister: number;
 }
 
 export interface PlayerUserRow {
@@ -42,7 +42,7 @@ export interface PlayerUserRow {
   name: string;
   email: string;
   phone: string;
-  role: "PLAYER";
+  role: "Player";
   createdAt: string;
   lastActiveAt: string;
   isOnlineNow: boolean;
@@ -57,7 +57,7 @@ export interface CoachUserRow {
   name: string;
   email: string;
   phone: string;
-  role: "COACH";
+  role: "Coach";
   createdAt: string;
   lastActiveAt: string;
   isOnlineNow: boolean;
@@ -81,7 +81,7 @@ export interface VenueListerUserRow {
   name: string;
   email: string;
   phone: string;
-  role: "VENUE_LISTER";
+  role: "VenueLister";
   createdAt: string;
   lastActiveAt: string;
   isOnlineNow: boolean;
@@ -146,9 +146,9 @@ export interface UserGrowthPoint {
   monthKey: string;
   label: string;
   total: number;
-  PLAYER: number;
-  COACH: number;
-  VENUE_LISTER: number;
+  Player: number;
+  Coach: number;
+  VenueLister: number;
 }
 
 export interface UserGrowthAnalytics {

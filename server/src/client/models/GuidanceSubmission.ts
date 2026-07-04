@@ -32,7 +32,7 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       primary_objective: {
         type: String,
         required: true,
-        enum: ["Recreational", "Health", "Social", "Competitive"],
+        enum: ["Recreational", "Fitness", "Compete", "Elite"],
       },
       weekly_time_commitment: {
         type: Number,
@@ -95,7 +95,6 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
         monthlyCoaching: { type: String },
         equipment: { type: String },
         tournaments: { type: String },
-        summary: { type: String },
       },
       burnoutRisk: {
         level: { type: String, enum: ["low", "medium", "high"] },

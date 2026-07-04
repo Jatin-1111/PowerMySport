@@ -200,7 +200,7 @@ export default function MemberProfilePage() {
                 {profile && (
                   <>
                     <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
-                      {profile.role === "COACH" ? "Coach" : "Player"}
+                      {profile.role === "Coach" ? "Coach" : "Player"}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
                       {profile.isIdentityPublic

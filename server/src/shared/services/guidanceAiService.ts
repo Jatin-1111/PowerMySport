@@ -1,17 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
+import { SportPathway } from "../models/SportPathway";
 
 export const guidanceRequestSchema = z.object({
   child_age: z.number().int().min(3).max(21),
   child_gender: z.enum(["male", "female"]),
   current_fitness_level: z.enum(["Low", "Moderate", "High"]),
   personality_tags: z.array(z.string().trim().min(1)).default([]),
-  primary_objective: z.enum([
-    "Recreational",
-    "Health",
-    "Social",
-    "Competitive",
-  ]),
+  primary_objective: z.enum(["Recreational", "Fitness", "Compete", "Elite"]),
   weekly_time_commitment: z.number().min(0).max(40),
   budget_tier: z.enum(["Budget", "Moderate", "Premium"]),
   parent_specific_question: z.string().trim().max(1000).optional(),
@@ -52,7 +48,6 @@ export const costBreakdownSchema = z.object({
   monthlyCoaching: z.string(),
   equipment: z.string(),
   tournaments: z.string(),
-  summary: z.string(),
 });
 
 export const guidanceResponseSchema = z.object({
@@ -88,8 +83,11 @@ export type GuidanceResponse = z.infer<typeof guidanceResponseSchema>;
 export const getYouthSportsGuidanceSystemPrompt = (
   hasSport: boolean,
   age: number,
+  groundingContext?: string,
 ) => `You are an expert Youth Sports Consultant advising an Indian parent. You will receive a child's profile strictly in JSON format.
-WRITE IN SIMPLE LANGUAGE: every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use short sentences and everyday words. Never use a sport-federation acronym (AITA, ITF, FIDE, SAI, BCCI, WTA, etc.) without immediately explaining it in plain words the first time it appears. Avoid dense, jargon-heavy phrasing anywhere in the response.
+${groundingContext ? `\nGROUNDING CONTEXT (OFFICIAL PATHWAY DATA):\n${groundingContext}\n\nYou must anchor your journey phases to these official benchmarks. Do not invent contradictory timelines or criteria.\n` : ""}
+WRITE IN THE SIMPLEST POSSIBLE ENGLISH: every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use only simple, everyday words — prefer short common words over long or formal ones (say "help" not "facilitate", "start" not "commence", "show" not "demonstrate", "use" not "utilize", "enough" not "sufficient"). Use short sentences and active voice. Never use a sport-federation acronym (AITA, ITF, FIDE, SAI, BCCI, WTA, etc.) without immediately explaining it in plain words the first time it appears. Avoid dense, jargon-heavy, or fancy/sophisticated phrasing anywhere in the response — this applies to every field, not just names and acronyms.
+GIVE EACH FIELD ONE JOB, NEVER REPEAT CONTENT ACROSS FIELDS: "profileAnalysis" ONLY covers the child's personality/fitness/age and never discusses whether their goal is realistic. "goalAssessment.rationale" ONLY covers the realism reasoning (timeframe, level, hours) and must NOT re-describe the child's personality — assume the reader already read profileAnalysis. "recommendedPlatformActions" ONLY lists actions the parent takes on the PowerMySport platform itself (e.g. book a trial with a coach, message a coach, browse a nearby academy listing) and must NEVER list training drills or practice milestones — those belong only in journeyPhases milestones.
 ${
   hasSport
     ? 'The profile includes a specific "sport". Focus your analysis on how to progress in that sport. Do NOT include "recommendedSports" in your response.'
@@ -102,14 +100,14 @@ For each phase include "pathwayLevel": a number 1–5 indicating which sports pa
 Use "years_playing" (how long the child has already been playing this sport, in years — 0 means brand new) as real experience context, separate from current_pathway_level: a child can have played casually for years without ever reaching a formal tier, or reach a tier quickly with very little total time in the sport. Let it inform how much foundational technique/habit-correction work is realistic to assume, how cautious to be about injury risk from accumulated load, and how aggressive a timeline is credible in "goalAssessment" — do not treat it as identical to current_pathway_level.
 Return ONLY a valid JSON object — no markdown, no preamble — matching this schema exactly:
 {
-  "profileAnalysis": "2-3 sentences: how this child's specific profile (personality, fitness, age, goals) positions them for sport",
+  "profileAnalysis": "2-3 sentences: ONLY the child's personality, fitness, and age, and how these traits suit sport in general. Do NOT say whether their specific goal is realistic — that belongs in goalAssessment",
   "idealCoachingStyle": "Specific description of the coaching style and communication approach that fits this child's personality and age — what to look for when hiring",
   "weeklyBlueprint": {
     "trainingHours": "Specific hours per week for structured training",
     "freePlayHours": "Hours per week for unstructured free play",
     "restDays": "How many rest days and why"
   },
-  "recommendedPlatformActions": "Single string (not array) containing 3-4 specific next steps the parent should take on the platform to get started",${
+  "recommendedPlatformActions": "Single string (not array) containing 3-4 specific actions the parent takes ON THE POWERMYSPORT PLATFORM ITSELF to get started (e.g. book a trial with a coach, message a coach, browse a nearby academy listing) — NOT training drills or practice milestones, those belong only in journeyPhases milestones",${
     hasSport
       ? ""
       : '\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"],'
@@ -128,14 +126,13 @@ Return ONLY a valid JSON object — no markdown, no preamble — matching this s
   "goalAssessment": {
     "statedGoal": "Restate the parent's goal in one clear line — use parent_specific_question if present, else the primary objective",
     "verdict": "Exactly one of: On Track | Achievable | Ambitious | Long-Term — your honest read of how realistic the goal is in the stated timeframe",
-    "rationale": "1-2 sentences directly answering the parent's question and justifying the verdict for THIS child's age, level and time commitment",
+    "rationale": "1-2 sentences directly answering the parent's question and justifying the verdict using THIS child's age, level and time commitment. Do NOT repeat the personality/fitness read from profileAnalysis",
     "benchmark": "A concrete reference point — what children/players at the target level typically do (e.g. training hours, tournaments per season, realistic timeline) so the parent has an honest yardstick"
   },
   "costBreakdown": {
     "monthlyCoaching": "Indicative monthly coaching cost range in INR for this budget_tier and location (e.g. '₹6,000–10,000/month')",
     "equipment": "Indicative equipment & gear cost range in INR (one-time/seasonal)",
-    "tournaments": "Indicative cost range in INR for tournament entries + travel across the plan period",
-    "summary": "One honest sentence on the overall financial commitment; state that figures are indicative and vary by city and academy"
+    "tournaments": "Indicative cost range in INR for tournament entries + travel across the plan period"
   },
   "mentalSkillsRoadmap": {
     "currentFocus": "The single most important mental skill for this child to develop right now given their age and objective",
@@ -185,6 +182,32 @@ export const generateYouthSportsGuidance = async (
   let lastError: unknown = null;
   let sawQuotaIssue = false;
 
+  let groundingContext = "";
+  if (payload.sport && payload.location) {
+    const slug = payload.sport.trim().toLowerCase().replace(/\s+/g, "-");
+    const stateSlug = payload.location.trim().toLowerCase().replace(/\s+/g, "-");
+    const cacheKey = `${slug}_${stateSlug}`;
+    
+    try {
+      const pathway = await SportPathway.findOne({ cacheKey }).lean();
+      if (pathway && (pathway as any).levels && (pathway as any).levels.length > 0) {
+        const levelIndex = Math.max(1, Math.min(5, payload.current_pathway_level || 1)) - 1;
+        const levelObj = (pathway as any).levels[levelIndex];
+        if (levelObj) {
+          groundingContext = JSON.stringify({
+            level: levelObj.level,
+            title: levelObj.title,
+            benchmarks: levelObj.benchmarks,
+            trialInfo: levelObj.trialInfo,
+            talentSignals: levelObj.talentSignals,
+          }, null, 2);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch grounding context for guidance AI", e);
+    }
+  }
+
   for (const modelName of guidanceModelCandidates) {
     try {
       const response = await genAI.models.generateContent({
@@ -194,6 +217,7 @@ export const generateYouthSportsGuidance = async (
           systemInstruction: getYouthSportsGuidanceSystemPrompt(
             !!payload.sport,
             payload.child_age,
+            groundingContext,
           ),
           responseMimeType: "application/json",
           temperature: 0.4,

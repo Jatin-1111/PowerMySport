@@ -45,7 +45,7 @@ export default function VenueListerDashboard() {
         );
         const earnings = confirmedBookings.reduce((sum, b) => {
           const venuePayment = b.payments?.find(
-            (p) => p.userType === "VENUE_LISTER",
+            (p) => p.userType === "VenueLister",
           );
           return (
             sum +

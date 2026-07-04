@@ -23,7 +23,7 @@ export function Step4Details({
   // Smart question chips based on context
   const smartChips: string[] = [
     ...(form.child_age <= 11 ? ["Should my child play multiple sports at this age, or specialise?"] : []),
-    ...(form.primary_objective === "Competitive" ? ["What talent indicators should I watch for in my child?"] : []),
+    ...(form.primary_objective === "Compete" ? ["What talent indicators should I watch for in my child?"] : []),
     "How do I find and evaluate the right coach for my child's age?",
     "What documents should I start collecting from Day 1 for future trials?",
     "How do I balance school academics with serious sport training?",

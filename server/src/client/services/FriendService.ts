@@ -51,13 +51,13 @@ export class FriendService {
     if (!recipient) {
       throw new Error("User not found");
     }
-    if (recipient.role !== "PLAYER") {
+    if (recipient.role !== "Player") {
       throw new Error("Can only send friend requests to players");
     }
 
     // Check if requester is a PLAYER
     const requester = await User.findById(requesterId);
-    if (!requester || requester.role !== "PLAYER") {
+    if (!requester || requester.role !== "Player") {
       throw new Error("Only players can send friend requests");
     }
 
@@ -423,7 +423,7 @@ export class FriendService {
 
     // Search for players by name or email (case-insensitive)
     const users = await User.find({
-      role: "PLAYER",
+      role: "Player",
       _id: { $ne: userId }, // Exclude current user
       $or: [
         { name: { $regex: safeQuery, $options: "i" } },

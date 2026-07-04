@@ -43,14 +43,19 @@ const VERDICT_CONFIG: Record<
   },
 };
 
-interface Props {
+interface LevelContext {
   sport: string;
   levelLabel: string;
-  assessment: GoalAssessment;
   roadmapHref: string;
 }
 
-export function LevelDecisionCard({ sport, levelLabel, assessment, roadmapHref }: Props) {
+export function VerdictHero({
+  assessment,
+  levelContext,
+}: {
+  assessment: GoalAssessment;
+  levelContext?: LevelContext;
+}) {
   const cfg = VERDICT_CONFIG[assessment.verdict] ?? VERDICT_CONFIG.Achievable;
   const Icon = cfg.icon;
 
@@ -59,22 +64,40 @@ export function LevelDecisionCard({ sport, levelLabel, assessment, roadmapHref }
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 26 }}
-      className={`rounded-2xl border ${cfg.border} ${cfg.bg} p-5 sm:p-6 mb-5`}
+      className={`rounded-2xl border ${cfg.border} ${cfg.bg} p-5 sm:p-6`}
     >
-      <div className="flex items-start gap-4">
+      {levelContext && (
+        <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-current/10 pb-3">
+          <p className="text-xs font-semibold text-slate-500">
+            Continuing your <span className="text-slate-800">{levelContext.sport}</span> pathway research
+          </p>
+          <Link
+            href={levelContext.roadmapHref}
+            className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-power-orange transition"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to roadmap
+          </Link>
+        </div>
+      )}
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
         <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white border ${cfg.border}`}>
           <Icon className={`h-6 w-6 ${cfg.color}`} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
-            Should your child start {sport} at {levelLabel} level?
+            {levelContext
+              ? `Should your child play ${levelContext.sport} at ${levelContext.levelLabel} level?`
+              : "Your goal check"}
           </p>
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <h3 className="font-title text-xl font-bold text-slate-900">{cfg.headline}</h3>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h2 className="font-title text-xl font-bold text-slate-900">{cfg.headline}</h2>
             <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${cfg.badge}`}>
               {assessment.verdict}
             </span>
           </div>
+          {!levelContext && (
+            <p className="mb-2 text-xs font-medium text-slate-500">{assessment.statedGoal}</p>
+          )}
           <p className="text-sm text-slate-700 leading-relaxed">{assessment.rationale}</p>
           <div className="mt-3 rounded-xl bg-white/80 border border-white/60 px-3 py-2.5">
             <p className="text-xs text-slate-600 leading-relaxed">
@@ -83,15 +106,6 @@ export function LevelDecisionCard({ sport, levelLabel, assessment, roadmapHref }
             </p>
           </div>
         </div>
-      </div>
-      <div className="mt-4 flex items-center justify-between border-t border-current/10 pt-3">
-        <p className="text-xs text-slate-500">Your full 90-day plan and next steps are below ↓</p>
-        <Link
-          href={roadmapHref}
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-power-orange transition"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to roadmap
-        </Link>
       </div>
     </motion.div>
   );

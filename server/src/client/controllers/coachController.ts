@@ -330,7 +330,7 @@ export const updateMyCoachAvailability = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "COACH") {
+    if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",
@@ -825,7 +825,7 @@ export const saveCoachVerificationStep1Handler = async (
       return;
     }
 
-    if (req.user.role !== "COACH") {
+    if (req.user.role !== "Coach") {
       res.status(403).json({ success: false, message: "Coach role required" });
       return;
     }
@@ -915,7 +915,7 @@ export const saveCoachVerificationStep2Handler = async (
       return;
     }
 
-    if (req.user.role !== "COACH") {
+    if (req.user.role !== "Coach") {
       res.status(403).json({ success: false, message: "Coach role required" });
       return;
     }
@@ -1214,7 +1214,7 @@ export const submitCoachVerificationStep3Handler = async (
       return;
     }
 
-    if (req.user.role !== "COACH") {
+    if (req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",
@@ -1329,7 +1329,7 @@ export const getCoachVerificationUploadUrlHandler = async (
       return;
     }
 
-    if (req.user.role !== "COACH") {
+    if (req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",

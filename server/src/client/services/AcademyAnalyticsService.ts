@@ -53,7 +53,7 @@ export const getAcademyEarnings = async (ownerUserId: string): Promise<AcademyEa
 
   const getAmount = (b: any): number => {
     if (Array.isArray(b.payments)) {
-      const p = b.payments.find((p: any) => ["VENUE_LISTER", "COACH"].includes(p.userType) && p.status === "PAID");
+      const p = b.payments.find((p: any) => ["VenueLister", "Coach"].includes(p.userType) && p.status === "PAID");
       if (p) return p.amount;
     }
     return b.totalAmount ?? 0;

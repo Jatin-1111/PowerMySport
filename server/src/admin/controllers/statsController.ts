@@ -18,14 +18,14 @@ import { isUserOnline } from "../../shared/services/UserPresenceService";
 import { getAllVenues as getAllVenuesService } from "../../client/services/VenueService";
 import { getPaginationParams } from "../../utils/pagination";
 
-type AdminUserRole = "PLAYER" | "COACH" | "VENUE_LISTER";
+type AdminUserRole = "Player" | "Coach" | "VenueLister";
 
 type FunnelSource = "WEB" | "MOBILE" | "SERVER";
 
 const USER_ROLE_SET: ReadonlySet<AdminUserRole> = new Set([
-  "PLAYER",
-  "COACH",
-  "VENUE_LISTER",
+  "Player",
+  "Coach",
+  "VenueLister",
 ]);
 
 const FUNNEL_SOURCE_SET: ReadonlySet<FunnelSource> = new Set([
@@ -124,7 +124,7 @@ export const getPublicPlatformStats = async (
       User.aggregate<{ _id: string; count: number }>([
         {
           $match: {
-            role: { $in: ["PLAYER", "COACH", "VENUE_LISTER"] },
+            role: { $in: ["Player", "Coach", "VenueLister"] },
           },
         },
         {
@@ -137,9 +137,9 @@ export const getPublicPlatformStats = async (
     ]);
 
     const summary = {
-      PLAYER: 0,
-      COACH: 0,
-      VENUE_LISTER: 0,
+      Player: 0,
+      Coach: 0,
+      VenueLister: 0,
     };
 
     for (const item of roleCounts) {
@@ -272,7 +272,7 @@ export const getUserRoleSummary = async (
     const roleCounts = await User.aggregate<{ _id: string; count: number }>([
       {
         $match: {
-          role: { $in: ["PLAYER", "COACH", "VENUE_LISTER"] },
+          role: { $in: ["Player", "Coach", "VenueLister"] },
         },
       },
       {
@@ -284,9 +284,9 @@ export const getUserRoleSummary = async (
     ]);
 
     const summary = {
-      PLAYER: 0,
-      COACH: 0,
-      VENUE_LISTER: 0,
+      Player: 0,
+      Coach: 0,
+      VenueLister: 0,
     };
 
     for (const item of roleCounts) {
@@ -328,7 +328,7 @@ export const getUserGrowthAnalytics = async (
     }>([
       {
         $match: {
-          role: { $in: ["PLAYER", "COACH", "VENUE_LISTER"] },
+          role: { $in: ["Player", "Coach", "VenueLister"] },
           createdAt: { $gte: start },
         },
       },
@@ -358,7 +358,7 @@ export const getUserGrowthAnalytics = async (
     const monthBuckets = new Map(
       monthSeries.map((item) => [
         item.key,
-        { ...item, total: 0, PLAYER: 0, COACH: 0, VENUE_LISTER: 0 },
+        { ...item, total: 0, Player: 0, Coach: 0, VenueLister: 0 },
       ]),
     );
 
@@ -401,7 +401,7 @@ export const getPlayersUsers = async (
       100,
     );
 
-    const query = { role: "PLAYER" };
+    const query = { role: "Player" };
     const [total, users] = await Promise.all([
       User.countDocuments(query),
       User.find(query)
@@ -452,7 +452,7 @@ export const getPlayersUsers = async (
           name: user.name,
           email: user.email,
           phone: user.phone,
-          role: "PLAYER",
+          role: "Player",
           createdAt: user.createdAt,
           lastActiveAt: user.lastActiveAt || user.createdAt,
           isOnlineNow: await isUserOnline(user._id.toString()),
@@ -496,7 +496,7 @@ export const getCoachUsers = async (
       100,
     );
 
-    const query = { role: "COACH" };
+    const query = { role: "Coach" };
     const total = await User.countDocuments(query);
     const users = await User.find(query)
       .select("name email phone createdAt lastActiveAt")
@@ -524,7 +524,7 @@ export const getCoachUsers = async (
           name: user.name,
           email: user.email,
           phone: user.phone,
-          role: "COACH",
+          role: "Coach",
           createdAt: user.createdAt,
           lastActiveAt: user.lastActiveAt || user.createdAt,
           isOnlineNow: await isUserOnline(user._id.toString()),
@@ -571,7 +571,7 @@ export const getVenueListerUsers = async (
       100,
     );
 
-    const query = { role: "VENUE_LISTER" };
+    const query = { role: "VenueLister" };
     const total = await User.countDocuments(query);
     const users = await User.find(query)
       .select(
@@ -628,7 +628,7 @@ export const getVenueListerUsers = async (
           name: user.name,
           email: user.email,
           phone: user.phone,
-          role: "VENUE_LISTER",
+          role: "VenueLister",
           createdAt: user.createdAt,
           lastActiveAt: user.lastActiveAt || user.createdAt,
           isOnlineNow: await isUserOnline(user._id.toString()),
@@ -677,21 +677,21 @@ export const getPlayersAnalytics = async (
       withDependents,
       newAccountsLast24Hours,
     ] = await Promise.all([
-      User.countDocuments({ role: "PLAYER" }),
+      User.countDocuments({ role: "Player" }),
       User.countDocuments({
-        role: "PLAYER",
+        role: "Player",
         createdAt: { $gte: monthStart },
       }),
       User.countDocuments({
-        role: "PLAYER",
+        role: "Player",
         "playerProfile.sports.0": { $exists: true },
       }),
       User.countDocuments({
-        role: "PLAYER",
+        role: "Player",
         "dependents.0": { $exists: true },
       }),
       User.countDocuments({
-        role: "PLAYER",
+        role: "Player",
         createdAt: { $gte: twentyFourHoursAgo },
       }),
     ]);
@@ -822,7 +822,7 @@ export const getCoachesAnalytics = async (
       ratingAggregate,
       newAccountsLast24Hours,
     ] = await Promise.all([
-      User.countDocuments({ role: "COACH" }),
+      User.countDocuments({ role: "Coach" }),
       Coach.countDocuments({ isVerified: true }),
       Coach.countDocuments({
         verificationStatus: { $in: ["PENDING", "REVIEW"] },
@@ -836,7 +836,7 @@ export const getCoachesAnalytics = async (
         },
       ]),
       User.countDocuments({
-        role: "COACH",
+        role: "Coach",
         createdAt: { $gte: twentyFourHoursAgo },
       }),
     ]);
@@ -872,9 +872,9 @@ export const getVenueListersAnalytics = async (
 
     const [totalVenueListers, newAccountsLast24Hours, venueCountAggregates] =
       await Promise.all([
-        User.countDocuments({ role: "VENUE_LISTER" }),
+        User.countDocuments({ role: "VenueLister" }),
         User.countDocuments({
-          role: "VENUE_LISTER",
+          role: "VenueLister",
           createdAt: { $gte: twentyFourHoursAgo },
         }),
         Venue.aggregate<{

@@ -74,8 +74,8 @@ export interface RegisterPayload {
   email: string;
   phone: string;
   password: string;
-  role: "PLAYER" | "VENUE_LISTER" | "COACH";
-  userType?: "Parent" | "Recreational" | "Coach" | "Academy" | "Admin";
+  role: "Player" | "VenueLister" | "Coach";
+  userType?: "Parent" | "Player" | "Coach" | "Academy" | "Admin";
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
 }
@@ -145,7 +145,7 @@ export const loginUser = async (
 };
 
 export const getUserById = async (id: string): Promise<UserDocument | null> => {
-  return User.findById(id);
+  return User.findById(id).select("+password");
 };
 
 export const requestPasswordReset = async (email: string): Promise<string> => {
@@ -211,13 +211,96 @@ export const resetPassword = async (
   }
 };
 
+/**
+ * Change password for an already-authenticated user. Requires the current
+ * password to be re-entered — this is the app's only re-authentication step
+ * (no 2FA exists), so it's the sole guard against a hijacked/left-open
+ * session silently locking the real owner out.
+ */
+export const changePassword = async (
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> => {
+  const user = await User.findById(userId).select("+password");
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!user.password) {
+    throw new Error(
+      "This account signed in with Google and has no password to change",
+    );
+  }
+
+  const isValid = await user.comparePassword(currentPassword);
+  if (!isValid) {
+    throw new Error("Current password is incorrect");
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  if (user.email) {
+    sendPasswordChangedEmail({ name: user.name, email: user.email }).catch(
+      (error) => console.error("Failed to send password-changed email:", error),
+    );
+  }
+};
+
+/**
+ * Deletes (soft) an account. A hard delete would orphan or corrupt
+ * historical Booking/Payment/Player/Review documents that reference this
+ * user, and financial records need to survive for tax/dispute purposes —
+ * so instead this deactivates the account (isActive=false, already
+ * enforced by authMiddleware on every request, so the user is immediately
+ * locked out) and anonymizes personally-identifying fields on the User
+ * document itself. Player/Booking/Payment history is intentionally left
+ * untouched.
+ */
+export const deleteAccount = async (
+  userId: string,
+  currentPassword: string,
+): Promise<void> => {
+  const user = await User.findById(userId).select("+password");
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.password) {
+    const isValid = await user.comparePassword(currentPassword);
+    if (!isValid) {
+      throw new Error("Password is incorrect");
+    }
+  }
+
+  const anonymizedTag = `deleted-${user._id.toString()}`;
+  user.name = "Deleted User";
+  user.email = `${anonymizedTag}@deleted.powermysport.com`;
+  user.phone = anonymizedTag;
+  delete user.password;
+  delete user.googleId;
+  delete user.photoUrl;
+  delete user.photoS3Key;
+  user.addresses = [];
+  delete user.shippingAddress;
+  user.refundMethods = [];
+  delete user.resetPasswordToken;
+  delete user.resetPasswordExpires;
+  user.pushSubscriptions = [];
+  user.isActive = false;
+  user.deactivatedAt = new Date();
+
+  await user.save();
+};
+
 export interface GoogleLoginPayload {
   googleId: string;
   email: string;
   name: string;
   photoUrl?: string;
-  role?: "PLAYER" | "VENUE_LISTER" | "COACH";
-  userType?: "Parent" | "Recreational" | "Coach" | "Academy" | "Admin";
+  role?: "Player" | "VenueLister" | "Coach";
+  userType?: "Parent" | "Player" | "Coach" | "Academy" | "Admin";
   action?: "login" | "register";
   acceptedTerms?: boolean;
   acceptedPrivacy?: boolean;
@@ -264,8 +347,8 @@ export const googleLogin = async (
         googleId: payload.googleId,
         photoUrl: payload.photoUrl,
         phone: uniquePhoneId, // Unique ID instead of fake phone number
-        role: payload.role || "PLAYER",
-        userType: payload.userType || "Recreational",
+        role: payload.role || "Player",
+        userType: payload.userType || "Player",
         legalConsents: {
           terms: {
             accepted: true,
@@ -350,8 +433,8 @@ export const graduateDependent = async (
       email: payload.email,
       phone: payload.phone,
       password: payload.password,
-      role: "PLAYER",
-      userType: "Recreational",
+      role: "Player",
+      userType: "Player",
     });
     await newUser.save({ session });
 
@@ -406,8 +489,9 @@ export interface AddDependentPayload {
   sportsFocus?: string[];
   sports?: string[];
   skillLevel?: string;
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
@@ -426,6 +510,10 @@ export const addDependent = async (
   const user = await User.findById(userId);
   if (!user) {
     throw new Error("User not found");
+  }
+
+  if (user.role === "Player" && user.userType !== "Parent") {
+    throw new Error("Only Parent profiles can add dependents. Please upgrade your profile first.");
   }
 
   let age = payload.age;
@@ -448,6 +536,7 @@ export const addDependent = async (
     relation: payload.relation,
     sportsFocus: payload.sportsFocus || payload.sports || [],
     skillLevel: payload.skillLevel || "",
+    yearsPlaying: payload.yearsPlaying,
     personalityTags: payload.personalityTags,
     primaryObjective: payload.primaryObjective,
     weeklyTimeCommitment: payload.weeklyTimeCommitment,
@@ -490,6 +579,8 @@ export const updateDependent = async (
   if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
   if (payload.sports) dependent.sportsFocus = payload.sports;
   if (payload.skillLevel) dependent.skillLevel = payload.skillLevel;
+  if (payload.yearsPlaying !== undefined)
+    dependent.yearsPlaying = payload.yearsPlaying;
   if (payload.personalityTags)
     dependent.personalityTags = payload.personalityTags;
   if (payload.primaryObjective)
@@ -538,10 +629,12 @@ export interface UpdateProfilePayload {
   email?: string;
   phone?: string;
   dob?: string | Date;
+  userType?: "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin";
   playerProfile?: {
     sports?: string[];
+    yearsPlaying?: number;
     personalityTags?: string[];
-    primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+    primaryObjective?: "Recreational" | "Fitness" | "Compete";
     weeklyTimeCommitment?: number;
     budgetTier?: "Budget" | "Moderate" | "Premium";
     location?: string;
@@ -595,6 +688,11 @@ export const updateProfile = async (
   if (payload.phone) user.phone = payload.phone;
   if (payload.dob) user.dob = new Date(payload.dob);
 
+  let userTypeToUpdate: any = undefined;
+  if (payload.userType && payload.userType !== user.userType) {
+    userTypeToUpdate = payload.userType;
+  }
+
   // Update player profile if provided
   if (payload.playerProfile && Array.isArray(payload.playerProfile.sports)) {
     let selfPlayer = await Player.findOne({ userId, type: "SELF" });
@@ -610,6 +708,8 @@ export const updateProfile = async (
         selfPlayer.sportsFocus = payload.playerProfile.sports;
     }
 
+    if (payload.playerProfile.yearsPlaying !== undefined)
+      selfPlayer.yearsPlaying = payload.playerProfile.yearsPlaying;
     if (payload.playerProfile.personalityTags)
       selfPlayer.personalityTags = payload.playerProfile.personalityTags;
     if (payload.playerProfile.primaryObjective)
@@ -650,6 +750,17 @@ export const updateProfile = async (
   }
 
   await user.save();
+  
+  if (userTypeToUpdate) {
+    await mongoose.connection.collection("users").updateOne(
+      { _id: user._id },
+      { $set: { userType: userTypeToUpdate } }
+    );
+    const updatedUser = await User.findById(userId);
+    if (!updatedUser) throw new Error("Failed to refetch updated user");
+    return updatedUser;
+  }
+
   return user;
 };
 

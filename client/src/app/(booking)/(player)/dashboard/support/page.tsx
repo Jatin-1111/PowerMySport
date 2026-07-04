@@ -31,7 +31,7 @@ interface SupportTicket {
   createdAt: string;
   updatedAt: string;
   notes?: Array<{
-    authorType: "USER" | "ADMIN";
+    authorType: "USER" | "Admin";
     message: string;
     createdAt: string;
   }>;
@@ -279,13 +279,13 @@ export default function SupportTicketsPage() {
                             <div
                               key={i}
                               className={`rounded-lg px-3 py-2.5 text-sm ${
-                                note.authorType === "ADMIN"
+                                note.authorType === "Admin"
                                   ? "border border-blue-200 bg-blue-50 text-blue-900"
                                   : "border border-slate-200 bg-white text-slate-700"
                               }`}
                             >
                               <span className="text-xs font-semibold">
-                                {note.authorType === "ADMIN"
+                                {note.authorType === "Admin"
                                   ? "Support team"
                                   : "You"}
                               </span>

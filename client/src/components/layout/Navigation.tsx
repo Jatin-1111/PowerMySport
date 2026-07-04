@@ -466,6 +466,9 @@ export const Navigation: React.FC<NavProps> = ({
                           <p className="text-xs text-muted-foreground mt-1">
                             {user.email}
                           </p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-power-orange mt-1.5">
+                            {user.userType || user.role.replace("_", " ")}
+                          </p>
                         </div>
 
                         <div className="py-1">
@@ -750,6 +753,9 @@ export const Navigation: React.FC<NavProps> = ({
                         {user.name}
                       </p>
                       <p className="text-xs mt-1 text-slate-500">{user.email}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-power-orange mt-1.5">
+                        {user.userType || user.role.replace("_", " ")}
+                      </p>
                     </div>
 
                     <Link href={getDashboardLink() || "/"}>

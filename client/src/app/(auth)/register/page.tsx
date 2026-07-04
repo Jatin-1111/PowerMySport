@@ -16,20 +16,20 @@ function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || null;
-  const roleParam = searchParams.get("role") || "PLAYER";
+  const roleParam = searchParams.get("role") || "Player";
   const initialRole =
-    roleParam === "PLAYER" ||
-    roleParam === "VENUE_LISTER" ||
-    roleParam === "COACH"
+    roleParam === "Player" ||
+    roleParam === "VenueLister" ||
+    roleParam === "Coach"
       ? roleParam
-      : "PLAYER";
+      : "Player";
   const { user, setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    userType: "Recreational" as "Parent" | "Recreational" | "Coach",
+    userType: "Player" as "Parent" | "Player" | "Coach",
     serviceMode: "OWN_VENUE" as "OWN_VENUE" | "FREELANCE" | "HYBRID",
     acceptedTerms: false,
     acceptedPrivacy: false,
@@ -42,13 +42,13 @@ function RegisterContent() {
     if (user) {
       if ((user as any).userType === "Parent") {
         router.push("/parent-onboarding");
-      } else if (user.role === "PLAYER") {
+      } else if (user.role === "Player") {
         router.push("/dashboard/my-bookings");
-      } else if (user.role === "VENUE_LISTER") {
+      } else if (user.role === "VenueLister") {
         router.push("/venue-lister/inventory");
-      } else if (user.role === "COACH") {
+      } else if (user.role === "Coach") {
         router.push("/coach/verification");
-      } else if (user.role === "ACADEMY_OWNER") {
+      } else if (user.role === "Academy") {
         router.push("/academy");
       } else if (user.role === "EXPERT") {
         router.push("/expert/dashboard");
@@ -115,7 +115,7 @@ function RegisterContent() {
     try {
       const payload = {
         ...formData,
-        role: formData.userType === "Coach" ? "COACH" : "PLAYER",
+        role: formData.userType === "Coach" ? "Coach" : "Player",
       };
       // @ts-ignore - The API expects role, we derived it from userType
       const response = await authApi.register(payload);
@@ -134,9 +134,9 @@ function RegisterContent() {
           router.push(redirectTo);
         } else if (formData.userType === "Parent") {
           router.push("/parent-onboarding");
-        } else if (response.data.user.role === "COACH") {
+        } else if (response.data.user.role === "Coach") {
           router.push("/coach/verification");
-        } else if (response.data.user.role === "VENUE_LISTER") {
+        } else if (response.data.user.role === "VenueLister") {
           router.push("/venue-lister/inventory");
         } else if (response.data.user.role === "EXPERT") {
           router.push("/expert/dashboard");
@@ -184,7 +184,7 @@ function RegisterContent() {
       // the user's identity from the verified token.
       const response = await authApi.googleLogin({
         credential: credentialResponse.credential,
-        role: formData.userType === "Coach" ? "COACH" : "PLAYER",
+        role: formData.userType === "Coach" ? "Coach" : "Player",
         userType: formData.userType,
         action: "register",
         acceptedTerms: formData.acceptedTerms,
@@ -204,9 +204,9 @@ function RegisterContent() {
         // Redirect based on userType/role
         if (formData.userType === "Parent") {
           router.push("/parent-onboarding");
-        } else if (response.data.user.role === "COACH") {
+        } else if (response.data.user.role === "Coach") {
           router.push("/coach/verification");
-        } else if (response.data.user.role === "VENUE_LISTER") {
+        } else if (response.data.user.role === "VenueLister") {
           router.push("/venue-lister/inventory");
         } else if (response.data.user.role === "EXPERT") {
           router.push("/expert/dashboard");
@@ -349,7 +349,7 @@ function RegisterContent() {
                   className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all"
                 >
                   <option value="Parent">I am a Parent (Managing my child&apos;s sports journey)</option>
-                  <option value="Recreational">I am an Athlete (Booking venues & playing)</option>
+                  <option value="Player">I am an Athlete (Booking venues & playing)</option>
                   <option value="Coach">I am a Coach (Offering training services)</option>
                 </select>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">

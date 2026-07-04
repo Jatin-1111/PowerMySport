@@ -576,7 +576,7 @@ export class EcommerceController {
       if (
         !existingOrder ||
         (existingOrder.userId.toString() !== userId &&
-          (req as any).user?.role !== "ADMIN")
+          (req as any).user?.role !== "Admin")
       ) {
         res.status(404).json({
           ok: false,
@@ -673,7 +673,7 @@ export class EcommerceController {
       // Verify ownership (admins may reconcile any order)
       if (
         order.userId.toString() !== userId &&
-        (req as any).user?.role !== "ADMIN"
+        (req as any).user?.role !== "Admin"
       ) {
         res.status(403).json({
           ok: false,
@@ -790,7 +790,7 @@ export class EcommerceController {
       // Verify user owns this order
       if (
         order.userId.toString() !== userId &&
-        (req as any).user?.role !== "ADMIN"
+        (req as any).user?.role !== "Admin"
       ) {
         res.status(403).json({
           ok: false,
@@ -948,7 +948,7 @@ export class EcommerceController {
       // Verify user owns this order or is admin
       if (
         order.userId.toString() !== userId &&
-        (req as any).user?.role !== "ADMIN"
+        (req as any).user?.role !== "Admin"
       ) {
         res.status(403).json({
           ok: false,

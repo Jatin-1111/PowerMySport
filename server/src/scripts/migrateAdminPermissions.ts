@@ -63,7 +63,7 @@ const migrateAdminPermissions = async () => {
         console.log(`✅ Migrated: ${admin.name} (${admin.email})`);
         console.log(`   ${oldRole} → ${admin.role}`);
         console.log(`   Permissions: ${admin.permissions.length} total`);
-      } else if (oldRole === "ADMIN") {
+      } else if (oldRole === "Admin") {
         admin.role = ADMIN_ROLES.SUPPORT_ADMIN;
         admin.permissions = [...SUPPORT_ADMIN_PERMISSIONS];
         console.log(`✅ Migrated: ${admin.name} (${admin.email})`);

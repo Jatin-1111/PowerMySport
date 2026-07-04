@@ -10,7 +10,7 @@ export interface UserDocument extends Document {
   role: UserRole;
   userType:
     | "Parent"
-    | "Recreational"
+    | "Player"
     | "Coach"
     | "Academy"
     | "VenueLister"
@@ -100,20 +100,20 @@ const userSchema = new Schema<UserDocument>(
     },
     role: {
       type: String,
-      enum: ["PLAYER", "VENUE_LISTER", "COACH", "ACADEMY_OWNER", "EXPERT", "ADMIN"],
-      default: "PLAYER",
+      enum: ["Player", "Parent", "VenueLister", "Coach", "Academy", "EXPERT", "Admin"],
+      default: "Player",
     },
     userType: {
       type: String,
       enum: [
         "Parent",
-        "Recreational",
+        "Player",
         "Coach",
         "Academy",
         "VenueLister",
         "Admin",
       ],
-      default: "Recreational",
+      default: "Player",
     },
     password: {
       type: String,
@@ -298,10 +298,10 @@ export const ParentUser = User.discriminator(
   new Schema({}),
   "Parent",
 );
-export const RecreationalUser = User.discriminator(
-  "RecreationalUser",
-  new Schema({}),
-  "Recreational",
+export const PlayerUser = User.discriminator(
+  "PlayerUser",
+  new mongoose.Schema({}),
+  "Player",
 );
 export const CoachUser = User.discriminator(
   "CoachUser",

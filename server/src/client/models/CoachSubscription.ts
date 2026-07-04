@@ -11,6 +11,7 @@ export interface CoachSubscriptionDocument extends Document {
   id?: string;
   coachId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
+  dependentId?: mongoose.Types.ObjectId; // Optional dependent for whom this was purchased
   packageId: mongoose.Types.ObjectId; // References CoachSubscriptionPackage
   status: CoachSubscriptionStatus;
   currentPeriodStart: Date;
@@ -36,6 +37,11 @@ const coachSubscriptionSchema = new Schema<CoachSubscriptionDocument>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: [true, "User ID is required"],
+      index: true,
+    },
+    dependentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
       index: true,
     },
     packageId: {

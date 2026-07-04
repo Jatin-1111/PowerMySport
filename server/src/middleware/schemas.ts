@@ -12,16 +12,16 @@ export const registerSchema = z.object({
     .boolean()
     .refine((value) => value === true, "Privacy Policy must be accepted"),
   role: z
-    .enum(["PLAYER", "VENUE_LISTER", "COACH"])
+    .enum(["Parent", "Player", "VenueLister", "Coach"])
     .optional()
-    .default("PLAYER"),
+    .default("Player"),
   // NOTE: "Admin" is intentionally NOT accepted at self-registration. Privileged
   // roles/types must be provisioned through the admin/verification flows, never
   // self-selected by the registrant.
   userType: z
-    .enum(["Parent", "Recreational", "Coach", "Academy", "VenueLister"])
+    .enum(["Parent", "Player", "Coach", "Academy", "VenueLister"])
     .optional()
-    .default("Recreational"),
+    .default("Player"),
 });
 
 export const loginSchema = z.object({
@@ -556,7 +556,7 @@ export const guestEventSchema = z.object({
 
 export const createReviewSchema = z.object({
   bookingId: z.string().min(1, "Booking ID is required"),
-  targetType: z.enum(["VENUE", "COACH"]),
+  targetType: z.enum(["VENUE", "Coach"]),
   targetId: z.string().min(1, "Target ID is required"),
   rating: z.number().min(1).max(5),
   review: z.string().max(1000).optional(),

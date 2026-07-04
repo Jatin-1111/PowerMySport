@@ -40,7 +40,7 @@ const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const MESSAGE_EDIT_DELETE_WINDOW_MS = 30 * 60 * 1000;
-const COMMUNITY_ALLOWED_ROLES = ["PLAYER", "COACH"] as const;
+const COMMUNITY_ALLOWED_ROLES = ["Player", "Coach", "Parent"] as const;
 const COMMUNITY_DEFAULT_GROUP_AUDIENCE = "ALL" as const;
 const COMMUNITY_POINTS = {
   CREATE_POST: 5,
@@ -153,9 +153,13 @@ const ensureCommunityUser = async (userId: string) => {
     throw new Error("User not found");
   }
 
-  if (!COMMUNITY_ALLOWED_ROLES.includes(user.role as "PLAYER" | "COACH")) {
+  if (
+    !COMMUNITY_ALLOWED_ROLES.includes(
+      user.role as (typeof COMMUNITY_ALLOWED_ROLES)[number],
+    )
+  ) {
     throw new Error(
-      "Community is available only for player and coach accounts",
+      "Community is available only for player, coach, and parent accounts",
     );
   }
 
@@ -396,7 +400,7 @@ export const CommunityService = {
           const profile = profileMap.get(authorId);
           const isSelf = authorId === userId;
           const isPostAnon = post.isAnonymous && !isSelf;
-          const isVerifiedExpert = !isPostAnon && authorUser?.role === "COACH";
+          const isVerifiedExpert = !isPostAnon && authorUser?.role === "Coach";
 
           return {
             id: String(post._id),
@@ -521,7 +525,7 @@ export const CommunityService = {
     const postAuthorId = String(post.authorId);
     const isPostAuthorSelf = postAuthorId === userId;
     const isPostAnon = post.isAnonymous && !isPostAuthorSelf;
-    const isPostAuthorExpert = !isPostAnon && postAuthor?.role === "COACH";
+    const isPostAuthorExpert = !isPostAnon && postAuthor?.role === "Coach";
 
     return {
       post: {
@@ -568,7 +572,7 @@ export const CommunityService = {
           const answerProfile = answerProfileMap.get(answerAuthorId);
           const isAnswerSelf = answerAuthorId === userId;
           const isAnswerAnon = answer.isAnonymous && !isAnswerSelf;
-          const isAnswerExpert = !isAnswerAnon && answerUser?.role === "COACH";
+          const isAnswerExpert = !isAnswerAnon && answerUser?.role === "Coach";
 
           return {
             id: String(answer._id),
@@ -1144,7 +1148,7 @@ export const CommunityService = {
             displayName,
             isIdentityPublic,
             role: user.role,
-            userType: (user as any).userType || "Recreational",
+            userType: (user as any).userType || "Player",
             photoUrl: null,
             city: typeof user.city === "string" ? user.city.trim() : null,
             age: calculateAge(user.dob),
@@ -1223,7 +1227,7 @@ export const CommunityService = {
     return {
       id: String(targetUser._id),
       role: targetUser.role,
-      userType: (targetUser as any).userType || "Recreational",
+      userType: (targetUser as any).userType || "Player",
       displayName: isIdentityPublic
         ? targetUser.name
         : profile.anonymousAlias || "Anonymous Member",

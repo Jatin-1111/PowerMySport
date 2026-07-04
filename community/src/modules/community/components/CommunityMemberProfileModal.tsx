@@ -134,7 +134,7 @@ export function CommunityMemberProfileModal({
                   {profile && (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
-                        {profile.role === "COACH" ? "Coach" : "Player"}
+                        {profile.role === "Coach" ? "Coach" : "Player"}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
                         {profile.isIdentityPublic
@@ -252,7 +252,7 @@ export function CommunityMemberProfileModal({
                         Role
                       </p>
                       <p className="mt-2 text-sm font-medium text-slate-900">
-                        {profile.role === "COACH" ? "Coach" : "Player"}
+                        {profile.role === "Coach" ? "Coach" : "Player"}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-border bg-white p-4 shadow-xs sm:p-5">

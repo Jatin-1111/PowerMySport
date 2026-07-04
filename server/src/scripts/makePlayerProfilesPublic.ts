@@ -23,7 +23,7 @@ const run = async () => {
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB");
 
-    const players = await User.find({ role: "PLAYER" })
+    const players = await User.find({ role: "Player" })
       .select("_id name role")
       .lean();
 

@@ -29,7 +29,7 @@ export const listPendingPayouts = async (
     const bookings = await Booking.find({
       status: "COMPLETED",
       "payments.status": "PENDING",
-      "payments.userType": { $in: ["VENUE_LISTER", "COACH"] },
+      "payments.userType": { $in: ["VenueLister", "Coach"] },
     }).lean();
 
     const payoutMap = new Map<string, any>();
@@ -38,7 +38,7 @@ export const listPendingPayouts = async (
       booking.payments.forEach((payment) => {
         if (
           payment.status === "PENDING" &&
-          (payment.userType === "VENUE_LISTER" || payment.userType === "COACH")
+          (payment.userType === "VenueLister" || payment.userType === "Coach")
         ) {
           const userIdStr = payment.userId.toString();
           const key = `${userIdStr}_${payment.userType}`;
@@ -67,14 +67,14 @@ export const listPendingPayouts = async (
         const user = await User.findById(payout.vendorId).select("name email phone").lean();
         
         let payoutMethod: IPayoutMethod | null = null;
-        if (payout.vendorRole === "COACH") {
+        if (payout.vendorRole === "Coach") {
           const coach = await Coach.findOne({ userId: payout.vendorId })
             .select("payoutMethods")
             .lean();
           payoutMethod = getPrimaryPayoutMethod(
             coach?.payoutMethods as IPayoutMethod[] | undefined,
           );
-        } else if (payout.vendorRole === "VENUE_LISTER") {
+        } else if (payout.vendorRole === "VenueLister") {
           const venue = await Venue.findOne({ ownerId: payout.vendorId })
             .select("payoutMethods")
             .lean();
@@ -192,7 +192,7 @@ export const markPayoutsAsPaid = async (
               email: vendorUser.email,
               amount: total,
               bookingCount: bookingIds.length,
-              role: vendorRole as "COACH" | "VENUE_LISTER",
+              role: vendorRole as "Coach" | "VenueLister",
             });
           }
         } catch (emailError) {

@@ -53,7 +53,7 @@ export interface ProductDocument extends Document {
   totalReviews: number;
   seller?: mongoose.Types.ObjectId;
   sellerName?: string;
-  sellerType?: "MERCHANT" | "PARENT" | "PLAYER" | "COACH" | "ACADEMY" | "SYSTEM";
+  sellerType?: "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
   condition?: "NEW" | "USED";
   createdAt: Date;
   updatedAt: Date;
@@ -265,7 +265,7 @@ const productSchema = new Schema<ProductDocument>(
     },
     sellerType: {
       type: String,
-      enum: ["MERCHANT", "PARENT", "PLAYER", "COACH", "ACADEMY", "SYSTEM"],
+      enum: ["MERCHANT", "PARENT", "Player", "Coach", "ACADEMY", "SYSTEM"],
       default: "SYSTEM",
       index: true,
     },

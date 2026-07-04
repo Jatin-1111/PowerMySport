@@ -59,7 +59,7 @@ export const initiateNewBooking = async (
       return;
     }
 
-    if (user.role !== "PLAYER") {
+    if (user.role !== "Player") {
       res.status(403).json({
         success: false,
         message: "Booking is available for player accounts only.",
@@ -127,9 +127,9 @@ export const getMyBookings = async (
     let result;
 
     // Different logic based on role
-    if (req.user.role === "VENUE_LISTER") {
+    if (req.user.role === "VenueLister") {
       result = await getVenueListerBookings(req.user.id, page, limit);
-    } else if (req.user.role === "COACH") {
+    } else if (req.user.role === "Coach") {
       result = await getCoachBookings(req.user.id, page, limit);
     } else {
       // For PLAYER and others, get bookings they made
@@ -194,12 +194,12 @@ export const getBookingById = async (
       return id ? String(id) : null;
     };
 
-    const isAdmin = req.user.role === "ADMIN";
+    const isAdmin = req.user.role === "Admin";
     const bookingOwnerId = getRefId(booking.userId) || String(booking.userId);
     const isBookingOwner = bookingOwnerId === req.user.id;
 
     let isVenueOwner = false;
-    if (booking.venueId && req.user.role === "VENUE_LISTER") {
+    if (booking.venueId && req.user.role === "VenueLister") {
       const venue = await Venue.findById(booking.venueId).select("ownerId");
       isVenueOwner = Boolean(
         venue && venue.ownerId?.toString() === req.user.id,
@@ -334,13 +334,13 @@ export const downloadBookingInvoicePdf = async (
       return;
     }
 
-    const isAdmin = req.user.role === "ADMIN";
+    const isAdmin = req.user.role === "Admin";
     const bookingOwnerId =
       getReferenceId(booking.userId) || String(booking.userId);
     const isBookingOwner = bookingOwnerId === req.user.id;
 
     let isVenueOwner = false;
-    if (booking.venueId && req.user.role === "VENUE_LISTER") {
+    if (booking.venueId && req.user.role === "VenueLister") {
       const venue = await Venue.findById(booking.venueId).select("ownerId");
       isVenueOwner = Boolean(
         venue && venue.ownerId?.toString() === req.user.id,
@@ -1553,7 +1553,7 @@ export const initiateNewGroupBooking = async (
       return;
     }
 
-    if (req.user.role !== "PLAYER") {
+    if (req.user.role !== "Player") {
       res.status(403).json({
         success: false,
         message: "Group booking is available for player accounts only.",

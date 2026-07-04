@@ -32,7 +32,7 @@ export default function AcademyLayout({
   const isOnboardingRoute = pathname.startsWith("/academy/onboarding");
 
   useEffect(() => {
-    if (user && user.role !== "ACADEMY_OWNER" && !isOnboardingRoute) {
+    if (user && user.role !== "Academy" && !isOnboardingRoute) {
       toast.error(
         "Academy dashboard is limited to academy owners. Use onboarding to activate your academy.",
       );

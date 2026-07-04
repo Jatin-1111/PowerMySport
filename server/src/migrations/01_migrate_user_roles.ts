@@ -32,7 +32,7 @@ const migrateUserRoles = async () => {
       { role: "user" },
       {
         $set: {
-          role: "PLAYER",
+          role: "Player",
           playerProfile: {
             paymentHistory: [],
           },
@@ -46,7 +46,7 @@ const migrateUserRoles = async () => {
       { role: "vendor" },
       {
         $set: {
-          role: "VENUE_LISTER",
+          role: "VenueLister",
           venueListerProfile: {
             businessDetails: {
               name: "",
@@ -68,7 +68,7 @@ const migrateUserRoles = async () => {
     // Migrate: admin → ADMIN (just uppercase)
     const adminResult = await User.updateMany(
       { role: "admin" },
-      { $set: { role: "ADMIN" } },
+      { $set: { role: "Admin" } },
     );
     console.log(
       `✅ Migrated ${adminResult.modifiedCount} admins to ADMIN role`,

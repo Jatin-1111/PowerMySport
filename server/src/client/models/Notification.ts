@@ -35,7 +35,7 @@ export type NotificationType =
 export type NotificationCategory =
   | "SOCIAL"
   | "BOOKING"
-  | "ADMIN"
+  | "Admin"
   | "REVIEW"
   | "PAYMENT"
   | "COMMUNITY";
@@ -112,7 +112,7 @@ const notificationSchema = new Schema<
     },
     category: {
       type: String,
-      enum: ["SOCIAL", "BOOKING", "ADMIN", "REVIEW", "PAYMENT", "COMMUNITY"],
+      enum: ["SOCIAL", "BOOKING", "Admin", "REVIEW", "PAYMENT", "COMMUNITY"],
       required: true,
       index: true,
     },

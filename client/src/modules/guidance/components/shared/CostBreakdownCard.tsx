@@ -1,6 +1,6 @@
 "use client";
 
-import { UserCircle2, Dumbbell, Trophy, Wallet, Info } from "lucide-react";
+import { UserCircle2, Dumbbell, Trophy, Wallet } from "lucide-react";
 import type { CostBreakdown } from "../../types";
 
 export function CostBreakdownCard({ c }: { c: CostBreakdown }) {
@@ -34,10 +34,6 @@ export function CostBreakdownCard({ c }: { c: CostBreakdown }) {
           </div>
         ))}
       </div>
-      <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-500">
-        <Info className="mt-0.5 h-3 w-3 shrink-0" />
-        {c.summary}
-      </p>
     </div>
   );
 }

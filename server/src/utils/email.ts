@@ -50,10 +50,13 @@ export const sendWelcomeEmail = async (
   options: WelcomeEmailOptions,
 ): Promise<void> => {
   const roleNames: Record<string, string> = {
-    PLAYER: "Player",
-    VENUE_LISTER: "Venue Lister",
-    COACH: "Coach",
-    ADMIN: "Admin",
+    Player: "Player",
+    Parent: "Parent",
+    VenueLister: "Venue Lister",
+    Coach: "Coach",
+    Academy: "Academy",
+    Admin: "Admin",
+    VENUE_ONBOARDING: "Venue Lister",
   };
 
   const html = `
@@ -125,7 +128,7 @@ export const sendWelcomeEmail = async (
     <p>We're excited to have you as part of our sports community. Your account has been successfully created and you're all set to get started.</p>
     
     ${
-      options.role === "PLAYER"
+      options.role === "Player"
         ? `
     <div class="feature-box">
       <h3>🎯 As a Player, you can:</h3>
@@ -137,7 +140,7 @@ export const sendWelcomeEmail = async (
       </ul>
     </div>
     `
-        : options.role === "COACH"
+        : options.role === "Coach"
           ? `
     <div class="feature-box">
       <h3>🏆 As a Coach, you can:</h3>
@@ -149,7 +152,7 @@ export const sendWelcomeEmail = async (
       </ul>
     </div>
     `
-          : options.role === "VENUE_LISTER"
+          : options.role === "VenueLister"
             ? `
     <div class="feature-box">
       <h3>🏟️ As a Venue Lister, you can:</h3>
@@ -193,7 +196,7 @@ export const sendWelcomeEmail = async (
 
 type BookingLifecycleState = "PENDING_CONFIRMATION" | "CONFIRMED" | "CANCELLED";
 
-type BookingLifecycleRecipientRole = "PLAYER" | "PROVIDER";
+type BookingLifecycleRecipientRole = "Player" | "PROVIDER";
 
 interface BookingLifecycleEmailOptions {
   email: string;
@@ -260,14 +263,14 @@ export const sendBookingLifecycleEmail = async (
 
   const recipientLeadText =
     options.state === "CONFIRMED"
-      ? options.recipientRole === "PLAYER"
+      ? options.recipientRole === "Player"
         ? "Your booking is confirmed and ready in your dashboard."
         : "You approved a booking and the player has been notified."
       : options.state === "CANCELLED"
-        ? options.recipientRole === "PLAYER"
+        ? options.recipientRole === "Player"
           ? "Your booking was cancelled."
           : "A booking under your control was cancelled."
-        : options.recipientRole === "PLAYER"
+        : options.recipientRole === "Player"
           ? "We have received your booking and it's waiting for provider approval."
           : "A new booking is waiting for your approval.";
 
@@ -297,7 +300,7 @@ export const sendBookingLifecycleEmail = async (
   const checkInRow =
     options.checkInCode &&
     options.state === "CONFIRMED" &&
-    options.recipientRole === "PLAYER"
+    options.recipientRole === "Player"
       ? `
                 <tr>
                   <td style="padding:10px 0 14px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Check-in Code</td>
@@ -393,12 +396,12 @@ export const sendBookingLifecycleEmail = async (
 
   const subject =
     options.state === "CONFIRMED"
-      ? options.recipientRole === "PLAYER"
+      ? options.recipientRole === "Player"
         ? "Your Booking is Confirmed ✨ | PowerMySport"
         : `Booking Confirmed - ${options.sport} at ${options.venueName} | PowerMySport`
       : options.state === "CANCELLED"
         ? `Booking Cancelled - ${options.sport} at ${options.venueName} | PowerMySport`
-        : options.recipientRole === "PLAYER"
+        : options.recipientRole === "Player"
           ? `Booking Received - Awaiting Confirmation | PowerMySport`
           : `New Booking Request - Awaiting Confirmation | PowerMySport`;
 
@@ -2114,7 +2117,7 @@ interface PayoutProcessedOptions {
   email: string;
   amount: number;
   bookingCount: number;
-  role: "COACH" | "VENUE_LISTER";
+  role: "Coach" | "VenueLister";
 }
 
 export const sendPayoutProcessedEmail = async (
@@ -2126,10 +2129,10 @@ export const sendPayoutProcessedEmail = async (
     bodyHtml: detailTable([
       ["Amount", formatInr(options.amount)],
       ["Bookings settled", String(options.bookingCount)],
-      ["Account type", options.role === "COACH" ? "Coach" : "Venue owner"],
+      ["Account type", options.role === "Coach" ? "Coach" : "Venue owner"],
     ]),
     ctaLabel: "View earnings",
-    ctaUrl: `${emailFrontendUrl()}/${options.role === "COACH" ? "coach" : "venue-lister"}/earnings`,
+    ctaUrl: `${emailFrontendUrl()}/${options.role === "Coach" ? "coach" : "venue-lister"}/earnings`,
     accent: "#16a34a",
   });
   await sendEmail({
@@ -2222,13 +2225,13 @@ interface CoachSubscriptionPurchasedOptions {
   packageName: string;
   price: number;
   counterpartName: string;
-  recipientRole: "PLAYER" | "COACH";
+  recipientRole: "Player" | "Coach";
 }
 
 export const sendCoachSubscriptionPurchasedEmail = async (
   options: CoachSubscriptionPurchasedOptions,
 ): Promise<void> => {
-  const forPlayer = options.recipientRole === "PLAYER";
+  const forPlayer = options.recipientRole === "Player";
   const html = renderEmailShell({
     heading: forPlayer ? "Your coaching plan is active 🏆" : "You have a new subscriber 🎉",
     intro: forPlayer
@@ -2257,13 +2260,13 @@ interface CoachSubscriptionCancelledOptions {
   email: string;
   packageName: string;
   counterpartName: string;
-  recipientRole: "PLAYER" | "COACH";
+  recipientRole: "Player" | "Coach";
 }
 
 export const sendCoachSubscriptionCancelledEmail = async (
   options: CoachSubscriptionCancelledOptions,
 ): Promise<void> => {
-  const forPlayer = options.recipientRole === "PLAYER";
+  const forPlayer = options.recipientRole === "Player";
   const html = renderEmailShell({
     heading: "Subscription cancelled",
     intro: forPlayer
@@ -2290,7 +2293,7 @@ interface ReviewReceivedOptions {
   rating: number;
   review?: string | undefined;
   reviewerName?: string | undefined;
-  targetType: "VENUE" | "COACH";
+  targetType: "VENUE" | "Coach";
 }
 
 export const sendReviewReceivedEmail = async (
@@ -2300,13 +2303,13 @@ export const sendReviewReceivedEmail = async (
     "☆".repeat(5 - Math.max(0, Math.min(5, Math.round(options.rating))));
   const html = renderEmailShell({
     heading: "You received a new review",
-    intro: `Hi ${options.name || "there"}, ${options.reviewerName || "a player"} left a review for your ${options.targetType === "COACH" ? "coaching" : "venue"}.`,
+    intro: `Hi ${options.name || "there"}, ${options.reviewerName || "a player"} left a review for your ${options.targetType === "Coach" ? "coaching" : "venue"}.`,
     bodyHtml:
       detailTable([
         ["Rating", `${stars} (${options.rating}/5)`],
       ]) + (options.review ? `<p style="margin-top:8px;"><strong>Their comment:</strong><br/>"${options.review}"</p>` : ""),
     ctaLabel: "View reviews",
-    ctaUrl: `${emailFrontendUrl()}/${options.targetType === "COACH" ? "coach/reviews" : "venue-lister/reviews"}`,
+    ctaUrl: `${emailFrontendUrl()}/${options.targetType === "Coach" ? "coach/reviews" : "venue-lister/reviews"}`,
   });
   await sendEmail({
     to: options.email,

@@ -9,7 +9,7 @@ export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
 
 export interface BookingPayment {
   userId: mongoose.Types.ObjectId;
-  userType: "VENUE_LISTER" | "COACH" | "PLAYER";
+  userType: "VenueLister" | "Coach" | "Player";
   amount: number;
   status: "PENDING" | "PAID" | "FAILED";
   paidAt?: Date;
@@ -196,7 +196,7 @@ const bookingSchema = new Schema<BookingDocument>(
         },
         userType: {
           type: String,
-          enum: ["VENUE_LISTER", "COACH", "PLAYER"],
+          enum: ["VenueLister", "Coach", "Player"],
           required: true,
         },
         amount: {

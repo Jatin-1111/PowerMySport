@@ -154,6 +154,13 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    /* Reserve the scrollbar's width permanently so content never reflows
+       (shifting horizontally, and any wrapped text vertically) when a page
+       transitions between not-scrollable and scrollable. */
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-background text-foreground;
     background:

@@ -509,7 +509,7 @@ function CheckoutPageContent() {
 
         if (profileResponse?.success && profileResponse.data) {
           setUser(profileResponse.data);
-          if (profileResponse.data.role !== "PLAYER") {
+          if (profileResponse.data.role !== "Player") {
             toast.error("Only player accounts can create bookings.");
             router.replace(getDashboardPathByRole(profileResponse.data.role));
             return;
@@ -711,7 +711,7 @@ function CheckoutPageContent() {
   };
 
   const handleCheckout = async () => {
-    if (user?.role !== "PLAYER") {
+    if (user?.role !== "Player") {
       toast.error("Only player accounts can create bookings.");
       return;
     }
@@ -1615,7 +1615,7 @@ function CheckoutPageContent() {
               q={`${sport} ${type === "coach" ? "coach" : "venue"}`}
               sport={sport}
               ctaUrl={communityUrl}
-              enabled={Boolean(user?.role === "PLAYER")}
+              enabled={Boolean(user?.role === "Player")}
             />
           </motion.div>
         </aside>

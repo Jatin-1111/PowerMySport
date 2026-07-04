@@ -333,7 +333,7 @@ const testReviewSystemLogic = () => {
   try {
     interface Review {
       bookingId: string;
-      targetType: "VENUE" | "COACH";
+      targetType: "VENUE" | "Coach";
       targetId: string;
       rating: number;
       moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
@@ -344,7 +344,7 @@ const testReviewSystemLogic = () => {
       bookingStatus: string,
       bookingDate: Date,
       existingReviews: Review[],
-      targetType: "VENUE" | "COACH",
+      targetType: "VENUE" | "Coach",
     ): { allowed: boolean; message?: string } => {
       if (bookingStatus !== "COMPLETED") {
         return {
@@ -418,7 +418,7 @@ const testReviewSystemLogic = () => {
       "COMPLETED",
       new Date("2026-03-01"),
       [existingVenueReview],
-      "COACH",
+      "Coach",
     );
     logTest(
       "Can leave coach review after venue review",

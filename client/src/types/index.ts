@@ -3,20 +3,22 @@
 // ============================================
 export interface IPlayerProfile {
   sports?: string[];
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
 }
 
 export type UserRole =
-  | "PLAYER"
-  | "VENUE_LISTER"
-  | "COACH"
-  | "ACADEMY_OWNER"
+  | "Player"
+  | "Parent"
+  | "VenueLister"
+  | "Coach"
+  | "Academy"
   | "EXPERT"
-  | "ADMIN";
+  | "Admin";
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
   | "PENDING_INVITES"
@@ -28,7 +30,7 @@ export type BookingStatus =
   | "CANCELLED"
   | "EXPIRED";
 
-export type PaymentUserType = "PLAYER" | "VENUE_LISTER" | "COACH";
+export type PaymentUserType = "Player" | "VenueLister" | "Coach";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {
@@ -62,8 +64,9 @@ export interface Dependent {
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   sports?: string[];
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
@@ -89,13 +92,15 @@ export interface User {
   isIdentityPublic?: boolean;
   dob?: string;
   role: UserRole;
-  userType?: "Parent" | "Recreational" | "Coach" | "VenueLister" | "Admin" | "Academy";
+  userType?: "Parent" | "Player" | "Coach" | "VenueLister" | "Admin" | "Academy";
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
   playerProfile?: IPlayerProfile;
   venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];
   shippingAddress?: UserShippingAddress;
+  /** False for Google-only accounts that never set a password. */
+  hasPassword?: boolean;
 }
 
 export interface AuthResponse {
@@ -298,7 +303,7 @@ export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
 
 export interface BookingPayment {
   userId: string;
-  userType: "VENUE_LISTER" | "COACH" | "PLAYER";
+  userType: "VenueLister" | "Coach" | "Player";
   amount: number;
   status: "PENDING" | "PAID" | "FAILED";
   paidAt?: string;
@@ -440,7 +445,7 @@ export interface ReviewItem {
   id?: string;
   bookingId: string;
   userId: string | ReviewUser;
-  targetType: "VENUE" | "COACH";
+  targetType: "VENUE" | "Coach";
   targetId: string;
   rating: number;
   review?: string;

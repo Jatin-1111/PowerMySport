@@ -26,8 +26,9 @@ interface Dependent {
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   sports?: string[];
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
@@ -291,6 +292,27 @@ export default function DependentManagementModal({
             />
           </ProfileEditField>
 
+          <ProfileEditField
+            label="Experience (Years)"
+            htmlFor="dependent-years-playing"
+            hint="Leave blank if they haven't started playing yet"
+          >
+            <Input
+              id="dependent-years-playing"
+              type="number"
+              min="0"
+              max="20"
+              placeholder="e.g., 2"
+              value={formData.yearsPlaying ?? ""}
+              onChange={(event) =>
+                handleChange(
+                  "yearsPlaying",
+                  event.target.value === "" ? undefined : parseInt(event.target.value, 10),
+                )
+              }
+            />
+          </ProfileEditField>
+
           {(formData.sports?.length ?? 0) > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {formData.sports?.map((sport) => (
@@ -320,9 +342,8 @@ export default function DependentManagementModal({
                   onChange={(value) => handleChange("primaryObjective", value)}
                   options={[
                     { value: "Recreational", label: "Recreational" },
-                    { value: "Health", label: "Health & Fitness" },
-                    { value: "Social", label: "Social & Fun" },
-                    { value: "Competitive", label: "Competitive" },
+                    { value: "Fitness", label: "Fitness" },
+                    { value: "Compete", label: "Compete" },
                   ]}
                 />
               </ProfileEditField>

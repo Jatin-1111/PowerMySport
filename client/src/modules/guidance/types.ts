@@ -5,7 +5,7 @@ export type GuidanceFormState = {
   child_gender: "male" | "female";
   current_fitness_level: "Low" | "Moderate" | "High";
   personality_tags: string[];
-  primary_objective: "Recreational" | "Health" | "Social" | "Competitive";
+  primary_objective: "Recreational" | "Fitness" | "Compete" | "Elite";
   weekly_time_commitment: number;
   budget_tier: "Budget" | "Moderate" | "Premium";
   parent_specific_question: string;
@@ -65,7 +65,6 @@ export type CostBreakdown = {
   monthlyCoaching: string;
   equipment: string;
   tournaments: string;
-  summary: string;
 };
 
 export type GuidanceSubmission = {
@@ -82,10 +81,12 @@ export type PlayerProfile = {
   name: string;
   age?: number;
   dob?: string;
+  gender?: "MALE" | "FEMALE" | "OTHER";
   sportsFocus: string[];
   skillLevel?: string;
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;

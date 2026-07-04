@@ -355,7 +355,7 @@ const checkInRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
       checkInBookingByCode(
         bookingWithCode.checkInCode as string,
         ctx.adminId,
-        "ADMIN",
+        "Admin",
       ),
     ),
   );
@@ -474,7 +474,7 @@ const run = async (): Promise<void> => {
       email: `race-owner-${unique()}@example.com`,
       phone: makePhone(),
       password: "password123",
-      role: "VENUE_LISTER",
+      role: "VenueLister",
     });
     createdUserIds.push(owner._id.toString());
 
@@ -483,7 +483,7 @@ const run = async (): Promise<void> => {
       email: `race-admin-${unique()}@example.com`,
       phone: makePhone(),
       password: "password123",
-      role: "ADMIN",
+      role: "Admin",
     });
     createdUserIds.push(admin._id.toString());
 
@@ -495,7 +495,7 @@ const run = async (): Promise<void> => {
         email: `race-player-${index}-${unique()}@example.com`,
         phone: makePhone(),
         password: "password123",
-        role: "PLAYER",
+        role: "Player",
       });
       playerIds.push(player._id.toString());
       createdUserIds.push(player._id.toString());
@@ -506,7 +506,7 @@ const run = async (): Promise<void> => {
       email: `race-coach-${unique()}@example.com`,
       phone: makePhone(),
       password: "password123",
-      role: "COACH",
+      role: "Coach",
     });
     createdUserIds.push(coachUser._id.toString());
 

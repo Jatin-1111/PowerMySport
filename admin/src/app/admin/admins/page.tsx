@@ -143,7 +143,7 @@ export default function AdminsManagementPage() {
   const canManageAdmins =
     storedAdmin?.role === "SYSTEM_ADMIN" ||
     storedAdmin?.role === "SUPER_ADMIN" ||
-    storedAdmin?.role === "ADMIN";
+    storedAdmin?.role === "Admin";
 
   const currentAdminId = storedAdmin?.id || null;
 

@@ -34,7 +34,7 @@ const runPaymentFlowTest = async () => {
       email: `venue_owner_paytest_${Date.now()}@example.com`,
       password: "hashedpassword",
       phone: `12${Date.now().toString().slice(-8)}`,
-      role: "VENUE_LISTER",
+      role: "VenueLister",
       name: "Venue Owner",
     } as any);
 
@@ -42,7 +42,7 @@ const runPaymentFlowTest = async () => {
       email: `coach_paytest_${Date.now()}@example.com`,
       password: "hashedpassword",
       phone: `34${Date.now().toString().slice(-8)}`,
-      role: "COACH",
+      role: "Coach",
       name: "Pro Coach",
     } as any);
 
@@ -50,7 +50,7 @@ const runPaymentFlowTest = async () => {
       email: `player_paytest_${Date.now()}@example.com`,
       password: "hashedpassword",
       phone: `56${Date.now().toString().slice(-8)}`,
-      role: "PLAYER",
+      role: "Player",
       name: "Active Player",
     } as any);
     
@@ -128,8 +128,8 @@ const runPaymentFlowTest = async () => {
       testFailed = true;
     } else {
       console.log("✅ Passed: Booking payments array is populated.");
-      const venuePayment = booking.payments.find(p => p.userType === "VENUE_LISTER");
-      const coachPayment = booking.payments.find(p => p.userType === "COACH");
+      const venuePayment = booking.payments.find(p => p.userType === "VenueLister");
+      const coachPayment = booking.payments.find(p => p.userType === "Coach");
       
       if (!venuePayment || venuePayment.status !== "PENDING") {
          console.log("❌ Failed: Venue payment split is missing or not PENDING.");

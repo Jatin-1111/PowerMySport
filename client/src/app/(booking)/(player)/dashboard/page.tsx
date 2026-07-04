@@ -4,6 +4,7 @@ import { toast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
   Calendar,
   UserPlus,
@@ -49,6 +50,7 @@ interface UpcomingBooking {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [upcomingBookings, setUpcomingBookings] = useState<UpcomingBooking[]>(
     [],
   );
@@ -196,6 +198,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PlayerPageHeader
+        badge={user?.userType === "Parent" ? "Parent Dashboard" : "Player Dashboard"}
         title="Dashboard"
         subtitle="Welcome back! Here's what's happening with your activities."
       />

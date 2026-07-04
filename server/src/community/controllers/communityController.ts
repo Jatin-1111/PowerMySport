@@ -35,7 +35,8 @@ const getStatusCode = (message: string): number => {
     message.includes("cannot") ||
     message.includes("required") ||
     message.includes("privacy") ||
-    message.includes("accept")
+    message.includes("accept") ||
+    message.includes("only for")
   ) {
     return 400;
   }

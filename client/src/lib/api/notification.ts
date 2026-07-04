@@ -4,7 +4,7 @@ export interface Notification {
   _id: string;
   userId: string;
   type: string;
-  category: "SOCIAL" | "BOOKING" | "ADMIN" | "REVIEW" | "PAYMENT" | "COMMUNITY";
+  category: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
   title: string;
   message: string;
   data?: Record<string, unknown>;
@@ -18,7 +18,7 @@ export interface NotificationFilters {
   category?:
     | "SOCIAL"
     | "BOOKING"
-    | "ADMIN"
+    | "Admin"
     | "REVIEW"
     | "PAYMENT"
     | "COMMUNITY";
@@ -97,7 +97,7 @@ export const notificationApi = {
     category?:
       | "SOCIAL"
       | "BOOKING"
-      | "ADMIN"
+      | "Admin"
       | "REVIEW"
       | "PAYMENT"
       | "COMMUNITY",

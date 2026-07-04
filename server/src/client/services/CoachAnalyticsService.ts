@@ -60,7 +60,7 @@ export const getCoachEarnings = async (coachUserId: string): Promise<EarningsDat
   const getCoachAmount = (b: any): number => {
     if (Array.isArray(b.payments)) {
       const coachPayment = b.payments.find(
-        (p: any) => p.userType === "COACH" && p.status === "PAID",
+        (p: any) => p.userType === "Coach" && p.status === "PAID",
       );
       if (coachPayment) return coachPayment.amount;
     }

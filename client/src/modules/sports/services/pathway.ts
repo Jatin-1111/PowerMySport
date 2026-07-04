@@ -106,6 +106,7 @@ export interface SportPathway {
   sportSlug: string;
   sportName: string;
   category?: string;
+  state?: string;
   overview: string;
   levels: PathwayLevel[];
   tournaments: Tournament[];
@@ -141,7 +142,7 @@ export const pathwayApi = {
   getPathway: async (
     sportName: string,
     childAge?: number,
-    childCity?: string,
+    state?: string,
   ): Promise<{
     pathway: SportPathway;
     source: "db" | "generated";
@@ -151,7 +152,7 @@ export const pathwayApi = {
     try {
       const params = new URLSearchParams({ sport: sportName });
       if (childAge) params.append("age", String(childAge));
-      if (childCity) params.append("city", childCity.trim());
+      if (state) params.append("state", state.trim());
       const resp = await axiosInstance.get<ApiResponse<SportPathway>>(
         `/pathways?${params.toString()}`,
       );

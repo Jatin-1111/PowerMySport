@@ -109,8 +109,8 @@ export default function DiscoverPageClient() {
         } else {
           let filters = {};
           if (activeTab === "PARENTS") filters = { userType: "Parent" };
-          if (activeTab === "PLAYERS") filters = { userType: "Recreational" };
-          if (activeTab === "COACHES") filters = { role: "COACH" };
+          if (activeTab === "PLAYERS") filters = { userType: "Player" };
+          if (activeTab === "COACHES") filters = { role: "Coach" };
 
           const playersData =
             await communityService.searchPlayers(debouncedQuery, filters);
@@ -193,8 +193,8 @@ export default function DiscoverPageClient() {
 
   const filteredPlayers = players.filter((p) => {
     if (activeTab === "PARENTS") { if (p.userType !== "Parent") return false; }
-    else if (activeTab === "PLAYERS") { if (p.userType !== "Recreational") return false; }
-    else if (activeTab === "COACHES") { if (p.role !== "COACH") return false; }
+    else if (activeTab === "PLAYERS") { if (p.userType !== "Player") return false; }
+    else if (activeTab === "COACHES") { if (p.role !== "Coach") return false; }
     else return false;
 
     if (selectedSport !== "All" && !(p.sports || []).includes(selectedSport)) return false;
@@ -543,7 +543,7 @@ export default function DiscoverPageClient() {
                               {player.displayName}
                             </h3>
                             <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-power-orange">
-                              {player.userType === "Parent" ? "Parent" : player.role === "COACH" ? "Coach" : "Player"}
+                              {player.userType === "Parent" ? "Parent" : player.role === "Coach" ? "Coach" : "Player"}
                             </p>
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
                               {player.sports?.slice(0, 2).map((s) => (
