@@ -1,4 +1,4 @@
-export type CommunityRole = "Player" | "Coach";
+export type CommunityRole = "Player" | "Coach" | "Parent";
 export type CommunityGroupAudience = "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
 
 export type CommunityInteractionPolicy = {
@@ -10,6 +10,7 @@ export type CommunityInteractionPolicy = {
 export const ROLE_LABEL: Record<CommunityRole, string> = {
   Player: "player",
   Coach: "coach",
+  Parent: "parent",
 };
 
 const parseBooleanFlag = (

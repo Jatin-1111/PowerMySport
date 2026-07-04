@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
+import { SportPathway } from "../models/SportPathway";
 
 export const guidanceRequestSchema = z.object({
   child_age: z.number().int().min(3).max(21),
@@ -82,7 +83,9 @@ export type GuidanceResponse = z.infer<typeof guidanceResponseSchema>;
 export const getYouthSportsGuidanceSystemPrompt = (
   hasSport: boolean,
   age: number,
+  groundingContext?: string,
 ) => `You are an expert Youth Sports Consultant advising an Indian parent. You will receive a child's profile strictly in JSON format.
+${groundingContext ? `\nGROUNDING CONTEXT (OFFICIAL PATHWAY DATA):\n${groundingContext}\n\nYou must anchor your journey phases to these official benchmarks. Do not invent contradictory timelines or criteria.\n` : ""}
 WRITE IN THE SIMPLEST POSSIBLE ENGLISH: every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use only simple, everyday words — prefer short common words over long or formal ones (say "help" not "facilitate", "start" not "commence", "show" not "demonstrate", "use" not "utilize", "enough" not "sufficient"). Use short sentences and active voice. Never use a sport-federation acronym (AITA, ITF, FIDE, SAI, BCCI, WTA, etc.) without immediately explaining it in plain words the first time it appears. Avoid dense, jargon-heavy, or fancy/sophisticated phrasing anywhere in the response — this applies to every field, not just names and acronyms.
 GIVE EACH FIELD ONE JOB, NEVER REPEAT CONTENT ACROSS FIELDS: "profileAnalysis" ONLY covers the child's personality/fitness/age and never discusses whether their goal is realistic. "goalAssessment.rationale" ONLY covers the realism reasoning (timeframe, level, hours) and must NOT re-describe the child's personality — assume the reader already read profileAnalysis. "recommendedPlatformActions" ONLY lists actions the parent takes on the PowerMySport platform itself (e.g. book a trial with a coach, message a coach, browse a nearby academy listing) and must NEVER list training drills or practice milestones — those belong only in journeyPhases milestones.
 ${
@@ -179,6 +182,32 @@ export const generateYouthSportsGuidance = async (
   let lastError: unknown = null;
   let sawQuotaIssue = false;
 
+  let groundingContext = "";
+  if (payload.sport && payload.location) {
+    const slug = payload.sport.trim().toLowerCase().replace(/\s+/g, "-");
+    const stateSlug = payload.location.trim().toLowerCase().replace(/\s+/g, "-");
+    const cacheKey = `${slug}_${stateSlug}`;
+    
+    try {
+      const pathway = await SportPathway.findOne({ cacheKey }).lean();
+      if (pathway && (pathway as any).levels && (pathway as any).levels.length > 0) {
+        const levelIndex = Math.max(1, Math.min(5, payload.current_pathway_level || 1)) - 1;
+        const levelObj = (pathway as any).levels[levelIndex];
+        if (levelObj) {
+          groundingContext = JSON.stringify({
+            level: levelObj.level,
+            title: levelObj.title,
+            benchmarks: levelObj.benchmarks,
+            trialInfo: levelObj.trialInfo,
+            talentSignals: levelObj.talentSignals,
+          }, null, 2);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch grounding context for guidance AI", e);
+    }
+  }
+
   for (const modelName of guidanceModelCandidates) {
     try {
       const response = await genAI.models.generateContent({
@@ -188,6 +217,7 @@ export const generateYouthSportsGuidance = async (
           systemInstruction: getYouthSportsGuidanceSystemPrompt(
             !!payload.sport,
             payload.child_age,
+            groundingContext,
           ),
           responseMimeType: "application/json",
           temperature: 0.4,

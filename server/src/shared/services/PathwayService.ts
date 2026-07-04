@@ -61,23 +61,24 @@ const LEVEL_LABEL_FALLBACKS = ["Beginner", "Intermediate", "Advanced", "National
 
 function buildPathwayPrompt(
   sportName: string,
-  childAge?: number,
-  childCity?: string,
+  state?: string,
 ): string {
-  const ageContext = childAge
-    ? `The parent's child is ${childAge} years old.`
-    : "";
-  const cityContext = childCity
-    ? `The family is based in ${childCity.trim()}, India.`
+  const stateContext = state
+    ? `The family is based in the Indian state/UT of ${state.trim()}.`
     : "";
 
   return `You are an expert Indian sports development consultant advising an average Indian parent. Generate a detailed, highly actionable, and realistic sports development pathway for their child in "${sportName}" within India.
-${ageContext ? `\n${ageContext}` : ""}${cityContext ? `\n${cityContext}` : ""}
+${stateContext ? `\n${stateContext}` : ""}
 WRITE IN SIMPLE LANGUAGE — this is the most important rule: Every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use short sentences and everyday words. Never use a sport-federation acronym (AITA, ITF, FIDE, SAI, BCCI, WTA, etc.) without immediately explaining it in plain words the first time, e.g. "AITA (the organisation that runs tennis in India)". Do not write dense, jargon-heavy phrases.
 
 LEVEL LABELS: Level 1's "label" is ALWAYS exactly the word "Beginner" — identical for every sport, no exceptions, because every parent understands "Beginner" regardless of which sport they're reading about.
-For levels 2-5, the "label" MUST be sport-specific — a short (2-4 word) plain-English name for what that stage is actually called in "${sportName}" (e.g. Tennis level 2 → "State-Level Player"; Chess level 4 → "National Rated Player"; Cricket level 2 → "District-Level Player"; Swimming level 3 → "State Swimmer"). Do NOT use a generic Indian-sports-tier word (like "Grassroots" or "District") unless it is genuinely how progression works for this sport — and do NOT use unexplained federation acronyms in the label. It must still sound like plain English a parent with zero sports background would understand at a glance.
-The "title" field is a slightly fuller version of the same idea, still in plain, simple English (e.g. for Tennis level 2 → "Playing in State-Level Tennis Tournaments"; for Chess level 4 → "Playing in National Chess Tournaments"; for Cricket level 2 → "Playing District-Level Cricket Matches"). Keep it short and concrete, not a mouthful of federation names.
+For levels 2-5, the "label" MUST be sport-specific — a short (2-4 word) plain-English name for what that stage is actually called in "${sportName}". STRICTLY MAP the levels to the geographic scope of competition as follows:
+- Level 2 MUST map to the District / Inter-City / Local competitive level (e.g., "District-Level Player").
+- Level 3 MUST map to the State / Provincial competitive level (e.g., "State-Level Player").
+- Level 4 MUST map to the National competitive level (e.g., "National Ranked Player").
+- Level 5 MUST map to the International / Elite competitive level (e.g., "International Tour Player").
+Do NOT use unexplained federation acronyms in the label. It must still sound like plain English a parent with zero sports background would understand at a glance.
+The "title" field is a slightly fuller version of the same idea, still in plain, simple English (e.g. for Tennis level 2 → "Playing in District-Level Tennis Tournaments"; for Chess level 4 → "Playing in National Chess Tournaments"; for Cricket level 3 → "Playing State-Level Cricket Matches"). Keep it short and concrete, not a mouthful of federation names.
 Keep the numeric "level" field as 1-5 in ascending order.
 Return ONLY a valid JSON object (no markdown, no code fences) with this exact structure:
 {
@@ -103,10 +104,11 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
       },
       "benchmarks": {
         "description": "What a child at this level should physically and technically be able to do",
-        "metrics": [{"metric": "specific skill or fitness attribute", "target": "measurable target appropriate for this level and sport"}]
+        "metrics": [{"metric": "specific skill or fitness attribute", "target": "measurable target appropriate for this level and sport", "checkpointMonth": 6}]
       },
       "trialInfo": {
         "typicalMonths": "Months when selection trials for this level typically happen in India (e.g. 'August–October')",
+        "precisionLevel": "exact or approximate",
         "registrationProcess": "Step-by-step: how a parent registers their child for trials",
         "eligibilityAge": "Age range accepted at this level's trials",
         "selectionCriteria": ["Physical fitness component being tested", "Technical skill being assessed"],
@@ -118,15 +120,15 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
         "warningSignsToWatch": ["Symptom or sign a parent must not ignore — when to see a doctor"]
       },
       "talentSignals": {
-        "physicalMarkers": ["Observable physical trait that indicates elite potential for this sport"],
-        "cognitiveMarkers": ["Mental or tactical aptitude sign coaches look for"],
-        "behavioralMarkers": ["Character trait or habit that predicts long-term success at elite level"]
+        "physicalMarkers": ["Observable physical trait that indicates elite potential for THIS sport specifically (not generic)"],
+        "cognitiveMarkers": ["Mental or tactical aptitude sign coaches look for in THIS sport"],
+        "behavioralMarkers": ["Character trait or habit that predicts long-term success at elite level in THIS sport"]
       },
       "mentalSkillsFocus": ["Top mental skill to develop at this level", "second skill", "third skill"],
       "coachSelectionGuide": {
         "mustHave": ["Non-negotiable qualification or quality for a coach at this level"],
         "niceToHave": ["Desirable but not essential trait"],
-        "redFlags": ["Warning sign of a coach who could harm a young athlete at this stage"],
+        "redFlags": ["Warning sign 1 of a harmful coach", "Warning sign 2", "Warning sign 3 (MUST HAVE MINIMUM 3 RED FLAGS)"],
         "questionsToAsk": ["Specific interview question a parent should ask before hiring"]
       },
       "governmentSchemes": [
@@ -135,7 +137,9 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
           "body": "Ministry or body that runs it (e.g. Ministry of Youth Affairs & Sports, SAI)",
           "eligibility": "Who qualifies — age range, performance level, sport",
           "benefit": "What it provides — ₹ stipend amount or in-kind support (kit, coaching, travel)",
-          "howToApply": "Concise application process — where to register, deadline cycle"
+          "howToApply": "Concise application process — where to register, deadline cycle",
+          "sourceURL": "URL of the official scheme website or news source",
+          "verifiedAsOf": "YYYY-MM-DD date when this scheme data was verified"
         }
       ],
       "academicIntegration": "Practical advice for parents on balancing school academics with sport at this specific level — board exam timing, school permissions, residential academies that cover studies",
@@ -244,9 +248,7 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
 
 Make all content specific to India's sports ecosystem, governing bodies, and actual competitions. Focus on giving parents practical advice and clear expectations. Be accurate and informative.
 
-If a child's age was provided, lead the "steps" of the most age-appropriate level with the most actionable next step for a child of that age — but always include all 5 levels in the output.
-
-If a city was provided, you MUST populate the \`localResources\` object for the lower three levels (tiers 1-3) with REAL, accurate names of academies, training facilities (e.g., SAI centres), and local federation branches located in or near that city. If none exist or you cannot be certain, leave the arrays empty.
+If a state was provided, you MUST populate the \`localResources\` object for the lower three levels (tiers 1-3) with REAL, accurate names of academies, training facilities (e.g., SAI centres), and local federation branches located in or near that state. If none exist or you cannot be certain, leave the arrays empty.
 Do not just merge local places into the general "steps" — use the \`localResources\` structured format.
 
 Do NOT include "tournaments", "scholarships", or "universities" arrays in your response — those are supplied separately from a verified database, not generated by you.`;
@@ -278,8 +280,7 @@ export class PathwayService {
    */
   async getOrGeneratePathway(
     sportName: string,
-    childAge?: number,
-    childCity?: string,
+    state?: string,
   ): Promise<{
     pathway: SportPathwayDocument | null;
     source: "db" | "generated" | "not_a_sport";
@@ -301,7 +302,8 @@ export class PathwayService {
     slug = knownSport ? knownSport.slug : slug;
 
     // ── 2. Build composite cache key ───────────────────────────────────────
-    const cacheKey = `${slug}_${childAge ?? "any"}_${normalizeCity(childCity)}`;
+    const stateSlug = state ? toSlug(state) : "any";
+    const cacheKey = `${slug}_${stateSlug}`;
 
     // ── 3. Check cache by cacheKey ─────────────────────────────────────────
     const existing = await SportPathway.findOne({ cacheKey });
@@ -331,7 +333,7 @@ export class PathwayService {
         existing,
         slug,
         finalSportName,
-        childCity,
+        state,
       );
       return {
         pathway: enriched.pathway,
@@ -352,7 +354,7 @@ export class PathwayService {
       );
       const [isValid, gen] = await Promise.all([
         this.validateSport(finalSportName),
-        this.generatePathway(finalSportName, childAge, childCity),
+        this.generatePathway(finalSportName, state),
       ]);
       log.info(`[PathwayService] Validation: ${isValid}, generated: ${!!gen}`);
       if (!isValid) {
@@ -367,8 +369,7 @@ export class PathwayService {
       // ── 5. Known sport — generate directly (no validation round-trip) ────
       generated = await this.generatePathway(
         finalSportName,
-        childAge,
-        childCity,
+        state,
       );
     }
 
@@ -386,7 +387,7 @@ export class PathwayService {
           fallbackDoc,
           slug,
           finalSportName,
-          childCity,
+          state,
         );
         return {
           pathway: enriched.pathway,
@@ -395,7 +396,7 @@ export class PathwayService {
           entitiesReady: enriched.entitiesReady,
           warnings: [
             ...(enriched.warnings || []),
-            "City-specific data is being generated. Showing general pathway for now.",
+            "State-specific data is being generated. Showing general pathway for now.",
           ],
         };
       }
@@ -422,7 +423,7 @@ export class PathwayService {
       saved,
       slug,
       finalSportName,
-      childCity,
+      state,
     );
     return {
       pathway: enriched.pathway,
@@ -481,17 +482,14 @@ export class PathwayService {
       // Mark in DB for multi-instance safety
       await SportPathway.updateOne(
         { cacheKey },
-        { $set: { refreshInProgress: true } },
+        { $set: { contentRefreshInProgress: true, financialRefreshInProgress: true } },
       );
 
-      // Parse slug / age / city back from cacheKey e.g. "cricket_12_ludhiana"
+      // Parse slug / state from cacheKey e.g. "cricket_punjab"
       const parts = cacheKey.split("_");
       const sportSlug: string = parts[0] ?? cacheKey;
-      const rawAge = parts[1];
-      const rawCity = parts.slice(2).join("-");
-      const childAge =
-        rawAge && rawAge !== "any" ? parseInt(rawAge, 10) : undefined;
-      const childCity = rawCity && rawCity !== "" ? rawCity : undefined;
+      const parsedState = parts.slice(1).join("-");
+      const state = parsedState && parsedState !== "any" ? parsedState : undefined;
 
       // Prefer sportName from existing doc
       const existingDoc = await SportPathway.findOne({ cacheKey })
@@ -503,8 +501,7 @@ export class PathwayService {
 
       const generated = await this.generatePathway(
         sportName,
-        childAge,
-        childCity,
+        state,
       );
 
       if (!generated) {
@@ -513,7 +510,7 @@ export class PathwayService {
         );
         await SportPathway.updateOne(
           { cacheKey },
-          { $set: { refreshInProgress: false } },
+          { $set: { contentRefreshInProgress: false, financialRefreshInProgress: false } },
         );
         return null;
       }
@@ -529,8 +526,10 @@ export class PathwayService {
             universities: [],
             sportSlug,
             cacheKey,
-            lastRefreshedAt: new Date(),
-            refreshInProgress: false,
+            contentRefreshedAt: new Date(),
+            financialDataRefreshedAt: new Date(),
+            contentRefreshInProgress: false,
+            financialRefreshInProgress: false,
           },
         },
         { upsert: true, new: true },
@@ -556,7 +555,7 @@ export class PathwayService {
       log.error(`[PathwayService] ❌ Refresh error for ${cacheKey}:`, err);
       await SportPathway.updateOne(
         { cacheKey },
-        { $set: { refreshInProgress: false } },
+        { $set: { contentRefreshInProgress: false, financialRefreshInProgress: false } },
       ).catch(() => {});
       return null;
     } finally {
@@ -571,15 +570,20 @@ export class PathwayService {
   async getStalePathways(
     thresholdDays: number = DEFAULT_STALE_DAYS,
   ): Promise<string[]> {
-    const cutoff = new Date(Date.now() - thresholdDays * 24 * 60 * 60 * 1000);
+    const financialCutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const contentCutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
 
     const staleDocs = await SportPathway.find({
       $or: [
-        { lastRefreshedAt: { $exists: false } },
-        { lastRefreshedAt: null },
-        { lastRefreshedAt: { $lt: cutoff } },
+        { financialDataRefreshedAt: { $exists: false } },
+        { financialDataRefreshedAt: null },
+        { financialDataRefreshedAt: { $lt: financialCutoff } },
+        { contentRefreshedAt: { $exists: false } },
+        { contentRefreshedAt: null },
+        { contentRefreshedAt: { $lt: contentCutoff } },
       ],
-      refreshInProgress: { $ne: true },
+      contentRefreshInProgress: { $ne: true },
+      financialRefreshInProgress: { $ne: true },
       // Expert-verified pathways are excluded from automatic regeneration —
       // an AI refresh would silently overwrite reviewed content.
       isVerified: { $ne: true },
@@ -691,25 +695,25 @@ export class PathwayService {
    */
   async getEntities(
     sportName: string,
-    childCity?: string,
+    state?: string,
   ): Promise<{ tournaments: any[]; scholarships: any[]; universities: any[] }> {
     const slug = toSlug(sportName);
     const knownSport = await Sport.findOne({ slug });
     const finalSlug = knownSport ? knownSport.slug : slug;
     const finalName = knownSport ? knownSport.name : sportName;
 
-    const cityQuery = this.buildCityQuery(childCity);
+    const stateQuery = this.buildStateQuery(state);
 
     const [t, s, u] = await Promise.all([
-      Tournament.find({ sportSlug: finalSlug, ...cityQuery })
+      Tournament.find({ sportSlug: finalSlug, ...stateQuery })
         .sort({ updatedAt: -1 })
         .limit(6)
         .lean(),
-      Scholarship.find({ sportSlug: finalSlug, ...cityQuery })
+      Scholarship.find({ sportSlug: finalSlug, ...stateQuery })
         .sort({ updatedAt: -1 })
         .limit(6)
         .lean(),
-      University.find({ sportSlug: finalSlug, ...cityQuery })
+      University.find({ sportSlug: finalSlug, ...stateQuery })
         .sort({ updatedAt: -1 })
         .limit(6)
         .lean(),
@@ -730,7 +734,7 @@ export class PathwayService {
         await realDataScraperService.scrapeSport({
           sportSlug: finalSlug,
           sportName: finalName,
-          ...(childCity ? { city: childCity } : {}),
+          ...(state ? { state } : {}),
         });
       } catch (err) {
         log.error(
@@ -740,15 +744,15 @@ export class PathwayService {
       }
 
       const [t2, s2, u2] = await Promise.all([
-        Tournament.find({ sportSlug: finalSlug, ...cityQuery })
+        Tournament.find({ sportSlug: finalSlug, ...stateQuery })
           .sort({ updatedAt: -1 })
           .limit(6)
           .lean(),
-        Scholarship.find({ sportSlug: finalSlug, ...cityQuery })
+        Scholarship.find({ sportSlug: finalSlug, ...stateQuery })
           .sort({ updatedAt: -1 })
           .limit(6)
           .lean(),
-        University.find({ sportSlug: finalSlug, ...cityQuery })
+        University.find({ sportSlug: finalSlug, ...stateQuery })
           .sort({ updatedAt: -1 })
           .limit(6)
           .lean(),
@@ -769,20 +773,20 @@ export class PathwayService {
     pathway: SportPathwayDocument,
     sportSlug: string,
     sportName?: string,
-    childCity?: string,
+    state?: string,
   ): Promise<CanonicalAttachResult> {
-    const cityQuery = this.buildCityQuery(childCity);
+    const stateQuery = this.buildStateQuery(state);
 
     const [tournaments, scholarships, universities] = await Promise.all([
-      Tournament.find({ sportSlug, ...cityQuery })
+      Tournament.find({ sportSlug, ...stateQuery })
         .sort({ updatedAt: -1 })
         .limit(6)
         .lean(),
-      Scholarship.find({ sportSlug, ...cityQuery })
+      Scholarship.find({ sportSlug, ...stateQuery })
         .sort({ updatedAt: -1 })
         .limit(6)
         .lean(),
-      University.find({ sportSlug, ...cityQuery })
+      University.find({ sportSlug, ...stateQuery })
         .sort({ updatedAt: -1 })
         .limit(6)
         .lean(),
@@ -813,7 +817,7 @@ export class PathwayService {
         .scrapeSport({
           sportSlug,
           sportName,
-          ...(childCity ? { city: childCity } : {}),
+          ...(state ? { state } : {}),
         })
         .catch((err) =>
           log.error(
@@ -821,41 +825,42 @@ export class PathwayService {
             err,
           ),
         );
+    }
 
+    const plainResponse = {
+      ...plain,
+      tournaments,
+      tournamentsStatus: (plain as any).tournamentsVerifiedEmpty ? "verified_empty" : tournaments.length === 0 ? "not_yet_researched" : undefined,
+      scholarships,
+      scholarshipsStatus: (plain as any).scholarshipsVerifiedEmpty ? "verified_empty" : scholarships.length === 0 ? "not_yet_researched" : undefined,
+      universities,
+      universitiesStatus: (plain as any).universitiesVerifiedEmpty ? "verified_empty" : universities.length === 0 ? "not_yet_researched" : undefined,
+    } as SportPathwayDocument;
+
+    if (needsRefresh && sportName) {
       return {
-        pathway: {
-          ...plain,
-          tournaments,
-          scholarships,
-          universities,
-        } as SportPathwayDocument,
+        pathway: plainResponse,
         warnings: [],
-        // entitiesReady=false tells the client to call /entities and wait for fresh data
         entitiesReady: !missingEntities && !missingDates,
       };
     }
 
     return {
-      pathway: {
-        ...plain,
-        tournaments,
-        scholarships,
-        universities,
-      } as SportPathwayDocument,
+      pathway: plainResponse,
       warnings: [],
       entitiesReady: true,
     };
   }
 
-  private buildCityQuery(childCity?: string) {
-    if (!childCity) return {};
-    const cityRegex = new RegExp(`^${childCity}$`, "i");
+  private buildStateQuery(state?: string) {
+    if (!state) return {};
+    const stateRegex = new RegExp(`^${state}$`, "i");
     return {
       $or: [
-        { city: cityRegex },
-        { city: { $exists: false } },
-        { city: null },
-        { city: /national/i },
+        { state: stateRegex },
+        { state: { $exists: false } },
+        { state: null },
+        { state: /national/i },
       ],
     };
   }
@@ -892,8 +897,7 @@ export class PathwayService {
 
   private async generatePathway(
     sportName: string,
-    childAge?: number,
-    childCity?: string,
+    state?: string,
   ): Promise<{
     sportName: string;
     category: string;
@@ -935,7 +939,7 @@ export class PathwayService {
       try {
         const result = await this.genAI.models.generateContent({
           model: modelName,
-          contents: buildPathwayPrompt(sportName, childAge, childCity),
+          contents: buildPathwayPrompt(sportName, state),
           config: {
             responseMimeType: "application/json",
             temperature: 0.4,

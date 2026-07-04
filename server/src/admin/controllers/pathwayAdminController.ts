@@ -88,7 +88,16 @@ export const getPathwayAdminDetail = async (
 // scholarships/universities stay exclusively owned by the canonical collections
 // and lookupCount/cacheKey/slug are identity/telemetry fields, not content.
 
-const EDITABLE_FIELDS = ["overview", "category", "levels", "equipment", "careers"] as const;
+const EDITABLE_FIELDS = [
+  "overview",
+  "category",
+  "levels",
+  "equipment",
+  "careers",
+  "tournamentsVerifiedEmpty",
+  "scholarshipsVerifiedEmpty",
+  "universitiesVerifiedEmpty",
+] as const;
 
 export const updatePathwayAdmin = async (
   req: Request,
@@ -171,6 +180,27 @@ export const setPathwayVerifiedAdmin = async (
     }
 
     const verified = req.body?.verified !== false; // default true
+
+    const existingPathway = await SportPathway.findById(id).lean();
+    if (!existingPathway) {
+      res.status(404).json({ success: false, message: "Pathway not found" });
+      return;
+    }
+
+    if (verified) {
+      // Validate that all government schemes have sources and dates
+      for (const level of (existingPathway as any).levels || []) {
+        for (const scheme of level.governmentSchemes || []) {
+          if (!scheme.sourceURL || !scheme.verifiedAsOf) {
+            res.status(400).json({
+              success: false,
+              message: "Cannot verify: All government schemes must have a sourceURL and a verifiedAsOf date.",
+            });
+            return;
+          }
+        }
+      }
+    }
 
     const pathway = await SportPathway.findByIdAndUpdate(
       id,

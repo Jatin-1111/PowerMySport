@@ -199,16 +199,7 @@ export const initializeScheduledJobs = (): void => {
   );
 
   // ── Pathway pre-warm (once at startup) ───────────────────────────────────
-  // Runs 15s after startup so the DB connection is ready.
-  // Only generates pathways for sports that don't have a cached entry yet.
-  const preWarmHandle = setTimeout(async () => {
-    try {
-      await pathwayService.preWarmPopularSports();
-    } catch (error) {
-      console.error("❌ Pathway pre-warm failed:", error);
-    }
-  }, 15_000);
-  preWarmHandle.unref();
+  // Pre-warming of 'any' locality generic sports is disabled.
 
   // ── Pathway stale-refresh (periodic) ─────────────────────────────────────
   // Configurable via PATHWAY_REFRESH_INTERVAL_HOURS (default: 24h).
