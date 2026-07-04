@@ -6,6 +6,7 @@ import {
 } from "@/modules/expert/services/expert";
 import { Button } from "@/modules/shared/ui/Button";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
+import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import {
   ArrowLeft,
   ArrowRight,
@@ -138,7 +139,7 @@ export default function MyExpertSessionsPage() {
                         {s.status === "SCHEDULED" && s.scheduledAt ? (
                           <>
                             <CalendarClock className="h-3.5 w-3.5" />
-                            {new Date(s.scheduledAt).toLocaleString()}
+                            {formatSessionTimeWithZone(s.scheduledAt, s.expertTimezone)}
                           </>
                         ) : (
                           <>

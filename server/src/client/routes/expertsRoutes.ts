@@ -27,6 +27,7 @@ router.get("/sessions/:sessionId", authMiddleware, expert.getSession);
 router.patch("/sessions/:sessionId/schedule", authMiddleware, expert.scheduleSession);
 router.patch("/sessions/:sessionId/meeting-link", authMiddleware, expert.updateMeetingLink);
 router.post("/sessions/:sessionId/complete", authMiddleware, expert.completeSession);
+router.post("/sessions/:sessionId/respond", authMiddleware, expert.respondSession);
 router.post("/sessions/:sessionId/cancel", authMiddleware, expert.cancelSession);
 router.post("/sessions/:sessionId/review", authMiddleware, expert.reviewSession);
 router.post("/sessions/:sessionId/refund-done", authMiddleware, adminMiddleware, expert.refundDoneAdmin);

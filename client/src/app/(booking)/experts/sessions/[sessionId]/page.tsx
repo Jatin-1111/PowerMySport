@@ -5,6 +5,8 @@ import {
   type ExpertSession,
 } from "@/modules/expert/services/expert";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -34,6 +36,7 @@ export default function ExpertSessionPage() {
   const [anonymous, setAnonymous] = useState(false);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [newSlot, setNewSlot] = useState<string | null>(null);
+  const [showCancel, setShowCancel] = useState(false);
 
   const init = useCallback(async () => {
     try {
@@ -81,12 +84,6 @@ export default function ExpertSessionPage() {
   };
 
   const handleCancel = async () => {
-    if (
-      !window.confirm(
-        "Cancel this session? If you paid, our team will process a refund manually.",
-      )
-    )
-      return;
     setSaving(true);
     try {
       const res = await expertApi.cancelSession(sessionId);
@@ -103,6 +100,7 @@ export default function ExpertSessionPage() {
       );
     } finally {
       setSaving(false);
+      setShowCancel(false);
     }
   };
 
@@ -199,6 +197,18 @@ export default function ExpertSessionPage() {
             Status: {session.status.replace(/_/g, " ")}
           </p>
 
+          {/* Expert confirmation status */}
+          {["PAID", "SCHEDULED"].includes(session.status) &&
+            (session.expertAcceptance === "ACCEPTED" ? (
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Confirmed by your expert
+              </p>
+            ) : (
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                <Clock className="h-3.5 w-3.5" /> Awaiting expert confirmation
+              </p>
+            ))}
+
           {/* Scheduled time + meeting link */}
           {session.scheduledAt && session.status !== "CANCELLED" && (
             <div className="mt-6 rounded-xl bg-slate-50 p-4">
@@ -207,7 +217,7 @@ export default function ExpertSessionPage() {
                 {session.status === "COMPLETED" ? "Session time" : "Scheduled"}
               </p>
               <p className="mt-1 text-sm text-slate-700">
-                {new Date(session.scheduledAt).toLocaleString("en-IN")}
+                {formatSessionTimeWithZone(session.scheduledAt, session.expertTimezone)}
                 {session.mode
                   ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}`
                   : ""}
@@ -244,7 +254,7 @@ export default function ExpertSessionPage() {
                     {session.scheduledAt ? "Reschedule" : "Pick a time"}
                   </button>
                   <button
-                    onClick={handleCancel}
+                    onClick={() => setShowCancel(true)}
                     disabled={saving}
                     className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
                   >
@@ -261,6 +271,7 @@ export default function ExpertSessionPage() {
                     expertId={session.expertId}
                     value={newSlot}
                     onChange={setNewSlot}
+                    timezone={session.expertTimezone}
                     className="mt-3"
                   />
                   <div className="mt-3 flex gap-2">
@@ -347,6 +358,18 @@ export default function ExpertSessionPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={showCancel}
+        onClose={() => setShowCancel(false)}
+        onConfirm={handleCancel}
+        title="Cancel session?"
+        message="If you've paid, our team will process a refund manually. This can't be undone."
+        confirmLabel="Cancel session"
+        cancelLabel="Keep session"
+        variant="danger"
+        loading={saving}
+      />
     </div>
   );
 }

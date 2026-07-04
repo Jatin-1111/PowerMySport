@@ -71,7 +71,7 @@ const serializeExpertFull = (expert: any) => ({
 
 const serializeSession = (
   session: any,
-  extra: { expert?: any; clientName?: string } = {},
+  extra: { expert?: any; clientName?: string; expertTimezone?: string } = {},
 ) => ({
   id: session._id?.toString(),
   _id: session._id?.toString(),
@@ -82,6 +82,9 @@ const serializeSession = (
   paymentStatus: session.paymentStatus,
   scheduledAt: session.scheduledAt,
   durationMinutes: session.durationMinutes,
+  // Canonical display timezone (the expert's) so client + expert see the same time.
+  expertTimezone:
+    extra.expertTimezone || extra.expert?.timezone || "Asia/Kolkata",
   mode: session.mode,
   meetingLink: session.meetingLink,
   clientNote: session.clientNote,
@@ -89,6 +92,8 @@ const serializeSession = (
   cancelledBy: session.cancelledBy,
   cancelReason: session.cancelReason,
   refundStatus: session.refundStatus,
+  expertAcceptance: session.expertAcceptance || "PENDING",
+  expertRespondedAt: session.expertRespondedAt,
   reviewed: session.reviewed,
   rating: session.rating,
   review: session.review,
@@ -195,7 +200,7 @@ export const listExpertsForAdmin = async (params: { page?: number | undefined; l
     Expert.countDocuments({}),
   ]);
   return {
-    data: experts.map(serializeExpert),
+    data: experts.map(serializeExpertFull),
     pagination: { total, page, totalPages: Math.ceil(total / limit) },
   };
 };
@@ -588,6 +593,77 @@ export const setSessionMeetingLink = async (params: {
   return session;
 };
 
+/**
+ * Expert (or admin) responds to a client's booked session:
+ *  - ACCEPT: confirm the client's chosen time.
+ *  - DECLINE: cancel the session (paid → manual refund required) + notify.
+ *  - RESCHEDULE: move to another open slot within the expert's availability.
+ */
+export const respondToExpertSession = async (params: {
+  sessionId: string;
+  expertUserId: string;
+  isAdmin?: boolean | undefined;
+  action: "ACCEPT" | "DECLINE" | "RESCHEDULE";
+  scheduledAt?: string | undefined;
+  reason?: string | undefined;
+}) => {
+  const session = await ExpertSession.findById(params.sessionId);
+  if (!session) throw new Error("Session not found");
+  const expert = await Expert.findById(session.expertId);
+  if (!expert) throw new Error("Expert not found");
+  if (
+    !params.isAdmin &&
+    (expert.userId as mongoose.Types.ObjectId).toString() !== params.expertUserId
+  ) {
+    throw new Error("Only the expert or an admin can respond to this session");
+  }
+  if (!["PAID", "SCHEDULED"].includes(session.status)) {
+    throw new Error("This session can no longer be modified");
+  }
+  const tz = expert.timezone || "Asia/Kolkata";
+
+  if (params.action === "ACCEPT") {
+    session.expertAcceptance = "ACCEPTED";
+    session.expertRespondedAt = new Date();
+    if (session.scheduledAt) session.status = "SCHEDULED";
+    await session.save();
+    notify(session.userId, "BOOKING_CONFIRMED", "Session confirmed",
+      "Your expert confirmed your session time.", { sessionId: session._id.toString() }, true);
+    return session;
+  }
+
+  if (params.action === "DECLINE") {
+    session.status = "CANCELLED";
+    session.cancelledAt = new Date();
+    session.cancelledBy = "EXPERT";
+    session.cancelReason = params.reason?.trim() || "The expert is unavailable at this time";
+    session.expertAcceptance = "DECLINED";
+    session.expertRespondedAt = new Date();
+    if (session.paymentStatus === "COMPLETED") session.refundStatus = "REQUIRED";
+    await session.save();
+    notify(session.userId, "BOOKING_CANCELLED", "Session declined",
+      session.paymentStatus === "COMPLETED"
+        ? "Your expert couldn't take this session. A refund will be processed manually by our team."
+        : "Your expert couldn't take this session.",
+      { sessionId: session._id.toString() }, true);
+    return session;
+  }
+
+  // RESCHEDULE
+  if (!params.scheduledAt) throw new Error("A new time is required to reschedule");
+  const when = new Date(params.scheduledAt);
+  await assertSlotBookable(expert, when, session._id.toString());
+  session.scheduledAt = when;
+  session.status = "SCHEDULED";
+  session.expertAcceptance = "ACCEPTED";
+  session.expertRespondedAt = new Date();
+  await session.save();
+  notify(session.userId, "BOOKING_STATUS_UPDATED", "Session rescheduled",
+    `Your expert moved your session to ${when.toLocaleString("en-IN", { timeZone: tz })}.`,
+    { sessionId: session._id.toString() }, true);
+  return session;
+};
+
 export const cancelExpertSession = async (params: {
   sessionId: string;
   actorUserId: string;
@@ -730,20 +806,23 @@ export const listUserExpertSessions = async (userId: string) => {
 };
 
 export const listExpertOwnSessions = async (expertUserId: string) => {
-  const expert = await Expert.findOne({ userId: toObjectId(expertUserId) }).select("_id");
+  const expert = await Expert.findOne({ userId: toObjectId(expertUserId) }).select("_id timezone");
   if (!expert) return [];
+  const tz = (expert as any).timezone || "Asia/Kolkata";
   const sessions = await ExpertSession.find({ expertId: expert._id })
     .populate("userId", "name")
     .sort({ createdAt: -1 })
     .lean();
   return sessions.map((s) => {
     const u = s.userId as unknown as { name?: string } | null;
-    return serializeSession(s, { clientName: u?.name || "Client" });
+    return serializeSession(s, { clientName: u?.name || "Client", expertTimezone: tz });
   });
 };
 
 /** Admin: an expert's sessions plus an earnings summary. */
 export const getExpertSessionsForAdmin = async (expertId: string) => {
+  const expertDoc = await Expert.findById(expertId).select("timezone").lean();
+  const tz = (expertDoc as any)?.timezone || "Asia/Kolkata";
   const sessions = await ExpertSession.find({ expertId: toObjectId(expertId) })
     .populate("userId", "name email")
     .sort({ createdAt: -1 })
@@ -756,7 +835,7 @@ export const getExpertSessionsForAdmin = async (expertId: string) => {
   return {
     sessions: sessions.map((s) => {
       const u = s.userId as unknown as { name?: string; email?: string } | null;
-      return serializeSession(s, { clientName: u?.name || "Client" });
+      return serializeSession(s, { clientName: u?.name || "Client", expertTimezone: tz });
     }),
     summary: {
       total: sessions.length,

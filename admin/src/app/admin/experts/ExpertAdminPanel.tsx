@@ -13,7 +13,7 @@ import {
   type AdminExpertSessionsResult,
 } from "@/modules/expert/services/expert";
 import { toast } from "@/lib/toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const formatDate = (v?: string) =>
@@ -51,6 +51,29 @@ export function ExpertAdminPanel({
     expert.weeklyAvailability || [],
   );
   const [blackout, setBlackout] = useState<string[]>(expert.blackoutDates || []);
+
+  const resetForm = () => {
+    setForm({
+      bio: expert.bio || "",
+      achievements: expert.achievements || "",
+      sports: (expert.sports || []).join(", "),
+      expertise: (expert.expertise || []).join(", "),
+      languages: (expert.languages || []).join(", "),
+      city: expert.city || "",
+      sessionMode: expert.sessionMode || "ONLINE",
+      sessionFee: String(expert.sessionFee ?? ""),
+      sessionDurationMinutes: String(expert.sessionDurationMinutes ?? 60),
+      photoUrl: expert.photoUrl || "",
+    });
+    setPhotoKey(expert.photoKey || null);
+    setWindows(expert.weeklyAvailability || []);
+    setBlackout(expert.blackoutDates || []);
+  };
+
+  useEffect(() => {
+    resetForm();
+  }, [expert]);
+
   const set = (k: keyof typeof form, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   const id = expert.id || expert._id || "";
@@ -222,7 +245,7 @@ export function ExpertAdminPanel({
           <button onClick={saveEdit} disabled={busy} className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60">
             {busy ? "Saving..." : "Save"}
           </button>
-          <button onClick={() => setEditing(false)} className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">
+          <button onClick={() => { setEditing(false); resetForm(); }} className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">
             Cancel
           </button>
         </div>

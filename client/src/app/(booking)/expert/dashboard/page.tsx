@@ -6,8 +6,11 @@ import {
   type ExpertSession,
 } from "@/modules/expert/services/expert";
 import { ExpertProfileEditor } from "./ExpertProfileEditor";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import { SlotPicker } from "@/modules/expert/components/SlotPicker";
+import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { toast } from "sonner";
-import { CalendarClock, Star, Users, Wallet } from "lucide-react";
+import { CalendarClock, Check, Star, Users, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
@@ -162,8 +165,13 @@ function SessionRow({
   const [busy, setBusy] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [link, setLink] = useState(session.meetingLink || "");
+  const [showCancel, setShowCancel] = useState(false);
+  const [showDecline, setShowDecline] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [newSlot, setNewSlot] = useState<string | null>(null);
   const id = String(session.id || session._id || "");
   const canManage = ["PAID", "SCHEDULED"].includes(session.status);
+  const needsResponse = canManage && session.expertAcceptance !== "ACCEPTED";
 
   const run = async (fn: () => Promise<{ success: boolean; message: string; data?: ExpertSession }>) => {
     setBusy(true);
@@ -194,6 +202,18 @@ function SessionRow({
     setLinkOpen(false);
   };
 
+  const saveReschedule = async () => {
+    if (!newSlot) {
+      toast.error("Pick a new time first.");
+      return;
+    }
+    await run(() =>
+      expertApi.respondSession(id, { action: "RESCHEDULE", scheduledAt: newSlot }),
+    );
+    setRescheduleOpen(false);
+    setNewSlot(null);
+  };
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -201,7 +221,7 @@ function SessionRow({
           <p className="font-semibold text-slate-900">{session.clientName || "Client"}</p>
           <p className="text-sm text-slate-500">
             {session.scheduledAt
-              ? new Date(session.scheduledAt).toLocaleString("en-IN")
+              ? formatSessionTimeWithZone(session.scheduledAt, session.expertTimezone)
               : "Not scheduled yet"}
             {session.mode ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}` : ""}
           </p>
@@ -215,15 +235,94 @@ function SessionRow({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="font-semibold text-slate-900">{formatInr(session.amount)}</span>
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${STATUS_STYLES[session.status] || "bg-slate-100 text-slate-600"}`}
-          >
-            {session.status.replace(/_/g, " ")}
-          </span>
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-slate-900">{formatInr(session.amount)}</span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${STATUS_STYLES[session.status] || "bg-slate-100 text-slate-600"}`}
+            >
+              {session.status.replace(/_/g, " ")}
+            </span>
+          </div>
+          {canManage && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                session.expertAcceptance === "ACCEPTED"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {session.expertAcceptance === "ACCEPTED" ? "Confirmed by you" : "Awaiting your response"}
+            </span>
+          )}
         </div>
       </div>
+
+      {/* Respond to the client's requested time */}
+      {needsResponse && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+          {rescheduleOpen ? (
+            <div>
+              <p className="mb-2 text-sm font-semibold text-slate-900">
+                Propose a new time
+              </p>
+              <SlotPicker
+                expertId={session.expertId}
+                value={newSlot}
+                onChange={setNewSlot}
+                timezone={session.expertTimezone}
+              />
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={saveReschedule}
+                  disabled={busy || !newSlot}
+                  className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+                >
+                  Confirm new time
+                </button>
+                <button
+                  onClick={() => {
+                    setRescheduleOpen(false);
+                    setNewSlot(null);
+                  }}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800"
+                >
+                  Back
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-slate-800">
+                The client is waiting for you to confirm this time.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => run(() => expertApi.respondSession(id, { action: "ACCEPT" }))}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  <Check className="h-4 w-4" /> Accept time
+                </button>
+                <button
+                  onClick={() => setRescheduleOpen(true)}
+                  disabled={busy}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  Reschedule
+                </button>
+                <button
+                  onClick={() => setShowDecline(true)}
+                  disabled={busy}
+                  className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                >
+                  Decline
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {canManage && (
         <div className="mt-4 border-t border-slate-100 pt-3">
@@ -267,11 +366,7 @@ function SessionRow({
                 Mark complete
               </button>
               <button
-                onClick={() => {
-                  if (window.confirm("Cancel this session? The client will be notified.")) {
-                    run(() => expertApi.cancelSession(id));
-                  }
-                }}
+                onClick={() => setShowCancel(true)}
                 disabled={busy}
                 className="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
               >
@@ -281,6 +376,30 @@ function SessionRow({
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showCancel}
+        onClose={() => setShowCancel(false)}
+        onConfirm={() => run(() => expertApi.cancelSession(id))}
+        title="Cancel session?"
+        message="The client will be notified that this session was cancelled."
+        confirmLabel="Cancel session"
+        cancelLabel="Keep session"
+        variant="danger"
+        loading={busy}
+      />
+
+      <ConfirmDialog
+        isOpen={showDecline}
+        onClose={() => setShowDecline(false)}
+        onConfirm={() => run(() => expertApi.respondSession(id, { action: "DECLINE" }))}
+        title="Decline this session?"
+        message="The client will be notified and, if they've paid, a manual refund will be required."
+        confirmLabel="Decline"
+        cancelLabel="Back"
+        variant="danger"
+        loading={busy}
+      />
     </div>
   );
 }

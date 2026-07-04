@@ -67,6 +67,10 @@ export interface ExpertSession {
   cancelledBy?: "CLIENT" | "EXPERT" | "ADMIN" | "SYSTEM";
   cancelReason?: string;
   refundStatus?: ExpertRefundStatus;
+  expertAcceptance?: "PENDING" | "ACCEPTED" | "DECLINED";
+  expertRespondedAt?: string;
+  // Canonical display timezone (the expert's) for scheduledAt.
+  expertTimezone?: string;
   reviewed: boolean;
   rating?: number;
   review?: string;
@@ -186,6 +190,22 @@ export const expertApi = {
   ): Promise<ApiResponse<ExpertSession>> => {
     const res = await axiosInstance.post(
       `/experts/sessions/${sessionId}/complete`,
+    );
+    return res.data;
+  },
+
+  // Expert accepts / declines / reschedules the client's booked time.
+  respondSession: async (
+    sessionId: string,
+    payload: {
+      action: "ACCEPT" | "DECLINE" | "RESCHEDULE";
+      scheduledAt?: string;
+      reason?: string;
+    },
+  ): Promise<ApiResponse<ExpertSession>> => {
+    const res = await axiosInstance.post(
+      `/experts/sessions/${sessionId}/respond`,
+      payload,
     );
     return res.data;
   },

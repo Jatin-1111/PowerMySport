@@ -295,6 +295,7 @@ export default function ExpertDetailPage() {
                   expertId={expertId}
                   value={slot}
                   onChange={setSlot}
+                  timezone={expert.timezone}
                 />
               </div>
 

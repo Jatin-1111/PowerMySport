@@ -12,6 +12,7 @@ import {
   completeExpertSession,
   reviewExpertSession,
   cancelExpertSession,
+  respondToExpertSession,
   setSessionMeetingLink,
   getExpertSessionForUser,
   listUserExpertSessions,
@@ -275,6 +276,29 @@ export const cancelSession = async (req: Request, res: Response): Promise<void> 
       reason: req.body?.reason,
     });
     res.json({ success: true, message: "Session cancelled", data: session });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+export const respondSession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const action = String(req.body?.action || "").toUpperCase();
+    if (!["ACCEPT", "DECLINE", "RESCHEDULE"].includes(action)) {
+      res.status(400).json({ success: false, message: "action must be ACCEPT, DECLINE or RESCHEDULE" });
+      return;
+    }
+    const session = await respondToExpertSession({
+      sessionId: req.params.sessionId as string,
+      expertUserId: userId,
+      isAdmin: req.user?.role === "ADMIN",
+      action: action as "ACCEPT" | "DECLINE" | "RESCHEDULE",
+      scheduledAt: req.body?.scheduledAt ? String(req.body.scheduledAt) : undefined,
+      reason: req.body?.reason,
+    });
+    res.json({ success: true, message: "Response recorded", data: session });
   } catch (e) {
     fail(res, e);
   }

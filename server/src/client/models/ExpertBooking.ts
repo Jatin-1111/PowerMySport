@@ -17,6 +17,8 @@ export type ExpertSessionStatus =
 
 export type ExpertSessionCanceller = "CLIENT" | "EXPERT" | "ADMIN" | "SYSTEM";
 export type ExpertRefundStatus = "NONE" | "REQUIRED" | "MANUAL_DONE";
+/** Whether the expert has confirmed the client's booked time. */
+export type ExpertAcceptance = "PENDING" | "ACCEPTED" | "DECLINED";
 
 export interface ExpertSessionDocument extends Document {
   expertId: mongoose.Types.ObjectId;
@@ -39,6 +41,9 @@ export interface ExpertSessionDocument extends Document {
   cancelReason?: string;
   refundStatus: ExpertRefundStatus;
   autoCompleted?: boolean;
+  // Expert confirmation of the booked time
+  expertAcceptance: ExpertAcceptance;
+  expertRespondedAt?: Date;
   // Review
   reviewed: boolean;
   rating?: number;
@@ -87,6 +92,13 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
       index: true,
     },
     autoCompleted: { type: Boolean, default: false },
+    expertAcceptance: {
+      type: String,
+      enum: ["PENDING", "ACCEPTED", "DECLINED"],
+      default: "PENDING",
+      index: true,
+    },
+    expertRespondedAt: { type: Date },
     reviewed: { type: Boolean, default: false },
     rating: { type: Number, min: 1, max: 5 },
     review: { type: String, trim: true, maxlength: 2000 },
