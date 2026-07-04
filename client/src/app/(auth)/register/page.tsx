@@ -52,7 +52,7 @@ function RegisterContent() {
         router.push("/academy");
       } else if (user.role === "EXPERT") {
         router.push("/expert/dashboard");
-      } else if (user.role === "ADMIN") {
+      } else if (user.role === "Admin") {
         router.push("/admin/users");
       } else {
         router.push("/dashboard/my-bookings");
@@ -140,7 +140,7 @@ function RegisterContent() {
           router.push("/venue-lister/inventory");
         } else if (response.data.user.role === "EXPERT") {
           router.push("/expert/dashboard");
-        } else if (response.data.user.role === "ADMIN") {
+        } else if (response.data.user.role === "Admin") {
           router.push("/admin/users");
         } else {
           router.push("/dashboard/my-bookings");
@@ -210,7 +210,7 @@ function RegisterContent() {
           router.push("/venue-lister/inventory");
         } else if (response.data.user.role === "EXPERT") {
           router.push("/expert/dashboard");
-        } else if (response.data.user.role === "ADMIN") {
+        } else if (response.data.user.role === "Admin") {
           router.push("/admin/users");
         } else {
           router.push("/dashboard/my-bookings");
