@@ -170,7 +170,7 @@ export const getSession = async (req: Request, res: Response): Promise<void> => 
     const data = await getExpertSessionForUser({
       sessionId: req.params.sessionId as string,
       userId,
-      isAdmin: req.user?.role === "ADMIN",
+      isAdmin: req.user?.role === "Admin",
     });
     res.json({ success: true, message: "Session retrieved", data });
   } catch (e) {
@@ -205,7 +205,7 @@ export const completeSession = async (req: Request, res: Response): Promise<void
     const session = await completeExpertSession({
       sessionId: req.params.sessionId as string,
       actorUserId: userId,
-      isAdmin: req.user?.role === "ADMIN",
+      isAdmin: req.user?.role === "Admin",
     });
     res.json({ success: true, message: "Session completed", data: session });
   } catch (e) {
@@ -293,7 +293,7 @@ export const respondSession = async (req: Request, res: Response): Promise<void>
     const session = await respondToExpertSession({
       sessionId: req.params.sessionId as string,
       expertUserId: userId,
-      isAdmin: req.user?.role === "ADMIN",
+      isAdmin: req.user?.role === "Admin",
       action: action as "ACCEPT" | "DECLINE" | "RESCHEDULE",
       scheduledAt: req.body?.scheduledAt ? String(req.body.scheduledAt) : undefined,
       reason: req.body?.reason,
@@ -315,7 +315,7 @@ export const updateMeetingLink = async (req: Request, res: Response): Promise<vo
     const session = await setSessionMeetingLink({
       sessionId: req.params.sessionId as string,
       actorUserId: userId,
-      isAdmin: req.user?.role === "ADMIN",
+      isAdmin: req.user?.role === "Admin",
       meetingLink: req.body.meetingLink,
     });
     res.json({ success: true, message: "Meeting link updated", data: session });

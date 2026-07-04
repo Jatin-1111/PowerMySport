@@ -673,7 +673,7 @@ export const cancelExpertSession = async (params: {
   const session = await ExpertSession.findById(params.sessionId);
   if (!session) throw new Error("Session not found");
 
-  const isAdmin = params.role === "ADMIN";
+  const isAdmin = params.role === "Admin";
   const expert = await Expert.findById(session.expertId).select("userId");
   const isExpert = expert?.userId?.toString() === params.actorUserId;
   const isClient = session.userId.toString() === params.actorUserId;
