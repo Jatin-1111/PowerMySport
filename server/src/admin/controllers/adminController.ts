@@ -959,10 +959,10 @@ export const listUsersForSafety = async (
     const skip = (page - 1) * limit;
 
     const query: Record<string, unknown> = {
-      role: { $in: ["PLAYER", "COACH", "VENUE_LISTER"] },
+      role: { $in: ["Player", "Coach", "VenueLister"] },
     };
 
-    if (role && ["PLAYER", "COACH", "VENUE_LISTER"].includes(role)) {
+    if (role && ["Player", "Coach", "VenueLister"].includes(role)) {
       query.role = role;
     }
 
@@ -2400,9 +2400,9 @@ export const updateVenueAdminHandler = async (
       });
 
       if (existingUser) {
-        if (existingUser.role === "VENUE_LISTER") {
+        if (existingUser.role === "VenueLister") {
           ownerUser = existingUser._id;
-        } else if (existingUser.role === "PLAYER") {
+        } else if (existingUser.role === "Player") {
           if (!convertExistingUser) {
             res.status(409).json({
               success: false,
@@ -2410,13 +2410,13 @@ export const updateVenueAdminHandler = async (
                 "User already exists as PLAYER. Convert this account to VENUE_LISTER to continue.",
               requiresConversion: true,
               existingRole: existingUser.role,
-              targetRole: "VENUE_LISTER",
+              targetRole: "VenueLister",
               existingUser: buildUserSummary(existingUser),
             });
             return;
           }
 
-          existingUser.role = "VENUE_LISTER";
+          existingUser.role = "VenueLister";
           await existingUser.save();
           ownerUser = existingUser._id;
         } else {
@@ -2426,7 +2426,7 @@ export const updateVenueAdminHandler = async (
               "An account already exists with a different role. Venue lister accounts must be separate.",
             requiresSeparateAccount: true,
             existingRole: existingUser.role,
-            targetRole: "VENUE_LISTER",
+            targetRole: "VenueLister",
             existingUser: buildUserSummary(existingUser),
           });
           return;
@@ -2443,7 +2443,7 @@ export const updateVenueAdminHandler = async (
           email: ownerEmail,
           phone: ownerPhone,
           password: tempPassword,
-          role: "VENUE_LISTER",
+          role: "VenueLister",
         });
 
         const savedUser = await newUser.save();
@@ -2557,19 +2557,19 @@ export const createCoachAdminHandler = async (
     let createdUser = false;
 
     if (user) {
-      if (user.role === "COACH") {
+      if (user.role === "Coach") {
         const existingCoach = await Coach.findOne({ userId: user._id });
         if (existingCoach) {
           res.status(409).json({
             success: false,
             message: "Coach profile already exists for this account",
             existingRole: user.role,
-            targetRole: "COACH",
+            targetRole: "Coach",
             existingUser: buildUserSummary(user),
           });
           return;
         }
-      } else if (user.role === "PLAYER") {
+      } else if (user.role === "Player") {
         if (!convertExistingUser) {
           res.status(409).json({
             success: false,
@@ -2577,13 +2577,13 @@ export const createCoachAdminHandler = async (
               "User already exists as PLAYER. Convert this account to COACH to continue.",
             requiresConversion: true,
             existingRole: user.role,
-            targetRole: "COACH",
+            targetRole: "Coach",
             existingUser: buildUserSummary(user),
           });
           return;
         }
 
-        user.role = "COACH";
+        user.role = "Coach";
         await user.save();
       } else {
         res.status(409).json({
@@ -2592,7 +2592,7 @@ export const createCoachAdminHandler = async (
             "An account already exists with a different role. Coach accounts must be separate.",
           requiresSeparateAccount: true,
           existingRole: user.role,
-          targetRole: "COACH",
+          targetRole: "Coach",
           existingUser: buildUserSummary(user),
         });
         return;
@@ -2603,7 +2603,7 @@ export const createCoachAdminHandler = async (
         name: `${firstName} ${lastName}`,
         email: normalizedEmail,
         phone: normalizedPhone,
-        role: "COACH",
+        role: "Coach",
         isActive: true,
         password: tempPassword, // Will be hashed by schema middleware
       });

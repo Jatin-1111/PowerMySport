@@ -7,7 +7,7 @@ export const authApi = {
     email: string;
     phone: string;
     password: string;
-    role: "PLAYER" | "VENUE_LISTER" | "COACH" | "ACADEMY_OWNER";
+    role: "Player" | "VenueLister" | "Coach" | "Academy";
     serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
     acceptedTerms: boolean;
     acceptedPrivacy: boolean;
@@ -39,6 +39,7 @@ export const authApi = {
     email?: string;
     phone?: string;
     dob?: string | Date;
+    userType?: string;
     playerProfile?: {
       sports?: string[];
       yearsPlaying?: number;
@@ -74,12 +75,27 @@ export const authApi = {
     return response.data;
   },
 
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.put("/auth/change-password", data);
+    return response.data;
+  },
+
+  deleteAccount: async (password: string): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.post("/auth/delete-account", {
+      password,
+    });
+    return response.data;
+  },
+
   googleLogin: async (data: {
     // Raw Google ID token ("credential" from Google Identity Services).
     // The server verifies this and derives identity from it — we no longer
     // send client-decoded googleId/email (those were forgeable).
     credential: string;
-    role?: "PLAYER" | "VENUE_LISTER" | "COACH" | "ACADEMY_OWNER";
+    role?: "Player" | "VenueLister" | "Coach" | "Academy";
     userType?: string;
     action?: "login" | "register";
     acceptedTerms?: boolean;

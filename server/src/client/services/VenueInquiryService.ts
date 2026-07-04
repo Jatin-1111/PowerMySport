@@ -100,7 +100,7 @@ export const reviewInquiry = async (
       email: generatedEmail,
       phone: inquiry.phone,
       password: tempPassword, // Pass plain password, User model will hash it
-      role: "VENUE_LISTER",
+      role: "VenueLister",
       venueListerProfile: {
         businessDetails: {
           name: inquiry.ownerName,

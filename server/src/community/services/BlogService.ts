@@ -12,7 +12,7 @@ import { normalizeTags } from "./communityQnaUtils";
 
 const s3Service = new S3Service();
 
-const COMMUNITY_ALLOWED_ROLES = ["PLAYER", "COACH"] as const;
+const COMMUNITY_ALLOWED_ROLES = ["Player", "Coach"] as const;
 const SOCIAL_KEYS: Array<keyof CommunitySocialLinks> = [
   "youtube",
   "instagram",
@@ -117,7 +117,7 @@ const ensureCommunityUser = async (userId: string) => {
   if (!user) {
     throw new Error("User not found");
   }
-  if (!COMMUNITY_ALLOWED_ROLES.includes(user.role as "PLAYER" | "COACH")) {
+  if (!COMMUNITY_ALLOWED_ROLES.includes(user.role as "Player" | "Coach")) {
     throw new Error(
       "The blog is available only for player and coach accounts",
     );

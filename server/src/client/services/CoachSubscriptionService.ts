@@ -66,6 +66,7 @@ const syncCoachSubscriptionSummary = async (params: {
  */
 export const subscribeToCoachPackage = async (params: {
   userId: string;
+  dependentId?: string;
   coachId: string;
   packageId: string;
 }): Promise<CoachSubscriptionDocument> => {
@@ -84,12 +85,20 @@ export const subscribeToCoachPackage = async (params: {
   const now = new Date();
   const periodEnd = addBillingPeriod(now, packageDoc.frequency);
 
-  // Check for existing active subscription from this user to this coach
-  const existingActive = await CoachSubscription.findOne({
+  const query: any = {
     coachId: toObjectId(params.coachId),
     userId: toObjectId(params.userId),
     status: { $in: ["ACTIVE", "PAST_DUE"] },
-  }).sort({ createdAt: -1 });
+  };
+
+  if (params.dependentId) {
+    query.dependentId = toObjectId(params.dependentId);
+  } else {
+    query.dependentId = { $exists: false };
+  }
+
+  // Check for existing active subscription from this user to this coach
+  const existingActive = await CoachSubscription.findOne(query).sort({ createdAt: -1 });
 
   if (
     existingActive &&
@@ -130,9 +139,10 @@ export const subscribeToCoachPackage = async (params: {
     await existingActive.save();
   }
 
-  const subscription = await CoachSubscription.create({
+  const newSubscription = await CoachSubscription.create({
     coachId: toObjectId(params.coachId),
     userId: toObjectId(params.userId),
+    ...(params.dependentId ? { dependentId: toObjectId(params.dependentId) } : {}),
     packageId: packageDoc._id,
     status: "ACTIVE",
     currentPeriodStart: now,
@@ -141,7 +151,7 @@ export const subscribeToCoachPackage = async (params: {
     autoRenew: true,
   });
 
-  const populated = await CoachSubscription.findById(subscription._id).populate(
+  const populated = await CoachSubscription.findById(newSubscription._id).populate(
     "packageId",
   );
 
@@ -151,7 +161,7 @@ export const subscribeToCoachPackage = async (params: {
 
   await syncCoachSubscriptionSummary({
     coachId: toObjectId(params.coachId),
-    subscriptionId: populated._id,
+    subscriptionId: newSubscription._id,
     subscriptionStatus: "ACTIVE",
     subscriptionExpiresAt: populated.currentPeriodEnd,
   });
@@ -177,7 +187,7 @@ export const subscribeToCoachPackage = async (params: {
           packageName: packageDoc.name,
           price: priceRupees,
           counterpartName: coachUser?.name || "your coach",
-          recipientRole: "PLAYER",
+          recipientRole: "Player",
         });
       }
       if (coachUser?.email) {
@@ -187,7 +197,7 @@ export const subscribeToCoachPackage = async (params: {
           packageName: packageDoc.name,
           price: priceRupees,
           counterpartName: player?.name || "A player",
-          recipientRole: "COACH",
+          recipientRole: "Coach",
         });
       }
     } catch (emailError) {
@@ -245,11 +255,11 @@ export const cancelCoachSubscriptionByUser = async (params: {
   if (params.userId) {
     const userRole = typeof params.userRole === "string" ? params.userRole : "";
 
-    if (userRole === "PLAYER") {
+    if (userRole === "Player") {
       if (subscription.userId.toString() !== params.userId) {
         throw new Error("You are not authorized to cancel this subscription");
       }
-    } else if (userRole === "COACH") {
+    } else if (userRole === "Coach") {
       const coach = await Coach.findOne({ userId: params.userId }).select(
         "_id",
       );
@@ -292,7 +302,7 @@ export const cancelCoachSubscriptionByUser = async (params: {
           email: player.email,
           packageName: pkg?.name || "coaching plan",
           counterpartName: coachUser?.name || "your coach",
-          recipientRole: "PLAYER",
+          recipientRole: "Player",
         });
       }
     } catch (emailError) {

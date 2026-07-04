@@ -264,9 +264,9 @@ export default function AdminPayoutsPage() {
                       }
                     />
                     <div
-                      className={`p-2 rounded-lg ${payout.vendorRole === "COACH" ? "bg-blue-100 text-blue-600" : "bg-purple-100 text-purple-600"}`}
+                      className={`p-2 rounded-lg ${payout.vendorRole === "Coach" ? "bg-blue-100 text-blue-600" : "bg-purple-100 text-purple-600"}`}
                     >
-                      {payout.vendorRole === "COACH" ? (
+                      {payout.vendorRole === "Coach" ? (
                         <UserCircle2 size={24} />
                       ) : (
                         <Building2 size={24} />
@@ -277,7 +277,7 @@ export default function AdminPayoutsPage() {
                         {payout.vendorName}
                       </h3>
                       <p className="text-sm font-semibold text-slate-500">
-                        {payout.vendorRole === "COACH"
+                        {payout.vendorRole === "Coach"
                           ? "Coach"
                           : "Venue Owner"}
                       </p>

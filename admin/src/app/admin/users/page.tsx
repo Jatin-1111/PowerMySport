@@ -122,9 +122,9 @@ function AdminUsersPageContent() {
 
   const tabParam = searchParams.get("tab") as UsersTabRole;
   const activeTab: UsersTabRole =
-    tabParam === "PLAYER" || tabParam === "COACH" || tabParam === "VENUE_LISTER"
+    tabParam === "Player" || tabParam === "Coach" || tabParam === "VenueLister"
       ? tabParam
-      : "PLAYER";
+      : "Player";
 
   const pageParam = Number(searchParams.get("page"));
   const currentPage = !isNaN(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -183,7 +183,7 @@ function AdminUsersPageContent() {
       setLoading(true);
       setError(null);
 
-      if (activeTab === "PLAYER") {
+      if (activeTab === "Player") {
         const [usersResponse, analyticsResponse] = await Promise.all([
           statsApi.getPlayersUsers({ page: currentPage, limit: PAGE_SIZE }),
           statsApi.getPlayersAnalytics(),
@@ -199,7 +199,7 @@ function AdminUsersPageContent() {
         return;
       }
 
-      if (activeTab === "COACH") {
+      if (activeTab === "Coach") {
         const [usersResponse, analyticsResponse] = await Promise.all([
           statsApi.getCoachUsers({ page: currentPage, limit: PAGE_SIZE }),
           statsApi.getCoachesAnalytics(),
@@ -316,8 +316,8 @@ function AdminUsersPageContent() {
       }
       if (
         sortColumn === "rating" &&
-        left.role === "COACH" &&
-        right.role === "COACH"
+        left.role === "Coach" &&
+        right.role === "Coach"
       ) {
         return factor * (left.rating - right.rating);
       }
@@ -360,7 +360,7 @@ function AdminUsersPageContent() {
       ),
     };
 
-    if (activeTab === "PLAYER") {
+    if (activeTab === "Player") {
       return [
         userCol,
         phoneCol,
@@ -368,7 +368,7 @@ function AdminUsersPageContent() {
           key: "sports",
           header: "Sports",
           render: (u) =>
-            u.role === "PLAYER" ? (
+            u.role === "Player" ? (
               <span className="text-slate-700">{u.sportsCount}</span>
             ) : null,
         },
@@ -376,7 +376,7 @@ function AdminUsersPageContent() {
           key: "dependents",
           header: "Dependents",
           render: (u) =>
-            u.role === "PLAYER" ? (
+            u.role === "Player" ? (
               <span className="text-slate-700">{u.dependentsCount}</span>
             ) : null,
         },
@@ -385,7 +385,7 @@ function AdminUsersPageContent() {
       ];
     }
 
-    if (activeTab === "COACH") {
+    if (activeTab === "Coach") {
       return [
         userCol,
         phoneCol,
@@ -393,7 +393,7 @@ function AdminUsersPageContent() {
           key: "verification",
           header: "Verification",
           render: (u) =>
-            u.role === "COACH" ? (
+            u.role === "Coach" ? (
               <StatusBadge status={u.verificationStatus} />
             ) : null,
         },
@@ -401,7 +401,7 @@ function AdminUsersPageContent() {
           key: "serviceMode",
           header: "Service Mode",
           render: (u) =>
-            u.role === "COACH" ? (
+            u.role === "Coach" ? (
               <span className="text-slate-600">{u.serviceMode || "—"}</span>
             ) : null,
         },
@@ -410,7 +410,7 @@ function AdminUsersPageContent() {
           header: "Rating",
           sortable: true,
           render: (u) =>
-            u.role === "COACH" ? (
+            u.role === "Coach" ? (
               <span className="text-slate-700">
                 {u.rating.toFixed(1)}{" "}
                 <span className="text-slate-400">({u.reviewCount})</span>
@@ -429,7 +429,7 @@ function AdminUsersPageContent() {
         key: "business",
         header: "Business",
         render: (u) =>
-          u.role === "VENUE_LISTER" ? (
+          u.role === "VenueLister" ? (
             <span className="text-slate-700">{u.businessName || "—"}</span>
           ) : null,
       },
@@ -437,7 +437,7 @@ function AdminUsersPageContent() {
         key: "venues",
         header: "Venues (A / P / Total)",
         render: (u) =>
-          u.role === "VENUE_LISTER" ? (
+          u.role === "VenueLister" ? (
             <span className="text-slate-700">
               <span className="text-emerald-600">{u.approvedVenueCount}</span>
               {" / "}
@@ -453,25 +453,25 @@ function AdminUsersPageContent() {
   }, [activeTab]);
 
   const exportColumns = useMemo(() => {
-    if (activeTab === "PLAYER") {
+    if (activeTab === "Player") {
       return [
         { header: "Name", value: (u: UsersRow) => u.name },
         { header: "Email", value: (u: UsersRow) => u.email },
         { header: "Phone", value: (u: UsersRow) => u.phone || "" },
         {
           header: "Sports Count",
-          value: (u: UsersRow) => (u.role === "PLAYER" ? u.sportsCount : ""),
+          value: (u: UsersRow) => (u.role === "Player" ? u.sportsCount : ""),
         },
         {
           header: "Dependents",
           value: (u: UsersRow) =>
-            u.role === "PLAYER" ? u.dependentsCount : "",
+            u.role === "Player" ? u.dependentsCount : "",
         },
         { header: "Created At", value: (u: UsersRow) => u.createdAt },
         { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
       ];
     }
-    if (activeTab === "COACH") {
+    if (activeTab === "Coach") {
       return [
         { header: "Name", value: (u: UsersRow) => u.name },
         { header: "Email", value: (u: UsersRow) => u.email },
@@ -479,15 +479,15 @@ function AdminUsersPageContent() {
         {
           header: "Verification Status",
           value: (u: UsersRow) =>
-            u.role === "COACH" ? u.verificationStatus : "",
+            u.role === "Coach" ? u.verificationStatus : "",
         },
         {
           header: "Service Mode",
-          value: (u: UsersRow) => (u.role === "COACH" ? u.serviceMode || "" : ""),
+          value: (u: UsersRow) => (u.role === "Coach" ? u.serviceMode || "" : ""),
         },
         {
           header: "Rating",
-          value: (u: UsersRow) => (u.role === "COACH" ? u.rating : ""),
+          value: (u: UsersRow) => (u.role === "Coach" ? u.rating : ""),
         },
         { header: "Created At", value: (u: UsersRow) => u.createdAt },
         { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
@@ -500,21 +500,21 @@ function AdminUsersPageContent() {
       {
         header: "Business Name",
         value: (u: UsersRow) =>
-          u.role === "VENUE_LISTER" ? u.businessName || "" : "",
+          u.role === "VenueLister" ? u.businessName || "" : "",
       },
       {
         header: "Total Venues",
-        value: (u: UsersRow) => (u.role === "VENUE_LISTER" ? u.venueCount : ""),
+        value: (u: UsersRow) => (u.role === "VenueLister" ? u.venueCount : ""),
       },
       {
         header: "Approved Venues",
         value: (u: UsersRow) =>
-          u.role === "VENUE_LISTER" ? u.approvedVenueCount : "",
+          u.role === "VenueLister" ? u.approvedVenueCount : "",
       },
       {
         header: "Pending Venues",
         value: (u: UsersRow) =>
-          u.role === "VENUE_LISTER" ? u.pendingVenueCount : "",
+          u.role === "VenueLister" ? u.pendingVenueCount : "",
       },
       { header: "Created At", value: (u: UsersRow) => u.createdAt },
       { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
@@ -553,7 +553,7 @@ function AdminUsersPageContent() {
       />
 
       <div className="admin-tabs-scroll border-b border-slate-200">
-        {(["PLAYER", "COACH", "VENUE_LISTER"] as UsersTabRole[]).map((tab) => (
+        {(["Player", "Coach", "VenueLister"] as UsersTabRole[]).map((tab) => (
           <button
             key={tab}
             onClick={() => switchTab(tab)}
@@ -571,7 +571,7 @@ function AdminUsersPageContent() {
         ))}
       </div>
 
-      {activeTab === "PLAYER" && playersAnalytics && (
+      {activeTab === "Player" && playersAnalytics && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Total" value={playersAnalytics.totalPlayers} />
           <StatCard
@@ -593,7 +593,7 @@ function AdminUsersPageContent() {
         </div>
       )}
 
-      {activeTab === "COACH" && coachesAnalytics && (
+      {activeTab === "Coach" && coachesAnalytics && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Total" value={coachesAnalytics.totalCoaches} />
           <StatCard label="Verified" value={coachesAnalytics.verifiedCount} />
@@ -612,7 +612,7 @@ function AdminUsersPageContent() {
         </div>
       )}
 
-      {activeTab === "VENUE_LISTER" && venueListersAnalytics && (
+      {activeTab === "VenueLister" && venueListersAnalytics && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <StatCard
             label="Total"
@@ -704,7 +704,7 @@ function AdminUsersPageContent() {
               />
             </DetailSection>
 
-            {selectedUser.role === "PLAYER" && (
+            {selectedUser.role === "Player" && (
               <DetailSection title="Player profile">
                 <DetailRow
                   label="Has sports profile"
@@ -725,7 +725,7 @@ function AdminUsersPageContent() {
               </DetailSection>
             )}
 
-            {selectedUser.role === "COACH" && (
+            {selectedUser.role === "Coach" && (
               <DetailSection title="Coach profile">
                 <DetailRow
                   label="Verification"
@@ -764,7 +764,7 @@ function AdminUsersPageContent() {
               </DetailSection>
             )}
 
-            {selectedUser.role === "VENUE_LISTER" && (
+            {selectedUser.role === "VenueLister" && (
               <DetailSection title="Venue owner profile">
                 <DetailRow
                   label="Business"

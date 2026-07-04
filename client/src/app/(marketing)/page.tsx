@@ -185,11 +185,11 @@ export default function HomePage() {
         subtitle="Built for Busy Parents"
         description="PowerMySport is a sports guidance platform for parents that helps you understand, plan, and execute your child's sports journey. All this with the help of experts on call."
         primaryCTA={
-          user?.role === "VENUE_LISTER"
+          user?.role === "VenueLister"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
             : {
-                label: user ? "Go to Dashboard" : "Build a Sports Plan",
-                href: user ? getDashboardLink() : "/roadmap",
+                label: user ? "Go to Roadmap" : "Build a Sports Plan",
+                href: "/roadmap",
               }
         }
         secondaryCTA={{
@@ -733,17 +733,21 @@ export default function HomePage() {
         variant="gradient"
         title={
           user
-            ? "Ready for Your Child's Next Step?"
-            : "Ready to Build Your Child's Sports Plan?"
+            ? user.userType === "Parent"
+              ? "Ready for Your Child's Next Step?"
+              : "Ready for Your Next Step?"
+            : "Ready to Build Your Sports Plan?"
         }
         description={
           user
-            ? "Jump back into your child's roadmap and get guidance on what comes next."
-            : "Get a clear, personalised roadmap and expert guidance for your child—free, in just a few minutes."
+            ? user.userType === "Parent"
+              ? "Jump back into your child's roadmap and get guidance on what comes next."
+              : "Jump back into your roadmap and get guidance on what comes next."
+            : "Get a clear, personalised roadmap and expert guidance—free, in just a few minutes."
         }
         primaryCTA={{
-          label: user ? "Go to Dashboard" : "Build a Sports Plan",
-          href: user ? getDashboardLink() : "/roadmap",
+          label: user ? "Go to Roadmap" : "Build a Sports Plan",
+          href: "/roadmap",
         }}
         secondaryCTA={{ label: "Get Free Guidance", href: "/guidance" }}
       />

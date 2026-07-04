@@ -627,7 +627,7 @@ export default function ProfilePage() {
                     <div className="sm:col-span-2">
                       <ProfileInfoField label="Account Type">
                         <span className="capitalize">
-                          {user.role.toLowerCase().replace("_", " ")}
+                          {user.userType === "Parent" ? "Parent" : user.role.toLowerCase().replace("_", " ")}
                         </span>
                       </ProfileInfoField>
                     </div>
@@ -900,186 +900,190 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card className="shop-surface premium-shadow overflow-hidden p-0">
-        <ProfileSectionHeader
-          icon={Users}
-          title="My Dependents"
-          description="Manage children or wards whose bookings you handle."
-          action={
-            <Button
-              onClick={handleAddDependent}
-              size="sm"
-              icon={<Plus size={14} />}
-              className="w-full sm:w-auto"
-            >
-              Add Dependent
-            </Button>
-          }
-        />
+      {(user.userType === "Parent" || (user.dependents && user.dependents.length > 0)) && (
+        <Card className="shop-surface premium-shadow overflow-hidden p-0">
+          <ProfileSectionHeader
+            icon={Users}
+            title="My Dependents"
+            description="Manage children or wards whose bookings you handle."
+            action={
+              user.userType === "Parent" ? (
+                <Button
+                  onClick={handleAddDependent}
+                  size="sm"
+                  icon={<Plus size={14} />}
+                  className="w-full sm:w-auto"
+                >
+                  Add Dependent
+                </Button>
+              ) : undefined
+            }
+          />
 
-        <CardContent className="px-6 py-6">
-          {user.dependents && user.dependents.length > 0 ? (
-            <div className="grid gap-4">
-              {user.dependents.map((dependent) => {
-                const age = getDependentAge(dependent.dob) ?? dependent.age ?? null;
-                const isEligible = age !== null && age >= 18;
-                const genderLabel = formatGender(dependent.gender);
-                const dependentCompletion = calculateProfileCompletion(dependent);
+          <CardContent className="px-6 py-6">
+            {user.dependents && user.dependents.length > 0 ? (
+              <div className="grid gap-4">
+                {user.dependents.map((dependent) => {
+                  const age = getDependentAge(dependent.dob) ?? dependent.age ?? null;
+                  const isEligible = age !== null && age >= 18;
+                  const genderLabel = formatGender(dependent.gender);
+                  const dependentCompletion = calculateProfileCompletion(dependent);
 
-                return (
-                  <div
-                    key={dependent._id}
-                    className="rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 sm:p-5"
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex items-start gap-3">
-                        <ProfileCompletionRing
-                          percent={dependentCompletion.percent}
-                          size={52}
-                          strokeWidth={3}
-                          title={`${dependent.name}'s profile is ${dependentCompletion.percent}% complete`}
-                        >
-                          <Avatar className="h-12 w-12 border border-white shadow-sm">
-                            <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
-                              {getInitials(dependent.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                        </ProfileCompletionRing>
+                  return (
+                    <div
+                      key={dependent._id}
+                      className="rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 sm:p-5"
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex items-start gap-3">
+                          <ProfileCompletionRing
+                            percent={dependentCompletion.percent}
+                            size={52}
+                            strokeWidth={3}
+                            title={`${dependent.name}'s profile is ${dependentCompletion.percent}% complete`}
+                          >
+                            <Avatar className="h-12 w-12 border border-white shadow-sm">
+                              <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
+                                {getInitials(dependent.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </ProfileCompletionRing>
 
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-base font-bold text-slate-900 sm:text-lg">
-                            {dependent.name}
-                          </h3>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-base font-bold text-slate-900 sm:text-lg">
+                              {dependent.name}
+                            </h3>
 
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {dependent.relation && (
-                              <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
-                                {formatDependentRelation(dependent.relation)}
-                              </Badge>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {dependent.relation && (
+                                <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
+                                  {formatDependentRelation(dependent.relation)}
+                                </Badge>
+                              )}
+                              {genderLabel && (
+                                <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
+                                  {genderLabel}
+                                </Badge>
+                              )}
+                              {age !== null && (
+                                <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
+                                  {age} yrs
+                                </Badge>
+                              )}
+                              {dependentCompletion.percent < 100 && (
+                                <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
+                                  {dependentCompletion.percent}% complete
+                                </Badge>
+                              )}
+                            </div>
+
+                            {dependent.dob && (
+                              <p className="mt-2 text-sm text-slate-500">
+                                Born{" "}
+                                {new Date(dependent.dob).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  },
+                                )}
+                              </p>
                             )}
-                            {genderLabel && (
-                              <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
-                                {genderLabel}
-                              </Badge>
-                            )}
-                            {age !== null && (
-                              <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
-                                {age} yrs
-                              </Badge>
-                            )}
-                            {dependentCompletion.percent < 100 && (
-                              <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
-                                {dependentCompletion.percent}% complete
-                              </Badge>
+
+                            {dependent.sports && dependent.sports.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {dependent.sports.map((sport) => (
+                                  <Badge
+                                    key={sport}
+                                    className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
+                                  >
+                                    {sport}
+                                  </Badge>
+                                ))}
+                              </div>
                             )}
                           </div>
+                        </div>
 
-                          {dependent.dob && (
-                            <p className="mt-2 text-sm text-slate-500">
-                              Born{" "}
-                              {new Date(dependent.dob).toLocaleDateString(
-                                undefined,
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )}
-                            </p>
-                          )}
-
-                          {dependent.sports && dependent.sports.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {dependent.sports.map((sport) => (
-                                <Badge
-                                  key={sport}
-                                  className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
-                                >
-                                  {sport}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                        <div className="flex flex-wrap gap-2 sm:justify-end">
+                          <Button
+                            onClick={() => handleEditDependent(dependent)}
+                            variant="secondary"
+                            size="sm"
+                            disabled={savingDependentId === dependent._id}
+                            icon={<Edit2 size={14} />}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => setDependentToDelete(dependent)}
+                            variant="secondary"
+                            size="sm"
+                            disabled={isDeletingDependentId === dependent._id}
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                            icon={<Trash2 size={14} />}
+                          >
+                            {isDeletingDependentId === dependent._id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </Button>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2 sm:justify-end">
+                      <CardFooter className="mt-4 border-slate-200/70 px-0 pb-0">
                         <Button
-                          onClick={() => handleEditDependent(dependent)}
-                          variant="secondary"
+                          onClick={() => handleStartGraduation(dependent)}
+                          disabled={
+                            !isEligible ||
+                            graduatingDependentId === dependent._id
+                          }
+                          variant={isEligible ? "primary" : "secondary"}
                           size="sm"
-                          disabled={savingDependentId === dependent._id}
-                          icon={<Edit2 size={14} />}
+                          icon={<GraduationCap size={14} />}
+                          className="w-full sm:w-auto"
                         >
-                          Edit
+                          {graduatingDependentId === dependent._id
+                            ? "Graduating..."
+                            : isEligible
+                              ? "Graduate to Independent"
+                              : `Eligible at 18 (${age ?? "?"} yrs now)`}
                         </Button>
-                        <Button
-                          onClick={() => setDependentToDelete(dependent)}
-                          variant="secondary"
-                          size="sm"
-                          disabled={isDeletingDependentId === dependent._id}
-                          className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                          icon={<Trash2 size={14} />}
-                        >
-                          {isDeletingDependentId === dependent._id
-                            ? "Deleting..."
-                            : "Delete"}
-                        </Button>
-                      </div>
+                      </CardFooter>
                     </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Users}
+                title="No dependents yet"
+                description="Add a child or ward to manage their bookings, sports, and player profile from your account."
+                actionLabel={user.userType === "Parent" ? "Add Dependent" : undefined}
+                onAction={user.userType === "Parent" ? handleAddDependent : undefined}
+              />
+            )}
+          </CardContent>
 
-                    <CardFooter className="mt-4 border-slate-200/70 px-0 pb-0">
-                      <Button
-                        onClick={() => handleStartGraduation(dependent)}
-                        disabled={
-                          !isEligible ||
-                          graduatingDependentId === dependent._id
-                        }
-                        variant={isEligible ? "primary" : "secondary"}
-                        size="sm"
-                        icon={<GraduationCap size={14} />}
-                        className="w-full sm:w-auto"
-                      >
-                        {graduatingDependentId === dependent._id
-                          ? "Graduating..."
-                          : isEligible
-                            ? "Graduate to Independent"
-                            : `Eligible at 18 (${age ?? "?"} yrs now)`}
-                      </Button>
-                    </CardFooter>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Users}
-              title="No dependents yet"
-              description="Add a child or ward to manage their bookings, sports, and player profile from your account."
-              actionLabel="Add Dependent"
-              onAction={handleAddDependent}
-            />
-          )}
-        </CardContent>
-
-        <div className="border-t border-slate-200/60 bg-blue-50/50 px-6 py-4">
-          <div className="flex gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
-              <Info className="h-4 w-4" />
-            </div>
-            <div className="text-sm text-slate-700">
-              <p className="font-semibold text-slate-900">
-                What is a dependent?
-              </p>
-              <p className="mt-1">
-                A dependent is someone whose bookings you manage. You can book
-                venues and coaches for them, track their sports, and graduate
-                them to an independent account once they turn 18.
-              </p>
+          <div className="border-t border-slate-200/60 bg-blue-50/50 px-6 py-4">
+            <div className="flex gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                <Info className="h-4 w-4" />
+              </div>
+              <div className="text-sm text-slate-700">
+                <p className="font-semibold text-slate-900">
+                  What is a dependent?
+                </p>
+                <p className="mt-1">
+                  A dependent is someone whose bookings you manage. You can book
+                  venues and coaches for them, track their sports, and graduate
+                  them to an independent account once they turn 18.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       <DependentManagementModal
         isOpen={showDependentModal}

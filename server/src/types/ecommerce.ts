@@ -55,7 +55,7 @@ export interface IProduct {
   isActive: boolean;
   seller?: string;
   sellerName?: string;
-  sellerType?: "MERCHANT" | "PARENT" | "PLAYER" | "COACH" | "ACADEMY" | "SYSTEM";
+  sellerType?: "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
   condition?: "NEW" | "USED";
   createdAt: Date;
   updatedAt: Date;

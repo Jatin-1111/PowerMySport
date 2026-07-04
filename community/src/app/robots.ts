@@ -16,7 +16,6 @@ export default function robots(): MetadataRoute.Robots {
           "/community/blog",
           "/community/q",
           "/community/discover",
-          "/community/ai-guidance",
         ],
         disallow: [
           "/community/chats",

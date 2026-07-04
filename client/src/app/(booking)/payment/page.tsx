@@ -75,7 +75,7 @@ function PaymentPageContent() {
           }
 
           if (profileResponse?.success && profileResponse.data) {
-            if (profileResponse.data.role !== "PLAYER") {
+            if (profileResponse.data.role !== "Player") {
               toast.error("Only player accounts can purchase subscriptions.");
               router.replace("/dashboard");
               return;
@@ -501,7 +501,7 @@ function PaymentPageContent() {
                       </p>
                       <div className="space-y-1.5">
                         {booking.payments
-                          .filter((p) => p.userType === "PLAYER")
+                          .filter((p) => p.userType === "Player")
                           .map((payment, idx) => {
                             let nameStr = "Friend's share";
                             if (payment.userId === booking.userId) {

@@ -25,7 +25,7 @@ async function fixVenueOwnerIds() {
     }
 
     // Get the first admin or create a default owner
-    let defaultOwner = await User.findOne({ role: "ADMIN" });
+    let defaultOwner = await User.findOne({ role: "Admin" });
 
     if (!defaultOwner) {
       // Try to find any user

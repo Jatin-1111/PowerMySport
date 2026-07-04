@@ -143,6 +143,18 @@ function FeatureCard({
 // card dangling in its own row.
 const bentoSpans = ["md:col-span-2 md:row-span-2", "", "", "", "", ""];
 
+// On mobile these stack into one long column of near-identical dark photo
+// cards — a distinct accent per card (icon chip + bottom edge) gives each
+// one its own identity while scrolling, instead of six lookalike tiles.
+const bentoAccents = [
+  { chip: "bg-power-orange/30 ring-power-orange/50", edge: "bg-power-orange" },
+  { chip: "bg-blue-500/30 ring-blue-400/50", edge: "bg-blue-400" },
+  { chip: "bg-purple-500/30 ring-purple-400/50", edge: "bg-purple-400" },
+  { chip: "bg-emerald-500/30 ring-emerald-400/50", edge: "bg-emerald-400" },
+  { chip: "bg-amber-500/30 ring-amber-400/50", edge: "bg-amber-400" },
+  { chip: "bg-rose-500/30 ring-rose-400/50", edge: "bg-rose-400" },
+];
+
 function BentoFeatureCard({
   feature,
   index,
@@ -152,6 +164,7 @@ function BentoFeatureCard({
 }) {
   const span = bentoSpans[index % bentoSpans.length];
   const isHero = span.includes("row-span-2");
+  const accent = bentoAccents[index % bentoAccents.length];
 
   return (
     <motion.div
@@ -159,7 +172,7 @@ function BentoFeatureCard({
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 280, damping: 20 }}
       className={cn(
-        "group relative flex min-h-[280px] flex-col justify-end overflow-hidden rounded-2xl border border-white/10 shadow-sm will-change-transform premium-shadow md:min-h-0",
+        "group relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-2xl border border-white/10 shadow-sm will-change-transform premium-shadow md:min-h-0",
         span,
       )}
     >
@@ -175,14 +188,24 @@ function BentoFeatureCard({
         />
       )}
 
-      {/* Dark overlay for text legibility */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/10" />
+      {/* Dark overlay for text legibility. Strong even at the top — with
+          `justify-end` a longer label+title+description block can extend
+          well into the upper half of shorter cards, and some source photos
+          (e.g. light/bright backgrounds) don't have enough natural contrast
+          for white text once the gradient thins out. */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-black/45" />
+      <div className="pointer-events-none absolute inset-0 bg-black/10" />
 
-      <div className="relative p-6">
+      {/* Per-card accent edge — the main thing that stops all six cards
+          reading as one repeated dark tile when stacked on mobile. */}
+      <div className={cn("absolute inset-x-0 top-0 h-1", accent.edge)} />
+
+      <div className="relative p-7 sm:p-8">
         {feature.icon && (
           <motion.div
             className={cn(
-              "mb-5 flex shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-md will-change-transform",
+              "mb-6 flex shrink-0 items-center justify-center rounded-xl text-white ring-1 backdrop-blur-md will-change-transform",
+              accent.chip,
               isHero ? "h-14 w-14" : "h-12 w-12",
             )}
             whileHover={{ rotate: 8, scale: 1.15 }}
@@ -192,14 +215,14 @@ function BentoFeatureCard({
           </motion.div>
         )}
         {feature.label && (
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
             {feature.label}
           </p>
         )}
         <h3
           className={cn(
-            "mb-2.5 font-bold text-white",
-            isHero ? "text-2xl" : "text-lg",
+            "mb-3 font-bold text-white",
+            isHero ? "text-2xl" : "text-xl",
           )}
         >
           {feature.title}
@@ -283,8 +306,8 @@ export const Features: React.FC<FeaturesProps> = ({
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
           className={cn(
-            "grid grid-cols-1 gap-5 sm:gap-6",
-            variant === "bento" ? "md:grid-cols-3 md:auto-rows-[14rem]" : gridCols[columns],
+            "grid grid-cols-1 gap-6 sm:gap-7",
+            variant === "bento" ? "md:grid-cols-3 md:auto-rows-[16rem]" : gridCols[columns],
           )}
         >
           {features.map((feature, index) =>

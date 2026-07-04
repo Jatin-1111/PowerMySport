@@ -30,7 +30,7 @@ interface PaginationData {
 }
 
 type BookingActionType = "REFUND" | "DISPUTE";
-type BookingTabType = "ALL" | "VENUE" | "COACH";
+type BookingTabType = "ALL" | "VENUE" | "Coach";
 const REFUND_ACTIONS_ENABLED = true;
 const DISPUTE_ACTIONS_ENABLED = false;
 
@@ -207,7 +207,7 @@ export default function AdminBookingsPage() {
     () =>
       bookings.filter((booking) => {
         if (activeTab === "ALL") return true;
-        if (activeTab === "COACH") return isCoachBooking(booking);
+        if (activeTab === "Coach") return isCoachBooking(booking);
         return !!booking.venueId && !booking.coachId;
       }),
     [bookings, activeTab],
@@ -237,7 +237,7 @@ export default function AdminBookingsPage() {
       header: "Type",
       render: (b) => (
         <StatusBadge
-          status={isCoachBooking(b) ? "COACH" : "VENUE"}
+          status={isCoachBooking(b) ? "Coach" : "VENUE"}
           tone={isCoachBooking(b) ? "blue" : "purple"}
           dot={false}
         />
@@ -336,7 +336,7 @@ export default function AdminBookingsPage() {
           [
             ["ALL", "All Bookings", bookingCounts.all],
             ["VENUE", "Venue Bookings", bookingCounts.venue],
-            ["COACH", "Coach Bookings", bookingCounts.coach],
+            ["Coach", "Coach Bookings", bookingCounts.coach],
           ] as [BookingTabType, string, number][]
         ).map(([tab, label, count]) => (
           <button
@@ -392,7 +392,7 @@ export default function AdminBookingsPage() {
             columns={[
               { header: "Booking ID", value: (b) => getBookingId(b) },
               { header: "Status", value: (b) => b.status },
-              { header: "Type", value: (b) => (b.coachId ? "COACH" : "VENUE") },
+              { header: "Type", value: (b) => (b.coachId ? "Coach" : "VENUE") },
               { header: "Date", value: (b) => b.date },
               { header: "Start Time", value: (b) => b.startTime },
               { header: "End Time", value: (b) => b.endTime },
@@ -455,7 +455,7 @@ export default function AdminBookingsPage() {
                 label="Type"
                 value={
                   <StatusBadge
-                    status={isCoachBooking(selectedBooking) ? "COACH" : "VENUE"}
+                    status={isCoachBooking(selectedBooking) ? "Coach" : "VENUE"}
                     tone={isCoachBooking(selectedBooking) ? "blue" : "purple"}
                     dot={false}
                   />

@@ -626,17 +626,17 @@ export default function AdminAnalyticsPage() {
                     />
                     <Legend />
                     <Bar
-                      dataKey="PLAYER"
+                      dataKey="Player"
                       stackId="users"
                       fill={ROLE_COLORS.PLAYER}
                     />
                     <Bar
-                      dataKey="COACH"
+                      dataKey="Coach"
                       stackId="users"
                       fill={ROLE_COLORS.COACH}
                     />
                     <Bar
-                      dataKey="VENUE_LISTER"
+                      dataKey="VenueLister"
                       stackId="users"
                       fill={ROLE_COLORS.VENUE_LISTER}
                     />

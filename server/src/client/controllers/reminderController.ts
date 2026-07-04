@@ -179,7 +179,7 @@ export const processRemindersManually = async (
 ): Promise<void> => {
   try {
     // Optional: Add admin check
-    // if (req.user!.role !== "ADMIN") {
+    // if (req.user!.role !== "Admin") {
     //   res.status(403).json({ success: false, message: "Forbidden" });
     //   return;
     // }
@@ -278,7 +278,7 @@ export const triggerHealthCheck = async (
 ): Promise<void> => {
   try {
     // Optional: Add admin role check here
-    // if (req.user?.role !== 'ADMIN') {
+    // if (req.user?.role !== 'Admin') {
     //   res.status(403).json({ success: false, message: 'Admin access required' });
     //   return;
     // }

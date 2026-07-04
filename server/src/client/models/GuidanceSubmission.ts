@@ -95,7 +95,6 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
         monthlyCoaching: { type: String },
         equipment: { type: String },
         tournaments: { type: String },
-        summary: { type: String },
       },
       burnoutRisk: {
         level: { type: String, enum: ["low", "medium", "high"] },

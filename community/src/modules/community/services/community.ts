@@ -33,9 +33,9 @@ interface PaginatedApiResponse<T, P> extends ApiResponse<T> {
 interface AuthBridgeSession {
   id: string;
   role:
-    | "PLAYER"
-    | "VENUE_LISTER"
-    | "COACH"
+    | "Player"
+    | "VenueLister"
+    | "Coach"
     | "SUPPORT_ADMIN"
     | "OPERATIONS_ADMIN"
     | "FINANCE_ADMIN"

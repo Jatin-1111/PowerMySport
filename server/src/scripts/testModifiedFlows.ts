@@ -443,7 +443,7 @@ const testReviewSystem = async () => {
     const coachReview = await Review.create({
       bookingId: booking._id,
       userId: user._id,
-      targetType: "COACH",
+      targetType: "Coach",
       targetId: coach._id,
       rating: 4,
       comment: "Good coach!",
@@ -451,7 +451,7 @@ const testReviewSystem = async () => {
     });
 
     logTest("Venue review created", venueReview.targetType === "VENUE");
-    logTest("Coach review created", coachReview.targetType === "COACH");
+    logTest("Coach review created", coachReview.targetType === "Coach");
     logTest(
       "Both reviews for same booking",
       venueReview.bookingId.toString() === coachReview.bookingId.toString(),

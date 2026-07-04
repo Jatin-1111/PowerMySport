@@ -6,6 +6,7 @@ export interface CoachSubscriptionPaymentDocument extends Document {
   id?: string;
   coachId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
+  dependentId?: mongoose.Types.ObjectId;
   packageId: mongoose.Types.ObjectId;
   merchantOrderId: string;
   phonepeOrderId?: string;
@@ -37,6 +38,10 @@ const coachSubscriptionPaymentSchema =
         ref: "User",
         required: true,
         index: true,
+      },
+      dependentId: {
+        type: Schema.Types.ObjectId,
+        ref: "Player",
       },
       packageId: {
         type: Schema.Types.ObjectId,

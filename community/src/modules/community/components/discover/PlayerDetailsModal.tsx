@@ -104,7 +104,7 @@ export default function PlayerDetailsModal({
                       </h2>
                       <div className="mt-1.5 flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded-md bg-sky-500/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-sky-600">
-                          {profile.userType === "Parent" ? "PARENT" : profile.role === "COACH" ? "COACH" : "PLAYER"}
+                          {profile.userType === "Parent" ? "PARENT" : profile.role === "Coach" ? "Coach" : "Player"}
                         </span>
                         {!profile.isIdentityPublic && (
                           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">

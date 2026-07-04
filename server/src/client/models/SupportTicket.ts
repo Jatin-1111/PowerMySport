@@ -27,7 +27,7 @@ export interface SupportTicketDocument extends Document {
   assignedAdminId?: mongoose.Types.ObjectId;
   lastUpdatedBy?: mongoose.Types.ObjectId;
   notes: Array<{
-    authorType: "USER" | "ADMIN";
+    authorType: "USER" | "Admin";
     authorId: mongoose.Types.ObjectId;
     message: string;
     createdAt: Date;
@@ -107,7 +107,7 @@ const supportTicketSchema = new Schema<SupportTicketDocument>(
       {
         authorType: {
           type: String,
-          enum: ["USER", "ADMIN"],
+          enum: ["USER", "Admin"],
           required: true,
         },
         authorId: {

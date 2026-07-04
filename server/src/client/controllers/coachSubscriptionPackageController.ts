@@ -59,7 +59,7 @@ export const createCoachPackageHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "COACH") {
+    if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",
@@ -130,7 +130,7 @@ export const getCoachPackagesHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "COACH") {
+    if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",
@@ -214,7 +214,7 @@ export const updateCoachPackageHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "COACH") {
+    if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",
@@ -295,7 +295,7 @@ export const deleteCoachPackageHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "COACH") {
+    if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",
@@ -592,7 +592,7 @@ export const getCoachActiveSubscriptionsHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "COACH") {
+    if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",
@@ -640,7 +640,7 @@ export const getCoachSubscriptionRevenueHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.user?.id || req.user.role !== "COACH") {
+    if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
         success: false,
         message: "Coach role required",
@@ -697,7 +697,7 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       return;
     }
 
-    if (req.user.role !== "PLAYER") {
+    if (req.user.role !== "Player") {
       res.status(403).json({
         success: false,
         message: "Only player accounts can purchase subscriptions",
@@ -705,9 +705,10 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       return;
     }
 
-    const { coachId, packageId } = req.body as {
+    const { coachId, packageId, dependentId } = req.body as {
       coachId?: string;
       packageId?: string;
+      dependentId?: string;
     };
 
     if (typeof coachId !== "string" || typeof packageId !== "string") {
@@ -800,6 +801,7 @@ export const initiateCoachSubscriptionPaymentHandler = async (
         udf1: coachId,
         udf2: packageId,
         udf3: req.user.id,
+        udf4: dependentId || "",
       },
     };
 
@@ -810,6 +812,7 @@ export const initiateCoachSubscriptionPaymentHandler = async (
     transaction = await CoachSubscriptionPaymentTransaction.create({
       coachId: packageDoc.coachId,
       userId: req.user.id,
+      ...(dependentId ? { dependentId } : {}),
       packageId: packageDoc._id,
       merchantOrderId,
       baseAmount: baseAmountInPaise,

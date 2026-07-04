@@ -42,19 +42,19 @@ describe("H1 — JWT secret required + algorithm pinned", () => {
   const SECRET = process.env.JWT_SECRET as string;
 
   it("round-trips a valid HS256 token", () => {
-    const token = generateToken({ id: "u1", email: "a@b.com", role: "PLAYER" });
+    const token = generateToken({ id: "u1", email: "a@b.com", role: "Player" });
     const decoded = verifyToken(token);
     assert.equal(decoded.id, "u1");
-    assert.equal(decoded.role, "PLAYER");
+    assert.equal(decoded.role, "Player");
   });
 
   it("rejects a token signed with a different secret", () => {
-    const forged = jwt.sign({ id: "u1", role: "ADMIN" }, "some-other-secret");
+    const forged = jwt.sign({ id: "u1", role: "Admin" }, "some-other-secret");
     assert.throws(() => verifyToken(forged), /Invalid or expired token/);
   });
 
   it('rejects an "alg: none" (unsigned) token', () => {
-    const none = jwt.sign({ id: "u1", role: "ADMIN" }, "", {
+    const none = jwt.sign({ id: "u1", role: "Admin" }, "", {
       algorithm: "none",
     });
     assert.throws(() => verifyToken(none), /Invalid or expired token/);
@@ -95,12 +95,12 @@ describe("H2 — registration cannot self-assign privileged role/type", () => {
     acceptedPrivacy: true,
   };
 
-  it("defaults to PLAYER / Recreational", () => {
+  it("defaults to PLAYER / Player", () => {
     const r = registerSchema.safeParse({ ...base });
     assert.equal(r.success, true);
     if (r.success) {
-      assert.equal(r.data.role, "PLAYER");
-      assert.equal(r.data.userType, "Recreational");
+      assert.equal(r.data.role, "Player");
+      assert.equal(r.data.userType, "Player");
     }
   });
 
@@ -109,13 +109,13 @@ describe("H2 — registration cannot self-assign privileged role/type", () => {
     assert.equal(r.success, false);
   });
 
-  it('rejects role "ADMIN"', () => {
-    const r = registerSchema.safeParse({ ...base, role: "ADMIN" });
+  it('rejects role "Admin"', () => {
+    const r = registerSchema.safeParse({ ...base, role: "Admin" });
     assert.equal(r.success, false);
   });
 
   it("still allows legitimate COACH self-registration", () => {
-    const r = registerSchema.safeParse({ ...base, role: "COACH" });
+    const r = registerSchema.safeParse({ ...base, role: "Coach" });
     assert.equal(r.success, true);
   });
 });

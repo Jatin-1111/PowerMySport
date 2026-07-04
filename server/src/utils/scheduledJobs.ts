@@ -49,7 +49,7 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
       // Only release payee entries (VENUE_LISTER / COACH).
       // The PLAYER entry is already marked PAID by updatePaymentStatus().
       booking.payments = booking.payments.map((payment: any) => {
-        if (payment.status === "PENDING" && payment.userType !== "PLAYER") {
+        if (payment.status === "PENDING" && payment.userType !== "Player") {
           payment.status = "PAID";
           payment.paidAt = now;
         }

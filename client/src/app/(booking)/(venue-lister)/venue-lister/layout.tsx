@@ -41,14 +41,14 @@ export default function VendorLayout({
   // Block coaches from accessing venue-lister routes
   // Coaches who want to list venues must create separate venue-lister credentials
   useEffect(() => {
-    if (user && user.role !== "VENUE_LISTER") {
+    if (user && user.role !== "VenueLister") {
       router.replace("/");
     }
   }, [user, router]);
 
   // Silently check payout method for banner
   const loadPayoutStatus = useCallback(async () => {
-    if (user?.role !== "VENUE_LISTER") return;
+    if (user?.role !== "VenueLister") return;
     try {
       const res = await payoutApi.getVenuePayoutMethod();
       setVenuePayoutMethod(res.data?.payoutMethod ?? null);

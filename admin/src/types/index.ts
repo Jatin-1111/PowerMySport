@@ -1,7 +1,7 @@
-﻿// ============================================
+// ============================================
 // USER & AUTH TYPES
 // ============================================
-export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
+export type UserRole = "Player" | "Parent" | "VenueLister" | "Coach" | "Academy" | "Admin";
 
 // Admin role types
 export type AdminRole =
@@ -28,7 +28,7 @@ export type BookingStatus =
   | "NO_SHOW"
   | "CANCELLED";
 
-export type PaymentUserType = "VENUE_LISTER" | "COACH";
+export type PaymentUserType = "VenueLister" | "Coach";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {

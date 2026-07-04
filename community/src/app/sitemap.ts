@@ -16,7 +16,6 @@ const staticRoutes: { path: string; priority: number; changeFrequency: MetadataR
   { path: "/blog", priority: 0.9, changeFrequency: "daily" },
   { path: "/q", priority: 0.9, changeFrequency: "daily" },
   { path: "/discover", priority: 0.8, changeFrequency: "weekly" },
-  { path: "/ai-guidance", priority: 0.7, changeFrequency: "monthly" },
 ];
 
 const toDate = (value?: string): Date => {

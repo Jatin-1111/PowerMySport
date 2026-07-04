@@ -148,6 +148,19 @@ export function isFormValid(form: GuidanceFormState): boolean {
   );
 }
 
+// Templated parent_specific_question for the roadmap-entry ("level plan") flow —
+// pre-fills Step4's free-text field so the AI's goalAssessment answers the
+// level-plan framing directly instead of the parent having to phrase it.
+export function buildLevelPlanQuestion(
+  sport: string,
+  levelLabel: string,
+  alreadyAtLevel: boolean,
+): string {
+  return alreadyAtLevel
+    ? `My child is already playing ${sport} at the ${levelLabel} level. Based on their profile, what's realistic for us to focus on and achieve over the next 3 months, and what would tell us they're ready to progress to the next level?`
+    : `We are exploring starting ${sport} at the ${levelLabel} level. Based on my child's profile, is this the right time to begin? What will the first 3 months realistically look like for our family, and what are the 3 most important first steps?`;
+}
+
 export function getMissingFields(form: GuidanceFormState): string[] {
   const missing: string[] = [];
   if (!form.child_age || form.child_age < 3 || form.child_age > 21) missing.push("Child's age (3–21)");

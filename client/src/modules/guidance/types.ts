@@ -65,7 +65,6 @@ export type CostBreakdown = {
   monthlyCoaching: string;
   equipment: string;
   tournaments: string;
-  summary: string;
 };
 
 export type GuidanceSubmission = {
@@ -82,6 +81,7 @@ export type PlayerProfile = {
   name: string;
   age?: number;
   dob?: string;
+  gender?: "MALE" | "FEMALE" | "OTHER";
   sportsFocus: string[];
   skillLevel?: string;
   yearsPlaying?: number;

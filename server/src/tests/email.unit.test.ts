@@ -53,7 +53,7 @@ test("welcome email → user's own address", async () => {
   await email.sendWelcomeEmail({
     name: "Asha",
     email: "player@example.com",
-    role: "PLAYER",
+    role: "Player",
   });
   assertSentTo("player@example.com");
 });
@@ -78,7 +78,7 @@ test("booking lifecycle email → the passed recipient", async () => {
     endTime: "19:00",
     totalAmount: 500,
     state: "CONFIRMED",
-    recipientRole: "PLAYER",
+    recipientRole: "Player",
   });
   assertSentTo("lifecycle@example.com");
 });

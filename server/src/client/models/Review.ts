@@ -4,7 +4,7 @@ export interface ReviewDocument extends Document {
   bookingId?: mongoose.Types.ObjectId; // For venues/coaches
   orderId?: mongoose.Types.ObjectId; // For products
   userId: mongoose.Types.ObjectId; // Reviewer (player)
-  targetType: "VENUE" | "COACH" | "PRODUCT";
+  targetType: "VENUE" | "Coach" | "PRODUCT";
   targetId: mongoose.Types.ObjectId;
 
   // Ratings (1-5)
@@ -47,7 +47,7 @@ const reviewSchema = new Schema<ReviewDocument>(
     },
     targetType: {
       type: String,
-      enum: ["VENUE", "COACH", "PRODUCT"],
+      enum: ["VENUE", "Coach", "PRODUCT"],
       required: true,
     },
     targetId: {

@@ -258,7 +258,7 @@ export default function VenueDetailsPage() {
 
   const handleBooking = async () => {
     if (!user) { router.push("/login?redirect=/venues/" + venueId); return; }
-    if (user.role !== "PLAYER") { toast.error("Only player accounts can create bookings."); return; }
+    if (user.role !== "Player") { toast.error("Only player accounts can create bookings."); return; }
     if (!selectedSlot || !selectedSport) { toast.error("Please select a sport and time slot"); return; }
     setBookingLoading(true);
     try {
@@ -276,7 +276,7 @@ export default function VenueDetailsPage() {
 
   const handleJoinWaitlist = async () => {
     if (!user) { router.push(`/login?redirect=/venues/${venueId}`); return; }
-    if (user.role !== "PLAYER") { toast.error("Only player accounts can join waitlists."); return; }
+    if (user.role !== "Player") { toast.error("Only player accounts can join waitlists."); return; }
     if (!selectedSlot || !selectedSport) { toast.error("Please select a sport and time slot"); return; }
     setBookingLoading(true);
     try {
@@ -554,7 +554,7 @@ export default function VenueDetailsPage() {
               q={`${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`}
               sport={selectedSport || venue?.sports?.[0] || ""}
               ctaUrl={communityUrl}
-              enabled={Boolean(user && (user.role === "PLAYER" || user.role === "COACH"))}
+              enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
             />
 
             {/* Sports Available */}

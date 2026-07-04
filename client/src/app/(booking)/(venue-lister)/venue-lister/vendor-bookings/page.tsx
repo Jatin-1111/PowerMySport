@@ -261,7 +261,7 @@ export default function VenueBookingsPage() {
 
                   {/* Payment Details */}
                   {booking.payments?.find(
-                    (payment) => payment.userType === "VENUE_LISTER",
+                    (payment) => payment.userType === "VenueLister",
                   ) && (
                     <div className="bg-slate-50 rounded-lg p-4 mt-3 border border-slate-200">
                       <p className="text-sm font-semibold mb-2 text-slate-900">
@@ -269,7 +269,7 @@ export default function VenueBookingsPage() {
                       </p>
                       {(() => {
                         const venuePayment = booking.payments?.find(
-                          (payment) => payment.userType === "VENUE_LISTER",
+                          (payment) => payment.userType === "VenueLister",
                         );
 
                         if (!venuePayment) {

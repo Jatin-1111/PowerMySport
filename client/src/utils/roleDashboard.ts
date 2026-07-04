@@ -1,17 +1,18 @@
 import { UserRole } from "@/types";
 
 const dashboardByRole: Record<UserRole, string> = {
-  PLAYER: "/dashboard",
-  VENUE_LISTER: "/venue-lister/inventory",
-  COACH: "/coach/profile",
-  ACADEMY_OWNER: "/academy",
-  ADMIN: "/admin/users",
+  Player: "/dashboard",
+  VenueLister: "/venue-lister/inventory",
+  Coach: "/coach/profile",
+  Academy: "/academy",
+  Admin: "/admin/users",
+  Parent: "/dashboard",
 };
 
 export const getDashboardPathByRole = (role?: UserRole | null): string => {
   if (!role) {
-    return dashboardByRole.PLAYER;
+    return dashboardByRole.Player;
   }
 
-  return dashboardByRole[role] || dashboardByRole.PLAYER;
+  return dashboardByRole[role] || dashboardByRole.Player;
 };

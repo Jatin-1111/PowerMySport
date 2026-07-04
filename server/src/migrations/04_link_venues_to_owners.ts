@@ -58,8 +58,8 @@ export const linkVenuesToOwners = async () => {
           console.log(`   ✓ Found existing user: ${user.email}`);
 
           // Update user role to VENUE_LISTER if not already
-          if (user.role !== "VENUE_LISTER") {
-            user.role = "VENUE_LISTER";
+          if (user.role !== "VenueLister") {
+            user.role = "VenueLister";
             await user.save();
             console.log(`   ✓ Updated user role to VENUE_LISTER`);
           }
@@ -72,7 +72,7 @@ export const linkVenuesToOwners = async () => {
             email: venue.ownerEmail,
             phone: venue.ownerPhone,
             password: tempPassword, // User model will hash this
-            role: "VENUE_LISTER",
+            role: "VenueLister",
           });
 
           await user.save();

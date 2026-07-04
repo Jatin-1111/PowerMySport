@@ -33,7 +33,7 @@ export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<ModerationReview[]>([]);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [targetTypeFilter, setTargetTypeFilter] = useState<"" | "VENUE" | "COACH">("");
+  const [targetTypeFilter, setTargetTypeFilter] = useState<"" | "VENUE" | "Coach">("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -163,7 +163,7 @@ export default function AdminReviewsPage() {
               >
                 <option value="">All types</option>
                 <option value="VENUE">Venues</option>
-                <option value="COACH">Coaches</option>
+                <option value="Coach">Coaches</option>
               </select>
               <ExportCsvButton
                 filename="reviews.csv"

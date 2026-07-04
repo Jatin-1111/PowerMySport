@@ -213,6 +213,6 @@ export const isSystemAdminRole = (role: string | undefined | null): boolean => {
   return (
     role === ADMIN_ROLES.SYSTEM_ADMIN ||
     role === "SUPER_ADMIN" ||
-    role === "ADMIN"
+    role === "Admin"
   );
 };

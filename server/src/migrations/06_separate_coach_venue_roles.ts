@@ -120,7 +120,7 @@ async function migrateCoachVenueToProfile() {
     console.log("\n=== Cleaning up orphaned coach-created venues ===\n");
 
     // Find all users with COACH role
-    const coachUsers = await User.find({ role: "COACH" }).select("_id");
+    const coachUsers = await User.find({ role: "Coach" }).select("_id");
     const coachUserIds = coachUsers.map((u) => u._id.toString());
 
     console.log(`Found ${coachUserIds.length} coach users`);

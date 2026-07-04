@@ -455,8 +455,8 @@ export function ShopCatalogClient({
                 Parents
               </button>
               <button
-                onClick={() => { setSellerType("PLAYER"); applyFilters({ sellerType: "PLAYER" }); }}
-                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "PLAYER" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
+                onClick={() => { setSellerType("Player"); applyFilters({ sellerType: "Player" }); }}
+                className={cn("text-left px-3 py-2 rounded-lg text-sm font-bold transition-all", sellerType === "Player" ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20" : "text-slate-600 hover:bg-slate-100")}
               >
                 Players (P2P)
               </button>

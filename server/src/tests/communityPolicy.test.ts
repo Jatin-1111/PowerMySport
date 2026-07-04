@@ -39,15 +39,15 @@ test("community policy supports explicit enable flags", () => {
 });
 
 test("cross-role interaction helper returns expected values", () => {
-  assert.equal(isCrossRoleInteraction("PLAYER", "COACH"), true);
-  assert.equal(isCrossRoleInteraction("PLAYER", "PLAYER"), false);
+  assert.equal(isCrossRoleInteraction("Player", "Coach"), true);
+  assert.equal(isCrossRoleInteraction("Player", "Player"), false);
 });
 
 test("group audience helper enforces audience membership rules", () => {
-  assert.equal(canJoinGroupAudience("ALL", "PLAYER"), true);
-  assert.equal(canJoinGroupAudience("ALL", "COACH"), true);
-  assert.equal(canJoinGroupAudience("PLAYERS_ONLY", "PLAYER"), true);
-  assert.equal(canJoinGroupAudience("PLAYERS_ONLY", "COACH"), false);
-  assert.equal(canJoinGroupAudience("COACHES_ONLY", "COACH"), true);
-  assert.equal(canJoinGroupAudience("COACHES_ONLY", "PLAYER"), false);
+  assert.equal(canJoinGroupAudience("ALL", "Player"), true);
+  assert.equal(canJoinGroupAudience("ALL", "Coach"), true);
+  assert.equal(canJoinGroupAudience("PLAYERS_ONLY", "Player"), true);
+  assert.equal(canJoinGroupAudience("PLAYERS_ONLY", "Coach"), false);
+  assert.equal(canJoinGroupAudience("COACHES_ONLY", "Coach"), true);
+  assert.equal(canJoinGroupAudience("COACHES_ONLY", "Player"), false);
 });

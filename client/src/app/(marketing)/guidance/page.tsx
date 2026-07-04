@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Info,
   MessageCircle,
+  Sparkles,
+  Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -28,10 +30,11 @@ import { Step2Goals } from "@/modules/guidance/components/wizard/Step2Goals";
 import { Step3Lifestyle } from "@/modules/guidance/components/wizard/Step3Lifestyle";
 import { Step4Details } from "@/modules/guidance/components/wizard/Step4Details";
 import { ResultsView } from "@/modules/guidance/components/results/ResultsView";
-import { LevelPlanFlow } from "@/modules/guidance/components/level-plan/LevelPlanFlow";
 import { GuidanceChatDrawer } from "@/modules/guidance/components/chat/GuidanceChatDrawer";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { downloadGuidanceReportPdf } from "@/modules/guidance/services/guidance";
+import { toast } from "@/lib/toast";
 
 // ─── Inner component (needs useSearchParams) ──────────────────────────────────
 
@@ -43,6 +46,10 @@ function GuidancePageInner() {
   const initialMode = searchParams.get("mode") ?? undefined;
   const initialLevelLabel = searchParams.get("levelLabel") ?? undefined;
   const isLevelPlan = initialMode === "level-plan" && !!initialSport && !!initialLevel;
+  const levelContext =
+    isLevelPlan && initialSport && initialLevel && initialLevelLabel
+      ? { sport: initialSport, level: initialLevel, levelLabel: initialLevelLabel }
+      : undefined;
   // openChat: post-login redirect param — auto-opens chat drawer
   const openChatParam = searchParams.get("openChat") === "1";
   // submissionId: if returning from login with an existing submission
@@ -69,9 +76,9 @@ function GuidancePageInner() {
     handleSubmit,
     resetForm,
     editInputs,
-  } = useGuidanceForm({ initialSport, initialLevel });
+  } = useGuidanceForm({ initialSport, initialLevel, initialLevelLabel });
 
-  // Mirrors LevelPlanFlow's "Already here" toggle (which sets
+  // Mirrors Step1Profile's "Already here" toggle (which sets
   // current_pathway_level = initialLevel) so the header/subtitle framing
   // matches whether this is a "should we start" or "how do we progress" plan.
   const alreadyAtLevel = isLevelPlan && form.current_pathway_level === initialLevel;
@@ -80,6 +87,7 @@ function GuidancePageInner() {
   const { user } = useAuthStore();
   const [chatOpen, setChatOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // If returning from login with openChat=1 and a submissionId in the URL,
   // we need to load that submission and auto-open the chat.
@@ -119,6 +127,19 @@ function GuidancePageInner() {
       setLoginModalOpen(true);
     } else {
       setChatOpen(true);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!submission) return;
+    setDownloadingPdf(true);
+    try {
+      await downloadGuidanceReportPdf(submission.id);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unable to download report";
+      toast.error(msg);
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -236,35 +257,12 @@ function GuidancePageInner() {
                 <div className="border-b border-slate-100 px-4 pt-3 sm:px-5">
                   <InputsSummaryBar query={submission.query} onEdit={editInputs} />
                 </div>
-                <div className="p-4 sm:p-5">
+                <div className="p-4 pb-24 sm:p-5 sm:pb-24">
                   <ResultsView
                     key={submission.id}
                     submission={submission}
-                    levelContext={isLevelPlan && initialSport && initialLevel && initialLevelLabel ? {
-                      sport: initialSport,
-                      level: initialLevel,
-                      levelLabel: initialLevelLabel,
-                    } : undefined}
+                    levelContext={levelContext}
                   />
-
-                  {/* ── Chat with Coach CTA ── */}
-                  <div className="mt-5 pt-4 border-t border-slate-100">
-                    <button
-                      id="chat-with-coach-btn"
-                      type="button"
-                      onClick={handleChatClick}
-                      className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-3.5 text-sm font-bold text-white shadow-[0_4px_20px_-6px_rgba(233,115,22,0.55)] transition-all hover:shadow-[0_6px_24px_-6px_rgba(233,115,22,0.7)] hover:scale-[1.01] active:scale-[0.98]"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Chat with Coach
-                      <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-                        Go deeper
-                      </span>
-                    </button>
-                    <p className="mt-2 text-center text-[11px] text-slate-400">
-                      Ask follow-up questions · Get drill suggestions · Adjust your plan
-                    </p>
-                  </div>
                 </div>
               </div>
             </motion.div>
@@ -297,18 +295,30 @@ function GuidancePageInner() {
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
             >
-            {isLevelPlan && initialSport && initialLevel && initialLevelLabel ? (
-              <LevelPlanFlow
-                sport={initialSport}
-                level={initialLevel}
-                levelLabel={initialLevelLabel}
-                form={form}
-                update={update}
-                onSubmit={onSubmit}
-                loading={loading}
-              />
-            ) : (
-              /* ── Wizard Card ── */
+            {levelContext && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-3 flex items-center gap-4 rounded-2xl border border-orange-100 bg-orange-50/80 px-5 py-4"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange/15">
+                  <Sparkles className="h-5 w-5 text-power-orange" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-power-orange/70">
+                    Planning for
+                  </p>
+                  <p className="font-title font-bold text-slate-900 truncate">
+                    {levelContext.sport} · {levelContext.levelLabel} Level
+                  </p>
+                </div>
+                <div className="ml-auto text-right shrink-0">
+                  <p className="text-[10px] text-slate-400 font-medium">2 minutes</p>
+                  <p className="text-xs font-semibold text-slate-600">then your personalised plan</p>
+                </div>
+              </motion.div>
+            )}
+              {/* ── Wizard Card ── */}
               <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.03] backdrop-blur-sm sm:p-6 z-10">
                 <StepIndicator current={step} steps={STEPS} />
 
@@ -321,6 +331,7 @@ function GuidancePageInner() {
                       players={players}
                       selectedId={selectedProfileId}
                       onSelectPlayer={handleProfileSelect}
+                      levelContext={levelContext}
                     />
                   )}
                   {step === 2 && (
@@ -406,13 +417,45 @@ function GuidancePageInner() {
                   {step < 4 && `${STEPS.length - step} more to go`}
                 </p>
               </div>
-            )}
             </motion.div>
           )}
           </AnimatePresence>
         </div>
 
       </div>
+
+      {/* ── Sticky action bar — always-visible retention surface while viewing results ── */}
+      {mode === "results" && submission && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 px-4 py-3 shadow-[0_-4px_20px_-8px_rgba(15,23,42,0.15)] backdrop-blur-md sm:px-6"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="mx-auto flex max-w-4xl items-center gap-2.5">
+            <button
+              id="chat-with-coach-btn"
+              type="button"
+              onClick={handleChatClick}
+              className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition-all hover:shadow-[0_6px_18px_-4px_rgba(233,115,22,0.65)] active:scale-[0.98]"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Chat with Coach
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {downloadingPdf ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Download PDF</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Achievement Toast ── */}
       <AnimatePresence>

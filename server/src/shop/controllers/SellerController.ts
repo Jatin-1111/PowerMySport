@@ -105,14 +105,14 @@ export class SellerController {
 
       const userTypeMap: Record<string, string> = {
         Parent: "PARENT",
-        Recreational: "PLAYER",
-        Coach: "COACH",
+        Player: "Player",
+        Coach: "Coach",
         Academy: "ACADEMY",
         VenueLister: "MERCHANT",
         Admin: "SYSTEM",
       };
 
-      const finalSellerType = userTypeMap[user.userType] || "PLAYER";
+      const finalSellerType = userTypeMap[user.userType] || "Player";
 
       const productData = {
         sku: finalSku,

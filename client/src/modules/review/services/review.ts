@@ -3,7 +3,7 @@ import { ApiResponse, ReviewListData, ReviewItem } from "@/types";
 
 export const reviewApi = {
   getReviewEligibility: async (params: {
-    targetType: "VENUE" | "COACH";
+    targetType: "VENUE" | "Coach";
     targetId: string;
   }): Promise<
     ApiResponse<{
@@ -42,7 +42,7 @@ export const reviewApi = {
 
   createReview: async (payload: {
     bookingId: string;
-    targetType: "VENUE" | "COACH";
+    targetType: "VENUE" | "Coach";
     targetId: string;
     rating: number;
     review?: string;

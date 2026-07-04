@@ -318,7 +318,7 @@ export default function PrivacyPage() {
                             </p>
                             {user.role && (
                               <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                                {user.role === "COACH" ? "Coach" : "Player"}
+                                {user.role === "Coach" ? "Coach" : "Player"}
                               </span>
                             )}
                           </div>

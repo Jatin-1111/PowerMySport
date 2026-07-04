@@ -207,7 +207,7 @@ export interface Admin {
   _id?: string;
   name: string;
   email: string;
-  role: string; // Changed from "SUPER_ADMIN" | "ADMIN" to string for new role system
+  role: string; // Changed from "SUPER_ADMIN" | "Admin" to string for new role system
   permissions: string[];
   isActive: boolean;
   mustChangePassword?: boolean;
@@ -218,7 +218,7 @@ export interface ModerationReview {
   _id: string;
   bookingId: string;
   userId: string | { _id?: string; id?: string; name?: string; email?: string };
-  targetType: "VENUE" | "COACH";
+  targetType: "VENUE" | "Coach";
   targetId: string | { _id?: string; id?: string; name?: string };
   rating: number;
   review?: string;
@@ -233,7 +233,7 @@ export interface UserSafetyRecord {
   name: string;
   email: string;
   phone: string;
-  role: "PLAYER" | "COACH" | "VENUE_LISTER";
+  role: "Player" | "Coach" | "VenueLister";
   isActive: boolean;
   suspensionReason?: string;
   suspendedAt?: string;
@@ -339,7 +339,7 @@ export interface AdminPhonePeRefundStatus {
 
 export interface PayoutSummary {
   vendorId: string;
-  vendorRole: "VENUE_LISTER" | "COACH";
+  vendorRole: "VenueLister" | "Coach";
   totalPendingAmount: number;
   bookingIds: string[];
   vendorName: string;
@@ -670,7 +670,7 @@ export const adminApi = {
   },
 
   getUserSafetyList: async (params?: {
-    role?: "PLAYER" | "COACH" | "VENUE_LISTER";
+    role?: "Player" | "Coach" | "VenueLister";
     status?: "ACTIVE" | "SUSPENDED";
     page?: number;
     limit?: number;
@@ -1054,7 +1054,7 @@ export const adminApi = {
 
   markPayoutsAsPaid: async (data: {
     vendorId: string;
-    vendorRole: "VENUE_LISTER" | "COACH";
+    vendorRole: "VenueLister" | "Coach";
     bookingIds: string[];
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/payouts/mark-paid", data);

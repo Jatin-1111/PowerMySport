@@ -8,7 +8,7 @@ import { sendReviewReceivedEmail } from "../../utils/email";
 export interface CreateReviewPayload {
   bookingId: string;
   userId: string;
-  targetType: "VENUE" | "COACH";
+  targetType: "VENUE" | "Coach";
   rating: number;
   review?: string;
 }
@@ -44,7 +44,7 @@ export const createReview = async (
       throw new Error("This booking has no venue to review");
     }
     targetId = booking.venueId;
-  } else if (payload.targetType === "COACH") {
+  } else if (payload.targetType === "Coach") {
     if (!booking.coachId) {
       throw new Error("This booking has no coach to review");
     }
@@ -87,7 +87,7 @@ export const createReview = async (
   // Update venue or coach rating
   if (payload.targetType === "VENUE") {
     await updateVenueRating(targetId.toString());
-  } else if (payload.targetType === "COACH") {
+  } else if (payload.targetType === "Coach") {
     await updateCoachRating(targetId.toString());
   }
 
@@ -170,7 +170,7 @@ const updateCoachRating = async (coachId: string): Promise<void> => {
   }
 
   const stats = await Review.aggregate([
-    { $match: { targetType: "COACH", targetId: coachId as any } },
+    { $match: { targetType: "Coach", targetId: coachId as any } },
     {
       $group: {
         _id: null,
@@ -241,7 +241,7 @@ export const getCoachReviews = async (
   const skip = (page - 1) * limit;
 
   const query = {
-    targetType: "COACH" as const,
+    targetType: "Coach" as const,
     targetId: coachId,
     isHidden: false,
     moderationStatus: { $ne: "REMOVED" },

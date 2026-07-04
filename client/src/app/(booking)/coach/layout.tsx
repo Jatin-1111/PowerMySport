@@ -49,7 +49,7 @@ export default function CoachLayout({
     let isMounted = true;
 
     const checkCoachVerificationGate = async () => {
-      if (user?.role !== "COACH") {
+      if (user?.role !== "Coach") {
         if (isMounted) {
           setIsVerificationLocked(false);
           setIsGateLoading(false);
@@ -110,7 +110,7 @@ export default function CoachLayout({
 
   // Silently check payout method for banner
   const loadPayoutStatus = useCallback(async () => {
-    if (user?.role !== "COACH") return;
+    if (user?.role !== "Coach") return;
     try {
       const res = await payoutApi.getCoachPayoutMethod();
       setCoachPayoutMethod(res.data?.payoutMethod ?? null);
@@ -190,7 +190,7 @@ export default function CoachLayout({
 
   if (
     isGateLoading &&
-    user?.role === "COACH" &&
+    user?.role === "Coach" &&
     pathname !== "/coach/verification"
   ) {
     return (

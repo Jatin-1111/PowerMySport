@@ -1,4 +1,4 @@
-﻿import axiosInstance from "@/lib/api/axios";
+import axiosInstance from "@/lib/api/axios";
 import {
   ApiResponse,
   CoachSubscription,
@@ -252,6 +252,7 @@ export const coachApi = {
   initiateSubscriptionPayment: async (payload: {
     coachId: string;
     packageId: string;
+    dependentId?: string;
   }): Promise<{
     redirectUrl: string;
     merchantOrderId: string;

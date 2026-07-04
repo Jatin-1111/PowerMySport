@@ -1,4 +1,4 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 import { User } from "@/types";
 
 interface AuthStore {
@@ -18,7 +18,16 @@ export const useAuthStore = create<AuthStore>((set) => ({
   token: null,
   isLoading: false,
   error: null,
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    set({ user });
+    if (typeof window !== "undefined") {
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
+      } else {
+        localStorage.removeItem("user");
+      }
+    }
+  },
   setToken: (token) => {
     if (typeof window !== "undefined") {
       if (token) {

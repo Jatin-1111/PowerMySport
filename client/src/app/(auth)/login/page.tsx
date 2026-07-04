@@ -26,11 +26,10 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
 
   const getDefaultRedirect = (role: string) => {
-    if (role === "PLAYER") return "/dashboard/my-bookings";
-    if (role === "VENUE_LISTER") return "/venue-lister/inventory";
-    if (role === "COACH") return "/coach/verification";
-    if (role === "ACADEMY_OWNER") return "/academy";
-    return "/dashboard/my-bookings";
+    if (role === "VenueLister") return "/venue-lister/inventory";
+    if (role === "Coach") return "/coach/verification";
+    if (role === "Academy") return "/academy";
+    return "/";
   };
 
   useEffect(() => {

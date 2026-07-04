@@ -3,7 +3,9 @@ import { generateToken, revokeToken } from "../../utils/jwt";
 import {
   addAddress,
   addDependent,
+  changePassword,
   confirmProfilePictureUpload,
+  deleteAccount,
   deleteAddress,
   deleteDependent,
   getPlayersByUserId,
@@ -41,8 +43,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await registerUser({
       ...req.body,
-      role: req.body.role || "PLAYER",
-      userType: req.body.userType || "Recreational",
+      role: req.body.role || "Player",
+      userType: req.body.userType || "Player",
     });
 
     const token = generateToken({
@@ -201,6 +203,7 @@ export const getProfile = async (
         playerProfile,
         dependents,
         shippingAddress: user.shippingAddress,
+        hasPassword: !!user.password,
       },
     });
   } catch (error) {
@@ -342,6 +345,86 @@ export const resetPasswordHandler = async (
     res.status(400).json({
       success: false,
       message: error instanceof Error ? error.message : "Password reset failed",
+    });
+  }
+};
+
+export const changePasswordHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+      return;
+    }
+    if (newPassword.length < 6) {
+      res.status(400).json({
+        success: false,
+        message: "New password must be at least 6 characters",
+      });
+      return;
+    }
+
+    await changePassword(req.user.id, currentPassword, newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to change password",
+    });
+  }
+};
+
+export const deleteAccountHandler = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+      return;
+    }
+
+    const { password } = req.body;
+    await deleteAccount(req.user.id, password || "");
+
+    const token =
+      req.cookies?.token || req.headers.authorization?.slice(7).trim();
+    if (token) {
+      await revokeToken(token);
+    }
+    res.clearCookie("token", authCookieOptions);
+
+    res.status(200).json({
+      success: true,
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to delete account",
     });
   }
 };

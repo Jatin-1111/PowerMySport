@@ -22,7 +22,7 @@ const run = async () => {
       email: `refund-test-${Date.now()}@example.com`,
       phone: `99${Math.floor(Math.random() * 100000000)}`,
       password: "password123",
-      role: "PLAYER",
+      role: "Player",
     });
     console.log("Created user:", user._id);
 

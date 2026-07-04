@@ -495,7 +495,7 @@ export const approveVenue = async (
       email: venue.ownerEmail,
       phone: venue.ownerPhone,
       password: tempPassword, // User model will hash this
-      role: "VENUE_LISTER",
+      role: "VenueLister",
       venueListerProfile: {
         businessDetails: {
           name: venue.ownerName,

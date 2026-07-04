@@ -882,13 +882,26 @@ export const initiateBooking = async (
       if (COACH_SUBSCRIPTIONS_ENFORCE_BOOKING) {
         const now = new Date();
 
-        const coachSubscription = await CoachSubscription.findOne({
+        const query: any = {
           coachId: coach._id,
+          userId: user._id,
           status: { $in: ["ACTIVE", "PAST_DUE"] },
-        }).sort({ createdAt: -1 });
+        };
+        
+        if (payload.dependentId) {
+          query.dependentId = payload.dependentId;
+        } else {
+          query.dependentId = { $exists: false };
+        }
+
+        const coachSubscription = await CoachSubscription.findOne(query).sort({ createdAt: -1 });
 
         if (!coachSubscription) {
-          throw new Error("Coach subscription is inactive for new bookings");
+          throw new Error(
+            payload.dependentId
+              ? "No active coach subscription found for this dependent"
+              : "No active coach subscription found for your account"
+          );
         }
 
         const isActive = coachSubscription.status === "ACTIVE";
@@ -898,7 +911,11 @@ export const initiateBooking = async (
           coachSubscription.gracePeriodEndsAt > now;
 
         if (!isActive && !isPastDueWithinGrace) {
-          throw new Error("Coach subscription is inactive for new bookings");
+          throw new Error(
+            payload.dependentId
+              ? "No active coach subscription found for this dependent"
+              : "No active coach subscription found for your account"
+          );
         }
       }
 
@@ -1386,12 +1403,12 @@ const getBookingParticipantIds = (booking: BookingDocument): string[] => {
 const getBookingLifecycleRecipients = async (
   booking: BookingDocument,
 ): Promise<
-  Array<{ name: string; email: string; role: "PLAYER" | "PROVIDER" }>
+  Array<{ name: string; email: string; role: "Player" | "PROVIDER" }>
 > => {
   const recipients: Array<{
     name: string;
     email: string;
-    role: "PLAYER" | "PROVIDER";
+    role: "Player" | "PROVIDER";
   }> = [];
 
   const player = await User.findById(booking.userId).select("name email");
@@ -1399,7 +1416,7 @@ const getBookingLifecycleRecipients = async (
     recipients.push({
       name: player.name || "Player",
       email: player.email,
-      role: "PLAYER",
+      role: "Player",
     });
   }
 
@@ -1437,7 +1454,7 @@ const getBookingLifecycleRecipients = async (
 
   const uniqueRecipients = new Map<
     string,
-    { name: string; email: string; role: "PLAYER" | "PROVIDER" }
+    { name: string; email: string; role: "Player" | "PROVIDER" }
   >();
   for (const recipient of recipients) {
     uniqueRecipients.set(recipient.email.toLowerCase(), recipient);
@@ -1475,7 +1492,7 @@ const sendBookingLifecycleEmails = async (
           recipientRole: recipient.role,
           ...(booking.checkInCode &&
           state === "CONFIRMED" &&
-          recipient.role === "PLAYER"
+          recipient.role === "Player"
             ? { checkInCode: booking.checkInCode }
             : {}),
           ...extra,
@@ -1498,7 +1515,7 @@ const buildRefundTargets = (
 
   if (booking.payments && booking.payments.length > 0) {
     const playerPayments = booking.payments.filter(
-      (payment) => payment.userType === "PLAYER" && payment.status === "PAID",
+      (payment) => payment.userType === "Player" && payment.status === "PAID",
     );
 
     if (playerPayments.length > 0) {
@@ -1975,10 +1992,10 @@ export const checkInBookingByCode = async (
   }
 
   // Verify authorization (admin, venue owner, or assigned coach)
-  if (requesterRole !== "ADMIN") {
+  if (requesterRole !== "Admin") {
     let isAuthorized = false;
 
-    if (requesterRole === "COACH" && booking.coachId) {
+    if (requesterRole === "Coach" && booking.coachId) {
       const coach = await Coach.findById(booking.coachId).select("userId");
       if (coach?.userId?.toString() === requesterUserId) {
         isAuthorized = true;
@@ -2449,7 +2466,7 @@ export const updatePaymentStatus = async (
     status === "PAID" &&
     (!booking.payments.length ||
       booking.payments
-        .filter((payment) => payment.userType === "PLAYER")
+        .filter((payment) => payment.userType === "Player")
         .every((payment) => payment.status === "PAID"))
   ) {
     booking.paymentConfirmedAt = new Date();
@@ -2542,7 +2559,7 @@ export const initiateGroupBooking = async (
     // Fetch invitee details
     const invitees = await User.find({
       _id: { $in: payload.invitedFriendIds },
-      role: "PLAYER",
+      role: "Player",
     });
 
     if (invitees.length !== payload.invitedFriendIds.length) {
@@ -2796,7 +2813,7 @@ export const respondToBookingInvitation = async (
     if (!accept && booking.paymentType === "SPLIT") {
       // Remove this user's payment
       booking.payments = booking.payments.filter(
-        (p) => p.userId.toString() !== userId || p.userType !== "PLAYER",
+        (p) => p.userId.toString() !== userId || p.userType !== "Player",
       );
 
       // Recalculate split among remaining accepted participants
@@ -2806,7 +2823,7 @@ export const respondToBookingInvitation = async (
 
       if (acceptedParticipants.length > 0) {
         const playerPayments = booking.payments.filter(
-          (p) => p.userType === "PLAYER",
+          (p) => p.userType === "Player",
         );
         const totalPlayerAmount = playerPayments.reduce(
           (sum, p) => sum + p.amount,
@@ -2823,13 +2840,13 @@ export const respondToBookingInvitation = async (
 
         // Update player payments
         const nonPlayerPayments = booking.payments.filter(
-          (p) => p.userType !== "PLAYER",
+          (p) => p.userType !== "Player",
         );
         booking.payments = [
           ...nonPlayerPayments,
           ...acceptedParticipants.map((p, index) => ({
             userId: p.userId,
-            userType: "PLAYER" as const,
+            userType: "Player" as const,
             amount:
               index === acceptedParticipants.length - 1
                 ? lastPersonAmount
@@ -3231,7 +3248,7 @@ export const coverUnpaidShares = async (
 
   // Find all unpaid player payments
   const unpaidPlayerPayments = booking.payments.filter(
-    (p) => p.userType === "PLAYER" && p.status === "PENDING",
+    (p) => p.userType === "Player" && p.status === "PENDING",
   );
 
   if (unpaidPlayerPayments.length === 0) {
@@ -3249,7 +3266,7 @@ export const coverUnpaidShares = async (
 
   // Find organizer's payment
   const organizerPayment = booking.payments.find(
-    (p) => p.userId.toString() === organizerId && p.userType === "PLAYER",
+    (p) => p.userId.toString() === organizerId && p.userType === "Player",
   );
 
   if (organizerPayment) {
@@ -3259,7 +3276,7 @@ export const coverUnpaidShares = async (
     // Create new payment for organizer covering unpaid shares
     booking.payments.push({
       userId: new mongoose.Types.ObjectId(organizerId),
-      userType: "PLAYER",
+      userType: "Player",
       amount: totalUnpaid,
       status: "PENDING",
     });
@@ -3269,7 +3286,7 @@ export const coverUnpaidShares = async (
   booking.payments = booking.payments.filter(
     (p) =>
       !(
-        p.userType === "PLAYER" &&
+        p.userType === "Player" &&
         p.status === "PENDING" &&
         p.userId.toString() !== organizerId
       ),

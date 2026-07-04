@@ -43,7 +43,7 @@ export const getVenueEarnings = async (ownerUserId: string): Promise<VenueEarnin
 
   const getVenueAmount = (b: any): number => {
     if (Array.isArray(b.payments)) {
-      const vp = b.payments.find((p: any) => p.userType === "VENUE_LISTER" && p.status === "PAID");
+      const vp = b.payments.find((p: any) => p.userType === "VenueLister" && p.status === "PAID");
       if (vp) return vp.amount;
     }
     return b.totalAmount ?? 0;

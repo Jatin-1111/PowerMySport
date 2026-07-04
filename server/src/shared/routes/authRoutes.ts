@@ -8,7 +8,9 @@ import { validateRequest } from "../../middleware/validation";
 import {
   addAddressHandler,
   addDependentHandler,
+  changePasswordHandler,
   confirmProfilePictureUploadHandler,
+  deleteAccountHandler,
   deleteAddressHandler,
   deleteDependentHandler,
   forgotPassword,
@@ -139,6 +141,32 @@ const resetPasswordRateLimiter = rateLimit({
   },
 });
 
+// Both require the current password, so brute-forcing it needs the same
+// throttle as login.
+const changePasswordRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisRateLimitStore("rl:auth:change-password:"),
+  message: {
+    success: false,
+    message: "Too many attempts. Please try again in 15 minutes.",
+  },
+});
+
+const deleteAccountRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisRateLimitStore("rl:auth:delete-account:"),
+  message: {
+    success: false,
+    message: "Too many attempts. Please try again in 15 minutes.",
+  },
+});
+
 router.post(
   "/register",
   registerRateLimiter,
@@ -154,6 +182,18 @@ router.post("/forgot-password", forgotPasswordRateLimiter, forgotPassword);
 router.post("/reset-password", resetPasswordRateLimiter, resetPasswordHandler);
 router.post("/google", googleAuth);
 router.post("/graduate", authMiddleware, graduateDependentHandler);
+router.put(
+  "/change-password",
+  authMiddleware,
+  changePasswordRateLimiter,
+  changePasswordHandler,
+);
+router.post(
+  "/delete-account",
+  authMiddleware,
+  deleteAccountRateLimiter,
+  deleteAccountHandler,
+);
 
 // Profile picture endpoints
 router.post(

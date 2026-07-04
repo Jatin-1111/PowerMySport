@@ -1,8 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Flag, TrendingUp } from "lucide-react";
 import { slideIn } from "../../constants";
 import type { GuidanceFormState, PlayerProfile } from "../../types";
+
+interface LevelContext {
+  sport: string;
+  level: number;
+  levelLabel: string;
+}
 
 export function Step1Profile({
   form,
@@ -10,6 +17,7 @@ export function Step1Profile({
   players,
   selectedId,
   onSelectPlayer,
+  levelContext,
 }: {
   form: GuidanceFormState;
   update: <K extends keyof GuidanceFormState>(
@@ -19,7 +27,9 @@ export function Step1Profile({
   players: PlayerProfile[];
   selectedId: string;
   onSelectPlayer: (id: string) => void;
+  levelContext?: LevelContext;
 }) {
+  const alreadyAtLevel = !!levelContext && form.current_pathway_level === levelContext.level;
   return (
     <motion.div
       variants={slideIn}
@@ -103,16 +113,92 @@ export function Step1Profile({
 
       <div className="space-y-2">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-          Current Sport (optional)
+          Current Sport {levelContext ? "" : "(optional)"}
         </span>
         <input
           type="text"
           value={form.sport}
           onChange={(e) => update("sport", e.target.value)}
+          disabled={!!levelContext}
           placeholder="e.g. Basketball, Swimming, Cricket…"
+          className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-power-orange focus:ring-4 focus:ring-power-orange/10 disabled:bg-slate-50 disabled:text-slate-500"
+        />
+        {levelContext && (
+          <p className="text-[11px] text-slate-400">
+            Locked — set from the {levelContext.levelLabel} level pathway you're exploring.
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          Experience (years){" "}
+          <span className="text-slate-400 normal-case font-normal">(optional)</span>
+        </span>
+        <input
+          type="number"
+          min={0}
+          max={20}
+          step={0.5}
+          value={form.years_playing ?? ""}
+          onChange={(e) =>
+            update("years_playing", e.target.value ? Number(e.target.value) : undefined)
+          }
+          placeholder="e.g. 1.5"
           className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-power-orange focus:ring-4 focus:ring-power-orange/10"
         />
+        <p className="text-[11px] text-slate-400">
+          Leave blank if they haven't started yet.
+        </p>
       </div>
+
+      {levelContext && (
+        <div className="space-y-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            Where does your child stand today?
+          </span>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => update("current_pathway_level", undefined)}
+              className={`flex items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-all ${
+                !alreadyAtLevel
+                  ? "border-power-orange bg-orange-50"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+              }`}
+            >
+              <Flag className={`mt-0.5 h-4 w-4 shrink-0 ${!alreadyAtLevel ? "text-power-orange" : "text-slate-400"}`} />
+              <span>
+                <span className={`block text-xs font-bold ${!alreadyAtLevel ? "text-power-orange" : "text-slate-800"}`}>
+                  Not there yet
+                </span>
+                <span className="block text-[11px] text-slate-500 mt-0.5">
+                  {levelContext.levelLabel} {levelContext.sport} would be new for us
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => update("current_pathway_level", levelContext.level)}
+              className={`flex items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-all ${
+                alreadyAtLevel
+                  ? "border-power-orange bg-orange-50"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+              }`}
+            >
+              <TrendingUp className={`mt-0.5 h-4 w-4 shrink-0 ${alreadyAtLevel ? "text-power-orange" : "text-slate-400"}`} />
+              <span>
+                <span className={`block text-xs font-bold ${alreadyAtLevel ? "text-power-orange" : "text-slate-800"}`}>
+                  Already here
+                </span>
+                <span className="block text-[11px] text-slate-500 mt-0.5">
+                  My child already plays at {levelContext.levelLabel} level
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -85,7 +85,7 @@ export default function CoachPayoutsPage() {
 
       {/* ── Payout manager ── */}
       <PayoutMethodManager
-        ownerType="COACH"
+        ownerType="Coach"
         onLoad={handleLoad}
         onAdd={handleAdd}
         onUpdate={handleUpdate}

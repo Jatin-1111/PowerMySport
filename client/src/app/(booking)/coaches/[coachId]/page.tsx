@@ -186,7 +186,7 @@ export default function CoachDetailsPage() {
 
   const loadReviewEligibility = async () => {
     try {
-      const response = await reviewApi.getReviewEligibility({ targetType: "COACH", targetId: coachId });
+      const response = await reviewApi.getReviewEligibility({ targetType: "Coach", targetId: coachId });
       if (response.success && response.data) {
         setEligibleBookingId(response.data.eligible ? response.data.bookingId : null);
         setReviewEligibilityReason(response.data.reason || "");
@@ -200,7 +200,7 @@ export default function CoachDetailsPage() {
     if (!reviewRating) { toast.error("Please select a rating"); return; }
     setReviewSubmitting(true);
     try {
-      const response = await reviewApi.createReview({ bookingId: eligibleBookingId, targetType: "COACH", targetId: coachId, rating: reviewRating, ...(reviewText.trim() ? { review: reviewText.trim() } : {}) });
+      const response = await reviewApi.createReview({ bookingId: eligibleBookingId, targetType: "Coach", targetId: coachId, rating: reviewRating, ...(reviewText.trim() ? { review: reviewText.trim() } : {}) });
       if (response.success) {
         toast.success("Review submitted successfully");
         setReviewRating(0); setReviewText(""); setEligibleBookingId(null);
@@ -213,7 +213,7 @@ export default function CoachDetailsPage() {
 
   const handleSubscribeToPackage = async (packageId: string) => {
     if (!user) { router.push(`/login?redirect=/coaches/${coachId}`); return; }
-    if (user.role !== "PLAYER") { toast.error("Only player accounts can subscribe to packages"); return; }
+    if (user.role !== "Player") { toast.error("Only player accounts can subscribe to packages"); return; }
     const p = new URLSearchParams({ coachId, packageId });
     router.push(`/dashboard/subscription-checkout?${p.toString()}`);
   };
@@ -230,7 +230,7 @@ export default function CoachDetailsPage() {
 
   const handleJoinWaitlist = async () => {
     if (!user) { router.push(`/login?redirect=/coaches/${coachId}`); return; }
-    if (user.role !== "PLAYER") { toast.error("Only player accounts can join waitlists."); return; }
+    if (user.role !== "Player") { toast.error("Only player accounts can join waitlists."); return; }
     if (!selectedSlot || !selectedSport) { toast.error("Please select a sport and time slot"); return; }
     setBookingLoading(true);
     try {
@@ -355,8 +355,8 @@ export default function CoachDetailsPage() {
               q={communityIntent.q}
               sport={communityIntent.sport}
               ctaUrl={communityUrl}
-              ctaTracking={{ eventName: "community_cta_click", entityType: "COACH", entityId: coachId, metadata: { ...communityIntent.analyticsMetadata, page: "coach_detail" } }}
-              enabled={Boolean(user && (user.role === "PLAYER" || user.role === "COACH"))}
+              ctaTracking={{ eventName: "community_cta_click", entityType: "Coach", entityId: coachId, metadata: { ...communityIntent.analyticsMetadata, page: "coach_detail" } }}
+              enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
             />
 
             {/* Subscription Packages */}
@@ -402,7 +402,7 @@ export default function CoachDetailsPage() {
                             {typeof pkg?.maxSessions === "number" ? <span className="rounded-full bg-slate-100 px-3 py-1">{pkg.maxSessions} sessions</span> : <span className="rounded-full bg-slate-100 px-3 py-1">Session limit flexible</span>}
                           </div>
                           <div className="mt-5">
-                            {user ? (user.role === "PLAYER" ? (
+                            {user ? (user.role === "Player" ? (
                               <Button variant="primary" className="w-full bg-turf-green hover:bg-green-700" onClick={() => handleSubscribeToPackage(packageId)} disabled={!packageId || isBusy}>
                                 {isBusy ? "Activating..." : "Subscribe now"}
                               </Button>

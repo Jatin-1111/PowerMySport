@@ -368,7 +368,7 @@ function CheckoutPageContent() {
 
         if (profileResp?.success && profileResp.data) {
           setUser(profileResp.data);
-          if (profileResp.data.role !== "PLAYER") {
+          if (profileResp.data.role !== "Player") {
             toast.error("Only player accounts can create bookings.");
             router.replace(getDashboardPathByRole(profileResp.data.role));
             return;
@@ -471,7 +471,7 @@ function CheckoutPageContent() {
   };
 
   const handleCheckout = async () => {
-    if (user?.role !== "PLAYER") { toast.error("Only player accounts can create bookings."); return; }
+    if (user?.role !== "Player") { toast.error("Only player accounts can create bookings."); return; }
     if (!hasRequiredDetails) { toast.error("Missing booking details."); return; }
     if (!hasValidDuration) { toast.error("End time must be after start time."); return; }
     if (!isDetailsReady) { toast.error("Details are not available."); return; }
@@ -895,7 +895,7 @@ function CheckoutPageContent() {
               title="Second opinion before paying?"
               description={`See what players are saying about this ${entityLabel} before you confirm.`}
               q={`${sport} ${entityLabel}`} sport={sport} ctaUrl={communityUrl}
-              enabled={Boolean(user?.role === "PLAYER")} />
+              enabled={Boolean(user?.role === "Player")} />
           </motion.div>
         </aside>
       </div>
