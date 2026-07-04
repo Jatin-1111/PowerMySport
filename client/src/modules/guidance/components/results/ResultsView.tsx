@@ -68,7 +68,6 @@ export function ResultsView({
     .map((s) => s.trim().replace(/\.$/, ""))
     .filter(Boolean);
 
-  const [profileExpanded, setProfileExpanded] = useState(false);
 
   return (
     <div className="flex flex-col gap-3">
@@ -113,18 +112,9 @@ export function ResultsView({
           </div>
         </div>
 
-        <p className={`text-sm leading-6 text-slate-700 ${profileExpanded ? "" : "line-clamp-2"}`}>
+        <p className="text-sm leading-6 text-slate-700">
           {r.profileAnalysis}
         </p>
-        {r.profileAnalysis && r.profileAnalysis.length > 140 && (
-          <button
-            type="button"
-            onClick={() => setProfileExpanded(!profileExpanded)}
-            className="mt-1 text-xs font-semibold text-power-orange transition hover:text-orange-600"
-          >
-            {profileExpanded ? "Show less" : "Read more →"}
-          </button>
-        )}
 
         {/* At-a-glance facts — lets a parent double-check what they entered */}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -232,7 +222,7 @@ export function ResultsView({
             Weekly Blueprint
           </h3>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             {
               label: "Training",
@@ -313,82 +303,11 @@ export function ResultsView({
             ))}
           </div>
 
-          {r.recommendedSports && r.recommendedSports.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {r.recommendedSports.map((sportName) => (
-                <Link
-                  key={sportName}
-                  href={`/roadmap?sport=${encodeURIComponent(sportName)}&age=${submission.query.child_age}&budget=${encodeURIComponent(submission.query.budget_tier)}&state=${encodeURIComponent(submission.query.location)}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-power-orange/20 bg-power-orange/5 px-3 py-2 text-xs font-semibold text-power-orange hover:bg-power-orange/10 transition"
-                >
-                  <MapPin className="h-3.5 w-3.5" />
-                  Explore {sportName} pathway →
-                </Link>
-              ))}
-            </div>
-          )}
+
         </div>
       )}
 
-      {/* Personality traits */}
-      {submission.query.personality_tags.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-violet-500" />
-            <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
-              Personality Profile
-            </h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {submission.query.personality_tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Experts CTA — human guidance to complement the AI plan */}
-      <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100">
-            <Users className="h-5 w-5 text-blue-600" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="font-title text-sm font-bold text-slate-900">
-              Want a real expert to weigh in?
-            </h3>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Our Experts platform connects you with experienced coaches for personalised, one-on-one guidance.
-            </p>
-          </div>
-        </div>
-        <Link
-          href="/experts"
-          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-blue-700 sm:w-auto"
-        >
-          Explore Experts
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
-
-      {/* Low-key footer links — primary actions live in the sticky bar */}
-      <div className="flex items-center justify-center gap-4 pt-2 pb-1">
-        <a
-          href={process.env.NEXT_PUBLIC_MAIN_APP_URL || "http://localhost:3000"}
-          className="text-xs font-semibold text-slate-400 hover:text-power-orange transition"
-        >
-          Explore Programs
-        </a>
-        <span className="text-slate-200">·</span>
-        <a href="/roadmap" className="text-xs font-semibold text-slate-400 hover:text-power-orange transition">
-          View Roadmap
-        </a>
-      </div>
     </div>
   );
 }

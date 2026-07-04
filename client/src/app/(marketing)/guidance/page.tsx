@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   BrainCircuit,
   Star,
@@ -13,6 +14,7 @@ import {
   MessageCircle,
   Sparkles,
   Download,
+  Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -431,6 +433,14 @@ function GuidancePageInner() {
           style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
         >
           <div className="mx-auto flex max-w-4xl items-center gap-2.5">
+            <Link
+              href="/experts"
+              className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(37,99,235,0.5)] transition-all hover:shadow-[0_6px_18px_-4px_rgba(37,99,235,0.65)] active:scale-[0.98]"
+            >
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Explore Experts</span>
+              <span className="sm:hidden">Experts</span>
+            </Link>
             <button
               id="chat-with-coach-btn"
               type="button"
@@ -438,20 +448,22 @@ function GuidancePageInner() {
               className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition-all hover:shadow-[0_6px_18px_-4px_rgba(233,115,22,0.65)] active:scale-[0.98]"
             >
               <MessageCircle className="h-4 w-4" />
-              Chat with Coach
+              <span className="hidden sm:inline">Chat with Coach</span>
+              <span className="sm:hidden">Chat</span>
             </button>
             <button
               type="button"
               onClick={handleDownloadPdf}
               disabled={downloadingPdf}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+              title="Download PDF"
             >
               {downloadingPdf ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              <span className="hidden sm:inline">Download PDF</span>
+              <span className="hidden sm:inline">PDF</span>
             </button>
           </div>
         </div>

@@ -46,9 +46,9 @@ const funnelDayOptions = [7, 14, 30, 90] as const;
 const POLL_MS = 15000;
 
 const ROLE_COLORS = {
-  PLAYER: "#0ea5e9",
-  COACH: "#10b981",
-  VENUE_LISTER: "#f97316",
+  Player: "#0ea5e9",
+  Coach: "#10b981",
+  VenueLister: "#f97316",
 } as const;
 
 const SOURCE_COLORS = {
@@ -71,9 +71,9 @@ const DEFAULT_PLATFORM_STATS: PlatformStats = {
 };
 
 const DEFAULT_ROLE_SUMMARY: UsersRoleSummary = {
-  PLAYER: 0,
-  COACH: 0,
-  VENUE_LISTER: 0,
+  Player: 0,
+  Coach: 0,
+  VenueLister: 0,
 };
 
 function formatNumber(value: number): string {
@@ -359,18 +359,18 @@ export default function AdminAnalyticsPage() {
     () => [
       {
         name: "Players",
-        value: roleSummary.PLAYER,
-        color: ROLE_COLORS.PLAYER,
+        value: roleSummary.Player,
+        color: ROLE_COLORS.Player,
       },
       {
         name: "Coaches",
-        value: roleSummary.COACH,
-        color: ROLE_COLORS.COACH,
+        value: roleSummary.Coach,
+        color: ROLE_COLORS.Coach,
       },
       {
         name: "Venue Listers",
-        value: roleSummary.VENUE_LISTER,
-        color: ROLE_COLORS.VENUE_LISTER,
+        value: roleSummary.VenueLister,
+        color: ROLE_COLORS.VenueLister,
       },
     ],
     [roleSummary],
@@ -628,17 +628,17 @@ export default function AdminAnalyticsPage() {
                     <Bar
                       dataKey="Player"
                       stackId="users"
-                      fill={ROLE_COLORS.PLAYER}
+                      fill={ROLE_COLORS.Player}
                     />
                     <Bar
                       dataKey="Coach"
                       stackId="users"
-                      fill={ROLE_COLORS.COACH}
+                      fill={ROLE_COLORS.Coach}
                     />
                     <Bar
                       dataKey="VenueLister"
                       stackId="users"
-                      fill={ROLE_COLORS.VENUE_LISTER}
+                      fill={ROLE_COLORS.VenueLister}
                     />
                     <Line
                       type="monotone"

@@ -48,6 +48,7 @@ export const OBJECTIVES = [
     desc: "Build strength and stamina",
   },
   { value: "Compete", label: "Compete", icon: Trophy, desc: "Train to win" },
+  { value: "Elite", label: "Reach Next Level", icon: Diamond, desc: "Take performance to the highest level" },
 ] as const;
 
 export const FITNESS_LEVELS = [

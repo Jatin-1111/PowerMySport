@@ -5,7 +5,7 @@ export type GuidanceFormState = {
   child_gender: "male" | "female";
   current_fitness_level: "Low" | "Moderate" | "High";
   personality_tags: string[];
-  primary_objective: "Recreational" | "Fitness" | "Compete";
+  primary_objective: "Recreational" | "Fitness" | "Compete" | "Elite";
   weekly_time_commitment: number;
   budget_tier: "Budget" | "Moderate" | "Premium";
   parent_specific_question: string;

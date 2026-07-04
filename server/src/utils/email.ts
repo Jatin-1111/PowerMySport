@@ -50,10 +50,13 @@ export const sendWelcomeEmail = async (
   options: WelcomeEmailOptions,
 ): Promise<void> => {
   const roleNames: Record<string, string> = {
-    PLAYER: "Player",
-    VENUE_LISTER: "Venue Lister",
-    COACH: "Coach",
-    ADMIN: "Admin",
+    Player: "Player",
+    Parent: "Parent",
+    VenueLister: "Venue Lister",
+    Coach: "Coach",
+    Academy: "Academy",
+    Admin: "Admin",
+    VENUE_ONBOARDING: "Venue Lister",
   };
 
   const html = `

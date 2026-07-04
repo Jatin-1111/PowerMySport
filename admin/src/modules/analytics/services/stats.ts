@@ -32,9 +32,9 @@ export interface UserData {
 export type UsersTabRole = "Player" | "Coach" | "VenueLister";
 
 export interface UsersRoleSummary {
-  PLAYER: number;
-  COACH: number;
-  VENUE_LISTER: number;
+  Player: number;
+  Coach: number;
+  VenueLister: number;
 }
 
 export interface PlayerUserRow {
@@ -146,9 +146,9 @@ export interface UserGrowthPoint {
   monthKey: string;
   label: string;
   total: number;
-  PLAYER: number;
-  COACH: number;
-  VENUE_LISTER: number;
+  Player: number;
+  Coach: number;
+  VenueLister: number;
 }
 
 export interface UserGrowthAnalytics {

@@ -137,9 +137,9 @@ export const getPublicPlatformStats = async (
     ]);
 
     const summary = {
-      PLAYER: 0,
-      COACH: 0,
-      VENUE_LISTER: 0,
+      Player: 0,
+      Coach: 0,
+      VenueLister: 0,
     };
 
     for (const item of roleCounts) {
@@ -284,9 +284,9 @@ export const getUserRoleSummary = async (
     ]);
 
     const summary = {
-      PLAYER: 0,
-      COACH: 0,
-      VENUE_LISTER: 0,
+      Player: 0,
+      Coach: 0,
+      VenueLister: 0,
     };
 
     for (const item of roleCounts) {

@@ -40,15 +40,15 @@ type SortColumn = "name" | "joined" | "lastActive" | "rating";
 type SortDirection = "asc" | "desc";
 
 const TAB_LABELS: Record<UsersTabRole, string> = {
-  PLAYER: "Players",
-  COACH: "Coaches",
-  VENUE_LISTER: "Venue Owners",
+  Player: "Players",
+  Coach: "Coaches",
+  VenueLister: "Venue Owners",
 };
 
 const DEFAULT_SUMMARY: UsersRoleSummary = {
-  PLAYER: 0,
-  COACH: 0,
-  VENUE_LISTER: 0,
+  Player: 0,
+  Coach: 0,
+  VenueLister: 0,
 };
 
 const formatDateTime = (value?: string): string =>

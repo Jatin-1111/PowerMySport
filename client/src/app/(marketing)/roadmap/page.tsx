@@ -4148,8 +4148,8 @@ export default function PathwaysPage() {
         title="Ready to Support Their Dream?"
         description="Find the right coach, book the right ground, and get a smart plan that shows exactly how to help your child grow in sports."
         primaryCTA={{
-          label: "Get Your Parent Guide",
-          href: "/register?role=PARENT",
+          label: "Get Guidance",
+          href: "/guidance",
         }}
         secondaryCTA={{
           label: "Join Parent Community",
