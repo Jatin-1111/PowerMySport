@@ -12,10 +12,29 @@ import {
   AlertCircle,
   Building2,
   UserCircle2,
+  GraduationCap,
   Landmark,
   Smartphone,
   Loader2,
 } from "lucide-react";
+
+const VENDOR_LABEL: Record<PayoutSummary["vendorRole"], string> = {
+  Coach: "Coach",
+  VenueLister: "Venue Owner",
+  Expert: "Expert",
+};
+
+const VENDOR_ICON: Record<PayoutSummary["vendorRole"], typeof UserCircle2> = {
+  Coach: UserCircle2,
+  VenueLister: Building2,
+  Expert: GraduationCap,
+};
+
+const VENDOR_ICON_CLASSES: Record<PayoutSummary["vendorRole"], string> = {
+  Coach: "bg-blue-100 text-blue-600",
+  VenueLister: "bg-purple-100 text-purple-600",
+  Expert: "bg-amber-100 text-amber-600",
+};
 
 const payoutKey = (payout: PayoutSummary) => `${payout.vendorId}-${payout.vendorRole}`;
 
@@ -132,7 +151,7 @@ export default function AdminPayoutsPage() {
         <AdminPageHeader
           badge="Finance"
           title="Pending Payouts"
-          subtitle="Manage and settle pending earnings for Venue Listers and Coaches."
+          subtitle="Manage and settle pending earnings for Venue Listers, Coaches, and Experts."
         />
         <div className="flex flex-col items-center justify-center py-16 text-slate-500">
           <Loader2 className="h-10 w-10 animate-spin mb-3" />
@@ -152,7 +171,7 @@ export default function AdminPayoutsPage() {
       <AdminPageHeader
         badge="Finance"
         title="Pending Payouts"
-        subtitle="Manage and settle pending earnings for Venue Listers and Coaches."
+        subtitle="Manage and settle pending earnings for Venue Listers, Coaches, and Experts."
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -264,22 +283,19 @@ export default function AdminPayoutsPage() {
                       }
                     />
                     <div
-                      className={`p-2 rounded-lg ${payout.vendorRole === "Coach" ? "bg-blue-100 text-blue-600" : "bg-purple-100 text-purple-600"}`}
+                      className={`p-2 rounded-lg ${VENDOR_ICON_CLASSES[payout.vendorRole]}`}
                     >
-                      {payout.vendorRole === "Coach" ? (
-                        <UserCircle2 size={24} />
-                      ) : (
-                        <Building2 size={24} />
-                      )}
+                      {(() => {
+                        const VendorIcon = VENDOR_ICON[payout.vendorRole];
+                        return <VendorIcon size={24} />;
+                      })()}
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-slate-900">
                         {payout.vendorName}
                       </h3>
                       <p className="text-sm font-semibold text-slate-500">
-                        {payout.vendorRole === "Coach"
-                          ? "Coach"
-                          : "Venue Owner"}
+                        {VENDOR_LABEL[payout.vendorRole]}
                       </p>
                     </div>
                   </div>

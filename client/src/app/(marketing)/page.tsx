@@ -182,7 +182,7 @@ export default function HomePage() {
       <Hero
         variant="home"
         title="Your child's gateway to a dream sports career"
-        subtitle="Built for Parents"
+        subtitle="Built for sports parents"
         description="PowerMySport is a sports guidance platform for parents that helps you understand, plan, and execute your child's sports journey. All this with the help of experts on call."
         primaryCTA={
           user?.role === "VenueLister"

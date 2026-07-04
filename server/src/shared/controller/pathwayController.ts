@@ -2,6 +2,18 @@ import { Request, Response } from "express";
 import { pathwayService } from "../services/PathwayService";
 import { AthleteStory } from "../models/AthleteStory";
 import { INDIAN_STATES_AND_UTS } from "../utils/states";
+import { PathwayExpertVerification } from "../models/PathwayExpertVerification";
+import {
+  listPathwaysForExpertVerification,
+  verifyPathwayAsExpert,
+  removePathwayExpertVerification,
+} from "../services/PathwayExpertVerificationService";
+
+const fail = (res: Response, error: unknown, code = 400) =>
+  res.status(code).json({
+    success: false,
+    message: error instanceof Error ? error.message : "Request failed",
+  });
 
 /**
  * GET /api/pathways?sport=cricket&age=12&city=Mumbai
@@ -44,14 +56,30 @@ export const getPathway = async (
       return;
     }
 
-
+    // Expert verification is sport-wide (not per state-variant document), so
+    // it's attached here at read time rather than stored on the pathway doc.
+    let data: unknown = result.pathway;
+    if (result.pathway) {
+      const expertVerifications = await PathwayExpertVerification.find({
+        sportSlug: result.pathway.sportSlug,
+      })
+        .select("expertId expertName expertPhotoUrl verifiedAt note -_id")
+        .sort({ verifiedAt: -1 })
+        .lean();
+      data = {
+        ...(typeof (result.pathway as any).toObject === "function"
+          ? (result.pathway as any).toObject()
+          : result.pathway),
+        expertVerifications,
+      };
+    }
 
     res.json({
       success: true,
       source: result.source, // "db" | "generated"
       isStale: result.isStale ?? false,
       entitiesReady: result.entitiesReady ?? true,
-      data: result.pathway,
+      data,
       warnings: result.warnings,
     });
   } catch (error) {
@@ -239,5 +267,75 @@ export const getPathwayStats = async (
   } catch (error) {
     console.error("Error fetching pathway stats:", error);
     res.status(500).json({ success: false, message: "Stats fetch failed." });
+  }
+};
+
+/**
+ * GET /api/pathways/expert/mine
+ * Expert-only: pathways matching sports on the logged-in expert's profile,
+ * so they only ever see (and can verify) content in their own domain.
+ */
+export const getPathwaysForExpertVerification = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    const data = await listPathwaysForExpertVerification(req.user.id);
+    res.json({ success: true, message: "Pathways retrieved", data });
+  } catch (error) {
+    fail(res, error, 404);
+  }
+};
+
+/**
+ * POST /api/pathways/expert/:sportSlug/verify
+ * Expert-only: adds (or updates) this expert's named verification credit for
+ * a sport. Applies to every state variant of that sport's pathway — rejected
+ * server-side if the sport isn't on the expert's own profile.
+ */
+export const postPathwayExpertVerify = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    const verification = await verifyPathwayAsExpert(
+      req.params.sportSlug as string,
+      req.user.id,
+      typeof req.body?.note === "string" ? req.body.note : undefined,
+    );
+    res.json({ success: true, message: "Pathway verified", data: verification });
+  } catch (error) {
+    fail(res, error);
+  }
+};
+
+/**
+ * DELETE /api/pathways/expert/:sportSlug/verify
+ * Expert-only: removes this expert's own verification credit for a sport.
+ */
+export const deletePathwayExpertVerify = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+    await removePathwayExpertVerification(
+      req.params.sportSlug as string,
+      req.user.id,
+    );
+    res.json({ success: true, message: "Verification removed" });
+  } catch (error) {
+    fail(res, error);
   }
 };

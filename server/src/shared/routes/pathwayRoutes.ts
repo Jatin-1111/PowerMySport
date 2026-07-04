@@ -8,7 +8,11 @@ import {
   refreshStalePathways,
   getPathwayStats,
   getPathwayStories,
+  getPathwaysForExpertVerification,
+  postPathwayExpertVerify,
+  deletePathwayExpertVerify,
 } from "../controller/pathwayController";
+import { authMiddleware } from "../../middleware/auth";
 
 const router = Router();
 
@@ -38,6 +42,19 @@ router.get("/", pathwayRateLimiter, getPathway);
 // Fetches only tournaments/scholarships/universities — waits for scraper if needed.
 // The client calls this in parallel with the main pathway request.
 router.get("/entities", pathwayRateLimiter, getPathwayEntities);
+
+// ── Expert verification routes ────────────────────────────────────────────────
+// Verification is keyed by sportSlug, not a specific pathway document id —
+// pathways are cached per-state, but an expert's credit applies sport-wide.
+
+// GET /api/pathways/expert/mine — sports matching the logged-in expert's own profile
+router.get("/expert/mine", authMiddleware, getPathwaysForExpertVerification);
+
+// POST /api/pathways/expert/:sportSlug/verify — add/update this expert's verification credit
+router.post("/expert/:sportSlug/verify", authMiddleware, postPathwayExpertVerify);
+
+// DELETE /api/pathways/expert/:sportSlug/verify — remove this expert's own verification credit
+router.delete("/expert/:sportSlug/verify", authMiddleware, deletePathwayExpertVerify);
 
 // ── Admin / internal routes ───────────────────────────────────────────────────
 // These require no extra middleware in development.

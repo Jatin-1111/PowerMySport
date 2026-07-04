@@ -2,10 +2,8 @@
 
 import {
   expertApi,
-  type Expert,
   type ExpertSession,
 } from "@/modules/expert/services/expert";
-import { ExpertProfileEditor } from "./ExpertProfileEditor";
 import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
@@ -23,12 +21,8 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED: "bg-red-50 text-red-700",
 };
 
-type Tab = "sessions" | "profile";
-
 export default function ExpertDashboardPage() {
-  const [tab, setTab] = useState<Tab>("sessions");
   const [sessions, setSessions] = useState<ExpertSession[]>([]);
-  const [profile, setProfile] = useState<Expert | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,13 +30,9 @@ export default function ExpertDashboardPage() {
     try {
       setLoading(true);
       setError(null);
-      const [s, p] = await Promise.all([
-        expertApi.expertSessions(),
-        expertApi.getMyProfile().catch(() => null),
-      ]);
+      const s = await expertApi.expertSessions();
       if (s.success && s.data) setSessions(s.data);
       else setError(s.message || "Failed to load your sessions.");
-      if (p && p.success && p.data) setProfile(p.data);
     } catch {
       setError("Failed to load your dashboard.");
     } finally {
@@ -86,7 +76,7 @@ export default function ExpertDashboardPage() {
           Your dashboard
         </h1>
         <p className="relative mt-1 text-sm text-slate-200">
-          Manage sessions, availability, and your public profile.
+          Manage your upcoming and past sessions.
         </p>
       </div>
 
@@ -101,24 +91,9 @@ export default function ExpertDashboardPage() {
         />
       </div>
 
-      {/* Tabs */}
-      <div className="mt-6 flex gap-2 border-b border-slate-200">
-        {(["sessions", "profile"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold capitalize transition-colors ${
-              tab === t
-                ? "border-power-orange text-power-orange"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            {t === "profile" ? "Profile & availability" : "Sessions"}
-          </button>
-        ))}
-      </div>
+      <h2 className="mt-8 text-lg font-bold text-slate-900">Sessions</h2>
 
-      <div className="mt-6">
+      <div className="mt-4">
         {loading ? (
           <div className="py-16 text-center text-slate-500">Loading...</div>
         ) : error ? (
@@ -131,14 +106,6 @@ export default function ExpertDashboardPage() {
               Retry
             </button>
           </div>
-        ) : tab === "profile" ? (
-          profile ? (
-            <ExpertProfileEditor profile={profile} onSaved={setProfile} />
-          ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white py-12 text-center text-slate-500">
-              Expert profile not found.
-            </div>
-          )
         ) : sessions.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center text-slate-500">
             No sessions booked yet.

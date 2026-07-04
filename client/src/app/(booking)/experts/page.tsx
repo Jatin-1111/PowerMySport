@@ -1,7 +1,9 @@
 "use client";
 
 import { expertApi, type Expert } from "@/modules/expert/services/expert";
-import { Button } from "@/modules/shared/ui/Button";
+import { EmptyState } from "@/modules/shared/ui/EmptyState";
+import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import {
   StaggerContainer,
   StaggerItem,
@@ -19,6 +21,7 @@ import {
   Languages,
   MapPin,
   Search,
+  ServerCrash,
   Star,
 } from "lucide-react";
 import Link from "next/link";
@@ -69,6 +72,24 @@ function ExpertAvatar({
       className={className}
       onError={() => setFailed(true)}
     />
+  );
+}
+
+function ExpertCardSkeleton() {
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)]">
+      <Skeleton className="aspect-3/4 w-full rounded-none" />
+      <div className="space-y-3 p-5">
+        <Skeleton className="h-5 w-2/3" />
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+        <div className="!mt-5 flex items-center justify-between border-t border-slate-50 pt-5">
+          <Skeleton className="h-6 w-20" />
+          <Skeleton className="h-10 w-10 rounded-full" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -232,7 +253,7 @@ function ExpertsBrowseContent() {
         <div className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-turf-green/10 blur-3xl" />
         <div className="relative mx-auto max-w-6xl px-6 py-12 sm:py-16">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-2xl">
+            <FadeIn className="max-w-2xl">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
                 <Award className="h-3.5 w-3.5" /> Expert guidance
               </span>
@@ -246,7 +267,7 @@ function ExpertsBrowseContent() {
                 Browse verified experts, pay securely, pick a time that suits
                 you — then rate your session afterwards.
               </p>
-            </div>
+            </FadeIn>
             <Link
               href="/experts/sessions"
               className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/20"
@@ -376,43 +397,34 @@ function ExpertsBrowseContent() {
       {/* ── Content ──────────────────────────────────────────────── */}
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {loading ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-24">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
-            <p className="text-sm font-medium text-slate-500">
-              Loading experts…
-            </p>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ExpertCardSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <Button
-              variant="secondary"
-              className="mt-4"
-              onClick={() => window.location.reload()}
-            >
-              Retry
-            </Button>
+          <div className="rounded-2xl border border-slate-100 bg-white">
+            <EmptyState
+              icon={ServerCrash}
+              title="Couldn't load experts"
+              description={error}
+              actionLabel="Retry"
+              onAction={() => window.location.reload()}
+            />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center">
-            <Search size={40} className="mx-auto mb-3 text-slate-200" />
-            <h3 className="text-lg font-bold text-slate-900">
-              {hasFilters ? "No experts match your filters" : "No experts yet"}
-            </h3>
-            <p className="mt-1 text-sm text-slate-500">
-              {hasFilters
-                ? "Try broadening your search or clearing filters."
-                : "Check back soon — we're onboarding experts."}
-            </p>
-            {hasFilters && (
-              <Button
-                variant="secondary"
-                className="mt-5"
-                onClick={handleClear}
-              >
-                Clear filters
-              </Button>
-            )}
+          <div className="rounded-2xl border border-slate-100 bg-white">
+            <EmptyState
+              icon={Search}
+              title={hasFilters ? "No experts match your filters" : "No experts yet"}
+              description={
+                hasFilters
+                  ? "Try broadening your search or clearing filters."
+                  : "Check back soon — we're onboarding experts."
+              }
+              actionLabel={hasFilters ? "Clear filters" : undefined}
+              onAction={hasFilters ? handleClear : undefined}
+            />
           </div>
         ) : (
           <>

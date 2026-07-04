@@ -156,6 +156,9 @@ export const runScheduledCleanup = async (): Promise<void> => {
         expireUnpaidExpertHolds,
         autoCompleteExpertSessions,
         sendExpertReviewReminders,
+        releaseExpertSessionPayouts,
+        sendExpertMeetingLinkNudges,
+        sendSessionStartReminders,
       } = await import("../client/services/ExpertsService");
       const expiredHolds = await expireUnpaidExpertHolds();
       if (expiredHolds > 0) console.log(`✅ Expired ${expiredHolds} unpaid expert hold(s)`);
@@ -163,6 +166,12 @@ export const runScheduledCleanup = async (): Promise<void> => {
       if (autoCompleted > 0) console.log(`✅ Auto-completed ${autoCompleted} expert session(s)`);
       const reminded = await sendExpertReviewReminders();
       if (reminded > 0) console.log(`✅ Sent ${reminded} expert review reminder(s)`);
+      const releasedPayouts = await releaseExpertSessionPayouts();
+      if (releasedPayouts > 0) console.log(`✅ Auto-released ${releasedPayouts} expert session payout(s)`);
+      const linkNudges = await sendExpertMeetingLinkNudges();
+      if (linkNudges > 0) console.log(`✅ Sent ${linkNudges} meeting-link nudge(s)`);
+      const startReminders = await sendSessionStartReminders();
+      if (startReminders > 0) console.log(`✅ Sent ${startReminders} session-starting-soon reminder(s)`);
     } catch (expertErr) {
       console.error("❌ Expert session maintenance failed:", expertErr);
     }

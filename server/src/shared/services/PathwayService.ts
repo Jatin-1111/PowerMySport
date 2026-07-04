@@ -24,7 +24,7 @@ type CanonicalAttachResult = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function toSlug(name: string): string {
+export function toSlug(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, "-");
 }
 

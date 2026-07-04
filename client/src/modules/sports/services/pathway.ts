@@ -101,6 +101,15 @@ export interface Career {
   demand: string;
 }
 
+/** A named credit from an expert who verified this pathway matches their domain. */
+export interface PathwayExpertVerification {
+  expertId: string;
+  expertName: string;
+  expertPhotoUrl?: string;
+  verifiedAt: string;
+  note?: string;
+}
+
 export interface SportPathway {
   _id?: string;
   sportSlug: string;
@@ -115,10 +124,29 @@ export interface SportPathway {
   equipment: Equipment[];
   careers: Career[];
   isVerified: boolean;
+  expertVerifications?: PathwayExpertVerification[];
   lookupCount: number;
   lastRefreshedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/**
+ * Summary row for an expert's own "sports I can verify" queue — one row per
+ * sport (not per state variant; the same sport can have several cached
+ * pathway documents, one per Indian state, but verification is sport-wide).
+ */
+export interface ExpertVerifiablePathway {
+  sportSlug: string;
+  sportName: string;
+  category?: string;
+  overview: string;
+  isVerified: boolean;
+  lookupCount: number;
+  /** How many separate state-variant pathway documents exist for this sport. */
+  stateVariants: number;
+  expertVerificationCount: number;
+  verifiedByMe: boolean;
 }
 
 interface ApiResponse<T> {
@@ -238,5 +266,41 @@ export const pathwayApi = {
     } catch {
       return { refreshed: 0 };
     }
+  },
+
+  /**
+   * Expert-only: pathways matching sports on the logged-in expert's own
+   * profile — the queue they can verify.
+   */
+  getForExpertVerification: async (): Promise<ExpertVerifiablePathway[]> => {
+    const resp = await axiosInstance.get<ApiResponse<ExpertVerifiablePathway[]>>(
+      `/pathways/expert/mine`,
+    );
+    return resp.data.data ?? [];
+  },
+
+  /**
+   * Expert-only: add/update this expert's named verification credit for a
+   * sport — applies to every state variant of that sport's pathway.
+   */
+  verifyAsExpert: async (
+    sportSlug: string,
+    note?: string,
+  ): Promise<ApiResponse<PathwayExpertVerification>> => {
+    const resp = await axiosInstance.post<ApiResponse<PathwayExpertVerification>>(
+      `/pathways/expert/${sportSlug}/verify`,
+      { note },
+    );
+    return resp.data;
+  },
+
+  /** Expert-only: remove this expert's own verification credit for a sport. */
+  removeExpertVerification: async (
+    sportSlug: string,
+  ): Promise<ApiResponse<null>> => {
+    const resp = await axiosInstance.delete<ApiResponse<null>>(
+      `/pathways/expert/${sportSlug}/verify`,
+    );
+    return resp.data;
   },
 };

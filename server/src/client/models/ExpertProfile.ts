@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { IPayoutMethod } from "./Coach";
 
 /**
  * Expert = an admin-vetted expert player who offers paid 1:1 sessions.
@@ -7,17 +8,6 @@ import mongoose, { Document, Schema } from "mongoose";
  * The linked User (role EXPERT) logs into the client app with emailed credentials.
  * (File is named ExpertProfile.ts; the Mongoose model name is "Expert".)
  */
-export interface ExpertPayoutMethod {
-  id?: string;
-  type: "BANK_TRANSFER" | "UPI";
-  accountHolderName?: string;
-  accountNumber?: string;
-  ifscCode?: string;
-  bankName?: string;
-  upiId?: string;
-  isDefault?: boolean;
-  addedAt?: Date;
-}
 
 /**
  * A recurring weekly availability window. `dayOfWeek` is 0 (Sunday) – 6 (Saturday).
@@ -45,10 +35,13 @@ export interface ExpertDocument extends Document {
   languages?: string[];
   photoUrl?: string;
   photoKey?: string;
+  /** Where an IN_PERSON/BOTH-mode session actually happens. Only ever shown
+   *  to a client with an active booking — never on the public discovery listing. */
+  inPersonAddress?: string;
   isActive: boolean;
   rating: number;
   reviewCount: number;
-  payoutMethods: ExpertPayoutMethod[];
+  payoutMethods: IPayoutMethod[];
   createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -80,6 +73,7 @@ const expertSchema = new Schema<ExpertDocument>(
     languages: { type: [String], default: [] },
     photoUrl: { type: String },
     photoKey: { type: String },
+    inPersonAddress: { type: String, trim: true, maxlength: 500 },
     isActive: { type: Boolean, default: true, index: true },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0, min: 0 },
@@ -94,7 +88,8 @@ const expertSchema = new Schema<ExpertDocument>(
           bankName: String,
           upiId: String,
           isDefault: Boolean,
-          addedAt: Date,
+          addedAt: { type: Date, default: Date.now },
+          updatedAt: { type: Date, default: Date.now },
         },
       ],
       default: [],

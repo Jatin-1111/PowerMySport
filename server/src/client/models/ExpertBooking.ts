@@ -19,6 +19,11 @@ export type ExpertSessionCanceller = "CLIENT" | "EXPERT" | "ADMIN" | "SYSTEM";
 export type ExpertRefundStatus = "NONE" | "REQUIRED" | "MANUAL_DONE";
 /** Whether the expert has confirmed the client's booked time. */
 export type ExpertAcceptance = "PENDING" | "ACCEPTED" | "DECLINED";
+/**
+ * PENDING until the 24h post-completion release job (or an admin override) flips
+ * it to PAID once the expert has actually been paid out.
+ */
+export type ExpertPayoutStatus = "PENDING" | "PAID";
 
 export interface ExpertSessionDocument extends Document {
   expertId: mongoose.Types.ObjectId;
@@ -40,10 +45,20 @@ export interface ExpertSessionDocument extends Document {
   cancelledBy?: ExpertSessionCanceller;
   cancelReason?: string;
   refundStatus: ExpertRefundStatus;
+  // Hours of notice given before scheduledAt when a paid session was cancelled
+  // (negative if cancelled after the scheduled time). Informational only — used
+  // by admin to decide whether a refund is warranted; the app never auto-forfeits.
+  cancellationNoticeHours?: number;
   autoCompleted?: boolean;
   // Expert confirmation of the booked time
   expertAcceptance: ExpertAcceptance;
   expertRespondedAt?: Date;
+  // Set when status transitions to COMPLETED (manual or auto) — the anchor for
+  // the 24h payout-release window (deliberately NOT `updatedAt`, which a later
+  // review submission would otherwise bump).
+  completedAt?: Date;
+  payoutStatus: ExpertPayoutStatus;
+  payoutPaidAt?: Date;
   // Review
   reviewed: boolean;
   rating?: number;
@@ -52,6 +67,11 @@ export interface ExpertSessionDocument extends Document {
   reviewHidden?: boolean;
   reviewedAt?: Date;
   reviewReminderSentAt?: Date;
+  // Session-connection reminders (both one-shot, deduped by these timestamps)
+  /** Nudge sent to the EXPERT to add a meeting link when an ONLINE session is starting soon and still has none. */
+  meetingLinkNudgeSentAt?: Date;
+  /** "Your session starts soon" reminder sent to both parties with the link/address. */
+  startReminderSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +111,7 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
       default: "NONE",
       index: true,
     },
+    cancellationNoticeHours: { type: Number },
     autoCompleted: { type: Boolean, default: false },
     expertAcceptance: {
       type: String,
@@ -99,6 +120,14 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
       index: true,
     },
     expertRespondedAt: { type: Date },
+    completedAt: { type: Date },
+    payoutStatus: {
+      type: String,
+      enum: ["PENDING", "PAID"],
+      default: "PENDING",
+      index: true,
+    },
+    payoutPaidAt: { type: Date },
     reviewed: { type: Boolean, default: false },
     rating: { type: Number, min: 1, max: 5 },
     review: { type: String, trim: true, maxlength: 2000 },
@@ -106,6 +135,8 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
     reviewHidden: { type: Boolean, default: false },
     reviewedAt: { type: Date },
     reviewReminderSentAt: { type: Date },
+    meetingLinkNudgeSentAt: { type: Date },
+    startReminderSentAt: { type: Date },
   },
   { timestamps: true },
 );
@@ -114,6 +145,10 @@ expertSessionSchema.index({ expertId: 1, status: 1, createdAt: -1 });
 expertSessionSchema.index({ userId: 1, createdAt: -1 });
 // Supports slot-conflict lookups for a given expert around a time.
 expertSessionSchema.index({ expertId: 1, scheduledAt: 1, status: 1 });
+// Supports the payout-release job's scan for completed-but-unpaid sessions.
+expertSessionSchema.index({ status: 1, payoutStatus: 1, completedAt: 1 });
+// Supports the connection-reminder jobs' scan for SCHEDULED sessions starting soon.
+expertSessionSchema.index({ status: 1, scheduledAt: 1 });
 
 export const ExpertSession =
   mongoose.models.ExpertSession ||

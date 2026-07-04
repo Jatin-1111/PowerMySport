@@ -6,6 +6,9 @@ import {
 } from "@/modules/shared/ui/DetailDrawer";
 import CoachPhotoUpload from "@/modules/admin/components/CoachPhotoUpload";
 import { AvailabilityEditor } from "@/modules/expert/components/AvailabilityEditor";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
+import ExpertiseMultiSelect from "@/modules/shared/components/ExpertiseMultiSelect";
+import LanguagesMultiSelect from "@/modules/shared/components/LanguagesMultiSelect";
 import {
   expertAdminApi,
   type AdminExpert,
@@ -13,12 +16,12 @@ import {
   type AdminExpertSessionsResult,
 } from "@/modules/expert/services/expert";
 import { toast } from "@/lib/toast";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const formatDate = (v?: string) =>
   v ? new Date(v).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
-const toList = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
 const field = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange/40";
 const label = "mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500";
 
@@ -37,15 +40,16 @@ export function ExpertAdminPanel({
   const [form, setForm] = useState({
     bio: expert.bio || "",
     achievements: expert.achievements || "",
-    sports: (expert.sports || []).join(", "),
-    expertise: (expert.expertise || []).join(", "),
-    languages: (expert.languages || []).join(", "),
     city: expert.city || "",
     sessionMode: expert.sessionMode || "ONLINE",
     sessionFee: String(expert.sessionFee ?? ""),
     sessionDurationMinutes: String(expert.sessionDurationMinutes ?? 60),
     photoUrl: expert.photoUrl || "",
+    inPersonAddress: expert.inPersonAddress || "",
   });
+  const [sports, setSports] = useState<string[]>(expert.sports || []);
+  const [expertise, setExpertise] = useState<string[]>(expert.expertise || []);
+  const [languages, setLanguages] = useState<string[]>(expert.languages || []);
   const [photoKey, setPhotoKey] = useState<string | null>(expert.photoKey || null);
   const [windows, setWindows] = useState<AdminExpertAvailabilityWindow[]>(
     expert.weeklyAvailability || [],
@@ -56,15 +60,16 @@ export function ExpertAdminPanel({
     setForm({
       bio: expert.bio || "",
       achievements: expert.achievements || "",
-      sports: (expert.sports || []).join(", "),
-      expertise: (expert.expertise || []).join(", "),
-      languages: (expert.languages || []).join(", "),
       city: expert.city || "",
       sessionMode: expert.sessionMode || "ONLINE",
       sessionFee: String(expert.sessionFee ?? ""),
       sessionDurationMinutes: String(expert.sessionDurationMinutes ?? 60),
       photoUrl: expert.photoUrl || "",
+      inPersonAddress: expert.inPersonAddress || "",
     });
+    setSports(expert.sports || []);
+    setExpertise(expert.expertise || []);
+    setLanguages(expert.languages || []);
     setPhotoKey(expert.photoKey || null);
     setWindows(expert.weeklyAvailability || []);
     setBlackout(expert.blackoutDates || []);
@@ -110,9 +115,9 @@ export function ExpertAdminPanel({
       const res = await expertAdminApi.update(id, {
         bio: form.bio,
         achievements: form.achievements,
-        sports: toList(form.sports),
-        expertise: toList(form.expertise),
-        languages: toList(form.languages),
+        sports,
+        expertise,
+        languages,
         city: form.city,
         sessionMode: form.sessionMode,
         sessionFee: fee,
@@ -121,6 +126,7 @@ export function ExpertAdminPanel({
         blackoutDates: blackout,
         photoUrl: form.photoUrl || undefined,
         photoKey: photoKey || undefined,
+        inPersonAddress: form.inPersonAddress || undefined,
       });
       if (res.success && res.data) {
         onUpdated(res.data);
@@ -193,16 +199,16 @@ export function ExpertAdminPanel({
           <textarea rows={2} className={field} value={form.achievements} onChange={(e) => set("achievements", e.target.value)} />
         </div>
         <div>
-          <label className={label}>Sports (comma separated)</label>
-          <input className={field} value={form.sports} onChange={(e) => set("sports", e.target.value)} />
+          <label className={label}>Sports</label>
+          <SportsMultiSelect value={sports} onChange={setSports} />
         </div>
         <div>
-          <label className={label}>Expertise (comma separated)</label>
-          <input className={field} value={form.expertise} onChange={(e) => set("expertise", e.target.value)} />
+          <label className={label}>Expertise</label>
+          <ExpertiseMultiSelect value={expertise} onChange={setExpertise} />
         </div>
         <div>
-          <label className={label}>Languages (comma separated)</label>
-          <input className={field} value={form.languages} onChange={(e) => set("languages", e.target.value)} />
+          <label className={label}>Languages</label>
+          <LanguagesMultiSelect value={languages} onChange={setLanguages} />
         </div>
         <div>
           <label className={label}>City</label>
@@ -216,6 +222,20 @@ export function ExpertAdminPanel({
             <option value="BOTH">Both</option>
           </select>
         </div>
+        {(form.sessionMode === "IN_PERSON" || form.sessionMode === "BOTH") && (
+          <div>
+            <label className={label}>In-person location</label>
+            <input
+              className={field}
+              placeholder="e.g. 2nd Floor, ABC Sports Complex, Sector 15, Chandigarh"
+              value={form.inPersonAddress}
+              onChange={(e) => set("inPersonAddress", e.target.value)}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Shown to a client only after they've booked a session.
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={label}>Session fee (₹)</label>
@@ -324,6 +344,8 @@ export function ExpertAdminPanel({
               <SummaryStat label="Completed" value={String(sessions.summary.completed)} />
               <SummaryStat label="Gross earnings" value={formatInr(sessions.summary.grossEarnings)} />
               <SummaryStat label="Refunds pending" value={formatInr(sessions.summary.refundsPending)} />
+              <SummaryStat label="Payout pending" value={formatInr(sessions.summary.payoutPending)} />
+              <SummaryStat label="Payout released" value={formatInr(sessions.summary.payoutReleased)} />
             </div>
             <div className="divide-y divide-slate-100">
               {sessions.sessions.map((s) => (
@@ -335,6 +357,28 @@ export function ExpertAdminPanel({
                   {s.reviewed && (
                     <p className="mt-0.5 text-xs text-amber-600">
                       {s.rating}★ {s.reviewHidden ? "(hidden)" : ""} {s.review ? `— "${s.review}"` : ""}
+                    </p>
+                  )}
+                  {s.refundStatus === "REQUIRED" && s.cancellationNoticeHours != null && (
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {s.cancellationNoticeHours >= 0
+                        ? `Cancelled ${s.cancellationNoticeHours}h before the scheduled session.`
+                        : `Cancelled ${Math.abs(s.cancellationNoticeHours)}h after the scheduled time.`}
+                    </p>
+                  )}
+                  {s.status === "COMPLETED" && s.paymentStatus === "COMPLETED" && (
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {s.payoutStatus === "PAID"
+                        ? `Payout released${s.payoutPaidAt ? ` on ${formatDate(s.payoutPaidAt)}` : ""}.`
+                        : (
+                          <>
+                            Payout pending (auto-releases 24h after completion, or process it now from{" "}
+                            <Link href="/admin/payouts" className="font-semibold text-power-orange hover:underline">
+                              Pending Payouts
+                            </Link>
+                            ).
+                          </>
+                        )}
                     </p>
                   )}
                   <div className="mt-1 flex gap-2">

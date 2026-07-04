@@ -222,23 +222,36 @@ export default function ExpertSessionPage() {
                   ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}`
                   : ""}
               </p>
-              {session.meetingLink ? (
-                <a
-                  href={session.meetingLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-block text-sm font-semibold text-power-orange hover:underline"
-                >
-                  Join meeting link
-                </a>
-              ) : (
-                session.mode === "ONLINE" &&
-                session.status === "SCHEDULED" && (
-                  <p className="mt-2 text-xs text-slate-500">
-                    Your expert will add a meeting link before the session.
-                  </p>
+              {session.mode === "ONLINE" ? (
+                session.meetingLink ? (
+                  <a
+                    href={session.meetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-sm font-semibold text-power-orange hover:underline"
+                  >
+                    Join meeting link
+                  </a>
+                ) : (
+                  session.status === "SCHEDULED" && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Your expert will add a meeting link before the session.
+                    </p>
+                  )
                 )
-              )}
+              ) : session.mode === "IN_PERSON" ? (
+                session.inPersonAddress ? (
+                  <p className="mt-2 text-sm text-slate-700">
+                    <span className="font-semibold">Location:</span> {session.inPersonAddress}
+                  </p>
+                ) : (
+                  session.status === "SCHEDULED" && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Your expert hasn&apos;t shared a location yet — check back closer to your session.
+                    </p>
+                  )
+                )
+              ) : null}
             </div>
           )}
 

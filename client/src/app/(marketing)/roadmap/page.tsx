@@ -2481,11 +2481,17 @@ function PathwayExplorerSection() {
     setShowSuggestions(true);
   }, [query, fuse]);
 
-  const handleSearch = async (sportName: string) => {
+  // `stateOverride` lets a caller pass a just-resolved state value directly
+  // instead of reading the `selectedState` React state variable — needed by
+  // the mount-time URL effect below, which otherwise races the "load saved
+  // state from localStorage" effect and reads a stale (empty) `selectedState`
+  // closure on the very first render.
+  const handleSearch = async (sportName: string, stateOverride?: string) => {
     const name = sportName.trim();
     if (!name || name.length < 2) return;
 
-    if (!selectedState) {
+    const effectiveState = stateOverride || selectedState;
+    if (!effectiveState) {
       setErrorMsg("Please select your state first.");
       setStatus("error");
       return;
@@ -2502,7 +2508,7 @@ function PathwayExplorerSection() {
     setExpandedCards(new Set());
     setOwnedEquipment(new Set());
 
-    const state = selectedState;
+    const state = effectiveState;
 
     try {
       const res = await pathwayApi.getPathway(name, undefined, state);
@@ -2579,7 +2585,12 @@ function PathwayExplorerSection() {
 
     if (state) handleStateChange(state);
     if (sport) {
-      handleSearch(sport).then(() => {
+      // Resolve the state synchronously (URL param, else whatever's already
+      // saved in localStorage) instead of trusting `selectedState`, which
+      // won't reflect the "load saved state" effect's update until after
+      // this mount-time effect has already run.
+      const effectiveState = state || loadState();
+      handleSearch(sport, effectiveState).then(() => {
         if (level) setActiveIdx(Math.max(0, parseInt(level, 10) - 1));
       });
     }
@@ -3039,7 +3050,14 @@ function PathwayExplorerSection() {
                     {/* Left: name + meta + overview */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-3">
-                        {result.pathway.isVerified ? (
+                        {result.pathway.expertVerifications && result.pathway.expertVerifications.length > 0 ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                            <BadgeCheck className="h-3 w-3" />
+                            Verified by {result.pathway.expertVerifications[0].expertName}
+                            {result.pathway.expertVerifications.length > 1 &&
+                              ` +${result.pathway.expertVerifications.length - 1} more`}
+                          </span>
+                        ) : result.pathway.isVerified ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
                             <BadgeCheck className="h-3 w-3" /> Verified by Expert
                           </span>
@@ -3068,6 +3086,12 @@ function PathwayExplorerSection() {
                       {result.pathway.overview && (
                         <p className="mt-2 max-w-2xl text-sm text-slate-600 leading-relaxed sm:text-base">
                           {result.pathway.overview}
+                        </p>
+                      )}
+                      {result.pathway.expertVerifications?.[0]?.note && (
+                        <p className="mt-2 max-w-2xl text-sm italic text-emerald-700">
+                          &ldquo;{result.pathway.expertVerifications[0].note}&rdquo;
+                          <span className="not-italic font-semibold"> — {result.pathway.expertVerifications[0].expertName}</span>
                         </p>
                       )}
                     </div>
@@ -3122,7 +3146,8 @@ function PathwayExplorerSection() {
                       </div>
                     ) : null}
                   </div>
-                  {result.pathway.isVerified === false && (
+                  {result.pathway.isVerified === false &&
+                    !(result.pathway.expertVerifications && result.pathway.expertVerifications.length > 0) && (
                     <div className="mt-4 rounded-xl bg-orange-50 border border-orange-200 p-4">
                       <div className="flex items-start gap-3">
                         <AlertTriangle className="h-5 w-5 text-power-orange shrink-0 mt-0.5" />

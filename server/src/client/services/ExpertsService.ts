@@ -67,11 +67,17 @@ const serializeExpertFull = (expert: any) => ({
   photoKey: expert.photoKey,
   weeklyAvailability: expert.weeklyAvailability || [],
   blackoutDates: expert.blackoutDates || [],
+  inPersonAddress: expert.inPersonAddress,
 });
 
 const serializeSession = (
   session: any,
-  extra: { expert?: any; clientName?: string; expertTimezone?: string } = {},
+  extra: {
+    expert?: any;
+    clientName?: string;
+    expertTimezone?: string;
+    expertInPersonAddress?: string;
+  } = {},
 ) => ({
   id: session._id?.toString(),
   _id: session._id?.toString(),
@@ -87,13 +93,22 @@ const serializeSession = (
     extra.expertTimezone || extra.expert?.timezone || "Asia/Kolkata",
   mode: session.mode,
   meetingLink: session.meetingLink,
+  // Only surfaced for IN_PERSON sessions, and only to someone who has an
+  // actual booking — the public expert listing never exposes this address.
+  ...(session.mode === "IN_PERSON" && extra.expertInPersonAddress
+    ? { inPersonAddress: extra.expertInPersonAddress }
+    : {}),
   clientNote: session.clientNote,
   cancelledAt: session.cancelledAt,
   cancelledBy: session.cancelledBy,
   cancelReason: session.cancelReason,
   refundStatus: session.refundStatus,
+  cancellationNoticeHours: session.cancellationNoticeHours,
   expertAcceptance: session.expertAcceptance || "PENDING",
   expertRespondedAt: session.expertRespondedAt,
+  completedAt: session.completedAt,
+  payoutStatus: session.payoutStatus || "PENDING",
+  payoutPaidAt: session.payoutPaidAt,
   reviewed: session.reviewed,
   rating: session.rating,
   review: session.review,
@@ -221,6 +236,7 @@ const EDITABLE_FIELDS = [
   "languages",
   "photoUrl",
   "photoKey",
+  "inPersonAddress",
 ] as const;
 
 const sanitizeProfilePatch = (patch: Record<string, unknown>) => {
@@ -548,6 +564,7 @@ export const completeExpertSession = async (params: {
     throw new Error("Session cannot be completed from its current state");
   }
   session.status = "COMPLETED";
+  session.completedAt = new Date();
   await session.save();
 
   notify(
@@ -633,13 +650,21 @@ export const respondToExpertSession = async (params: {
   }
 
   if (params.action === "DECLINE") {
+    const declinedAt = new Date();
     session.status = "CANCELLED";
-    session.cancelledAt = new Date();
+    session.cancelledAt = declinedAt;
     session.cancelledBy = "EXPERT";
     session.cancelReason = params.reason?.trim() || "The expert is unavailable at this time";
     session.expertAcceptance = "DECLINED";
-    session.expertRespondedAt = new Date();
-    if (session.paymentStatus === "COMPLETED") session.refundStatus = "REQUIRED";
+    session.expertRespondedAt = declinedAt;
+    if (session.paymentStatus === "COMPLETED") {
+      session.refundStatus = "REQUIRED";
+      if (session.scheduledAt) {
+        session.cancellationNoticeHours = Math.round(
+          (session.scheduledAt.getTime() - declinedAt.getTime()) / (60 * 60 * 1000),
+        );
+      }
+    }
     await session.save();
     notify(session.userId, "BOOKING_CANCELLED", "Session declined",
       session.paymentStatus === "COMPLETED"
@@ -684,12 +709,22 @@ export const cancelExpertSession = async (params: {
   if (session.status === "CANCELLED") return session;
 
   const by: ExpertSessionCanceller = isAdmin ? "ADMIN" : isExpert ? "EXPERT" : "CLIENT";
+  const cancelledAt = new Date();
   session.status = "CANCELLED";
-  session.cancelledAt = new Date();
+  session.cancelledAt = cancelledAt;
   session.cancelledBy = by;
   session.cancelReason = params.reason?.trim();
-  // Paid sessions require a manual refund (handled by admin/finance).
-  if (session.paymentStatus === "COMPLETED") session.refundStatus = "REQUIRED";
+  // Paid sessions require a manual refund (handled by admin/finance). We record
+  // how much notice was given so admin can apply their own late-cancellation
+  // judgment when processing it — the app never auto-forfeits the payment.
+  if (session.paymentStatus === "COMPLETED") {
+    session.refundStatus = "REQUIRED";
+    if (session.scheduledAt) {
+      session.cancellationNoticeHours = Math.round(
+        (session.scheduledAt.getTime() - cancelledAt.getTime()) / (60 * 60 * 1000),
+      );
+    }
+  }
   await session.save();
 
   const expertUserId = expert?.userId?.toString();
@@ -775,6 +810,28 @@ export const markSessionRefundDone = async (sessionId: string) => {
   return session;
 };
 
+/** Admin/finance: mark a completed session's payout to the expert as done (early, ahead of the 24h auto-release). */
+export const markSessionPayoutDone = async (sessionId: string) => {
+  const session = await ExpertSession.findById(sessionId);
+  if (!session) throw new Error("Session not found");
+  if (session.status !== "COMPLETED" || session.paymentStatus !== "COMPLETED") {
+    throw new Error("This session has no payout to release");
+  }
+  if (session.payoutStatus === "PAID") {
+    throw new Error("This session's payout has already been marked paid");
+  }
+  session.payoutStatus = "PAID";
+  session.payoutPaidAt = new Date();
+  await session.save();
+  const expertUserId = await expertUserIdOf(session.expertId);
+  if (expertUserId) {
+    notify(expertUserId, "PAYOUT_PROCESSED", "Payout released",
+      `Your payout of ₹${session.amount} for a completed session has been released.`,
+      { sessionId: session._id.toString() }, true);
+  }
+  return session;
+};
+
 // ── Reads ────────────────────────────────────────────────────────────────────
 
 export const getExpertSessionForUser = async (params: {
@@ -791,7 +848,10 @@ export const getExpertSessionForUser = async (params: {
   if (!isClient && !isExpert && !params.isAdmin) {
     throw new Error("You are not authorized to view this session");
   }
-  return serializeSession(session, { expert: expert ? serializeExpert(expert) : undefined });
+  return serializeSession(session, {
+    expert: expert ? serializeExpert(expert) : undefined,
+    expertInPersonAddress: expert?.inPersonAddress,
+  });
 };
 
 export const listUserExpertSessions = async (userId: string) => {
@@ -801,7 +861,10 @@ export const listUserExpertSessions = async (userId: string) => {
   const byId = new Map(experts.map((e) => [e._id.toString(), e]));
   return sessions.map((s) => {
     const e = byId.get(s.expertId.toString());
-    return serializeSession(s, { expert: e ? serializeExpert(e) : undefined });
+    return serializeSession(s, {
+      expert: e ? serializeExpert(e) : undefined,
+      expertInPersonAddress: e?.inPersonAddress,
+    });
   });
 };
 
@@ -832,6 +895,15 @@ export const getExpertSessionsForAdmin = async (expertId: string) => {
   const refundsPending = sessions
     .filter((s) => s.refundStatus === "REQUIRED")
     .reduce((sum, s) => sum + (s.amount || 0), 0);
+  const completedPaid = sessions.filter(
+    (s) => s.status === "COMPLETED" && s.paymentStatus === "COMPLETED",
+  );
+  const payoutPending = completedPaid
+    .filter((s) => (s.payoutStatus || "PENDING") === "PENDING")
+    .reduce((sum, s) => sum + (s.amount || 0), 0);
+  const payoutReleased = completedPaid
+    .filter((s) => s.payoutStatus === "PAID")
+    .reduce((sum, s) => sum + (s.amount || 0), 0);
   return {
     sessions: sessions.map((s) => {
       const u = s.userId as unknown as { name?: string; email?: string } | null;
@@ -843,6 +915,8 @@ export const getExpertSessionsForAdmin = async (expertId: string) => {
       upcoming: sessions.filter((s) => s.status === "SCHEDULED").length,
       grossEarnings,
       refundsPending,
+      payoutPending,
+      payoutReleased,
     },
   };
 };
@@ -941,13 +1015,149 @@ export const autoCompleteExpertSessions = async (): Promise<number> => {
     if (end > now) continue;
     const updated = await ExpertSession.findOneAndUpdate(
       { _id: s._id, status: "SCHEDULED" },
-      { $set: { status: "COMPLETED", autoCompleted: true } },
+      { $set: { status: "COMPLETED", autoCompleted: true, completedAt: now } },
     );
     if (updated) {
       count += 1;
       notify(s.userId, "REVIEW_REMINDER", "How was your session?",
         "Your expert session is complete. Leave a rating and feedback to help others.",
         { sessionId: s._id.toString() }, true);
+    }
+  }
+  return count;
+};
+
+/**
+ * Nudge the expert to add a meeting link when an ONLINE session is starting
+ * soon and still has none. Fires once per session (deduped via
+ * meetingLinkNudgeSentAt). Window is generous (up to 3h out) since the
+ * cleanup job itself only polls every 15–60 minutes.
+ */
+export const sendExpertMeetingLinkNudges = async (): Promise<number> => {
+  const now = new Date();
+  const soon = new Date(now.getTime() + 3 * 60 * 60_000);
+  const candidates = await ExpertSession.find({
+    status: "SCHEDULED",
+    mode: "ONLINE",
+    meetingLink: { $in: [null, ""] },
+    scheduledAt: { $gte: now, $lte: soon },
+    meetingLinkNudgeSentAt: { $exists: false },
+  }).select("_id expertId scheduledAt");
+  let count = 0;
+  for (const s of candidates) {
+    const updated = await ExpertSession.findOneAndUpdate(
+      { _id: s._id, meetingLinkNudgeSentAt: { $exists: false } },
+      { $set: { meetingLinkNudgeSentAt: now } },
+    );
+    if (!updated) continue;
+    count += 1;
+    const expertUserId = await expertUserIdOf(s.expertId);
+    if (expertUserId) {
+      notify(
+        expertUserId,
+        "SESSION_LINK_REQUIRED",
+        "Add your meeting link",
+        `Your session on ${new Date(s.scheduledAt as Date).toLocaleString("en-IN")} is coming up and still needs a meeting link.`,
+        { sessionId: s._id.toString() },
+        true,
+      );
+    }
+  }
+  return count;
+};
+
+/**
+ * "Your session starts soon" reminder to both parties, with whatever
+ * connection details are available (meeting link for ONLINE, address for
+ * IN_PERSON). Fires once per session (deduped via startReminderSentAt).
+ */
+export const sendSessionStartReminders = async (): Promise<number> => {
+  const now = new Date();
+  const soon = new Date(now.getTime() + 2 * 60 * 60_000);
+  const candidates = await ExpertSession.find({
+    status: "SCHEDULED",
+    scheduledAt: { $gte: now, $lte: soon },
+    startReminderSentAt: { $exists: false },
+  }).select("_id expertId userId scheduledAt mode meetingLink");
+  let count = 0;
+  for (const s of candidates) {
+    const updated = await ExpertSession.findOneAndUpdate(
+      { _id: s._id, startReminderSentAt: { $exists: false } },
+      { $set: { startReminderSentAt: now } },
+    );
+    if (!updated) continue;
+    count += 1;
+
+    const when = new Date(s.scheduledAt as Date).toLocaleString("en-IN");
+    let clientDetail = "";
+    let expertDetail = "";
+    if (s.mode === "ONLINE") {
+      clientDetail = s.meetingLink
+        ? ` Join here: ${s.meetingLink}`
+        : " Your expert hasn't shared a meeting link yet — check back shortly.";
+      expertDetail = s.meetingLink
+        ? ` Your meeting link: ${s.meetingLink}`
+        : " Don't forget to add a meeting link.";
+    } else if (s.mode === "IN_PERSON") {
+      const expertDoc = await Expert.findById(s.expertId).select("inPersonAddress").lean();
+      const address = (expertDoc as any)?.inPersonAddress;
+      clientDetail = address
+        ? ` Location: ${address}`
+        : " Contact your expert for the exact location.";
+    }
+
+    notify(
+      s.userId,
+      "BOOKING_REMINDER",
+      "Your session starts soon",
+      `Your session is scheduled for ${when}.${clientDetail}`,
+      { sessionId: s._id.toString() },
+      true,
+    );
+
+    const expertUserId = await expertUserIdOf(s.expertId);
+    if (expertUserId) {
+      notify(
+        expertUserId,
+        "BOOKING_REMINDER",
+        "Your session starts soon",
+        `Your session is scheduled for ${when}.${expertDetail}`,
+        { sessionId: s._id.toString() },
+        true,
+      );
+    }
+  }
+  return count;
+};
+
+/**
+ * Auto-release expert payouts 24 hours after session completion, mirroring
+ * releaseCompletedBookingPayments() for venue/coach bookings. Anchored on
+ * `completedAt` (not `updatedAt`, which a later review submission bumps).
+ */
+export const releaseExpertSessionPayouts = async (): Promise<number> => {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const candidates = await ExpertSession.find({
+    status: "COMPLETED",
+    paymentStatus: "COMPLETED",
+    payoutStatus: "PENDING",
+    completedAt: { $lte: cutoff },
+  }).select("_id expertId amount");
+  let count = 0;
+  for (const s of candidates) {
+    const now = new Date();
+    const updated = await ExpertSession.findOneAndUpdate(
+      { _id: s._id, payoutStatus: "PENDING" },
+      { $set: { payoutStatus: "PAID", payoutPaidAt: now } },
+    );
+    if (updated) {
+      count += 1;
+      const expertUserId = await expertUserIdOf(s.expertId);
+      if (expertUserId) {
+        notify(expertUserId, "PAYOUT_PROCESSED", "Payout released",
+          `Your payout of ₹${s.amount} for a completed session has been released.`,
+          { sessionId: s._id.toString() }, true);
+      }
     }
   }
   return count;

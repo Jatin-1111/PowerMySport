@@ -3,6 +3,9 @@ import { Booking } from "../../client/models/Booking";
 import { Coach, IPayoutMethod } from "../../client/models/Coach";
 import { Venue } from "../../client/models/Venue";
 import { User } from "../../client/models/User";
+import { Expert } from "../../client/models/ExpertProfile";
+import { ExpertSession } from "../../client/models/ExpertBooking";
+import { markSessionPayoutDone } from "../../client/services/ExpertsService";
 import { sendPayoutProcessedEmail } from "../../utils/email";
 import mongoose from "mongoose";
 
@@ -59,13 +62,50 @@ export const listPendingPayouts = async (
       });
     });
 
+    // Expert sessions carry their payout owed directly on the session
+    // (no nested payments array like Booking), so they're gathered separately.
+    const expertSessions = await ExpertSession.find({
+      status: "COMPLETED",
+      paymentStatus: "COMPLETED",
+      payoutStatus: "PENDING",
+    })
+      .select("expertId amount")
+      .lean();
+
+    if (expertSessions.length > 0) {
+      const expertIds = [...new Set(expertSessions.map((s) => s.expertId.toString()))];
+      const experts = await Expert.find({ _id: { $in: expertIds } })
+        .select("userId")
+        .lean();
+      const expertUserIdByExpertId = new Map(
+        experts.map((e) => [e._id.toString(), e.userId.toString()]),
+      );
+
+      for (const session of expertSessions) {
+        const expertUserId = expertUserIdByExpertId.get(session.expertId.toString());
+        if (!expertUserId) continue;
+        const key = `${expertUserId}_Expert`;
+        if (!payoutMap.has(key)) {
+          payoutMap.set(key, {
+            vendorId: expertUserId,
+            vendorRole: "Expert",
+            totalPendingAmount: 0,
+            bookingIds: [],
+          });
+        }
+        const current = payoutMap.get(key)!;
+        current.totalPendingAmount += session.amount || 0;
+        current.bookingIds.push(session._id.toString());
+      }
+    }
+
     const pendingPayouts = Array.from(payoutMap.values());
 
     // Populate vendor details and payout methods
     const populatedPayouts = await Promise.all(
       pendingPayouts.map(async (payout) => {
         const user = await User.findById(payout.vendorId).select("name email phone").lean();
-        
+
         let payoutMethod: IPayoutMethod | null = null;
         if (payout.vendorRole === "Coach") {
           const coach = await Coach.findOne({ userId: payout.vendorId })
@@ -80,6 +120,13 @@ export const listPendingPayouts = async (
             .lean();
           payoutMethod = getPrimaryPayoutMethod(
             venue?.payoutMethods as IPayoutMethod[] | undefined,
+          );
+        } else if (payout.vendorRole === "Expert") {
+          const expert = await Expert.findOne({ userId: payout.vendorId })
+            .select("payoutMethods")
+            .lean();
+          payoutMethod = getPrimaryPayoutMethod(
+            expert?.payoutMethods as unknown as IPayoutMethod[] | undefined,
           );
         }
 
@@ -122,6 +169,29 @@ export const markPayoutsAsPaid = async (
       res.status(400).json({
         success: false,
         message: "vendorId, vendorRole, and an array of bookingIds are required",
+      });
+      return;
+    }
+
+    // Expert session payouts live directly on ExpertSession (no nested payments
+    // array), so they're released one at a time via the same guarded service
+    // function the per-session admin/auto-release paths use.
+    if (vendorRole === "Expert") {
+      let updatedCount = 0;
+      for (const sessionId of bookingIds) {
+        try {
+          await markSessionPayoutDone(sessionId);
+          updatedCount++;
+        } catch (err) {
+          console.warn(
+            `Skipping expert payout for session ${sessionId}:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+      res.status(200).json({
+        success: true,
+        message: `Successfully marked ${updatedCount} expert session payout(s) as PAID.`,
       });
       return;
     }

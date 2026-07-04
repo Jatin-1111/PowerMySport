@@ -165,4 +165,82 @@ export const payoutApi = {
     );
     return response.data;
   },
+
+  // ── EXPERT ───────────────────────────────────────────────────────────────
+
+  /** Fetch the currently-authenticated expert's saved payout method */
+  getExpertPayoutMethod: async (): Promise<
+    ApiResponse<{ payoutMethod: IPayoutMethod | null }>
+  > => {
+    try {
+      const response = await axiosInstance.get(
+        "/payouts/expert/my-payout-method",
+      );
+      return response.data;
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        return {
+          success: true,
+          message: "Payout method retrieved",
+          data: { payoutMethod: null },
+        };
+      }
+
+      throw error;
+    }
+  },
+
+  /** Fetch all of the expert's payout methods */
+  getExpertPayoutMethods: async (): Promise<
+    ApiResponse<{ payoutMethods: IPayoutMethod[] }>
+  > => {
+    try {
+      const response = await axiosInstance.get(
+        "/payouts/expert/my-payout-methods",
+      );
+      return response.data;
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        return {
+          success: true,
+          message: "Payout methods retrieved",
+          data: { payoutMethods: [] },
+        };
+      }
+
+      throw error;
+    }
+  },
+
+  /** Create or update the expert's payout method */
+  upsertExpertPayoutMethod: async (
+    payload: Omit<IPayoutMethod, "addedAt" | "updatedAt">,
+  ): Promise<ApiResponse<{ payoutMethods: IPayoutMethod[] }>> => {
+    const response = await axiosInstance.put(
+      "/payouts/expert/my-payout-method",
+      payload,
+    );
+    return response.data;
+  },
+
+  /** Remove a specific expert's payout method by ID */
+  deleteExpertPayoutMethod: async (
+    methodId?: string,
+  ): Promise<ApiResponse<{ payoutMethods: IPayoutMethod[] }>> => {
+    const url = methodId
+      ? `/payouts/expert/my-payout-method/${methodId}`
+      : "/payouts/expert/my-payout-method";
+    const response = await axiosInstance.delete(url);
+    return response.data;
+  },
+
+  /** Set a specific payout method as default */
+  setExpertDefaultPayoutMethod: async (
+    methodId: string,
+  ): Promise<ApiResponse<{ payoutMethods: IPayoutMethod[] }>> => {
+    const response = await axiosInstance.put(
+      `/payouts/expert/my-payout-method/${methodId}/set-default`,
+    );
+    return response.data;
+  },
 };

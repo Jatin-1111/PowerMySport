@@ -27,6 +27,8 @@ export interface AdminExpert {
   languages?: string[];
   photoUrl?: string;
   photoKey?: string;
+  /** Where an IN_PERSON/BOTH-mode session happens — never shown on the public listing. */
+  inPersonAddress?: string;
   isActive: boolean;
   rating: number;
   reviewCount: number;
@@ -50,6 +52,7 @@ export interface CreateExpertPayload {
   languages?: string[];
   photoUrl?: string;
   photoKey?: string;
+  inPersonAddress?: string;
 }
 
 export type UpdateExpertPayload = Partial<
@@ -68,6 +71,7 @@ export type UpdateExpertPayload = Partial<
     | "blackoutDates"
     | "photoUrl"
     | "photoKey"
+    | "inPersonAddress"
     | "isActive"
   >
 >;
@@ -82,6 +86,9 @@ export interface AdminExpertSession {
   mode?: string;
   clientName?: string;
   refundStatus?: "NONE" | "REQUIRED" | "MANUAL_DONE";
+  cancellationNoticeHours?: number;
+  payoutStatus?: "PENDING" | "PAID";
+  payoutPaidAt?: string;
   reviewed?: boolean;
   rating?: number;
   review?: string;
@@ -97,6 +104,8 @@ export interface AdminExpertSessionsResult {
     upcoming: number;
     grossEarnings: number;
     refundsPending: number;
+    payoutPending: number;
+    payoutReleased: number;
   };
 }
 

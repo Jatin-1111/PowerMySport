@@ -339,7 +339,7 @@ export interface AdminPhonePeRefundStatus {
 
 export interface PayoutSummary {
   vendorId: string;
-  vendorRole: "VenueLister" | "Coach";
+  vendorRole: "VenueLister" | "Coach" | "Expert";
   totalPendingAmount: number;
   bookingIds: string[];
   vendorName: string;
@@ -1054,7 +1054,7 @@ export const adminApi = {
 
   markPayoutsAsPaid: async (data: {
     vendorId: string;
-    vendorRole: "VenueLister" | "Coach";
+    vendorRole: "VenueLister" | "Coach" | "Expert";
     bookingIds: string[];
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/payouts/mark-paid", data);

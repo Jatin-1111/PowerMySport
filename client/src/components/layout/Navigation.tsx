@@ -181,7 +181,10 @@ export const Navigation: React.FC<NavProps> = ({
             <div className="relative" ref={exploreDropdownRef}>
               <button
                 onClick={() => setExploreDropdownOpen(!exploreDropdownOpen)}
-                onMouseEnter={() => { setExploreDropdownOpen(true); setServicesDropdownOpen(false); }}
+                onMouseEnter={() => {
+                  setExploreDropdownOpen(true);
+                  setServicesDropdownOpen(false);
+                }}
                 className={cn(
                   "shop-nav-link relative font-medium flex items-center gap-1 focus:outline-none",
                   isExploreActive &&
@@ -284,7 +287,10 @@ export const Navigation: React.FC<NavProps> = ({
             <div className="relative" ref={servicesDropdownRef}>
               <button
                 onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
-                onMouseEnter={() => { setServicesDropdownOpen(true); setExploreDropdownOpen(false); }}
+                onMouseEnter={() => {
+                  setServicesDropdownOpen(true);
+                  setExploreDropdownOpen(false);
+                }}
                 className={cn(
                   "shop-nav-link relative font-medium focus:outline-none",
                   isServicesActive &&
@@ -323,7 +329,11 @@ export const Navigation: React.FC<NavProps> = ({
                       <motion.div
                         initial={{ opacity: 0, x: -6 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0, duration: 0.15, ease: "easeOut" }}
+                        transition={{
+                          delay: 0,
+                          duration: 0.15,
+                          ease: "easeOut",
+                        }}
                       >
                         <Link
                           href="/booking"
@@ -481,25 +491,16 @@ export const Navigation: React.FC<NavProps> = ({
                             Dashboard
                           </Link>
 
-                          {user.role === "EXPERT" && (
+                          {user.role !== "EXPERT" && (
                             <Link
-                              href="/expert/dashboard"
+                              href="/experts/sessions"
                               onClick={() => setUserDropdownOpen(false)}
                               className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
                             >
-                              <Users className="w-4 h-4 mr-3" />
-                              Expert Dashboard
+                              <CalendarCheck className="w-4 h-4 mr-3" />
+                              My Sessions
                             </Link>
                           )}
-
-                          <Link
-                            href="/experts/sessions"
-                            onClick={() => setUserDropdownOpen(false)}
-                            className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
-                          >
-                            <CalendarCheck className="w-4 h-4 mr-3" />
-                            My Sessions
-                          </Link>
 
                           <Link
                             href="/settings"
@@ -649,7 +650,16 @@ export const Navigation: React.FC<NavProps> = ({
                 )}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <span className={cn("text-base font-medium", isActive("/community") ? "text-power-orange" : "text-slate-700")}>Community</span>
+                <span
+                  className={cn(
+                    "text-base font-medium",
+                    isActive("/community")
+                      ? "text-power-orange"
+                      : "text-slate-700",
+                  )}
+                >
+                  Community
+                </span>
               </Link>
 
               {/* Mobile Services Accordion */}
@@ -661,11 +671,21 @@ export const Navigation: React.FC<NavProps> = ({
                     isServicesActive ? "bg-orange-50" : "hover:bg-indigo-50",
                   )}
                 >
-                  <span className={cn("text-base font-medium", isServicesActive ? "text-power-orange" : "text-slate-700")}>Services</span>
+                  <span
+                    className={cn(
+                      "text-base font-medium",
+                      isServicesActive ? "text-power-orange" : "text-slate-700",
+                    )}
+                  >
+                    Services
+                  </span>
                   <motion.span
                     animate={{ rotate: mobileServicesOpen ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
-                    className={cn("inline-flex", isServicesActive ? "text-power-orange" : "text-slate-700")}
+                    className={cn(
+                      "inline-flex",
+                      isServicesActive ? "text-power-orange" : "text-slate-700",
+                    )}
                   >
                     <ChevronDown className="w-4 h-4" />
                   </motion.span>
@@ -752,7 +772,9 @@ export const Navigation: React.FC<NavProps> = ({
                       <p className="text-sm font-medium text-slate-900">
                         {user.name}
                       </p>
-                      <p className="text-xs mt-1 text-slate-500">{user.email}</p>
+                      <p className="text-xs mt-1 text-slate-500">
+                        {user.email}
+                      </p>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-power-orange mt-1.5">
                         {user.userType || user.role.replace("_", " ")}
                       </p>
@@ -771,8 +793,8 @@ export const Navigation: React.FC<NavProps> = ({
                       </Button>
                     </Link>
 
-                    {user.role === "EXPERT" && (
-                      <Link href="/expert/dashboard">
+                    {user.role !== "EXPERT" && (
+                      <Link href="/experts/sessions">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -780,24 +802,11 @@ export const Navigation: React.FC<NavProps> = ({
                           onClick={() => setMobileMenuOpen(false)}
                           className="justify-start"
                         >
-                          <Users className="w-4 h-4 mr-2" />
-                          Expert Dashboard
+                          <CalendarCheck className="w-4 h-4 mr-2" />
+                          My Sessions
                         </Button>
                       </Link>
                     )}
-
-                    <Link href="/experts/sessions">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="justify-start"
-                      >
-                        <CalendarCheck className="w-4 h-4 mr-2" />
-                        My Sessions
-                      </Button>
-                    </Link>
 
                     <Link href="/settings">
                       <Button

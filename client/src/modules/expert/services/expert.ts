@@ -27,6 +27,8 @@ export interface Expert {
   languages?: string[];
   photoUrl?: string;
   photoKey?: string;
+  /** Where an IN_PERSON/BOTH-mode session happens — owner/admin-only, never public. */
+  inPersonAddress?: string;
   isActive: boolean;
   rating: number;
   reviewCount: number;
@@ -62,6 +64,8 @@ export interface ExpertSession {
   durationMinutes?: number;
   mode?: ExpertSessionMode;
   meetingLink?: string;
+  /** Only present for IN_PERSON sessions, and only once the client has an active booking. */
+  inPersonAddress?: string;
   clientNote?: string;
   cancelledAt?: string;
   cancelledBy?: "CLIENT" | "EXPERT" | "ADMIN" | "SYSTEM";
@@ -265,6 +269,7 @@ export const expertApi = {
         | "timezone"
         | "photoUrl"
         | "photoKey"
+        | "inPersonAddress"
         | "weeklyAvailability"
         | "blackoutDates"
       >

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Coach, IPayoutMethod } from "../../client/models/Coach";
 import { Venue } from "../../client/models/Venue";
+import { Expert } from "../../client/models/ExpertProfile";
 
 type PayoutMethodRecord = IPayoutMethod & {
   _id?: unknown;
@@ -685,6 +686,342 @@ export const setVenueDefaultPayoutMethod = async (
     });
   } catch (error) {
     console.error("setVenueDefaultPayoutMethod error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to set default payout method" });
+  }
+};
+
+// ============================================
+// EXPERT PAYOUT METHODS
+// ============================================
+
+/**
+ * GET /api/payouts/expert/my-payout-method
+ * Get the current expert's saved payout method
+ */
+export const getExpertPayoutMethod = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const expert = await Expert.findOne({ userId })
+      .select("payoutMethods")
+      .lean();
+    if (!expert) {
+      res
+        .status(404)
+        .json({ success: false, message: "Expert profile not found" });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: "Payout method retrieved",
+      data: { payoutMethod: getPrimaryPayoutMethod(expert.payoutMethods as IPayoutMethod[] | undefined) },
+    });
+  } catch (error) {
+    console.error("getExpertPayoutMethod error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to retrieve payout method" });
+  }
+};
+
+/**
+ * GET /api/payouts/expert/my-payout-methods
+ * Get all of the current expert's saved payout methods
+ */
+export const getExpertPayoutMethods = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const expert = await Expert.findOne({ userId })
+      .select("payoutMethods")
+      .lean();
+    if (!expert) {
+      res
+        .status(404)
+        .json({ success: false, message: "Expert profile not found" });
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: "Payout methods retrieved",
+      data: { payoutMethods: expert.payoutMethods || [] },
+    });
+  } catch (error) {
+    console.error("getExpertPayoutMethods error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to retrieve payout methods" });
+  }
+};
+
+/**
+ * PUT /api/payouts/expert/my-payout-method
+ * Save or update the current expert's payout method (add new or update existing)
+ */
+export const upsertExpertPayoutMethod = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { id, type, accountHolderName, accountNumber, ifscCode, bankName, upiId } =
+      req.body as {
+        id?: string;
+        type: "BANK_TRANSFER" | "UPI";
+        accountHolderName?: string;
+        accountNumber?: string;
+        ifscCode?: string;
+        bankName?: string;
+        upiId?: string;
+      };
+
+    // Basic validation
+    if (!type || !["BANK_TRANSFER", "UPI"].includes(type)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid payout method type. Must be BANK_TRANSFER or UPI.",
+      });
+      return;
+    }
+
+    if (type === "BANK_TRANSFER") {
+      if (!accountHolderName?.trim() || !accountNumber?.trim() || !ifscCode?.trim() || !bankName?.trim()) {
+        res.status(400).json({
+          success: false,
+          message: "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
+        });
+        return;
+      }
+      // Validate IFSC format (basic)
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode.toUpperCase().trim())) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid IFSC code format (e.g., SBIN0001234)",
+        });
+        return;
+      }
+    }
+
+    if (type === "UPI") {
+      if (!upiId?.trim()) {
+        res.status(400).json({
+          success: false,
+          message: "UPI method requires a valid UPI ID",
+        });
+        return;
+      }
+      // Basic UPI ID validation
+      if (!/^[\w.\-+]+@[\w]+$/.test(upiId.trim())) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid UPI ID format (e.g., yourname@okaxis)",
+        });
+        return;
+      }
+    }
+
+    const now = new Date();
+    const expert = await Expert.findOne({ userId });
+    if (!expert) {
+      res
+        .status(404)
+        .json({ success: false, message: "Expert profile not found" });
+      return;
+    }
+
+    const payoutMethods = expert.payoutMethods ?? [];
+
+    const payoutMethodData: IPayoutMethod = {
+      type,
+      addedAt: now,
+      updatedAt: now,
+      isDefault: !expert.payoutMethods || expert.payoutMethods.length === 0, // First method is default
+    };
+
+    if (type === "BANK_TRANSFER") {
+      payoutMethodData.accountHolderName = accountHolderName!.trim();
+      payoutMethodData.accountNumber = accountNumber!.trim();
+      payoutMethodData.ifscCode = ifscCode!.trim().toUpperCase();
+      payoutMethodData.bankName = bankName!.trim();
+    } else {
+      payoutMethodData.upiId = upiId!.trim();
+    }
+
+    if (id) {
+      // Update existing method
+      const methodIndex = payoutMethods.findIndex(
+        (method: IPayoutMethod) => getPayoutMethodId(method as PayoutMethodRecord) === id,
+      );
+      if (methodIndex === -1) {
+        res
+          .status(404)
+          .json({ success: false, message: "Payout method not found" });
+        return;
+      }
+      payoutMethodData.id = id;
+      payoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
+      payoutMethods[methodIndex] = payoutMethodData;
+    } else {
+      // Add new method
+      payoutMethods.push(payoutMethodData);
+    }
+
+    expert.payoutMethods = payoutMethods;
+
+    await expert.save();
+
+    res.json({
+      success: true,
+      message: "Payout method saved successfully",
+      data: { payoutMethods: expert.payoutMethods },
+    });
+  } catch (error) {
+    console.error("upsertExpertPayoutMethod error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to save payout method" });
+  }
+};
+
+/**
+ * DELETE /api/payouts/expert/my-payout-method/:methodId
+ * Remove a specific payout method by ID (or all if no ID provided)
+ */
+export const deleteExpertPayoutMethod = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { methodId } = req.params;
+
+    const expert = await Expert.findOne({ userId });
+    if (!expert) {
+      res
+        .status(404)
+        .json({ success: false, message: "Expert profile not found" });
+      return;
+    }
+
+    const payoutMethods = expert.payoutMethods ?? [];
+
+    if (methodId) {
+      // Delete specific method
+      const initialLength = payoutMethods.length;
+      expert.payoutMethods = payoutMethods.filter(
+        (method: IPayoutMethod) => getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
+      );
+
+      if ((expert.payoutMethods ?? []).length === initialLength) {
+        res
+          .status(404)
+          .json({ success: false, message: "Payout method not found" });
+        return;
+      }
+
+      // If the deleted method was default and there are remaining methods, set first as default
+      if (!expert.payoutMethods.some((method: IPayoutMethod) => method.isDefault) && expert.payoutMethods.length > 0) {
+        expert.payoutMethods[0]!.isDefault = true;
+      }
+    } else {
+      // Delete all methods
+      expert.payoutMethods = [];
+    }
+
+    await expert.save();
+
+    res.json({
+      success: true,
+      message: "Payout method removed",
+      data: { payoutMethods: expert.payoutMethods },
+    });
+  } catch (error) {
+    console.error("deleteExpertPayoutMethod error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to remove payout method" });
+  }
+};
+
+/**
+ * PUT /api/payouts/expert/my-payout-method/:methodId/set-default
+ * Set a specific payout method as the default
+ */
+export const setExpertDefaultPayoutMethod = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { methodId } = req.params;
+
+    const expert = await Expert.findOne({ userId });
+    if (!expert) {
+      res
+        .status(404)
+        .json({ success: false, message: "Expert profile not found" });
+      return;
+    }
+
+    const methods = expert.payoutMethods || [];
+    const methodIndex = methods.findIndex(
+      (method: IPayoutMethod) => getPayoutMethodId(method as PayoutMethodRecord) === methodId,
+    );
+
+    if (methodIndex === -1) {
+      res
+        .status(404)
+        .json({ success: false, message: "Payout method not found" });
+      return;
+    }
+
+    // Set all to non-default except the one being set
+    methods.forEach((m: IPayoutMethod, idx: number) => {
+      m.isDefault = idx === methodIndex;
+    });
+
+    await expert.save();
+
+    res.json({
+      success: true,
+      message: "Default payout method updated",
+      data: { payoutMethods: expert.payoutMethods },
+    });
+  } catch (error) {
+    console.error("setExpertDefaultPayoutMethod error:", error);
     res
       .status(500)
       .json({ success: false, message: "Failed to set default payout method" });

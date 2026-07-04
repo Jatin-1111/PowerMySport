@@ -27,7 +27,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 interface PayoutMethodManagerProps {
   /** Who owns this payout method UI */
-  ownerType: "Coach" | "VENUE";
+  ownerType: "Coach" | "VENUE" | "Expert";
   /** Load all payout methods from backend */
   onLoad: () => Promise<IPayoutMethod[]>;
   /** Add a new payout method */
