@@ -323,7 +323,7 @@ export default function VenuesTab() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredVenues.map((venue, index) => {
                 const venueId = String(venue.id || venue._id || "");
                 const isFollowed = followedVenueIds.includes(venueId);
@@ -345,7 +345,7 @@ export default function VenuesTab() {
                     onClick={() => router.push(`/venues/${venueId}`)}
                   >
                     {/* Image */}
-                    <div className="relative h-56 w-full overflow-hidden bg-slate-100">
+                    <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
                       {venueImages.length > 0 ? (
                         <img src={venueImages[0]} alt={venue.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       ) : (

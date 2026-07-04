@@ -212,10 +212,7 @@ export default function ExpertDetailPage() {
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
                         <Award className="h-3.5 w-3.5" /> Verified Expert
                       </span>
-                      <h1
-                        className="mt-2 text-2xl font-bold sm:text-3xl"
-                        style={{ fontFamily: "var(--font-syne)" }}
-                      >
+                      <h1 className="font-title mt-2 text-2xl font-bold sm:text-3xl">
                         {expert.name || "Expert"}
                       </h1>
                       <div className="mt-2 flex flex-wrap items-center justify-center gap-3 text-sm text-slate-300 sm:justify-start">

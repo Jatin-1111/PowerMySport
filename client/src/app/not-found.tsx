@@ -15,16 +15,10 @@ export default function NotFound() {
       <p className="relative mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-power-orange">
         Error 404
       </p>
-      <h1
-        className="relative text-7xl font-extrabold leading-none text-deep-slate sm:text-8xl"
-        style={{ fontFamily: "var(--font-syne)" }}
-      >
+      <h1 className="font-title relative text-7xl font-extrabold leading-none text-deep-slate sm:text-8xl">
         404
       </h1>
-      <h2
-        className="relative mt-4 text-2xl font-bold text-slate-900 sm:text-3xl"
-        style={{ fontFamily: "var(--font-syne)" }}
-      >
+      <h2 className="font-title relative mt-4 text-2xl font-bold text-slate-900 sm:text-3xl">
         This page has left the field
       </h2>
       <p className="relative mt-3 max-w-md text-base text-slate-600">

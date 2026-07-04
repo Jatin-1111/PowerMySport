@@ -66,11 +66,17 @@ export const getPathway = async (
         .select("expertId expertName expertPhotoUrl verifiedAt note -_id")
         .sort({ verifiedAt: -1 })
         .lean();
+      let trustTier: "unverified" | "admin_verified" | "expert_verified" = "unverified";
+      if (result.pathway.isVerified) {
+        trustTier = expertVerifications.length > 0 ? "expert_verified" : "admin_verified";
+      }
+
       data = {
         ...(typeof (result.pathway as any).toObject === "function"
           ? (result.pathway as any).toObject()
           : result.pathway),
         expertVerifications,
+        trustTier,
       };
     }
 

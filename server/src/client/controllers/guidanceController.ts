@@ -337,7 +337,7 @@ export const downloadGuidanceReportPdf = async (
       .font("Helvetica")
       .fontSize(8)
       .text(
-        `Generated ${new Date(submission.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} · Report ID ${submission._id.toString()}`,
+        `Generated ${new Date(submission.createdAt).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })} · Report ID ${submission._id.toString()}`,
         pageLeft + 20,
         headerTop + 68,
       );

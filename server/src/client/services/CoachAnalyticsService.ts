@@ -99,13 +99,13 @@ export const getCoachEarnings = async (coachUserId: string): Promise<EarningsDat
   const monthMap = new Map<string, { total: number; sessions: number }>();
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = d.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+    const key = d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", year: "numeric" });
     monthMap.set(key, { total: 0, sessions: 0 });
   }
   completedBookings
     .filter((b: any) => new Date(b.date) >= sixMonthsAgo)
     .forEach((b: any) => {
-      const key = new Date(b.date).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+      const key = new Date(b.date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", year: "numeric" });
       const entry = monthMap.get(key);
       if (entry) {
         entry.total += getCoachAmount(b);
@@ -225,7 +225,7 @@ export const getCoachAnalytics = async (coachUserId: string): Promise<AnalyticsD
   });
   const sessionsTrend: TrendPoint[] = Array.from(trendMap.entries()).map(
     ([date, count]) => ({
-      label: new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+      label: new Date(date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" }),
       count,
     }),
   );

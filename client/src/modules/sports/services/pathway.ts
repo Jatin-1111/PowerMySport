@@ -125,6 +125,7 @@ export interface SportPathway {
   careers: Career[];
   isVerified: boolean;
   expertVerifications?: PathwayExpertVerification[];
+  trustTier?: "unverified" | "admin_verified" | "expert_verified";
   lookupCount: number;
   lastRefreshedAt?: string;
   createdAt?: string;

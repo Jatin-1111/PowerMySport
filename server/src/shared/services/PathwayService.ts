@@ -80,6 +80,9 @@ For levels 2-5, the "label" MUST be sport-specific — a short (2-4 word) plain-
 Do NOT use unexplained federation acronyms in the label. It must still sound like plain English a parent with zero sports background would understand at a glance.
 The "title" field is a slightly fuller version of the same idea, still in plain, simple English (e.g. for Tennis level 2 → "Playing in District-Level Tennis Tournaments"; for Chess level 4 → "Playing in National Chess Tournaments"; for Cricket level 3 → "Playing State-Level Cricket Matches"). Keep it short and concrete, not a mouthful of federation names.
 Keep the numeric "level" field as 1-5 in ascending order.
+
+BENCHMARKS REQUIREMENT: For any level whose ageRange or typical duration spans more than 12 months, the \`benchmarks.metrics\` array MUST contain at least 3 entries, each with a distinct \`checkpointMonth\` spaced across that level's full timeframe (e.g. months 6, 18, 36 for a 4-year level) — not a single end-state goal. For levels under 12 months, 1-2 checkpoints is acceptable.
+
 Return ONLY a valid JSON object (no markdown, no code fences) with this exact structure:
 {
   "sportName": "Proper name of the sport",
@@ -961,6 +964,29 @@ export class PathwayService {
           Array.isArray(parsed.equipment) &&
           Array.isArray(parsed.careers)
         ) {
+          // Fix 1: Validate benchmark metrics length for >1 year levels
+          let benchmarksValid = true;
+          for (const lvl of parsed.levels) {
+            const ageRangeStr = lvl.ageRange || "";
+            const matches = ageRangeStr.match(/(\d+)\s*[-–]\s*(\d+)/);
+            if (matches) {
+              const lower = parseInt(matches[1], 10);
+              const upper = parseInt(matches[2], 10);
+              if (upper - lower > 1) {
+                const metrics = lvl.benchmarks?.metrics || [];
+                if (metrics.length < 3) {
+                  benchmarksValid = false;
+                  log.warn(`[PathwayService] Level ${lvl.level} spans > 1 year but has < 3 benchmark metrics. Regenerating.`);
+                  break;
+                }
+              }
+            }
+          }
+          
+          if (!benchmarksValid) {
+            continue;
+          }
+
           // Level 1 is always "Beginner" regardless of what the model returned.
           // Levels 2-5 keep the model's sport-specific label, falling back to a
           // generic tier name only if the model left it blank.

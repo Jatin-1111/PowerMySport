@@ -238,7 +238,7 @@ export class ReminderMonitoringService {
   </div>
   
   <div class="content">
-    <p><strong>Alert Time:</strong> ${new Date().toLocaleString("en-IN")}</p>
+    <p><strong>Alert Time:</strong> ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
     
     <div class="alert-box">
       <h3 style="margin-top:0;color:#991b1b;">Issues Detected:</h3>
@@ -251,7 +251,7 @@ export class ReminderMonitoringService {
     <table class="stats-table">
       <tr>
         <td>Last Scheduler Run</td>
-        <td>${healthStatus.lastRun ? healthStatus.lastRun.toLocaleString("en-IN") : "Never"}</td>
+        <td>${healthStatus.lastRun ? healthStatus.lastRun.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "Never"}</td>
       </tr>
       <tr>
         <td>Minutes Since Last Run</td>
@@ -320,7 +320,7 @@ export class ReminderMonitoringService {
               (r) => `
       <tr>
         <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.interval}</td>
-        <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.failedAt.toLocaleString("en-IN")}</td>
+        <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.failedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</td>
         <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.failureReason.substring(0, 50)}${r.failureReason.length > 50 ? "..." : ""}</td>
         <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;">${r.retryCount}</td>
       </tr>
@@ -353,7 +353,7 @@ export class ReminderMonitoringService {
   <div style="background:#eef2f7;padding:20px;">
     <div class="header">
       <h1 style="margin:0;">📊 Daily Reminder System Report</h1>
-      <p style="margin:10px 0 0;opacity:0.9;">${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+      <p style="margin:10px 0 0;opacity:0.9;">${new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
     </div>
     
     <div class="content">
@@ -398,7 +398,7 @@ export class ReminderMonitoringService {
         </tr>
         <tr>
           <td style="padding:10px;background:#f8fafc;font-weight:bold;color:#64748b;">Last Scheduler Run</td>
-          <td style="padding:10px;background:#f8fafc;">${healthStatus.lastRun ? healthStatus.lastRun.toLocaleString("en-IN") : "N/A"}</td>
+          <td style="padding:10px;background:#f8fafc;">${healthStatus.lastRun ? healthStatus.lastRun.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "N/A"}</td>
         </tr>
       </table>
 
@@ -425,7 +425,7 @@ export class ReminderMonitoringService {
 
       <div class="footer">
         <p>This is an automated daily report from PowerMySport Reminder System.<br/>
-        Server: ${process.env.NODE_ENV || "development"} | Generated: ${new Date().toLocaleString("en-IN")}</p>
+        Server: ${process.env.NODE_ENV || "development"} | Generated: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
       </div>
     </div>
   </div>
@@ -436,7 +436,7 @@ export class ReminderMonitoringService {
     try {
       await sendEmail({
         to: adminEmail,
-        subject: `📊 Daily Reminder System Report - ${new Date().toLocaleDateString("en-IN")}`,
+        subject: `📊 Daily Reminder System Report - ${new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`,
         html,
       });
       console.log(`📧 Daily summary sent to ${adminEmail}`);

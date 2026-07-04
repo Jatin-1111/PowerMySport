@@ -376,7 +376,7 @@ export class WebhookController {
                 <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Refund ID</td><td style="padding:8px;border:1px solid #e5e7eb;">${refund.id}</td></tr>
                 <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Payment ID</td><td style="padding:8px;border:1px solid #e5e7eb;">${paymentId}</td></tr>
                 <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Failure Reason</td><td style="padding:8px;border:1px solid #e5e7eb;">${refund.reason_code || 'Unknown'}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Failed At</td><td style="padding:8px;border:1px solid #e5e7eb;">${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</td></tr>
+                <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;">Failed At</td><td style="padding:8px;border:1px solid #e5e7eb;">${new Date().toLocaleString("en-IN", { timeZone: 'Asia/Kolkata' })} IST</td></tr>
               </table>
               <p style="color:#6b7280;font-size:12px;margin-top:24px;">Please investigate and process the refund manually if required.</p>
               </body></html>

@@ -1004,7 +1004,7 @@ export class EcommerceController {
       // Invoice details
       doc.fontSize(10).font("Helvetica");
       doc.text(`Invoice Number: ${invoiceNumber}`);
-      doc.text(`Order Date: ${invoiceDate.toLocaleDateString("en-IN")}`);
+      doc.text(`Order Date: ${invoiceDate.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`);
       doc.text(`Order Number: ${order.orderNumber}`);
       doc.moveDown();
 

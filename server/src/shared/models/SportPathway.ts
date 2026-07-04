@@ -124,7 +124,11 @@ export interface SportPathwayDocument extends Document {
   tournamentsVerifiedEmpty?: boolean;
   scholarshipsVerifiedEmpty?: boolean;
   universitiesVerifiedEmpty?: boolean;
-  /** false = AI-generated, pending admin review. true = an admin has reviewed/edited this against expert input */
+  /** 
+   * Baseline quality gate. false = AI-generated, pending admin review. true = an admin has reviewed/edited this.
+   * Note: expertVerifications are an independent trust layer on top of this. An expert verification
+   * should only count if isVerified is true (see trustTier logic).
+   */
   isVerified: boolean;
   /** When an admin last marked this pathway verified (cleared when unverified) */
   verifiedAt?: Date;

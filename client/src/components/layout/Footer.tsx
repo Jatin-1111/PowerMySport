@@ -66,7 +66,7 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="mt-12 border-t border-white/60 bg-white/70 text-slate-900 backdrop-blur-md">
+    <footer className="border-t border-white/60 bg-white/70 text-slate-900 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
         <div className="py-16">

@@ -70,10 +70,7 @@ export default function MyExpertSessionsPage() {
           <ArrowLeft className="h-4 w-4" /> Browse experts
         </Link>
 
-        <h1
-          className="text-2xl font-bold text-slate-900"
-          style={{ fontFamily: "var(--font-syne)" }}
-        >
+        <h1 className="font-title text-2xl font-bold text-slate-900">
           My expert sessions
         </h1>
         <p className="mt-1 text-sm text-slate-500">

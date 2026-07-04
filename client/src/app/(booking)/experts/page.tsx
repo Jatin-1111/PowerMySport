@@ -14,15 +14,22 @@ import {
 } from "@/modules/discovery/components/FilterBar";
 import { cn } from "@/utils/cn";
 import {
-  ArrowRight,
   Award,
   CalendarCheck,
-  Globe,
-  Languages,
+  CheckCircle2,
+  ChevronRight,
+  Filter,
   MapPin,
   Search,
   ServerCrash,
   Star,
+  Users,
+  ShieldCheck,
+  CircleCheck,
+  Zap,
+  Globe,
+  Languages,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -246,37 +253,58 @@ function ExpertsBrowseContent() {
   const hasFilters = activeFilters.length > 0 || appliedSearch !== "";
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F4F3F0]">
       {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-        <div className="pointer-events-none absolute -right-24 -top-20 h-72 w-72 rounded-full bg-power-orange/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-turf-green/10 blur-3xl" />
-        <div className="relative mx-auto max-w-6xl px-6 py-12 sm:py-16">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="border-b border-slate-200 bg-white">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <FadeIn className="max-w-2xl">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
-                <Award className="h-3.5 w-3.5" /> Expert guidance
-              </span>
+              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-700">
+                Expert Guidance
+              </p>
               <h1
-                className="mt-4 text-3xl font-bold leading-tight sm:text-4xl"
-                style={{ fontFamily: "var(--font-syne)" }}
+                className="font-title font-black leading-[0.92] tracking-tight text-slate-900"
+                style={{
+                  fontSize: "clamp(2.2rem, 5vw, 3.75rem)",
+                  textWrap: "balance",
+                }}
               >
-                Book a 1:1 session with a sports expert
+                Book a 1:1 session with a{" "}
+                <span className="text-power-orange">sports expert.</span>
               </h1>
-              <p className="mt-3 text-sm text-slate-300 sm:text-base">
+              <p className="mt-4 max-w-md text-[15px] leading-relaxed text-slate-500">
                 Browse verified experts, pay securely, pick a time that suits
                 you — then rate your session afterwards.
               </p>
             </FadeIn>
-            <Link
-              href="/experts/sessions"
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/20"
-            >
-              <CalendarCheck className="h-4 w-4" /> My sessions
-            </Link>
+
+            <FadeIn delay={0.1} className="flex flex-col items-start lg:items-end gap-6">
+              <div className="flex flex-wrap gap-3 lg:flex-col lg:items-end lg:gap-2.5">
+                {[
+                  { icon: ShieldCheck, label: "Secure payments" },
+                  { icon: CircleCheck, label: "Verified experts" },
+                  { icon: Zap, label: "1:1 Guidance" },
+                ].map(({ icon: Icon, label }) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-100 bg-slate-50 px-3.5 py-1.5 text-[12px] font-medium text-slate-600"
+                  >
+                    <Icon size={13} className="text-power-orange" />
+                    {label}
+                  </span>
+                ))}
+              </div>
+              
+              <Link
+                href="/experts/sessions"
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-700 transition-colors hover:bg-orange-100 ring-1 ring-inset ring-orange-700/20"
+              >
+                <CalendarCheck className="h-4 w-4" /> My sessions
+              </Link>
+            </FadeIn>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* ── Filters ──────────────────────────────────────────────── */}
       <FilterBar
@@ -395,9 +423,9 @@ function ExpertsBrowseContent() {
       </FilterBar>
 
       {/* ── Content ──────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
         {loading ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <ExpertCardSkeleton key={i} />
             ))}
@@ -437,7 +465,7 @@ function ExpertsBrowseContent() {
               </span>
             </div>
 
-            <StaggerContainer className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <StaggerContainer className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((expert) => {
                 const id = String(expert.id || expert._id || "");
                 const route = `/experts/${id}`;
@@ -462,7 +490,7 @@ function ExpertsBrowseContent() {
                       aria-label={`View expert profile for ${expert.name || "expert"}`}
                       className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
                     >
-                      <div className="relative aspect-3/4 w-full overflow-hidden bg-slate-100">
+                      <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
                         <ExpertAvatar
                           expert={expert}
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"

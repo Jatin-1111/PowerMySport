@@ -21,12 +21,9 @@ export interface UpcomingTournamentContext {
 }
 
 function formatDate(d: Date): string {
-  return new Date(d).toLocaleDateString("en-IN", {
-    day: "numeric",
+  return new Date(d).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric",
     month: "long",
-    year: "numeric",
-    timeZone: "Asia/Kolkata",
-  });
+    year: "numeric" });
 }
 
 function buildUpcomingTournamentsBlock(

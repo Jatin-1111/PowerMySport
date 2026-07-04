@@ -467,7 +467,7 @@ function CoachesTabContent() {
               </h2>
             </div>
 
-            <StaggerContainer className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <StaggerContainer className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredCoaches.map((coach, idx) => {
                 const coachId = String(coach.id || coach._id || "");
                 const key = coachId || `${String(coach.userId)}-${idx}`;
@@ -500,7 +500,7 @@ function CoachesTabContent() {
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(coachRoute); } }}
                       aria-label={`View coach profile for ${name}`}
                     >
-                      <div className="relative aspect-3/4 w-full overflow-hidden bg-slate-100">
+                      <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
                         <CoachImageWithFallback sources={getCoachImages(coach)} alt={name} fallbackLabel={initials} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
 
                         {/* Subtle Bookmark */}

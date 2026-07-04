@@ -240,8 +240,7 @@ const formatCurrency = (value: number): string => {
 };
 
 const formatInvoiceDate = (date: Date): string => {
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
+  return date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
     month: "short",
     year: "numeric",
   });

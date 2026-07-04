@@ -329,7 +329,7 @@ export default function AcademiesTab() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {displayedAcademies.map((academy) => {
                 const coverImage = normalizeImageUrl(academy.coverPhotoUrl) || normalizeImageUrl(academy.logoUrl);
                 const rupees = toRupees(academy.sessionRatePerHour);
@@ -352,7 +352,7 @@ export default function AcademiesTab() {
                     onClick={() => router.push(detailsHref)}
                   >
                     {/* Image */}
-                    <div className="relative h-56 w-full overflow-hidden bg-slate-100">
+                    <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
                       {coverImage ? (
                         <img src={coverImage} alt={academy.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       ) : (

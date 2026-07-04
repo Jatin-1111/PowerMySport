@@ -466,7 +466,7 @@ const applyExpertPaymentSuccess = async (
 
   if (!wasPaid) {
     const when = session.scheduledAt
-      ? new Date(session.scheduledAt).toLocaleString("en-IN")
+      ? new Date(session.scheduledAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })
       : "a time you choose";
     // Client receipt.
     notify(
@@ -503,10 +503,18 @@ export const reconcileExpertSession = async (params: {
   if (session.paymentStatus === "COMPLETED") return session;
 
   const status = await getPhonePeOrderStatus(session.merchantOrderId);
-  if (status.state === "COMPLETED") {
+  const state = (status.state || "").toUpperCase();
+  if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(state)) {
     return applyExpertPaymentSuccess(session);
-  } else if (status.state === "FAILED") {
+  } else if (["FAILED", "PAYMENT_ERROR", "PAYMENT_DECLINED"].includes(state)) {
     session.paymentStatus = "FAILED";
+    if (session.status === "PENDING_PAYMENT") {
+      session.status = "CANCELLED";
+      session.cancelledBy = "SYSTEM";
+      session.cancelReason = "Payment failed";
+      session.cancelledAt = new Date();
+      session.set("holdExpiresAt", undefined);
+    }
     await session.save();
   }
   return session;
@@ -541,7 +549,7 @@ export const scheduleExpertSession = async (params: {
     expertUserId,
     "BOOKING_STATUS_UPDATED",
     "Session scheduled",
-    `A session was scheduled for ${when.toLocaleString("en-IN")}.`,
+    `A session was scheduled for ${when.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })}.`,
     { sessionId: session._id.toString() },
   );
   return session;
@@ -968,12 +976,19 @@ export const reconcileExpertSessionPaymentFromWebhookPayload = async (
   const upper = (rawState || "").toUpperCase();
 
   session.callbackPayload = payload;
-  if (upper === "COMPLETED") {
+  if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(upper)) {
     await session.save();
     await applyExpertPaymentSuccess(session);
     console.info(`[ExpertWebhook] payment confirmed for session ${session._id}`);
-  } else if (upper === "FAILED" && session.paymentStatus !== "COMPLETED") {
+  } else if (["FAILED", "PAYMENT_ERROR", "PAYMENT_DECLINED"].includes(upper) && session.paymentStatus !== "COMPLETED") {
     session.paymentStatus = "FAILED";
+    if (session.status === "PENDING_PAYMENT") {
+      session.status = "CANCELLED";
+      session.cancelledBy = "SYSTEM";
+      session.cancelReason = "Payment failed";
+      session.cancelledAt = new Date();
+      session.set("holdExpiresAt", undefined);
+    }
     await session.save();
     console.info(`[ExpertWebhook] payment failed for session ${session._id}`);
   } else {
@@ -1057,7 +1072,7 @@ export const sendExpertMeetingLinkNudges = async (): Promise<number> => {
         expertUserId,
         "SESSION_LINK_REQUIRED",
         "Add your meeting link",
-        `Your session on ${new Date(s.scheduledAt as Date).toLocaleString("en-IN")} is coming up and still needs a meeting link.`,
+        `Your session on ${new Date(s.scheduledAt as Date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })} is coming up and still needs a meeting link.`,
         { sessionId: s._id.toString() },
         true,
       );
@@ -1088,7 +1103,7 @@ export const sendSessionStartReminders = async (): Promise<number> => {
     if (!updated) continue;
     count += 1;
 
-    const when = new Date(s.scheduledAt as Date).toLocaleString("en-IN");
+    const when = new Date(s.scheduledAt as Date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" });
     let clientDetail = "";
     let expertDetail = "";
     if (s.mode === "ONLINE") {

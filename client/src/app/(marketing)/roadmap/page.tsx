@@ -3050,14 +3050,14 @@ function PathwayExplorerSection() {
                     {/* Left: name + meta + overview */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-3">
-                        {result.pathway.expertVerifications && result.pathway.expertVerifications.length > 0 ? (
+                        {result.pathway.trustTier === "expert_verified" && result.pathway.expertVerifications && result.pathway.expertVerifications.length > 0 ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                             <BadgeCheck className="h-3 w-3" />
                             Verified by {result.pathway.expertVerifications[0].expertName}
                             {result.pathway.expertVerifications.length > 1 &&
                               ` +${result.pathway.expertVerifications.length - 1} more`}
                           </span>
-                        ) : result.pathway.isVerified ? (
+                        ) : result.pathway.trustTier === "admin_verified" ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
                             <BadgeCheck className="h-3 w-3" /> Verified by Expert
                           </span>
@@ -3146,8 +3146,7 @@ function PathwayExplorerSection() {
                       </div>
                     ) : null}
                   </div>
-                  {result.pathway.isVerified === false &&
-                    !(result.pathway.expertVerifications && result.pathway.expertVerifications.length > 0) && (
+                  {result.pathway.trustTier === "unverified" && (
                     <div className="mt-4 rounded-xl bg-orange-50 border border-orange-200 p-4">
                       <div className="flex items-start gap-3">
                         <AlertTriangle className="h-5 w-5 text-power-orange shrink-0 mt-0.5" />

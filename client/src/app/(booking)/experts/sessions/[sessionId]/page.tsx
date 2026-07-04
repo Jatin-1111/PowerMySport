@@ -104,6 +104,30 @@ export default function ExpertSessionPage() {
     }
   };
 
+  const handleRetryPayment = async () => {
+    if (!session || !session.scheduledAt) return;
+    setSaving(true);
+    try {
+      const res = await expertApi.initiateSession(session.expertId, {
+        scheduledAt: session.scheduledAt,
+        mode: session.mode,
+        clientNote: session.clientNote,
+      });
+      if (res.success && res.data?.redirectUrl) {
+        window.location.href = res.data.redirectUrl;
+      } else {
+        toast.error(res.message || "Could not start payment.");
+        setSaving(false);
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "This slot was taken or is no longer available.";
+      toast.error(msg);
+      setSaving(false);
+    }
+  };
+
   const handleReview = async () => {
     if (rating < 1) {
       toast.error("Please select a rating.");
@@ -167,13 +191,26 @@ export default function ExpertSessionPage() {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           {session.status === "CANCELLED" ? (
-            <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-              <XCircle className="h-5 w-5" /> Session cancelled
-              {session.refundStatus === "REQUIRED"
-                ? " · refund pending"
-                : session.refundStatus === "MANUAL_DONE"
-                  ? " · refunded"
-                  : ""}
+            <div className="mb-4 flex flex-col items-start gap-3 rounded-lg bg-red-50 px-4 py-4 text-sm font-semibold text-red-700 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5" /> Session cancelled
+                {session.refundStatus === "REQUIRED"
+                  ? " · refund pending"
+                  : session.refundStatus === "MANUAL_DONE"
+                    ? " · refunded"
+                    : session.cancelReason === "Payment failed"
+                      ? " · payment failed"
+                      : ""}
+              </div>
+              {session.cancelReason === "Payment failed" && (
+                <button
+                  onClick={handleRetryPayment}
+                  disabled={saving}
+                  className="rounded bg-red-100 px-3 py-1.5 text-xs font-bold text-red-800 transition-colors hover:bg-red-200 disabled:opacity-50"
+                >
+                  {saving ? "Retrying..." : "Retry Payment"}
+                </button>
+              )}
             </div>
           ) : paid ? (
             <div className="mb-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
@@ -187,10 +224,7 @@ export default function ExpertSessionPage() {
             </div>
           )}
 
-          <h1
-            className="text-xl font-bold text-slate-900"
-            style={{ fontFamily: "var(--font-syne)" }}
-          >
+          <h1 className="font-title text-xl font-bold text-slate-900">
             Session with {expertName}
           </h1>
           <p className="mt-1 text-sm text-slate-500">

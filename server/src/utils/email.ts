@@ -220,8 +220,7 @@ export const sendBookingLifecycleEmail = async (
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
-  const bookingDate = options.date.toLocaleDateString("en-IN", {
-    day: "2-digit",
+  const bookingDate = options.date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
     month: "short",
     year: "numeric",
   });
@@ -866,7 +865,7 @@ export const sendBookingInvitationEmail = async (
       </div>
       <div class="detail-row">
         <span class="detail-label">Date:</span>
-        <span>${new Date(options.date).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+        <span>${new Date(options.date).toLocaleDateString("en-US", { timeZone: "Asia/Kolkata", weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">Time:</span>
@@ -1521,8 +1520,7 @@ export const sendBookingConfirmationEmail = async (
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
-  const bookingDate = options.date.toLocaleDateString("en-IN", {
-    day: "2-digit",
+  const bookingDate = options.date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
     month: "short",
     year: "numeric",
   });
@@ -1646,8 +1644,7 @@ export const sendBookingReminderEmail = async (
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
-  const bookingDate = options.date.toLocaleDateString("en-IN", {
-    day: "2-digit",
+  const bookingDate = options.date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
     month: "short",
     year: "numeric",
   });
@@ -2194,8 +2191,7 @@ interface WaitlistSlotAvailableOptions {
 export const sendWaitlistSlotAvailableEmail = async (
   options: WaitlistSlotAvailableOptions,
 ): Promise<void> => {
-  const dateStr = new Date(options.date).toLocaleDateString("en-IN", {
-    weekday: "short",
+  const dateStr = new Date(options.date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "short",
     day: "numeric",
     month: "short",
     year: "numeric",

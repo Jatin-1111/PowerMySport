@@ -69,10 +69,10 @@ export const getAcademyEarnings = async (ownerUserId: string): Promise<AcademyEa
   const monthMap = new Map<string, { total: number; sessions: number }>();
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    monthMap.set(d.toLocaleDateString("en-IN", { month: "short", year: "numeric" }), { total: 0, sessions: 0 });
+    monthMap.set(d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", year: "numeric" }), { total: 0, sessions: 0 });
   }
   completedBookings.filter((b: any) => new Date(b.date) >= sixMonthsAgo).forEach((b: any) => {
-    const key = new Date(b.date).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+    const key = new Date(b.date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", year: "numeric" });
     const e = monthMap.get(key); if (e) { e.total += getAmount(b); e.sessions += 1; }
   });
   const byMonth = Array.from(monthMap.entries()).map(([label, v]) => ({ label, ...v }));
@@ -128,7 +128,7 @@ export const getAcademyAnalytics = async (ownerUserId: string): Promise<AcademyA
   const trendMap = new Map<string, number>();
   for (let i = 29; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); trendMap.set(d.toISOString().split("T")[0] ?? "", 0); }
   recentBookings.forEach((b: any) => { const key = new Date(b.date).toISOString().split("T")[0] ?? ""; if (key && trendMap.has(key)) trendMap.set(key, (trendMap.get(key) ?? 0) + 1); });
-  const sessionsTrend = Array.from(trendMap.entries()).map(([date, count]) => ({ label: new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }), count }));
+  const sessionsTrend = Array.from(trendMap.entries()).map(([date, count]) => ({ label: new Date(date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" }), count }));
 
   const sportCountMap = new Map<string, number>();
   allBookings.forEach((b: any) => { const s = b.sport as string; sportCountMap.set(s, (sportCountMap.get(s) ?? 0) + 1); });
