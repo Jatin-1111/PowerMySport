@@ -478,6 +478,26 @@ export const Navigation: React.FC<NavProps> = ({
                             Dashboard
                           </Link>
 
+                          {user.role === "EXPERT" && (
+                            <Link
+                              href="/expert/dashboard"
+                              onClick={() => setUserDropdownOpen(false)}
+                              className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+                            >
+                              <Users className="w-4 h-4 mr-3" />
+                              Expert Dashboard
+                            </Link>
+                          )}
+
+                          <Link
+                            href="/experts/sessions"
+                            onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+                          >
+                            <CalendarCheck className="w-4 h-4 mr-3" />
+                            My Sessions
+                          </Link>
+
                           <Link
                             href="/settings"
                             onClick={() => setUserDropdownOpen(false)}
@@ -742,6 +762,34 @@ export const Navigation: React.FC<NavProps> = ({
                       >
                         <LayoutDashboard className="w-4 h-4 mr-2" />
                         Dashboard
+                      </Button>
+                    </Link>
+
+                    {user.role === "EXPERT" && (
+                      <Link href="/expert/dashboard">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          fullWidth
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="justify-start"
+                        >
+                          <Users className="w-4 h-4 mr-2" />
+                          Expert Dashboard
+                        </Button>
+                      </Link>
+                    )}
+
+                    <Link href="/experts/sessions">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        fullWidth
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="justify-start"
+                      >
+                        <CalendarCheck className="w-4 h-4 mr-2" />
+                        My Sessions
                       </Button>
                     </Link>
 
