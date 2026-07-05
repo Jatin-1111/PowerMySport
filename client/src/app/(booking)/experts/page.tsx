@@ -4,6 +4,7 @@ import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
+import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
 import {
   StaggerContainer,
   StaggerItem,
@@ -582,6 +583,21 @@ function ExpertsBrowseContent() {
 }
 
 export default function ExpertsBrowsePage() {
+  if (process.env.NEXT_PUBLIC_EXPERTS_IS_LIVE !== "true") {
+    return (
+      <FeatureWaitlist
+        title="Experts."
+        subtitle={<span className="text-transparent bg-clip-text bg-gradient-to-r from-power-orange to-amber-500">Coming Soon.</span>}
+        description="Our Experts platform is almost here. Get ready to connect with verified coaches and mentors."
+        icon={Users}
+        gradientFrom="#E97316"
+        gradientTo="#F59E0B"
+        shadowColorClass="shadow-power-orange/30"
+        buttonColorClass="bg-power-orange"
+      />
+    );
+  }
+
   return (
     <Suspense
       fallback={
