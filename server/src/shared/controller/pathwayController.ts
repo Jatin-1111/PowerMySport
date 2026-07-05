@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { pathwayService } from "../services/PathwayService";
 import { AthleteStory } from "../models/AthleteStory";
+import { realDataScraperService } from "../services/RealDataScraperService";
 import { INDIAN_STATES_AND_UTS } from "../utils/states";
 import { PathwayExpertVerification } from "../models/PathwayExpertVerification";
 import {
@@ -127,16 +128,51 @@ export const getPathwayEntities = async (
 
 export const getPathwayStories = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { sport, level } = req.query;
+    const { sport, level, state } = req.query;
+
     if (!sport || typeof sport !== "string") {
       res.status(400).json({ success: false, message: "Provide a sport parameter" });
       return;
     }
-    const query: any = { sportSlug: sport.toLowerCase() };
+
+    const sportSlug = sport.toLowerCase();
+    const query: any = { sportSlug };
+
     if (level && !isNaN(Number(level))) {
       query.level = Number(level);
     }
-    const stories = await AthleteStory.find(query).lean();
+
+    // When a state is provided, filter stories to that state.
+    // Also include stories with no location (national-level athletes).
+    if (state && typeof state === "string" && state.trim()) {
+      const stateRegex = new RegExp(`^${state.trim()}$`, "i");
+      query.$or = [
+        { location: stateRegex },
+        { location: { $exists: false } },
+        { location: "" },
+      ];
+    }
+
+    const stories = await AthleteStory.find(query).sort({ level: 1 }).lean();
+
+    // If nothing found, fire a background scrape so the next request gets results.
+    // Use the Sport collection to get the display name for the scraper prompt.
+    if (stories.length === 0) {
+      const { Sport } = await import("../models/Sport");
+      const knownSport = await Sport.findOne({ slug: sportSlug }).select("name").lean();
+      const sportName = (knownSport as any)?.name || sport;
+
+      realDataScraperService
+        .scrapeStoriesForSport({
+          sportSlug,
+          sportName,
+          ...(state && typeof state === "string" ? { city: state.trim() } : {}),
+        })
+        .catch((err) =>
+          console.error("[pathwayController] Background story scrape failed:", err)
+        );
+    }
+
     res.json({ success: true, data: stories });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to fetch stories" });

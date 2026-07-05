@@ -3,10 +3,11 @@ import { GoogleGenAI } from "@google/genai";
 import { Tournament } from "../models/Tournament";
 import { Scholarship } from "../models/Scholarship";
 import { University } from "../models/University";
+import { AthleteStory } from "../models/AthleteStory";
 
 dotenv.config();
 
-type EntityType = "tournament" | "scholarship" | "university";
+type EntityType = "tournament" | "scholarship" | "university" | "story";
 
 interface ScrapeContext {
   sportSlug: string;
@@ -56,6 +57,24 @@ function schemaBullets(type: EntityType): string {
 - prerequisiteGuide (array of 2-4 short steps to apply)
 - documentChecklist (array of documents typically required)`;
   }
+  if (type === "story") {
+    return `- name (string — the athlete's real full name as publicly known, e.g. "Saina Nehwal")
+- location (string — the Indian state they represent or are from, e.g. "Haryana")
+- achievement (string — their single most verifiable notable achievement, concise, max 10 words, e.g. "Won National Junior Badminton Championship 2018")
+- quote (string — exactly 2 sentences written in first person, grounded ONLY in publicly known facts about this athlete's real journey. This is a factual narrative paraphrase, NOT a fabricated interview quote. E.g. "I started training at a local court in Patiala when I was 10. By 15, I was playing state-level tournaments for Punjab.")
+- parentNote (string — exactly 2 sentences written from a parent's perspective, grounded in what is publicly known about this athlete's background. E.g. "We never imagined badminton could become a career. Seeing her win the district championship changed everything for our family.")
+- level (number — 1, 2, 3, 4, or 5. Assign based on the athlete's HIGHEST 
+  ACHIEVEMENT, not where they started. Every athlete starts as a beginner — 
+  ignore the starting point entirely.
+  1 = highest level is school/local club only
+  2 = highest level is district championship
+  3 = highest level is state championship or state team
+  4 = highest level is national ranking, national championship, or national team
+  5 = highest level is international ranking, international tournament, or 
+      national team at international events
+  Ribhav Saroha (All India No. 1 Under-16) = 4. Karman Kaur Thandi (WTA top 200) = 5.)
+- tags (array of 1–3 short strings describing what makes this athlete's journey notable, e.g. ["rural background", "self-funded", "late starter"])`;
+  }
 
   return `- name (string — the real university name)
 - location (string — "City, State")
@@ -72,6 +91,7 @@ function entityLabel(type: EntityType): string {
   if (type === "tournament") return "tournaments";
   if (type === "scholarship")
     return "scholarships or financial support schemes";
+  if (type === "story") return "real Indian athletes with notable journeys";
   return "universities/colleges offering admission via sports quota";
 }
 
@@ -89,6 +109,28 @@ function buildGroundingPrompt(type: EntityType, ctx: ScrapeContext): string {
   const cityClause = ctx.city
     ? ` specifically located in or highly relevant to players from ${ctx.city}`
     : "";
+
+  if (type === "story") {
+    const stateClause = ctx.city
+      ? ` from the Indian state of ${ctx.city} or who represent ${ctx.city}`
+      : " from across India";
+
+    return `Use Google Search to find 2 to 3 REAL, NAMED Indian athletes who play or have played "${ctx.sportName}"${stateClause} and have a publicly documented journey worth sharing with parents considering this sport for their child.
+
+CRITICAL RULES — read before searching:
+- Only return athletes who ACTUALLY EXIST and whose achievements are findable via search. A real athlete with a modest achievement is far better than a fabricated one.
+- Do NOT invent athletes, fabricate achievements, or fill gaps with assumptions. If you cannot find 2 real athletes, return 1 or even 0. Empty is correct; invented is harmful.
+- Prefer athletes who started at grassroots or school level and progressed upward — not only already-famous stars. The goal is "this could be your child", not "here is a celebrity."
+- If the state was specified, strongly prefer athletes who are from or represent that state. If you genuinely cannot find any, you may include national-level athletes and note their home state.
+- Do NOT include the same athlete twice. Do NOT include international athletes who are not Indian.
+
+For each real athlete you find, report:
+${schemaBullets(type)}
+
+You can answer in plain text, bullet points, or any format — just make sure every fact
+is something you actually found through search, not recalled from memory or guessed.
+If you find nothing credible, say so plainly — "I could not find verifiable athletes for this sport from this state."`;
+  }
 
   if (type === "tournament") {
     return `Use Google Search to research REAL, CURRENTLY ACTIVE ${ctx.sportName} tournaments in
@@ -359,6 +401,33 @@ async function upsertUniversities(
   }
 }
 
+async function upsertStories(
+  sportSlug: string,
+  items: any[],
+  sourceUrls: string[],
+) {
+  for (const item of items) {
+    if (!item?.name) continue;
+    await AthleteStory.findOneAndUpdate(
+      { sportSlug, name: item.name },
+      {
+        $set: {
+          location: item.location || "",
+          achievement: item.achievement || "",
+          quote: item.quote || "",
+          parentNote: item.parentNote || "",
+          level: Number(item.level) || 1,
+          tags: Array.isArray(item.tags) ? item.tags : [],
+          isAiGenerated: true,
+          sourceUrls,
+          lastScrapedAt: new Date(),
+        },
+      },
+      { upsert: true, new: true },
+    );
+  }
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export class RealDataScraperService {
@@ -407,6 +476,13 @@ export class RealDataScraperService {
     return result.items.length;
   }
 
+  async scrapeStoriesForSport(ctx: ScrapeContext): Promise<number> {
+    if (!this.genAI) return 0;
+    const result = await extractWithGrounding(this.genAI, "story", ctx);
+    await upsertStories(ctx.sportSlug, result.items, result.sourceUrls);
+    return result.items.length;
+  }
+
   /**
    * Scrapes all three entity types for one sport in parallel. Used for
    * manual/admin "refresh this sport now" actions.
@@ -415,19 +491,21 @@ export class RealDataScraperService {
     tournaments: number;
     scholarships: number;
     universities: number;
+    stories: number;
   }> {
     if (!this.genAI) {
       console.warn(
         "[RealDataScraperService] No GEMINI_API_KEY/GOOGLE_API_KEY set — skipping.",
       );
-      return { tournaments: 0, scholarships: 0, universities: 0 };
+      return { tournaments: 0, scholarships: 0, universities: 0, stories: 0 };
     }
 
-    const [tournamentResult, scholarshipResult, universityResult] =
+    const [tournamentResult, scholarshipResult, universityResult, storyResult] =
       await Promise.all([
         extractWithGrounding(this.genAI, "tournament", ctx),
         extractWithGrounding(this.genAI, "scholarship", ctx),
         extractWithGrounding(this.genAI, "university", ctx),
+        extractWithGrounding(this.genAI, "story", ctx),
       ]);
 
     const dedupedTournamentItems = dedupeTournamentItems(
@@ -449,11 +527,17 @@ export class RealDataScraperService {
       universityResult.items,
       universityResult.sourceUrls,
     );
+    await upsertStories(
+      ctx.sportSlug,
+      storyResult.items,
+      storyResult.sourceUrls,
+    );
 
     return {
       tournaments: dedupedTournamentItems.length,
       scholarships: scholarshipResult.items.length,
       universities: universityResult.items.length,
+      stories: storyResult.items.length,
     };
   }
 }

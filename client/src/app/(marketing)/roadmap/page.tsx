@@ -768,8 +768,10 @@ function StoriesTab({ sportName, levels, stories }: { sportName: string; levels:
         {displayStories.length === 0 ? (
           <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-10 text-center">
             <MessageSquareQuote className="mx-auto mb-3 h-8 w-8 text-slate-200" />
-            <p className="text-sm font-medium text-slate-500">No stories verified for this level yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Check back later as our team reviews more family accounts.</p>
+            <p className="text-sm font-medium text-slate-500">Finding athlete stories…</p>
+            <p className="text-xs text-slate-400 mt-1">
+              We're compiling real journeys from Indian athletes in this sport. Check back in a moment.
+            </p>
           </div>
         ) : (
           displayStories.map((story) => {
@@ -785,8 +787,17 @@ function StoriesTab({ sportName, levels, stories }: { sportName: string; levels:
                       {levels.find((l) => l.level === story.level)?.label ?? `Level ${story.level}`}
                     </span>
                     <div className="flex items-center gap-1">
-                      <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className="text-[10px] font-bold text-emerald-600">Verified</span>
+                      {story.isAiGenerated ? (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 text-slate-400" />
+                          <span className="text-[10px] font-bold text-slate-400">AI-compiled</span>
+                        </>
+                      ) : (
+                        <>
+                          <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
+                          <span className="text-[10px] font-bold text-emerald-600">Verified</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   {/* Quote */}
@@ -2421,12 +2432,16 @@ function PathwayExplorerSection() {
       if (result && activeTab === "inspire") {
         const macroLevels = groupLevelsIntoMacro(result.pathway.levels);
         const selectedMacroLevel = macroLevels[activeIdx] || macroLevels[0];
-        const fetchedStories = await pathwayProfileApi.getStories(result.pathway.sportSlug, selectedMacroLevel.representativeRawLevel);
+        const fetchedStories = await pathwayProfileApi.getStories(
+          result.pathway.sportSlug,
+          undefined,
+          selectedState || undefined
+        );
         setDbStories(fetchedStories);
       }
     };
     fetchStories();
-  }, [result, activeTab, activeIdx]);
+  }, [result, activeTab, activeIdx, selectedState]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;

@@ -20,6 +20,8 @@ export interface AthleteStory {
   quote: string;
   parentNote: string;
   tags: string[];
+  isAiGenerated?: boolean;
+  sourceUrls?: string[];
 }
 
 export const pathwayProfileApi = {
@@ -41,10 +43,11 @@ export const pathwayProfileApi = {
     }
   },
 
-  getStories: async (sport: string, level?: number): Promise<AthleteStory[]> => {
+  getStories: async (sport: string, level?: number, state?: string): Promise<AthleteStory[]> => {
     try {
       let url = `/pathways/stories?sport=${encodeURIComponent(sport)}`;
       if (level) url += `&level=${level}`;
+      if (state) url += `&state=${encodeURIComponent(state)}`;
       const resp = await axiosInstance.get<{ success: boolean; data: AthleteStory[] }>(url);
       return resp.data.data ?? [];
     } catch {

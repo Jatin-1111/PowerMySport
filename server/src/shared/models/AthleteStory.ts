@@ -9,6 +9,9 @@ export interface AthleteStoryDocument extends Document {
   quote: string;
   parentNote: string;
   tags: string[];
+  isAiGenerated: boolean;
+  sourceUrls: string[];
+  lastScrapedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +26,9 @@ const athleteStorySchema = new Schema<AthleteStoryDocument>(
     quote: { type: String, required: true },
     parentNote: { type: String, required: true },
     tags: [{ type: String }],
+    isAiGenerated: { type: Boolean, default: true },
+    sourceUrls: { type: [String], default: [] },
+    lastScrapedAt: { type: Date },
   },
   { timestamps: true }
 );
