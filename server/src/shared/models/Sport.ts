@@ -6,6 +6,11 @@ export interface SportDocument extends Document {
   slug: string; // lowercase, hyphenated version for searching
   description?: string;
   category?: string; // e.g., "Ball Sports", "Racquet Sports", "Team Sports", etc.
+  attributes?: {
+    interactionType: "individual" | "team" | "head-to-head";
+    demand: "precision" | "power" | "endurance" | "reflex" | "strategy" | "flexibility";
+    contactLevel: "none" | "low" | "high";
+  };
   isVerified: boolean; // true if added through system verification, false if admin-added
   verifiedAt?: Date;
   addedBy?: mongoose.Types.ObjectId; // Coach who requested this sport
@@ -46,6 +51,14 @@ const sportSchema = new Schema<SportDocument>(
         "Other",
       ],
       default: "Other",
+    },
+    attributes: {
+      type: {
+        interactionType: { type: String, enum: ["individual", "team", "head-to-head"] },
+        demand: { type: String, enum: ["precision", "power", "endurance", "reflex", "strategy", "flexibility"] },
+        contactLevel: { type: String, enum: ["none", "low", "high"] },
+      },
+      default: undefined,
     },
     isVerified: {
       type: Boolean,

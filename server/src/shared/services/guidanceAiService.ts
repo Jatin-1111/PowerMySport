@@ -321,8 +321,10 @@ For each of these 3 sports, using ONLY the provided pathway data, write 3 short 
 
 WRITE IN THE SIMPLEST POSSIBLE ENGLISH — short sentences, common everyday words only (say 'help' not 'facilitate', 'need' not 'require'). No sport-federation acronyms without explaining them. Each bullet max 12-15 words. If a reason needs a caveat to make sense, cut it — it isn't simple enough yet.
 
-For any sport where hasGeneratedPathway is false, you have NO cost or talent-signal data — do not invent numbers or specifics for it. Write reasons based ONLY on category and personality fit (e.g. 'This is an individual, precision-focused sport that suits your child's Focused and Patient traits'). Set monthlyCostRange and keyTalentSignal to null.
+For any sport where hasGeneratedPathway is false, you have NO cost or talent-signal data — do not invent numbers or specifics for it. Ground each reason in that sport's sportDescription and attributes fields — reference the specific trait/motion/demand named there. Do not use the word 'individual', 'team', or the raw category name as the reason itself; name the concrete thing from sportDescription instead. Set monthlyCostRange and keyTalentSignal to null.
 For sports where hasGeneratedPathway is true, return the monthlyCostRange and one keyTalentSignal taken directly from the pathway data.
+
+Before finalizing, check each reason: if it could be copy-pasted onto a different sport in the same category by only swapping the sport name, rewrite it using a fact from sportDescription, keyFocus, or mentalSkillsFocus that is unique to this sport.
 
 Keep matchScore identical to the provided grounding context.
 

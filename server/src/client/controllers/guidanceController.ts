@@ -504,19 +504,19 @@ export const downloadGuidanceReportPdf = async (
   }
 };
 
-const getCategoryScore = (tags: string[], category?: string): number => {
-  if (!category) return 0;
+const getCategoryScore = (tags: string[], attributes?: any): number => {
+  if (!attributes) return 0;
   let score = 0;
-  const c = category.toLowerCase();
+  
   for (const tag of tags) {
     const t = tag.toLowerCase();
-    if (t === "competitive" && (c.includes("individual") || c.includes("racquet") || c.includes("combat") || c.includes("water") || c.includes("winter") || c.includes("ball"))) score += 1;
-    if (t === "social" && (c.includes("team") || c.includes("ball"))) score += 2;
-    if (t === "team-oriented" && (c.includes("team") || c.includes("ball"))) score += 2;
-    if (t === "shy" && (c.includes("individual") || c.includes("fitness") || c.includes("water"))) score += 2;
-    if (t === "energetic" && (c.includes("ball") || c.includes("combat") || c.includes("team") || c.includes("racquet"))) score += 1;
-    if (t === "focused" && (c.includes("individual") || c.includes("racquet") || c.includes("target") || c.includes("combat"))) score += 2;
-    if (t === "patient" && (c.includes("individual") || c.includes("target") || c.includes("fitness"))) score += 1;
+    if (t === "competitive" && attributes.interactionType === "head-to-head") score += 1;
+    if (t === "social" && attributes.interactionType === "team") score += 2;
+    if (t === "team-oriented" && attributes.interactionType === "team") score += 2;
+    if (t === "shy" && attributes.interactionType === "individual") score += 2;
+    if (t === "energetic" && (attributes.demand === "power" || attributes.demand === "reflex" || attributes.demand === "endurance")) score += 1;
+    if (t === "focused" && (attributes.demand === "precision" || attributes.demand === "strategy")) score += 2;
+    if (t === "patient" && (attributes.demand === "strategy" || attributes.demand === "precision" || attributes.demand === "flexibility")) score += 1;
     if (t === "curious") score += 1; // inquisitive for anything
   }
   return score;
@@ -590,7 +590,7 @@ export const recommendSport = async (req: Request, res: Response): Promise<void>
       let score = 0;
       
       // Calculate category score (works without pathway data)
-      score += getCategoryScore(parsed.data.personality_tags, sport.category);
+      score += getCategoryScore(parsed.data.personality_tags, sport.attributes);
       
       // Check if we have pathway data for this sport in this state
       const p = pathwayBySlug.get(sport.slug);
@@ -621,6 +621,11 @@ export const recommendSport = async (req: Request, res: Response): Promise<void>
         sportName: sport.name,
         matchScore: normalizedScore,
         category: sport.category || "Other",
+        sportDescription: sport.description || "",
+        attributes: sport.attributes || null,
+        keyFocus: level1?.keyFocus || null,
+        mentalSkillsFocus: level1?.mentalSkillsFocus || null,
+        levelDescription: level1?.description || null,
         talentSignals: level1?.talentSignals ? JSON.stringify(level1.talentSignals) : "None",
         equipmentCost: equip1?.estimatedCost || "Unknown",
         overview: overview,
