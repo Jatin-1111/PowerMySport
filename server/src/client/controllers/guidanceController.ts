@@ -565,20 +565,16 @@ export const recommendSport = async (req: Request, res: Response): Promise<void>
     }
     
     // Step A: Rule-based ranking
-    const allPathways = await SportPathway.find({}).lean();
+    const stateSlug = parsed.data.location.toLowerCase().replace(/\s+/g, "-");
+    const allPathways = await SportPathway.find({
+      cacheKey: { $regex: new RegExp(`_${stateSlug}$`, "i") }
+    }).lean();
     
-    // Filter to unique sports (since we might have state-specific variants, pick the generic one or the requested state)
     const sportMap = new Map<string, any>();
     for (const p of allPathways) {
       const pAny = p as any;
       if (!pAny.sportSlug) continue;
-      
-      const isRequestedState = pAny.cacheKey && pAny.cacheKey.endsWith(`_${parsed.data.location.toLowerCase().replace(/\s+/g, "-")}`);
-      const isGeneric = pAny.cacheKey && pAny.cacheKey.endsWith("_any");
-      
-      if (isRequestedState || isGeneric || !sportMap.has(pAny.sportSlug)) {
-        sportMap.set(pAny.sportSlug, pAny);
-      }
+      sportMap.set(pAny.sportSlug, pAny);
     }
     
     const sports = Array.from(sportMap.values());
@@ -601,10 +597,13 @@ export const recommendSport = async (req: Request, res: Response): Promise<void>
         score += getAgeScore(parsed.data.child_age, level1.ageRange);
       }
       
+      const MAX_POSSIBLE_SCORE = 10;
+      const normalizedScore = Math.max(0, Math.min(100, Math.round((score / MAX_POSSIBLE_SCORE) * 100)));
+      
       return {
         sportSlug: s.sportSlug,
         sportName: s.sportName,
-        matchScore: score,
+        matchScore: normalizedScore,
         category: s.category || "Other",
         talentSignals: level1?.talentSignals ? JSON.stringify(level1.talentSignals) : "None",
         equipmentCost: equip1?.estimatedCost || "Unknown",

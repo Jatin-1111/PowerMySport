@@ -26,7 +26,7 @@ interface SportMatchModalProps {
   onClose: () => void;
   playerProfile?: PlayerProfile | null;
   dependents?: PlayerProfile[];
-  onExplore: (sportName: string) => void;
+  onExplore: (sportName: string, dependentId?: string) => void;
 }
 
 export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, onExplore }: SportMatchModalProps) {
@@ -48,6 +48,8 @@ export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, on
     personality_tags: [] as string[]
   });
   const [qStep, setQStep] = useState(1);
+  const [inlineAge, setInlineAge] = useState("");
+  const [inlineLocation, setInlineLocation] = useState("");
 
   // Check if we have data on open
   useEffect(() => {
@@ -432,31 +434,86 @@ export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, on
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => {
-                    if (playerProfile) {
-                      onClose();
-                    } else {
-                      setSelectedDependent(null);
-                      setStep("select_dependent");
-                    }
-                  }}>
-                    {playerProfile ? "Cancel" : "Back"}
-                  </Button>
-                  <Button variant="primary" onClick={() => {
-                    const pAge = selectedDependent.age || (selectedDependent.dob ? Math.floor((new Date().getTime() - new Date(selectedDependent.dob).getTime()) / 31557600000) : 8);
-                    fetchRecommendations({
-                      child_age: pAge,
-                      location: selectedDependent.location || "Maharashtra",
-                      primary_objective: selectedDependent.primaryObjective || "Recreational",
-                      budget_tier: selectedDependent.budgetTier || "Moderate",
-                      personality_tags: selectedDependent.personalityTags?.length ? selectedDependent.personalityTags : ["Energetic"],
-                    });
-                  }}>
-                    Find Matches <Sparkles className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
+
+                {/* Inline prompts for missing data */}
+                {(() => {
+                  const hasAge = selectedDependent.age || selectedDependent.dob;
+                  const hasLocation = !!selectedDependent.location;
+                  const needsAge = !hasAge;
+                  const needsLocation = !hasLocation;
+                  const isBlocked = (needsAge && !inlineAge) || (needsLocation && !inlineLocation);
+
+                  return (
+                    <>
+                      {(needsAge || needsLocation) && (
+                        <div className="mb-8 rounded-2xl bg-orange-50 border border-orange-100 p-5">
+                          <div className="flex items-start gap-3 mb-4">
+                            <Activity className="h-5 w-5 text-power-orange mt-0.5" />
+                            <div>
+                              <p className="text-sm font-bold text-slate-900">Missing Information</p>
+                              <p className="text-xs text-slate-600">We need a bit more info to find the right sport.</p>
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            {needsAge && (
+                              <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">What is {selectedDependent.name}'s age?</label>
+                                <input 
+                                  type="number" 
+                                  min="3" max="21"
+                                  className="w-full rounded-xl border-slate-200 px-4 py-2 focus:border-power-orange focus:ring-power-orange"
+                                  value={inlineAge}
+                                  onChange={e => setInlineAge(e.target.value)}
+                                />
+                              </div>
+                            )}
+                            {needsLocation && (
+                              <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1">Which state are you in?</label>
+                                <select 
+                                  className="w-full rounded-xl border-slate-200 px-4 py-2 focus:border-power-orange focus:ring-power-orange"
+                                  value={inlineLocation}
+                                  onChange={e => setInlineLocation(e.target.value)}
+                                >
+                                  <option value="">Select state...</option>
+                                  {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => {
+                          if (playerProfile) {
+                            onClose();
+                          } else {
+                            setSelectedDependent(null);
+                            setStep("select_dependent");
+                          }
+                        }}>
+                          {playerProfile ? "Cancel" : "Back"}
+                        </Button>
+                        <Button variant="primary" disabled={isBlocked} onClick={() => {
+                          const pAge = selectedDependent.age || (selectedDependent.dob ? Math.floor((new Date().getTime() - new Date(selectedDependent.dob).getTime()) / 31557600000) : null);
+                          const finalAge = pAge || parseInt(inlineAge);
+                          const finalLocation = selectedDependent.location || inlineLocation;
+                          
+                          fetchRecommendations({
+                            child_age: finalAge,
+                            location: finalLocation,
+                            primary_objective: selectedDependent.primaryObjective || "Recreational",
+                            budget_tier: selectedDependent.budgetTier || "Moderate",
+                            personality_tags: selectedDependent.personalityTags?.length ? selectedDependent.personalityTags : ["Energetic"],
+                          });
+                        }}>
+                          Find Matches <Sparkles className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -464,56 +521,63 @@ export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, on
 
             {step === "results" && (
               <div className="space-y-6">
+                {recommendations.length > 0 && recommendations[0].matchScore < 30 ? (
+                  <div className="text-center mb-6">
+                    <h3 className="font-title text-xl font-bold text-slate-900 mb-2">We don't have a strong match yet</h3>
+                    <p className="text-sm text-slate-500">Here are some options to explore based on the data we have.</p>
+                  </div>
+                ) : (
+                  <div className="text-center mb-6">
+                    <h3 className="font-title text-xl font-bold text-slate-900 mb-2">Your Top Matches</h3>
+                    <p className="text-sm text-slate-500">Based on your profile, these are the best sports to pursue.</p>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {recommendations.map((rec, i) => (
                     <div key={rec.sportSlug} className="flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition">
                       <div className={`p-4 ${i === 0 ? 'bg-orange-50 border-b border-orange-100' : 'bg-slate-50 border-b border-slate-100'}`}>
                         <div className="flex items-center justify-between mb-1">
                           <h3 className="font-title text-xl font-bold text-slate-900">{rec.sportName}</h3>
-                          {i === 0 && (
+                          {i === 0 && rec.matchScore >= 30 && (
                             <span className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-bold text-power-orange">Top Match</span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500 font-medium">Match Score: {rec.matchScore}</p>
+                        <p className="text-xs text-slate-500 font-medium">Match Score: {rec.matchScore}%</p>
                       </div>
                       
                       <div className="p-5 flex-1 flex flex-col gap-4">
                         <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Why it fits</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Why this sport?</p>
                           <ul className="space-y-2">
-                            {rec.reasons.map((r, j) => (
-                              <li key={j} className="text-sm text-slate-700 flex items-start gap-2">
-                                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-power-orange" />
-                                <span>{r}</span>
+                            {rec.reasons.map((r, ri) => (
+                              <li key={ri} className="flex items-start gap-2 text-sm text-slate-600">
+                                <div className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-power-orange" />
+                                {r}
                               </li>
                             ))}
                           </ul>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-slate-100">
+                        <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
                           <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                              <Wallet className="h-3 w-3" /> Cost/Mo
-                            </p>
-                            <p className="text-xs font-semibold text-slate-700">{rec.monthlyCostRange}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Wallet className="h-3 w-3" /> Cost/mo</p>
+                            <p className="text-sm font-semibold text-slate-800">{rec.monthlyCostRange}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                              <Activity className="h-3 w-3" /> Talent Sign
-                            </p>
-                            <p className="text-xs font-semibold text-slate-700 truncate" title={rec.keyTalentSignal}>{rec.keyTalentSignal}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Activity className="h-3 w-3" /> Key Trait</p>
+                            <p className="text-sm font-semibold text-slate-800 line-clamp-2">{rec.keyTalentSignal}</p>
                           </div>
                         </div>
                         
-                        <Button
-                          variant={i === 0 ? "primary" : "secondary"}
-                          className="w-full mt-2"
+                        <Button 
+                          variant={i === 0 ? "primary" : "outline"} 
+                          className="w-full mt-2" 
                           onClick={() => {
-                            onExplore(rec.sportName);
-                            onClose();
+                            onExplore(rec.sportName, selectedDependent?._id);
                           }}
                         >
-                          Explore {rec.sportName}'s Roadmap
+                          Explore Pathway <ChevronRight className="ml-1 h-4 w-4" />
                         </Button>
                       </div>
                     </div>

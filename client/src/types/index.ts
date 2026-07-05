@@ -2,7 +2,7 @@
 // USER & AUTH TYPES
 // ============================================
 export interface IPlayerProfile {
-  sports?: string[];
+  sportsFocus?: string[];
   yearsPlaying?: number;
   personalityTags?: string[];
   primaryObjective?: "Recreational" | "Fitness" | "Compete";
@@ -63,7 +63,7 @@ export interface Dependent {
   age?: number;
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
-  sports?: string[];
+  sportsFocus?: string[];
   yearsPlaying?: number;
   personalityTags?: string[];
   primaryObjective?: "Recreational" | "Fitness" | "Compete";

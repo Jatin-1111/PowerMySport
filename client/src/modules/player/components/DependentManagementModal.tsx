@@ -25,7 +25,7 @@ interface Dependent {
   dob: string | Date;
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
-  sports?: string[];
+  sportsFocus?: string[];
   yearsPlaying?: number;
   personalityTags?: string[];
   primaryObjective?: "Recreational" | "Fitness" | "Compete";
@@ -48,7 +48,7 @@ const EMPTY_FORM: Dependent = {
   dob: "",
   gender: "MALE",
   relation: DEFAULT_DEPENDENT_RELATION,
-  sports: [],
+  sportsFocus: [],
   personalityTags: [],
   primaryObjective: "Recreational",
   weeklyTimeCommitment: 3,
@@ -287,8 +287,8 @@ export default function DependentManagementModal({
         >
           <ProfileEditField label="Sports">
             <SportsMultiSelect
-              value={formData.sports || []}
-              onChange={(sports) => handleChange("sports", sports)}
+              value={formData.sportsFocus || []}
+              onChange={(sports) => handleChange("sportsFocus", sports)}
             />
           </ProfileEditField>
 
@@ -313,9 +313,9 @@ export default function DependentManagementModal({
             />
           </ProfileEditField>
 
-          {(formData.sports?.length ?? 0) > 0 && (
+          {(formData.sportsFocus?.length ?? 0) > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {formData.sports?.map((sport) => (
+              {formData.sportsFocus?.map((sport) => (
                 <Badge
                   key={sport}
                   className="border-orange-200 bg-white text-orange-700 hover:bg-white"

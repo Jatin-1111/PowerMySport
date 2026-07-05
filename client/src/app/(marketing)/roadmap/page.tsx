@@ -2386,8 +2386,10 @@ function PathwayExplorerSection() {
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
   const [isMatchModalCollapsed, setIsMatchModalCollapsed] = useState(false);
   const [previewSport, setPreviewSport] = useState<string | null>(null);
+  const [previewSportDependentId, setPreviewSportDependentId] = useState<string | null>(null);
   const [isSavingSport, setIsSavingSport] = useState(false);
   const [showReengagePrompt, setShowReengagePrompt] = useState(false);
+  const hasShownReengageRef = useRef(false);
 
   const searchParams = useSearchParams();
   const [contextBanner, setContextBanner] = useState<{ age: string; budget: string; state: string } | null>(null);
@@ -2426,13 +2428,14 @@ function PathwayExplorerSection() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isMatchModalCollapsed && activeIdx >= 1 && !showReengagePrompt) {
+    if (isMatchModalCollapsed && activeIdx >= 1 && !hasShownReengageRef.current) {
       timer = setTimeout(() => {
         setShowReengagePrompt(true);
+        hasShownReengageRef.current = true;
       }, 4000);
     }
     return () => clearTimeout(timer);
-  }, [isMatchModalCollapsed, activeIdx, showReengagePrompt]);
+  }, [isMatchModalCollapsed, activeIdx]);
 
   const handleSavedChange = (items: SavedItem[]) => {
     setSavedItems(items);
@@ -3070,7 +3073,7 @@ function PathwayExplorerSection() {
               {/* Header logic */}
               {result ? (
                 <>
-                  {previewSport === result.pathway.sportName && user?.dependents?.[0] && (
+                  {previewSport === result.pathway.sportName && previewSportDependentId && (
                     <div className="mb-4 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                         <Target className="h-5 w-5" />
@@ -3080,24 +3083,26 @@ function PathwayExplorerSection() {
                           Is {previewSport} the one?
                         </p>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          Save to {user.dependents[0].name}'s profile to track progress.
+                          Save to profile to track progress.
                         </p>
                       </div>
                       <button
                         disabled={isSavingSport}
                         onClick={async () => {
-                          const targetDep = user.dependents![0];
-                          if (!targetDep._id) return;
+                          const targetDep = user?.dependents?.find(d => d._id === previewSportDependentId);
+                          if (!targetDep || !targetDep._id) return;
                           setIsSavingSport(true);
                           try {
-                            const current = targetDep.sports || [];
+                            const current = targetDep.sportsFocus || [];
                             if (!current.includes(previewSport!)) {
-                              await authApi.updateDependent(targetDep._id, { sports: [...current, previewSport!] });
+                              await authApi.updateDependent(targetDep._id, { sportsFocus: [...current, previewSport!] });
                               toast.success(`Saved to ${targetDep.name}'s profile`);
                               setPreviewSport(null);
+                              setPreviewSportDependentId(null);
                             } else {
                               toast.success(`Already in ${targetDep.name}'s profile`);
                               setPreviewSport(null);
+                              setPreviewSportDependentId(null);
                             }
                           } catch (e) {
                             toast.error("Failed to save sport");
@@ -4024,12 +4029,14 @@ function PathwayExplorerSection() {
           isOpen={isMatchModalOpen}
           onClose={() => setIsMatchModalOpen(false)}
           dependents={(user?.dependents as any) || undefined}
-          onExplore={(sportName) => {
+          onExplore={(sportName, dependentId) => {
             setIsMatchModalOpen(false);
             setPreviewSport(sportName);
+            if (dependentId) setPreviewSportDependentId(dependentId);
             handleSearch(sportName);
             // Part 4: collapse to draggable icon
             setIsMatchModalCollapsed(true);
+            hasShownReengageRef.current = false;
           }}
         />
 

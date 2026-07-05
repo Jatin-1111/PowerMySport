@@ -41,7 +41,7 @@ export const authApi = {
     dob?: string | Date;
     userType?: string;
     playerProfile?: {
-      sports?: string[];
+      sportsFocus?: string[];
       yearsPlaying?: number;
       personalityTags?: string[];
       primaryObjective?: "Recreational" | "Fitness" | "Compete";
@@ -125,7 +125,7 @@ export const authApi = {
     dob: string | Date;
     gender?: "MALE" | "FEMALE" | "OTHER";
     relation?: string;
-    sports?: string[];
+    sportsFocus?: string[];
     yearsPlaying?: number;
     personalityTags?: string[];
     primaryObjective?: "Recreational" | "Fitness" | "Compete";
@@ -144,7 +144,7 @@ export const authApi = {
       dob?: string | Date;
       gender?: "MALE" | "FEMALE" | "OTHER";
       relation?: string;
-      sports?: string[];
+      sportsFocus?: string[];
       yearsPlaying?: number;
       personalityTags?: string[];
       primaryObjective?: "Recreational" | "Fitness" | "Compete";
