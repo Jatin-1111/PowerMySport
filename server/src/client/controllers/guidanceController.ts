@@ -4,8 +4,11 @@ import PDFDocument from "pdfkit";
 import {
   generateYouthSportsGuidance,
   guidanceRequestSchema,
+  sportMatchRequestSchema,
+  generateSportMatchRecommendation,
 } from "../../shared/services/guidanceAiService";
 import { GuidanceSubmission } from "../models/GuidanceSubmission";
+import { SportPathway } from "../../shared/models/SportPathway";
 
 // ─── Rule-based burnout risk — zero AI cost ───────────────────────────────────
 
@@ -496,6 +499,141 @@ export const downloadGuidanceReportPdf = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to generate report",
+    });
+  }
+};
+
+const getCategoryScore = (tags: string[], category?: string): number => {
+  if (!category) return 0;
+  let score = 0;
+  const c = category.toLowerCase();
+  for (const tag of tags) {
+    const t = tag.toLowerCase();
+    if (t === "competitive" && (c.includes("individual") || c.includes("racquet") || c.includes("combat") || c.includes("water") || c.includes("winter") || c.includes("ball"))) score += 1;
+    if (t === "social" && (c.includes("team") || c.includes("ball"))) score += 2;
+    if (t === "team-oriented" && (c.includes("team") || c.includes("ball"))) score += 2;
+    if (t === "shy" && (c.includes("individual") || c.includes("fitness") || c.includes("water"))) score += 2;
+    if (t === "energetic" && (c.includes("ball") || c.includes("combat") || c.includes("team") || c.includes("racquet"))) score += 1;
+    if (t === "focused" && (c.includes("individual") || c.includes("racquet") || c.includes("target") || c.includes("combat"))) score += 2;
+    if (t === "patient" && (c.includes("individual") || c.includes("target") || c.includes("fitness"))) score += 1;
+    if (t === "curious") score += 1; // inquisitive for anything
+  }
+  return score;
+};
+
+const getBudgetScore = (budget: string, costStr: string): number => {
+  if (!costStr) return 0;
+  const nums = costStr.replace(/,/g, "").match(/\d+/g);
+  let avg = 0;
+  if (nums && nums.length > 0) {
+    const parsed = nums.map(Number);
+    avg = parsed.reduce((a, b) => a + b, 0) / parsed.length;
+  } else {
+    return 0; // cannot parse
+  }
+  const b = budget.toLowerCase();
+  if (b === "budget") {
+    if (avg <= 8000) return 2;
+    if (avg > 20000) return -2;
+  } else if (b === "moderate") {
+    if (avg >= 5000 && avg <= 30000) return 2;
+  } else if (b === "premium") {
+    if (avg > 15000) return 2;
+  }
+  return 0;
+};
+
+const getAgeScore = (age: number, rangeStr: string): number => {
+  if (!rangeStr) return 0;
+  const nums = rangeStr.match(/\d+/g);
+  if (nums && nums.length >= 2) {
+    const min = Number(nums[0]);
+    const max = Number(nums[1]);
+    if (age >= min && age <= max) return 2;
+    if (age < min) return -1;
+    if (age > max + 3) return -1;
+  }
+  return 0;
+};
+
+export const recommendSport = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const parsed = sportMatchRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, message: "Invalid payload", issues: parsed.error.flatten() });
+      return;
+    }
+    
+    // Step A: Rule-based ranking
+    const allPathways = await SportPathway.find({}).lean();
+    
+    // Filter to unique sports (since we might have state-specific variants, pick the generic one or the requested state)
+    const sportMap = new Map<string, any>();
+    for (const p of allPathways) {
+      const pAny = p as any;
+      if (!pAny.sportSlug) continue;
+      
+      const isRequestedState = pAny.cacheKey && pAny.cacheKey.endsWith(`_${parsed.data.location.toLowerCase().replace(/\s+/g, "-")}`);
+      const isGeneric = pAny.cacheKey && pAny.cacheKey.endsWith("_any");
+      
+      if (isRequestedState || isGeneric || !sportMap.has(pAny.sportSlug)) {
+        sportMap.set(pAny.sportSlug, pAny);
+      }
+    }
+    
+    const sports = Array.from(sportMap.values());
+    if (sports.length === 0) {
+      res.status(404).json({ success: false, message: "No sports available" });
+      return;
+    }
+
+    const scoredSports = sports.map((s) => {
+      let score = 0;
+      
+      const level1 = s.levels && s.levels.length > 0 ? s.levels[0] : null;
+      const equip1 = s.equipment && s.equipment.length > 0 ? s.equipment[0] : null;
+      
+      score += getCategoryScore(parsed.data.personality_tags, s.category);
+      if (equip1 && equip1.estimatedCost) {
+        score += getBudgetScore(parsed.data.budget_tier, equip1.estimatedCost);
+      }
+      if (level1 && level1.ageRange) {
+        score += getAgeScore(parsed.data.child_age, level1.ageRange);
+      }
+      
+      return {
+        sportSlug: s.sportSlug,
+        sportName: s.sportName,
+        matchScore: score,
+        category: s.category || "Other",
+        talentSignals: level1?.talentSignals ? JSON.stringify(level1.talentSignals) : "None",
+        equipmentCost: equip1?.estimatedCost || "Unknown",
+        overview: s.overview || "",
+      };
+    });
+    
+    scoredSports.sort((a, b) => b.matchScore - a.matchScore);
+    const top3 = scoredSports.slice(0, 3);
+    
+    // Step B: Grounded AI Call
+    const recommendationResponse = await generateSportMatchRecommendation(parsed.data, top3);
+    
+    res.status(200).json({
+      success: true,
+      data: recommendationResponse,
+    });
+  } catch (error) {
+    let errorMessage = error instanceof Error ? error.message : "Failed to generate recommendation";
+    const normalizedMessage = errorMessage.toLowerCase();
+    const isTemporarilyUnavailable =
+      normalizedMessage.includes("quota") ||
+      normalizedMessage.includes("rate limit") ||
+      normalizedMessage.includes("too many requests") ||
+      normalizedMessage.includes("temporarily unavailable");
+
+    res.status(isTemporarilyUnavailable ? 503 : 500).json({
+      success: false,
+      message: errorMessage,
     });
   }
 };

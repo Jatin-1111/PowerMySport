@@ -261,3 +261,113 @@ export const generateYouthSportsGuidance = async (
     )}. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
   );
 };
+
+export const sportMatchRequestSchema = z.object({
+  personality_tags: z.array(z.string()),
+  primary_objective: z.string(),
+  budget_tier: z.string(),
+  child_age: z.number(),
+  location: z.string(),
+});
+
+export const sportMatchRecommendationSchema = z.object({
+  recommendations: z.array(
+    z.object({
+      sportSlug: z.string(),
+      sportName: z.string(),
+      matchScore: z.number(),
+      reasons: z.array(z.string()).length(3),
+      monthlyCostRange: z.string(),
+      keyTalentSignal: z.string(),
+    })
+  ),
+});
+
+export type SportMatchRequest = z.infer<typeof sportMatchRequestSchema>;
+export type SportMatchResponse = z.infer<typeof sportMatchRecommendationSchema>;
+
+export const generateSportMatchRecommendation = async (
+  request: SportMatchRequest,
+  topSports: Array<{
+    sportSlug: string;
+    sportName: string;
+    matchScore: number;
+    category: string;
+    talentSignals: string;
+    equipmentCost: string;
+    overview: string;
+  }>
+): Promise<SportMatchResponse> => {
+  const genAI = getGuidanceClient();
+  let lastError: unknown = null;
+  let sawQuotaIssue = false;
+
+  const groundingData = JSON.stringify(topSports, null, 2);
+
+  const systemPrompt = `You are an expert Indian sports development consultant advising a parent who is unsure what sport their child should play.
+You will receive context about 3 recommended sports and the child's profile.
+
+CHILD PROFILE:
+Age: ${request.child_age}
+Personality: ${request.personality_tags.join(", ")}
+Objective: ${request.primary_objective}
+
+GROUNDING CONTEXT (3 SPORTS):
+${groundingData}
+
+INSTRUCTIONS:
+For each of these 3 sports, using ONLY the provided pathway data, write 3 short bullets explaining why THIS sport fits THIS child's personality_tags and primary_objective — name the child's actual traits (e.g. 'Your child's Focused and Patient traits suit archery's precision demands'), not generic sport praise. Never invent facts not present in the provided data.
+
+WRITE IN THE SIMPLEST POSSIBLE ENGLISH — short sentences, common everyday words only (say 'help' not 'facilitate', 'need' not 'require'). No sport-federation acronyms without explaining them. Each bullet max 12-15 words. If a reason needs a caveat to make sense, cut it — it isn't simple enough yet.
+
+Also return the monthly cost range and one talent signal per sport, taken directly from the pathway data, not generated. Keep matchScore identical to the provided grounding context.
+
+Return ONLY a valid JSON object matching this schema exactly:
+{
+  "recommendations": [
+    {
+      "sportSlug": "string",
+      "sportName": "string",
+      "matchScore": number,
+      "reasons": ["string", "string", "string"],
+      "monthlyCostRange": "string",
+      "keyTalentSignal": "string"
+    }
+  ]
+}`;
+
+  for (const modelName of guidanceModelCandidates) {
+    try {
+      const response = await genAI.models.generateContent({
+        model: modelName,
+        contents: "Generate the sport match recommendations.",
+        config: {
+          systemInstruction: systemPrompt,
+          responseMimeType: "application/json",
+          temperature: 0.3,
+        },
+      });
+
+      const rawText = (response.text ?? "").trim();
+      if (!rawText) throw new Error("Empty response from model");
+
+      const parsed = JSON.parse(rawText);
+      return sportMatchRecommendationSchema.parse(parsed);
+    } catch (error) {
+      lastError = error;
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      if (isQuotaOrRateLimitError(errorMessage)) {
+        sawQuotaIssue = true;
+        continue;
+      }
+      if (!isModelUnavailableError(errorMessage)) throw error;
+    }
+  }
+
+  if (sawQuotaIssue) {
+    throw new Error("Guidance generation temporarily unavailable due to quota limits.");
+  }
+  throw new Error(
+    `No supported Gemini model found for sport match. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`
+  );
+};

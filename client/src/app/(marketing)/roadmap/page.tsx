@@ -4,11 +4,9 @@ import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { getCommunityAppUrl } from "@/lib/community/url";
-import {
-  pathwayApi,
-  SportPathway,
-  PathwayLevel,
-} from "@/modules/sports/services/pathway";
+import { pathwayApi, SportPathway, PathwayLevel } from "@/modules/sports/services/pathway";
+import { authApi } from "@/modules/auth/services/auth";
+import { toast } from "@/lib/toast";
 import { sportsApi, Sport } from "@/modules/sports/services/sports";
 import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
 import { TournamentModal } from "@/modules/sports/components/TournamentDetailModal";
@@ -16,6 +14,7 @@ import { TournamentRecommendationPanel } from "@/modules/sports/components/Tourn
 import { pathwayProfileApi, AthleteStory } from "@/modules/sports/services/pathwayProfileApi";
 import { RoadmapChatDrawer } from "@/modules/sports/components/RoadmapChatDrawer";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
+import { SportMatchModal } from "@/modules/guidance/components/wizard/SportMatchModal";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
   groupLevelsIntoMacro,
@@ -2384,6 +2383,11 @@ function PathwayExplorerSection() {
   const [dbStories, setDbStories] = useState<AthleteStory[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatLoginModalOpen, setChatLoginModalOpen] = useState(false);
+  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
+  const [isMatchModalCollapsed, setIsMatchModalCollapsed] = useState(false);
+  const [previewSport, setPreviewSport] = useState<string | null>(null);
+  const [isSavingSport, setIsSavingSport] = useState(false);
+  const [showReengagePrompt, setShowReengagePrompt] = useState(false);
 
   const searchParams = useSearchParams();
   const [contextBanner, setContextBanner] = useState<{ age: string; budget: string; state: string } | null>(null);
@@ -2419,6 +2423,16 @@ function PathwayExplorerSection() {
     };
     fetchStories();
   }, [result, activeTab, activeIdx]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isMatchModalCollapsed && activeIdx >= 1 && !showReengagePrompt) {
+      timer = setTimeout(() => {
+        setShowReengagePrompt(true);
+      }, 4000);
+    }
+    return () => clearTimeout(timer);
+  }, [isMatchModalCollapsed, activeIdx, showReengagePrompt]);
 
   const handleSavedChange = (items: SavedItem[]) => {
     setSavedItems(items);
@@ -2904,6 +2918,15 @@ function PathwayExplorerSection() {
             className="mt-6 flex flex-col items-center gap-3 px-2"
           >
             <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Popular in India</p>
+            <div className="flex flex-col items-center gap-2">
+
+              <button
+                type="button"
+                onClick={() => setIsMatchModalOpen(true)}
+                className="text-xs font-bold text-power-orange hover:text-orange-600 transition underline underline-offset-2 mb-2 cursor-pointer"
+              >
+                Still confused? Get a recommendation &rarr;
+              </button>
             <div className="flex flex-wrap justify-center gap-2">
               {[
                 "Cricket",
@@ -2923,6 +2946,7 @@ function PathwayExplorerSection() {
                   {s}
                 </button>
               ))}
+            </div>
             </div>
             <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
@@ -3045,7 +3069,49 @@ function PathwayExplorerSection() {
             >
               {/* Header logic */}
               {result ? (
-                <div className="mb-8 rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+                <>
+                  {previewSport === result.pathway.sportName && user?.dependents?.[0] && (
+                    <div className="mb-4 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                        <Target className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">
+                          Is {previewSport} the one?
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Save to {user.dependents[0].name}'s profile to track progress.
+                        </p>
+                      </div>
+                      <button
+                        disabled={isSavingSport}
+                        onClick={async () => {
+                          const targetDep = user.dependents![0];
+                          if (!targetDep._id) return;
+                          setIsSavingSport(true);
+                          try {
+                            const current = targetDep.sports || [];
+                            if (!current.includes(previewSport!)) {
+                              await authApi.updateDependent(targetDep._id, { sports: [...current, previewSport!] });
+                              toast.success(`Saved to ${targetDep.name}'s profile`);
+                              setPreviewSport(null);
+                            } else {
+                              toast.success(`Already in ${targetDep.name}'s profile`);
+                              setPreviewSport(null);
+                            }
+                          } catch (e) {
+                            toast.error("Failed to save sport");
+                          } finally {
+                            setIsSavingSport(false);
+                          }
+                        }}
+                        className="ml-auto rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white hover:bg-emerald-700 transition shadow-sm"
+                      >
+                        {isSavingSport ? "Saving..." : "Yes, save it"}
+                      </button>
+                    </div>
+                  )}
+                  <div className="mb-8 rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-sm sm:p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     {/* Left: name + meta + overview */}
                     <div className="flex-1 min-w-0">
@@ -3162,6 +3228,7 @@ function PathwayExplorerSection() {
                     </div>
                   )}
                 </div>
+                </>
               ) : null}
 
               {/* Tabs */}
@@ -3953,6 +4020,19 @@ function PathwayExplorerSection() {
           />
         )}
 
+        <SportMatchModal
+          isOpen={isMatchModalOpen}
+          onClose={() => setIsMatchModalOpen(false)}
+          dependents={(user?.dependents as any) || undefined}
+          onExplore={(sportName) => {
+            setIsMatchModalOpen(false);
+            setPreviewSport(sportName);
+            handleSearch(sportName);
+            // Part 4: collapse to draggable icon
+            setIsMatchModalCollapsed(true);
+          }}
+        />
+
         {/* Concierge modal — scholarships & universities only */}
         {modalData && (
           <PathwayConciergeModal
@@ -3982,6 +4062,69 @@ function PathwayExplorerSection() {
             <span className="sm:hidden">Ask AI Coach</span>
           </motion.button>
         )}
+
+        {/* Part 4 & 5: Draggable floating icon and re-engage prompt */}
+        <AnimatePresence>
+          {isMatchModalCollapsed && (
+            <motion.div
+              drag
+              dragConstraints={{ left: -100, right: 100, top: -500, bottom: 500 }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="fixed bottom-24 right-5 z-40 sm:bottom-24 sm:right-6 flex flex-col items-end gap-3"
+            >
+              <AnimatePresence>
+                {showReengagePrompt && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                    className="relative w-64 rounded-2xl bg-white p-4 shadow-xl border border-slate-100"
+                  >
+                    <button
+                      onClick={() => setShowReengagePrompt(false)}
+                      className="absolute right-2 top-2 rounded-full p-1 text-slate-400 hover:bg-slate-100 transition"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <p className="text-sm font-bold text-slate-800 mb-1">Want to keep reading?</p>
+                    <p className="text-xs text-slate-500 mb-3">Or compare the other 2 recommended sports.</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowReengagePrompt(false)}
+                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition"
+                      >
+                        Keep Reading
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowReengagePrompt(false);
+                          setIsMatchModalCollapsed(false);
+                          setIsMatchModalOpen(true);
+                        }}
+                        className="flex-1 rounded-lg bg-power-orange px-2 py-1.5 text-[11px] font-bold text-white hover:bg-orange-600 transition shadow-sm"
+                      >
+                        Compare
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <button
+                onClick={() => {
+                  setShowReengagePrompt(false);
+                  setIsMatchModalCollapsed(false);
+                  setIsMatchModalOpen(true);
+                }}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-power-orange text-white shadow-xl hover:bg-orange-600 transition premium-shadow"
+              >
+                <Sparkles className="h-6 w-6" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Roadmap chat drawer — opens inline, no navigation away from this page */}
         {result && (

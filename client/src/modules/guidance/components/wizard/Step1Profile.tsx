@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { Flag, TrendingUp } from "lucide-react";
 import { slideIn } from "../../constants";
 import type { GuidanceFormState, PlayerProfile } from "../../types";
+import { SportMatchModal } from "./SportMatchModal";
+import { useState } from "react";
 
 interface LevelContext {
   sport: string;
@@ -29,7 +31,10 @@ export function Step1Profile({
   onSelectPlayer: (id: string) => void;
   levelContext?: LevelContext;
 }) {
+  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
   const alreadyAtLevel = !!levelContext && form.current_pathway_level === levelContext.level;
+  
+  const selectedPlayer = players.find(p => p._id === selectedId);
   return (
     <motion.div
       variants={slideIn}
@@ -128,7 +133,25 @@ export function Step1Profile({
             Locked — set from the {levelContext.levelLabel} level pathway you're exploring.
           </p>
         )}
+        {!levelContext && !form.sport && (
+          <button
+            type="button"
+            onClick={() => setIsMatchModalOpen(true)}
+            className="text-xs font-bold text-power-orange hover:text-orange-600 transition underline underline-offset-2 mt-1"
+          >
+            Still confused? Get a recommendation &rarr;
+          </button>
+        )}
       </div>
+
+      <SportMatchModal
+        isOpen={isMatchModalOpen}
+        onClose={() => setIsMatchModalOpen(false)}
+        playerProfile={selectedPlayer}
+        onExplore={(sportName) => {
+          update("sport", sportName);
+        }}
+      />
 
       <div className="space-y-2">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
