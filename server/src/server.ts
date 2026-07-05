@@ -39,6 +39,7 @@ const configuredOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://powermysport.com",
+  "https://client-uat.powermysport.com",
   "https://www.powermysport.com",
   "https://admin.powermysport.com",
   "https://community.powermysport.com",
