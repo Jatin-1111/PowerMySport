@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRoadmapChat } from "../hooks/useRoadmapChat";
 import { ChatDrawer } from "@/modules/guidance/components/chat/ChatDrawer";
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 
 const QUICK_REPLIES = [
   "Explain this level in simple terms",
@@ -64,6 +65,8 @@ export function RoadmapChatDrawer({
       sendMessage={sendMessage}
       clearError={clearError}
       quickReplies={QUICK_REPLIES}
-    />
+    >
+      <AIDisclaimer variant="chat" />
+    </ChatDrawer>
   );
 }

@@ -18,6 +18,7 @@ import {
   Users,
   ArrowRight,
 } from "lucide-react";
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 import { motion } from "framer-motion";
 import type { GuidanceSubmission } from "../../types";
 import { buildFallbackJourney } from "../../utils";
@@ -71,6 +72,7 @@ export function ResultsView({
 
   return (
     <div className="flex flex-col gap-3">
+      <AIDisclaimer variant="guidance" />
       {/* The verdict, up front — this is the one thing every parent came here for */}
       {r.goalAssessment && (
         <VerdictHero

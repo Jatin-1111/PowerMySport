@@ -277,8 +277,8 @@ export const sportMatchRecommendationSchema = z.object({
       sportName: z.string(),
       matchScore: z.number(),
       reasons: z.array(z.string()).length(3),
-      monthlyCostRange: z.string(),
-      keyTalentSignal: z.string(),
+      monthlyCostRange: z.string().nullable(),
+      keyTalentSignal: z.string().nullable(),
     })
   ),
 });
@@ -296,6 +296,7 @@ export const generateSportMatchRecommendation = async (
     talentSignals: string;
     equipmentCost: string;
     overview: string;
+    hasGeneratedPathway: boolean;
   }>
 ): Promise<SportMatchResponse> => {
   const genAI = getGuidanceClient();
@@ -320,7 +321,10 @@ For each of these 3 sports, using ONLY the provided pathway data, write 3 short 
 
 WRITE IN THE SIMPLEST POSSIBLE ENGLISH — short sentences, common everyday words only (say 'help' not 'facilitate', 'need' not 'require'). No sport-federation acronyms without explaining them. Each bullet max 12-15 words. If a reason needs a caveat to make sense, cut it — it isn't simple enough yet.
 
-Also return the monthly cost range and one talent signal per sport, taken directly from the pathway data, not generated. Keep matchScore identical to the provided grounding context.
+For any sport where hasGeneratedPathway is false, you have NO cost or talent-signal data — do not invent numbers or specifics for it. Write reasons based ONLY on category and personality fit (e.g. 'This is an individual, precision-focused sport that suits your child's Focused and Patient traits'). Set monthlyCostRange and keyTalentSignal to null.
+For sports where hasGeneratedPathway is true, return the monthlyCostRange and one keyTalentSignal taken directly from the pathway data.
+
+Keep matchScore identical to the provided grounding context.
 
 Return ONLY a valid JSON object matching this schema exactly:
 {
@@ -330,8 +334,8 @@ Return ONLY a valid JSON object matching this schema exactly:
       "sportName": "string",
       "matchScore": number,
       "reasons": ["string", "string", "string"],
-      "monthlyCostRange": "string",
-      "keyTalentSignal": "string"
+      "monthlyCostRange": "string or null",
+      "keyTalentSignal": "string or null"
     }
   ]
 }`;

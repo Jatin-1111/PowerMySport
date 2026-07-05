@@ -395,7 +395,7 @@ function ContactView() {
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Preferred Sport</p>
-            <p className="mt-1 font-semibold text-slate-900">{user.playerProfile?.sports?.join(", ") || "None specified"}</p>
+            <p className="mt-1 font-semibold text-slate-900">{user.playerProfile?.sportsFocus?.join(", ") || "None specified"}</p>
           </div>
         </div>
       </div>

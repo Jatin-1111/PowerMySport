@@ -94,6 +94,7 @@ import {
   BrainCircuit,
   BookOpen,
 } from "lucide-react";
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
@@ -2389,6 +2390,7 @@ function PathwayExplorerSection() {
   const [previewSportDependentId, setPreviewSportDependentId] = useState<string | null>(null);
   const [isSavingSport, setIsSavingSport] = useState(false);
   const [showReengagePrompt, setShowReengagePrompt] = useState(false);
+  const [hasRunMatchThisSession, setHasRunMatchThisSession] = useState(false);
   const hasShownReengageRef = useRef(false);
 
   const searchParams = useSearchParams();
@@ -3073,6 +3075,9 @@ function PathwayExplorerSection() {
               {/* Header logic */}
               {result ? (
                 <>
+                  <div className="mb-4">
+                    <AIDisclaimer variant="roadmap" />
+                  </div>
                   {previewSport === result.pathway.sportName && previewSportDependentId && (
                     <div className="mb-4 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
@@ -4027,7 +4032,13 @@ function PathwayExplorerSection() {
 
         <SportMatchModal
           isOpen={isMatchModalOpen}
-          onClose={() => setIsMatchModalOpen(false)}
+          onClose={() => {
+            setIsMatchModalOpen(false);
+            if (hasRunMatchThisSession) {
+              setIsMatchModalCollapsed(true);
+            }
+          }}
+          onRecommendationsReady={() => setHasRunMatchThisSession(true)}
           dependents={(user?.dependents as any) || undefined}
           onExplore={(sportName, dependentId) => {
             setIsMatchModalOpen(false);
@@ -4084,41 +4095,14 @@ function PathwayExplorerSection() {
               <AnimatePresence>
                 {showReengagePrompt && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                    className="relative w-64 rounded-2xl bg-white p-4 shadow-xl border border-slate-100"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 shadow-md border border-slate-100"
                   >
-                    <button
-                      onClick={() => setShowReengagePrompt(false)}
-                      className="absolute right-2 top-2 rounded-full p-1 text-slate-400 hover:bg-slate-100 transition"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                    <p className="text-sm font-bold text-slate-800 mb-1">Want to keep reading?</p>
-                    <p className="text-xs text-slate-500 mb-3">Or compare the other 2 recommended sports.</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowReengagePrompt(false)}
-                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition"
-                      >
-                        Keep Reading
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowReengagePrompt(false);
-                          setIsMatchModalCollapsed(false);
-                          setIsMatchModalOpen(true);
-                        }}
-                        className="flex-1 rounded-lg bg-power-orange px-2 py-1.5 text-[11px] font-bold text-white hover:bg-orange-600 transition shadow-sm"
-                      >
-                        Compare
-                      </button>
-                    </div>
+                    2 more sports to compare
                   </motion.div>
                 )}
               </AnimatePresence>
-
               <button
                 onClick={() => {
                   setShowReengagePrompt(false);

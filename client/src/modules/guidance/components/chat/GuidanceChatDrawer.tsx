@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useGuidanceChat } from "../../hooks/useGuidanceChat";
 import type { GuidanceSubmission } from "../../types";
 import { ChatDrawer } from "./ChatDrawer";
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 
 // ─── Quick-reply chips ────────────────────────────────────────────────────────
 
@@ -67,6 +68,8 @@ export function GuidanceChatDrawer({
       sendMessage={sendMessage}
       clearError={clearError}
       quickReplies={QUICK_REPLIES}
-    />
+    >
+      <AIDisclaimer variant="chat" />
+    </ChatDrawer>
   );
 }

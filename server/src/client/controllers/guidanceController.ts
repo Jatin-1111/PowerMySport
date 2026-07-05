@@ -9,6 +9,7 @@ import {
 } from "../../shared/services/guidanceAiService";
 import { GuidanceSubmission } from "../models/GuidanceSubmission";
 import { SportPathway } from "../../shared/models/SportPathway";
+import { Sport } from "../../shared/models/Sport";
 
 // ─── Rule-based burnout risk — zero AI cost ───────────────────────────────────
 
@@ -480,7 +481,7 @@ export const downloadGuidanceReportPdf = async (
       .font("Helvetica")
       .fontSize(8)
       .text(
-        "This report is AI-generated guidance and does not replace professional medical or coaching advice.",
+        "AI-generated guidance — verify with a coach or academy before acting on this plan.",
         pageLeft,
         doc.y,
         { width: pageWidth },
@@ -566,48 +567,64 @@ export const recommendSport = async (req: Request, res: Response): Promise<void>
     
     // Step A: Rule-based ranking
     const stateSlug = parsed.data.location.toLowerCase().replace(/\s+/g, "-");
-    const allPathways = await SportPathway.find({
+    
+    // 1. Get all verified sports (the full catalog)
+    const allSports = await Sport.find({ isVerified: true }).lean();
+    
+    // 2. Fetch existing pathways for this specific state
+    const existingPathways = await SportPathway.find({
       cacheKey: { $regex: new RegExp(`_${stateSlug}$`, "i") }
     }).lean();
     
-    const sportMap = new Map<string, any>();
-    for (const p of allPathways) {
-      const pAny = p as any;
-      if (!pAny.sportSlug) continue;
-      sportMap.set(pAny.sportSlug, pAny);
-    }
+    // 3. Create a map of existing pathways by sport slug
+    const pathwayBySlug = new Map<string, any>(
+      existingPathways.map(p => [(p as any).sportSlug, p])
+    );
     
-    const sports = Array.from(sportMap.values());
-    if (sports.length === 0) {
+    if (allSports.length === 0) {
       res.status(404).json({ success: false, message: "No sports available" });
       return;
     }
 
-    const scoredSports = sports.map((s) => {
+    const scoredSports = allSports.map((sport) => {
       let score = 0;
       
-      const level1 = s.levels && s.levels.length > 0 ? s.levels[0] : null;
-      const equip1 = s.equipment && s.equipment.length > 0 ? s.equipment[0] : null;
+      // Calculate category score (works without pathway data)
+      score += getCategoryScore(parsed.data.personality_tags, sport.category);
       
-      score += getCategoryScore(parsed.data.personality_tags, s.category);
-      if (equip1 && equip1.estimatedCost) {
-        score += getBudgetScore(parsed.data.budget_tier, equip1.estimatedCost);
-      }
-      if (level1 && level1.ageRange) {
-        score += getAgeScore(parsed.data.child_age, level1.ageRange);
+      // Check if we have pathway data for this sport in this state
+      const p = pathwayBySlug.get(sport.slug);
+      const hasGeneratedPathway = !!p;
+      
+      let level1 = null;
+      let equip1 = null;
+      let overview = sport.description || "";
+      
+      if (hasGeneratedPathway) {
+        level1 = p.levels && p.levels.length > 0 ? p.levels[0] : null;
+        equip1 = p.equipment && p.equipment.length > 0 ? p.equipment[0] : null;
+        if (p.overview) overview = p.overview;
+        
+        if (equip1 && equip1.estimatedCost) {
+          score += getBudgetScore(parsed.data.budget_tier, equip1.estimatedCost);
+        }
+        if (level1 && level1.ageRange) {
+          score += getAgeScore(parsed.data.child_age, level1.ageRange);
+        }
       }
       
       const MAX_POSSIBLE_SCORE = 10;
       const normalizedScore = Math.max(0, Math.min(100, Math.round((score / MAX_POSSIBLE_SCORE) * 100)));
       
       return {
-        sportSlug: s.sportSlug,
-        sportName: s.sportName,
+        sportSlug: sport.slug,
+        sportName: sport.name,
         matchScore: normalizedScore,
-        category: s.category || "Other",
+        category: sport.category || "Other",
         talentSignals: level1?.talentSignals ? JSON.stringify(level1.talentSignals) : "None",
         equipmentCost: equip1?.estimatedCost || "Unknown",
-        overview: s.overview || "",
+        overview: overview,
+        hasGeneratedPathway,
       };
     });
     

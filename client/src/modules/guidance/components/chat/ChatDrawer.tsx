@@ -206,6 +206,7 @@ export interface ChatDrawerProps {
   sendMessage: (text: string) => Promise<void>;
   clearError: () => void;
   quickReplies?: string[];
+  children?: React.ReactNode;
 }
 
 export function ChatDrawer({
@@ -221,6 +222,7 @@ export function ChatDrawer({
   sendMessage,
   clearError,
   quickReplies = [],
+  children,
 }: ChatDrawerProps) {
   const [inputValue, setInputValue] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -321,6 +323,13 @@ export function ChatDrawer({
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
+            
+            {/* Header addon area for disclaimers/badges */}
+            {children && (
+              <div className="bg-slate-50 border-b border-slate-100 px-4 py-2">
+                {children}
+              </div>
+            )}
 
             {/* ── Messages area ── */}
             <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">

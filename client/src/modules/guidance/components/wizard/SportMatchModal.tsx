@@ -10,6 +10,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import axiosInstance from "@/lib/api/axios";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { DEPENDENT_RELATIONS } from "@/modules/player/constants/dependentRelations";
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 
 
 type SportRecommendation = {
@@ -17,8 +18,8 @@ type SportRecommendation = {
   sportName: string;
   matchScore: number;
   reasons: string[];
-  monthlyCostRange: string;
-  keyTalentSignal: string;
+  monthlyCostRange: string | null;
+  keyTalentSignal: string | null;
 };
 
 interface SportMatchModalProps {
@@ -27,9 +28,10 @@ interface SportMatchModalProps {
   playerProfile?: PlayerProfile | null;
   dependents?: PlayerProfile[];
   onExplore: (sportName: string, dependentId?: string) => void;
+  onRecommendationsReady?: () => void;
 }
 
-export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, onExplore }: SportMatchModalProps) {
+export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, onExplore, onRecommendationsReady }: SportMatchModalProps) {
   const [step, setStep] = useState<"select_dependent" | "questions" | "profile_summary" | "loading" | "results">("select_dependent");
   const [recommendations, setRecommendations] = useState<SportRecommendation[]>([]);
   const [selectedDependent, setSelectedDependent] = useState<PlayerProfile | null>(null);
@@ -54,6 +56,10 @@ export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, on
   // Check if we have data on open
   useEffect(() => {
     if (isOpen) {
+      if (recommendations.length > 0) {
+        setStep("results");
+        return;
+      }
       if (playerProfile) {
         setSelectedDependent(playerProfile);
         setStep("profile_summary");
@@ -82,7 +88,7 @@ export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, on
         });
       }
     }
-  }, [isOpen, playerProfile]);
+  }, [isOpen, playerProfile, recommendations]);
 
   const fetchRecommendations = async (data: any) => {
     setStep("loading");
@@ -91,6 +97,7 @@ export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, on
       if (res.data.success) {
         setRecommendations(res.data.data.recommendations);
         setStep("results");
+        onRecommendationsReady?.();
       } else {
         throw new Error(res.data.message);
       }
@@ -521,6 +528,9 @@ export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, on
 
             {step === "results" && (
               <div className="space-y-6">
+                <div className="flex justify-center mb-2">
+                  <AIDisclaimer variant="sportmatch" />
+                </div>
                 {recommendations.length > 0 && recommendations[0].matchScore < 30 ? (
                   <div className="text-center mb-6">
                     <h3 className="font-title text-xl font-bold text-slate-900 mb-2">We don't have a strong match yet</h3>
@@ -559,16 +569,24 @@ export function SportMatchModal({ isOpen, onClose, playerProfile, dependents, on
                           </ul>
                         </div>
                         
-                        <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Wallet className="h-3 w-3" /> Cost/mo</p>
-                            <p className="text-sm font-semibold text-slate-800">{rec.monthlyCostRange}</p>
+                        {rec.monthlyCostRange && rec.keyTalentSignal ? (
+                          <div className="mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Wallet className="h-3 w-3" /> Cost/mo</p>
+                              <p className="text-sm font-semibold text-slate-800">{rec.monthlyCostRange}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Activity className="h-3 w-3" /> Key Trait</p>
+                              <p className="text-sm font-semibold text-slate-800 line-clamp-2">{rec.keyTalentSignal}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Activity className="h-3 w-3" /> Key Trait</p>
-                            <p className="text-sm font-semibold text-slate-800 line-clamp-2">{rec.keyTalentSignal}</p>
+                        ) : (
+                          <div className="mt-auto pt-4 border-t border-slate-100">
+                            <p className="text-sm italic text-slate-600 text-center">
+                              Full details ready once you explore this sport →
+                            </p>
                           </div>
-                        </div>
+                        )}
                         
                         <Button 
                           variant={i === 0 ? "primary" : "outline"} 

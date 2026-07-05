@@ -363,7 +363,7 @@ export default function ProfilePage() {
 
   const resetSportsForm = () => {
     if (!user) return;
-    setSelectedSports(user.playerProfile?.sports || []);
+    setSelectedSports(user.playerProfile?.sportsFocus || []);
     setPlayerProfileForm({
       yearsPlaying: user.playerProfile?.yearsPlaying,
       personalityTags: user.playerProfile?.personalityTags || [],
@@ -391,7 +391,7 @@ export default function ProfilePage() {
     try {
       await authApi.updateProfile({
         playerProfile: {
-          sports: selectedSports,
+          sportsFocus: selectedSports,
           yearsPlaying: playerProfileForm.yearsPlaying,
           personalityTags: playerProfileForm.personalityTags,
           primaryObjective: playerProfileForm.primaryObjective,
@@ -455,7 +455,7 @@ export default function ProfilePage() {
     );
   }
 
-  const sportsCount = user.playerProfile?.sports?.length ?? 0;
+  const sportsCount = user.playerProfile?.sportsFocus?.length ?? 0;
   const dependentsCount = user.dependents?.length ?? 0;
   const userAge = user.dob ? getDependentAge(user.dob) : null;
 
@@ -834,9 +834,9 @@ export default function ProfilePage() {
             <div className="space-y-8">
               <div>
                 <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">My Sports</h4>
-                {user.playerProfile?.sports && user.playerProfile.sports.length > 0 ? (
+                {user.playerProfile?.sportsFocus && user.playerProfile.sportsFocus.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {user.playerProfile.sports.map((sport) => (
+                    {user.playerProfile.sportsFocus.map((sport: string) => (
                       <Badge
                         key={sport}
                         className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
@@ -991,9 +991,9 @@ export default function ProfilePage() {
                               </p>
                             )}
 
-                            {dependent.sports && dependent.sports.length > 0 && (
+                            {dependent.sportsFocus && dependent.sportsFocus.length > 0 && (
                               <div className="mt-3 flex flex-wrap gap-2">
-                                {dependent.sports.map((sport) => (
+                                {dependent.sportsFocus.map((sport: string) => (
                                   <Badge
                                     key={sport}
                                     className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
