@@ -11,7 +11,7 @@ import "./globals.css";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 const siteTitle = "PowerMySport";
 const siteDescription =
-  "PowerMySport is organizing the unorganized sports sector. We solve the biggest problem for parents by providing a unified platform to discover athletic pathways, book venues, and find certified coaches.";
+  "PowerMySport helps parents plan their child's sports career. Get AI-powered sport pathways, personalised guidance, and 1:1 sessions with verified experts — free to explore, state-specific for India.";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -32,21 +32,27 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   manifest: "/site.webmanifest",
   title: {
-    default: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
-    template: `%s | ${siteTitle}`,
+    default: "PowerMySport — Sports Career Planner for Parents",
+    template: "%s | PowerMySport",
   },
   description: siteDescription,
-  applicationName: siteTitle,
+  applicationName: "PowerMySport",
   keywords: [
-    "unorganized sports sector",
-    "sports for parents",
-    "youth sports pathway",
-    "sports academy",
-    "sports coach booking",
-    "parent sports guide",
-    "sports venue booking",
-    "book turf online",
+    // High-intent parent queries
+    "sports pathway for kids India",
+    "child sports career planning",
+    "which sport is right for my child",
+    "youth sports guidance India",
+    "sports roadmap for children",
+    // Feature-specific
+    "AI sports guidance",
+    "personalised sports plan India",
+    "sports expert consultation",
+    "book sports expert India",
+    "state-specific sports pathway",
+    // Brand
     "PowerMySport",
+    "powermysport.com",
   ],
   category: "sports",
   icons: {
@@ -55,9 +61,7 @@ export const metadata: Metadata = {
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
     shortcut: "/favicon.png",
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   alternates: {
     canonical: "/",
@@ -66,21 +70,21 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: siteUrl,
-    siteName: siteTitle,
-    title: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
+    siteName: "PowerMySport",
+    title: "PowerMySport — Sports Career Planner for Parents",
     description: siteDescription,
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: `${siteTitle} preview`,
+        alt: "PowerMySport — Plan your child's sports career",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
+    title: "PowerMySport — Sports Career Planner for Parents",
     description: siteDescription,
     images: ["/twitter-image.png"],
   },

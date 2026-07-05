@@ -94,6 +94,7 @@ import {
   UserCheck,
   BrainCircuit,
   BookOpen,
+  Unlock,
 } from "lucide-react";
 import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 import Link from "next/link";
@@ -4200,31 +4201,31 @@ export default function PathwaysPage() {
   const selected = pathwayLevels[activeLevel];
 
   const statCards = [
-    {
-      icon: <Users className="h-6 w-6" />,
-      value: "500M+",
-      label: "Sports Participants in India",
-      color: "bg-orange-100 text-power-orange",
-    },
-    {
-      icon: <Medal className="h-6 w-6" />,
-      value: "28",
-      label: "Olympic Medals (All-time)",
-      color: "bg-indigo-100 text-indigo-600",
-    },
-    {
-      icon: <Trophy className="h-6 w-6" />,
-      value: "40+",
-      label: "National Federations",
-      color: "bg-amber-100 text-amber-600",
-    },
-    {
-      icon: <Star className="h-6 w-6" />,
-      value: "5 Levels",
-      label: "From Grassroots to World Stage",
-      color: "bg-emerald-100 text-emerald-600",
-    },
-  ];
+  {
+    icon: <Zap className="h-6 w-6" />,
+    value: "< 30 sec",
+    label: "Any Sport, Pathway in Seconds",
+    color: "bg-orange-100 text-power-orange",
+  },
+  {
+    icon: <TrendingUp className="h-6 w-6" />,
+    value: "3 Levels",
+    label: "Beginner to Elite",
+    color: "bg-indigo-100 text-indigo-600",
+  },
+  {
+    icon: <MapPin className="h-6 w-6" />,
+    value: "28 States",
+    label: "State-Specific Guidance",
+    color: "bg-amber-100 text-amber-600",
+  },
+  {
+    icon: <Unlock className="h-6 w-6" />,
+    value: "₹0",
+    label: "Free to Explore",
+    color: "bg-emerald-100 text-emerald-600",
+  },
+];
 
   return (
     <main className="overflow-x-hidden">

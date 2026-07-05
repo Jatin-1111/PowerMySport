@@ -4,14 +4,25 @@ import React from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Find Sports Experts | Book 1:1 Guidance Sessions",
+  title: "Sports Experts — Book 1:1 Guidance Sessions",
   description:
-    "Browse verified sports experts and book paid 1:1 guidance sessions. Pay securely, schedule a time that works, and rate your expert after the session.",
-  openGraph: {
-    title: "Find Sports Experts | Book 1:1 Guidance Sessions",
-    description:
-      "Browse verified sports experts and book paid 1:1 guidance sessions on PowerMySport.",
+    "Browse verified Indian sports experts and book paid 1:1 sessions online or in person. Get personalised advice on your child's sport, level, and next steps from people who've actually played.",
+  alternates: {
+    canonical: "/experts",
   },
+  openGraph: {
+    title: "Sports Experts — Book 1:1 Guidance Sessions",
+    description:
+      "Verified sports experts available for 1:1 sessions. Book online or in person. PowerMySport.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  keywords: [
+    "sports expert India",
+    "book sports expert online India",
+    "1:1 sports coaching India",
+    "sports mentor for kids India",
+    "verified sports coach India",
+  ],
 };
 
 export default function ExpertsLayout({

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About Us | PowerMySport",
+  title: "About PowerMySport — Why We Built This",
   description:
-    "Learn how PowerMySport is organizing the unorganized sports sector to help parents chart the perfect athletic journey for their children.",
+    "PowerMySport was built for parents navigating India's fragmented sports system. Learn our mission: making sports career planning structured, accessible, and parent-friendly.",
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 import { AboutPageContent } from "./AboutPageContent";

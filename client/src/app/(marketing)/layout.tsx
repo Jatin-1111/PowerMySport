@@ -4,13 +4,13 @@ import { Navigation } from "@/components/layout/Navigation";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "PowerMySport | Organizing the Unorganized Sports Sector",
+  title: "PowerMySport — Sports Career Planner for Parents",
   description:
-    "PowerMySport is solving the biggest problem for parents by organizing the sports sector. Discover the right pathways, book venues, and find professional coaches for your child's sports journey.",
+    "Plan your child's sports career with AI-powered pathways, personalised guidance, and verified experts. State-specific roadmaps for 70+ sports across India. Free to explore.",
   openGraph: {
-    title: "PowerMySport | Organizing the Unorganized Sports Sector",
+    title: "PowerMySport — Sports Career Planner for Parents",
     description:
-      "Solving the biggest problem for parents by organizing the sports sector. Find and book the best sports venues, certified coaches, and academies.",
+      "Plan your child's sports career with AI-powered pathways, personalised guidance, and verified experts across India.",
   },
 };
 
