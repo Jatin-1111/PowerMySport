@@ -79,6 +79,7 @@ import {
   Bookmark,
   Bell,
   MessageSquareQuote,
+  Info,
   ExternalLink,
   CheckCheck,
   RotateCcw,
@@ -1685,6 +1686,15 @@ function PathwayLevelDetail({
                               <div><p className="font-bold text-slate-400 text-[9px] uppercase mb-0.5">Benefit</p><p className="text-slate-700">{scheme.benefit}</p></div>
                               <div><p className="font-bold text-slate-400 text-[9px] uppercase mb-0.5">How to Apply</p><p className="text-slate-700">{scheme.howToApply}</p></div>
                             </div>
+                            {scheme.verifiedAsOf && (
+                              <p className="mt-2 text-[9px] text-slate-400">
+                                Data as of{" "}
+                                {new Date(scheme.verifiedAsOf).toLocaleDateString("en-IN", {
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -2429,9 +2439,7 @@ function PathwayExplorerSection() {
 
   useEffect(() => {
     const fetchStories = async () => {
-      if (result && activeTab === "inspire") {
-        const macroLevels = groupLevelsIntoMacro(result.pathway.levels);
-        const selectedMacroLevel = macroLevels[activeIdx] || macroLevels[0];
+      if (result) {
         const fetchedStories = await pathwayProfileApi.getStories(
           result.pathway.sportSlug,
           undefined,
@@ -2441,7 +2449,7 @@ function PathwayExplorerSection() {
       }
     };
     fetchStories();
-  }, [result, activeTab, activeIdx, selectedState]);
+  }, [result, selectedState]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -3090,9 +3098,6 @@ function PathwayExplorerSection() {
               {/* Header logic */}
               {result ? (
                 <>
-                  <div className="mb-4">
-                    <AIDisclaimer variant="roadmap" />
-                  </div>
                   {previewSport === result.pathway.sportName && previewSportDependentId && (
                     <div className="mb-4 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
@@ -3142,11 +3147,18 @@ function PathwayExplorerSection() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-3">
                         {result.pathway.trustTier === "expert_verified" && result.pathway.expertVerifications && result.pathway.expertVerifications.length > 0 ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                            <BadgeCheck className="h-3 w-3" />
-                            Verified by {result.pathway.expertVerifications[0].expertName}
-                            {result.pathway.expertVerifications.length > 1 &&
-                              ` +${result.pathway.expertVerifications.length - 1} more`}
+                          <span className="inline-flex flex-col gap-0.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs">
+                            <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                              <BadgeCheck className="h-3 w-3" />
+                              Verified by {result.pathway.expertVerifications[0].expertName}
+                              {result.pathway.expertVerifications.length > 1 &&
+                                ` +${result.pathway.expertVerifications.length - 1} more`}
+                            </span>
+                            {result.pathway.expertVerifications[0].expertCredential && (
+                              <span className="text-[10px] text-emerald-600 font-medium pl-4">
+                                {result.pathway.expertVerifications[0].expertCredential}
+                              </span>
+                            )}
                           </span>
                         ) : result.pathway.trustTier === "admin_verified" ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
@@ -3206,6 +3218,7 @@ function PathwayExplorerSection() {
                             <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400 mt-0.5 whitespace-nowrap">
                               Tournaments
                             </span>
+                            <span className="text-[8px] text-orange-300 mt-0.5">official sources</span>
                           </button>
                         )}
                         {(result.pathway.scholarships?.length ?? 0) > 0 && (
@@ -3219,6 +3232,7 @@ function PathwayExplorerSection() {
                             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mt-0.5 whitespace-nowrap">
                               Scholarships
                             </span>
+                            <span className="text-[8px] text-emerald-300 mt-0.5">official sources</span>
                           </button>
                         )}
                         {(result.pathway.universities?.length ?? 0) > 0 && (
@@ -3232,23 +3246,27 @@ function PathwayExplorerSection() {
                             <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mt-0.5 whitespace-nowrap">
                               Universities
                             </span>
+                            <span className="text-[8px] text-indigo-300 mt-0.5">official sources</span>
                           </button>
                         )}
                       </div>
                     ) : null}
                   </div>
                   {result.pathway.trustTier === "unverified" && (
-                    <div className="mt-4 rounded-xl bg-orange-50 border border-orange-200 p-4">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-power-orange shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-bold text-orange-900">
-                            AI Generated Pathway — Pending Expert Review
-                          </p>
-                          <p className="mt-1 text-sm text-orange-800">
-                            This pathway was generated by AI based on regional data and is currently awaiting verification by our sports experts. Some specific local details may vary.
-                          </p>
-                        </div>
+                    <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-3">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                          Pathway data sourced from{" "}
+                          {result.pathway.levels?.[0]?.governingBody
+                            ? <span className="font-semibold text-slate-600">{result.pathway.levels[0].governingBody}</span>
+                            : "India's sports development records"
+                          }
+                          {", Khelo India, and verified tournament & scholarship data. "}
+                          <span className="text-slate-400">
+                            Expert review pending — details may vary by region.
+                          </span>
+                        </p>
                       </div>
                     </div>
                   )}
@@ -3284,7 +3302,7 @@ function PathwayExplorerSection() {
                       id: "inspire",
                       label: "Inspire",
                       icon: <Sparkles className="h-4 w-4" />,
-                      show: !!result,
+                      show: !!result && dbStories.length > 0,
                     },
                     {
                       id: "saved",
@@ -3996,6 +4014,22 @@ function PathwayExplorerSection() {
                         stories={dbStories}
                       />
                     </div>
+
+                    <div className="mt-8 flex items-center justify-between gap-4 border-t border-slate-100 pt-4">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <Sparkles className="h-3 w-3 shrink-0" />
+                        <p>
+                          Pathway built from India's sports development data.{" "}
+                          <span className="text-slate-400">Verify specific milestones with a local academy.</span>
+                        </p>
+                      </div>
+                      <a
+                        href="/guidance"
+                        className="shrink-0 text-xs font-semibold text-power-orange hover:underline"
+                      >
+                        Personalise for your child →
+                      </a>
+                    </div>
                   </motion.div>
                 )}
 
@@ -4273,8 +4307,7 @@ export default function PathwaysPage() {
               variants={fadeUp}
               className="mx-auto mt-4 max-w-xl text-base text-slate-600 sm:text-lg"
             >
-              No matter where you start, we provide the tools, coaches, and
-              places you need to reach the next level.
+              No matter where you start, we provide the expert guidance and smart tools you need to reach the next level.
             </motion.p>
           </motion.div>
 
@@ -4283,24 +4316,16 @@ export default function PathwaysPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-60px" }}
-            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2"
           >
             {[
               {
                 icon: <Dumbbell className="h-7 w-7" />,
-                title: "Expert Coaches",
+                title: "Top Experts",
                 description:
-                  "Connect with verified coaches who have played at top levels. Learn from people who know exactly what it takes to succeed.",
+                  "Connect with verified experts who have played at top levels. Learn from people who know exactly what it takes to succeed.",
                 color: "bg-orange-100 text-power-orange",
                 accent: "text-power-orange",
-              },
-              {
-                icon: <MapPin className="h-7 w-7" />,
-                title: "Top Training Grounds",
-                description:
-                  "Book the best training grounds used by top athletes. Get access to the same great facilities the pros use, whenever you need them.",
-                color: "bg-indigo-100 text-indigo-600",
-                accent: "text-indigo-600",
               },
               {
                 icon: <Award className="h-7 w-7" />,

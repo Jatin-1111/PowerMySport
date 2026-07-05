@@ -51,6 +51,7 @@ export interface PathwayLevel {
     eligibility: string;
     benefit: string;
     howToApply: string;
+    verifiedAsOf?: string;
   }>;
   academicIntegration?: string;
   proactiveDocuments?: string[];
@@ -108,6 +109,7 @@ export interface PathwayExpertVerification {
   expertPhotoUrl?: string;
   verifiedAt: string;
   note?: string;
+  expertCredential?: string;
 }
 
 export interface SportPathway {

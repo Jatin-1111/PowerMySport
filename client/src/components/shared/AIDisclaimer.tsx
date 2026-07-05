@@ -16,7 +16,7 @@ export function AIDisclaimer({ variant, className = "" }: AIDisclaimerProps) {
   } else if (variant === "sportmatch") {
     message = "AI-powered sport match. Verify with a coach before deciding.";
   } else if (variant === "roadmap") {
-    message = "AI-generated roadmap. Verify milestones with an academy.";
+    message = "Pathway data sourced from India's sports development records. Verify milestones with a local academy.";
   }
 
   const Icon = variant === "chat" ? Info : Sparkles;

@@ -4,6 +4,7 @@ import { AthleteStory } from "../models/AthleteStory";
 import { realDataScraperService } from "../services/RealDataScraperService";
 import { INDIAN_STATES_AND_UTS } from "../utils/states";
 import { PathwayExpertVerification } from "../models/PathwayExpertVerification";
+import { Expert } from "../../client/models/ExpertProfile";
 import {
   listPathwaysForExpertVerification,
   verifyPathwayAsExpert,
@@ -61,12 +62,27 @@ export const getPathway = async (
     // it's attached here at read time rather than stored on the pathway doc.
     let data: unknown = result.pathway;
     if (result.pathway) {
-      const expertVerifications = await PathwayExpertVerification.find({
+      const rawVerifications = await PathwayExpertVerification.find({
         sportSlug: result.pathway.sportSlug,
       })
         .select("expertId expertName expertPhotoUrl verifiedAt note -_id")
         .sort({ verifiedAt: -1 })
         .lean();
+
+      const expertVerifications = await Promise.all(
+        rawVerifications.map(async (v) => {
+          const profile = await Expert.findOne({ userId: v.expertId })
+            .select("achievements bio sports")
+            .lean();
+          return {
+            ...v,
+            expertCredential: (profile as any)?.achievements
+              || (profile as any)?.bio?.slice(0, 80)
+              || null,
+            expertSports: (profile as any)?.sports || [],
+          };
+        })
+      );
       let trustTier: "unverified" | "admin_verified" | "expert_verified" = "unverified";
       if (result.pathway.isVerified) {
         trustTier = expertVerifications.length > 0 ? "expert_verified" : "admin_verified";
