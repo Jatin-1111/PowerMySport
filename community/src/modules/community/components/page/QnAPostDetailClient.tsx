@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowBigDown,
   ArrowBigUp,
+  CalendarDays,
   ChevronLeft,
   EyeOff,
   Flag,
@@ -23,15 +24,16 @@ import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
+import AuthorAvatar from "@/modules/community/components/page/AuthorAvatar";
 
-const toRelativeTime = (value: string): string => {
-  const at = new Date(value).getTime();
-  if (Number.isNaN(at)) return "";
-  const diffMin = Math.max(1, Math.floor((Date.now() - at) / 60000));
-  if (diffMin < 60) return `${diffMin}m`;
-  const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `${diffH}h`;
-  return `${Math.floor(diffH / 24)}d`;
+const formatPostedDate = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 export default function QnAPostDetailClient({ postId }: { postId: string }) {
@@ -590,7 +592,8 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
 
           {/* Metadata */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-            <div className="flex items-center gap-3 text-xs text-slate-600">
+            <div className="flex items-center gap-2 text-xs text-slate-600">
+              <AuthorAvatar author={post.author} size={34} />
               <span className="font-semibold text-slate-900">
                 {post.author.displayName}
               </span>
@@ -599,8 +602,9 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                   ★ {post.author.expertTitle || "Verified Coach"}
                 </span>
               ) : null}
-              <span className="text-slate-500">
-                {toRelativeTime(post.createdAt)}
+              <span className="inline-flex items-center gap-1 text-slate-500">
+                <CalendarDays size={12} className="text-slate-400" />
+                {formatPostedDate(post.createdAt)}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -760,25 +764,29 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
               <div className="flex-1 p-4 sm:p-5">
                 {/* Header - Author & Time */}
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-900">
-                        {answer.author.displayName}
-                      </span>
-                      {answer.author.isVerifiedExpert ? (
-                        <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                          ★ {answer.author.expertTitle || "Verified Coach"}
+                  <div className="flex items-center gap-2.5">
+                    <AuthorAvatar author={answer.author} size={36} />
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-slate-900">
+                          {answer.author.displayName}
                         </span>
-                      ) : null}
-                      {index === 0 && answer.voteScore > 0 ? (
-                        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">
-                          Top Answer
-                        </span>
-                      ) : null}
+                        {answer.author.isVerifiedExpert ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                            ★ {answer.author.expertTitle || "Verified Coach"}
+                          </span>
+                        ) : null}
+                        {index === 0 && answer.voteScore > 0 ? (
+                          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">
+                            Top Answer
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-500">
+                        <CalendarDays size={11} className="text-slate-400" />
+                        {formatPostedDate(answer.createdAt)}
+                      </p>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {toRelativeTime(answer.createdAt)} ago
-                    </p>
                   </div>
                   <button
                     onClick={() => void reportTarget("ANSWER", answer.id)}

@@ -34,6 +34,28 @@ export default function AskQuestionModal({
     setMounted(true);
   }, []);
 
+  // Lock background scroll and enable Escape-to-close while the modal is open.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [isOpen, onClose]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim().length < 10 || body.trim().length < 20) {
@@ -89,13 +111,23 @@ export default function AskQuestionModal({
             className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[201] overflow-y-auto"
           >
-            <div className="flex w-full max-w-2xl flex-col rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5 pointer-events-auto max-h-[95vh]">
+            <div
+              onClick={onClose}
+              className="flex min-h-full items-center justify-center p-4 sm:p-6"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                onClick={(event) => event.stopPropagation()}
+                className="relative my-auto flex w-full max-w-2xl flex-col rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5"
+              >
               {/* Header */}
               <div className="relative border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:px-8 sm:py-6 rounded-t-[2rem]">
                 <div className="flex items-center justify-between">
@@ -292,6 +324,7 @@ export default function AskQuestionModal({
                   )}
                 </button>
               </div>
+              </motion.div>
             </div>
           </motion.div>
         </>

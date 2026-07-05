@@ -36,6 +36,19 @@ const buildGroupParticipantKey = (groupId: string): string =>
 
 const normalizeOptionalText = (value?: string): string => value?.trim() || "";
 
+// Supports multi-select filters sent as a comma-separated list (e.g. "Tennis,Cricket").
+const splitCsvValues = (value?: string): string[] => {
+  if (!value) return [];
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
+};
+
 const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -324,14 +337,18 @@ export const CommunityService = {
       query.tags = tag;
     }
 
-    const sport = normalizeOptionalText(filters?.sport);
-    if (sport) {
-      query.sport = sport;
+    const sportValues = splitCsvValues(filters?.sport);
+    if (sportValues.length === 1) {
+      query.sport = sportValues[0];
+    } else if (sportValues.length > 1) {
+      query.sport = { $in: sportValues };
     }
 
-    const city = normalizeOptionalText(filters?.city);
-    if (city) {
-      query.city = city;
+    const cityValues = splitCsvValues(filters?.city);
+    if (cityValues.length === 1) {
+      query.city = cityValues[0];
+    } else if (cityValues.length > 1) {
+      query.city = { $in: cityValues };
     }
 
     const category = normalizeOptionalText(filters?.category);
