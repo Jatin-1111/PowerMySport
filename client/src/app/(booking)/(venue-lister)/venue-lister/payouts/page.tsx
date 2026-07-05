@@ -86,10 +86,10 @@ export default function VenuePayoutsPage() {
         />
       </div>
 
-      <div className="flex items-start gap-3 rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm text-blue-900">
+      <div className="flex items-start gap-3 rounded-lg bg-indigo-50 border border-indigo-200 p-4 text-sm text-blue-900">
         <Info
           size={16}
-          className="mt-0.5 shrink-0 text-blue-600 flex-shrink-0"
+          className="mt-0.5 shrink-0 text-indigo-600 flex-shrink-0"
         />
         <p>
           You can update your payout method at any time. Changes will apply to

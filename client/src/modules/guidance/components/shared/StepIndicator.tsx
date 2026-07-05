@@ -31,7 +31,7 @@ export function StepIndicator({
                 <div
                   className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                     done
-                      ? "border-emerald-500 bg-emerald-500 text-white shadow-emerald-200 shadow-md"
+                      ? "border-emerald-500 bg-turf-green text-white shadow-emerald-200 shadow-md"
                       : active
                         ? "border-power-orange bg-power-orange text-white shadow-power-orange/30 shadow-md"
                         : "border-slate-200 bg-white text-slate-400"
@@ -59,7 +59,7 @@ export function StepIndicator({
                 <div className="flex-1 mt-[18px] sm:mt-[20px] mx-1 sm:mx-2">
                   <div
                     className={`h-0.5 w-full rounded transition-all duration-500 ${
-                      current > step.id ? "bg-emerald-400" : "bg-slate-100"
+                      current > step.id ? "bg-turf-green" : "bg-slate-100"
                     }`}
                   />
                 </div>

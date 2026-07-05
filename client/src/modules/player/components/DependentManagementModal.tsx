@@ -402,7 +402,7 @@ export default function DependentManagementModal({
                       }}
                       className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
                         isSelected
-                          ? "border-blue-600 bg-blue-50 font-medium text-blue-700"
+                          ? "border-blue-600 bg-indigo-50 font-medium text-indigo-700"
                           : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                       }`}
                     >

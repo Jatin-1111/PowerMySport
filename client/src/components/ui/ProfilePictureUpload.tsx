@@ -102,7 +102,7 @@ export default function ProfilePictureUpload({
       {/* Profile Picture Preview */}
       <div className="relative">
         <div
-          className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center`}
+          className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-slate-200 bg-slate-100 flex items-center justify-center`}
         >
           {previewUrl ? (
             <Image
@@ -130,7 +130,7 @@ export default function ProfilePictureUpload({
             />
           ) : (
             <svg
-              className="w-1/2 h-1/2 text-gray-400"
+              className="w-1/2 h-1/2 text-slate-400"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -166,7 +166,7 @@ export default function ProfilePictureUpload({
       </label>
 
       {/* Info Text */}
-      <p className="text-gray-500 text-xs text-center max-w-xs">
+      <p className="text-slate-500 text-xs text-center max-w-xs">
         JPG, PNG or WebP. Max 5MB.
       </p>
     </div>

@@ -41,7 +41,7 @@ export function TrustMarquee({
   return (
     <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
       <div className="pointer-events-none absolute left-0 top-1/4 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-100/40 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-1/4 right-0 h-72 w-72 translate-x-1/2 rounded-full bg-blue-100/30 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-1/4 right-0 h-72 w-72 translate-x-1/2 rounded-full bg-indigo-100/30 blur-3xl" />
 
       {(title || subtitle) && (
         <motion.div

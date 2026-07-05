@@ -113,9 +113,9 @@ export default function CoachDetailsPage() {
   const getVerificationBadge = (coachData: Coach) => {
     const status = coachData.verificationStatus || (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
     switch (status) {
-      case "VERIFIED": return { label: "Verified", className: "bg-green-100 text-green-700 border border-green-200" };
+      case "VERIFIED": return { label: "Verified", className: "bg-emerald-100 text-emerald-700 border border-emerald-200" };
       case "PENDING": return { label: "Pending", className: "bg-yellow-100 text-yellow-700 border border-yellow-200" };
-      case "REVIEW": return { label: "In Review", className: "bg-blue-100 text-blue-700 border border-blue-200" };
+      case "REVIEW": return { label: "In Review", className: "bg-indigo-100 text-indigo-700 border border-indigo-200" };
       case "REJECTED": return { label: "Unverified", className: "bg-red-100 text-red-700 border border-red-200" };
       default: return { label: "Unverified", className: "bg-slate-100 text-slate-700 border border-slate-200" };
     }
@@ -403,7 +403,7 @@ export default function CoachDetailsPage() {
                           </div>
                           <div className="mt-5">
                             {user ? (user.role === "Player" ? (
-                              <Button variant="primary" className="w-full bg-turf-green hover:bg-green-700" onClick={() => handleSubscribeToPackage(packageId)} disabled={!packageId || isBusy}>
+                              <Button variant="primary" className="w-full bg-turf-green hover:bg-emerald-700" onClick={() => handleSubscribeToPackage(packageId)} disabled={!packageId || isBusy}>
                                 {isBusy ? "Activating..." : "Subscribe now"}
                               </Button>
                             ) : <p className="text-sm text-slate-500">Subscription packages are available for player accounts.</p>)
@@ -511,7 +511,7 @@ export default function CoachDetailsPage() {
                     </div>
                     <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} rows={3} maxLength={1000} placeholder="Write your review (optional)" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-turf-green/40" />
                     <div className="mt-3 flex justify-end">
-                      <Button variant="primary" className="bg-turf-green hover:bg-green-700" onClick={handleSubmitReview} disabled={reviewSubmitting || reviewRating === 0}>
+                      <Button variant="primary" className="bg-turf-green hover:bg-emerald-700" onClick={handleSubmitReview} disabled={reviewSubmitting || reviewRating === 0}>
                         {reviewSubmitting ? "Submitting..." : "Submit Review"}
                       </Button>
                     </div>
@@ -622,7 +622,7 @@ export default function CoachDetailsPage() {
 
                     {user ? (
                       isSelectedSlotAvailable ? (
-                        <Button variant="primary" className="w-full h-12 text-base font-semibold bg-turf-green hover:bg-green-700 shadow-md" onClick={handleBooking} disabled={bookingLoading || !selectedSlot}>
+                        <Button variant="primary" className="w-full h-12 text-base font-semibold bg-turf-green hover:bg-emerald-700 shadow-md" onClick={handleBooking} disabled={bookingLoading || !selectedSlot}>
                           {bookingLoading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> : <Check size={20} className="mr-2" />}
                           Confirm Booking
                         </Button>

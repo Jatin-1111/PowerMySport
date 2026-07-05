@@ -42,7 +42,7 @@ const canViewInvoice = (status: Booking["status"]): boolean => {
 const STATUS_STYLES: Record<string, string> = {
   CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
   PENDING_CONFIRMATION: "bg-amber-50 text-amber-700 border-amber-200",
-  PENDING_INVITES: "bg-blue-50 text-blue-700 border-blue-200",
+  PENDING_INVITES: "bg-indigo-50 text-indigo-700 border-indigo-200",
   IN_PROGRESS: "bg-yellow-50 text-yellow-700 border-yellow-200",
   COMPLETED: "bg-slate-50 text-slate-600 border-slate-200",
   CANCELLED: "bg-red-50 text-red-700 border-red-200",
@@ -337,7 +337,7 @@ export default function BookingsPage() {
                     <div
                       className={`w-1 shrink-0 ${
                         booking.status === "CONFIRMED"
-                          ? "bg-emerald-400"
+                          ? "bg-turf-green"
                           : booking.status === "PENDING_CONFIRMATION" ||
                               booking.status === "PENDING_INVITES"
                             ? "bg-amber-400"
@@ -357,8 +357,8 @@ export default function BookingsPage() {
                               href={`/venues/${(booking.venueId as any)._id || (booking.venueId as any).id}`}
                               className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900 hover:text-power-orange transition-colors"
                             >
-                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
-                                <MapPin className="h-4 w-4 text-blue-600" />
+                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100">
+                                <MapPin className="h-4 w-4 text-indigo-600" />
                               </div>
                               {(booking.venueId as any).name || "Venue"}
                             </Link>

@@ -411,7 +411,7 @@ function SubscriptionCheckoutContent() {
           )}
 
           <Button
-            className="mt-6 w-full bg-turf-green hover:bg-green-700"
+            className="mt-6 w-full bg-turf-green hover:bg-emerald-700"
             onClick={handlePay}
             loading={submitting}
             disabled={submitting}

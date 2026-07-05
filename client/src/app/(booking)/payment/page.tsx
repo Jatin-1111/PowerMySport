@@ -221,7 +221,7 @@ function PaymentPageContent() {
       : "We are confirming your payment. You can safely leave this page.";
 
   const icon = isSuccess ? (
-    <CheckCircle className="text-green-500" size={44} />
+    <CheckCircle className="text-emerald-600" size={44} />
   ) : isCancel ? (
     <XCircle className="text-red-500" size={44} />
   ) : (
@@ -396,11 +396,11 @@ function PaymentPageContent() {
                 {/* Booking Type Badge */}
                 {booking.bookingType === "GROUP" && (
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                    <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
                       Group Booking
                     </span>
                     {booking.paymentType === "SPLIT" && (
-                      <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
                         Split Payment
                       </span>
                     )}
@@ -550,7 +550,7 @@ function PaymentPageContent() {
 
             {/* Group Booking Info */}
             {isSuccess && booking?.bookingType === "GROUP" && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-left text-xs text-blue-800">
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-left text-xs text-blue-800">
                 {booking.paymentType === "SPLIT" ? (
                   <div className="space-y-1">
                     <p className="font-semibold">

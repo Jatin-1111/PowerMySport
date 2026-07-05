@@ -79,7 +79,7 @@ const NOTE_TYPE_CONFIG: Record<
   },
   SESSION: {
     label: "Session",
-    className: "bg-blue-100 text-blue-700 border border-blue-200",
+    className: "bg-indigo-100 text-indigo-700 border border-indigo-200",
     icon: <Activity size={12} />,
   },
   INJURY: {
@@ -102,14 +102,14 @@ const NOTE_TYPE_CONFIG: Record<
 function getBookingStatusClass(status: Booking["status"]): string {
   switch (status) {
     case "CONFIRMED":
-      return "bg-green-100 text-green-700 border border-green-200";
+      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
     case "COMPLETED":
       return "bg-emerald-100 text-emerald-700 border border-emerald-200";
     case "PENDING_CONFIRMATION":
     case "PENDING_INVITES":
       return "bg-amber-100 text-amber-700 border border-amber-200";
     case "IN_PROGRESS":
-      return "bg-blue-100 text-blue-700 border border-blue-200";
+      return "bg-indigo-100 text-indigo-700 border border-indigo-200";
     case "NO_SHOW":
       return "bg-yellow-100 text-yellow-700 border border-yellow-200";
     case "CANCELLED":
@@ -497,7 +497,7 @@ export default function ClientProfilePage() {
           <div className="p-6">
             <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
               {/* Avatar */}
-              <div className="shrink-0 flex h-16 w-16 items-center justify-center rounded-full bg-orange-500 text-white text-xl font-bold shadow-md select-none">
+              <div className="shrink-0 flex h-16 w-16 items-center justify-center rounded-full bg-power-orange text-white text-xl font-bold shadow-md select-none">
                 {client.photoUrl ? (
                   <img
                     src={client.photoUrl}
@@ -583,7 +583,7 @@ export default function ClientProfilePage() {
             <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
-                  <FileText size={17} className="text-orange-500" />
+                  <FileText size={17} className="text-power-orange" />
                   Session Notes
                   {client.notes.length > 0 && (
                     <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 font-medium">
@@ -745,7 +745,7 @@ export default function ClientProfilePage() {
             <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
                 <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
-                  <Calendar size={17} className="text-orange-500" />
+                  <Calendar size={17} className="text-power-orange" />
                   Session History
                   {client.bookings.length > 0 && (
                     <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 font-medium">

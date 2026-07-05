@@ -32,11 +32,11 @@ const getStatusBadgeClass = (status: Booking["status"]) => {
     case "PENDING_CONFIRMATION":
       return "bg-amber-100 text-amber-700 border border-amber-300";
     case "PENDING_INVITES":
-      return "bg-blue-100 text-blue-700 border border-blue-300";
+      return "bg-indigo-100 text-indigo-700 border border-indigo-300";
     case "CONFIRMED":
-      return "bg-green-100 text-green-700 border border-green-300";
+      return "bg-emerald-100 text-emerald-700 border border-emerald-300";
     case "IN_PROGRESS":
-      return "bg-blue-100 text-blue-700 border border-blue-300";
+      return "bg-indigo-100 text-indigo-700 border border-indigo-300";
     case "COMPLETED":
       return "bg-emerald-100 text-emerald-700 border border-emerald-300";
     case "NO_SHOW":
@@ -218,7 +218,7 @@ export default function CoachBookingsPage() {
                 <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
                   Confirmed
                 </p>
-                <p className="text-2xl font-bold text-green-600 sm:text-3xl">
+                <p className="text-2xl font-bold text-emerald-600 sm:text-3xl">
                   {stats.confirmed}
                 </p>
               </Card>

@@ -241,7 +241,7 @@ function OwnerStepCard({
       />
       <div
         aria-hidden
-        className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-blue-50 opacity-40 transition-transform duration-700 group-hover:scale-125"
+        className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-indigo-50 opacity-40 transition-transform duration-700 group-hover:scale-125"
       />
 
       <div className="relative mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 text-2xl font-bold text-white shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
@@ -315,7 +315,7 @@ export default function HowItWorksPage() {
   const playerSteps: StepRowProps[] = [
     {
       step: 1,
-      stepColor: "text-orange-500",
+      stepColor: "text-power-orange",
       badgeBg: "bg-gradient-to-r from-orange-500 to-orange-400",
       title: "Tell Us About Your Child",
       description:
@@ -343,7 +343,7 @@ export default function HowItWorksPage() {
     },
     {
       step: 2,
-      stepColor: "text-blue-500",
+      stepColor: "text-indigo-500",
       badgeBg: "bg-gradient-to-r from-blue-600 to-blue-500",
       title: "Get an AI Sports Roadmap",
       description:
@@ -351,13 +351,13 @@ export default function HowItWorksPage() {
       checkItems: [
         {
           text: "Know which sport fits your child best",
-          iconColor: "text-blue-400",
+          iconColor: "text-indigo-400",
         },
         {
           text: "See the time and cost it really takes",
-          iconColor: "text-blue-400",
+          iconColor: "text-indigo-400",
         },
-        { text: "Clear next steps, not vague advice", iconColor: "text-blue-400" },
+        { text: "Clear next steps, not vague advice", iconColor: "text-indigo-400" },
       ],
       image: {
         src: "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=800&q=80",
@@ -371,7 +371,7 @@ export default function HowItWorksPage() {
     },
     {
       step: 3,
-      stepColor: "text-emerald-500",
+      stepColor: "text-emerald-600",
       badgeBg: "bg-gradient-to-r from-emerald-600 to-emerald-400",
       title: "Get Guidance on Every Step",
       description:
@@ -454,7 +454,7 @@ export default function HowItWorksPage() {
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
         {/* Ambient blobs */}
         <AmbientBlob className="h-96 w-96 bg-orange-100/40 -left-48 top-24" />
-        <AmbientBlob className="h-80 w-80 bg-blue-100/30 -right-40 top-1/3" />
+        <AmbientBlob className="h-80 w-80 bg-indigo-100/30 -right-40 top-1/3" />
         <AmbientBlob className="h-72 w-72 bg-indigo-100/30 -left-32 bottom-1/4" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -665,7 +665,7 @@ export default function HowItWorksPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        <AmbientBlob className="h-80 w-80 bg-violet-100/40 -right-24 top-16" />
+        <AmbientBlob className="h-80 w-80 bg-indigo-100/40 -right-24 top-16" />
 
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <motion.div

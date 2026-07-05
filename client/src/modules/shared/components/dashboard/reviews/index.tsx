@@ -128,8 +128,8 @@ export function ReviewCard({ review }: { review: ReviewItem }) {
 // ---------------------------------------------------------------------------
 
 const STAR_COLORS: Record<number, string> = {
-  5: "bg-emerald-400",
-  4: "bg-green-400",
+  5: "bg-turf-green",
+  4: "bg-turf-green",
   3: "bg-amber-400",
   2: "bg-orange-400",
   1: "bg-rose-400",

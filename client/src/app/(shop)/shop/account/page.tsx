@@ -174,10 +174,10 @@ function OrdersView() {
                   <span className={cn(
                     "mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ring-inset capitalize",
                     o.status === "DELIVERED"
-                      ? "bg-green-50 text-green-700 ring-green-600/20"
+                      ? "bg-emerald-50 text-emerald-700 ring-green-600/20"
                       : o.status === "CANCELLED"
                       ? "bg-red-50 text-red-700 ring-red-600/20"
-                      : "bg-blue-50 text-blue-700 ring-blue-600/20"
+                      : "bg-indigo-50 text-indigo-700 ring-blue-600/20"
                   )}>
                     {o.status.toLowerCase().replace(/_/g, " ")}
                   </span>
@@ -273,7 +273,7 @@ function BalanceView() {
                 <div className="flex items-center gap-4">
                   <div className={cn(
                     "h-10 w-10 rounded-full flex items-center justify-center font-bold",
-                    t.type === "CREDIT" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
+                    t.type === "CREDIT" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
                   )}>
                     {t.type === "CREDIT" ? "+" : "-"}
                   </div>
@@ -282,7 +282,7 @@ function BalanceView() {
                     <p className="text-xs text-slate-500">{new Date(t.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <p className={cn("font-bold", t.type === "CREDIT" ? "text-green-600" : "text-red-600")}>
+                <p className={cn("font-bold", t.type === "CREDIT" ? "text-emerald-600" : "text-red-600")}>
                   {t.type === "CREDIT" ? "+" : "-"} {formatInr(t.amount)}
                 </p>
               </div>
@@ -688,7 +688,7 @@ function SellerDashboardView() {
                                 <>
                                   <button
                                     onClick={() => handleUpdateProduct(p.id)}
-                                    className="p-1 text-green-600 hover:bg-green-50 rounded"
+                                    className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
                                     title="Save"
                                   >
                                     <Check className="h-4 w-4" />
@@ -908,7 +908,7 @@ function SellerDashboardView() {
                   </div>
                   <span className={cn(
                     "inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold capitalize",
-                    o.status === "DELIVERED" ? "bg-green-50 text-green-700 border border-green-200" : "bg-blue-50 text-blue-700 border border-blue-200"
+                    o.status === "DELIVERED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-indigo-50 text-indigo-700 border border-indigo-200"
                   )}>
                     {o.status.toLowerCase().replace(/_/g, " ")}
                   </span>

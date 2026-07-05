@@ -898,7 +898,7 @@ export default function CoachBillingPage() {
                         )
                       ) : undefined
                     }
-                    className="bg-turf-green hover:bg-green-700 whitespace-nowrap sm:flex-1"
+                    className="bg-turf-green hover:bg-emerald-700 whitespace-nowrap sm:flex-1"
                   >
                     {editingPackage ? "Save changes" : "Create package"}
                   </Button>

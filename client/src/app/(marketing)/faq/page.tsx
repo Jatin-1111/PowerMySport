@@ -393,7 +393,7 @@ export default function FAQPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Links to Legal Pages */}
         <div className="mb-12 p-6 bg-orange-50 rounded-lg border-2 border-orange-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">
             <span className="inline-flex items-center gap-2">
               <FileText size={18} /> For Detailed Legal Information
             </span>

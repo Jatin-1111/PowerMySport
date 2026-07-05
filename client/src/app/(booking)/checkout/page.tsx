@@ -276,7 +276,7 @@ function EntityCard({ coach, venue, academy, type }: { coach: Coach | null; venu
           <div className="flex items-start gap-2">
             <p className="text-lg font-bold text-slate-900">{academy.name}</p>
             {(academy.kycVerified || academy.isApproved) && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                 <BadgeCheck size={10} />Verified
               </span>
             )}
@@ -780,9 +780,9 @@ function CheckoutPageContent() {
                   </motion.div>
                 )}
                 {showWaitlistPrompt && (
-                  <motion.div variants={fadeUp} initial="hidden" animate="show" exit="hidden" className="rounded-xl border border-blue-200/60 bg-blue-50/80 p-4">
+                  <motion.div variants={fadeUp} initial="hidden" animate="show" exit="hidden" className="rounded-xl border border-indigo-200/60 bg-indigo-50/80 p-4">
                     <p className="text-sm font-semibold text-blue-800">This slot was just taken.</p>
-                    {alternateSlots.length > 0 ? <p className="mt-1 text-xs text-blue-600">Nearby alternates: {alternateSlots.join(", ")}</p> : <p className="mt-1 text-xs text-blue-600">No nearby alternate slots right now.</p>}
+                    {alternateSlots.length > 0 ? <p className="mt-1 text-xs text-indigo-600">Nearby alternates: {alternateSlots.join(", ")}</p> : <p className="mt-1 text-xs text-indigo-600">No nearby alternate slots right now.</p>}
                     <div className="mt-3 flex gap-2">
                       <Button variant="outline" size="sm" onClick={handleJoinWaitlist} disabled={isJoiningWaitlist}>{isJoiningWaitlist ? "Joining..." : "Join waitlist"}</Button>
                       <Button variant="ghost" size="sm" onClick={() => setShowWaitlistPrompt(false)}>Dismiss</Button>

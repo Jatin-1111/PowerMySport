@@ -247,7 +247,7 @@ export default function Step3DocumentUpload({
                       </div>
                     </div>
                     {isUploaded && (
-                      <CheckCircle className="w-6 h-6 text-green-600 shrink-0" />
+                      <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0" />
                     )}
                   </div>
 

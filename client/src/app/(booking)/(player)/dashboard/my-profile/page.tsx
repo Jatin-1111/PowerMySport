@@ -530,7 +530,7 @@ export default function ProfilePage() {
                 <p className="text-sm font-semibold text-slate-900">
                   {isEditingProfile ? profileForm.name || user.name : user.name}
                 </p>
-                <Badge className="mt-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50">
+                <Badge className="mt-2 border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-50">
                   {user.userType || user.role.replace("_", " ")}
                 </Badge>
               </div>
@@ -817,7 +817,7 @@ export default function ProfilePage() {
                           }}
                           className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
                             isSelected
-                              ? "border-blue-600 bg-blue-50 font-medium text-blue-700"
+                              ? "border-blue-600 bg-indigo-50 font-medium text-indigo-700"
                               : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                           }`}
                         >
@@ -1065,9 +1065,9 @@ export default function ProfilePage() {
             )}
           </CardContent>
 
-          <div className="border-t border-slate-200/60 bg-blue-50/50 px-6 py-4">
+          <div className="border-t border-slate-200/60 bg-indigo-50/50 px-6 py-4">
             <div className="flex gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
                 <Info className="h-4 w-4" />
               </div>
               <div className="text-sm text-slate-700">

@@ -288,7 +288,7 @@ export function PathwayConciergeModal({
           <ul className="space-y-2">
             {item.documentChecklist.map((doc: string, i: number) => (
               <li key={i} className="flex items-start gap-2.5">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 <span className="text-sm text-slate-700">{doc}</span>
               </li>
             ))}
@@ -368,7 +368,7 @@ export function PathwayConciergeModal({
           <ul className="space-y-2">
             {item.documentChecklist.map((doc: string, i: number) => (
               <li key={i} className="flex items-start gap-2.5">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 <span className="text-sm text-slate-700">{doc}</span>
               </li>
             ))}
@@ -681,7 +681,7 @@ export function PathwayConciergeModal({
               </div>
               <label className="block border-2 border-dashed border-slate-200 bg-white rounded-xl p-4 text-center hover:border-power-orange hover:bg-orange-50/30 transition-colors cursor-pointer flex flex-col items-center justify-center gap-1.5">
                 <UploadCloud
-                  className={`h-5 w-5 ${file ? "text-emerald-500" : "text-slate-400"}`}
+                  className={`h-5 w-5 ${file ? "text-emerald-600" : "text-slate-400"}`}
                 />
                 <div className="text-xs font-bold text-slate-700">
                   {file ? file.name : `Upload ${docName}`}

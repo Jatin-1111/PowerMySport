@@ -151,7 +151,7 @@ export default function CoachProfilePage() {
       case "VERIFIED":
         return {
           label: "Verified",
-          className: "bg-green-100 text-green-700 border border-green-200",
+          className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
           icon: CheckCircle,
         };
       case "PENDING":
@@ -163,7 +163,7 @@ export default function CoachProfilePage() {
       case "REVIEW":
         return {
           label: "In Review",
-          className: "bg-blue-100 text-blue-700 border border-blue-200",
+          className: "bg-indigo-100 text-indigo-700 border border-indigo-200",
           icon: AlertCircle,
         };
       case "REJECTED":
@@ -978,7 +978,7 @@ export default function CoachProfilePage() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
             {guidance}
           </div>
 
@@ -1769,7 +1769,7 @@ export default function CoachProfilePage() {
                             {doc.fileName}
                           </p>
                         </div>
-                        <CheckCircle size={16} className="text-green-600" />
+                        <CheckCircle size={16} className="text-emerald-600" />
                       </div>
                     ))}
                   </div>
@@ -1814,7 +1814,7 @@ export default function CoachProfilePage() {
                 <div
                   className={`mt-3 rounded-lg border px-3 py-2 text-xs font-medium ${
                     checkedInBooking
-                      ? "border-green-200 bg-green-50 text-green-700"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                       : "border-amber-200 bg-amber-50 text-amber-700"
                   }`}
                 >
@@ -1867,8 +1867,8 @@ export default function CoachProfilePage() {
                   {guidance}
                 </div>
                 {status === "VERIFIED" && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-2">
-                    <p className="text-xs font-medium text-green-700 inline-flex items-center gap-1.5">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2">
+                    <p className="text-xs font-medium text-emerald-700 inline-flex items-center gap-1.5">
                       <CheckCircle size={13} />
                       Profile verified and visible to players
                     </p>

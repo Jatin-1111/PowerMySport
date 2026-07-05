@@ -115,7 +115,7 @@ function bookingsForDay(day: Date, bookings: Booking[]): Booking[] {
 
 const STATUS_DOT: Record<string, string> = {
   PENDING_CONFIRMATION: "bg-amber-400",
-  CONFIRMED: "bg-emerald-400",
+  CONFIRMED: "bg-turf-green",
   IN_PROGRESS: "bg-blue-400",
   COMPLETED: "bg-slate-300",
   NO_SHOW: "bg-rose-300",
@@ -135,7 +135,7 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_BADGE: Record<string, string> = {
   PENDING_CONFIRMATION: "bg-amber-50 text-amber-700 border border-amber-200",
   CONFIRMED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  IN_PROGRESS: "bg-blue-50 text-blue-700 border border-blue-200",
+  IN_PROGRESS: "bg-indigo-50 text-indigo-700 border border-indigo-200",
   COMPLETED: "bg-slate-100 text-slate-600 border border-slate-200",
   NO_SHOW: "bg-rose-50 text-rose-600 border border-rose-200",
   CANCELLED: "bg-red-50 text-red-600 border border-red-200",
@@ -145,7 +145,7 @@ const STATUS_BADGE: Record<string, string> = {
 const BOOKING_BLOCK: Record<string, string> = {
   PENDING_CONFIRMATION: "bg-amber-100 border-amber-300 text-amber-800",
   CONFIRMED: "bg-emerald-100 border-emerald-300 text-emerald-800",
-  IN_PROGRESS: "bg-blue-100 border-blue-300 text-blue-800",
+  IN_PROGRESS: "bg-indigo-100 border-indigo-300 text-blue-800",
   COMPLETED: "bg-slate-100 border-slate-200 text-slate-600",
   NO_SHOW: "bg-rose-100 border-rose-200 text-rose-700",
   EXPIRED: "bg-red-100 border-red-200 text-red-700",
@@ -446,7 +446,7 @@ function MonthView({
               )}
               <span className={cn(
                 "relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
-                isToday && "bg-orange-500 text-white",
+                isToday && "bg-power-orange text-white",
                 !isToday && isCurrentMonth && "text-slate-800",
                 !isToday && !isCurrentMonth && "text-slate-400",
               )}>
@@ -505,7 +505,7 @@ function TimeGrid({
               <p className="text-xs font-medium text-slate-400 uppercase">{DAY_LABELS[d.getDay()]}</p>
               <p className={cn(
                 "mx-auto mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
-                isToday ? "bg-orange-500 text-white" : "text-slate-700",
+                isToday ? "bg-power-orange text-white" : "text-slate-700",
               )}>
                 {d.getDate()}
               </p>
@@ -897,7 +897,7 @@ export default function CoachSchedulePage() {
             <div className="border-t border-slate-100 px-4 py-2.5 flex flex-wrap gap-x-4 gap-y-1">
               {[
                 { label: "Pending", cls: "bg-amber-400" },
-                { label: "Confirmed", cls: "bg-emerald-400" },
+                { label: "Confirmed", cls: "bg-turf-green" },
                 { label: "In Progress", cls: "bg-blue-400" },
                 { label: "Completed", cls: "bg-slate-300" },
               ].map(({ label, cls }) => (
@@ -976,8 +976,8 @@ export default function CoachSchedulePage() {
                 transition={{ duration: 0.35, delay: 0.15 }}
                 className="rounded-2xl border border-slate-200 bg-white shadow-sm px-4 py-3.5 flex items-center gap-3"
               >
-                <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                  <Clock size={15} className="text-blue-500" />
+                <div className="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+                  <Clock size={15} className="text-indigo-500" />
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-700">Buffer time between sessions</p>

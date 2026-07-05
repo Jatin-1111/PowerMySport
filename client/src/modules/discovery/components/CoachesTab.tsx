@@ -120,7 +120,7 @@ function CoachesTabContent() {
 
   const getVerificationBadge = (coach: Coach) => {
     const status = coach.verificationStatus || (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
-    if (status === "VERIFIED") return { label: "Verified", className: "bg-green-100 text-green-700 border border-green-200" };
+    if (status === "VERIFIED") return { label: "Verified", className: "bg-emerald-100 text-emerald-700 border border-emerald-200" };
     return { label: "Unverified", className: "bg-slate-100 text-slate-700 border border-slate-200" };
   };
 
@@ -266,16 +266,16 @@ function CoachesTabContent() {
 
   const activeFilters: ActiveFilter[] = [];
   if (serviceModeFilter !== "ALL") {
-    activeFilters.push({ id: "mode", label: serviceModeFilter === "OWN_VENUE" ? "Own Venue" : serviceModeFilter === "FREELANCE" ? "Freelance" : "Hybrid", onRemove: () => setServiceModeFilter("ALL"), badgeClassName: "bg-green-50 border-green-100 text-turf-green", iconClassName: "hover:text-green-700" });
+    activeFilters.push({ id: "mode", label: serviceModeFilter === "OWN_VENUE" ? "Own Venue" : serviceModeFilter === "FREELANCE" ? "Freelance" : "Hybrid", onRemove: () => setServiceModeFilter("ALL"), badgeClassName: "bg-emerald-50 border-emerald-100 text-turf-green", iconClassName: "hover:text-emerald-700" });
   }
   if (maxRate) {
-    activeFilters.push({ id: "rate", label: `Max ₹${maxRate}/hr`, onRemove: () => setMaxRate(""), badgeClassName: "bg-green-50 border-green-100 text-turf-green", iconClassName: "hover:text-green-700" });
+    activeFilters.push({ id: "rate", label: `Max ₹${maxRate}/hr`, onRemove: () => setMaxRate(""), badgeClassName: "bg-emerald-50 border-emerald-100 text-turf-green", iconClassName: "hover:text-emerald-700" });
   }
   if (Number(minRating) > 0) {
-    activeFilters.push({ id: "rating", label: `${minRating}+ ★`, onRemove: () => setMinRating("0"), badgeClassName: "bg-green-50 border-green-100 text-turf-green", iconClassName: "hover:text-green-700" });
+    activeFilters.push({ id: "rating", label: `${minRating}+ ★`, onRemove: () => setMinRating("0"), badgeClassName: "bg-emerald-50 border-emerald-100 text-turf-green", iconClassName: "hover:text-emerald-700" });
   }
   if (sortBy !== "relevance") {
-    activeFilters.push({ id: "sort", label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : sortBy === "nearest" ? "Nearest" : "Top Rated"}`, onRemove: () => setSortBy("relevance"), badgeClassName: "bg-green-50 border-green-100 text-turf-green", iconClassName: "hover:text-green-700" });
+    activeFilters.push({ id: "sort", label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : sortBy === "nearest" ? "Nearest" : "Top Rated"}`, onRemove: () => setSortBy("relevance"), badgeClassName: "bg-emerald-50 border-emerald-100 text-turf-green", iconClassName: "hover:text-emerald-700" });
   }
   if (verifiedOnly) {
     activeFilters.push({ id: "verified", label: "Verified", onRemove: () => setVerifiedOnly(false), badgeClassName: "bg-emerald-50 border-emerald-100 text-emerald-700", iconClassName: "hover:text-emerald-900" });
@@ -316,7 +316,7 @@ function CoachesTabContent() {
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   serviceModeFilter === opt.val
-                    ? "border-turf-green bg-green-50 text-turf-green"
+                    ? "border-turf-green bg-emerald-50 text-turf-green"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
@@ -353,7 +353,7 @@ function CoachesTabContent() {
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
               )}
             >
-              {verifiedOnly && <span className="text-emerald-500 font-bold">✓</span>}
+              {verifiedOnly && <span className="text-emerald-600 font-bold">✓</span>}
               Verified Coaches Only
             </button>
             <button
@@ -389,7 +389,7 @@ function CoachesTabContent() {
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   minRating === opt.val
-                    ? "border-turf-green bg-green-50 text-turf-green"
+                    ? "border-turf-green bg-emerald-50 text-turf-green"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
@@ -418,7 +418,7 @@ function CoachesTabContent() {
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all col-span-1",
                   opt.val === "ratingDesc" && "col-span-2 sm:col-span-1",
                   sortBy === opt.val
-                    ? "border-turf-green bg-green-50 text-turf-green"
+                    ? "border-turf-green bg-emerald-50 text-turf-green"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
@@ -535,7 +535,7 @@ function CoachesTabContent() {
                             </span>
                           )}
                           {badge.label === "Verified" && (
-                            <span className="flex items-center gap-1 rounded-full bg-blue-50/50 px-2.5 py-1 text-xs font-semibold text-blue-600 ring-1 ring-inset ring-blue-100/50">
+                            <span className="flex items-center gap-1 rounded-full bg-indigo-50/50 px-2.5 py-1 text-xs font-semibold text-indigo-600 ring-1 ring-inset ring-blue-100/50">
                               <Award size={12} />Verified
                             </span>
                           )}

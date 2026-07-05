@@ -18,7 +18,7 @@ export function PlayerPageHeader({
       <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1">
           {badge && (
-            <span className="inline-flex items-center rounded-full bg-blue-100/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+            <span className="inline-flex items-center rounded-full bg-indigo-100/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
               {badge}
             </span>
           )}

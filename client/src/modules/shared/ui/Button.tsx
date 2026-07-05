@@ -51,7 +51,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         "border-2 border-power-orange text-power-orange hover:bg-power-orange hover:text-white focus:ring-power-orange",
       ghost: "text-power-orange hover:bg-orange-50 focus:ring-power-orange",
       success:
-        "bg-turf-green text-white hover:bg-green-600 focus:ring-turf-green",
+        "bg-turf-green text-white hover:bg-emerald-600 focus:ring-turf-green",
       danger: "bg-error-red text-white hover:bg-red-600 focus:ring-error-red",
     };
 

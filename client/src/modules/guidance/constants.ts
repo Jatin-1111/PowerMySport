@@ -58,7 +58,7 @@ export const FITNESS_LEVELS = [
     icon: Sprout,
     color: "text-emerald-600",
     bar: "w-1/3",
-    barColor: "bg-emerald-400",
+    barColor: "bg-turf-green",
     desc: "Just starting out",
   },
   {
@@ -74,7 +74,7 @@ export const FITNESS_LEVELS = [
     value: "High",
     label: "Advanced",
     icon: Zap,
-    color: "text-violet-600",
+    color: "text-indigo-600",
     bar: "w-full",
     barColor: "bg-violet-500",
     desc: "Skilled & active",

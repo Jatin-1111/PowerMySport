@@ -90,7 +90,7 @@ function StatCard({ icon, label, value, sub, accent }: StatCardProps) {
       transition={{ duration: 0.45, ease: "easeOut" }}
       className={`rounded-2xl border p-5 flex items-center gap-4 ${
         accent
-          ? "bg-orange-500 border-orange-500 text-white"
+          ? "bg-power-orange border-power-orange text-white"
           : "bg-white border-slate-200 text-slate-800"
       }`}
     >
@@ -99,7 +99,7 @@ function StatCard({ icon, label, value, sub, accent }: StatCardProps) {
           accent ? "bg-white/20" : "bg-orange-50"
         }`}
       >
-        <span className={accent ? "text-white" : "text-orange-500"}>{icon}</span>
+        <span className={accent ? "text-white" : "text-power-orange"}>{icon}</span>
       </div>
       <div>
         <p className={`text-2xl font-bold leading-none ${accent ? "text-white" : "text-slate-900"}`}>
@@ -125,7 +125,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
     <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-orange-200 transition-all duration-200">
       {/* header row */}
       <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-base shrink-0 select-none">
+        <div className="w-12 h-12 rounded-full bg-power-orange flex items-center justify-center text-white font-bold text-base shrink-0 select-none">
           {getInitials(client.name)}
         </div>
         <div className="flex-1 min-w-0">
@@ -135,7 +135,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
         <span
           className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${
             client.isActive
-              ? "bg-green-100 text-green-700"
+              ? "bg-emerald-100 text-emerald-700"
               : "bg-slate-100 text-slate-500"
           }`}
         >
@@ -277,7 +277,7 @@ export default function CoachClientsPage() {
         >
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-power-orange flex items-center justify-center">
                 <Users className="w-5 h-5 text-white" />
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
@@ -337,7 +337,7 @@ export default function CoachClientsPage() {
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   activeTab === tab
-                    ? "bg-orange-500 text-white shadow-sm"
+                    ? "bg-power-orange text-white shadow-sm"
                     : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
@@ -393,7 +393,7 @@ export default function CoachClientsPage() {
                     setSearch("");
                     setActiveTab("All");
                   }}
-                  className="mt-4 text-orange-500 text-sm font-medium hover:underline"
+                  className="mt-4 text-power-orange text-sm font-medium hover:underline"
                 >
                   Clear filters
                 </button>

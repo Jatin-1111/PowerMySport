@@ -22,7 +22,7 @@ const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING_PAYMENT: "bg-amber-50 text-amber-700 ring-amber-100",
-  PAID: "bg-blue-50 text-blue-700 ring-blue-100",
+  PAID: "bg-indigo-50 text-indigo-700 ring-blue-100",
   SCHEDULED: "bg-indigo-50 text-indigo-700 ring-indigo-100",
   COMPLETED: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   CANCELLED: "bg-red-50 text-red-700 ring-red-100",

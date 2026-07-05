@@ -131,7 +131,7 @@ export function PaymentTypeSelector({
 
       {/* Info Note */}
       {value === "SPLIT" && (
-        <div className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800 border border-blue-200">
+        <div className="rounded-lg bg-indigo-50 px-4 py-3 text-sm text-blue-800 border border-indigo-200">
           <p className="font-medium">How split payment works:</p>
           <ul className="mt-2 space-y-1 text-xs">
             <li>• Each participant pays their share separately</li>

@@ -53,14 +53,14 @@ export function Step1Profile({
       </div>
 
       {players.length > 0 && (
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-2">
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-2">
             Auto-fill from profile
           </p>
           <select
             value={selectedId}
             onChange={(e) => onSelectPlayer(e.target.value)}
-            className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           >
             <option value="">— New athlete —</option>
             {players.map((p) => (

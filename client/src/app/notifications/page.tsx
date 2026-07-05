@@ -135,18 +135,18 @@ const categoryConfig: Record<
     unreadBg: "bg-sky-50/40",
   },
   BOOKING: {
-    iconWrap: "bg-violet-100",
-    iconColor: "text-violet-600",
-    badge: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
+    iconWrap: "bg-indigo-100",
+    iconColor: "text-indigo-600",
+    badge: "bg-indigo-50 text-indigo-700 ring-1 ring-violet-200",
     dot: "bg-violet-500",
     accent: "border-l-violet-400",
-    unreadBg: "bg-violet-50/30",
+    unreadBg: "bg-indigo-50/30",
   },
   PAYMENT: {
     iconWrap: "bg-emerald-100",
     iconColor: "text-emerald-600",
     badge: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
-    dot: "bg-emerald-500",
+    dot: "bg-turf-green",
     accent: "border-l-emerald-400",
     unreadBg: "bg-emerald-50/30",
   },
@@ -170,7 +170,7 @@ const categoryConfig: Record<
     iconWrap: "bg-orange-100",
     iconColor: "text-orange-600",
     badge: "bg-orange-50 text-orange-700 ring-1 ring-orange-200",
-    dot: "bg-orange-500",
+    dot: "bg-power-orange",
     accent: "border-l-orange-400",
     unreadBg: "bg-orange-50/30",
   },
@@ -218,7 +218,7 @@ function Toggle({
       onClick={onChange}
       className={cn(
         "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
-        checked ? "bg-orange-500" : "bg-slate-200",
+        checked ? "bg-power-orange" : "bg-slate-200",
       )}
     >
       <span
@@ -317,7 +317,7 @@ function NotificationCard({
               href={action.href}
               target="_blank"
               rel="noreferrer"
-              className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-orange-500 hover:text-orange-600 hover:underline transition-colors"
+              className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-power-orange hover:text-orange-600 hover:underline transition-colors"
             >
               {action.label}
               <ExternalLink className="h-3 w-3" />
@@ -325,7 +325,7 @@ function NotificationCard({
           ) : (
             <button
               onClick={() => router.push(action.href)}
-              className="ml-auto text-xs font-semibold text-orange-500 hover:text-orange-600 hover:underline transition-colors"
+              className="ml-auto text-xs font-semibold text-power-orange hover:text-orange-600 hover:underline transition-colors"
             >
               {action.label} →
             </button>
@@ -686,7 +686,7 @@ function NotificationsPageContent() {
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium whitespace-nowrap shrink-0 transition-all duration-150",
                       isActive
-                        ? "border-orange-300 bg-orange-500 text-white shadow-sm shadow-orange-200"
+                        ? "border-orange-300 bg-power-orange text-white shadow-sm shadow-orange-200"
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
                     )}
                   >
@@ -774,7 +774,7 @@ function NotificationsPageContent() {
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-medium transition-all",
                       page === pageNum
-                        ? "border-orange-300 bg-orange-500 text-white shadow-sm shadow-orange-200"
+                        ? "border-orange-300 bg-power-orange text-white shadow-sm shadow-orange-200"
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
                     )}
                   >

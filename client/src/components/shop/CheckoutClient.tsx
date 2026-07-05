@@ -259,7 +259,7 @@ export function CheckoutClient() {
           animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl border border-emerald-200 bg-white p-10 shadow-sm"
         >
-          <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
+          <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
           <h1 className="mt-4 text-3xl font-black text-slate-950">
             Order started
           </h1>
@@ -328,7 +328,7 @@ export function CheckoutClient() {
                     className={cn(
                       "w-full rounded-xl border-2 p-4 text-left transition-all",
                       selected
-                        ? "border-orange-500 bg-orange-50/40"
+                        ? "border-power-orange bg-orange-50/40"
                         : "border-slate-200 bg-white hover:border-slate-300",
                     )}
                   >
@@ -338,7 +338,7 @@ export function CheckoutClient() {
                           {address.fullName}
                         </span>
                         {address.isDefault && (
-                          <span className="rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                          <span className="rounded-full bg-power-orange px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                             Default
                           </span>
                         )}
@@ -347,7 +347,7 @@ export function CheckoutClient() {
                         className={cn(
                           "grid h-5 w-5 place-items-center rounded-full border-2",
                           selected
-                            ? "border-orange-500 bg-orange-500"
+                            ? "border-power-orange bg-power-orange"
                             : "border-slate-300 bg-white",
                         )}
                       >
@@ -552,7 +552,7 @@ export function CheckoutClient() {
           type="submit"
           form="shop-checkout-form"
           disabled={!canPlace || status === "placing"}
-          className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-orange-500 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-power-orange text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {status === "placing" ? "Placing Order..." : "Place Order"}
         </button>

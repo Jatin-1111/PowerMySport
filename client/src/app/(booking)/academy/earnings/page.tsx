@@ -71,7 +71,7 @@ function StatCard({ title, amount, subtitle, icon, accent, trend }: StatCardProp
             accent ? "bg-white/20" : "bg-orange-50"
           }`}
         >
-          <span className={accent ? "text-white" : "text-orange-500"}>
+          <span className={accent ? "text-white" : "text-power-orange"}>
             {icon}
           </span>
         </div>
@@ -81,7 +81,7 @@ function StatCard({ title, amount, subtitle, icon, accent, trend }: StatCardProp
               accent
                 ? "bg-white/20 text-white"
                 : trend.positive
-                ? "bg-green-50 text-green-600"
+                ? "bg-emerald-50 text-emerald-600"
                 : "bg-red-50 text-red-600"
             }`}
           >
@@ -338,7 +338,7 @@ function RecentTransactions({ bookings }: { bookings: Booking[] }) {
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-              <IndianRupee className="w-4 h-4 text-orange-500" />
+              <IndianRupee className="w-4 h-4 text-power-orange" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-slate-800 truncate">
@@ -420,7 +420,7 @@ export default function AcademyEarningsPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <Loader2 className="w-8 h-8 animate-spin text-power-orange" />
           <p className="text-sm font-medium">Loading earnings…</p>
         </div>
       </div>
@@ -528,7 +528,7 @@ export default function AcademyEarningsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm bg-orange-500 inline-block" />
+                <span className="w-3 h-3 rounded-sm bg-power-orange inline-block" />
                 <span className="text-xs text-slate-400">Earnings</span>
               </div>
             </div>

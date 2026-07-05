@@ -277,7 +277,7 @@ export default function Step5Pricing({
           )}
         </div>
 
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
           <p className="text-sm text-blue-900">
             💡 You can create subscription plans and packages later from your
             dashboard.

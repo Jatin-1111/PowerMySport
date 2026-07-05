@@ -25,7 +25,7 @@ export function KpiCard({
   return (
     <SlideUp delay={delay ?? 0}>
       <div className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-orange-300">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-power-orange">
           {icon}
         </div>
         <div className="min-w-0">
@@ -333,9 +333,9 @@ export function RetentionCard({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {/* New clients */}
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-center">
-          <p className="text-2xl font-bold text-blue-700">{newCount}</p>
-          <p className="mt-1 text-xs text-blue-500">{newLabel}</p>
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center">
+          <p className="text-2xl font-bold text-indigo-700">{newCount}</p>
+          <p className="mt-1 text-xs text-indigo-500">{newLabel}</p>
         </div>
         {/* Returning clients */}
         <div className="rounded-xl border border-orange-100 bg-orange-50 p-4 text-center">

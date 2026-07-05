@@ -559,7 +559,7 @@ export default function HomePage() {
       {!user && (
         <section className="relative py-16 sm:py-20 lg:py-24">
           <div className="pointer-events-none absolute -right-32 top-0 h-96 w-96 rounded-full bg-orange-100/25 blur-3xl" />
-          <div className="pointer-events-none absolute -left-32 bottom-0 h-96 w-96 rounded-full bg-blue-100/20 blur-3xl" />
+          <div className="pointer-events-none absolute -left-32 bottom-0 h-96 w-96 rounded-full bg-indigo-100/20 blur-3xl" />
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <motion.div
               variants={sectionVariants}
@@ -726,7 +726,7 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href="/register?role=COACH"
-                  className="block w-full rounded-xl bg-turf-green px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-green-700"
+                  className="block w-full rounded-xl bg-turf-green px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-emerald-700"
                 >
                   Register Early
                 </Link>

@@ -220,7 +220,7 @@ function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
       }}
     >
       <motion.div
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-50 text-orange-500"
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-50 text-power-orange"
         initial={iconPop.initial}
         whileInView={iconPop.whileInView}
         whileHover={iconPop.whileHover}
@@ -260,7 +260,7 @@ function Field({ label, id, required, ...props }: FieldProps) {
         htmlFor={id}
         className="mb-2 block text-sm font-semibold text-slate-800"
       >
-        {label} {required && <span className="text-orange-500">*</span>}
+        {label} {required && <span className="text-power-orange">*</span>}
       </label>
       <input
         id={id}
@@ -457,9 +457,9 @@ export default function ContactPage() {
                       initial={{ opacity: 0, y: -12, height: 0 }}
                       animate={{ opacity: 1, y: 0, height: "auto" }}
                       exit={{ opacity: 0, y: -8, height: 0 }}
-                      className="mb-6 overflow-hidden rounded-xl border border-green-200 bg-green-50 px-4 py-3"
+                      className="mb-6 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3"
                     >
-                      <p className="text-sm font-semibold text-green-800">
+                      <p className="text-sm font-semibold text-emerald-800">
                         ✓ Message sent — we&apos;ll be in touch within 24 hours.
                       </p>
                     </motion.div>
@@ -528,7 +528,7 @@ export default function ContactPage() {
                         htmlFor="userType"
                         className="mb-2 block text-sm font-semibold text-slate-800"
                       >
-                        I am a <span className="text-orange-500">*</span>
+                        I am a <span className="text-power-orange">*</span>
                       </label>
                       <select
                         id="userType"
@@ -552,7 +552,7 @@ export default function ContactPage() {
                       htmlFor="subject"
                       className="mb-2 block text-sm font-semibold text-slate-800"
                     >
-                      Subject <span className="text-orange-500">*</span>
+                      Subject <span className="text-power-orange">*</span>
                     </label>
                     <select
                       id="subject"
@@ -579,7 +579,7 @@ export default function ContactPage() {
                       htmlFor="message"
                       className="mb-2 block text-sm font-semibold text-slate-800"
                     >
-                      Message <span className="text-orange-500">*</span>
+                      Message <span className="text-power-orange">*</span>
                     </label>
                     <textarea
                       id="message"
@@ -642,7 +642,7 @@ export default function ContactPage() {
                 />
                 {/* Floating glass badge */}
                 <div className="absolute bottom-4 left-5 flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-slate-900 shadow-lg backdrop-blur-md">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-turf-green" />
                   Support team online
                 </div>
                 {/* Geo accent */}
@@ -656,7 +656,7 @@ export default function ContactPage() {
               <InfoCard icon={Mail} title="Email">
                 <a
                   href="mailto:teams@powermysport.com"
-                  className="text-sm text-slate-600 transition-colors hover:text-orange-500"
+                  className="text-sm text-slate-600 transition-colors hover:text-power-orange"
                 >
                   teams@powermysport.com
                 </a>
@@ -666,7 +666,7 @@ export default function ContactPage() {
               <InfoCard icon={Phone} title="Phone">
                 <a
                   href="tel:+918968582443"
-                  className="text-sm text-slate-600 transition-colors hover:text-orange-500"
+                  className="text-sm text-slate-600 transition-colors hover:text-power-orange"
                 >
                   +91 89685 82443
                 </a>
@@ -704,7 +704,7 @@ export default function ContactPage() {
                       key={label}
                       href={href}
                       aria-label={label}
-                      className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:bg-orange-500 hover:text-white"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:bg-power-orange hover:text-white"
                       whileHover={{ scale: 1.12, rotate: 7 }}
                       whileTap={{ scale: 0.93 }}
                       transition={{
@@ -733,7 +733,7 @@ export default function ContactPage() {
         {/* Background radial burst */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-orange-500/10 blur-[100px]"
+          className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-power-orange/10 blur-[100px]"
         />
 
         {/* Diagonal stripe overlay */}
@@ -754,7 +754,7 @@ export default function ContactPage() {
             viewport={{ once: true, margin: "-80px" }}
           >
             <motion.div variants={scaleIn} className="mb-4 inline-flex">
-              <span className="rounded-full border border-orange-500/40 bg-orange-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
+              <span className="rounded-full border border-power-orange/40 bg-power-orange/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
                 Ready to play?
               </span>
             </motion.div>
@@ -782,7 +782,7 @@ export default function ContactPage() {
             >
               <motion.a
                 href="/register"
-                className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/30 hover:shadow-xl"
+                className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/30 hover:shadow-xl"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >

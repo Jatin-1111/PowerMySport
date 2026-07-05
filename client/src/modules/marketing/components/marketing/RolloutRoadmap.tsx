@@ -123,17 +123,17 @@ const accentStyles: Record<
   },
   blue: {
     dot: "bg-blue-500",
-    iconBox: "bg-blue-100 text-blue-600",
-    badge: "bg-blue-50 text-blue-700 border-blue-200/80",
+    iconBox: "bg-indigo-100 text-indigo-600",
+    badge: "bg-indigo-50 text-indigo-700 border-indigo-200/80",
     glow: "from-blue-400/15",
-    check: "text-blue-500",
+    check: "text-indigo-500",
   },
   emerald: {
-    dot: "bg-emerald-500",
+    dot: "bg-turf-green",
     iconBox: "bg-emerald-100 text-emerald-600",
     badge: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
     glow: "from-emerald-400/15",
-    check: "text-emerald-500",
+    check: "text-emerald-600",
   },
   indigo: {
     dot: "bg-indigo-500",
@@ -236,8 +236,8 @@ function PhaseRow({ phase, isLast }: { phase: Phase; isLast: boolean }) {
             {isLive ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-turf-green opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-turf-green" />
                 </span>
                 Live
               </span>
@@ -314,7 +314,7 @@ export function RolloutRoadmap({
     <section className={cn("relative overflow-hidden py-16 sm:py-20 lg:py-24", className)}>
       {/* Ambient blobs */}
       <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-orange-100/25 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-blue-100/25 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-indigo-100/25 blur-3xl" />
 
       <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         {/* Header */}

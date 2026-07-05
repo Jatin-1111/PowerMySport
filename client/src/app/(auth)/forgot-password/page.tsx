@@ -92,8 +92,8 @@ export default function ForgotPasswordPage() {
             </>
           ) : (
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-green-800 text-center font-semibold">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <p className="text-emerald-800 text-center font-semibold">
                   Password reset instructions have been sent to your email!
                 </p>
               </div>

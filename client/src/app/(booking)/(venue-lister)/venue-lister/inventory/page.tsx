@@ -276,7 +276,7 @@ function VenueCard({
             className={[
               "text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm",
               isActive
-                ? "bg-emerald-500/90 text-white"
+                ? "bg-turf-green/90 text-white"
                 : "bg-amber-500/90 text-white",
             ].join(" ")}
           >
@@ -350,7 +350,7 @@ function VenueCard({
         {/* External coaches badge */}
         {venue.allowExternalCoaches && (
           <div className="flex items-center gap-1.5">
-            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
             <span className="text-xs text-emerald-600 font-medium">
               External coaches welcome
             </span>
@@ -362,7 +362,7 @@ function VenueCard({
         {/* Price + Rating */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <div className="flex items-baseline gap-0.5">
-            <IndianRupee className="w-4 h-4 text-orange-500 shrink-0" strokeWidth={2.5} />
+            <IndianRupee className="w-4 h-4 text-power-orange shrink-0" strokeWidth={2.5} />
             <span className="text-xl font-bold text-slate-900">
               {venue.pricePerHour.toLocaleString("en-IN")}
             </span>
@@ -1143,21 +1143,21 @@ export default function VenueInventoryPage() {
                 label: "Total Venues",
                 value: venues.length,
                 icon: <Building2 className="w-4 h-4" />,
-                color: "text-orange-500",
+                color: "text-power-orange",
                 bg: "bg-orange-50",
               },
               {
                 label: "Sports Offered",
                 value: totalSports,
                 icon: <Layout className="w-4 h-4" />,
-                color: "text-blue-500",
-                bg: "bg-blue-50",
+                color: "text-indigo-500",
+                bg: "bg-indigo-50",
               },
               {
                 label: "With Photos",
                 value: venuesWithPhotos,
                 icon: <ImageOff className="w-4 h-4" />,
-                color: "text-emerald-500",
+                color: "text-emerald-600",
                 bg: "bg-emerald-50",
               },
               {
@@ -1195,7 +1195,7 @@ export default function VenueInventoryPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-orange-50 mb-4">
-                <Building2 className="w-6 h-6 text-orange-500" />
+                <Building2 className="w-6 h-6 text-power-orange" />
               </div>
               <h2 className="text-2xl font-bold text-slate-900 mb-1">
                 {editingVenue ? "Edit Venue" : "Create New Venue"}
@@ -1611,7 +1611,7 @@ export default function VenueInventoryPage() {
                         <span>
                           {selectedImages.length + existingImages.length} images
                         </span>
-                        <span className="text-orange-500 font-medium">
+                        <span className="text-power-orange font-medium">
                           {selectedImages.length + existingImages.length}/10
                         </span>
                       </div>
@@ -1661,7 +1661,7 @@ export default function VenueInventoryPage() {
                                   <X className="w-3.5 h-3.5" />
                                 </button>
                                 {existingCoverPhotoUrl === url && (
-                                  <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                  <span className="absolute top-2 right-2 bg-power-orange text-white text-xs px-2 py-1 rounded-full font-medium">
                                     Cover
                                   </span>
                                 )}
@@ -1701,7 +1701,7 @@ export default function VenueInventoryPage() {
                                       <X className="w-3.5 h-3.5" />
                                     </button>
                                     {existingCoverPhotoUrl === url && (
-                                      <span className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                      <span className="absolute top-2 right-2 bg-power-orange text-white text-xs px-2 py-1 rounded-full font-medium">
                                         Cover
                                       </span>
                                     )}
@@ -1772,7 +1772,7 @@ export default function VenueInventoryPage() {
                               <X className="w-3.5 h-3.5" />
                             </button>
                             {coverPhotoIndex === index && (
-                              <span className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                              <span className="absolute top-2 left-2 bg-power-orange text-white text-xs px-2 py-1 rounded-full font-medium">
                                 Cover
                               </span>
                             )}
@@ -1798,7 +1798,7 @@ export default function VenueInventoryPage() {
 
                   {isUploadingImages && (
                     <div className="flex items-center justify-center gap-2 py-4 text-slate-500 text-sm">
-                      <div className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-power-orange border-t-transparent rounded-full animate-spin" />
                       Uploading images…
                     </div>
                   )}

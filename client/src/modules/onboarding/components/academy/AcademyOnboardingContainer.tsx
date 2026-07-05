@@ -414,7 +414,7 @@ export default function AcademyOnboardingContainer() {
                   step === currentStep
                     ? "bg-power-orange text-white shadow-lg scale-110"
                     : step <= maxUnlockedStep
-                      ? "bg-green-500 text-white"
+                      ? "bg-turf-green text-white"
                       : "bg-slate-200 text-slate-400"
                 }`}
               >
@@ -451,7 +451,7 @@ export default function AcademyOnboardingContainer() {
 
         {/* Resume banner */}
         {resumeId && currentStep > 1 && (
-          <div className="mb-4 px-4 py-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-green-800">
+          <div className="mb-4 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-sm text-emerald-800">
             <span>✅</span>
             <span>
               Resuming your onboarding from Step {currentStep}. Previous steps

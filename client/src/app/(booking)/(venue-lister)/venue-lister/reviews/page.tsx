@@ -169,7 +169,7 @@ export default function VenueListerReviewsPage() {
         {/* ── Venues Loading ── */}
         {venuesLoading && (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
+            <Loader2 className="w-7 h-7 text-power-orange animate-spin" />
           </div>
         )}
 
@@ -220,7 +220,7 @@ export default function VenueListerReviewsPage() {
             {/* ── Single venue label ── */}
             {venues.length === 1 && selectedVenueName && (
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-100">
-                <Building2 className="w-3.5 h-3.5 text-orange-500" />
+                <Building2 className="w-3.5 h-3.5 text-power-orange" />
                 <span className="text-xs font-medium text-orange-700">
                   {selectedVenueName}
                 </span>
@@ -230,7 +230,7 @@ export default function VenueListerReviewsPage() {
             {/* ── Reviews Loading ── */}
             {reviewsLoading && (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+                <Loader2 className="w-6 h-6 text-power-orange animate-spin" />
               </div>
             )}
 
@@ -257,7 +257,7 @@ export default function VenueListerReviewsPage() {
                           onClick={() => setActiveFilter(tab.value)}
                           className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                             isActive
-                              ? "bg-orange-500 border-orange-500 text-white shadow-sm"
+                              ? "bg-power-orange border-power-orange text-white shadow-sm"
                               : "bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-600"
                           }`}
                         >

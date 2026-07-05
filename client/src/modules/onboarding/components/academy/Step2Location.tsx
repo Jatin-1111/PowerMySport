@@ -299,7 +299,7 @@ export default function Step2Location({
             <p className="text-red-600 text-xs mt-1">{fieldErrors.address}</p>
           )}
           {hasSelectedLocation && (
-            <p className="text-green-600 text-xs mt-1">✓ Location selected</p>
+            <p className="text-emerald-600 text-xs mt-1">✓ Location selected</p>
           )}
           {fieldErrors.location && (
             <p className="text-amber-600 text-xs mt-1 bg-amber-50 p-2 rounded border border-amber-200">

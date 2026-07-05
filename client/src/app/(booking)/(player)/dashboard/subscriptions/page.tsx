@@ -339,7 +339,7 @@ export default function SubscriptionsPage() {
                       <div className="flex rounded-xl border border-slate-200/70 bg-slate-50/40 overflow-hidden">
                         {/* Status accent stripe */}
                         <div
-                          className={`w-1 shrink-0 ${isLive ? "bg-emerald-400" : "bg-slate-300"}`}
+                          className={`w-1 shrink-0 ${isLive ? "bg-turf-green" : "bg-slate-300"}`}
                         />
                         <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="space-y-2">

@@ -67,7 +67,7 @@ export default function CoachAnalyticsPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-400">
-          <Loader2 size={36} className="animate-spin text-orange-500" />
+          <Loader2 size={36} className="animate-spin text-power-orange" />
           <p className="text-sm">Loading analytics…</p>
         </div>
       </div>
@@ -84,7 +84,7 @@ export default function CoachAnalyticsPage() {
           <p className="text-slate-500 text-sm">{error ?? "No data available."}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
+            className="mt-4 px-5 py-2 bg-power-orange hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
           >
             Retry
           </button>
@@ -121,7 +121,7 @@ export default function CoachAnalyticsPage() {
           ? `${overview.avgRating.toFixed(1)} ★`
           : "—",
       icon: <Star size={20} />,
-      valueClass: "text-orange-500",
+      valueClass: "text-power-orange",
     },
   ];
 
@@ -134,7 +134,7 @@ export default function CoachAnalyticsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
-                <TrendingUp size={28} className="text-orange-500" />
+                <TrendingUp size={28} className="text-power-orange" />
                 Analytics &amp; Insights
               </h1>
               <p className="text-slate-500 text-sm mt-1">
@@ -142,7 +142,7 @@ export default function CoachAnalyticsPage() {
               </p>
             </div>
             <div className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-xs text-slate-600 font-medium self-start sm:self-auto shadow-sm">
-              <Clock size={12} className="text-orange-500" />
+              <Clock size={12} className="text-power-orange" />
               Last 30 days
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function CoachAnalyticsPage() {
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider">
-                <BarChart2 size={16} className="text-orange-500" />
+                <BarChart2 size={16} className="text-power-orange" />
                 Sessions Trend
               </h2>
               <span className="text-slate-400 text-xs">Daily • last 30 days</span>
@@ -180,7 +180,7 @@ export default function CoachAnalyticsPage() {
           <SlideUp delay={0.2}>
             <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full shadow-sm">
               <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-                <Activity size={16} className="text-orange-500" />
+                <Activity size={16} className="text-power-orange" />
                 Sport Breakdown
               </h2>
               <SportBreakdownPanel data={sportBreakdown} />
@@ -190,7 +190,7 @@ export default function CoachAnalyticsPage() {
           <SlideUp delay={0.25}>
             <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full shadow-sm">
               <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-                <Clock size={16} className="text-orange-500" />
+                <Clock size={16} className="text-power-orange" />
                 Busy Hours
               </h2>
               {popularHours.length === 0 ? (
@@ -208,7 +208,7 @@ export default function CoachAnalyticsPage() {
         <SlideUp delay={0.3}>
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-              <Users size={16} className="text-orange-500" />
+              <Users size={16} className="text-power-orange" />
               Client Retention
             </h2>
             <RetentionCard
@@ -224,7 +224,7 @@ export default function CoachAnalyticsPage() {
           <SlideUp delay={0.35}>
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-                <CheckCircle size={16} className="text-orange-500" />
+                <CheckCircle size={16} className="text-power-orange" />
                 Completion Rate
               </h2>
               <div className="flex items-center gap-6">
@@ -246,7 +246,7 @@ export default function CoachAnalyticsPage() {
           <SlideUp delay={0.4}>
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-                <TrendingUp size={16} className="text-orange-500" />
+                <TrendingUp size={16} className="text-power-orange" />
                 All-time Summary
               </h2>
               <div className="grid grid-cols-2 gap-4">
@@ -264,7 +264,7 @@ export default function CoachAnalyticsPage() {
                 </div>
                 <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
                   <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Avg Rating</p>
-                  <p className="text-orange-500 font-bold text-2xl">
+                  <p className="text-power-orange font-bold text-2xl">
                     {overview.avgRating > 0 ? overview.avgRating.toFixed(1) : "—"}
                   </p>
                 </div>

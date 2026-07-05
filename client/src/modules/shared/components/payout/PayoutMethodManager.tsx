@@ -505,8 +505,8 @@ export function PayoutMethodManager({
                 placeholder="yourname@okaxis"
                 hint="Format: name@bankname (e.g., john@okaxis)"
               />
-              <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm text-blue-900">
-                <Lock size={16} className="mt-0.5 shrink-0 text-blue-600" />
+              <div className="flex items-start gap-2 rounded-lg bg-indigo-50 border border-indigo-200 p-4 text-sm text-blue-900">
+                <Lock size={16} className="mt-0.5 shrink-0 text-indigo-600" />
                 <p>
                   We only store your UPI ID to process payouts. Your data is
                   encrypted and we will never initiate unauthorized debits.

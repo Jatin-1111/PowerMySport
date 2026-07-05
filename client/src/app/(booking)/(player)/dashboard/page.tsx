@@ -214,7 +214,7 @@ export default function DashboardPage() {
             transition={{ duration: 0.15 }}
           >
             <div className="flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
                 <UserPlus className="h-5 w-5" />
               </div>
               {pendingFriendRequests > 0 && (
@@ -451,7 +451,7 @@ export default function DashboardPage() {
                   href: "/venues",
                   icon: MapPin,
                   label: "Book Venue",
-                  color: "bg-blue-100 text-blue-600",
+                  color: "bg-indigo-100 text-indigo-600",
                 },
                 {
                   href: "/coaches",

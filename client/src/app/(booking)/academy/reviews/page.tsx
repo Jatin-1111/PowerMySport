@@ -128,7 +128,7 @@ export default function AcademyReviewsPage() {
   if (loadingVenues) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-power-orange" />
       </div>
     );
   }
@@ -158,7 +158,7 @@ export default function AcademyReviewsPage() {
             </div>
             <Link
               href="/academy/venues"
-              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+              className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
             >
               <Building2 size={16} />
               Manage venues
@@ -287,7 +287,7 @@ export default function AcademyReviewsPage() {
                 onClick={() => setActiveFilter(tab.value)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                   activeFilter === tab.value
-                    ? "bg-orange-500 text-white shadow-sm"
+                    ? "bg-power-orange text-white shadow-sm"
                     : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-orange-50 hover:text-orange-600"
                 }`}
               >
@@ -300,7 +300,7 @@ export default function AcademyReviewsPage() {
         {/* ── Review List ──────────────────────────────────────── */}
         {loadingReviews ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-power-orange" />
           </div>
         ) : filteredReviews.length === 0 ? (
           <EmptyState activeFilter={activeFilter} />
@@ -337,7 +337,7 @@ export default function AcademyReviewsPage() {
               className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loadingMore && (
-                <Loader2 size={15} className="animate-spin text-orange-500" />
+                <Loader2 size={15} className="animate-spin text-power-orange" />
               )}
               {loadingMore ? "Loading..." : "Load more reviews"}
             </button>

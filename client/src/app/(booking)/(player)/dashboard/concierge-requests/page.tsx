@@ -49,14 +49,14 @@ export default function ConciergeRequestsPage() {
         };
       case "processing":
         return {
-          icon: <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />,
-          color: "bg-blue-50 text-blue-700 border-blue-200",
+          icon: <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />,
+          color: "bg-indigo-50 text-indigo-700 border-indigo-200",
           text: "Processing",
           detail: "Your documents are currently being reviewed. We'll update you as soon as there's progress.",
         };
       case "completed":
         return {
-          icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
+          icon: <CheckCircle2 className="h-5 w-5 text-emerald-600" />,
           color: "bg-emerald-50 text-emerald-700 border-emerald-200",
           text: "Completed",
           detail: "Your request has been successfully processed.",
@@ -182,7 +182,7 @@ export default function ConciergeRequestsPage() {
                               key={i}
                               className="inline-flex items-center rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700"
                             >
-                              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-emerald-500" />
+                              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
                               {doc.documentName}
                             </span>
                           ))}

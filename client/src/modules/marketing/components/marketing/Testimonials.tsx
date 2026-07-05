@@ -167,7 +167,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
 
       {/* Ambient blobs */}
       <div className="pointer-events-none absolute left-0 top-1/4 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-100/40 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-1/4 right-0 h-72 w-72 translate-x-1/2 rounded-full bg-blue-100/30 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-1/4 right-0 h-72 w-72 translate-x-1/2 rounded-full bg-indigo-100/30 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}

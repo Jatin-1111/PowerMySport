@@ -165,7 +165,7 @@ const pathwayLevels = [
     border: "border-emerald-200",
     accent: "text-emerald-600",
     badge: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    glowColor: "bg-emerald-400/10",
+    glowColor: "bg-turf-green/10",
     steps: [
       "Join a local club or school sports program",
       "Learn the basics under structured coaching",
@@ -192,9 +192,9 @@ const pathwayLevels = [
     icon: <Shield className="h-6 w-6" />,
     color: "from-blue-500 to-indigo-500",
     bgLight: "from-blue-50 to-indigo-50",
-    border: "border-blue-200",
-    accent: "text-blue-600",
-    badge: "bg-blue-100 text-blue-700 border-blue-200",
+    border: "border-indigo-200",
+    accent: "text-indigo-600",
+    badge: "bg-indigo-100 text-indigo-700 border-indigo-200",
     glowColor: "bg-blue-400/10",
     steps: [
       "Attend district-level selection trials",
@@ -222,9 +222,9 @@ const pathwayLevels = [
     icon: <Flag className="h-6 w-6" />,
     color: "from-violet-500 to-purple-600",
     bgLight: "from-violet-50 to-purple-50",
-    border: "border-violet-200",
-    accent: "text-violet-600",
-    badge: "bg-violet-100 text-violet-700 border-violet-200",
+    border: "border-indigo-200",
+    accent: "text-indigo-600",
+    badge: "bg-indigo-100 text-indigo-700 border-indigo-200",
     glowColor: "bg-violet-400/10",
     steps: [
       "Pass state selection / qualifying trials",
@@ -510,11 +510,11 @@ function SavedTab({
     career: {
       label: "Careers",
       icon: <Briefcase className="h-4 w-4" />,
-      color: "text-blue-600",
-      bg: "bg-blue-50 border-blue-100",
-      iconBg: "bg-blue-100",
+      color: "text-indigo-600",
+      bg: "bg-indigo-50 border-indigo-100",
+      iconBg: "bg-indigo-100",
       accentBar: "bg-gradient-to-b from-blue-400 to-blue-300",
-      countStyle: "border-blue-100 bg-blue-50 text-blue-600",
+      countStyle: "border-indigo-100 bg-indigo-50 text-indigo-600",
     },
   } as const;
 
@@ -608,7 +608,7 @@ function ApplicationsTab({
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const statusConfig: Record<ApplicationRecord["status"], { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-    Submitted: { label: "Submitted", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: <FileText className="h-3.5 w-3.5" /> },
+    Submitted: { label: "Submitted", color: "text-indigo-700", bg: "bg-indigo-50 border-indigo-200", icon: <FileText className="h-3.5 w-3.5" /> },
     "In Review": { label: "In Review", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: <RotateCcw className="h-3.5 w-3.5 animate-spin-slow" /> },
     Approved: { label: "Approved", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: <CheckCheck className="h-3.5 w-3.5" /> },
   };
@@ -641,9 +641,9 @@ function ApplicationsTab({
       transition={{ duration: 0.2 }}
       className="space-y-4"
     >
-      <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-        <Bell className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-        <p className="text-sm text-blue-700 leading-relaxed">
+      <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
+        <Bell className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+        <p className="text-sm text-indigo-700 leading-relaxed">
           Use this as a personal tracker. Tap any application to see documents and update the status as things progress.
         </p>
       </div>
@@ -657,7 +657,7 @@ function ApplicationsTab({
         return (
           <div key={app.id} className="relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className={`absolute inset-y-0 left-0 w-1 ${
-              app.status === "Approved" ? "bg-emerald-400" :
+              app.status === "Approved" ? "bg-turf-green" :
               app.status === "In Review" ? "bg-amber-400" :
               "bg-blue-400"
             } rounded-l-full`} />
@@ -796,7 +796,7 @@ function StoriesTab({ sportName, levels, stories }: { sportName: string; levels:
                         </>
                       ) : (
                         <>
-                          <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" />
+                          <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
                           <span className="text-[10px] font-bold text-emerald-600">Verified</span>
                         </>
                       )}
@@ -860,16 +860,16 @@ const levelColorMap: Record<
   2: {
     gradient: "from-blue-500 to-indigo-500",
     bg: "from-blue-50 to-indigo-50",
-    border: "border-blue-200",
-    text: "text-blue-600",
-    badge: "bg-blue-100 text-blue-700 border-blue-200",
+    border: "border-indigo-200",
+    text: "text-indigo-600",
+    badge: "bg-indigo-100 text-indigo-700 border-indigo-200",
   },
   3: {
     gradient: "from-violet-500 to-purple-600",
     bg: "from-violet-50 to-purple-50",
-    border: "border-violet-200",
-    text: "text-violet-600",
-    badge: "bg-violet-100 text-violet-700 border-violet-200",
+    border: "border-indigo-200",
+    text: "text-indigo-600",
+    badge: "bg-indigo-100 text-indigo-700 border-indigo-200",
   },
   4: {
     gradient: "from-orange-500 to-amber-500",
@@ -1082,7 +1082,7 @@ function ProgressTracker({
                             }`}
                           >
                             {done ? (
-                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                             ) : (
                               <Circle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
                             )}
@@ -1097,16 +1097,16 @@ function ProgressTracker({
 
                   {/* Gap / progress summary */}
                   {remainingCount > 0 && nextLevel ? (
-                    <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 text-blue-500 shrink-0" />
-                      <p className="text-xs font-semibold text-blue-700">
+                    <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2.5 flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4 text-indigo-500 shrink-0" />
+                      <p className="text-xs font-semibold text-indigo-700">
                         <span className="font-bold">{remainingCount} objective{remainingCount > 1 ? "s" : ""}</span> remaining before you're ready for{" "}
                         <span className="font-bold">{nextLevel.label} level</span>
                       </p>
                     </div>
                   ) : remainingCount === 0 && nextLevel ? (
                     <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                       <p className="text-xs font-bold text-emerald-700 flex flex-wrap items-center gap-1">
                         All objectives complete! Ready to step up to{" "}
                         <span className="flex items-center gap-1">{nextLevel.label} level <PartyPopper className="h-3.5 w-3.5 text-emerald-600 mb-0.5" /></span>
@@ -1670,15 +1670,15 @@ function PathwayLevelDetail({
                     </div>
                   )}
                   {lvl.governmentSchemes && lvl.governmentSchemes.length > 0 && (
-                    <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-4">
-                      <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-violet-700">
+                    <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4">
+                      <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700">
                         <Landmark className="h-3.5 w-3.5" /> Government Schemes & Funding
                       </h4>
                       <div className="space-y-3">
                         {lvl.governmentSchemes.map((scheme, i: number) => (
-                          <div key={i} className="rounded-xl border border-violet-100 bg-white/90 p-3">
+                          <div key={i} className="rounded-xl border border-indigo-100 bg-white/90 p-3">
                             <div className="flex items-center gap-2 mb-1.5">
-                              <GraduationCap className="h-3.5 w-3.5 shrink-0 text-violet-600" />
+                              <GraduationCap className="h-3.5 w-3.5 shrink-0 text-indigo-600" />
                               <p className="text-xs font-bold text-violet-900">{scheme.name}</p>
                             </div>
                             <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{scheme.body}</p>
@@ -1735,7 +1735,7 @@ function PathwayLevelDetail({
                               <ul className="space-y-1">
                                 {lvl.coachSelectionGuide.mustHave.map((q: string, i: number) => (
                                   <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />{q}
+                                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />{q}
                                   </li>
                                 ))}
                               </ul>
@@ -1804,7 +1804,7 @@ function PathwayLevelDetail({
                               <div className="flex flex-wrap gap-2">
                                 {lvl.localResources.facilities.map((item: string, i: number) => (
                                   <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm">
-                                    <Pin className="h-3 w-3 text-emerald-500" /> {item}
+                                    <Pin className="h-3 w-3 text-emerald-600" /> {item}
                                   </span>
                                 ))}
                               </div>
@@ -1816,7 +1816,7 @@ function PathwayLevelDetail({
                               <div className="flex flex-wrap gap-2">
                                 {lvl.localResources.governingBodies.map((item: string, i: number) => (
                                   <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-sm">
-                                    <Shield className="h-3 w-3 text-blue-500" /> {item}
+                                    <Shield className="h-3 w-3 text-indigo-500" /> {item}
                                   </span>
                                 ))}
                               </div>
@@ -3010,10 +3010,10 @@ function PathwayExplorerSection() {
                   icon: <Sparkles className="h-5 w-5" />,
                   tab: "Inspire",
                   desc: "Real career paths and family stories from parents who walked this road.",
-                  iconBg: "bg-violet-100",
-                  iconColor: "text-violet-600",
-                  border: "border-violet-100",
-                  bg: "bg-violet-50/60",
+                  iconBg: "bg-indigo-100",
+                  iconColor: "text-indigo-600",
+                  border: "border-indigo-100",
+                  bg: "bg-indigo-50/60",
                 },
               ].map((item) => (
                 <div
@@ -3162,7 +3162,7 @@ function PathwayExplorerSection() {
                             )}
                           </span>
                         ) : result.pathway.trustTier === "admin_verified" ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                             <BadgeCheck className="h-3 w-3" /> Verified by Expert
                           </span>
                         ) : (
@@ -3173,7 +3173,7 @@ function PathwayExplorerSection() {
                           )
                         )}
                         {selectedState && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 border border-blue-100">
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 border border-indigo-100">
                             <MapPin className="h-3 w-3" /> {selectedState}
                           </span>
                         )}
@@ -3550,9 +3550,9 @@ function PathwayExplorerSection() {
                     className="space-y-10"
                   >
                     {entitiesStatus === "loading" && (
-                      <div className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3">
+                      <div className="flex items-center gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3">
                         <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
-                        <p className="text-sm font-medium text-violet-700">
+                        <p className="text-sm font-medium text-indigo-700">
                           Fetching live data — this takes a moment for a new sport.
                         </p>
                       </div>
@@ -3684,7 +3684,7 @@ function PathwayExplorerSection() {
                                     <p className="text-sm text-slate-600 leading-relaxed">{s.description}</p>
                                     {s.eligibility && (
                                       <div className="flex items-start gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
-                                        <CheckCircle className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                                        <CheckCircle className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
                                         <p className="text-xs text-slate-600 leading-relaxed">{s.eligibility}</p>
                                       </div>
                                     )}

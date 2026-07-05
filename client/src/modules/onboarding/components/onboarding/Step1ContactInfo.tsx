@@ -194,7 +194,7 @@ export default function Step1ContactInfo({
             type="button"
             onClick={onSkip}
             disabled={loading || isSubmitting}
-            className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2.5 text-base"
+            className="w-full bg-slate-600 hover:bg-slate-700 text-white py-2.5 text-base"
           >
             Skip (Dev)
           </Button>

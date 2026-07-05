@@ -235,7 +235,7 @@ export default function Step5CoachList({
               {coaches.map((coach, index) => (
                 <div
                   key={index}
-                  className="p-4 border border-gray-200 rounded-lg flex justify-between items-start bg-gray-50"
+                  className="p-4 border border-slate-200 rounded-lg flex justify-between items-start bg-slate-50"
                 >
                   <div className="flex items-start gap-3">
                     {/* Coach Photo */}
@@ -243,27 +243,27 @@ export default function Step5CoachList({
                       <img
                         src={coach.profilePhoto}
                         alt={coach.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-300 shrink-0"
+                        className="w-12 h-12 rounded-full object-cover border-2 border-slate-200 shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-gray-400 shrink-0">
-                        <User className="w-6 h-6 text-gray-600" />
+                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-slate-300 shrink-0">
+                        <User className="w-6 h-6 text-slate-600" />
                       </div>
                     )}
 
                     {/* Coach Info */}
                     <div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-slate-900">
                         {coach.name}
                       </h3>
-                      <p className="text-sm text-gray-600 flex items-center gap-2">
+                      <p className="text-sm text-slate-600 flex items-center gap-2">
                         <span>{coach.sport}</span>
-                        <span className="text-gray-400">|</span>
-                        <IndianRupee className="h-4 w-4 text-gray-500" />
+                        <span className="text-slate-400">|</span>
+                        <IndianRupee className="h-4 w-4 text-slate-500" />
                         <span>{coach.hourlyRate}/hour</span>
                       </p>
                       {coach.bio && (
-                        <p className="text-sm text-gray-600 mt-2 italic">
+                        <p className="text-sm text-slate-600 mt-2 italic">
                           "{coach.bio}"
                         </p>
                       )}
@@ -298,7 +298,7 @@ export default function Step5CoachList({
           >
             {/* Coach Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Coach Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -307,14 +307,14 @@ export default function Step5CoachList({
                 value={newCoach.name}
                 onChange={handleInputChange}
                 placeholder="e.g., John Doe"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={loading}
               />
             </div>
 
             {/* Profile Photo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Profile Photo (Optional)
               </label>
               <div className="flex items-center gap-4">
@@ -325,7 +325,7 @@ export default function Step5CoachList({
                       <img
                         src={newCoach.profilePhoto}
                         alt="Coach profile"
-                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-slate-200"
                       />
                       <button
                         type="button"
@@ -337,8 +337,8 @@ export default function Step5CoachList({
                       </button>
                     </div>
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
-                      <User className="w-10 h-10 text-gray-400" />
+                    <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center border-2 border-slate-200">
+                      <User className="w-10 h-10 text-slate-400" />
                     </div>
                   )}
                 </div>
@@ -364,7 +364,7 @@ export default function Step5CoachList({
                       disabled={isUploadingPhoto || loading}
                     />
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     JPG, PNG up to 5MB
                   </p>
                   {photoUploadError && (
@@ -378,14 +378,14 @@ export default function Step5CoachList({
 
             {/* Sport */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Sport <span className="text-red-500">*</span>
               </label>
               <select
                 name="sport"
                 value={newCoach.sport}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={loading}
               >
                 <option value="">Select a sport</option>
@@ -399,9 +399,9 @@ export default function Step5CoachList({
 
             {/* Hourly Rate */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 <span className="inline-flex items-center gap-1">
-                  <IndianRupee className="h-4 w-4 text-gray-600" />
+                  <IndianRupee className="h-4 w-4 text-slate-600" />
                   Hourly Rate (INR)
                 </span>
                 <span className="text-red-500"> *</span>
@@ -413,14 +413,14 @@ export default function Step5CoachList({
                 onChange={handleInputChange}
                 placeholder="500"
                 min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={loading}
               />
             </div>
 
             {/* Bio */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Bio / Expertise (Optional)
               </label>
               <textarea
@@ -429,7 +429,7 @@ export default function Step5CoachList({
                 onChange={handleInputChange}
                 placeholder="e.g., Certified coach with 5+ years of experience"
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 disabled={loading}
               />
             </div>

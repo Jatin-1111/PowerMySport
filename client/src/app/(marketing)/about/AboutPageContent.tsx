@@ -315,7 +315,7 @@ export function AboutPageContent() {
                 {
                   title: "A unified sports network",
                   desc: "Building a reliable network where conversations, reviews, and bookings reinforce each other instead of living in fragmented silos.",
-                  color: "border-blue-200 bg-blue-50/30",
+                  color: "border-indigo-200 bg-indigo-50/30",
                 },
               ].map((card, i) => (
                 <motion.div

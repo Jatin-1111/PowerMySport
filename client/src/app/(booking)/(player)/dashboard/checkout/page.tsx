@@ -1364,17 +1364,17 @@ function CheckoutPageContent() {
                     initial="hidden"
                     animate="show"
                     exit="hidden"
-                    className="rounded-xl border border-blue-200/60 bg-blue-50/80 p-4"
+                    className="rounded-xl border border-indigo-200/60 bg-indigo-50/80 p-4"
                   >
                     <p className="text-sm font-semibold text-blue-800">
                       This slot was just taken.
                     </p>
                     {alternateSlots.length > 0 ? (
-                      <p className="mt-1 text-xs text-blue-600">
+                      <p className="mt-1 text-xs text-indigo-600">
                         Nearby alternates: {alternateSlots.join(", ")}
                       </p>
                     ) : (
-                      <p className="mt-1 text-xs text-blue-600">
+                      <p className="mt-1 text-xs text-indigo-600">
                         No nearby alternate slots right now.
                       </p>
                     )}

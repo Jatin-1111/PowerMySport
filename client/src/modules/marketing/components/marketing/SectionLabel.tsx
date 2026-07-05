@@ -9,7 +9,7 @@ interface SectionLabelProps {
 const colorMap = {
   orange: "bg-orange-50 border-orange-200/80 text-power-orange",
   green: "bg-emerald-50 border-emerald-200/80 text-emerald-700",
-  blue: "bg-blue-50 border-blue-200/80 text-blue-700",
+  blue: "bg-indigo-50 border-indigo-200/80 text-indigo-700",
   slate: "bg-slate-50 border-slate-200/80 text-slate-600",
 };
 

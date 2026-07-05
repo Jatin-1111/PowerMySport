@@ -226,11 +226,11 @@ export default function VenueBookingsPage() {
                         booking.status === "CONFIRMED" ||
                         booking.status === "IN_PROGRESS" ||
                         booking.status === "COMPLETED"
-                          ? "bg-green-100 text-green-700 border border-green-300"
+                          ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
                           : booking.status === "PENDING_CONFIRMATION"
                             ? "bg-amber-100 text-amber-700 border border-amber-300"
                             : booking.status === "PENDING_INVITES"
-                              ? "bg-blue-100 text-blue-700 border border-blue-300"
+                              ? "bg-indigo-100 text-indigo-700 border border-indigo-300"
                               : "bg-red-100 text-red-700 border border-red-300"
                       }`}
                     >
@@ -289,7 +289,7 @@ export default function VenueBookingsPage() {
                               <span
                                 className={`ml-2 font-semibold ${
                                   venuePayment.status === "PAID"
-                                    ? "text-green-700"
+                                    ? "text-emerald-700"
                                     : "text-yellow-700"
                                 }`}
                               >

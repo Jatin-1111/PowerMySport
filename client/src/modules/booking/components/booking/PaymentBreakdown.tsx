@@ -33,7 +33,7 @@ export default function PaymentBreakdown({
                 <span
                   className={
                     payment.status === "PAID"
-                      ? "text-green-600"
+                      ? "text-emerald-600"
                       : "text-orange-600"
                   }
                 >

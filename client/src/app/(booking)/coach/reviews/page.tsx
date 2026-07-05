@@ -73,7 +73,7 @@ function StarRow({ rating, size = 16, className = "" }: StarRowProps) {
             >
               <Star
                 size={size}
-                className="text-orange-500"
+                className="text-power-orange"
                 fill="currentColor"
               />
             </span>
@@ -89,10 +89,10 @@ function StarRow({ rating, size = 16, className = "" }: StarRowProps) {
 // ---------------------------------------------------------------------------
 
 const STAR_COLORS: Record<number, string> = {
-  5: "bg-emerald-500",
-  4: "bg-green-500",
+  5: "bg-turf-green",
+  4: "bg-turf-green",
   3: "bg-amber-400",
-  2: "bg-orange-500",
+  2: "bg-power-orange",
   1: "bg-rose-500",
 };
 
@@ -203,7 +203,7 @@ export default function CoachReviewsPage() {
   if (loadingProfile) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-power-orange" />
       </div>
     );
   }
@@ -318,7 +318,7 @@ export default function CoachReviewsPage() {
               onClick={() => setActiveFilter(tab.value)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 activeFilter === tab.value
-                  ? "bg-orange-500 text-white shadow-sm"
+                  ? "bg-power-orange text-white shadow-sm"
                   : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-orange-50 hover:text-orange-600"
               }`}
             >
@@ -330,7 +330,7 @@ export default function CoachReviewsPage() {
         {/* ── Review List ──────────────────────────────────────── */}
         {loadingReviews ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-power-orange" />
           </div>
         ) : filteredReviews.length === 0 ? (
           <EmptyState activeFilter={activeFilter} />
@@ -355,7 +355,7 @@ export default function CoachReviewsPage() {
               className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loadingMore && (
-                <Loader2 size={15} className="animate-spin text-orange-500" />
+                <Loader2 size={15} className="animate-spin text-power-orange" />
               )}
               {loadingMore ? "Loading…" : "Load more reviews"}
             </button>
@@ -374,7 +374,7 @@ function ReviewCard({ review }: { review: ReviewItem }) {
   const name = getReviewerName(review.userId);
   const initials = getInitials(name);
   const avatarColors = [
-    "bg-violet-100 text-violet-700",
+    "bg-indigo-100 text-indigo-700",
     "bg-sky-100 text-sky-700",
     "bg-teal-100 text-teal-700",
     "bg-rose-100 text-rose-700",

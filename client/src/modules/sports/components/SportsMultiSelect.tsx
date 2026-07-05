@@ -178,14 +178,14 @@ export default function SportsMultiSelect({
         {selectedSportObjects.map((sport) => (
           <div
             key={sport.name}
-            className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700"
+            className="flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700"
           >
             {sport.name}
             <button
               type="button"
               onClick={() => handleRemoveSport(sport.name)}
               disabled={disabled}
-              className="text-blue-500 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="text-indigo-500 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <X size={16} />
             </button>
@@ -221,7 +221,7 @@ export default function SportsMultiSelect({
           <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
             {isLoading ? (
               <div className="flex items-center justify-center px-4 py-6">
-                <Loader size={20} className="animate-spin text-blue-500" />
+                <Loader size={20} className="animate-spin text-indigo-500" />
               </div>
             ) : (
               <>
@@ -236,7 +236,7 @@ export default function SportsMultiSelect({
                           type="button"
                           onClick={() => handleSelectSport(sport.name)}
                           disabled={isSelected}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:cursor-default disabled:bg-blue-50 disabled:text-slate-600 focus:outline-none"
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 disabled:cursor-default disabled:bg-indigo-50 disabled:text-slate-600 focus:outline-none"
                         >
                           <div className="flex items-center gap-2">
                             {isSelected && (

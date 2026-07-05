@@ -218,7 +218,7 @@ export function ExpertProfileEditor({
           <Card className="border border-slate-200 bg-white shadow-sm">
             <SectionHeader
               icon={User}
-              iconClassName="bg-blue-50 text-blue-600"
+              iconClassName="bg-indigo-50 text-indigo-600"
               title="About you"
               subtitle="Shown on your public profile"
             />

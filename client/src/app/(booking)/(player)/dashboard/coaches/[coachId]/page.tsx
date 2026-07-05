@@ -247,7 +247,7 @@ export default function BookCoachPage() {
           <div className="space-y-4">
             <div className="flex justify-between items-center bg-white/50 border border-slate-200/60 p-3 rounded-lg">
               <span className="font-semibold text-slate-700">Service Mode</span>
-              <span className="text-sm bg-blue-100/70 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
+              <span className="text-sm bg-indigo-100/70 text-indigo-700 px-2 py-1 rounded-full text-xs font-semibold">
                 {coach.serviceMode}
               </span>
             </div>

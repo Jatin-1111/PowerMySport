@@ -830,7 +830,7 @@ export default function OnboardingContainer() {
                         }
                         className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold ring-4 ring-white transition-all duration-300 ${
                           isCompleted
-                            ? "bg-emerald-500 text-white shadow-md hover:scale-105 cursor-pointer"
+                            ? "bg-turf-green text-white shadow-md hover:scale-105 cursor-pointer"
                             : isActive
                               ? "bg-linear-to-br from-power-orange to-orange-500 text-white shadow-lg scale-110"
                               : "bg-slate-200 text-slate-600 cursor-not-allowed"

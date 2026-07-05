@@ -169,11 +169,11 @@ function ResetPasswordContent() {
             </>
           ) : (
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-green-800 text-center font-semibold">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <p className="text-emerald-800 text-center font-semibold">
                   Password reset successfully!
                 </p>
-                <p className="text-green-700 text-sm text-center mt-2">
+                <p className="text-emerald-700 text-sm text-center mt-2">
                   Redirecting to login page...
                 </p>
               </div>

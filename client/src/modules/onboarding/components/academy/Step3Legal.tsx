@@ -294,7 +294,7 @@ export default function Step3Legal({
               <label
                 className={`flex items-center gap-4 border-2 border-dashed rounded-lg p-4 cursor-pointer transition ${
                   panUploaded
-                    ? "border-green-400 bg-green-50"
+                    ? "border-emerald-400 bg-emerald-50"
                     : fieldErrors.panDocument
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 hover:border-power-orange hover:bg-orange-50"
@@ -311,7 +311,7 @@ export default function Step3Legal({
                   {panUploading ? (
                     <Loader2 className="w-5 h-5 text-power-orange animate-spin" />
                   ) : panUploaded ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
                   ) : (
                     <Upload className="w-5 h-5 text-slate-500" />
                   )}
@@ -377,7 +377,7 @@ export default function Step3Legal({
                 <label
                   className={`flex items-center gap-4 border-2 border-dashed rounded-lg p-4 cursor-pointer transition ${
                     gstUploaded
-                      ? "border-green-400 bg-green-50"
+                      ? "border-emerald-400 bg-emerald-50"
                       : fieldErrors.gstDocument
                         ? "border-red-300 bg-red-50"
                         : "border-slate-300 hover:border-power-orange hover:bg-orange-50"
@@ -394,7 +394,7 @@ export default function Step3Legal({
                     {gstUploading ? (
                       <Loader2 className="w-5 h-5 text-power-orange animate-spin" />
                     ) : gstUploaded ? (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
                     ) : (
                       <Upload className="w-5 h-5 text-slate-500" />
                     )}

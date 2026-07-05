@@ -38,7 +38,7 @@ interface SupportTicket {
 }
 
 const STATUS_STYLES: Record<SupportTicket["status"], string> = {
-  OPEN: "bg-blue-50 text-blue-700 border-blue-200",
+  OPEN: "bg-indigo-50 text-indigo-700 border-indigo-200",
   IN_PROGRESS: "bg-amber-50 text-amber-700 border-amber-200",
   RESOLVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
   CLOSED: "bg-slate-100 text-slate-600 border-slate-200",
@@ -46,7 +46,7 @@ const STATUS_STYLES: Record<SupportTicket["status"], string> = {
 
 const PRIORITY_STYLES: Record<SupportTicket["priority"], string> = {
   LOW: "bg-slate-100 text-slate-600 border-slate-200",
-  MEDIUM: "bg-blue-50 text-blue-700 border-blue-200",
+  MEDIUM: "bg-indigo-50 text-indigo-700 border-indigo-200",
   HIGH: "bg-amber-50 text-amber-700 border-amber-200",
   URGENT: "bg-red-50 text-red-700 border-red-200",
 };
@@ -280,7 +280,7 @@ export default function SupportTicketsPage() {
                               key={i}
                               className={`rounded-lg px-3 py-2.5 text-sm ${
                                 note.authorType === "Admin"
-                                  ? "border border-blue-200 bg-blue-50 text-blue-900"
+                                  ? "border border-indigo-200 bg-indigo-50 text-blue-900"
                                   : "border border-slate-200 bg-white text-slate-700"
                               }`}
                             >
@@ -298,7 +298,7 @@ export default function SupportTicketsPage() {
                     <div className="flex shrink-0 items-center gap-1 self-start">
                       {ticket.status === "RESOLVED" ||
                       ticket.status === "CLOSED" ? (
-                        <CheckCircle className="h-5 w-5 text-emerald-500" />
+                        <CheckCircle className="h-5 w-5 text-emerald-600" />
                       ) : (
                         <AlertCircle className="h-5 w-5 text-amber-500" />
                       )}

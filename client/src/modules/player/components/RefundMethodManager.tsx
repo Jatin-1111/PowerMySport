@@ -242,14 +242,14 @@ export function RefundMethodManager({
         </div>
 
         {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
           <div className="flex gap-3">
-            <Shield size={18} className="text-blue-600 flex-shrink-0 mt-0.5" />
+            <Shield size={18} className="text-indigo-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-blue-900">
                 No setup required for basic refunds
               </p>
-              <p className="text-xs text-blue-700 mt-1">
+              <p className="text-xs text-indigo-700 mt-1">
                 If we refund you, money returns to your original payment card
                 automatically (3-5 business days). Only add a bank account below
                 if you prefer that method instead.
@@ -361,8 +361,8 @@ export function RefundMethodManager({
           </div>
         ) : (
           <div className="text-center py-8">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
-              <Landmark size={26} className="text-blue-600" />
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50">
+              <Landmark size={26} className="text-indigo-600" />
             </div>
             <p className="text-sm text-slate-600 mb-4">
               No bank account added yet. Only add if you want an alternative to

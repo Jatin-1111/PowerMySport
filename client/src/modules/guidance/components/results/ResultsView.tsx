@@ -48,7 +48,7 @@ export function ResultsView({
   const fitnessInfo = (() => {
     const lvl = submission.query.current_fitness_level;
     if (lvl === "Low")
-      return { pct: "33%", color: "bg-emerald-400", label: "Beginner" };
+      return { pct: "33%", color: "bg-turf-green", label: "Beginner" };
     if (lvl === "Moderate")
       return { pct: "66%", color: "bg-amber-400", label: "Developing" };
     return { pct: "100%", color: "bg-violet-500", label: "Advanced" };
@@ -243,9 +243,9 @@ export function ResultsView({
             {
               label: "Rest",
               value: r.weeklyBlueprint.restDays,
-              color: "text-violet-600",
-              bg: "bg-violet-50",
-              border: "border-violet-100",
+              color: "text-indigo-600",
+              bg: "bg-indigo-50",
+              border: "border-indigo-100",
             },
           ].map(({ label, value, color, bg, border }, i) => (
             <motion.div

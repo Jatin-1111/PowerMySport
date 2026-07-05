@@ -162,14 +162,14 @@ export function PushNotificationPermission() {
           <div
             className={`rounded-full p-2 ${
               isSubscribed
-                ? "bg-green-100"
+                ? "bg-emerald-100"
                 : permission === "denied"
                   ? "bg-red-100"
                   : "bg-power-orange/10"
             }`}
           >
             {isSubscribed ? (
-              <Bell className="text-green-600" size={20} />
+              <Bell className="text-emerald-600" size={20} />
             ) : (
               <BellOff
                 className={
@@ -186,7 +186,7 @@ export function PushNotificationPermission() {
                 Browser Push Notifications
               </h3>
               {isSubscribed && (
-                <div className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                <div className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
                   <CheckCircle size={12} />
                   Active
                 </div>

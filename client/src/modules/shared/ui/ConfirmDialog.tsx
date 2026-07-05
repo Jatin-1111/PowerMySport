@@ -36,7 +36,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const iconColors = {
     danger: "text-red-600",
     warning: "text-orange-600",
-    info: "text-blue-600",
+    info: "text-indigo-600",
   };
 
   const confirmVariant = variant === "danger" ? "danger" : "primary";

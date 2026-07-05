@@ -35,10 +35,10 @@ const VERDICT_CONFIG: Record<
   },
   "Long-Term": {
     icon: Clock,
-    color: "text-violet-600",
-    bg: "bg-violet-50",
-    border: "border-violet-200",
-    badge: "bg-violet-100 text-violet-700",
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    border: "border-indigo-200",
+    badge: "bg-indigo-100 text-indigo-700",
     headline: "Long road — plan carefully",
   },
 };

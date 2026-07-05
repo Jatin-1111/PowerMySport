@@ -135,7 +135,7 @@ export function ProductCard({ product }: { product: Product }) {
             </div>
             <span className={cn(
               "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
-              stockLevel === "Sold out" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
+              stockLevel === "Sold out" ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
             )}>
               {stockLevel}
             </span>

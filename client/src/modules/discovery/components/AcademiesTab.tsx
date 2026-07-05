@@ -177,7 +177,7 @@ export default function AcademiesTab() {
       id: `amenity-${am}`, 
       label: am, 
       onRemove: () => setSelectedAmenities(prev => prev.filter(a => a !== am)),
-      badgeClassName: "bg-blue-50 border-blue-100 text-blue-700",
+      badgeClassName: "bg-indigo-50 border-indigo-100 text-indigo-700",
       iconClassName: "hover:text-blue-900"
     });
   });
@@ -269,7 +269,7 @@ export default function AcademiesTab() {
                   className={cn(
                     "flex items-center gap-2 rounded-xl border py-2.5 px-3 text-left text-sm font-semibold transition-all",
                     isSelected
-                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      ? "border-indigo-300 bg-indigo-50 text-indigo-700"
                       : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                   )}
                 >
@@ -294,7 +294,7 @@ export default function AcademiesTab() {
                 : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
             )}
           >
-            {verifiedOnly && <BadgeCheck size={18} className="text-emerald-500" />}
+            {verifiedOnly && <BadgeCheck size={18} className="text-emerald-600" />}
             {verifiedOnly ? "Verified Academies Only" : "Show All Academies"}
           </button>
         </div>

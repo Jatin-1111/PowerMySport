@@ -320,7 +320,7 @@ export default function FriendsPage() {
               {friends.length > 0 && (
                 <Badge
                   variant="secondary"
-                  className="ml-1 bg-blue-100/70 text-blue-700 text-xs"
+                  className="ml-1 bg-indigo-100/70 text-indigo-700 text-xs"
                 >
                   {friends.length}
                 </Badge>
@@ -541,7 +541,7 @@ export default function FriendsPage() {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border border-white shadow-sm">
                           <AvatarImage src={request.recipient.photoUrl} />
-                          <AvatarFallback className="bg-blue-100 text-sm font-bold text-blue-600">
+                          <AvatarFallback className="bg-indigo-100 text-sm font-bold text-indigo-600">
                             {request.recipient.name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -651,7 +651,7 @@ export default function FriendsPage() {
                             </Badge>
                           )}
                           {user.friendStatus === "PENDING_RECEIVED" && (
-                            <Badge className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50">
+                            <Badge className="border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-50">
                               Pending Request
                             </Badge>
                           )}

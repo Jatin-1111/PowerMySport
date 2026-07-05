@@ -146,8 +146,8 @@ export default function Step6Payouts({
           </div>
         )}
 
-        <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <CheckCircle2 size={18} className="text-blue-600 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+          <CheckCircle2 size={18} className="text-indigo-600 mt-0.5 shrink-0" />
           <p className="text-blue-900 text-sm">
             Provide either a <strong>bank account</strong> or{" "}
             <strong>UPI ID</strong> (or both) for receiving payouts.
@@ -358,7 +358,7 @@ export default function Step6Payouts({
         </fieldset>
 
         {/* Terms Agreement */}
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
           <label className="flex items-start gap-3 cursor-pointer">
             <Checkbox
               checked={formData.agreedToTerms}

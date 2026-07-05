@@ -288,14 +288,14 @@ export default function Step1VenueDetails({
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Add Your Venue</h1>
-        <p className="text-gray-600 mt-2">Step 1 of 3: Basic Details</p>
+        <h1 className="text-3xl font-bold text-slate-900">Add Your Venue</h1>
+        <p className="text-slate-600 mt-2">Step 1 of 3: Basic Details</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Venue Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Venue Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -304,14 +304,14 @@ export default function Step1VenueDetails({
             value={formData.name}
             onChange={handleInputChange}
             placeholder="e.g., Central Sports Complex"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
         </div>
 
         {/* Sports Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Sports Available <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -324,9 +324,9 @@ export default function Step1VenueDetails({
                   type="checkbox"
                   checked={selectedSports.includes(sport)}
                   onChange={() => toggleSport(sport)}
-                  className="w-4 h-4 text-blue-600 rounded"
+                  className="w-4 h-4 text-indigo-600 rounded"
                 />
-                <span className="text-sm text-gray-700">{sport}</span>
+                <span className="text-sm text-slate-700">{sport}</span>
               </label>
             ))}
           </div>
@@ -335,10 +335,10 @@ export default function Step1VenueDetails({
         {/* Pricing */}
         <div className="space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-slate-700">
               Pricing (per hour) <span className="text-red-500">*</span>
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <label className="flex items-center gap-2 text-sm text-slate-600">
               <input
                 type="checkbox"
                 checked={samePriceForAll}
@@ -353,7 +353,7 @@ export default function Step1VenueDetails({
                     setSportPricing(nextPricing);
                   }
                 }}
-                className="w-4 h-4 text-blue-600 rounded"
+                className="w-4 h-4 text-indigo-600 rounded"
               />
               Same price for all sports
             </label>
@@ -362,7 +362,7 @@ export default function Step1VenueDetails({
           {samePriceForAll && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Base price per hour
                 </label>
                 <input
@@ -373,7 +373,7 @@ export default function Step1VenueDetails({
                   }
                   placeholder="500"
                   min="0"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -381,7 +381,7 @@ export default function Step1VenueDetails({
           )}
 
           {formData.sports.length === 0 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500">
               Select sports to set specific prices.
             </p>
           )}
@@ -390,7 +390,7 @@ export default function Step1VenueDetails({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {formData.sports.map((sport) => (
                 <div key={sport}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     {sport} price per hour
                   </label>
                   <input
@@ -408,7 +408,7 @@ export default function Step1VenueDetails({
                     }
                     placeholder="500"
                     min="0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
@@ -427,7 +427,7 @@ export default function Step1VenueDetails({
 
         {/* Address */}
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Address <span className="text-red-500">*</span>
           </label>
           <input
@@ -436,12 +436,12 @@ export default function Step1VenueDetails({
             value={addressInput}
             onChange={handleInputChange}
             placeholder="Search or type address..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
             onFocus={() => addressInput && setShowSuggestions(true)}
           />
           {autocompleteLoading && (
-            <div className="absolute right-3 top-[2.4rem] text-gray-500">
+            <div className="absolute right-3 top-[2.4rem] text-slate-500">
               <svg
                 className="animate-spin h-5 w-5"
                 xmlns="http://www.w3.org/2000/svg"
@@ -467,18 +467,18 @@ export default function Step1VenueDetails({
 
           {/* Address Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg">
               {suggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => handleSuggestionSelect(suggestion)}
-                  className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-200 last:border-b-0 transition"
+                  className="w-full text-left px-4 py-3 hover:bg-indigo-50 border-b border-slate-200 last:border-b-0 transition"
                 >
-                  <div className="font-medium text-gray-900 text-sm">
+                  <div className="font-medium text-slate-900 text-sm">
                     {suggestion.label}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-slate-500 mt-1">
                     {suggestion.lat.toFixed(4)}, {suggestion.lon.toFixed(4)}
                   </div>
                 </button>
@@ -490,23 +490,23 @@ export default function Step1VenueDetails({
             addressInput &&
             suggestions.length === 0 &&
             !autocompleteLoading && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-3">
-                <p className="text-sm text-gray-600">No locations found</p>
+              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-3">
+                <p className="text-sm text-slate-600">No locations found</p>
               </div>
             )}
         </div>
 
         {/* Location Coordinates */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Location Coordinates
-            <span className="text-gray-500 text-xs ml-2">
+            <span className="text-slate-500 text-xs ml-2">
               (Auto-filled from Google Places)
             </span>
           </label>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">
+              <label className="block text-xs text-slate-600 mb-1">
                 Longitude
               </label>
               <input
@@ -516,11 +516,11 @@ export default function Step1VenueDetails({
                 onChange={handleInputChange}
                 placeholder="77.2"
                 step="0.0001"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1">
+              <label className="block text-xs text-slate-600 mb-1">
                 Latitude
               </label>
               <input
@@ -530,7 +530,7 @@ export default function Step1VenueDetails({
                 onChange={handleInputChange}
                 placeholder="28.7"
                 step="0.0001"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
@@ -538,7 +538,7 @@ export default function Step1VenueDetails({
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Description
           </label>
           <textarea
@@ -547,13 +547,13 @@ export default function Step1VenueDetails({
             onChange={handleInputChange}
             placeholder="Tell players about your venue..."
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           />
         </div>
 
         {/* Amenities */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             Amenities
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -566,9 +566,9 @@ export default function Step1VenueDetails({
                   type="checkbox"
                   checked={selectedAmenities.includes(amenity)}
                   onChange={() => toggleAmenity(amenity)}
-                  className="w-4 h-4 text-blue-600 rounded"
+                  className="w-4 h-4 text-indigo-600 rounded"
                 />
-                <span className="text-sm text-gray-700">{amenity}</span>
+                <span className="text-sm text-slate-700">{amenity}</span>
               </label>
             ))}
           </div>
@@ -581,9 +581,9 @@ export default function Step1VenueDetails({
             name="allowExternalCoaches"
             checked={formData.allowExternalCoaches}
             onChange={handleInputChange}
-            className="w-4 h-4 text-blue-600 rounded"
+            className="w-4 h-4 text-indigo-600 rounded"
           />
-          <label className="text-sm text-gray-700">
+          <label className="text-sm text-slate-700">
             Allow external coaches at your venue?
           </label>
         </div>

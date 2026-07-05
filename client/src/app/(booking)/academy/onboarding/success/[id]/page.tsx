@@ -15,8 +15,8 @@ export default function AcademySubmissionSuccessPage() {
           {/* Success Icon */}
           <div className="flex justify-center">
             <div className="relative w-20 h-20">
-              <div className="absolute inset-0 bg-green-100 rounded-full" />
-              <CheckCircle className="w-20 h-20 text-green-600 absolute inset-0" />
+              <div className="absolute inset-0 bg-emerald-100 rounded-full" />
+              <CheckCircle className="w-20 h-20 text-emerald-600 absolute inset-0" />
             </div>
           </div>
 
@@ -31,9 +31,9 @@ export default function AcademySubmissionSuccessPage() {
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 space-y-3">
+          <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200 space-y-3">
             <div className="flex items-start gap-3">
-              <Mail className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <Mail className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
               <div className="text-left">
                 <h3 className="font-semibold text-blue-900 text-sm">
                   Check Your Email

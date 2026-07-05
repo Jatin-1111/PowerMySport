@@ -85,7 +85,7 @@ export default function CoachEarningsPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <Loader2 className="w-8 h-8 animate-spin text-power-orange" />
           <p className="text-sm font-medium">Loading earnings…</p>
         </div>
       </div>
@@ -189,7 +189,7 @@ export default function CoachEarningsPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm bg-orange-500 inline-block" />
+                <span className="w-3 h-3 rounded-sm bg-power-orange inline-block" />
                 <span className="text-xs text-slate-400">Earnings</span>
               </div>
             </div>

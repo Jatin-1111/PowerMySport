@@ -70,7 +70,7 @@ export function EarningsStatCard({
         <span
           className={[
             "flex items-center justify-center w-9 h-9 rounded-xl",
-            accent ? "bg-white/20" : "bg-orange-50 text-orange-500",
+            accent ? "bg-white/20" : "bg-orange-50 text-power-orange",
           ].join(" ")}
         >
           {icon}
@@ -103,7 +103,7 @@ export function EarningsStatCard({
               trend.positive
                 ? accent
                   ? "bg-white/20 text-white"
-                  : "bg-green-50 text-green-600"
+                  : "bg-emerald-50 text-emerald-600"
                 : accent
                 ? "bg-white/20 text-white"
                 : "bg-red-50 text-red-500",
@@ -375,7 +375,7 @@ export function RecentTransactionsList({
           className="flex items-center gap-4 py-3 first:pt-0 last:pb-0"
         >
           {/* Avatar */}
-          <span className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-orange-50 text-orange-500">
+          <span className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-orange-50 text-power-orange">
             <CheckCircle className="w-5 h-5" strokeWidth={2} />
           </span>
 

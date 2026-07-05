@@ -292,8 +292,8 @@ function HomeHero({
             className="absolute right-4 top-6 hidden items-center gap-1.5 rounded-full border border-emerald-200 bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-sm sm:flex"
           >
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-turf-green opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-turf-green" />
             </span>
             <span className="text-xs font-semibold text-emerald-700">
               Live availability

@@ -261,7 +261,7 @@ export default function InvitationsPage() {
                     <div
                       className={`w-1 shrink-0 ${
                         invitation.status === "ACCEPTED"
-                          ? "bg-emerald-400"
+                          ? "bg-turf-green"
                           : "bg-slate-300"
                       }`}
                     />

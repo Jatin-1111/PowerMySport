@@ -46,9 +46,9 @@ export const EVENT_TYPE_COLORS: Record<CalendarEventType, string> = {
 
 export const EVENT_TYPE_BG: Record<CalendarEventType, string> = {
   IMPORTANT: "bg-orange-100 text-orange-700",
-  COMPETITION: "bg-violet-100 text-violet-700",
+  COMPETITION: "bg-indigo-100 text-indigo-700",
   TRAINING: "bg-emerald-100 text-emerald-700",
-  REMINDER: "bg-blue-100 text-blue-700",
+  REMINDER: "bg-indigo-100 text-indigo-700",
   OTHER: "bg-slate-100 text-slate-600",
 };
 

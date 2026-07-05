@@ -164,7 +164,7 @@ export default function AcademyProfilePage() {
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{academy.name}</h1>
                     {academy.kycVerified && academy.isApproved && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                         <BadgeCheck size={14} />Verified
                       </span>
                     )}

@@ -49,7 +49,7 @@ function VerifyWalletContent() {
 
       {status === "success" && (
         <div className="flex flex-col items-center gap-4">
-          <CheckCircle2 className="h-16 w-16 text-emerald-500" />
+          <CheckCircle2 className="h-16 w-16 text-emerald-600" />
           <h2 className="text-2xl font-bold text-slate-900">Top-up Successful!</h2>
           <p className="text-slate-500">Your wallet balance has been updated.</p>
           <Button className="mt-4" onClick={() => router.push("/dashboard/wallet")}>

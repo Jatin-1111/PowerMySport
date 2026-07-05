@@ -239,7 +239,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       PAYMENT: {
         iconWrap: "bg-emerald-100",
         iconColor: "text-emerald-700",
-        dot: "bg-emerald-500",
+        dot: "bg-turf-green",
         chip: "bg-emerald-50 text-emerald-700 border-emerald-200",
       },
       REVIEW: {
@@ -257,7 +257,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       COMMUNITY: {
         iconWrap: "bg-orange-100",
         iconColor: "text-orange-700",
-        dot: "bg-orange-500",
+        dot: "bg-power-orange",
         chip: "bg-orange-50 text-orange-700 border-orange-200",
       },
     };

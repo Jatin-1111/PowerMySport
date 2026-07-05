@@ -198,7 +198,7 @@ const getVerificationBadge = (coachData: Coach | null) => {
     case "VERIFIED":
       return {
         label: "Verified",
-        className: "bg-green-100 text-green-700 border border-green-200",
+        className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
       };
     case "PENDING":
       return {
@@ -208,7 +208,7 @@ const getVerificationBadge = (coachData: Coach | null) => {
     case "REVIEW":
       return {
         label: "In Review",
-        className: "bg-blue-100 text-blue-700 border border-blue-200",
+        className: "bg-indigo-100 text-indigo-700 border border-indigo-200",
       };
     case "REJECTED":
       return {
@@ -1419,44 +1419,44 @@ export default function CoachVerificationPage() {
               </label>
 
               {/* Bio Tips Banner */}
-              <div className="mb-4 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-4">
+              <div className="mb-4 rounded-lg border-l-4 border-blue-500 bg-indigo-50 p-4">
                 <div className="flex items-start gap-3 mb-3">
-                  <Lightbulb className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+                  <Lightbulb className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="font-semibold text-blue-900 mb-2">
                       Tips to Write a Great Bio
                     </p>
                     <ul className="space-y-2 text-sm text-blue-800">
                       <li className="flex items-start gap-2">
-                        <Award className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <Award className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
                         <span>
                           <strong>Experience:</strong> Years of coaching, sports
                           background
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Briefcase className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <Briefcase className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
                         <span>
                           <strong>Certifications:</strong> Relevant credentials
                           and achievements
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Target className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <Target className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
                         <span>
                           <strong>Specialization:</strong> What levels
                           (beginner/advanced)
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Star className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <Star className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
                         <span>
                           <strong>Coaching Style:</strong> Your approach and
                           philosophy
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Users className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <Users className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
                         <span>
                           <strong>Track Record:</strong> Success stories or
                           player achievements
