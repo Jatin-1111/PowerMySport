@@ -368,7 +368,7 @@ function CheckoutPageContent() {
 
         if (profileResp?.success && profileResp.data) {
           setUser(profileResp.data);
-          if (profileResp.data.role !== "Player") {
+          if (profileResp.data.role !== "Player" && profileResp.data.role !== "Parent") {
             toast.error("Only player accounts can create bookings.");
             router.replace(getDashboardPathByRole(profileResp.data.role));
             return;
@@ -471,7 +471,7 @@ function CheckoutPageContent() {
   };
 
   const handleCheckout = async () => {
-    if (user?.role !== "Player") { toast.error("Only player accounts can create bookings."); return; }
+    if (user?.role !== "Player" && user?.role !== "Parent") { toast.error("Only player accounts can create bookings."); return; }
     if (!hasRequiredDetails) { toast.error("Missing booking details."); return; }
     if (!hasValidDuration) { toast.error("End time must be after start time."); return; }
     if (!isDetailsReady) { toast.error("Details are not available."); return; }

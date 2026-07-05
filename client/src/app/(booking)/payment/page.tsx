@@ -75,7 +75,7 @@ function PaymentPageContent() {
           }
 
           if (profileResponse?.success && profileResponse.data) {
-            if (profileResponse.data.role !== "Player") {
+            if (profileResponse.data.role !== "Player" && profileResponse.data.role !== "Parent") {
               toast.error("Only player accounts can purchase subscriptions.");
               router.replace("/dashboard");
               return;

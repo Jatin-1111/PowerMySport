@@ -213,7 +213,7 @@ export default function CoachDetailsPage() {
 
   const handleSubscribeToPackage = async (packageId: string) => {
     if (!user) { router.push(`/login?redirect=/coaches/${coachId}`); return; }
-    if (user.role !== "Player") { toast.error("Only player accounts can subscribe to packages"); return; }
+    if (user.role !== "Player" && user.role !== "Parent") { toast.error("Only player accounts can subscribe to packages"); return; }
     const p = new URLSearchParams({ coachId, packageId });
     router.push(`/dashboard/subscription-checkout?${p.toString()}`);
   };
@@ -230,7 +230,7 @@ export default function CoachDetailsPage() {
 
   const handleJoinWaitlist = async () => {
     if (!user) { router.push(`/login?redirect=/coaches/${coachId}`); return; }
-    if (user.role !== "Player") { toast.error("Only player accounts can join waitlists."); return; }
+    if (user.role !== "Player" && user.role !== "Parent") { toast.error("Only player accounts can join waitlists."); return; }
     if (!selectedSlot || !selectedSport) { toast.error("Please select a sport and time slot"); return; }
     setBookingLoading(true);
     try {

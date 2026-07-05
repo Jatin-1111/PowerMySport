@@ -697,10 +697,10 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       return;
     }
 
-    if (req.user.role !== "Player") {
+    if (req.user.role !== "Player" && req.user.role !== "Parent") {
       res.status(403).json({
         success: false,
-        message: "Only player accounts can purchase subscriptions",
+        message: "Only player and parent accounts can purchase subscriptions",
       });
       return;
     }

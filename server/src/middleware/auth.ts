@@ -248,10 +248,10 @@ export const playerOnlyMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  if (req.user?.role !== "Player") {
+  if (req.user?.role !== "Player" && req.user?.role !== "Parent") {
     res.status(403).json({
       success: false,
-      message: "Booking is available for player accounts only.",
+      message: "Booking is available for player and parent accounts.",
     });
     return;
   }

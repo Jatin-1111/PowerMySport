@@ -35,9 +35,17 @@ export default function VenueDetailsPage() {
 
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0],
-  );
+  // Use local date (not UTC) so midnight-to-dawn visitors see today's date,
+  // not yesterday's (which toISOString() would return for IST before 05:30 UTC).
+  const getLocalDateString = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString());
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     startTime: string;
@@ -67,10 +75,26 @@ export default function VenueDetailsPage() {
   const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(null);
   const [reviewEligibilityReason, setReviewEligibilityReason] = useState("");
 
-  const slotsToDisplay =
-    availability?.allSlots && availability.allSlots.length > 0
-      ? availability.allSlots
-      : availability?.availableSlots || [];
+  const slotsToDisplay = (() => {
+    const raw =
+      availability?.allSlots && availability.allSlots.length > 0
+        ? availability.allSlots
+        : availability?.availableSlots || [];
+
+    // When the selected date is today, hide slots whose start time is already past.
+    const localDateStr = getLocalDateString();
+    if (selectedDate !== localDateStr) return raw;
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return raw.filter((slot: string) => {
+      const startTime = slot.split("-")[0] || slot; // "HH:MM"
+      const [h = "0", m = "0"] = startTime.split(":");
+      const slotMinutes = parseInt(h) * 60 + parseInt(m);
+      return slotMinutes > currentMinutes;
+    });
+  })();
 
   const isSelectedSlotAvailable =
     (selectedSlot &&
@@ -258,7 +282,7 @@ export default function VenueDetailsPage() {
 
   const handleBooking = async () => {
     if (!user) { router.push("/login?redirect=/venues/" + venueId); return; }
-    if (user.role !== "Player") { toast.error("Only player accounts can create bookings."); return; }
+    if (user.role !== "Player" && user.role !== "Parent") { toast.error("Only player accounts can create bookings."); return; }
     if (!selectedSlot || !selectedSport) { toast.error("Please select a sport and time slot"); return; }
     setBookingLoading(true);
     try {
@@ -276,7 +300,7 @@ export default function VenueDetailsPage() {
 
   const handleJoinWaitlist = async () => {
     if (!user) { router.push(`/login?redirect=/venues/${venueId}`); return; }
-    if (user.role !== "Player") { toast.error("Only player accounts can join waitlists."); return; }
+    if (user.role !== "Player" && user.role !== "Parent") { toast.error("Only player accounts can join waitlists."); return; }
     if (!selectedSlot || !selectedSport) { toast.error("Please select a sport and time slot"); return; }
     setBookingLoading(true);
     try {
@@ -795,7 +819,7 @@ export default function VenueDetailsPage() {
                     <input
                       type="date"
                       value={selectedDate}
-                      min={new Date().toISOString().split("T")[0]}
+                      min={getLocalDateString()}
                       onChange={(e) => setSelectedDate(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 font-medium"
                     />

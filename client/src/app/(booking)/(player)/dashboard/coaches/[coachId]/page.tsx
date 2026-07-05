@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
@@ -96,7 +96,7 @@ export default function BookCoachPage() {
       const userResponse = await authApi.getProfile();
       if (userResponse.success && userResponse.data) {
         setUser(userResponse.data);
-        if (userResponse.data.role !== "Player") {
+        if (userResponse.data.role !== "Player" && userResponse.data.role !== "Parent") {
           toast.error("Only player accounts can create bookings.");
           router.replace(getDashboardPathByRole(userResponse.data.role));
           return;
@@ -166,7 +166,7 @@ export default function BookCoachPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (user && user.role !== "Player") {
+    if (user && user.role !== "Player" && user.role !== "Parent") {
       toast.error("Only player accounts can create bookings.");
       return;
     }

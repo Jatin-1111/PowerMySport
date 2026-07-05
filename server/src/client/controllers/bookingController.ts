@@ -59,10 +59,10 @@ export const initiateNewBooking = async (
       return;
     }
 
-    if (user.role !== "Player") {
+    if (user.role !== "Player" && user.role !== "Parent") {
       res.status(403).json({
         success: false,
-        message: "Booking is available for player accounts only.",
+        message: "Booking is available for player and parent accounts.",
       });
       return;
     }
@@ -1552,10 +1552,10 @@ export const initiateNewGroupBooking = async (
       return;
     }
 
-    if (req.user.role !== "Player") {
+    if (req.user.role !== "Player" && req.user.role !== "Parent") {
       res.status(403).json({
         success: false,
-        message: "Group booking is available for player accounts only.",
+        message: "Group booking is available for player and parent accounts.",
       });
       return;
     }

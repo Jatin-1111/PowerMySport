@@ -509,7 +509,7 @@ function CheckoutPageContent() {
 
         if (profileResponse?.success && profileResponse.data) {
           setUser(profileResponse.data);
-          if (profileResponse.data.role !== "Player") {
+          if (profileResponse.data.role !== "Player" && profileResponse.data.role !== "Parent") {
             toast.error("Only player accounts can create bookings.");
             router.replace(getDashboardPathByRole(profileResponse.data.role));
             return;
@@ -711,7 +711,7 @@ function CheckoutPageContent() {
   };
 
   const handleCheckout = async () => {
-    if (user?.role !== "Player") {
+    if (user?.role !== "Player" && user?.role !== "Parent") {
       toast.error("Only player accounts can create bookings.");
       return;
     }
