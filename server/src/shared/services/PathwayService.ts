@@ -282,7 +282,7 @@ export class PathwayService {
       };
     }
 
-    // ── 4. For unknown sports: validate + generate IN PARALLEL ─────────────
+    // ── 4. For unknown sports: validate FIRST, only generate if valid ──────
     //    For known sports: skip validation entirely (it's already confirmed).
     let generated: Awaited<ReturnType<typeof this.generatePathway>>;
 
@@ -943,7 +943,13 @@ export class PathwayService {
                 responseMimeType: "application/json",
                 temperature: 0.4,
                 abortSignal: controller.signal,
-                maxOutputTokens: isMeta ? 1024 : 3072,
+                // Cap scales with batch size because each level's schema is large enough that a flat cap risks truncation.
+                // TODO: revisit these values once a few days of candidatesTokenCount logs are available and tighten/loosen based on observation.
+                maxOutputTokens: isMeta
+                  ? 1024
+                  : levelNums!.length === 3
+                    ? 6000
+                    : 4000,
               },
             }),
             timeoutMs,
