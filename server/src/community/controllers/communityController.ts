@@ -726,6 +726,8 @@ export const listCommunityPosts = async (
     const tag = typeof req.query.tag === "string" ? req.query.tag : "";
     const sport = typeof req.query.sport === "string" ? req.query.sport : "";
     const city = typeof req.query.city === "string" ? req.query.city : "";
+    const category =
+      typeof req.query.category === "string" ? req.query.category : "";
     const mine =
       typeof req.query.mine === "string"
         ? req.query.mine.toLowerCase() === "true"
@@ -737,6 +739,7 @@ export const listCommunityPosts = async (
       tag,
       sport,
       city,
+      category,
       mine,
     });
 

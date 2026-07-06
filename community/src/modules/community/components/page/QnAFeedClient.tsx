@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import {
+  Activity,
   ArrowBigDown,
   ArrowBigUp,
+  CalendarDays,
   LoaderCircle,
+  MapPin,
   MessageCircle,
   Plus,
   Search,
+  Trash2,
   Trophy,
+  X,
 } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import {
@@ -28,6 +32,11 @@ import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { toast } from "@/lib/toast";
 import { useMutationState } from "@/lib/hooks/useMutationState";
 import AskQuestionModal from "@/modules/community/components/page/AskQuestionModal";
+import AuthorAvatar from "@/modules/community/components/page/AuthorAvatar";
+import {
+  MultiCheckboxDropdown,
+  SelectDropdown,
+} from "@/modules/community/components/page/FilterControls";
 
 const SORT_OPTIONS: Array<{ value: CommunityFeedSort; label: string }> = [
   { value: "NEW", label: "New" },
@@ -45,6 +54,16 @@ const toRelativeTime = (value: string): string => {
   return `${Math.floor(diffH / 24)}d`;
 };
 
+const formatPostedDate = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 const getActivityLabel = (item: CommunityActivityItem): string => {
   const event = item.data?.event || "";
 
@@ -60,6 +79,40 @@ const getActivityLabel = (item: CommunityActivityItem): string => {
 
   return "Community activity";
 };
+
+const CAPSULE_TONES = {
+  violet: "border-violet-200 bg-violet-50 text-violet-700",
+  orange: "border-power-orange/30 bg-power-orange/10 text-power-orange",
+  blue: "border-blue-200 bg-blue-50 text-blue-700",
+  rose: "border-rose-200 bg-rose-50 text-rose-700",
+  slate: "border-slate-200 bg-slate-100 text-slate-700",
+} as const;
+
+function FilterCapsule({
+  label,
+  onRemove,
+  tone = "slate",
+}: {
+  label: string;
+  onRemove: () => void;
+  tone?: keyof typeof CAPSULE_TONES;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${CAPSULE_TONES[tone]}`}
+    >
+      <span className="max-w-[10rem] truncate">{label}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="rounded-full p-0.5 transition hover:bg-black/10"
+        title={`Remove ${label}`}
+      >
+        <X size={12} />
+      </button>
+    </span>
+  );
+}
 
 export default function QnAFeedClient() {
   const router = useRouter();
@@ -155,10 +208,10 @@ export default function QnAFeedClient() {
   const [searchInput, setSearchInput] = useState("");
   const [activeTag, setActiveTag] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [sportFilterInput, setSportFilterInput] = useState("");
-  const [cityFilterInput, setCityFilterInput] = useState("");
-  const [sportFilter, setSportFilter] = useState("");
-  const [cityFilter, setCityFilter] = useState("");
+  const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [sportOptions, setSportOptions] = useState<string[]>([]);
+  const [cityOptions, setCityOptions] = useState<string[]>([]);
   const [showAskForm, setShowAskForm] = useState(false);
   const [isUrlHydrated, setIsUrlHydrated] = useState(false);
   const [followedTopics, setFollowedTopics] = useState<string[]>([]);
@@ -175,13 +228,17 @@ export default function QnAFeedClient() {
     const nextSort: CommunityFeedSort =
       sortParam === "TOP" || sortParam === "UNANSWERED" ? sortParam : "NEW";
 
+    const parseCsv = (value: string): string[] =>
+      value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
     setSearchInput(qParam);
     setQ(qParam);
     setActiveTag(tagParam);
-    setSportFilterInput(sportParam);
-    setSportFilter(sportParam);
-    setCityFilterInput(cityParam);
-    setCityFilter(cityParam);
+    setSelectedSports(parseCsv(sportParam));
+    setSelectedCities(parseCsv(cityParam));
     setSort(nextSort);
     setViewMode(mineParam ? "MINE" : "ALL");
     if (askParam) {
@@ -211,8 +268,8 @@ export default function QnAFeedClient() {
             sort,
             q,
             tag: activeTag || undefined,
-            sport: sportFilter || undefined,
-            city: cityFilter || undefined,
+            sport: selectedSports.length ? selectedSports.join(",") : undefined,
+            city: selectedCities.length ? selectedCities.join(",") : undefined,
             category: categoryFilter || undefined,
             mine: viewMode === "MINE",
           }),
@@ -221,6 +278,23 @@ export default function QnAFeedClient() {
 
         const items = postData.items || [];
         setPosts((current) => (append ? [...current, ...items] : items));
+
+        // Accumulate sport/city options so the filter dropdowns stay populated
+        // even after a filter narrows the visible posts.
+        setSportOptions((current) => {
+          const merged = new Set(current);
+          for (const item of items) {
+            if (item.sport) merged.add(item.sport);
+          }
+          return [...merged].sort((a, b) => a.localeCompare(b));
+        });
+        setCityOptions((current) => {
+          const merged = new Set(current);
+          for (const item of items) {
+            if (item.city) merged.add(item.city);
+          }
+          return [...merged].sort((a, b) => a.localeCompare(b));
+        });
         setReputation(rep);
         setPage(targetPage);
         setHasMore(targetPage < (postData.pagination?.totalPages || 0));
@@ -233,7 +307,7 @@ export default function QnAFeedClient() {
         setIsLoadingMore(false);
       }
     },
-    [sort, q, activeTag, sportFilter, cityFilter, categoryFilter, viewMode],
+    [sort, q, activeTag, selectedSports, selectedCities, categoryFilter, viewMode],
   );
 
   const loadActivity = useCallback(async () => {
@@ -356,15 +430,6 @@ export default function QnAFeedClient() {
   }, [searchInput]);
 
   useEffect(() => {
-    const handle = setTimeout(() => {
-      setSportFilter(sportFilterInput.trim());
-      setCityFilter(cityFilterInput.trim());
-    }, 260);
-
-    return () => clearTimeout(handle);
-  }, [sportFilterInput, cityFilterInput]);
-
-  useEffect(() => {
     const followed = communityFollowStore
       .getByKind("topic")
       .map((item) => item.id.toLowerCase());
@@ -385,8 +450,8 @@ export default function QnAFeedClient() {
 
     const desiredQ = q.trim();
     const desiredTag = activeTag.trim();
-    const desiredSport = sportFilter.trim();
-    const desiredCity = cityFilter.trim();
+    const desiredSport = selectedSports.join(",");
+    const desiredCity = selectedCities.join(",");
     const desiredSort = sort;
     const desiredMine = viewMode;
 
@@ -415,13 +480,13 @@ export default function QnAFeedClient() {
     });
   }, [
     activeTag,
-    cityFilter,
+    selectedCities,
     isUrlHydrated,
     pathname,
     q,
     router,
     sort,
-    sportFilter,
+    selectedSports,
     urlSearchParams,
     viewMode,
   ]);
@@ -532,6 +597,54 @@ export default function QnAFeedClient() {
     [nonFeaturedPosts],
   );
 
+  const toggleSport = (sport: string) => {
+    setSelectedSports((current) =>
+      current.includes(sport)
+        ? current.filter((item) => item !== sport)
+        : [...current, sport],
+    );
+  };
+
+  const toggleCity = (city: string) => {
+    setSelectedCities((current) =>
+      current.includes(city)
+        ? current.filter((item) => item !== city)
+        : [...current, city],
+    );
+  };
+
+  const hasActiveFilters =
+    selectedSports.length > 0 ||
+    selectedCities.length > 0 ||
+    Boolean(categoryFilter) ||
+    Boolean(activeTag) ||
+    Boolean(q);
+
+  const clearAllFilters = () => {
+    setSelectedSports([]);
+    setSelectedCities([]);
+    setCategoryFilter("");
+    setActiveTag("");
+    setQ("");
+    setSearchInput("");
+  };
+
+  const categoryOptions = useMemo(
+    () => [
+      { value: "", label: "All Categories" },
+      ...COMMUNITY_POST_CATEGORIES.map((cat) => ({ value: cat, label: cat })),
+    ],
+    [],
+  );
+
+  const topicOptions = useMemo(
+    () => [
+      { value: "", label: "All Topics" },
+      ...spotlight.popularTags.map((tag) => ({ value: tag, label: `#${tag}` })),
+    ],
+    [spotlight.popularTags],
+  );
+
   const toggleTopicFollow = (topic: string) => {
     const normalized = topic.trim().toLowerCase();
     if (!normalized) {
@@ -622,11 +735,12 @@ export default function QnAFeedClient() {
             />
 
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+              {/* Row 1: View toggle + Sort */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="inline-flex items-center self-start rounded-xl border border-slate-200 bg-slate-50 p-1">
                   <button
                     onClick={() => setViewMode("ALL")}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
                       viewMode === "ALL"
                         ? "bg-slate-900 text-white shadow-sm"
                         : "text-slate-600 hover:bg-white"
@@ -636,7 +750,7 @@ export default function QnAFeedClient() {
                   </button>
                   <button
                     onClick={() => setViewMode("MINE")}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
                       viewMode === "MINE"
                         ? "bg-slate-900 text-white shadow-sm"
                         : "text-slate-600 hover:bg-white"
@@ -646,32 +760,10 @@ export default function QnAFeedClient() {
                   </button>
                 </div>
 
-                <div className="grid w-full gap-2 lg:w-auto lg:grid-cols-3">
-                  <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2">
-                    <Search size={16} className="text-slate-500" />
-                    <input
-                      value={searchInput}
-                      onChange={(event) => setSearchInput(event.target.value)}
-                      placeholder="Search questions"
-                      className="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none sm:w-52"
-                    />
-                  </div>
-                  <input
-                    value={sportFilterInput}
-                    onChange={(event) =>
-                      setSportFilterInput(event.target.value)
-                    }
-                    placeholder="Filter sport"
-                    className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-power-orange focus:bg-white focus:outline-none"
-                  />
-                  <input
-                    value={cityFilterInput}
-                    onChange={(event) => setCityFilterInput(event.target.value)}
-                    placeholder="Filter city"
-                    className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm placeholder:text-slate-400 focus:border-power-orange focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="hidden text-xs font-semibold uppercase tracking-wide text-slate-400 sm:inline">
+                    Sort
+                  </span>
                   {SORT_OPTIONS.map((option) => (
                     <button
                       key={option.value}
@@ -688,78 +780,144 @@ export default function QnAFeedClient() {
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Category
-                </span>
-                <button
-                  onClick={() => setCategoryFilter("")}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                    !categoryFilter
-                      ? "border-violet-400/50 bg-violet-50 text-violet-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  All
-                </button>
-                {COMMUNITY_POST_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoryFilter(cat === categoryFilter ? "" : cat)}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                      categoryFilter === cat
-                        ? "border-violet-400/50 bg-violet-50 text-violet-700"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+              {/* Row 2: Search (wide) + Sport + City filters */}
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[2.4fr_1fr_1fr]">
+                <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 transition focus-within:border-power-orange focus-within:bg-white sm:col-span-2 lg:col-span-1">
+                  <Search size={16} className="shrink-0 text-slate-500" />
+                  <input
+                    value={searchInput}
+                    onChange={(event) => setSearchInput(event.target.value)}
+                    placeholder="Search questions, keywords, topics…"
+                    className="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none"
+                  />
+                  {searchInput ? (
+                    <button
+                      onClick={() => {
+                        setSearchInput("");
+                        setQ("");
+                      }}
+                      className="shrink-0 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
+                      title="Clear search"
+                    >
+                      <X size={14} />
+                    </button>
+                  ) : null}
+                </div>
+
+                <MultiCheckboxDropdown
+                  label="Sport"
+                  icon={<Activity size={15} className="text-blue-500" />}
+                  options={sportOptions}
+                  selected={selectedSports}
+                  onToggle={toggleSport}
+                  emptyHint="No sports tagged yet"
+                />
+                <MultiCheckboxDropdown
+                  label="City"
+                  icon={<MapPin size={15} className="text-rose-500" />}
+                  options={cityOptions}
+                  selected={selectedCities}
+                  onToggle={toggleCity}
+                  emptyHint="No cities tagged yet"
+                />
               </div>
 
-              {spotlight.popularTags.length > 0 && (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Popular Topics
-                  </span>
-                  <button
-                    onClick={() => setActiveTag("")}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                      !activeTag
-                        ? "border-power-orange/40 bg-power-orange/10 text-power-orange"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    All
-                  </button>
-                  {spotlight.popularTags.map((tag) => (
-                    <div key={tag} className="inline-flex items-center gap-1">
-                      <button
-                        onClick={() => setActiveTag(tag)}
-                        className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                          activeTag === tag
-                            ? "border-power-orange/40 bg-power-orange/10 text-power-orange"
-                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        #{tag}
-                      </button>
-                      <button
-                        onClick={() => toggleTopicFollow(tag)}
-                        className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${
-                          followedTopics.includes(tag.toLowerCase())
-                            ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
-                        }`}
-                      >
-                        {followedTopics.includes(tag.toLowerCase())
-                          ? "Following"
-                          : "Follow"}
-                      </button>
-                    </div>
-                  ))}
+              {/* Row 3: Category + Popular Topics dropdowns */}
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Category
+                  </p>
+                  <SelectDropdown
+                    options={categoryOptions}
+                    value={categoryFilter}
+                    onChange={setCategoryFilter}
+                  />
                 </div>
-              )}
+                <div>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Popular Topics
+                  </p>
+                  <SelectDropdown
+                    options={topicOptions}
+                    value={activeTag}
+                    onChange={setActiveTag}
+                    renderSuffix={(value) =>
+                      value ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleTopicFollow(value)}
+                          className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
+                            followedTopics.includes(value.toLowerCase())
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
+                          }`}
+                        >
+                          {followedTopics.includes(value.toLowerCase())
+                            ? "Following"
+                            : "Follow"}
+                        </button>
+                      ) : null
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Active filter capsules + Clear all */}
+              {hasActiveFilters ? (
+                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    Active
+                  </span>
+                  {categoryFilter ? (
+                    <FilterCapsule
+                      label={categoryFilter}
+                      onRemove={() => setCategoryFilter("")}
+                      tone="violet"
+                    />
+                  ) : null}
+                  {activeTag ? (
+                    <FilterCapsule
+                      label={`#${activeTag}`}
+                      onRemove={() => setActiveTag("")}
+                      tone="orange"
+                    />
+                  ) : null}
+                  {selectedSports.map((sport) => (
+                    <FilterCapsule
+                      key={`sport-${sport}`}
+                      label={sport}
+                      onRemove={() => toggleSport(sport)}
+                      tone="blue"
+                    />
+                  ))}
+                  {selectedCities.map((city) => (
+                    <FilterCapsule
+                      key={`city-${city}`}
+                      label={city}
+                      onRemove={() => toggleCity(city)}
+                      tone="rose"
+                    />
+                  ))}
+                  {q ? (
+                    <FilterCapsule
+                      label={`“${q}”`}
+                      onRemove={() => {
+                        setSearchInput("");
+                        setQ("");
+                      }}
+                      tone="slate"
+                    />
+                  ) : null}
+                  <button
+                    onClick={clearAllFilters}
+                    className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-100"
+                  >
+                    <Trash2 size={13} />
+                    Clear all
+                  </button>
+                </div>
+              ) : null}
             </section>
 
             {isLoading ? (
@@ -912,7 +1070,8 @@ export default function QnAFeedClient() {
 
                       {/* Footer */}
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/50 pt-4">
-                        <div className="flex items-center gap-3 text-xs text-slate-600">
+                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                          <AuthorAvatar author={featuredPost.author} size={32} />
                           <span className="font-semibold text-slate-900">
                             {featuredPost.author.displayName}
                           </span>
@@ -921,8 +1080,9 @@ export default function QnAFeedClient() {
                               ★ {featuredPost.author.expertTitle || "Verified Coach"}
                             </span>
                           ) : null}
-                          <span className="text-slate-500">
-                            {toRelativeTime(featuredPost.createdAt)} ago
+                          <span className="inline-flex items-center gap-1 text-slate-500">
+                            <CalendarDays size={12} className="text-slate-400" />
+                            {formatPostedDate(featuredPost.createdAt)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1026,7 +1186,8 @@ export default function QnAFeedClient() {
 
                           {/* Footer - Metadata & Actions */}
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                            <div className="flex items-center gap-3 text-xs text-slate-500">
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <AuthorAvatar author={post.author} size={26} />
                               <span className="font-medium text-slate-700">
                                 {post.author.displayName}
                               </span>
@@ -1035,8 +1196,9 @@ export default function QnAFeedClient() {
                                   ★ {post.author.expertTitle || "Verified Coach"}
                                 </span>
                               ) : null}
-                              <span className="text-slate-400">
-                                {toRelativeTime(post.createdAt)} ago
+                              <span className="inline-flex items-center gap-1 text-slate-400">
+                                <CalendarDays size={12} />
+                                {formatPostedDate(post.createdAt)}
                               </span>
                             </div>
 
