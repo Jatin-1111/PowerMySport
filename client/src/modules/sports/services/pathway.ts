@@ -204,6 +204,7 @@ export const pathwayApi = {
     }
   },
 
+
   /**
    * Fetch only tournaments/scholarships/universities for a sport.
    * The server waits for the scraper if they aren't cached yet.

@@ -2555,19 +2555,17 @@ function PathwayExplorerSection() {
 
     try {
       const res = await pathwayApi.getPathway(name, undefined, state);
-      if (!res) {
-        setErrorMsg(`"${name}" doesn't appear to be a recognised sport. Please try a different name.`);
-        setStatus("error");
-        return;
-      }
-
+      if (!res) throw new Error("Not found");
       if ((res.pathway as any).status === "pending_review") {
-        setErrorMsg((res.pathway as any).message || "This pathway is being reviewed by experts and is not yet available for your state.");
+        setErrorMsg(
+          (res.pathway as any).message ||
+            "This pathway is being reviewed by experts and is not yet available for your state.",
+        );
         setStatus("error");
         return;
       }
 
-      setResult(res);
+      setResult(res as any);
       setQuery(res.pathway.sportName);
       setStatus("success");
 
@@ -2575,22 +2573,28 @@ function PathwayExplorerSection() {
       // fetch them in the background and merge when done.
       if (!res.entitiesReady) {
         setEntitiesStatus("loading");
-        pathwayApi.getEntities(res.pathway.sportName, state).then((entities) => {
-          if (!entities) { setEntitiesStatus("ready"); return; }
-          setResult((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              pathway: {
-                ...prev.pathway,
-                tournaments: entities.tournaments,
-                scholarships: entities.scholarships,
-                universities: entities.universities,
-              },
-            };
-          });
-          setEntitiesStatus("ready");
-        }).catch(() => setEntitiesStatus("ready"));
+        pathwayApi
+          .getEntities(res.pathway.sportName, state)
+          .then((entities) => {
+            if (!entities) {
+              setEntitiesStatus("ready");
+              return;
+            }
+            setResult((prev: any) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                pathway: {
+                  ...prev.pathway,
+                  tournaments: entities.tournaments,
+                  scholarships: entities.scholarships,
+                  universities: entities.universities,
+                },
+              };
+            });
+            setEntitiesStatus("ready");
+          })
+          .catch(() => setEntitiesStatus("ready"));
       } else {
         setEntitiesStatus("ready");
       }

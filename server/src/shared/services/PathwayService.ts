@@ -845,7 +845,8 @@ export class PathwayService {
           contents: prompt,
           config: {
             maxOutputTokens: 5,
-          },
+            thinkingConfig: { thinkingBudget: 0 },
+          } as any,
         });
         
         if (result.usageMetadata) {
@@ -905,6 +906,7 @@ export class PathwayService {
     }>;
   } | null> {
     if (!this.genAI) return null;
+    const genStart = Date.now();
 
     const modelCandidates = [
       "gemini-2.5-flash",
@@ -923,9 +925,14 @@ export class PathwayService {
         attempts++;
         const startTime = Date.now();
         const controller = new AbortController();
-        const timeoutMs = isMeta ? 8000 : 12000;
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        const timeoutMs = isMeta
+          ? 10000
+          : levelNums!.length === 3
+            ? 45000
+            : 30000;
+        const abortTimeoutId = setTimeout(() => controller.abort(), timeoutMs + 1000);
 
+        let text = "";
         try {
           const withTimeout = <T>(p: Promise<T>, ms: number) =>
             Promise.race([
@@ -935,6 +942,10 @@ export class PathwayService {
               ),
             ]);
 
+          log.info(
+            `[PathwayService] ▶ Attempt ${attempts}/${modelCandidates.length} [${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`}] → Model: ${modelName}, Timeout: ${timeoutMs}ms`
+          );
+
           const result = await withTimeout(
             this.genAI!.models.generateContent({
               model: modelName,
@@ -943,21 +954,36 @@ export class PathwayService {
                 responseMimeType: "application/json",
                 temperature: 0.4,
                 abortSignal: controller.signal,
+                // Disable thinking — this is a structured JSON formatting task, not a reasoning
+                // task. Thinking tokens eat the maxOutputTokens budget and add latency for zero benefit.
+                thinkingConfig: { thinkingBudget: 0 },
                 // Cap scales with batch size because each level's schema is large enough that a flat cap risks truncation.
                 // TODO: revisit these values once a few days of candidatesTokenCount logs are available and tighten/loosen based on observation.
                 maxOutputTokens: isMeta
-                  ? 1024
+                  ? 2048
                   : levelNums!.length === 3
-                    ? 6000
-                    : 4000,
-              },
+                    ? 8192
+                    : 5500,
+              } as any,
             }),
             timeoutMs,
           );
-          clearTimeout(timeoutId);
+          clearTimeout(abortTimeoutId);
 
           const latencyMs = Date.now() - startTime;
-          const text = (result.text ?? "").trim();
+          text = (result.text ?? "").trim();
+          
+          if (result.usageMetadata) {
+            const label = isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`;
+            log.info(
+              `[PathwayService] Usage [${label}]. Model: ${modelName}, ` +
+              `Prompt: ${result.usageMetadata.promptTokenCount}, ` +
+              `Thinking: ${(result.usageMetadata as any).thoughtsTokenCount ?? 0}, ` +
+              `Candidates: ${result.usageMetadata.candidatesTokenCount}, ` +
+              `Total: ${result.usageMetadata.totalTokenCount}`
+            );
+          }
+          
           const jsonText = text
             .replace(/^```[a-z]*\n?/i, "")
             .replace(/```$/i, "")
@@ -967,12 +993,6 @@ export class PathwayService {
           log.info(
             `[PathwayService] ${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`} generation success. Model: ${modelName}, Attempt: ${attempts}, Latency: ${latencyMs}ms`,
           );
-          
-          if (result.usageMetadata) {
-            log.info(
-              `[PathwayService] Usage [${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`}]. Model: ${modelName}, Prompt: ${result.usageMetadata.promptTokenCount}, Candidates: ${result.usageMetadata.candidatesTokenCount}, Total: ${result.usageMetadata.totalTokenCount}`,
-            );
-          }
 
           if (!isMeta) {
             // Level validation (benchmarks length check)
@@ -997,13 +1017,21 @@ export class PathwayService {
 
           return parsed;
         } catch (error: any) {
-          clearTimeout(timeoutId);
+          clearTimeout(abortTimeoutId);
           const latencyMs = Date.now() - startTime;
           const reason =
             error.name === "AbortError" ? "Timeout" : error.message;
           log.warn(
             `[PathwayService] ${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`} generation failed. Model: ${modelName}, Attempt: ${attempts}, Latency: ${latencyMs}ms, Reason: ${reason}`,
           );
+
+          const isParseError = !["client_timeout", "Timeout", "AbortError"]
+            .some((t) => reason.includes(t));
+          if (isParseError && text.length > 0) {
+            log.warn(
+              `[PathwayService] ✂ Parse error on raw response [${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`}]. Model: ${modelName}, First 300 chars: ${text.slice(0, 300)}`
+            );
+          }
         }
       }
 
@@ -1011,6 +1039,9 @@ export class PathwayService {
       if (isMeta) {
         return null;
       } else {
+        log.warn(
+          `[PathwayService] ⚠️ PLACEHOLDER content for Levels ${levelNums?.join(",")} — all ${modelCandidates.length} models exhausted. Users will see "Information currently unavailable".`
+        );
         return levelNums!.map((levelNum) => ({
           level: levelNum,
           label:
@@ -1070,6 +1101,9 @@ export class PathwayService {
       log.error(
         "[PathwayService] Meta pathway generation failed all attempts.",
       );
+      log.warn(
+        `[PathwayService] ✗ generatePathway failed after ${Date.now() - genStart}ms for "${sportName}"`
+      );
       return null;
     }
 
@@ -1092,6 +1126,10 @@ export class PathwayService {
             : lvl.label?.trim() || LEVEL_LABEL_FALLBACKS[index],
       };
     });
+
+    log.info(
+      `[PathwayService] ✅ generatePathway complete in ${Date.now() - genStart}ms for "${sportName}"${state ? ` (${state})` : ""}`
+    );
 
     return {
       sportName: metaResult.sportName,

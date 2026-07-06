@@ -114,6 +114,8 @@ export const getPathway = async (
   }
 };
 
+
+
 /**
  * GET /api/pathways/entities?sport=cricket&city=Mumbai
  * Returns just tournaments/scholarships/universities for a sport.

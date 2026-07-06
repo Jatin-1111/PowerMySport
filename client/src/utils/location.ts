@@ -14,11 +14,16 @@ export interface OwnVenueLocationDisplay {
 export const formatCoordinatesLabel = (
   coordinates?: [number, number] | null,
 ): string => {
-  if (!coordinates) {
+  if (!coordinates || coordinates.length < 2) {
     return "";
   }
 
   const [longitude, latitude] = coordinates;
+
+  if (typeof longitude !== "number" || typeof latitude !== "number") {
+    return "";
+  }
+
   return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
 };
 
