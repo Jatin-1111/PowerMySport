@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowBigDown,
@@ -37,6 +38,7 @@ const formatPostedDate = (value: string): string => {
 };
 
 export default function QnAPostDetailClient({ postId }: { postId: string }) {
+  const router = useRouter();
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMoreAnswers, setIsLoadingMoreAnswers] = useState(false);
@@ -248,7 +250,17 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
         answerDraft.trim(),
         answerIsAnonymous,
       );
-      setAnswers((current) => [...current, created]);
+      const createdWithAuthor = {
+        ...created,
+        author: {
+          id: answerIsAnonymous ? "anon" : currentUserId,
+          displayName: answerIsAnonymous ? "Anonymous" : "Me",
+          isIdentityPublic: !answerIsAnonymous,
+          photoUrl: null,
+          isVerifiedExpert: false,
+        },
+      };
+      setAnswers((current) => [...current, createdWithAuthor]);
       setAnswerDraft("");
       setAnswerIsAnonymous(false);
       setPost((current) =>
@@ -317,7 +329,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
       setIsMutatingPost(true);
       await communityService.deletePost(post.id);
       toast.success("Question deleted");
-      window.location.assign("/q");
+      router.push("/q");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete question",
@@ -459,7 +471,7 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
         <p className="text-slate-700">Question not found.</p>
         <Link
           href="/q"
-          className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
         >
           Back to Feed
         </Link>
@@ -593,9 +605,9 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
           {/* Metadata */}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
             <div className="flex items-center gap-2 text-xs text-slate-600">
-              <AuthorAvatar author={post.author} size={34} />
+              <AuthorAvatar author={post.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : post.author} size={34} />
               <span className="font-semibold text-slate-900">
-                {post.author.displayName}
+                {post.isAnonymous ? "Anonymous" : post.author.displayName}
               </span>
               {post.author.isVerifiedExpert ? (
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
@@ -765,11 +777,11 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                 {/* Header - Author & Time */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                    <AuthorAvatar author={answer.author} size={36} />
+                    <AuthorAvatar author={answer.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : answer.author} size={36} />
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold text-slate-900">
-                          {answer.author.displayName}
+                          {answer.isAnonymous ? "Anonymous" : answer.author.displayName}
                         </span>
                         {answer.author.isVerifiedExpert ? (
                           <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
