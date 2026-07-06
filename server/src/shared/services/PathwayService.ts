@@ -99,32 +99,16 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
 Make all content specific to India's sports ecosystem. Do NOT include "tournaments", "scholarships", or "universities" arrays.`;
 }
 
-function buildLevelPrompt(
+function buildLevelRangePrompt(
   sportName: string,
   state: string | undefined,
-  levelNumber: number,
+  levelNumbers: number[],
 ): string {
   const stateContext = state
     ? `The family is based in the Indian state/UT of ${state.trim()}.`
     : "";
 
-  return `You are an expert Indian sports development consultant advising an average Indian parent. Generate detailed, highly actionable information for LEVEL ${levelNumber} of a 5-level sports development pathway for their child in "${sportName}" within India.
-${stateContext ? `\n${stateContext}` : ""}
-WRITE IN SIMPLE LANGUAGE — this is the most important rule: Every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use short sentences and everyday words. Never use a sport-federation acronym without immediately explaining it in plain words the first time.
-
-LEVEL LABELS:
-- If this is Level 1, the "label" is ALWAYS exactly the word "Beginner".
-- If this is Level 2-5, the "label" MUST be a short (2-4 word) sport-specific, plain-English name for what that stage is actually called in "${sportName}". STRICTLY MAP the levels to the geographic scope of competition:
-  - Level 2 MUST map to the District / Inter-City / Local competitive level.
-  - Level 3 MUST map to the State / Provincial competitive level.
-  - Level 4 MUST map to the National competitive level.
-  - Level 5 MUST map to the International / Elite competitive level.
-The "title" field is a slightly fuller version of the same idea.
-
-BENCHMARKS REQUIREMENT: For any level whose ageRange or typical duration spans more than 12 months, the \`benchmarks.metrics\` array MUST contain at least 3 entries, each with a distinct \`checkpointMonth\` spaced across that level's full timeframe (e.g. months 6, 18, 36 for a 4-year level). For levels under 12 months, 1-2 checkpoints is acceptable.
-
-Return ONLY a valid JSON object (no markdown, no code fences) with this exact structure for ONE level:
-{
+  const levelObjects = levelNumbers.map(levelNumber => `{
   "level": ${levelNumber},
   "label": "Short, sport-specific plain-English name (or 'Beginner' if level 1)",
   "title": "Short, plain-English, sport-specific title for this tier",
@@ -181,9 +165,29 @@ Return ONLY a valid JSON object (no markdown, no code fences) with this exact st
   ],
   "academicIntegration": "Practical advice for parents on balancing school academics with sport at this specific level",
   "proactiveDocuments": ["Document to start collecting NOW that will be required at a higher level"]
-}
+}`).join(",\n");
 
-If a state was provided and this is Level 1, 2, or 3, you MUST populate the \`localResources\` object with REAL, accurate names of academies, training facilities (e.g. SAI centres), and local federation branches located in or near that state. If none exist or you cannot be certain, leave the arrays empty.
+  return `You are an expert Indian sports development consultant advising an average Indian parent. Generate detailed, highly actionable information for LEVELS ${levelNumbers.join(", ")} of a 5-level sports development pathway for their child in "${sportName}" within India.
+${stateContext ? `\n${stateContext}` : ""}
+WRITE IN SIMPLE LANGUAGE — this is the most important rule: Every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use short sentences and everyday words. Never use a sport-federation acronym without immediately explaining it in plain words the first time.
+
+LEVEL LABELS:
+- If a level is 1, the "label" is ALWAYS exactly the word "Beginner".
+- If a level is 2-5, the "label" MUST be a short (2-4 word) sport-specific, plain-English name for what that stage is actually called in "${sportName}". STRICTLY MAP the levels to the geographic scope of competition:
+  - Level 2 MUST map to the District / Inter-City / Local competitive level.
+  - Level 3 MUST map to the State / Provincial competitive level.
+  - Level 4 MUST map to the National competitive level.
+  - Level 5 MUST map to the International / Elite competitive level.
+The "title" field is a slightly fuller version of the same idea.
+
+BENCHMARKS REQUIREMENT: For any level whose ageRange or typical duration spans more than 12 months, the \`benchmarks.metrics\` array MUST contain at least 3 entries, each with a distinct \`checkpointMonth\` spaced across that level's full timeframe (e.g. months 6, 18, 36 for a 4-year level). For levels under 12 months, 1-2 checkpoints is acceptable.
+
+Return ONLY a valid JSON array of objects (no markdown, no code fences) exactly matching this structure for the requested levels:
+[
+${levelObjects}
+]
+
+If a state was provided, you MUST populate the \`localResources\` object for levels 1, 2, and 3 with REAL, accurate names of academies, training facilities (e.g. SAI centres), and local federation branches located in or near that state. If none exist or you cannot be certain, leave the arrays empty.
 `;
 }
 
@@ -194,6 +198,7 @@ export class PathwayService {
 
   /** Set of cacheKeys currently being refreshed — prevents duplicate Gemini calls */
   private refreshInProgressSet = new Set<string>();
+  private sportValidationCache = new Map<string, boolean>();
 
   constructor() {
     const apiKey =
@@ -283,13 +288,10 @@ export class PathwayService {
 
     if (!knownSport) {
       log.info(
-        `[PathwayService] Unknown sport — running validate+generate in parallel: ${finalSportName}`,
+        `[PathwayService] Unknown sport — running validation: ${finalSportName}`,
       );
-      const [isValid, gen] = await Promise.all([
-        this.validateSport(finalSportName),
-        this.generatePathway(finalSportName, state),
-      ]);
-      log.info(`[PathwayService] Validation: ${isValid}, generated: ${!!gen}`);
+      const isValid = await this.validateSport(finalSportName);
+      log.info(`[PathwayService] Validation: ${isValid}`);
       if (!isValid) {
         return {
           pathway: null,
@@ -297,7 +299,7 @@ export class PathwayService {
           message: `"${finalSportName}" does not appear to be a recognised sport or athletic activity.`,
         };
       }
-      generated = gen;
+      generated = await this.generatePathway(finalSportName, state);
     } else {
       // ── 5. Known sport — generate directly (no validation round-trip) ────
       generated = await this.generatePathway(finalSportName, state);
@@ -822,23 +824,45 @@ export class PathwayService {
 
   private isPathwayStale(doc: SportPathwayDocument): boolean {
     const staleCutoff = new Date(
-      Date.now() - DEFAULT_STALE_DAYS * 24 * 60 * 60 * 1000,
+      Date.now() - 180 * 24 * 60 * 60 * 1000,
     );
-    const referenceDate = (doc as any).lastRefreshedAt ?? doc.createdAt;
+    const referenceDate = (doc as any).contentRefreshedAt ?? (doc as any).lastRefreshedAt ?? doc.createdAt;
     return referenceDate < staleCutoff;
   }
 
   private async validateSport(sportName: string): Promise<boolean> {
+    const cacheKey = sportName.trim().toLowerCase();
+    if (this.sportValidationCache.has(cacheKey)) {
+      return this.sportValidationCache.get(cacheKey)!;
+    }
+
     const prompt = `Is "${sportName}" a real sport or athletic activity? Reply with only "yes" or "no".`;
 
     if (this.genAI) {
       try {
         const result = await this.genAI.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-2.5-flash-lite",
           contents: prompt,
+          config: {
+            maxOutputTokens: 5,
+          },
         });
+        
+        if (result.usageMetadata) {
+          log.info(
+            `[PathwayService] Validation usage. Model: gemini-2.5-flash-lite, Prompt: ${result.usageMetadata.promptTokenCount}, Candidates: ${result.usageMetadata.candidatesTokenCount}, Total: ${result.usageMetadata.totalTokenCount}`,
+          );
+        }
+
         const answer = (result.text ?? "").trim().toLowerCase();
-        return answer.startsWith("yes");
+        const isValid = answer.startsWith("yes");
+        
+        if (this.sportValidationCache.size >= 500) {
+          const firstKey = this.sportValidationCache.keys().next().value;
+          this.sportValidationCache.delete(firstKey!);
+        }
+        this.sportValidationCache.set(cacheKey, isValid);
+        return isValid;
       } catch (err) {
         log.warn(
           "[PathwayService] Gemini validation failed, falling back.",
@@ -891,11 +915,11 @@ export class PathwayService {
     const callModelWithFallback = async (
       prompt: string,
       isMeta: boolean,
-      levelNum?: number,
+      levelNums?: number[],
     ) => {
       let attempts = 0;
       for (const modelName of modelCandidates) {
-        if (attempts >= 2) break; // Cap retries per call at 2 attempts
+        if (attempts >= modelCandidates.length) break;
         attempts++;
         const startTime = Date.now();
         const controller = new AbortController();
@@ -919,6 +943,7 @@ export class PathwayService {
                 responseMimeType: "application/json",
                 temperature: 0.4,
                 abortSignal: controller.signal,
+                maxOutputTokens: isMeta ? 1024 : 3072,
               },
             }),
             timeoutMs,
@@ -934,23 +959,31 @@ export class PathwayService {
           const parsed = JSON.parse(jsonText);
 
           log.info(
-            `[PathwayService] ${isMeta ? "Meta" : `Level ${levelNum}`} generation success. Model: ${modelName}, Attempt: ${attempts}, Latency: ${latencyMs}ms`,
+            `[PathwayService] ${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`} generation success. Model: ${modelName}, Attempt: ${attempts}, Latency: ${latencyMs}ms`,
           );
+          
+          if (result.usageMetadata) {
+            log.info(
+              `[PathwayService] Usage [${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`}]. Model: ${modelName}, Prompt: ${result.usageMetadata.promptTokenCount}, Candidates: ${result.usageMetadata.candidatesTokenCount}, Total: ${result.usageMetadata.totalTokenCount}`,
+            );
+          }
 
           if (!isMeta) {
             // Level validation (benchmarks length check)
-            const lvl = parsed;
-            const ageRangeStr = lvl.ageRange || "";
-            const matches = ageRangeStr.match(/(\d+)\s*[-–]\s*(\d+)/);
-            if (matches) {
-              const lower = parseInt(matches[1], 10);
-              const upper = parseInt(matches[2], 10);
-              if (upper - lower > 1) {
-                const metrics = lvl.benchmarks?.metrics || [];
-                if (metrics.length < 3) {
-                  throw new Error(
-                    `Level ${lvl.level} spans > 1 year but has < 3 benchmark metrics`,
-                  );
+            const parsedArray = Array.isArray(parsed) ? parsed : [parsed];
+            for (const lvl of parsedArray) {
+              const ageRangeStr = lvl.ageRange || "";
+              const matches = ageRangeStr.match(/(\d+)\s*[-–]\s*(\d+)/);
+              if (matches) {
+                const lower = parseInt(matches[1], 10);
+                const upper = parseInt(matches[2], 10);
+                if (upper - lower > 1) {
+                  const metrics = lvl.benchmarks?.metrics || [];
+                  if (metrics.length < 3) {
+                    throw new Error(
+                      `Level ${lvl.level} spans > 1 year but has < 3 benchmark metrics`,
+                    );
+                  }
                 }
               }
             }
@@ -963,7 +996,7 @@ export class PathwayService {
           const reason =
             error.name === "AbortError" ? "Timeout" : error.message;
           log.warn(
-            `[PathwayService] ${isMeta ? "Meta" : `Level ${levelNum}`} generation failed. Model: ${modelName}, Attempt: ${attempts}, Latency: ${latencyMs}ms, Reason: ${reason}`,
+            `[PathwayService] ${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`} generation failed. Model: ${modelName}, Attempt: ${attempts}, Latency: ${latencyMs}ms, Reason: ${reason}`,
           );
         }
       }
@@ -972,10 +1005,10 @@ export class PathwayService {
       if (isMeta) {
         return null;
       } else {
-        return {
+        return levelNums!.map((levelNum) => ({
           level: levelNum,
           label:
-            levelNum === 1 ? "Beginner" : LEVEL_LABEL_FALLBACKS[levelNum! - 1],
+            levelNum === 1 ? "Beginner" : LEVEL_LABEL_FALLBACKS[levelNum - 1],
           title: "Pathway Level",
           description: "Information currently unavailable.",
           keyFocus: "General",
@@ -1017,17 +1050,14 @@ export class PathwayService {
           governmentSchemes: [],
           academicIntegration: "",
           proactiveDocuments: [],
-        };
+        }));
       }
     };
 
-    const [metaResult, ...levelResults] = await Promise.all([
+    const [metaResult, levelsAResult, levelsBResult] = await Promise.all([
       callModelWithFallback(buildPathwayMetaPrompt(sportName, state), true),
-      callModelWithFallback(buildLevelPrompt(sportName, state, 1), false, 1),
-      callModelWithFallback(buildLevelPrompt(sportName, state, 2), false, 2),
-      callModelWithFallback(buildLevelPrompt(sportName, state, 3), false, 3),
-      callModelWithFallback(buildLevelPrompt(sportName, state, 4), false, 4),
-      callModelWithFallback(buildLevelPrompt(sportName, state, 5), false, 5),
+      callModelWithFallback(buildLevelRangePrompt(sportName, state, [1, 2, 3]), false, [1, 2, 3]),
+      callModelWithFallback(buildLevelRangePrompt(sportName, state, [4, 5]), false, [4, 5]),
     ]);
 
     if (!metaResult) {
@@ -1037,7 +1067,17 @@ export class PathwayService {
       return null;
     }
 
-    const levels = levelResults.map((lvl: any, index: number) => {
+    let flatLevels: any[] = [];
+    if (levelsAResult) {
+      flatLevels = flatLevels.concat(Array.isArray(levelsAResult) ? levelsAResult : [levelsAResult]);
+    }
+    if (levelsBResult) {
+      flatLevels = flatLevels.concat(Array.isArray(levelsBResult) ? levelsBResult : [levelsBResult]);
+    }
+    // ensure order by level
+    flatLevels.sort((a, b) => a.level - b.level);
+
+    const levels = flatLevels.map((lvl: any, index: number) => {
       return {
         ...lvl,
         label:
