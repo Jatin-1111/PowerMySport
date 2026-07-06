@@ -1,8 +1,6 @@
 "use client";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { getDashboardPathByRole } from "@/utils/roleDashboard";
-
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Features } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
@@ -168,11 +166,6 @@ export default function HomePage() {
     },
   ];
 
-  const getDashboardLink = () => {
-    if (!user) return "/register?role=PLAYER";
-    return getDashboardPathByRole(user.role);
-  };
-
   return (
     <main>
       <script
@@ -189,7 +182,7 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="Your child's gateway to a dream sports career"
+        title="Your child's gateway to a dream sports journey"
         subtitle="Built for sports parents"
         description="PowerMySport is a sports guidance platform for parents that helps you understand, plan, and execute your child's sports journey. All this with the help of experts on call."
         primaryCTA={

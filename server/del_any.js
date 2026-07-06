@@ -1,1 +1,0 @@
-require("dotenv").config(); const mongoose = require("mongoose"); mongoose.connect(process.env.MONGO_URI).then(() => mongoose.connection.collection("sportpathways").deleteMany({ cacheKey: { "$regex": "_any_" } })).then((res) => { console.log("Deleted _any_ pathways:", res.deletedCount); mongoose.disconnect(); }).catch(console.error);

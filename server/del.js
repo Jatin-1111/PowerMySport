@@ -1,1 +1,0 @@
-require("dotenv").config(); const mongoose = require("mongoose"); mongoose.connect(process.env.MONGO_URI).then(() => mongoose.connection.collection("sportpathways").deleteMany({ cacheKey: { "$in": ["tennis_chandigarh", "tennis_any_"] } })).then((res) => { console.log("Deleted:", res.deletedCount); mongoose.disconnect(); }).catch(console.error);

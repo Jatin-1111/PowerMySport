@@ -50,22 +50,22 @@ type CoachCard = {
 
 const valueProps: ValueProp[] = [
   {
-    title: "Vetted Coaches",
+    title: "Real Parent Experiences",
     description:
-      "Explore coaches with safety checks, parent reviews, and youth-first training experience.",
-    icon: ShieldCheck,
+      "Learn from the journeys of other parents who have navigated youth sports in your area.",
+    icon: Users,
   },
   {
-    title: "Hassle-free Venues",
+    title: "Expert Insights",
     description:
-      "Book reliable courts, fields, and training spaces without juggling fragmented listings.",
-    icon: HeartHandshake,
+      "Get answers from verified coaches, former athletes, and sports professionals.",
+    icon: BadgeCheck,
   },
   {
-    title: "AI-Powered Mapping",
+    title: "Pathway Planning",
     description:
-      "Get a guided path from your child’s goals to the right sport, coach, and nearby venue.",
-    icon: BrainCircuit,
+      "Discuss and refine your child's athletic roadmap before making any commitments.",
+    icon: Compass,
   },
 ];
 
@@ -244,25 +244,24 @@ export default function CommunityLandingPage() {
                   Parent-first youth sports community
                 </span>
                 <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                  Help your child grow in a safer, smarter sports community.
+                  Learn, connect, and plan your child's sports journey.
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                  Find vetted coaches, trusted venues, and practical AI guidance
-                  that helps parents choose the right next step with confidence.
+                  Before you book a coach or a venue, get the knowledge you need. Ask questions, read expert insights, and connect with parents who have been there.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-600">
                   <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-200">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    Safety-first listings
+                    <MessageSquareQuote className="h-4 w-4 text-power-orange" />
+                    Parent-to-parent advice
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-200">
-                    <Users className="h-4 w-4 text-power-orange" />
-                    Local parent community
+                    <BadgeCheck className="h-4 w-4 text-emerald-600" />
+                    Verified expert answers
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-200">
-                    <Compass className="h-4 w-4 text-sky-600" />
-                    Nearby coach mapping
+                    <BrainCircuit className="h-4 w-4 text-sky-600" />
+                    AI-assisted planning
                   </span>
                 </div>
 
@@ -271,13 +270,13 @@ export default function CommunityLandingPage() {
                     href={`${getMainAppUrl()}/guidance`}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                   >
-                    Get Guidance <BrainCircuit className="h-4 w-4" />
+                    Get Personalised Plan <BrainCircuit className="h-4 w-4" />
                   </a>
                   <a
-                    href={`${getMainAppUrl()}/coaches`}
+                    href={`${getMainAppUrl()}/roadmap`}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                   >
-                    Explore local coaches <ArrowRight className="h-4 w-4" />
+                    Explore Sports Roadmaps <Compass className="h-4 w-4" />
                   </a>
                 </div>
               </div>
@@ -287,14 +286,13 @@ export default function CommunityLandingPage() {
 
                 <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,rgba(233,115,22,0.08),rgba(255,255,255,0.98))] p-5 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                    Fastest path
+                    Smarter Planning
                   </p>
                   <p className="mt-2 text-lg font-semibold text-slate-900">
-                    Search, ask, and book with confidence.
+                    Learn before you commit.
                   </p>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Start with a child profile, get structured guidance, then
-                    move into coach and venue recommendations.
+                    Use our roadmap to see the big picture, get a personalised AI plan, and ask the community for local insights before booking any sessions.
                   </p>
                 </div>
               </div>
@@ -303,9 +301,9 @@ export default function CommunityLandingPage() {
 
           <section className="space-y-6">
             <SectionHeading
-              eyebrow="Why parents use PowerMySport"
-              title="A simpler path from curiosity to the right booking"
-              description="Everything is designed to help families make confident decisions faster, while keeping safety and fit at the center of every recommendation."
+              eyebrow="Why join the community"
+              title="A smarter way to navigate youth sports"
+              description="Make confident decisions by combining our structured pathways with real-world experiences from local parents and experts."
             />
             <div className="grid gap-4 md:grid-cols-3">
               {valueProps.map((prop) => (
@@ -336,20 +334,19 @@ export default function CommunityLandingPage() {
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
                     <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
                     <span>
-                      Verified coach badges and parent-reviewed profiles.
+                      Strict moderation to ensure helpful, respectful discussions.
                     </span>
                   </div>
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
-                    <Users className="mt-0.5 h-4 w-4 text-power-orange" />
+                    <BadgeCheck className="mt-0.5 h-4 w-4 text-power-orange" />
                     <span>
-                      Community questions focused on real local experiences.
+                      Expert responses are clearly badged for credibility.
                     </span>
                   </div>
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
                     <BrainCircuit className="mt-0.5 h-4 w-4 text-sky-600" />
                     <span>
-                      AI guidance that turns parent concerns into clear next
-                      steps.
+                      AI synthesis helps summarize complex debates into clear takeaways.
                     </span>
                   </div>
                 </div>
