@@ -17,12 +17,9 @@ const log = {
 };
 
 const modelCandidates = [
-  process.env.GEMINI_SCRAPER_MODEL,
-  process.env.GEMINI_MODEL_NAME,
-  "gemini-3.5-flash",
-  "gemini-3.1-flash-lite",
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash-lite",
 ].filter(Boolean) as string[];
 
 /** Raw shape the extraction prompt asks for */
@@ -96,7 +93,11 @@ async function fetchDirect(url: string): Promise<string | null> {
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 
-function extractionRules(sportName: string, url: string, today: string): string {
+function extractionRules(
+  sportName: string,
+  url: string,
+  today: string,
+): string {
   return `Each object must have exactly these keys:
 - "name": short canonical event name. For series-code cells like "CS7 (Delhi)" produce "AITA CS7 (Delhi)" — organiser prefix + code + city. Never leave the city out of the name when the same series runs in many cities.
 - "startDate": "YYYY-MM-DD". Infer the year from the page/URL context. Calendar tables often give week-start dates — use those.
@@ -209,11 +210,21 @@ async function jsonExtractionCall(
       });
       const items = parseJsonArray((res.text ?? "").trim());
       if (items) return items;
-      log.warn(`[TournamentCalendar] Model ${model} returned unparseable JSON — trying next.`);
+      log.warn(
+        `[TournamentCalendar] Model ${model} returned unparseable JSON — trying next.`,
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message.toLowerCase() : "";
-      log.warn(`[TournamentCalendar] Model ${model} failed:`, msg.slice(0, 200));
-      if (!msg.includes("404") && !msg.includes("not found") && !msg.includes("429") && !msg.includes("quota")) {
+      log.warn(
+        `[TournamentCalendar] Model ${model} failed:`,
+        msg.slice(0, 200),
+      );
+      if (
+        !msg.includes("404") &&
+        !msg.includes("not found") &&
+        !msg.includes("429") &&
+        !msg.includes("quota")
+      ) {
         // Unexpected error — don't burn remaining candidates
         return null;
       }
@@ -243,7 +254,10 @@ async function urlContextExtraction(
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message.toLowerCase() : "";
-      log.warn(`[TournamentCalendar] urlContext via ${model} failed:`, msg.slice(0, 200));
+      log.warn(
+        `[TournamentCalendar] urlContext via ${model} failed:`,
+        msg.slice(0, 200),
+      );
     }
   }
   return null;
@@ -263,7 +277,8 @@ interface ValidEdition {
 }
 
 function parseDateStrict(value: unknown): Date | undefined {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return undefined;
   const d = new Date(`${value}T00:00:00.000Z`);
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
@@ -306,12 +321,25 @@ function validateEditions(raw: ExtractedEdition[]): {
       name,
       startDate,
       endDate,
-      registrationDeadlineDate: parseDateStrict(item?.registrationDeadlineDate ?? undefined),
-      venue: typeof item?.venue === "string" ? item.venue.trim() || undefined : undefined,
-      city: typeof item?.city === "string" ? item.city.trim() || undefined : undefined,
-      level: typeof item?.level === "string" ? item.level.trim() || undefined : undefined,
+      registrationDeadlineDate: parseDateStrict(
+        item?.registrationDeadlineDate ?? undefined,
+      ),
+      venue:
+        typeof item?.venue === "string"
+          ? item.venue.trim() || undefined
+          : undefined,
+      city:
+        typeof item?.city === "string"
+          ? item.city.trim() || undefined
+          : undefined,
+      level:
+        typeof item?.level === "string"
+          ? item.level.trim() || undefined
+          : undefined,
       ageGroups: Array.isArray(item?.ageGroups)
-        ? item.ageGroups.filter((a): a is string => typeof a === "string" && a.trim().length > 0)
+        ? item.ageGroups.filter(
+            (a): a is string => typeof a === "string" && a.trim().length > 0,
+          )
         : [],
     });
   }
@@ -397,7 +425,9 @@ async function scrapeSource(
         );
       } else {
         // Direct fetch failed — fall back to Google-side fetching
-        log.info(`[TournamentCalendar] Direct fetch failed for ${url} — trying urlContext fallback`);
+        log.info(
+          `[TournamentCalendar] Direct fetch failed for ${url} — trying urlContext fallback`,
+        );
         items = await urlContextExtraction(genAI, entry.sportName, url);
       }
     } else {
@@ -405,16 +435,22 @@ async function scrapeSource(
     }
 
     if (!items) {
-      warnings.push(`Extraction produced nothing for ${url} — page may have moved (check registry).`);
+      warnings.push(
+        `Extraction produced nothing for ${url} — page may have moved (check registry).`,
+      );
       continue;
     }
 
     const { valid, dropped } = validateEditions(items);
     if (dropped > 0) {
-      log.info(`[TournamentCalendar] ${url}: dropped ${dropped} invalid/duplicate entries`);
+      log.info(
+        `[TournamentCalendar] ${url}: dropped ${dropped} invalid/duplicate entries`,
+      );
     }
     if (valid.length === 0) {
-      warnings.push(`0 valid editions extracted from ${url} — possible source rot.`);
+      warnings.push(
+        `0 valid editions extracted from ${url} — possible source rot.`,
+      );
       continue;
     }
 
@@ -444,13 +480,20 @@ export async function scrapeCalendarSport(
 
   const genAI = getClient();
   if (!genAI) {
-    result.warnings.push("No GEMINI_API_KEY/GOOGLE_API_KEY configured — skipping.");
+    result.warnings.push(
+      "No GEMINI_API_KEY/GOOGLE_API_KEY configured — skipping.",
+    );
     return result;
   }
 
   for (const source of entry.sources) {
     result.sourcesTried++;
-    const { extracted, upserted } = await scrapeSource(genAI, entry, source, result.warnings);
+    const { extracted, upserted } = await scrapeSource(
+      genAI,
+      entry,
+      source,
+      result.warnings,
+    );
     result.extracted += extracted;
     result.upserted += upserted;
   }
@@ -458,13 +501,16 @@ export async function scrapeCalendarSport(
   log.info(
     `[TournamentCalendar] ${sportSlug}: ${result.upserted} editions upserted (${result.warnings.length} warnings)`,
   );
-  for (const w of result.warnings) log.warn(`[TournamentCalendar] ⚠ ${sportSlug}: ${w}`);
+  for (const w of result.warnings)
+    log.warn(`[TournamentCalendar] ⚠ ${sportSlug}: ${w}`);
 
   return result;
 }
 
 /** Refresh every registry sport sequentially (respects Gemini rate limits). */
-export async function refreshAllCalendarSports(): Promise<CalendarScrapeResult[]> {
+export async function refreshAllCalendarSports(): Promise<
+  CalendarScrapeResult[]
+> {
   const results: CalendarScrapeResult[] = [];
   for (const entry of TOURNAMENT_SOURCE_REGISTRY) {
     results.push(await scrapeCalendarSport(entry.sportSlug));

@@ -1,0 +1,51 @@
+{
+  "summary": {
+    "cacheKey": "tennis_chandigarh",
+    "baseUrl": "http://localhost:5000",
+    "totalRuns": 5,
+    "successfulRuns": 0,
+    "failedRuns": 5,
+    "lockConflictRuns": 0,
+    "clientTimeoutRuns": 0,
+    "structurallyValidRuns": 0,
+    "runsWithFallbackLevels": 0,
+    "latencyMs": null
+  },
+  "runs": [
+    {
+      "run": 1,
+      "ok": false,
+      "status": 500,
+      "latencyMs": 24205.4355,
+      "error": "Refresh failed — Gemini may be unavailable. Try again later."
+    },
+    {
+      "run": 2,
+      "ok": false,
+      "status": "network_error",
+      "latencyMs": 23700.8263,
+      "error": "fetch failed"
+    },
+    {
+      "run": 3,
+      "ok": false,
+      "status": "network_error",
+      "latencyMs": 2.471900000004098,
+      "error": "fetch failed"
+    },
+    {
+      "run": 4,
+      "ok": false,
+      "status": "network_error",
+      "latencyMs": 1.5769000000000233,
+      "error": "fetch failed"
+    },
+    {
+      "run": 5,
+      "ok": false,
+      "status": "network_error",
+      "latencyMs": 1.6767000000036205,
+      "error": "fetch failed"
+    }
+  ]
+}

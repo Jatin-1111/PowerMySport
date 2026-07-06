@@ -48,7 +48,6 @@ Important: When answering "where do I find X?", always respond with the page nam
 
 // ─── Persona + guardrail instruction ─────────────────────────────────────────
 
-
 const PERSONA_GUARDRAIL = `
 You are a dedicated Youth Sports Development Coach on the PowerMySport platform. Your role is to help parents deepen and personalize the guidance they have already received for their child.
 
@@ -91,12 +90,13 @@ export function buildChatSystemPrompt(
 ): string {
   const childName = `a ${request.child_age}-year-old ${request.child_gender}`;
   const sport = request.sport || "an undetermined sport";
-  const phases = response.journeyPhases
-    ?.map(
-      (p, i) =>
-        `  Phase ${i + 1}: "${p.title}" (${p.timeframe}) — ${p.focus}`,
-    )
-    .join("\n") || "  No phases specified.";
+  const phases =
+    response.journeyPhases
+      ?.map(
+        (p, i) =>
+          `  Phase ${i + 1}: "${p.title}" (${p.timeframe}) — ${p.focus}`,
+      )
+      .join("\n") || "  No phases specified.";
 
   const costSummary = response.costBreakdown
     ? `Monthly coaching: ${response.costBreakdown.monthlyCoaching} | Equipment: ${response.costBreakdown.equipment} | Tournaments: ${response.costBreakdown.tournaments}`
@@ -129,9 +129,10 @@ Weekly blueprint: Train ${response.weeklyBlueprint.trainingHours}, Free play ${r
 Journey phases:
 ${phases}
 
-Goal assessment: ${response.goalAssessment
-    ? `"${response.goalAssessment.statedGoal}" — ${response.goalAssessment.verdict}. ${response.goalAssessment.rationale}`
-    : "Not specified"
+Goal assessment: ${
+    response.goalAssessment
+      ? `"${response.goalAssessment.statedGoal}" — ${response.goalAssessment.verdict}. ${response.goalAssessment.rationale}`
+      : "Not specified"
   }
 
 Cost breakdown: ${costSummary}
@@ -157,13 +158,11 @@ Important: The parent has already read the guidance above. They are here to go D
 // ─── Gemini streaming chat ────────────────────────────────────────────────────
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-const configuredModelName = process.env.GEMINI_MODEL_NAME?.trim();
 
 const chatModelCandidates = [
-  configuredModelName,
-  "gemini-3.1-flash-lite",
   "gemini-2.5-flash",
-  "gemini-2.5",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash-lite",
 ].filter((m): m is string => Boolean(m));
 
 export interface ChatHistoryMessage {
@@ -181,7 +180,9 @@ export async function* streamGuidanceChatResponse(
   userMessage: string,
 ): AsyncGenerator<string> {
   if (!apiKey) {
-    throw new Error("Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable");
+    throw new Error(
+      "Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable",
+    );
   }
 
   const genAI = new GoogleGenAI({ apiKey });

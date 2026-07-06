@@ -58,7 +58,9 @@ export const guidanceResponseSchema = z.object({
     freePlayHours: z.string(),
     restDays: z.string(),
   }),
-  recommendedPlatformActions: z.union([z.string(), z.array(z.string())]).transform((v) => Array.isArray(v) ? v.join(". ") : v),
+  recommendedPlatformActions: z
+    .union([z.string(), z.array(z.string())])
+    .transform((v) => (Array.isArray(v) ? v.join(". ") : v)),
   recommendedSports: z.array(z.string()).optional(),
   mentalSkillsRoadmap: z
     .object({
@@ -147,13 +149,10 @@ Return ONLY a valid JSON object — no markdown, no preamble — matching this s
   }
 }`;
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-const configuredModelName = process.env.GEMINI_MODEL_NAME?.trim();
 const guidanceModelCandidates = [
-  configuredModelName,
-  "gemini-3.1-flash-lite",
-  "gemini-2.5",
-  "gemini-3.5-flash",
   "gemini-2.5-flash",
+  "gemini-3.5-flash",
+  "gemini-2.5-flash-lite",
 ].filter((modelName): modelName is string => Boolean(modelName));
 
 const isModelUnavailableError = (errorMessage: string) =>
@@ -185,22 +184,34 @@ export const generateYouthSportsGuidance = async (
   let groundingContext = "";
   if (payload.sport && payload.location) {
     const slug = payload.sport.trim().toLowerCase().replace(/\s+/g, "-");
-    const stateSlug = payload.location.trim().toLowerCase().replace(/\s+/g, "-");
+    const stateSlug = payload.location
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-");
     const cacheKey = `${slug}_${stateSlug}`;
-    
+
     try {
       const pathway = await SportPathway.findOne({ cacheKey }).lean();
-      if (pathway && (pathway as any).levels && (pathway as any).levels.length > 0) {
-        const levelIndex = Math.max(1, Math.min(5, payload.current_pathway_level || 1)) - 1;
+      if (
+        pathway &&
+        (pathway as any).levels &&
+        (pathway as any).levels.length > 0
+      ) {
+        const levelIndex =
+          Math.max(1, Math.min(5, payload.current_pathway_level || 1)) - 1;
         const levelObj = (pathway as any).levels[levelIndex];
         if (levelObj) {
-          groundingContext = JSON.stringify({
-            level: levelObj.level,
-            title: levelObj.title,
-            benchmarks: levelObj.benchmarks,
-            trialInfo: levelObj.trialInfo,
-            talentSignals: levelObj.talentSignals,
-          }, null, 2);
+          groundingContext = JSON.stringify(
+            {
+              level: levelObj.level,
+              title: levelObj.title,
+              benchmarks: levelObj.benchmarks,
+              trialInfo: levelObj.trialInfo,
+              talentSignals: levelObj.talentSignals,
+            },
+            null,
+            2,
+          );
         }
       }
     } catch (e) {
@@ -279,7 +290,7 @@ export const sportMatchRecommendationSchema = z.object({
       reasons: z.array(z.string()).length(3),
       monthlyCostRange: z.string().nullable(),
       keyTalentSignal: z.string().nullable(),
-    })
+    }),
   ),
 });
 
@@ -297,7 +308,7 @@ export const generateSportMatchRecommendation = async (
     equipmentCost: string;
     overview: string;
     hasGeneratedPathway: boolean;
-  }>
+  }>,
 ): Promise<SportMatchResponse> => {
   const genAI = getGuidanceClient();
   let lastError: unknown = null;
@@ -361,7 +372,8 @@ Return ONLY a valid JSON object matching this schema exactly:
       return sportMatchRecommendationSchema.parse(parsed);
     } catch (error) {
       lastError = error;
-      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const errorMessage =
+        error instanceof Error ? error.message.toLowerCase() : "";
       if (isQuotaOrRateLimitError(errorMessage)) {
         sawQuotaIssue = true;
         continue;
@@ -371,9 +383,11 @@ Return ONLY a valid JSON object matching this schema exactly:
   }
 
   if (sawQuotaIssue) {
-    throw new Error("Guidance generation temporarily unavailable due to quota limits.");
+    throw new Error(
+      "Guidance generation temporarily unavailable due to quota limits.",
+    );
   }
   throw new Error(
-    `No supported Gemini model found for sport match. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`
+    `No supported Gemini model found for sport match. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
   );
 };
