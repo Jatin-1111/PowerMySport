@@ -8,10 +8,7 @@ export interface DisputeDocument extends Document {
   status: "OPEN" | "RESOLVED" | "CLOSED";
   resolutionMethod?: "AUTO" | "MANUAL";
   recommendedAction?:
-    | "FULL_REFUND"
-    | "PARTIAL_REFUND"
-    | "NO_REFUND"
-    | "MANUAL_REVIEW";
+    "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND" | "MANUAL_REVIEW";
   refundPercentage?: number;
   reasoning?: string;
   confidence?: "HIGH" | "MEDIUM" | "LOW";

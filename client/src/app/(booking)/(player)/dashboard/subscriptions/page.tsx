@@ -118,7 +118,7 @@ export default function SubscriptionsPage() {
     };
     socket.on("subscription:updated", handleUpdate);
     socket.on("wallet:updated", handleUpdate);
-    
+
     return () => {
       socket.off("subscription:updated", handleUpdate);
       socket.off("wallet:updated", handleUpdate);
@@ -346,7 +346,9 @@ export default function SubscriptionsPage() {
                             <p className="text-base font-semibold text-slate-900">
                               {packageName}
                             </p>
-                            <p className="text-sm text-slate-600">{coachName}</p>
+                            <p className="text-sm text-slate-600">
+                              {coachName}
+                            </p>
                             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                               <span className="inline-flex items-center gap-1">
                                 <CalendarRange size={13} />

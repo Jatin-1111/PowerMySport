@@ -3,7 +3,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { clearShopCart, getShopCartTotals, updateShopCartQuantity, useShopCart } from "@/lib/shop/cart";
+import {
+  clearShopCart,
+  getShopCartTotals,
+  updateShopCartQuantity,
+  useShopCart,
+} from "@/lib/shop/cart";
 import { formatInr } from "@/lib/shop/format";
 
 export function CartClient() {
@@ -14,7 +19,9 @@ export function CartClient() {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 shadow-sm">
-          <h1 className="text-3xl font-black text-slate-950">Your cart is empty</h1>
+          <h1 className="text-3xl font-black text-slate-950">
+            Your cart is empty
+          </h1>
           <p className="mt-3 text-slate-600">
             Add training gear to see live totals and checkout details here.
           </p>
@@ -79,7 +86,8 @@ export function CartClient() {
                     {item.name}
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    {item.variantLabel || "Standard"} · {formatInr(item.unitPrice)} each
+                    {item.variantLabel || "Standard"} ·{" "}
+                    {formatInr(item.unitPrice)} each
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
@@ -87,7 +95,10 @@ export function CartClient() {
                     <button
                       type="button"
                       onClick={() =>
-                        updateShopCartQuantity(item.variantId, item.quantity - 1)
+                        updateShopCartQuantity(
+                          item.variantId,
+                          item.quantity - 1,
+                        )
                       }
                       className="grid h-10 w-10 place-items-center text-slate-600 hover:text-slate-950"
                     >
@@ -99,7 +110,10 @@ export function CartClient() {
                     <button
                       type="button"
                       onClick={() =>
-                        updateShopCartQuantity(item.variantId, item.quantity + 1)
+                        updateShopCartQuantity(
+                          item.variantId,
+                          item.quantity + 1,
+                        )
                       }
                       className="grid h-10 w-10 place-items-center text-slate-600 hover:text-slate-950"
                     >
@@ -129,7 +143,11 @@ export function CartClient() {
           </div>
           <div className="flex items-center justify-between">
             <span>Shipping</span>
-            <span>{totals.shippingAmount ? formatInr(totals.shippingAmount) : "Free"}</span>
+            <span>
+              {totals.shippingAmount
+                ? formatInr(totals.shippingAmount)
+                : "Free"}
+            </span>
           </div>
           <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-lg font-black text-slate-950">
             <span>Total</span>

@@ -29,7 +29,7 @@ export class WalletService {
     userId: string,
     amount: number,
     reason: string,
-    referenceId?: string
+    referenceId?: string,
   ) {
     const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const transaction: WalletTransaction = {
@@ -48,7 +48,7 @@ export class WalletService {
         $inc: { balance: amount },
         $push: { transactions: { $each: [transaction], $position: 0 } },
       },
-      { new: true, upsert: true }
+      { new: true, upsert: true },
     );
 
     return { wallet, transaction };
@@ -61,7 +61,7 @@ export class WalletService {
     userId: string,
     amount: number,
     reason: string,
-    referenceId?: string
+    referenceId?: string,
   ) {
     const wallet = await Wallet.findOne({ userId });
     if (!wallet) {
@@ -88,11 +88,13 @@ export class WalletService {
         $inc: { balance: -amount },
         $push: { transactions: { $each: [transaction], $position: 0 } },
       },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedWallet) {
-      throw new Error("Concurrent transaction altered balance. Please try again.");
+      throw new Error(
+        "Concurrent transaction altered balance. Please try again.",
+      );
     }
 
     return { wallet: updatedWallet, transaction };
@@ -122,7 +124,7 @@ export class WalletService {
     await Wallet.findOneAndUpdate(
       { userId },
       { $push: { transactions: { $each: [transaction], $position: 0 } } },
-      { upsert: true }
+      { upsert: true },
     );
 
     const initResult = await initiatePhonePePayment({
@@ -150,7 +152,7 @@ export class WalletService {
     if (!wallet) throw new Error("Wallet not found");
 
     const transaction = wallet.transactions.find(
-      (t) => t.referenceId === merchantOrderId && t.reason === "Wallet Top Up"
+      (t) => t.referenceId === merchantOrderId && t.reason === "Wallet Top Up",
     );
 
     if (!transaction) throw new Error("Top-up transaction not found");
@@ -180,25 +182,37 @@ export class WalletService {
 
       // It's a success, update balance and transaction status
       const updatedWallet = await Wallet.findOneAndUpdate(
-        { userId, "transactions.id": transaction.id, "transactions.status": "PENDING" },
+        {
+          userId,
+          "transactions.id": transaction.id,
+          "transactions.status": "PENDING",
+        },
         {
           $inc: { balance: transaction.amount },
           $set: { "transactions.$.status": "COMPLETED" },
         },
-        { new: true }
+        { new: true },
       );
 
       if (!updatedWallet) {
         // Already processed concurrently
-        return { status: "COMPLETED", amount: transaction.amount, wallet: await Wallet.findOne({ userId }) };
+        return {
+          status: "COMPLETED",
+          amount: transaction.amount,
+          wallet: await Wallet.findOne({ userId }),
+        };
       }
 
-      return { status: "COMPLETED", amount: transaction.amount, wallet: updatedWallet };
+      return {
+        status: "COMPLETED",
+        amount: transaction.amount,
+        wallet: updatedWallet,
+      };
     } else if (phonePeStatus.state === "FAILED") {
       // Mark as failed
       await Wallet.updateOne(
         { userId, "transactions.id": transaction.id },
-        { $set: { "transactions.$.status": "FAILED" } }
+        { $set: { "transactions.$.status": "FAILED" } },
       );
       return { status: "FAILED", wallet };
     }

@@ -10,8 +10,7 @@
  *  - Events are batched and sent best-effort; failures are swallowed.
  */
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 const ENDPOINT = `${API_BASE}/stats/guest/event`;
 const GUEST_ID_KEY = "pms-guest-id";
 const FLUSH_INTERVAL_MS = 8000;

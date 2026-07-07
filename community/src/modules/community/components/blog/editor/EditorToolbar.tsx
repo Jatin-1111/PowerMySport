@@ -95,17 +95,14 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
     const href = normalizeUrl(linkValue);
     setLinkPopoverOpen(false);
     if (!href) return;
-    editor
-      .chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href })
-      .run();
+    editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
   };
 
   const onPickImage = () => fileInputRef.current?.click();
 
-  const onImageSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onImageSelected = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -118,7 +115,9 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
         .setImage({ src: url, alt: file.name, key } as never)
         .run();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Image upload failed");
+      toast.error(
+        error instanceof Error ? error.message : "Image upload failed",
+      );
     } finally {
       setUploadingImage(false);
     }
@@ -126,10 +125,18 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
 
   return (
     <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 rounded-t-2xl border border-b-0 border-slate-200 bg-white/95 px-2 py-1.5 backdrop-blur">
-      <ToolbarButton label="Undo" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
+      <ToolbarButton
+        label="Undo"
+        onClick={() => editor.chain().focus().undo().run()}
+        disabled={!editor.can().undo()}
+      >
         <Undo2 size={16} />
       </ToolbarButton>
-      <ToolbarButton label="Redo" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
+      <ToolbarButton
+        label="Redo"
+        onClick={() => editor.chain().focus().redo().run()}
+        disabled={!editor.can().redo()}
+      >
         <Redo2 size={16} />
       </ToolbarButton>
 
@@ -281,7 +288,11 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
         ) : null}
       </div>
 
-      <ToolbarButton label="Insert image" onClick={onPickImage} disabled={uploadingImage}>
+      <ToolbarButton
+        label="Insert image"
+        onClick={onPickImage}
+        disabled={uploadingImage}
+      >
         {uploadingImage ? (
           <Loader2 size={16} className="animate-spin" />
         ) : (
@@ -307,7 +318,9 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
 
       <ToolbarButton
         label="Clear formatting"
-        onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+        onClick={() =>
+          editor.chain().focus().unsetAllMarks().clearNodes().run()
+        }
       >
         <Eraser size={16} />
       </ToolbarButton>

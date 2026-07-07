@@ -29,7 +29,9 @@ export default function AdminSportPathwaysPage() {
     page: 1,
     totalPages: 1,
   });
-  const [pendingToggle, setPendingToggle] = useState<AdminSportPathway | null>(null);
+  const [pendingToggle, setPendingToggle] = useState<AdminSportPathway | null>(
+    null,
+  );
   const [actionLoading, setActionLoading] = useState(false);
   const PAGE_SIZE = 20;
 
@@ -142,7 +144,9 @@ export default function AdminSportPathwaysPage() {
         </Card>
       ) : pathways.length === 0 ? (
         <Card className="bg-white">
-          <div className="py-12 text-center text-slate-600">No pathways found.</div>
+          <div className="py-12 text-center text-slate-600">
+            No pathways found.
+          </div>
         </Card>
       ) : (
         <Card className="bg-white overflow-x-auto">
@@ -159,7 +163,10 @@ export default function AdminSportPathwaysPage() {
             </thead>
             <tbody>
               {pathways.map((pathway) => (
-                <tr key={pathway._id} className="border-b border-slate-100 last:border-0">
+                <tr
+                  key={pathway._id}
+                  className="border-b border-slate-100 last:border-0"
+                >
                   <td className="px-4 py-3">
                     <Link
                       href={`/admin/sport-pathways/${pathway._id}`}
@@ -168,10 +175,14 @@ export default function AdminSportPathwaysPage() {
                       {pathway.sportName}
                     </Link>
                     {pathway.cacheKey && (
-                      <p className="text-xs text-slate-400">{pathway.cacheKey}</p>
+                      <p className="text-xs text-slate-400">
+                        {pathway.cacheKey}
+                      </p>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{pathway.category || "Other"}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {pathway.category || "Other"}
+                  </td>
                   <td className="px-4 py-3">
                     {pathway.isVerified ? (
                       <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
@@ -183,7 +194,9 @@ export default function AdminSportPathwaysPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{pathway.lookupCount ?? 0}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {pathway.lookupCount ?? 0}
+                  </td>
                   <td className="px-4 py-3 text-slate-500">
                     {pathway.lastRefreshedAt
                       ? new Date(pathway.lastRefreshedAt).toLocaleDateString()
@@ -220,7 +233,8 @@ export default function AdminSportPathwaysPage() {
         <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-center text-sm text-slate-600 sm:text-left">
             Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-            {Math.min(currentPage * PAGE_SIZE, pagination.total)} of {pagination.total}
+            {Math.min(currentPage * PAGE_SIZE, pagination.total)} of{" "}
+            {pagination.total}
           </p>
           <div className="flex items-center justify-center gap-2">
             <button
@@ -231,7 +245,10 @@ export default function AdminSportPathwaysPage() {
               <ChevronLeft size={18} />
             </button>
             {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-              .slice(Math.max(0, currentPage - 2), Math.min(pagination.totalPages, currentPage + 1))
+              .slice(
+                Math.max(0, currentPage - 2),
+                Math.min(pagination.totalPages, currentPage + 1),
+              )
               .map((page) => (
                 <button
                   key={page}
@@ -246,7 +263,9 @@ export default function AdminSportPathwaysPage() {
                 </button>
               ))}
             <button
-              onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
+              onClick={() =>
+                setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))
+              }
               disabled={currentPage === pagination.totalPages}
               className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
@@ -258,7 +277,11 @@ export default function AdminSportPathwaysPage() {
 
       <ConfirmModal
         open={Boolean(pendingToggle)}
-        title={pendingToggle?.isVerified ? "Remove verification?" : "Mark pathway as verified?"}
+        title={
+          pendingToggle?.isVerified
+            ? "Remove verification?"
+            : "Mark pathway as verified?"
+        }
         description={
           pendingToggle
             ? pendingToggle.isVerified

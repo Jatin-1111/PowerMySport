@@ -140,7 +140,11 @@ router.get("/expert/my-payout-methods", authMiddleware, getExpertPayoutMethods);
  * PUT /api/payouts/expert/my-payout-method
  * Save / update the expert's payout method (add new or update existing)
  */
-router.put("/expert/my-payout-method", authMiddleware, upsertExpertPayoutMethod);
+router.put(
+  "/expert/my-payout-method",
+  authMiddleware,
+  upsertExpertPayoutMethod,
+);
 
 /**
  * DELETE /api/payouts/expert/my-payout-method/:methodId

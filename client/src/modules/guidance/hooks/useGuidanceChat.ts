@@ -47,15 +47,12 @@ export function useGuidanceChat({ submissionId }: UseGuidanceChatOptions) {
     try {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await fetch(
-        `${API_BASE_URL}/guidance/${submissionId}/chat`,
-        {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          credentials: "include",
+      const res = await fetch(`${API_BASE_URL}/guidance/${submissionId}/chat`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-      );
+        credentials: "include",
+      });
       const data = await res.json();
       if (data.success) {
         setMessages(data.data.messages);
@@ -106,9 +103,7 @@ export function useGuidanceChat({ submissionId }: UseGuidanceChatOptions) {
 
       try {
         const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("token")
-            : null;
+          typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
         const res = await fetch(
           `${API_BASE_URL}/guidance/${submissionId}/chat`,
@@ -127,8 +122,7 @@ export function useGuidanceChat({ submissionId }: UseGuidanceChatOptions) {
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const errMsg =
-            errData.message ||
-            `Chat request failed (${res.status})`;
+            errData.message || `Chat request failed (${res.status})`;
           // Remove the placeholder assistant message
           setMessages((prev) => prev.slice(0, -1));
           setError(errMsg);

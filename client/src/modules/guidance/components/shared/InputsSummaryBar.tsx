@@ -1,6 +1,14 @@
 "use client";
 
-import { UserCircle2, Target, Activity, Timer, Wallet, MapPin, Pencil } from "lucide-react";
+import {
+  UserCircle2,
+  Target,
+  Activity,
+  Timer,
+  Wallet,
+  MapPin,
+  Pencil,
+} from "lucide-react";
 import type { GuidanceFormState } from "../../types";
 import type { Compass } from "lucide-react";
 
@@ -14,7 +22,9 @@ export function InputsSummaryBar({
   const chips: Array<{ icon: typeof Compass; label: string }> = [
     { icon: UserCircle2, label: `Age ${query.child_age}` },
     { icon: Target, label: query.primary_objective },
-    ...(query.sport?.trim() ? [{ icon: Activity, label: query.sport.trim() }] : []),
+    ...(query.sport?.trim()
+      ? [{ icon: Activity, label: query.sport.trim() }]
+      : []),
     { icon: Timer, label: `${query.weekly_time_commitment}h / week` },
     { icon: Wallet, label: query.budget_tier },
     ...(query.location ? [{ icon: MapPin, label: query.location }] : []),

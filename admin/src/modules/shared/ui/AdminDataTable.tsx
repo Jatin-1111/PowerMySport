@@ -1,6 +1,13 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp, ChevronDown, Search } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsUpDown,
+  ChevronUp,
+  ChevronDown,
+  Search,
+} from "lucide-react";
 import { cn } from "@/utils/cn";
 
 export interface AdminDataTableColumn<T> {
@@ -45,7 +52,11 @@ interface AdminDataTableProps<T> {
 }
 
 const alignClass = (align?: "left" | "right" | "center") =>
-  align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  align === "right"
+    ? "text-right"
+    : align === "center"
+      ? "text-center"
+      : "text-left";
 
 /**
  * Generic, presentational admin list table: search input, sortable column
@@ -96,13 +107,13 @@ export function AdminDataTable<T>({
           className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
         >
           1
-        </button>
+        </button>,
       );
       if (start > 2) {
         buttons.push(
           <span key="dots-start" className="px-1 text-slate-400 self-center">
             ...
-          </span>
+          </span>,
         );
       }
     }
@@ -118,11 +129,11 @@ export function AdminDataTable<T>({
             "px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors",
             current === p
               ? "bg-power-orange text-white"
-              : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+              : "border border-slate-300 text-slate-700 hover:bg-slate-50",
           )}
         >
           {p}
-        </button>
+        </button>,
       );
     }
 
@@ -132,7 +143,7 @@ export function AdminDataTable<T>({
         buttons.push(
           <span key="dots-end" className="px-1 text-slate-400 self-center">
             ...
-          </span>
+          </span>,
         );
       }
       buttons.push(
@@ -143,7 +154,7 @@ export function AdminDataTable<T>({
           className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
         >
           {total}
-        </button>
+        </button>,
       );
     }
 
@@ -184,11 +195,14 @@ export function AdminDataTable<T>({
                     className={cn(
                       "px-4 py-3 text-xs font-semibold uppercase text-slate-500",
                       alignClass(col.align),
-                      col.sortable && "cursor-pointer select-none hover:text-slate-700",
+                      col.sortable &&
+                        "cursor-pointer select-none hover:text-slate-700",
                       col.className,
                     )}
                     onClick={
-                      col.sortable && sort ? () => sort.onChange(col.key) : undefined
+                      col.sortable && sort
+                        ? () => sort.onChange(col.key)
+                        : undefined
                     }
                   >
                     <span className="inline-flex items-center gap-1">
@@ -234,12 +248,17 @@ export function AdminDataTable<T>({
                 <tr
                   key={getRowKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={cn(onRowClick && "cursor-pointer hover:bg-slate-50")}
+                  className={cn(
+                    onRowClick && "cursor-pointer hover:bg-slate-50",
+                  )}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={cn("px-4 py-3 text-slate-700", alignClass(col.align))}
+                      className={cn(
+                        "px-4 py-3 text-slate-700",
+                        alignClass(col.align),
+                      )}
                     >
                       {col.render(row)}
                     </td>
@@ -255,18 +274,21 @@ export function AdminDataTable<T>({
         <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border border-slate-200 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-slate-500 text-center sm:text-left">
             Page {pagination.page} of {pagination.totalPages}
-            {typeof pagination.total === "number" && ` · ${pagination.total} total`}
+            {typeof pagination.total === "number" &&
+              ` · ${pagination.total} total`}
           </p>
           <div className="flex items-center justify-center gap-2">
             <button
               type="button"
-              onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
+              onClick={() =>
+                pagination.onPageChange(Math.max(1, pagination.page - 1))
+              }
               disabled={pagination.page <= 1}
               className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            
+
             {renderPageButtons()}
 
             <button

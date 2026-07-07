@@ -37,8 +37,7 @@ export default async function ProductDetailPage({
   }
 
   const price = getProductPrice(product);
-  const variant =
-    product.variants.find((item) => item.stock > 0) ||
+  const variant = product.variants.find((item) => item.stock > 0) ||
     product.variants[0] || {
       id: product.id,
       sku: product.sku,
@@ -61,7 +60,10 @@ export default async function ProductDetailPage({
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_0.9fr]">
         <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="absolute right-4 top-4 z-20">
-            <WishlistButton productId={product.id} className="h-12 w-12 border border-slate-200" />
+            <WishlistButton
+              productId={product.id}
+              className="h-12 w-12 border border-slate-200"
+            />
           </div>
           <div className="aspect-square bg-linear-to-br from-blue-50 via-white to-orange-50">
             {image ? (
@@ -84,7 +86,9 @@ export default async function ProductDetailPage({
               <span className="inline-flex rounded-full bg-orange-50 px-3 py-1 text-sm font-bold text-orange-700">
                 {product.category}
               </span>
-              <span className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${product.condition === "USED" ? "bg-slate-900 text-white" : "bg-emerald-50 text-emerald-700"}`}>
+              <span
+                className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${product.condition === "USED" ? "bg-slate-900 text-white" : "bg-emerald-50 text-emerald-700"}`}
+              >
                 {product.condition === "USED" ? "Pre-owned / Used" : "New Gear"}
               </span>
               {product.sellerName && (

@@ -52,7 +52,10 @@ export default function LikeButton({
         transition={{ duration: 0.28, ease: "easeOut" }}
         className="inline-flex"
       >
-        <Heart size={s.icon} className={liked ? "fill-rose-500 text-rose-500" : ""} />
+        <Heart
+          size={s.icon}
+          className={liked ? "fill-rose-500 text-rose-500" : ""}
+        />
       </motion.span>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span

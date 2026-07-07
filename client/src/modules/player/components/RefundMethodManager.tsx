@@ -244,7 +244,10 @@ export function RefundMethodManager({
         {/* Info Banner */}
         <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
           <div className="flex gap-3">
-            <Shield size={18} className="text-indigo-600 flex-shrink-0 mt-0.5" />
+            <Shield
+              size={18}
+              className="text-indigo-600 flex-shrink-0 mt-0.5"
+            />
             <div>
               <p className="text-sm font-semibold text-blue-900">
                 No setup required for basic refunds

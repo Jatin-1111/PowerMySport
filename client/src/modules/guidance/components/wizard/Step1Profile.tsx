@@ -32,9 +32,10 @@ export function Step1Profile({
   levelContext?: LevelContext;
 }) {
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
-  const alreadyAtLevel = !!levelContext && form.current_pathway_level === levelContext.level;
-  
-  const selectedPlayer = players.find(p => p._id === selectedId);
+  const alreadyAtLevel =
+    !!levelContext && form.current_pathway_level === levelContext.level;
+
+  const selectedPlayer = players.find((p) => p._id === selectedId);
   return (
     <motion.div
       variants={slideIn}
@@ -85,7 +86,12 @@ export function Step1Profile({
               min={3}
               max={21}
               value={form.child_age || ""}
-              onChange={(e) => update("child_age", e.target.value ? Number(e.target.value) : ("" as any))}
+              onChange={(e) =>
+                update(
+                  "child_age",
+                  e.target.value ? Number(e.target.value) : ("" as any),
+                )
+              }
               className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 pr-10 text-lg font-bold text-slate-900 outline-none transition focus:border-power-orange focus:ring-4 focus:ring-power-orange/10"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">
@@ -130,7 +136,8 @@ export function Step1Profile({
         />
         {levelContext && (
           <p className="text-[11px] text-slate-400">
-            Locked — set from the {levelContext.levelLabel} level pathway you're exploring.
+            Locked — set from the {levelContext.levelLabel} level pathway you're
+            exploring.
           </p>
         )}
       </div>
@@ -147,7 +154,9 @@ export function Step1Profile({
       <div className="space-y-2">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
           Experience (years){" "}
-          <span className="text-slate-400 normal-case font-normal">(optional)</span>
+          <span className="text-slate-400 normal-case font-normal">
+            (optional)
+          </span>
         </span>
         <input
           type="number"
@@ -156,7 +165,10 @@ export function Step1Profile({
           step={0.5}
           value={form.years_playing ?? ""}
           onChange={(e) =>
-            update("years_playing", e.target.value ? Number(e.target.value) : undefined)
+            update(
+              "years_playing",
+              e.target.value ? Number(e.target.value) : undefined,
+            )
           }
           placeholder="e.g. 1.5"
           className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition focus:border-power-orange focus:ring-4 focus:ring-power-orange/10"
@@ -181,28 +193,39 @@ export function Step1Profile({
                   : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
-              <Flag className={`mt-0.5 h-4 w-4 shrink-0 ${!alreadyAtLevel ? "text-power-orange" : "text-slate-400"}`} />
+              <Flag
+                className={`mt-0.5 h-4 w-4 shrink-0 ${!alreadyAtLevel ? "text-power-orange" : "text-slate-400"}`}
+              />
               <span>
-                <span className={`block text-xs font-bold ${!alreadyAtLevel ? "text-power-orange" : "text-slate-800"}`}>
+                <span
+                  className={`block text-xs font-bold ${!alreadyAtLevel ? "text-power-orange" : "text-slate-800"}`}
+                >
                   Not there yet
                 </span>
                 <span className="block text-[11px] text-slate-500 mt-0.5">
-                  {levelContext.levelLabel} {levelContext.sport} would be new for us
+                  {levelContext.levelLabel} {levelContext.sport} would be new
+                  for us
                 </span>
               </span>
             </button>
             <button
               type="button"
-              onClick={() => update("current_pathway_level", levelContext.level)}
+              onClick={() =>
+                update("current_pathway_level", levelContext.level)
+              }
               className={`flex items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-all ${
                 alreadyAtLevel
                   ? "border-power-orange bg-orange-50"
                   : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
-              <TrendingUp className={`mt-0.5 h-4 w-4 shrink-0 ${alreadyAtLevel ? "text-power-orange" : "text-slate-400"}`} />
+              <TrendingUp
+                className={`mt-0.5 h-4 w-4 shrink-0 ${alreadyAtLevel ? "text-power-orange" : "text-slate-400"}`}
+              />
               <span>
-                <span className={`block text-xs font-bold ${alreadyAtLevel ? "text-power-orange" : "text-slate-800"}`}>
+                <span
+                  className={`block text-xs font-bold ${alreadyAtLevel ? "text-power-orange" : "text-slate-800"}`}
+                >
                   Already here
                 </span>
                 <span className="block text-[11px] text-slate-500 mt-0.5">

@@ -96,9 +96,7 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
 
       try {
         const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("token")
-            : null;
+          typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
         const res = await fetch(
           `${API_BASE_URL}/roadmap-chat/${encodeURIComponent(sportSlug)}`,
@@ -109,7 +107,10 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
             credentials: "include",
-            body: JSON.stringify({ message: userContent.trim(), level: levelRef.current }),
+            body: JSON.stringify({
+              message: userContent.trim(),
+              level: levelRef.current,
+            }),
             signal: abortRef.current.signal,
           },
         );
@@ -117,8 +118,7 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const errMsg =
-            errData.message ||
-            `Chat request failed (${res.status})`;
+            errData.message || `Chat request failed (${res.status})`;
           setMessages((prev) => prev.slice(0, -1));
           setError(errMsg);
           if (res.status === 429) {

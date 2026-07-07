@@ -129,7 +129,7 @@ export default function SportsSelect({
 
       if (!verification.isValid) {
         setCustomSportError(
-          `Invalid sport: ${verification.message}. Please try another.`
+          `Invalid sport: ${verification.message}. Please try another.`,
         );
         setIsVerifyingCustom(false);
         return;
@@ -165,8 +165,8 @@ export default function SportsSelect({
   return (
     <div className="w-full relative" ref={containerRef}>
       {/* Trigger Button / Input */}
-      <div 
-        className={`flex items-center justify-between w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm font-medium text-slate-900 shadow-sm backdrop-blur transition-all focus-within:border-power-orange/50 focus-within:bg-white focus-within:ring-4 focus-within:ring-power-orange/10 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      <div
+        className={`flex items-center justify-between w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm font-medium text-slate-900 shadow-sm backdrop-blur transition-all focus-within:border-power-orange/50 focus-within:bg-white focus-within:ring-4 focus-within:ring-power-orange/10 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         onClick={() => !disabled && setIsOpen(true)}
       >
         <span className={value ? "text-slate-900" : "text-slate-400"}>
@@ -177,9 +177,11 @@ export default function SportsSelect({
 
       {/* Dropdown */}
       {isOpen && !disabled && (
-        <div className={`absolute left-0 z-[100] w-full min-w-[300px] max-h-80 overflow-y-auto overflow-x-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${
-          placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
-        }`}>
+        <div
+          className={`absolute left-0 z-[100] w-full min-w-[300px] max-h-80 overflow-y-auto overflow-x-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${
+            placement === "top" ? "bottom-full mb-2" : "top-full mt-2"
+          }`}
+        >
           {/* Search Input Inside Dropdown */}
           <div className="mb-2 px-2 pt-2">
             <input

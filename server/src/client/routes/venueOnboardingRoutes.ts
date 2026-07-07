@@ -142,13 +142,21 @@ router.post(
  * Get presigned URL for coach profile photo upload
  * POST /api/venues/onboarding/coach-photo-upload-url
  */
-router.post("/coach-photo-upload-url", onboardingAuthMiddleware, getCoachPhotoUploadUrl);
+router.post(
+  "/coach-photo-upload-url",
+  onboardingAuthMiddleware,
+  getCoachPhotoUploadUrl,
+);
 
 /**
  * Cancel/Delete onboarding
  * DELETE /api/venues/onboarding/:venueId
  */
-router.delete("/:venueId", onboardingAuthMiddleware, deleteVenueOnboardingHandler);
+router.delete(
+  "/:venueId",
+  onboardingAuthMiddleware,
+  deleteVenueOnboardingHandler,
+);
 
 // ============================================
 // ADMIN ROUTES (Protected - Admin only)

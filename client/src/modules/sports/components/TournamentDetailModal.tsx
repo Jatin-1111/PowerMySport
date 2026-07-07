@@ -2,10 +2,31 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Trophy, Users, MapPin, FileText, CheckCircle2, AlertCircle,
-  Sparkles, CalendarPlus, ArrowRight, Shield, ExternalLink, Loader2,
-  Heart, ChevronRight, Globe, Target, Award, Info, CheckCheck,
-  ChevronLeft, UploadCloud, ShieldAlert, CalendarDays, Clock,
+  X,
+  Trophy,
+  Users,
+  MapPin,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  CalendarPlus,
+  ArrowRight,
+  Shield,
+  ExternalLink,
+  Loader2,
+  Heart,
+  ChevronRight,
+  Globe,
+  Target,
+  Award,
+  Info,
+  CheckCheck,
+  ChevronLeft,
+  UploadCloud,
+  ShieldAlert,
+  CalendarDays,
+  Clock,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { calendarApi } from "@/modules/booking/services/calendarApi";
@@ -51,19 +72,51 @@ export interface TournamentModalProps {
 
 function normalizeTournamentLevel(levelStr: string): number {
   const l = (levelStr || "").toLowerCase();
-  if (l.includes("international") || l.includes("world") || l.includes("asian") || l.includes("olympic")) return 5;
+  if (
+    l.includes("international") ||
+    l.includes("world") ||
+    l.includes("asian") ||
+    l.includes("olympic")
+  )
+    return 5;
   if (l.includes("national") || l.includes("senior")) return 4;
   if (l.includes("state")) return 3;
-  if (l.includes("district") || l.includes("zonal") || l.includes("sub-junior")) return 2;
+  if (l.includes("district") || l.includes("zonal") || l.includes("sub-junior"))
+    return 2;
   return 1;
 }
 
 const LEVEL_CONFIG = {
-  1: { label: "Grassroots", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
-  2: { label: "District",   color: "text-blue-700",    bg: "bg-blue-50",    border: "border-blue-200" },
-  3: { label: "State",      color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200" },
-  4: { label: "National",   color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-200" },
-  5: { label: "International", color: "text-rose-700", bg: "bg-rose-50",    border: "border-rose-200" },
+  1: {
+    label: "Grassroots",
+    color: "text-emerald-700",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+  },
+  2: {
+    label: "District",
+    color: "text-blue-700",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+  },
+  3: {
+    label: "State",
+    color: "text-violet-700",
+    bg: "bg-violet-50",
+    border: "border-violet-200",
+  },
+  4: {
+    label: "National",
+    color: "text-orange-700",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+  },
+  5: {
+    label: "International",
+    color: "text-rose-700",
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+  },
 } as const;
 
 type LevelKey = keyof typeof LEVEL_CONFIG;
@@ -72,10 +125,14 @@ function getWhyThisTournament(
   tournament: any,
   currentLevel: number,
   sportName: string,
-): { headline: string; body: string; priority: "next-step" | "goal" | "aspirational" | "consolidate" } {
+): {
+  headline: string;
+  body: string;
+  priority: "next-step" | "goal" | "aspirational" | "consolidate";
+} {
   const tLevel = normalizeTournamentLevel(tournament.level || "");
   const sport = sportName || "this sport";
-  const curLabel = LEVEL_CONFIG[(currentLevel as LevelKey)] ?? LEVEL_CONFIG[1];
+  const curLabel = LEVEL_CONFIG[currentLevel as LevelKey] ?? LEVEL_CONFIG[1];
 
   if (currentLevel === 0) {
     return {
@@ -113,20 +170,36 @@ function getWhyThisTournament(
 }
 
 const PRIORITY_CONFIG = {
-  "next-step":   { label: "Next Step",     icon: <ChevronRight className="h-3 w-3" />, style: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "consolidate": { label: "Consolidate",   icon: <CheckCheck   className="h-3 w-3" />, style: "bg-blue-100   text-blue-700   border-blue-200" },
-  "goal":        { label: "Near-term Goal",icon: <Target       className="h-3 w-3" />, style: "bg-violet-100 text-violet-700 border-violet-200" },
-  "aspirational":{ label: "Aspirational",  icon: <Award        className="h-3 w-3" />, style: "bg-amber-100  text-amber-700  border-amber-200" },
+  "next-step": {
+    label: "Next Step",
+    icon: <ChevronRight className="h-3 w-3" />,
+    style: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  },
+  consolidate: {
+    label: "Consolidate",
+    icon: <CheckCheck className="h-3 w-3" />,
+    style: "bg-blue-100   text-blue-700   border-blue-200",
+  },
+  goal: {
+    label: "Near-term Goal",
+    icon: <Target className="h-3 w-3" />,
+    style: "bg-violet-100 text-violet-700 border-violet-200",
+  },
+  aspirational: {
+    label: "Aspirational",
+    icon: <Award className="h-3 w-3" />,
+    style: "bg-amber-100  text-amber-700  border-amber-200",
+  },
 } as const;
 
 const STEP_TITLES: Partial<Record<Step, string>> = {
-  question:  "Register with PowerMySport",
-  unlocked:  "You're Ready to Apply",
+  question: "Register with PowerMySport",
+  unlocked: "You're Ready to Apply",
   doc_check: "Documents Check",
-  no_docs:   "Gather Your Documents",
-  upload:    "Upload Documents",
-  loading:   "Submitting...",
-  success:   "Request Submitted!",
+  no_docs: "Gather Your Documents",
+  upload: "Upload Documents",
+  loading: "Submitting...",
+  success: "Request Submitted!",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -158,7 +231,9 @@ export function TournamentModal({
   const [reminderLoading, setReminderLoading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [pastDocs, setPastDocs] = useState<string[]>([]);
-  const [applyTarget, setApplyTarget] = useState<"prerequisite" | "direct">("prerequisite");
+  const [applyTarget, setApplyTarget] = useState<"prerequisite" | "direct">(
+    "prerequisite",
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -175,7 +250,11 @@ export function TournamentModal({
       if (raw) {
         const apps = JSON.parse(raw);
         const names = new Set<string>();
-        apps.forEach((a: any) => a.documents?.forEach((d: any) => { if (d.name) names.add(d.name); }));
+        apps.forEach((a: any) =>
+          a.documents?.forEach((d: any) => {
+            if (d.name) names.add(d.name);
+          }),
+        );
         setPastDocs(Array.from(names));
       }
     } catch {}
@@ -187,13 +266,16 @@ export function TournamentModal({
   const hasPrerequisite = !!tournament?.prerequisiteName;
   const prerequisiteName = tournament?.prerequisiteName || "";
   const tLevel = normalizeTournamentLevel(tournament.level || "");
-  const levelCfg = LEVEL_CONFIG[(tLevel as LevelKey)] || LEVEL_CONFIG[1];
+  const levelCfg = LEVEL_CONFIG[tLevel as LevelKey] || LEVEL_CONFIG[1];
   const whyInfo = getWhyThisTournament(tournament, currentLevel, sportName);
   const priorityCfg = PRIORITY_CONFIG[whyInfo.priority];
   const documentChecklist: string[] =
     tournament?.documentChecklist?.length > 0
       ? tournament.documentChecklist
-      : ["Proof of Age (Birth Certificate or Passport)", "Medical Fitness Certificate"];
+      : [
+          "Proof of Age (Birth Certificate or Passport)",
+          "Medical Fitness Certificate",
+        ];
   const isInConciergeFlow = step !== "detail";
 
   // Progress dots (shown in concierge header)
@@ -204,11 +286,11 @@ export function TournamentModal({
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   const BACK_MAP: Partial<Record<Step, Step>> = {
-    question:  "detail",
-    unlocked:  "question",
+    question: "detail",
+    unlocked: "question",
     doc_check: applyTarget === "prerequisite" ? "question" : "unlocked",
-    no_docs:   "doc_check",
-    upload:    "doc_check",
+    no_docs: "doc_check",
+    upload: "doc_check",
   };
   const handleBack = () => setStep(BACK_MAP[step] ?? "detail");
 
@@ -225,7 +307,10 @@ export function TournamentModal({
 
   // ── Calendar ───────────────────────────────────────────────────────────────
   const handleAddToCalendar = async () => {
-    if (!calendarDate) { setCalendarError("Please select a date first."); return; }
+    if (!calendarDate) {
+      setCalendarError("Please select a date first.");
+      return;
+    }
     setCalendarError("");
     setAddingToCalendar(true);
     try {
@@ -234,7 +319,8 @@ export function TournamentModal({
         date: calendarDate,
         type: "COMPETITION",
         color: "#8b5cf6",
-        notes: `${tournament.level || ""} level tournament. Age group: ${tournament.ageGroup || "Open"}. ${tournament.description || ""}`.trim(),
+        notes:
+          `${tournament.level || ""} level tournament. Age group: ${tournament.ageGroup || "Open"}. ${tournament.description || ""}`.trim(),
       });
       setCalendarAdded(true);
     } catch {
@@ -250,7 +336,11 @@ export function TournamentModal({
     try {
       if (hasPrerequisite && tournament.prerequisiteId) {
         await axiosInstance.put("/auth/profile", {
-          playerProfile: { pathwayState: { satisfiedPrerequisites: [tournament.prerequisiteId] } },
+          playerProfile: {
+            pathwayState: {
+              satisfiedPrerequisites: [tournament.prerequisiteId],
+            },
+          },
         });
       }
     } catch {}
@@ -272,7 +362,10 @@ export function TournamentModal({
 
   const handleUploadSubmit = async () => {
     for (const doc of documentChecklist) {
-      if (!uploadedFiles[doc]) { setUploadError(`Please upload: ${doc}`); return; }
+      if (!uploadedFiles[doc]) {
+        setUploadError(`Please upload: ${doc}`);
+        return;
+      }
     }
     setStep("loading");
     try {
@@ -284,17 +377,25 @@ export function TournamentModal({
             contentType: file.type,
             documentType: docName,
           });
-          await fetch(res.data.uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+          await fetch(res.data.uploadUrl, {
+            method: "PUT",
+            body: file,
+            headers: { "Content-Type": file.type },
+          });
           return { documentName: docName, s3Key: res.data.key };
-        })
+        }),
       );
       await axiosInstance.post("/concierge/request", {
         sportSlug: tournament.sportName || "sport",
         itemType: type,
         itemId: tournament._id || "unknown",
         itemName: tournament.name,
-        prerequisiteId: applyTarget === "prerequisite" ? tournament.prerequisiteId : undefined,
-        prerequisiteName: applyTarget === "prerequisite" ? prerequisiteName : undefined,
+        prerequisiteId:
+          applyTarget === "prerequisite"
+            ? tournament.prerequisiteId
+            : undefined,
+        prerequisiteName:
+          applyTarget === "prerequisite" ? prerequisiteName : undefined,
         documents,
       });
     } catch {}
@@ -305,7 +406,9 @@ export function TournamentModal({
       itemType: type,
       sport: tournament.sportName || "General",
       status: "Submitted",
-      documents: documentChecklist.map((d: string) => ({ name: uploadedFiles[d]?.name || d })),
+      documents: documentChecklist.map((d: string) => ({
+        name: uploadedFiles[d]?.name || d,
+      })),
       submittedAt: new Date().toISOString(),
     });
     setStep("success");
@@ -347,18 +450,24 @@ export function TournamentModal({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${levelCfg.bg} ${levelCfg.color} ${levelCfg.border}`}>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${levelCfg.bg} ${levelCfg.color} ${levelCfg.border}`}
+                      >
                         <Trophy className="h-3 w-3" />
                         {tournament.level || levelCfg.label}
                       </span>
                       {currentLevel > 0 && (
-                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${priorityCfg.style}`}>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${priorityCfg.style}`}
+                        >
                           {priorityCfg.icon}
                           {priorityCfg.label}
                         </span>
                       )}
                     </div>
-                    <h2 className="text-xl font-bold leading-snug break-words">{tournament.name}</h2>
+                    <h2 className="text-xl font-bold leading-snug break-words">
+                      {tournament.name}
+                    </h2>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {onToggleSave && (
@@ -366,10 +475,15 @@ export function TournamentModal({
                         onClick={onToggleSave}
                         className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all ${isSaved ? "border-rose-200 bg-rose-50 text-rose-500" : "border-white/20 bg-white/10 text-white/70 hover:bg-white/20"}`}
                       >
-                        <Heart className={`h-4 w-4 ${isSaved ? "fill-rose-500" : ""}`} />
+                        <Heart
+                          className={`h-4 w-4 ${isSaved ? "fill-rose-500" : ""}`}
+                        />
                       </button>
                     )}
-                    <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20 transition">
+                    <button
+                      onClick={onClose}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20 transition"
+                    >
                       <X className="h-4 w-4" />
                     </button>
                   </div>
@@ -377,22 +491,26 @@ export function TournamentModal({
                 <div className="flex flex-wrap gap-2 mt-3">
                   {tournament.ageGroup && (
                     <span className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90">
-                      <Users className="h-3 w-3" />{tournament.ageGroup}
+                      <Users className="h-3 w-3" />
+                      {tournament.ageGroup}
                     </span>
                   )}
                   {tournament.city && (
                     <span className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90">
-                      <MapPin className="h-3 w-3" />{tournament.city}
+                      <MapPin className="h-3 w-3" />
+                      {tournament.city}
                     </span>
                   )}
                   {tournament.federation && (
                     <span className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90">
-                      <Shield className="h-3 w-3" />{tournament.federation}
+                      <Shield className="h-3 w-3" />
+                      {tournament.federation}
                     </span>
                   )}
                   {sportName && (
                     <span className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90">
-                      <Globe className="h-3 w-3" />{sportName}
+                      <Globe className="h-3 w-3" />
+                      {sportName}
                     </span>
                   )}
                 </div>
@@ -409,7 +527,10 @@ export function TournamentModal({
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     {step !== "loading" && step !== "success" && (
-                      <button onClick={handleBack} className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition">
+                      <button
+                        onClick={handleBack}
+                        className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition"
+                      >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
                     )}
@@ -417,7 +538,9 @@ export function TournamentModal({
                       <p className="text-[10px] font-bold uppercase tracking-wider text-white/60 truncate">
                         {tournament.name}
                       </p>
-                      <h3 className="text-base font-bold">{STEP_TITLES[step]}</h3>
+                      <h3 className="text-base font-bold">
+                        {STEP_TITLES[step]}
+                      </h3>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
@@ -427,15 +550,20 @@ export function TournamentModal({
                           <div
                             key={i}
                             className={`h-1.5 rounded-full transition-all duration-300 ${
-                              i < progressIdx  ? "w-3 bg-white" :
-                              i === progressIdx ? "w-5 bg-white" :
-                              "w-1.5 bg-white/30"
+                              i < progressIdx
+                                ? "w-3 bg-white"
+                                : i === progressIdx
+                                  ? "w-5 bg-white"
+                                  : "w-1.5 bg-white/30"
                             }`}
                           />
                         ))}
                       </div>
                     )}
-                    <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20 transition">
+                    <button
+                      onClick={onClose}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/10 hover:bg-white/20 transition"
+                    >
                       <X className="h-4 w-4" />
                     </button>
                   </div>
@@ -447,7 +575,6 @@ export function TournamentModal({
           {/* ── Scrollable body ── */}
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
             <AnimatePresence mode="wait">
-
               {/* Detail step */}
               {step === "detail" && (
                 <motion.div
@@ -463,12 +590,15 @@ export function TournamentModal({
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
                         <FileText className="h-3 w-3" /> About This Tournament
                       </p>
-                      <p className="text-sm text-slate-700 leading-relaxed">{tournament.description}</p>
+                      <p className="text-sm text-slate-700 leading-relaxed">
+                        {tournament.description}
+                      </p>
                     </div>
                   )}
 
                   {/* Schedule — dates & registration deadline */}
-                  {(tournament.typicalDates || tournament.registrationDeadline) && (
+                  {(tournament.typicalDates ||
+                    tournament.registrationDeadline) && (
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col sm:flex-row gap-4">
                       {tournament.typicalDates && (
                         <div className="flex items-start gap-3 flex-1">
@@ -476,8 +606,12 @@ export function TournamentModal({
                             <CalendarDays className="h-4 w-4 text-violet-600" />
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Typical Dates</p>
-                            <p className="text-sm font-semibold text-slate-800">{tournament.typicalDates}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Typical Dates
+                            </p>
+                            <p className="text-sm font-semibold text-slate-800">
+                              {tournament.typicalDates}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -487,8 +621,12 @@ export function TournamentModal({
                             <Clock className="h-4 w-4 text-amber-600" />
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Registration</p>
-                            <p className="text-sm font-semibold text-slate-800">{tournament.registrationDeadline}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Registration
+                            </p>
+                            <p className="text-sm font-semibold text-slate-800">
+                              {tournament.registrationDeadline}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -503,19 +641,27 @@ export function TournamentModal({
                     <p className="text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1 opacity-60">
                       <Sparkles className="h-3 w-3" /> Why This Tournament
                     </p>
-                    <h4 className="font-bold text-sm mb-1">{whyInfo.headline}</h4>
-                    <p className="text-sm leading-relaxed opacity-80">{whyInfo.body}</p>
+                    <h4 className="font-bold text-sm mb-1">
+                      {whyInfo.headline}
+                    </h4>
+                    <p className="text-sm leading-relaxed opacity-80">
+                      {whyInfo.body}
+                    </p>
                   </div>
 
                   {/* Prerequisite alert */}
                   {tournament.prerequisiteName && (
                     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-1.5 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" /> Prerequisite Required
+                        <AlertCircle className="h-3 w-3" /> Prerequisite
+                        Required
                       </p>
-                      <p className="font-semibold text-amber-800 text-sm">{tournament.prerequisiteName}</p>
+                      <p className="font-semibold text-amber-800 text-sm">
+                        {tournament.prerequisiteName}
+                      </p>
                       <p className="text-xs text-amber-700 mt-1">
-                        You'll need this registration/ID before entering. Our team can help you obtain it.
+                        You'll need this registration/ID before entering. Our
+                        team can help you obtain it.
                       </p>
                     </div>
                   )}
@@ -523,7 +669,8 @@ export function TournamentModal({
                   {/* Documents checklist */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-4">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1">
-                      <FileText className="h-3 w-3" /> Documents Needed for Entry
+                      <FileText className="h-3 w-3" /> Documents Needed for
+                      Entry
                     </p>
                     <ul className="space-y-2">
                       {documentChecklist.map((doc: string, i: number) => (
@@ -557,14 +704,28 @@ export function TournamentModal({
                       <div className="flex items-start gap-2.5">
                         <Info className="h-4 w-4 text-violet-400 shrink-0 mt-0.5" />
                         <p className="text-sm text-violet-700">
-                          <a href="/login" className="font-bold underline underline-offset-2">Log in</a> or{" "}
-                          <a href="/register" className="font-bold underline underline-offset-2">sign up</a> to add this tournament to your calendar.
+                          <a
+                            href="/login"
+                            className="font-bold underline underline-offset-2"
+                          >
+                            Log in
+                          </a>{" "}
+                          or{" "}
+                          <a
+                            href="/register"
+                            className="font-bold underline underline-offset-2"
+                          >
+                            sign up
+                          </a>{" "}
+                          to add this tournament to your calendar.
                         </p>
                       </div>
                     ) : calendarAdded ? (
                       <div className="flex items-center gap-2 text-emerald-700">
                         <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-                        <p className="text-sm font-semibold">Added to your competition calendar!</p>
+                        <p className="text-sm font-semibold">
+                          Added to your competition calendar!
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -572,7 +733,10 @@ export function TournamentModal({
                           <input
                             type="date"
                             value={calendarDate}
-                            onChange={(e) => { setCalendarDate(e.target.value); setCalendarError(""); }}
+                            onChange={(e) => {
+                              setCalendarDate(e.target.value);
+                              setCalendarError("");
+                            }}
                             min={new Date().toISOString().split("T")[0]}
                             className="flex-1 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
                           />
@@ -581,16 +745,29 @@ export function TournamentModal({
                             disabled={addingToCalendar || !calendarDate}
                             className="flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white shadow transition hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {addingToCalendar ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarPlus className="h-4 w-4" />}
+                            {addingToCalendar ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CalendarPlus className="h-4 w-4" />
+                            )}
                             {addingToCalendar ? "Adding..." : "Add"}
                           </button>
                         </div>
-                        {calendarError && <p className="text-xs text-rose-600">{calendarError}</p>}
+                        {calendarError && (
+                          <p className="text-xs text-rose-600">
+                            {calendarError}
+                          </p>
+                        )}
                         <p className="text-xs text-violet-600">
-                          Select the date — it'll appear as a Competition event on your dashboard.
+                          Select the date — it'll appear as a Competition event
+                          on your dashboard.
                           {tournament.typicalDates && (
                             <span className="block mt-1 text-violet-500">
-                              Hint: this tournament is typically held {tournament.typicalDates.toLowerCase().replace(/^usually held in /i, "")}.
+                              Hint: this tournament is typically held{" "}
+                              {tournament.typicalDates
+                                .toLowerCase()
+                                .replace(/^usually held in /i, "")}
+                              .
                             </span>
                           )}
                         </p>
@@ -603,9 +780,13 @@ export function TournamentModal({
                     <p className="text-[10px] font-bold uppercase tracking-wider text-power-orange mb-2 flex items-center gap-1">
                       <Sparkles className="h-3 w-3" /> PowerMySport Concierge
                     </p>
-                    <h4 className="font-bold text-slate-900 text-sm mb-1">We Handle the Registration for You</h4>
+                    <h4 className="font-bold text-slate-900 text-sm mb-1">
+                      We Handle the Registration for You
+                    </h4>
                     <p className="text-sm text-slate-700 leading-relaxed mb-3">
-                      Obtaining federation IDs, preparing documents, and navigating registration portals takes hours. Our concierge team handles all of it — completely free.
+                      Obtaining federation IDs, preparing documents, and
+                      navigating registration portals takes hours. Our concierge
+                      team handles all of it — completely free.
                     </p>
                     <ul className="space-y-1.5">
                       {[
@@ -641,8 +822,9 @@ export function TournamentModal({
                       <Sparkles className="h-5 w-5 text-power-orange" />
                     </div>
                     <div className="flex-1 rounded-2xl rounded-tl-none bg-slate-100 p-4 text-slate-800 text-sm leading-relaxed">
-                      To register for <strong>{tournament.name}</strong>, your child needs an active{" "}
-                      <strong>{prerequisiteName}</strong>. Do they currently have one?
+                      To register for <strong>{tournament.name}</strong>, your
+                      child needs an active <strong>{prerequisiteName}</strong>.
+                      Do they currently have one?
                     </div>
                   </div>
 
@@ -653,14 +835,19 @@ export function TournamentModal({
                         What is a {prerequisiteName}?
                       </p>
                       <ol className="space-y-2">
-                        {(tournament.prerequisiteGuide as string[]).slice(0, 3).map((s, i) => (
-                          <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500">
-                              {i + 1}
-                            </span>
-                            {s}
-                          </li>
-                        ))}
+                        {(tournament.prerequisiteGuide as string[])
+                          .slice(0, 3)
+                          .map((s, i) => (
+                            <li
+                              key={i}
+                              className="flex items-start gap-2.5 text-sm text-slate-700"
+                            >
+                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-500">
+                                {i + 1}
+                              </span>
+                              {s}
+                            </li>
+                          ))}
                       </ol>
                     </div>
                   )}
@@ -680,9 +867,12 @@ export function TournamentModal({
                   <div className="flex items-start gap-3 rounded-xl bg-emerald-50 p-4 border border-emerald-100">
                     <CheckCircle2 className="h-6 w-6 text-emerald-600 shrink-0" />
                     <div>
-                      <h4 className="font-bold text-emerald-800">You're ready to proceed!</h4>
+                      <h4 className="font-bold text-emerald-800">
+                        You're ready to proceed!
+                      </h4>
                       <p className="text-sm text-emerald-600 mt-1">
-                        Here's everything you need for <strong>{tournament.name}</strong>.
+                        Here's everything you need for{" "}
+                        <strong>{tournament.name}</strong>.
                       </p>
                     </div>
                   </div>
@@ -708,14 +898,18 @@ export function TournamentModal({
                         How to Register / Apply
                       </h5>
                       <ol className="space-y-2.5">
-                        {(tournament.prerequisiteGuide as string[]).map((s, i) => (
-                          <li key={i} className="flex items-start gap-3">
-                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700">
-                              {i + 1}
-                            </span>
-                            <span className="text-sm leading-relaxed text-slate-700">{s}</span>
-                          </li>
-                        ))}
+                        {(tournament.prerequisiteGuide as string[]).map(
+                          (s, i) => (
+                            <li key={i} className="flex items-start gap-3">
+                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700">
+                                {i + 1}
+                              </span>
+                              <span className="text-sm leading-relaxed text-slate-700">
+                                {s}
+                              </span>
+                            </li>
+                          ),
+                        )}
                       </ol>
                     </div>
                   )}
@@ -729,7 +923,9 @@ export function TournamentModal({
                         {documentChecklist.map((doc, i) => (
                           <li key={i} className="flex items-start gap-2.5">
                             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                            <span className="text-sm text-slate-700">{doc}</span>
+                            <span className="text-sm text-slate-700">
+                              {doc}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -738,7 +934,9 @@ export function TournamentModal({
 
                   {prerequisiteName && (
                     <p className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-2.5 text-xs text-amber-700">
-                      Remember to mention your <strong>{prerequisiteName}</strong> during the registration process.
+                      Remember to mention your{" "}
+                      <strong>{prerequisiteName}</strong> during the
+                      registration process.
                     </p>
                   )}
                 </motion.div>
@@ -761,12 +959,14 @@ export function TournamentModal({
                     <div className="flex-1 rounded-2xl rounded-tl-none bg-slate-100 p-4 text-slate-800 text-sm leading-relaxed">
                       {applyTarget === "prerequisite" ? (
                         <>
-                          No problem — we can get your child a <strong>{prerequisiteName}</strong> for free!{" "}
-                          To do that, the federation requires:
+                          No problem — we can get your child a{" "}
+                          <strong>{prerequisiteName}</strong> for free! To do
+                          that, the federation requires:
                         </>
                       ) : (
                         <>
-                          Great — we can apply for <strong>{tournament.name}</strong> on your behalf!{" "}
+                          Great — we can apply for{" "}
+                          <strong>{tournament.name}</strong> on your behalf!{" "}
                           We'll need:
                         </>
                       )}
@@ -797,13 +997,19 @@ export function TournamentModal({
                   <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-4 border border-amber-100">
                     <ShieldAlert className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
                     <div>
-                      <h3 className="font-bold text-amber-800">You'll need these documents first.</h3>
-                      <p className="text-sm text-amber-700 mt-1">Gather them and come back — we'll be right here.</p>
+                      <h3 className="font-bold text-amber-800">
+                        You'll need these documents first.
+                      </h3>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Gather them and come back — we'll be right here.
+                      </p>
                     </div>
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-white p-5">
-                    <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Required Documents</h5>
+                    <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Required Documents
+                    </h5>
                     <ul className="space-y-2.5">
                       {documentChecklist.map((doc, i) => (
                         <li key={i} className="flex items-start gap-2.5">
@@ -816,8 +1022,12 @@ export function TournamentModal({
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-slate-700">Want a reminder?</p>
-                      <p className="text-xs text-slate-500 mt-0.5">We'll ping you in 7 days to check if you're ready.</p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        Want a reminder?
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        We'll ping you in 7 days to check if you're ready.
+                      </p>
                     </div>
                     {reminderSent ? (
                       <span className="shrink-0 flex items-center gap-1.5 rounded-lg bg-emerald-100 border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700">
@@ -829,7 +1039,9 @@ export function TournamentModal({
                         disabled={reminderLoading}
                         className="shrink-0 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-700 transition disabled:opacity-60 flex items-center gap-1.5"
                       >
-                        {reminderLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                        {reminderLoading && (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        )}
                         Remind me in 7 days
                       </button>
                     )}
@@ -852,9 +1064,17 @@ export function TournamentModal({
                       <Sparkles className="h-5 w-5 text-power-orange" />
                     </div>
                     <div className="flex-1 rounded-2xl rounded-tl-none bg-slate-100 p-4 text-slate-800 text-sm leading-relaxed">
-                      Excellent! Upload the documents below and our team will process your{" "}
-                      <strong>{applyTarget === "prerequisite" && prerequisiteName ? prerequisiteName : tournament.name}</strong>{" "}
-                      {applyTarget === "prerequisite" ? "registration" : "application"} — completely free of charge.
+                      Excellent! Upload the documents below and our team will
+                      process your{" "}
+                      <strong>
+                        {applyTarget === "prerequisite" && prerequisiteName
+                          ? prerequisiteName
+                          : tournament.name}
+                      </strong>{" "}
+                      {applyTarget === "prerequisite"
+                        ? "registration"
+                        : "application"}{" "}
+                      — completely free of charge.
                     </div>
                   </div>
 
@@ -862,9 +1082,14 @@ export function TournamentModal({
                     {documentChecklist.map((docName: string) => {
                       const file = uploadedFiles[docName];
                       return (
-                        <div key={docName} className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+                        <div
+                          key={docName}
+                          className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3 space-y-2"
+                        >
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-700">{docName}</span>
+                            <span className="text-xs font-bold text-slate-700">
+                              {docName}
+                            </span>
                             {file && (
                               <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
                                 <CheckCircle2 className="h-3 w-3" /> Ready
@@ -872,16 +1097,28 @@ export function TournamentModal({
                             )}
                           </div>
                           <label className="flex flex-col items-center gap-1.5 border-2 border-dashed border-slate-200 bg-white rounded-xl p-4 text-center hover:border-power-orange hover:bg-orange-50/30 transition cursor-pointer">
-                            <UploadCloud className={`h-5 w-5 ${file ? "text-emerald-500" : "text-slate-400"}`} />
-                            <span className="text-xs font-bold text-slate-700">{file ? file.name : `Upload ${docName}`}</span>
-                            <span className="text-[10px] text-slate-400">{file ? "Click to change" : "PDF, JPG, or PNG"}</span>
+                            <UploadCloud
+                              className={`h-5 w-5 ${file ? "text-emerald-500" : "text-slate-400"}`}
+                            />
+                            <span className="text-xs font-bold text-slate-700">
+                              {file ? file.name : `Upload ${docName}`}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {file ? "Click to change" : "PDF, JPG, or PNG"}
+                            </span>
                             <input
                               type="file"
                               className="hidden"
                               accept=".pdf,.jpg,.jpeg,.png"
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
-                                if (f) { setUploadedFiles(prev => ({ ...prev, [docName]: f })); setUploadError(""); }
+                                if (f) {
+                                  setUploadedFiles((prev) => ({
+                                    ...prev,
+                                    [docName]: f,
+                                  }));
+                                  setUploadError("");
+                                }
                               }}
                             />
                           </label>
@@ -891,11 +1128,17 @@ export function TournamentModal({
                                 Reuse a previously uploaded document:
                               </p>
                               <div className="flex flex-wrap gap-1.5">
-                                {pastDocs.map(name => (
+                                {pastDocs.map((name) => (
                                   <button
                                     key={name}
                                     type="button"
-                                    onClick={() => { setUploadedFiles(prev => ({ ...prev, [docName]: new File([], name) })); setUploadError(""); }}
+                                    onClick={() => {
+                                      setUploadedFiles((prev) => ({
+                                        ...prev,
+                                        [docName]: new File([], name),
+                                      }));
+                                      setUploadError("");
+                                    }}
                                     className="rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-power-orange hover:text-power-orange px-2 py-1 text-[10px] font-semibold text-slate-600 transition"
                                   >
                                     Use "{name}"
@@ -910,7 +1153,9 @@ export function TournamentModal({
                   </div>
 
                   {uploadError && (
-                    <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3 border border-red-100">{uploadError}</p>
+                    <p className="text-sm text-red-600 bg-red-50 rounded-lg p-3 border border-red-100">
+                      {uploadError}
+                    </p>
                   )}
                 </motion.div>
               )}
@@ -924,8 +1169,12 @@ export function TournamentModal({
                   className="flex flex-col items-center justify-center py-24 space-y-4"
                 >
                   <Loader2 className="h-10 w-10 text-power-orange animate-spin" />
-                  <h3 className="font-bold text-slate-800 text-lg">Uploading Documents...</h3>
-                  <p className="text-sm text-slate-500 text-center max-w-xs">Please don't close this window.</p>
+                  <h3 className="font-bold text-slate-800 text-lg">
+                    Uploading Documents...
+                  </h3>
+                  <p className="text-sm text-slate-500 text-center max-w-xs">
+                    Please don't close this window.
+                  </p>
                 </motion.div>
               )}
 
@@ -946,11 +1195,14 @@ export function TournamentModal({
                     <CheckCircle2 className="h-10 w-10 text-emerald-600" />
                   </motion.div>
                   <div>
-                    <h3 className="font-bold text-slate-800 text-xl">Documents Received!</h3>
+                    <h3 className="font-bold text-slate-800 text-xl">
+                      Documents Received!
+                    </h3>
                     <p className="text-sm text-slate-600 mt-2 leading-relaxed max-w-sm mx-auto">
                       Our team is verifying your files and will{" "}
-                      {type === "tournament" ? "generate" : "process"} your child's{" "}
-                      {prerequisiteName || tournament.name} within 48 hours. We'll notify you once it's done.
+                      {type === "tournament" ? "generate" : "process"} your
+                      child's {prerequisiteName || tournament.name} within 48
+                      hours. We'll notify you once it's done.
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 w-full max-w-[220px]">
@@ -969,7 +1221,6 @@ export function TournamentModal({
                   </div>
                 </motion.div>
               )}
-
             </AnimatePresence>
           </div>
 
@@ -993,7 +1244,10 @@ export function TournamentModal({
                 </button>
                 <p className="text-center text-xs text-slate-400">
                   or{" "}
-                  <button onClick={onClose} className="underline underline-offset-2 hover:text-slate-600 transition">
+                  <button
+                    onClick={onClose}
+                    className="underline underline-offset-2 hover:text-slate-600 transition"
+                  >
                     I'll register independently
                   </button>
                 </p>
@@ -1016,7 +1270,10 @@ export function TournamentModal({
                     Yes, they have it
                   </button>
                   <button
-                    onClick={() => { setApplyTarget("prerequisite"); setStep("doc_check"); }}
+                    onClick={() => {
+                      setApplyTarget("prerequisite");
+                      setStep("doc_check");
+                    }}
                     className="flex-1 rounded-xl border-2 border-slate-200 bg-white py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
                   >
                     No — help us get it
@@ -1034,11 +1291,17 @@ export function TournamentModal({
                 className="shrink-0 border-t border-slate-100 bg-white p-4"
               >
                 <div className="flex gap-3">
-                  <button onClick={onClose} className="flex-1 rounded-xl border-2 border-slate-200 bg-white py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 rounded-xl border-2 border-slate-200 bg-white py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
+                  >
                     I'll apply myself
                   </button>
                   <button
-                    onClick={() => { setApplyTarget("direct"); setStep("doc_check"); }}
+                    onClick={() => {
+                      setApplyTarget("direct");
+                      setStep("doc_check");
+                    }}
                     className="flex-1 rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white shadow-md hover:bg-slate-800 transition"
                   >
                     Apply on my behalf
@@ -1080,7 +1343,10 @@ export function TournamentModal({
                 exit={{ opacity: 0, y: 8 }}
                 className="shrink-0 border-t border-slate-100 bg-white p-4"
               >
-                <button onClick={onClose} className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
+                <button
+                  onClick={onClose}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                >
                   I'll gather them and come back
                 </button>
               </motion.div>

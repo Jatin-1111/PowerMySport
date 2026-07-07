@@ -1,10 +1,7 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import Admin from "../admin/models/Admin";
-import {
-  ADMIN_ROLES,
-  getRolePermissions,
-} from "../constants/adminPermissions";
+import { ADMIN_ROLES, getRolePermissions } from "../constants/adminPermissions";
 
 /**
  * Re-syncs every SYSTEM_ADMIN's stored `permissions` array to the current
@@ -33,11 +30,15 @@ const run = async () => {
   console.log("Connected to MongoDB");
 
   const systemAdmins = await Admin.find({ role: ADMIN_ROLES.SYSTEM_ADMIN });
-  const canonicalPermissions = [...getRolePermissions(ADMIN_ROLES.SYSTEM_ADMIN)];
+  const canonicalPermissions = [
+    ...getRolePermissions(ADMIN_ROLES.SYSTEM_ADMIN),
+  ];
   const canonicalSet = new Set(canonicalPermissions);
 
   console.log(`Found ${systemAdmins.length} System Admin(s)`);
-  console.log(`Canonical permission set has ${canonicalPermissions.length} entries`);
+  console.log(
+    `Canonical permission set has ${canonicalPermissions.length} entries`,
+  );
   console.log("---");
 
   let updated = 0;

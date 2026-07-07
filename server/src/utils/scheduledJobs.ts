@@ -19,7 +19,8 @@ import { pathwayService } from "../shared/services/PathwayService";
 export const releaseCompletedBookingPayments = async (): Promise<void> => {
   try {
     const { Booking } = await import("../client/models/Booking");
-    const { BookingPaymentTransaction } = await import("../client/models/BookingPayment");
+    const { BookingPaymentTransaction } =
+      await import("../client/models/BookingPayment");
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -161,17 +162,27 @@ export const runScheduledCleanup = async (): Promise<void> => {
         sendSessionStartReminders,
       } = await import("../client/services/ExpertsService");
       const expiredHolds = await expireUnpaidExpertHolds();
-      if (expiredHolds > 0) console.log(`✅ Expired ${expiredHolds} unpaid expert hold(s)`);
+      if (expiredHolds > 0)
+        console.log(`✅ Expired ${expiredHolds} unpaid expert hold(s)`);
       const autoCompleted = await autoCompleteExpertSessions();
-      if (autoCompleted > 0) console.log(`✅ Auto-completed ${autoCompleted} expert session(s)`);
+      if (autoCompleted > 0)
+        console.log(`✅ Auto-completed ${autoCompleted} expert session(s)`);
       const reminded = await sendExpertReviewReminders();
-      if (reminded > 0) console.log(`✅ Sent ${reminded} expert review reminder(s)`);
+      if (reminded > 0)
+        console.log(`✅ Sent ${reminded} expert review reminder(s)`);
       const releasedPayouts = await releaseExpertSessionPayouts();
-      if (releasedPayouts > 0) console.log(`✅ Auto-released ${releasedPayouts} expert session payout(s)`);
+      if (releasedPayouts > 0)
+        console.log(
+          `✅ Auto-released ${releasedPayouts} expert session payout(s)`,
+        );
       const linkNudges = await sendExpertMeetingLinkNudges();
-      if (linkNudges > 0) console.log(`✅ Sent ${linkNudges} meeting-link nudge(s)`);
+      if (linkNudges > 0)
+        console.log(`✅ Sent ${linkNudges} meeting-link nudge(s)`);
       const startReminders = await sendSessionStartReminders();
-      if (startReminders > 0) console.log(`✅ Sent ${startReminders} session-starting-soon reminder(s)`);
+      if (startReminders > 0)
+        console.log(
+          `✅ Sent ${startReminders} session-starting-soon reminder(s)`,
+        );
     } catch (expertErr) {
       console.error("❌ Expert session maintenance failed:", expertErr);
     }

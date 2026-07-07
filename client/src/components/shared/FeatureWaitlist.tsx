@@ -60,7 +60,7 @@ export default function FeatureWaitlist({
       <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-power-orange/20 blur-[120px] mix-blend-multiply pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400/20 blur-[120px] mix-blend-multiply pointer-events-none" />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
@@ -71,7 +71,9 @@ export default function FeatureWaitlist({
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
           className={`mb-8 flex h-24 w-24 items-center justify-center rounded-3xl shadow-2xl ${shadowColorClass}`}
-          style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
+          style={{
+            background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`,
+          }}
         >
           <Icon className="text-white" size={48} strokeWidth={1.5} />
         </motion.div>
@@ -80,12 +82,15 @@ export default function FeatureWaitlist({
           {title} <br className="hidden sm:block" />
           {subtitle}
         </h1>
-        
+
         <p className="mb-10 max-w-xl text-lg text-slate-600 sm:text-xl">
           {description}
         </p>
 
-        <form onSubmit={handleSubmit} className="w-full max-w-md relative mb-12">
+        <form
+          onSubmit={handleSubmit}
+          className="w-full max-w-md relative mb-12"
+        >
           <div className="relative flex items-center">
             <BellRing className="absolute left-4 text-slate-400" size={20} />
             <input
@@ -109,18 +114,21 @@ export default function FeatureWaitlist({
           </div>
         </form>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
           className="flex gap-4"
         >
-          <Link 
+          <Link
             href={backHref}
             className="group flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm border border-slate-200 transition-all hover:shadow-md"
           >
             {backLabel}
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+            <ArrowRight
+              size={16}
+              className="transition-transform group-hover:translate-x-1"
+            />
           </Link>
         </motion.div>
       </motion.div>

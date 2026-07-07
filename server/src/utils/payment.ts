@@ -43,7 +43,7 @@ export const calculateSplitAmounts = (
     payments.push({
       userId: payerUserId,
       userType: "Player",
-      amount: totalAmount ?? (venuePrice + (coachPrice || 0)),
+      amount: totalAmount ?? venuePrice + (coachPrice || 0),
       status: "PENDING",
     });
   }

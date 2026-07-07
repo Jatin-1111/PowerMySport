@@ -207,7 +207,9 @@ export default function AdminCoachesPage() {
     {
       key: "verification",
       header: "Verification",
-      render: (c) => <StatusBadge status={c.verificationStatus || "UNVERIFIED"} />,
+      render: (c) => (
+        <StatusBadge status={c.verificationStatus || "UNVERIFIED"} />
+      ),
     },
     {
       key: "sports",
@@ -412,7 +414,10 @@ export default function AdminCoachesPage() {
                 label="Rating"
                 value={`${(selectedCoach.rating ?? 0).toFixed(1)} (${selectedCoach.reviewCount ?? 0} reviews)`}
               />
-              <DetailRow label="Joined" value={formatDate(selectedCoach.createdAt)} />
+              <DetailRow
+                label="Joined"
+                value={formatDate(selectedCoach.createdAt)}
+              />
               {selectedCoach.ownVenueDetails?.address && (
                 <DetailRow
                   label="Own venue"

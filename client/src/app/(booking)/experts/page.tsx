@@ -195,9 +195,13 @@ function ExpertsBrowseContent() {
     };
 
     if (sortBy === "priceAsc")
-      next = [...next].sort((a, b) => (a.sessionFee || 0) - (b.sessionFee || 0));
+      next = [...next].sort(
+        (a, b) => (a.sessionFee || 0) - (b.sessionFee || 0),
+      );
     else if (sortBy === "priceDesc")
-      next = [...next].sort((a, b) => (b.sessionFee || 0) - (a.sessionFee || 0));
+      next = [...next].sort(
+        (a, b) => (b.sessionFee || 0) - (a.sessionFee || 0),
+      );
     else if (sortBy === "ratingDesc")
       next = [...next].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     else next = [...next].sort((a, b) => relevance(b) - relevance(a));
@@ -279,7 +283,10 @@ function ExpertsBrowseContent() {
               </p>
             </FadeIn>
 
-            <FadeIn delay={0.1} className="flex flex-col items-start lg:items-end gap-6">
+            <FadeIn
+              delay={0.1}
+              className="flex flex-col items-start lg:items-end gap-6"
+            >
               <div className="flex flex-wrap gap-3 lg:flex-col lg:items-end lg:gap-2.5">
                 {[
                   { icon: ShieldCheck, label: "Secure payments" },
@@ -295,7 +302,7 @@ function ExpertsBrowseContent() {
                   </span>
                 ))}
               </div>
-              
+
               <Link
                 href="/experts/sessions"
                 className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-orange-50 px-4 py-2.5 text-sm font-semibold text-orange-700 transition-colors hover:bg-orange-100 ring-1 ring-inset ring-orange-700/20"
@@ -445,7 +452,9 @@ function ExpertsBrowseContent() {
           <div className="rounded-2xl border border-slate-100 bg-white">
             <EmptyState
               icon={Search}
-              title={hasFilters ? "No experts match your filters" : "No experts yet"}
+              title={
+                hasFilters ? "No experts match your filters" : "No experts yet"
+              }
               description={
                 hasFilters
                   ? "Try broadening your search or clearing filters."
@@ -509,7 +518,10 @@ function ExpertsBrowseContent() {
 
                         {expert.city && (
                           <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500">
-                            <MapPin size={14} className="shrink-0 text-slate-400" />
+                            <MapPin
+                              size={14}
+                              className="shrink-0 text-slate-400"
+                            />
                             <span className="line-clamp-1">{expert.city}</span>
                           </p>
                         )}
@@ -587,7 +599,11 @@ export default function ExpertsBrowsePage() {
     return (
       <FeatureWaitlist
         title="Experts."
-        subtitle={<span className="text-transparent bg-clip-text bg-gradient-to-r from-power-orange to-amber-500">Coming Soon.</span>}
+        subtitle={
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-power-orange to-amber-500">
+            Coming Soon.
+          </span>
+        }
         description="Our Experts platform is almost here. Get ready to connect with verified coaches and mentors."
         icon={Users}
         gradientFrom="#E97316"

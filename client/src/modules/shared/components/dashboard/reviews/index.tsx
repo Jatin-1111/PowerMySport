@@ -9,7 +9,7 @@ import type { ReviewItem, ReviewSummary } from "@/types";
 // ---------------------------------------------------------------------------
 
 function getReviewerName(
-  userId: string | { name?: string; _id?: string; id?: string }
+  userId: string | { name?: string; _id?: string; id?: string },
 ): string {
   if (typeof userId === "string") return "User";
   return userId.name ?? "User";
@@ -165,7 +165,8 @@ export function ReviewSummaryCard({
             <StarDisplay rating={summary.averageRating} size={18} />
           </div>
           <span className="mt-1.5 text-sm text-slate-500">
-            {summary.reviewCount} {summary.reviewCount === 1 ? "review" : "reviews"}
+            {summary.reviewCount}{" "}
+            {summary.reviewCount === 1 ? "review" : "reviews"}
           </span>
         </div>
 
@@ -179,7 +180,9 @@ export function ReviewSummaryCard({
               <div key={star} className="flex items-center gap-2">
                 {/* Star label */}
                 <div className="flex items-center gap-0.5 w-10 flex-shrink-0 justify-end">
-                  <span className="text-xs text-slate-500 font-medium">{star}</span>
+                  <span className="text-xs text-slate-500 font-medium">
+                    {star}
+                  </span>
                   <Star
                     width={11}
                     height={11}

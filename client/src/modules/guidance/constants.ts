@@ -48,7 +48,12 @@ export const OBJECTIVES = [
     desc: "Build strength and stamina",
   },
   { value: "Compete", label: "Compete", icon: Trophy, desc: "Train to win" },
-  { value: "Elite", label: "Reach Next Level", icon: Diamond, desc: "Take performance to the highest level" },
+  {
+    value: "Elite",
+    label: "Reach Next Level",
+    icon: Diamond,
+    desc: "Take performance to the highest level",
+  },
 ] as const;
 
 export const FITNESS_LEVELS = [
@@ -123,16 +128,45 @@ export const initialForm: GuidanceFormState = {
 };
 
 export const INDIAN_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
-  "Delhi", "Jammu & Kashmir", "Chandigarh", "Puducherry",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Delhi",
+  "Jammu & Kashmir",
+  "Chandigarh",
+  "Puducherry",
 ].sort((a, b) => a.localeCompare(b));
 
 // Required fields that must be filled before generating
-export const REQUIRED_FIELDS: Array<{ key: keyof GuidanceFormState; label: string }> = [
+export const REQUIRED_FIELDS: Array<{
+  key: keyof GuidanceFormState;
+  label: string;
+}> = [
   { key: "child_age", label: "Child's age" },
   { key: "child_gender", label: "Gender" },
   { key: "primary_objective", label: "Primary goal" },
@@ -164,7 +198,8 @@ export function buildLevelPlanQuestion(
 
 export function getMissingFields(form: GuidanceFormState): string[] {
   const missing: string[] = [];
-  if (!form.child_age || form.child_age < 3 || form.child_age > 21) missing.push("Child's age (3–21)");
+  if (!form.child_age || form.child_age < 3 || form.child_age > 21)
+    missing.push("Child's age (3–21)");
   if (!form.child_gender) missing.push("Gender");
   if (!form.primary_objective) missing.push("Primary goal");
   if (!form.location) missing.push("State / Location");

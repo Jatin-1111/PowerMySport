@@ -39,7 +39,10 @@ export function ProfileCompletionRing({
 
   return (
     <div
-      className={cn("relative inline-flex shrink-0 items-center justify-center", className)}
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center",
+        className,
+      )}
       style={{ width: size, height: size }}
       title={title ?? `Profile ${clamped}% complete`}
     >
@@ -66,11 +69,12 @@ export function ProfileCompletionRing({
         />
       </svg>
       <div className="relative z-10 flex items-center justify-center">
-        {children ?? (showLabel && (
-          <span className="text-[10px] font-bold" style={{ color }}>
-            {clamped}%
-          </span>
-        ))}
+        {children ??
+          (showLabel && (
+            <span className="text-[10px] font-bold" style={{ color }}>
+              {clamped}%
+            </span>
+          ))}
       </div>
     </div>
   );

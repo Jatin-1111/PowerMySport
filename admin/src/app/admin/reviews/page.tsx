@@ -33,7 +33,9 @@ export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<ModerationReview[]>([]);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [targetTypeFilter, setTargetTypeFilter] = useState<"" | "VENUE" | "Coach">("");
+  const [targetTypeFilter, setTargetTypeFilter] = useState<
+    "" | "VENUE" | "Coach"
+  >("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -73,7 +75,8 @@ export default function AdminReviewsPage() {
   };
 
   const visibleReviews = reviews.filter((review) => {
-    if (targetTypeFilter && review.targetType !== targetTypeFilter) return false;
+    if (targetTypeFilter && review.targetType !== targetTypeFilter)
+      return false;
     const query = search.trim().toLowerCase();
     if (!query) return true;
     return (
@@ -88,13 +91,27 @@ export default function AdminReviewsPage() {
       key: "target",
       header: "Reviewed",
       render: (review) => (
-        <span className="font-medium text-slate-900">{getTargetLabel(review)}</span>
+        <span className="font-medium text-slate-900">
+          {getTargetLabel(review)}
+        </span>
       ),
     },
     { key: "reviewer", header: "Reviewer", render: getReviewerLabel },
-    { key: "rating", header: "Rating", render: (review) => `${review.rating}/5` },
-    { key: "reportCount", header: "Reports", render: (review) => review.reportCount },
-    { key: "status", header: "Status", render: (review) => review.moderationStatus },
+    {
+      key: "rating",
+      header: "Rating",
+      render: (review) => `${review.rating}/5`,
+    },
+    {
+      key: "reportCount",
+      header: "Reports",
+      render: (review) => review.reportCount,
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (review) => review.moderationStatus,
+    },
     {
       key: "review",
       header: "Review",

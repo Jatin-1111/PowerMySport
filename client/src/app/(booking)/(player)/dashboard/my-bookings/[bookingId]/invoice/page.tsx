@@ -339,13 +339,17 @@ export default function BookingInvoicePage() {
         </div>
       </Card>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @media print {
           body {
             background: #ffffff;
           }
         }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 }

@@ -104,7 +104,9 @@ communityGroupSchema.index({ inviteCode: 1 });
 
 const notifyGroupMembersUpdated = (doc: any) => {
   if (!doc || !doc._id) return;
-  emitCommunityGroupEvent(doc._id.toString(), "community:groupMembersUpdated", { groupId: doc._id.toString() });
+  emitCommunityGroupEvent(doc._id.toString(), "community:groupMembersUpdated", {
+    groupId: doc._id.toString(),
+  });
 };
 
 communityGroupSchema.post("save", function (doc) {

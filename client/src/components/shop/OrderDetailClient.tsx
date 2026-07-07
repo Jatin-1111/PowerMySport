@@ -204,7 +204,9 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
           <button
             onClick={handleDownloadInvoice}
             disabled={downloadingInvoice || !isPaid}
-            title={!isPaid ? "Invoice is available once payment is confirmed" : ""}
+            title={
+              !isPaid ? "Invoice is available once payment is confirmed" : ""
+            }
             className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="h-4 w-4" />{" "}

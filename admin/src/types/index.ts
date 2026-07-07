@@ -1,7 +1,14 @@
 // ============================================
 // USER & AUTH TYPES
 // ============================================
-export type UserRole = "Player" | "Parent" | "VenueLister" | "Coach" | "Academy" | "EXPERT" | "Admin";
+export type UserRole =
+  | "Player"
+  | "Parent"
+  | "VenueLister"
+  | "Coach"
+  | "Academy"
+  | "EXPERT"
+  | "Admin";
 
 // Admin role types
 export type AdminRole =
@@ -22,11 +29,7 @@ export interface RoleTemplate {
 
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
-  | "CONFIRMED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "NO_SHOW"
-  | "CANCELLED";
+  "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
 
 export type PaymentUserType = "VenueLister" | "Coach";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
@@ -112,11 +115,7 @@ export interface IOwnVenueDetails {
 }
 
 export type CoachVerificationStatus =
-  | "UNVERIFIED"
-  | "PENDING"
-  | "REVIEW"
-  | "VERIFIED"
-  | "REJECTED";
+  "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
 export interface CoachVerificationDocument {
   type:

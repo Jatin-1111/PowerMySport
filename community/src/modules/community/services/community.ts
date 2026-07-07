@@ -189,10 +189,7 @@ const BLOCKED_USERS_CACHE_KEY = "blocked-users";
 
 export const communityService = {
   async clearNotificationCache(): Promise<void> {
-    clearCacheByPrefixes([
-      "community-notifications",
-      "community-unread-count",
-    ]);
+    clearCacheByPrefixes(["community-notifications", "community-unread-count"]);
   },
 
   async ensureSession(): Promise<AuthBridgeSession> {
@@ -203,7 +200,7 @@ export const communityService = {
 
   async searchCommunityUsers(
     query: string,
-    filters?: { userType?: string; role?: string }
+    filters?: { userType?: string; role?: string },
   ): Promise<CommunityUserSearchResult[]> {
     const normalizedQuery = query.trim().toLowerCase();
     const cacheKey = `players:${normalizedQuery}:${filters?.userType || ""}:${filters?.role || ""}`;
@@ -222,7 +219,10 @@ export const communityService = {
     );
   },
 
-  async searchPlayers(query: string, filters?: { userType?: string; role?: string }): Promise<CommunityUserSearchResult[]> {
+  async searchPlayers(
+    query: string,
+    filters?: { userType?: string; role?: string },
+  ): Promise<CommunityUserSearchResult[]> {
     return this.searchCommunityUsers(query, filters);
   },
 
@@ -403,7 +403,7 @@ export const communityService = {
 
   async getMessages(
     conversationId: string,
-    page = 1
+    page = 1,
   ): Promise<{
     conversation: {
       id: string;

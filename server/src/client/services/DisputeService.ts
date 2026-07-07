@@ -11,10 +11,7 @@ import { sendDisputeStatusEmail } from "../../utils/email";
 export interface DisputeAnalysis {
   disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER";
   recommendedAction:
-    | "FULL_REFUND"
-    | "PARTIAL_REFUND"
-    | "NO_REFUND"
-    | "MANUAL_REVIEW";
+    "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND" | "MANUAL_REVIEW";
   refundPercentage: number;
   reasoning: string;
   confidence: "HIGH" | "MEDIUM" | "LOW";

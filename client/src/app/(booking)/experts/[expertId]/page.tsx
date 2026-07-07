@@ -226,7 +226,8 @@ export default function ExpertDetailPage() {
                         </span>
                         {expert.languages && expert.languages.length > 0 && (
                           <span className="inline-flex items-center gap-1">
-                            <Languages className="h-3.5 w-3.5" /> {expert.languages.join(", ")}
+                            <Languages className="h-3.5 w-3.5" />{" "}
+                            {expert.languages.join(", ")}
                           </span>
                         )}
                       </div>
@@ -272,7 +273,8 @@ export default function ExpertDetailPage() {
                   {expert.achievements && (
                     <div className="mt-4 rounded-xl bg-slate-50 p-4">
                       <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                        <Award className="h-4 w-4 text-power-orange" /> Achievements
+                        <Award className="h-4 w-4 text-power-orange" />{" "}
+                        Achievements
                       </p>
                       <p className="mt-1 whitespace-pre-line text-sm text-slate-600">
                         {expert.achievements}
@@ -291,7 +293,9 @@ export default function ExpertDetailPage() {
                     <Star className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">Reviews</h2>
+                    <h2 className="text-base font-bold text-slate-900">
+                      Reviews
+                    </h2>
                     <p className="text-xs text-slate-500">
                       {reviews.length > 0
                         ? `${reviews.length} review${reviews.length === 1 ? "" : "s"} from past sessions`
@@ -348,7 +352,8 @@ export default function ExpertDetailPage() {
                   </p>
                   {expert.sessionDurationMinutes && (
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
-                      <Timer className="h-3.5 w-3.5" /> {expert.sessionDurationMinutes} min
+                      <Timer className="h-3.5 w-3.5" />{" "}
+                      {expert.sessionDurationMinutes} min
                     </span>
                   )}
                 </div>
@@ -375,7 +380,9 @@ export default function ExpertDetailPage() {
                     </label>
                     <select
                       value={mode}
-                      onChange={(e) => setMode(e.target.value as ExpertSessionMode)}
+                      onChange={(e) =>
+                        setMode(e.target.value as ExpertSessionMode)
+                      }
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20"
                     >
                       <option value="ONLINE">Online</option>
@@ -386,7 +393,8 @@ export default function ExpertDetailPage() {
 
                 <div className="mt-4">
                   <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    <MessageSquareText className="h-3.5 w-3.5" /> Note to expert (optional)
+                    <MessageSquareText className="h-3.5 w-3.5" /> Note to expert
+                    (optional)
                   </label>
                   <textarea
                     rows={3}
@@ -405,10 +413,13 @@ export default function ExpertDetailPage() {
                   size="lg"
                   className="mt-5"
                 >
-                  {slot ? `Book — Pay ${formatInr(expert.sessionFee)}` : "Select a time to continue"}
+                  {slot
+                    ? `Book — Pay ${formatInr(expert.sessionFee)}`
+                    : "Select a time to continue"}
                 </Button>
                 <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate-400">
-                  <ShieldCheck className="h-3.5 w-3.5" /> Secure payment via PhonePe
+                  <ShieldCheck className="h-3.5 w-3.5" /> Secure payment via
+                  PhonePe
                 </p>
               </Card>
             </FadeIn>

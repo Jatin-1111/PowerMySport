@@ -33,7 +33,9 @@ function AdminUserSafetyPageContent() {
   const pathname = usePathname();
 
   // Local React State for status filter and page selection
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "SUSPENDED">("ALL");
+  const [statusFilter, setStatusFilter] = useState<
+    "ALL" | "ACTIVE" | "SUSPENDED"
+  >("ALL");
   const [page, setPage] = useState(1);
 
   const [users, setUsers] = useState<UserSafetyRecord[]>([]);
@@ -47,14 +49,20 @@ function AdminUserSafetyPageContent() {
   // Modal safety states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalUserId, setModalUserId] = useState<string | null>(null);
-  const [modalAction, setModalAction] = useState<"SUSPEND" | "REACTIVATE" | "DEACTIVATE" | null>(null);
+  const [modalAction, setModalAction] = useState<
+    "SUSPEND" | "REACTIVATE" | "DEACTIVATE" | null
+  >(null);
   const [modalReason, setModalReason] = useState("");
 
   // Restore states from URL query params on initial mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const statusParam = params.get("status") as "ALL" | "ACTIVE" | "SUSPENDED";
-    if (statusParam === "ALL" || statusParam === "ACTIVE" || statusParam === "SUSPENDED") {
+    if (
+      statusParam === "ALL" ||
+      statusParam === "ACTIVE" ||
+      statusParam === "SUSPENDED"
+    ) {
       setStatusFilter(statusParam);
     }
     const pageParam = Number(params.get("page"));
@@ -118,20 +126,27 @@ function AdminUserSafetyPageContent() {
   const updateSafety = async (
     userId: string,
     action: "SUSPEND" | "REACTIVATE" | "DEACTIVATE",
-    reason?: string
+    reason?: string,
   ) => {
     setBusyUserId(userId);
     try {
-      const response = await adminApi.updateUserSafety(userId, { action, reason });
+      const response = await adminApi.updateUserSafety(userId, {
+        action,
+        reason,
+      });
       if (response.success) {
         toast.success(`User ${action.toLowerCase()}d successfully.`);
         await loadUsers();
       } else {
-        toast.error(response.message || `Failed to ${action.toLowerCase()} user.`);
+        toast.error(
+          response.message || `Failed to ${action.toLowerCase()} user.`,
+        );
       }
     } catch (e) {
       console.error(e);
-      toast.error(`An error occurred while trying to ${action.toLowerCase()} user.`);
+      toast.error(
+        `An error occurred while trying to ${action.toLowerCase()} user.`,
+      );
     } finally {
       setBusyUserId(null);
     }
@@ -153,11 +168,14 @@ function AdminUserSafetyPageContent() {
 
   const handleModalConfirm = () => {
     if (!modalUserId || !modalAction) return;
-    if ((modalAction === "SUSPEND" || modalAction === "DEACTIVATE") && !modalReason.trim()) {
+    if (
+      (modalAction === "SUSPEND" || modalAction === "DEACTIVATE") &&
+      !modalReason.trim()
+    ) {
       toast.error("Reason is required.");
       return;
     }
-    
+
     updateSafety(modalUserId, modalAction, modalReason.trim());
     setModalOpen(false);
     setModalUserId(null);
@@ -271,10 +289,17 @@ function AdminUserSafetyPageContent() {
             onChange: setSearch,
             placeholder: "Search by name or email...",
           }}
-          pagination={{ page, totalPages, onPageChange: handlePageChange, total }}
+          pagination={{
+            page,
+            totalPages,
+            onPageChange: handlePageChange,
+            total,
+          }}
           toolbarExtra={
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-slate-700">Filter:</label>
+              <label className="text-sm font-medium text-slate-700">
+                Filter:
+              </label>
               <select
                 value={statusFilter}
                 onChange={(event) =>
@@ -302,10 +327,15 @@ function AdminUserSafetyPageContent() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-slate-900 mb-2">
-              {modalAction === "SUSPEND" ? "Suspend Account" : "Deactivate Account"}
+              {modalAction === "SUSPEND"
+                ? "Suspend Account"
+                : "Deactivate Account"}
             </h3>
             <p className="text-sm text-slate-500 mb-4">
-              Please enter the reason for {modalAction === "SUSPEND" ? "suspending" : "deactivating"} this user account. This reason is required and will be saved in the database.
+              Please enter the reason for{" "}
+              {modalAction === "SUSPEND" ? "suspending" : "deactivating"} this
+              user account. This reason is required and will be saved in the
+              database.
             </p>
             <div className="space-y-4">
               <div>
@@ -332,7 +362,8 @@ function AdminUserSafetyPageContent() {
                   disabled={!modalReason.trim()}
                   className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Confirm {modalAction === "SUSPEND" ? "Suspension" : "Deactivation"}
+                  Confirm{" "}
+                  {modalAction === "SUSPEND" ? "Suspension" : "Deactivation"}
                 </button>
               </div>
             </div>

@@ -42,7 +42,10 @@ export function Timeline({ data, className }: TimelineProps) {
     <div ref={containerRef} className={cn("relative w-full", className)}>
       <div ref={ref} className="relative mx-auto max-w-6xl">
         {data.map((item, index) => (
-          <div key={index} className="flex justify-start gap-6 pt-10 first:pt-0 md:gap-10 md:pt-24">
+          <div
+            key={index}
+            className="flex justify-start gap-6 pt-10 first:pt-0 md:gap-10 md:pt-24"
+          >
             {/* Sticky rail: dot + step title */}
             <div className="sticky top-32 z-30 flex max-w-[6rem] shrink-0 flex-col items-center self-start md:max-w-xs md:flex-row md:items-start">
               <div className="absolute left-3 flex h-9 w-9 items-center justify-center rounded-full border border-orange-200 bg-white shadow-sm md:left-0">

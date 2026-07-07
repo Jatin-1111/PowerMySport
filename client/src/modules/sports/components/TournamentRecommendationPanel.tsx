@@ -25,34 +25,74 @@ interface TournamentRecommendationPanelProps {
 }
 
 const GOALS = [
-  { level: 2, label: "District Champion", short: "District", color: "from-blue-500 to-indigo-500", bg: "bg-blue-50 border-blue-200 text-blue-700" },
-  { level: 3, label: "State Representative", short: "State", color: "from-violet-500 to-purple-600", bg: "bg-violet-50 border-violet-200 text-violet-700" },
-  { level: 4, label: "National Athlete", short: "National", color: "from-orange-500 to-amber-500", bg: "bg-orange-50 border-orange-200 text-orange-700" },
-  { level: 5, label: "International / Olympic", short: "Olympic", color: "from-rose-500 to-pink-600", bg: "bg-rose-50 border-rose-200 text-rose-700" },
+  {
+    level: 2,
+    label: "District Champion",
+    short: "District",
+    color: "from-blue-500 to-indigo-500",
+    bg: "bg-blue-50 border-blue-200 text-blue-700",
+  },
+  {
+    level: 3,
+    label: "State Representative",
+    short: "State",
+    color: "from-violet-500 to-purple-600",
+    bg: "bg-violet-50 border-violet-200 text-violet-700",
+  },
+  {
+    level: 4,
+    label: "National Athlete",
+    short: "National",
+    color: "from-orange-500 to-amber-500",
+    bg: "bg-orange-50 border-orange-200 text-orange-700",
+  },
+  {
+    level: 5,
+    label: "International / Olympic",
+    short: "Olympic",
+    color: "from-rose-500 to-pink-600",
+    bg: "bg-rose-50 border-rose-200 text-rose-700",
+  },
 ];
 
 const ASPIRATION_EXAMPLES: Record<string, string[]> = {
-  "Badminton": ["Saina Nehwal", "PV Sindhu", "Lakshya Sen"],
-  "Cricket": ["Virat Kohli", "Smriti Mandhana", "Yashasvi Jaiswal"],
-  "Tennis": ["Sania Mirza", "Leander Paes", "Sumit Nagal"],
-  "Hockey": ["PR Sreejesh", "Rani Rampal"],
-  "Wrestling": ["Vinesh Phogat", "Bajrang Punia"],
-  "Boxing": ["MC Mary Kom", "Neeraj Chopra"],
-  "Athletics": ["Neeraj Chopra", "Hima Das"],
+  Badminton: ["Saina Nehwal", "PV Sindhu", "Lakshya Sen"],
+  Cricket: ["Virat Kohli", "Smriti Mandhana", "Yashasvi Jaiswal"],
+  Tennis: ["Sania Mirza", "Leander Paes", "Sumit Nagal"],
+  Hockey: ["PR Sreejesh", "Rani Rampal"],
+  Wrestling: ["Vinesh Phogat", "Bajrang Punia"],
+  Boxing: ["MC Mary Kom", "Neeraj Chopra"],
+  Athletics: ["Neeraj Chopra", "Hima Das"],
 };
 
 function normalizeTournamentLevel(levelStr: string): number {
   const l = (levelStr || "").toLowerCase();
-  if (l.includes("international") || l.includes("world") || l.includes("asian") || l.includes("olympic")) return 5;
+  if (
+    l.includes("international") ||
+    l.includes("world") ||
+    l.includes("asian") ||
+    l.includes("olympic")
+  )
+    return 5;
   if (l.includes("national") || l.includes("senior")) return 4;
   if (l.includes("state")) return 3;
-  if (l.includes("district") || l.includes("zonal") || l.includes("sub-junior") || l.includes("junior")) return 2;
+  if (
+    l.includes("district") ||
+    l.includes("zonal") ||
+    l.includes("sub-junior") ||
+    l.includes("junior")
+  )
+    return 2;
   return 1;
 }
 
 type Priority = "immediate" | "next" | "goal" | "aspire";
 
-function getPriority(tLevel: number, currentLevel: number, goalLevel: number): Priority | null {
+function getPriority(
+  tLevel: number,
+  currentLevel: number,
+  goalLevel: number,
+): Priority | null {
   if (currentLevel === 0) {
     // No progress set — prioritise everything relative to the chosen goal.
     // Without a goal, only surface beginner-friendly tournaments.
@@ -70,15 +110,44 @@ function getPriority(tLevel: number, currentLevel: number, goalLevel: number): P
   return null;
 }
 
-const PRIORITY_META: Record<Priority, { label: string; icon: React.ReactNode; style: string; order: number }> = {
-  immediate: { label: "Play Now", icon: <Zap className="h-3 w-3" />, style: "bg-emerald-100 text-emerald-700 border-emerald-200", order: 1 },
-  next: { label: "Next Step", icon: <ChevronRight className="h-3 w-3" />, style: "bg-blue-100 text-blue-700 border-blue-200", order: 2 },
-  goal: { label: "Target Goal", icon: <Target className="h-3 w-3" />, style: "bg-violet-100 text-violet-700 border-violet-200", order: 3 },
-  aspire: { label: "Aspirational", icon: <Award className="h-3 w-3" />, style: "bg-amber-100 text-amber-700 border-amber-200", order: 4 },
+const PRIORITY_META: Record<
+  Priority,
+  { label: string; icon: React.ReactNode; style: string; order: number }
+> = {
+  immediate: {
+    label: "Play Now",
+    icon: <Zap className="h-3 w-3" />,
+    style: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    order: 1,
+  },
+  next: {
+    label: "Next Step",
+    icon: <ChevronRight className="h-3 w-3" />,
+    style: "bg-blue-100 text-blue-700 border-blue-200",
+    order: 2,
+  },
+  goal: {
+    label: "Target Goal",
+    icon: <Target className="h-3 w-3" />,
+    style: "bg-violet-100 text-violet-700 border-violet-200",
+    order: 3,
+  },
+  aspire: {
+    label: "Aspirational",
+    icon: <Award className="h-3 w-3" />,
+    style: "bg-amber-100 text-amber-700 border-amber-200",
+    order: 4,
+  },
 };
 
-function getReasonText(tournament: any, priority: Priority, currentLevel: number, goalLevel: number, sportName: string): string {
-  const goal = GOALS.find(g => g.level === goalLevel);
+function getReasonText(
+  tournament: any,
+  priority: Priority,
+  currentLevel: number,
+  goalLevel: number,
+  sportName: string,
+): string {
+  const goal = GOALS.find((g) => g.level === goalLevel);
   const sport = sportName || "your sport";
 
   switch (priority) {
@@ -110,7 +179,8 @@ export function TournamentRecommendationPanel({
       const tLevel = normalizeTournamentLevel(t.level || "");
       // When no goal is set and no current level, default effectiveGoal to 0 so
       // getPriority shows nothing until the user picks a goal.
-      const effectiveGoal = goalLevel || (currentLevel > 0 ? currentLevel + 2 : 0);
+      const effectiveGoal =
+        goalLevel || (currentLevel > 0 ? currentLevel + 2 : 0);
       const priority = getPriority(tLevel, currentLevel, effectiveGoal);
       return priority ? { tournament: t, priority, tLevel } : null;
     })
@@ -124,7 +194,7 @@ export function TournamentRecommendationPanel({
 
   const displayed = showAll ? recommended : recommended.slice(0, 3);
 
-  const activeGoal = GOALS.find(g => g.level === goalLevel);
+  const activeGoal = GOALS.find((g) => g.level === goalLevel);
 
   if (tournaments.length === 0) return null;
 
@@ -137,7 +207,7 @@ export function TournamentRecommendationPanel({
       {/* Panel header */}
       <button
         type="button"
-        onClick={() => setIsExpanded(o => !o)}
+        onClick={() => setIsExpanded((o) => !o)}
         className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-slate-50/80 transition"
       >
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-power-orange to-amber-400 text-white shadow">
@@ -153,7 +223,11 @@ export function TournamentRecommendationPanel({
               : "Which tournaments should your child play?"}
           </p>
         </div>
-        <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0 text-slate-400">
+        <motion.div
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="shrink-0 text-slate-400"
+        >
           <ChevronDown className="h-4 w-4" />
         </motion.div>
       </button>
@@ -164,7 +238,10 @@ export function TournamentRecommendationPanel({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.15 } }}
+            transition={{
+              height: { type: "spring", stiffness: 300, damping: 30 },
+              opacity: { duration: 0.15 },
+            }}
             className="overflow-hidden"
           >
             <div className="px-5 pb-5 space-y-4 border-t border-slate-100 pt-4">
@@ -172,8 +249,11 @@ export function TournamentRecommendationPanel({
               {examples.length > 0 && (
                 <p className="text-xs text-slate-500">
                   Want your child to reach the level of{" "}
-                  <span className="font-semibold text-slate-700">{examples.join(", ")}</span>?
-                  {" "}Set a goal below and we'll show you the exact tournaments to play.
+                  <span className="font-semibold text-slate-700">
+                    {examples.join(", ")}
+                  </span>
+                  ? Set a goal below and we'll show you the exact tournaments to
+                  play.
                 </p>
               )}
 
@@ -218,59 +298,79 @@ export function TournamentRecommendationPanel({
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">
                     Recommended Tournaments
-                    {goalLevel && currentLevel > 0 ? ` — Your child is at Level ${currentLevel}, aiming for ${activeGoal?.label}` : ""}
+                    {goalLevel && currentLevel > 0
+                      ? ` — Your child is at Level ${currentLevel}, aiming for ${activeGoal?.label}`
+                      : ""}
                   </p>
 
                   <div className="space-y-2.5">
                     <AnimatePresence>
-                      {displayed.map(({ tournament: t, priority, tLevel }, i) => {
-                        const meta = PRIORITY_META[priority];
-                        const reason = getReasonText(t, priority, currentLevel, goalLevel || 3, sportName);
-                        return (
-                          <motion.button
-                            key={t.name || i}
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.04 }}
-                            type="button"
-                            onClick={() => onViewTournament(t)}
-                            className="w-full flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left hover:border-power-orange hover:shadow-sm transition-all group"
-                          >
-                            {/* Priority badge */}
-                            <div className="flex flex-col items-center gap-1 shrink-0 pt-0.5">
-                              <span className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold ${meta.style}`}>
-                                {meta.icon}
-                                {meta.label}
-                              </span>
-                              <span className="text-[9px] font-bold text-slate-300">#{i + 1}</span>
-                            </div>
+                      {displayed.map(
+                        ({ tournament: t, priority, tLevel }, i) => {
+                          const meta = PRIORITY_META[priority];
+                          const reason = getReasonText(
+                            t,
+                            priority,
+                            currentLevel,
+                            goalLevel || 3,
+                            sportName,
+                          );
+                          return (
+                            <motion.button
+                              key={t.name || i}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: i * 0.04 }}
+                              type="button"
+                              onClick={() => onViewTournament(t)}
+                              className="w-full flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left hover:border-power-orange hover:shadow-sm transition-all group"
+                            >
+                              {/* Priority badge */}
+                              <div className="flex flex-col items-center gap-1 shrink-0 pt-0.5">
+                                <span
+                                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold ${meta.style}`}
+                                >
+                                  {meta.icon}
+                                  {meta.label}
+                                </span>
+                                <span className="text-[9px] font-bold text-slate-300">
+                                  #{i + 1}
+                                </span>
+                              </div>
 
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <h4 className="font-bold text-slate-900 text-sm break-words group-hover:text-power-orange transition-colors">
-                                  {t.name}
-                                </h4>
-                                <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange shrink-0 mt-0.5 transition-colors" />
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 rounded-md px-1.5 py-0.5">{t.level}</span>
-                                {t.ageGroup && (
-                                  <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                                    <Users className="h-3 w-3" />{t.ageGroup}
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <h4 className="font-bold text-slate-900 text-sm break-words group-hover:text-power-orange transition-colors">
+                                    {t.name}
+                                  </h4>
+                                  <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange shrink-0 mt-0.5 transition-colors" />
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 rounded-md px-1.5 py-0.5">
+                                    {t.level}
                                   </span>
-                                )}
-                                {t.city && (
-                                  <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                                    <MapPin className="h-3 w-3" />{t.city}
-                                  </span>
-                                )}
+                                  {t.ageGroup && (
+                                    <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                                      <Users className="h-3 w-3" />
+                                      {t.ageGroup}
+                                    </span>
+                                  )}
+                                  {t.city && (
+                                    <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                                      <MapPin className="h-3 w-3" />
+                                      {t.city}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-500 leading-relaxed">
+                                  {reason}
+                                </p>
                               </div>
-                              <p className="text-xs text-slate-500 leading-relaxed">{reason}</p>
-                            </div>
-                          </motion.button>
-                        );
-                      })}
+                            </motion.button>
+                          );
+                        },
+                      )}
                     </AnimatePresence>
                   </div>
 
@@ -279,10 +379,12 @@ export function TournamentRecommendationPanel({
                     {recommended.length > 3 && (
                       <button
                         type="button"
-                        onClick={() => setShowAll(o => !o)}
+                        onClick={() => setShowAll((o) => !o)}
                         className="text-xs font-semibold text-slate-500 hover:text-slate-800 underline underline-offset-2 transition"
                       >
-                        {showAll ? "Show top 3 only" : `Show all ${recommended.length} recommendations`}
+                        {showAll
+                          ? "Show top 3 only"
+                          : `Show all ${recommended.length} recommendations`}
                       </button>
                     )}
                     <span className="flex items-center gap-1.5 text-xs text-slate-400 ml-auto">

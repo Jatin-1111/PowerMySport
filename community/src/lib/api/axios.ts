@@ -32,8 +32,7 @@ axiosInstance.interceptors.response.use(
 
     const errorMessage =
       ((error.response?.data as { message?: string })?.message as
-        | string
-        | undefined) || "";
+        string | undefined) || "";
 
     const isStaleProfileSession =
       error.response?.status === 404 &&

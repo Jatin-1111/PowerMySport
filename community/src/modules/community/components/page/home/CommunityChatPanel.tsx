@@ -75,7 +75,9 @@ export default function CommunityChatPanel({ page }: Props) {
 
   const previousScrollHeightRef = useRef<number>(0);
   const previousScrollTopRef = useRef<number>(0);
-  const typingEmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingEmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [textareaRows, setTextareaRows] = useState(1);
 
@@ -90,24 +92,33 @@ export default function CommunityChatPanel({ page }: Props) {
     if (isLoadingMoreMessages) {
       const currentHeight = container.scrollHeight;
       if (currentHeight > previousScrollHeightRef.current) {
-        const heightDifference = currentHeight - previousScrollHeightRef.current;
+        const heightDifference =
+          currentHeight - previousScrollHeightRef.current;
         container.scrollTop = previousScrollTopRef.current + heightDifference;
       }
       return;
     }
 
-    const messagesMatchConversation = messages.length === 0 || messages[0].conversationId === selectedConversation?.id;
+    const messagesMatchConversation =
+      messages.length === 0 ||
+      messages[0].conversationId === selectedConversation?.id;
     if (!messagesMatchConversation) return;
 
-    const isNewConversation = currentConversationIdRef.current !== selectedConversation?.id;
-    const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+    const isNewConversation =
+      currentConversationIdRef.current !== selectedConversation?.id;
+    const lastMessageId =
+      messages.length > 0 ? messages[messages.length - 1].id : null;
     const isNewMessage = lastMessageId !== lastMessageIdRef.current;
 
     // Only evaluate auto-scrolling if this is a newly opened chat OR a new message just arrived
     if (isNewConversation || isNewMessage) {
       // If user is within 250px of the bottom, we consider them "at the bottom"
-      const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 250;
-      const isMyMessage = messages.length > 0 && messages[messages.length - 1].senderId === profile?.userId;
+      const isAtBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight <
+        250;
+      const isMyMessage =
+        messages.length > 0 &&
+        messages[messages.length - 1].senderId === profile?.userId;
 
       // Auto-scroll if it's a new chat, or they are already at the bottom, or they just sent a message
       if (isNewConversation || isAtBottom || isMyMessage) {
@@ -117,23 +128,35 @@ export default function CommunityChatPanel({ page }: Props) {
       currentConversationIdRef.current = selectedConversation?.id || null;
       lastMessageIdRef.current = lastMessageId;
     }
-  }, [messages, isLoadingMoreMessages, selectedConversation?.id, profile?.userId]);
+  }, [
+    messages,
+    isLoadingMoreMessages,
+    selectedConversation?.id,
+    profile?.userId,
+  ]);
 
   const handleScroll = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
     previousScrollHeightRef.current = container.scrollHeight;
     previousScrollTopRef.current = container.scrollTop;
-    if (container.scrollTop < 100 && hasMoreMessages && !isLoadingMoreMessages) {
+    if (
+      container.scrollTop < 100 &&
+      hasMoreMessages &&
+      !isLoadingMoreMessages
+    ) {
       void loadMoreMessages();
     }
   };
 
   const handleSend = () => {
-    if (typingEmitTimeoutRef.current) clearTimeout(typingEmitTimeoutRef.current);
+    if (typingEmitTimeoutRef.current)
+      clearTimeout(typingEmitTimeoutRef.current);
     const socket = getCommunitySocket();
     if (selectedConversation) {
-      socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+      socket.emit("community:typingStop", {
+        conversationId: selectedConversation.id,
+      });
     }
     if (pendingImageFile) {
       void handleSendImageMessage(pendingImageFile, newMessage.trim());
@@ -158,20 +181,27 @@ export default function CommunityChatPanel({ page }: Props) {
       if (!selectedConversation) return;
       const socket = getCommunitySocket();
       if (val.trim().length > 0) {
-        socket.emit("community:typingStart", { conversationId: selectedConversation.id });
-        if (typingEmitTimeoutRef.current) clearTimeout(typingEmitTimeoutRef.current);
+        socket.emit("community:typingStart", {
+          conversationId: selectedConversation.id,
+        });
+        if (typingEmitTimeoutRef.current)
+          clearTimeout(typingEmitTimeoutRef.current);
         typingEmitTimeoutRef.current = setTimeout(() => {
-          socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+          socket.emit("community:typingStop", {
+            conversationId: selectedConversation.id,
+          });
         }, 2000);
       } else {
-        socket.emit("community:typingStop", { conversationId: selectedConversation.id });
+        socket.emit("community:typingStop", {
+          conversationId: selectedConversation.id,
+        });
       }
     },
     [setNewMessage, selectedConversation],
   );
 
   const currentlyTypingUsers = selectedConversation
-    ? (typingUsers[selectedConversation.id] || [])
+    ? typingUsers[selectedConversation.id] || []
     : [];
   const isSomeoneTyping = currentlyTypingUsers.length > 0;
   const isGroup = selectedConversation?.conversationType === "GROUP";
@@ -180,13 +210,15 @@ export default function CommunityChatPanel({ page }: Props) {
   // Empty state — no conversation selected
   if (!selectedConversation) {
     return (
-      <div className={`h-full min-h-0 min-w-0 flex-col overflow-hidden ${workspaceView === "CHAT" ? "flex" : "hidden md:flex"}`}>
-        <CommunityChatEmptyState 
+      <div
+        className={`h-full min-h-0 min-w-0 flex-col overflow-hidden ${workspaceView === "CHAT" ? "flex" : "hidden md:flex"}`}
+      >
+        <CommunityChatEmptyState
           onBack={() => {
             setIsConversationSidebarOpen(true);
             setSidebarMode("INBOX");
             setWorkspaceView("DIRECTORY");
-          }} 
+          }}
         />
       </div>
     );
@@ -242,9 +274,15 @@ export default function CommunityChatPanel({ page }: Props) {
               <button
                 onClick={() => setShowGroupMembersPanel(!showGroupMembersPanel)}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition"
-                aria-label={showGroupMembersPanel ? "Hide members" : "Show members"}
+                aria-label={
+                  showGroupMembersPanel ? "Hide members" : "Show members"
+                }
               >
-                {showGroupMembersPanel ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+                {showGroupMembersPanel ? (
+                  <PanelRightClose size={20} />
+                ) : (
+                  <PanelRightOpen size={20} />
+                )}
               </button>
             )}
           </div>
@@ -263,7 +301,9 @@ export default function CommunityChatPanel({ page }: Props) {
                 {selectedConversationNeedsMyApproval ? (
                   <>
                     <p className="font-600 text-orange-900">Message request</p>
-                    <p className="mt-0.5 text-[13px] text-orange-800/80">Do you want to accept this conversation request?</p>
+                    <p className="mt-0.5 text-[13px] text-orange-800/80">
+                      Do you want to accept this conversation request?
+                    </p>
                     <div className="mt-3 flex gap-2">
                       <button
                         onClick={handleAcceptRequest}
@@ -281,7 +321,8 @@ export default function CommunityChatPanel({ page }: Props) {
                   </>
                 ) : (
                   <p className="text-[13px] font-medium text-orange-800/80">
-                    Request sent. You can still message while waiting for a reply.
+                    Request sent. You can still message while waiting for a
+                    reply.
                   </p>
                 )}
               </div>
@@ -370,9 +411,18 @@ export default function CommunityChatPanel({ page }: Props) {
             >
               <div className="inline-flex items-center gap-2 rounded-[20px] rounded-bl-[6px] border border-slate-200/60 bg-white/90 backdrop-blur-sm px-4 py-3 shadow-sm">
                 <div className="flex gap-1.5 items-center">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
+                  <span
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             </motion.div>
@@ -485,7 +535,11 @@ export default function CommunityChatPanel({ page }: Props) {
           {/* Attach image button */}
           <button
             type="button"
-            disabled={!canSendSelectedConversationMessage || isSending || isUploadingImage}
+            disabled={
+              !canSendSelectedConversationMessage ||
+              isSending ||
+              isUploadingImage
+            }
             onClick={() => imageInputRef.current?.click()}
             aria-label="Attach image"
             className="mb-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-power-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 sm:h-11 sm:w-11"
@@ -506,20 +560,24 @@ export default function CommunityChatPanel({ page }: Props) {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if (canSendSelectedConversationMessage && hasContent) handleSend();
+                  if (canSendSelectedConversationMessage && hasContent)
+                    handleSend();
                 }
               }}
               placeholder={
                 !selectedConversation
                   ? "Select a conversation"
                   : pendingImageFile
-                  ? "Add a caption…"
-                  : "Message…"
+                    ? "Add a caption…"
+                    : "Message…"
               }
               disabled={!canSendSelectedConversationMessage || isUploadingImage}
               rows={textareaRows}
               className="w-full resize-none rounded-[24px] border border-slate-200/80 bg-slate-100/50 px-4 py-2.5 text-[15px] leading-relaxed focus:border-power-orange/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10 disabled:cursor-not-allowed disabled:opacity-60 transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] sm:py-3"
-              style={{ maxHeight: "9rem", overflowY: textareaRows >= 5 ? "auto" : "hidden" }}
+              style={{
+                maxHeight: "9rem",
+                overflowY: textareaRows >= 5 ? "auto" : "hidden",
+              }}
             />
           </div>
 
@@ -546,7 +604,14 @@ export default function CommunityChatPanel({ page }: Props) {
 
         {/* Keyboard hint */}
         <p className="mt-2 hidden text-center text-[12px] font-medium text-slate-400 sm:block">
-          <kbd className="font-sans rounded bg-slate-100 px-1 py-0.5 text-slate-500 border border-slate-200">Enter</kbd> to send · <kbd className="font-sans rounded bg-slate-100 px-1 py-0.5 text-slate-500 border border-slate-200">Shift+Enter</kbd> for new line
+          <kbd className="font-sans rounded bg-slate-100 px-1 py-0.5 text-slate-500 border border-slate-200">
+            Enter
+          </kbd>{" "}
+          to send ·{" "}
+          <kbd className="font-sans rounded bg-slate-100 px-1 py-0.5 text-slate-500 border border-slate-200">
+            Shift+Enter
+          </kbd>{" "}
+          for new line
         </p>
       </div>
     </motion.section>

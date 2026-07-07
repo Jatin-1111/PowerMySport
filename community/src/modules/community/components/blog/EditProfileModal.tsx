@@ -29,7 +29,9 @@ export default function EditProfileModal({
 }: EditProfileModalProps) {
   const [username, setUsername] = useState(profile.username);
   const [bio, setBio] = useState(profile.bio);
-  const [socials, setSocials] = useState<SocialLinks>(profile.socialLinks || {});
+  const [socials, setSocials] = useState<SocialLinks>(
+    profile.socialLinks || {},
+  );
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -46,7 +48,9 @@ export default function EditProfileModal({
 
   const save = async () => {
     if (!/^[a-z0-9_]{3,30}$/.test(username.trim().toLowerCase())) {
-      toast.error("Username must be 3–30 chars: letters, numbers, underscores.");
+      toast.error(
+        "Username must be 3–30 chars: letters, numbers, underscores.",
+      );
       return;
     }
     setSaving(true);
@@ -209,7 +213,11 @@ export default function EditProfileModal({
                   disabled={saving}
                   className="inline-flex min-w-[120px] items-center justify-center gap-2 rounded-xl bg-power-orange px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-power-orange/20 transition hover:bg-[#d96610] disabled:opacity-60"
                 >
-                  {saving ? <Loader2 size={16} className="animate-spin" /> : "Save changes"}
+                  {saving ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "Save changes"
+                  )}
                 </button>
               </div>
             </div>

@@ -3,10 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export type ReminderType = "BOOKING_REMINDER" | "PATHWAY_DOCUMENT_REMINDER";
 export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS";
 export type ScheduledNotificationStatus =
-  | "PENDING"
-  | "SENT"
-  | "FAILED"
-  | "CANCELLED";
+  "PENDING" | "SENT" | "FAILED" | "CANCELLED";
 
 export interface ScheduledNotificationDocument extends Document {
   userId: mongoose.Types.ObjectId;

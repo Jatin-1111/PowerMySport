@@ -1,10 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export type SupportTicketStatus =
-  | "OPEN"
-  | "IN_PROGRESS"
-  | "RESOLVED"
-  | "CLOSED";
+  "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 
 export type SupportTicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -14,11 +11,7 @@ export interface SupportTicketDocument extends Document {
   requesterEmail?: string;
   requesterPhone?: string;
   requesterType?:
-    | "player"
-    | "venue_owner"
-    | "coach"
-    | "academy_owner"
-    | "other";
+    "player" | "venue_owner" | "coach" | "academy_owner" | "other";
   subject: string;
   description: string;
   category: "BOOKING" | "PAYMENT" | "ACCOUNT" | "TECHNICAL" | "OTHER";

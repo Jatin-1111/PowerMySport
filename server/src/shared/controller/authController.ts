@@ -434,8 +434,14 @@ export const googleAuth = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { credential, role, userType, action, acceptedTerms, acceptedPrivacy } =
-      req.body;
+    const {
+      credential,
+      role,
+      userType,
+      action,
+      acceptedTerms,
+      acceptedPrivacy,
+    } = req.body;
 
     // Verify the Google ID token server-side. Identity (googleId/email/name) is
     // derived ONLY from the verified token — never from client-supplied fields.

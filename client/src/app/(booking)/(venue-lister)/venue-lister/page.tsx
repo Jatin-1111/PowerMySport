@@ -118,132 +118,144 @@ export default function VenueListerDashboard() {
       {/* Stats Grid */}
       <StaggerContainer className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StaggerItem className="h-full">
-        <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Venues</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">
-            {stats.totalVenues}
-          </p>
-        </Card>
+          <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+              Total Venues
+            </p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">
+              {stats.totalVenues}
+            </p>
+          </Card>
         </StaggerItem>
 
         <StaggerItem className="h-full">
-        <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Bookings</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white">
-            {stats.totalBookings}
-          </p>
-        </Card>
+          <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+              Total Bookings
+            </p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">
+              {stats.totalBookings}
+            </p>
+          </Card>
         </StaggerItem>
 
         <StaggerItem className="h-full">
-        <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Earnings</p>
-          <p className="text-xl font-bold text-power-orange sm:text-2xl">
-            {formatCurrency(stats.totalEarnings)}
-          </p>
-        </Card>
+          <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+              Total Earnings
+            </p>
+            <p className="text-xl font-bold text-power-orange sm:text-2xl">
+              {formatCurrency(stats.totalEarnings)}
+            </p>
+          </Card>
         </StaggerItem>
 
         <StaggerItem className="h-full">
-        <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Pending Bookings</p>
-          <p className="text-xl font-bold text-yellow-600 sm:text-2xl">
-            {stats.pendingBookings}
-          </p>
-        </Card>
+          <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+              Pending Bookings
+            </p>
+            <p className="text-xl font-bold text-yellow-600 sm:text-2xl">
+              {stats.pendingBookings}
+            </p>
+          </Card>
         </StaggerItem>
       </StaggerContainer>
 
       <SlideUp delay={0.2} yOffset={20}>
-      {primaryVenue && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Your First Venue</h2>
-          <Card className="glass-panel premium-shadow p-0 overflow-hidden border-0">
-            {primaryVenue.coverPhotoUrl ||
-            (primaryVenue.images && primaryVenue.images.length > 0) ? (
-              <img
-                src={primaryVenue.coverPhotoUrl || primaryVenue.images[0]}
-                alt={primaryVenue.name}
-                className="h-40 w-full object-cover"
-              />
-            ) : null}
-            <div className="p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    {primaryVenue.name}
-                  </h3>
-                  <p className="text-sm text-slate-600 mt-1 flex items-center gap-2">
-                    <MapPin size={16} className="text-power-orange" />
-                    {primaryVenue.address || "Location on file"}
-                  </p>
+        {primaryVenue && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              Your First Venue
+            </h2>
+            <Card className="glass-panel premium-shadow p-0 overflow-hidden border-0">
+              {primaryVenue.coverPhotoUrl ||
+              (primaryVenue.images && primaryVenue.images.length > 0) ? (
+                <img
+                  src={primaryVenue.coverPhotoUrl || primaryVenue.images[0]}
+                  alt={primaryVenue.name}
+                  className="h-40 w-full object-cover"
+                />
+              ) : null}
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {primaryVenue.name}
+                    </h3>
+                    <p className="text-sm text-slate-600 mt-1 flex items-center gap-2">
+                      <MapPin size={16} className="text-power-orange" />
+                      {primaryVenue.address || "Location on file"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs uppercase text-slate-500">
+                      Starting at
+                    </p>
+                    <p className="text-lg font-bold text-power-orange">
+                      {formatCurrency(getDisplayPrice(primaryVenue))}/hr
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs uppercase text-slate-500">
-                    Starting at
-                  </p>
-                  <p className="text-lg font-bold text-power-orange">
-                    {formatCurrency(getDisplayPrice(primaryVenue))}/hr
-                  </p>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {primaryVenue.sports.map((sport) => (
+                    <span
+                      key={sport}
+                      className="text-xs bg-power-orange/10 text-power-orange px-2 py-1 rounded-full"
+                    >
+                      {sport}
+                    </span>
+                  ))}
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {primaryVenue.sports.map((sport) => (
-                  <span
-                    key={sport}
-                    className="text-xs bg-power-orange/10 text-power-orange px-2 py-1 rounded-full"
+                <div className="mt-4">
+                  <Link
+                    href="/venue-lister/inventory"
+                    className="inline-flex items-center gap-2 text-sm text-power-orange font-semibold hover:text-orange-600"
                   >
-                    {sport}
-                  </span>
-                ))}
+                    Manage this venue
+                    <ArrowRight size={16} />
+                  </Link>
+                </div>
               </div>
-              <div className="mt-4">
-                <Link
-                  href="/venue-lister/inventory"
-                  className="inline-flex items-center gap-2 text-sm text-power-orange font-semibold hover:text-orange-600"
-                >
-                  Manage this venue
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
+            </Card>
+          </div>
+        )}
       </SlideUp>
 
       {/* Quick Actions */}
       {/* Quick Actions */}
       <SlideUp delay={0.3} yOffset={20}>
-      <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h2>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Link
-          href="/venue-lister/inventory"
-          className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-lg hover:bg-slate-800 hover:shadow-lg transition-all group"
-        >
-          <div>
-            <h3 className="text-lg font-bold mb-1">Manage Inventory</h3>
-            <p className="text-slate-300 text-sm">Add or edit your venues</p>
-          </div>
-          <ArrowRight
-            size={24}
-            className="group-hover:translate-x-2 transition-transform"
-          />
-        </Link>
-        <Link
-          href="/venue-lister/vendor-bookings"
-          className="flex items-center justify-between p-6 bg-power-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-lg transition-all group"
-        >
-          <div>
-            <h3 className="text-lg font-bold mb-1">View Bookings</h3>
-            <p className="text-orange-100 text-sm">Check upcoming sessions</p>
-          </div>
-          <ArrowRight
-            size={24}
-            className="group-hover:translate-x-2 transition-transform"
-          />
-        </Link>
-      </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Link
+            href="/venue-lister/inventory"
+            className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-lg hover:bg-slate-800 hover:shadow-lg transition-all group"
+          >
+            <div>
+              <h3 className="text-lg font-bold mb-1">Manage Inventory</h3>
+              <p className="text-slate-300 text-sm">Add or edit your venues</p>
+            </div>
+            <ArrowRight
+              size={24}
+              className="group-hover:translate-x-2 transition-transform"
+            />
+          </Link>
+          <Link
+            href="/venue-lister/vendor-bookings"
+            className="flex items-center justify-between p-6 bg-power-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-lg transition-all group"
+          >
+            <div>
+              <h3 className="text-lg font-bold mb-1">View Bookings</h3>
+              <p className="text-orange-100 text-sm">Check upcoming sessions</p>
+            </div>
+            <ArrowRight
+              size={24}
+              className="group-hover:translate-x-2 transition-transform"
+            />
+          </Link>
+        </div>
       </SlideUp>
     </div>
   );

@@ -51,4 +51,3 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
 // Note: Hydration is now handled by HydrationBoundary component
 // This ensures proper client-side initialization without SSR hydration mismatches
-

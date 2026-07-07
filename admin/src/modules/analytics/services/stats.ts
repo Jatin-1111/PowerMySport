@@ -65,11 +65,7 @@ export interface CoachUserRow {
   hourlyRate: number | null;
   serviceMode: "OWN_VENUE" | "FREELANCE" | "HYBRID" | null;
   verificationStatus:
-    | "UNVERIFIED"
-    | "PENDING"
-    | "REVIEW"
-    | "VERIFIED"
-    | "REJECTED";
+    "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
   isVerified: boolean;
   rating: number;
   reviewCount: number;
@@ -455,9 +451,7 @@ export const statsApi = {
     return response.data;
   },
 
-  getGuestActivity: async (
-    days = 30,
-  ): Promise<ApiResponse<GuestActivity>> => {
+  getGuestActivity: async (days = 30): Promise<ApiResponse<GuestActivity>> => {
     const response = await axiosInstance.get("/stats/guests/activity", {
       params: { days },
     });
@@ -475,9 +469,7 @@ export const statsApi = {
     return response.data;
   },
 
-  getInfraMetrics: async (
-    hours = 6,
-  ): Promise<ApiResponse<InfraMetrics>> => {
+  getInfraMetrics: async (hours = 6): Promise<ApiResponse<InfraMetrics>> => {
     const response = await axiosInstance.get("/stats/infra/metrics", {
       params: { hours },
     });

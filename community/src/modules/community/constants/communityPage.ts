@@ -28,9 +28,7 @@ export type DirectoryView = "CONTACTS" | "GROUPS";
 export type GroupToolsMode = "DISCOVER" | "MANAGE" | "INVITE";
 export type SidebarMode = "INBOX" | "TOOLS";
 
-export const isValidSidebarTab = (
-  value: string | null,
-): value is SidebarTab =>
+export const isValidSidebarTab = (value: string | null): value is SidebarTab =>
   value === "community-overview" || value === "conversations";
 
 export const isValidWorkspaceView = (

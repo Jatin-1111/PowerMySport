@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import { up } from '../migrations/13_parent_dependent_pivot';
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import { up } from "../migrations/13_parent_dependent_pivot";
 
 dotenv.config();
 
@@ -9,7 +9,7 @@ const run = async () => {
     process.env.MONGO_URI ||
     process.env.MONGODB_URI ||
     "mongodb://localhost:27017/powermysport";
-  
+
   await mongoose.connect(mongoUri);
   console.log("Connected to database");
 
@@ -24,7 +24,9 @@ const run = async () => {
   }
 };
 
-run().then(() => process.exit(0)).catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+run()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });

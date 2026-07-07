@@ -12,11 +12,17 @@ export default function DynamicFeaturedQA() {
   useEffect(() => {
     async function loadFeaturedQA() {
       try {
-        const postsResponse = await communityService.listPosts(1, 10, { sort: "TOP" });
-        const topAnsweredPost = postsResponse.items?.find((p) => p.answerCount > 0);
-        
+        const postsResponse = await communityService.listPosts(1, 10, {
+          sort: "TOP",
+        });
+        const topAnsweredPost = postsResponse.items?.find(
+          (p) => p.answerCount > 0,
+        );
+
         if (topAnsweredPost) {
-          const details = await communityService.getPostDetails(topAnsweredPost.id);
+          const details = await communityService.getPostDetails(
+            topAnsweredPost.id,
+          );
           setData(details);
         }
       } catch (err) {
@@ -55,14 +61,17 @@ export default function DynamicFeaturedQA() {
             What sport helps a shy 9-year-old build confidence fast?
           </h3>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Coach Daniel recommends a low-pressure group setting with frequent small wins, simple drills, and a coach who rewards effort before competition.
+            Coach Daniel recommends a low-pressure group setting with frequent
+            small wins, simple drills, and a coach who rewards effort before
+            competition.
           </p>
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-4">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">
               Coach takeaway
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              Start with one session per week, pick a coach with strong parent reviews, and look for venues that keep practice times predictable.
+              Start with one session per week, pick a coach with strong parent
+              reviews, and look for venues that keep practice times predictable.
             </p>
           </div>
         </div>

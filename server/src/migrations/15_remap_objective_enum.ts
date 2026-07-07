@@ -21,7 +21,9 @@ const REMAP: Record<string, string> = {
 };
 
 export async function up(): Promise<void> {
-  console.log("Starting migration: Remap primaryObjective enum to Recreational/Fitness/Compete...");
+  console.log(
+    "Starting migration: Remap primaryObjective enum to Recreational/Fitness/Compete...",
+  );
 
   try {
     if (mongoose.connection.readyState !== 1) {

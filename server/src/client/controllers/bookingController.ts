@@ -84,7 +84,7 @@ export const initiateNewBooking = async (
     console.error("[initiateNewBooking] Error details:", {
       body: req.body,
       errorMessage: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
     res.status(400).json({
       success: false,
@@ -240,7 +240,9 @@ const formatCurrency = (value: number): string => {
 };
 
 const formatInvoiceDate = (date: Date): string => {
-  return date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
+  return date.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
     month: "short",
     year: "numeric",
   });
@@ -791,30 +793,34 @@ export const getVenueAvailability = async (
         (closeMinute > 0 ? 1 : 0);
 
       const intervalMinutes = (venue as any).minimumBookingDuration || 60;
-      allSlots = generateDynamicSlots(slotStartHour, slotEndHour, intervalMinutes).filter(
-        (slot) => {
-          const slotHour = parseInt(slot.split(":")[0] || "0", 10);
-          const slotMin = parseInt(slot.split(":")[1] || "0", 10);
-          
-          let endMin = slotMin + intervalMinutes;
-          let endHour = slotHour + Math.floor(endMin / 60);
-          endMin = endMin % 60;
-          
-          const slotEnd = `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")}`;
-          return isWithinOpeningHours(
-            targetDate,
-            slot,
-            slotEnd,
-            venue.openingHours,
-          ).isValid;
-        },
-      );
+      allSlots = generateDynamicSlots(
+        slotStartHour,
+        slotEndHour,
+        intervalMinutes,
+      ).filter((slot) => {
+        const slotHour = parseInt(slot.split(":")[0] || "0", 10);
+        const slotMin = parseInt(slot.split(":")[1] || "0", 10);
+
+        let endMin = slotMin + intervalMinutes;
+        let endHour = slotHour + Math.floor(endMin / 60);
+        endMin = endMin % 60;
+
+        const slotEnd = `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")}`;
+        return isWithinOpeningHours(
+          targetDate,
+          slot,
+          slotEnd,
+          venue.openingHours,
+        ).isValid;
+      });
     }
 
     const now = new Date();
     // "Today" in IST terms, not the server's local date — a slot's date and
     // "now" are compared as real UTC instants below regardless.
-    const nowIstDateKey = new Date(now.getTime() + IST_OFFSET_MINUTES * 60 * 1000)
+    const nowIstDateKey = new Date(
+      now.getTime() + IST_OFFSET_MINUTES * 60 * 1000,
+    )
       .toISOString()
       .slice(0, 10);
     const targetIstDateKey = targetDate.toISOString().slice(0, 10);
@@ -1810,7 +1816,7 @@ export const payBookingWithWallet = async (
     ) {
       // Find if they are a participant
       const isParticipant = booking.payments?.some(
-        (p) => p.userId.toString() === user.id
+        (p) => p.userId.toString() === user.id,
       );
       if (!isParticipant) {
         res.status(403).json({
@@ -1823,7 +1829,7 @@ export const payBookingWithWallet = async (
 
     // Calculate user's share
     const paymentShare = booking.payments?.find(
-      (p) => p.userId.toString() === user.id
+      (p) => p.userId.toString() === user.id,
     );
 
     const amount = paymentShare ? paymentShare.amount : booking.totalAmount;
@@ -1849,7 +1855,7 @@ export const payBookingWithWallet = async (
       user.id,
       amount,
       `Booking Payment: ${bookingId}`,
-      bookingId
+      bookingId,
     );
 
     const merchantOrderId = `WALLET-${Date.now()}-${Math.random().toString(36).substring(7)}`;

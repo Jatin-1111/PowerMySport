@@ -65,9 +65,10 @@ export default function VenueListerAnalyticsPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await axiosInstance.get<{ success: boolean; data: VenueAnalyticsData }>(
-          "/venues/analytics"
-        );
+        const response = await axiosInstance.get<{
+          success: boolean;
+          data: VenueAnalyticsData;
+        }>("/venues/analytics");
         if (response.data.success && response.data.data) {
           setData(response.data.data);
         } else {
@@ -102,8 +103,12 @@ export default function VenueListerAnalyticsPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
         <div className="text-center max-w-sm">
           <Activity size={40} className="text-red-400 mx-auto mb-3" />
-          <p className="text-slate-900 font-semibold mb-1">Unable to load analytics</p>
-          <p className="text-slate-500 text-sm">{error ?? "No data available."}</p>
+          <p className="text-slate-900 font-semibold mb-1">
+            Unable to load analytics
+          </p>
+          <p className="text-slate-500 text-sm">
+            {error ?? "No data available."}
+          </p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-5 py-2 bg-power-orange hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
@@ -115,7 +120,13 @@ export default function VenueListerAnalyticsPage() {
     );
   }
 
-  const { overview, sessionsTrend, sportBreakdown, popularHours, customerRetention } = data;
+  const {
+    overview,
+    sessionsTrend,
+    sportBreakdown,
+    popularHours,
+    customerRetention,
+  } = data;
 
   const kpiCards = [
     {
@@ -147,7 +158,6 @@ export default function VenueListerAnalyticsPage() {
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
-
         {/* ── Page header ──────────────────────────────────────────────────── */}
         <SlideUp>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -182,7 +192,9 @@ export default function VenueListerAnalyticsPage() {
                 <BarChart2 size={16} className="text-power-orange" />
                 Sessions Trend
               </h2>
-              <span className="text-slate-400 text-xs">Daily · last 30 days</span>
+              <span className="text-slate-400 text-xs">
+                Daily · last 30 days
+              </span>
             </div>
             {sessionsTrend.length === 0 ? (
               <div className="flex items-center justify-center h-28 text-slate-400 text-sm">
@@ -252,12 +264,20 @@ export default function VenueListerAnalyticsPage() {
                 <DonutChart rate={overview.completionRate} />
                 <div className="space-y-3">
                   <div>
-                    <p className="text-slate-500 text-xs uppercase tracking-wide">Completed</p>
-                    <p className="text-slate-900 font-bold text-xl">{overview.completedSessions}</p>
+                    <p className="text-slate-500 text-xs uppercase tracking-wide">
+                      Completed
+                    </p>
+                    <p className="text-slate-900 font-bold text-xl">
+                      {overview.completedSessions}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-slate-500 text-xs uppercase tracking-wide">Total</p>
-                    <p className="text-slate-900 font-bold text-xl">{overview.totalSessions}</p>
+                    <p className="text-slate-500 text-xs uppercase tracking-wide">
+                      Total
+                    </p>
+                    <p className="text-slate-900 font-bold text-xl">
+                      {overview.totalSessions}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -272,28 +292,43 @@ export default function VenueListerAnalyticsPage() {
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Sessions</p>
-                  <p className="text-slate-900 font-bold text-2xl">{overview.totalSessions}</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">
+                    Sessions
+                  </p>
+                  <p className="text-slate-900 font-bold text-2xl">
+                    {overview.totalSessions}
+                  </p>
                 </div>
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Customers</p>
-                  <p className="text-slate-900 font-bold text-2xl">{overview.totalCustomers}</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">
+                    Customers
+                  </p>
+                  <p className="text-slate-900 font-bold text-2xl">
+                    {overview.totalCustomers}
+                  </p>
                 </div>
                 <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Reviews</p>
-                  <p className="text-slate-900 font-bold text-2xl">{overview.reviewCount}</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">
+                    Reviews
+                  </p>
+                  <p className="text-slate-900 font-bold text-2xl">
+                    {overview.reviewCount}
+                  </p>
                 </div>
                 <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
-                  <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">Avg Rating</p>
+                  <p className="text-slate-500 text-xs uppercase tracking-wide mb-1">
+                    Avg Rating
+                  </p>
                   <p className="text-power-orange font-bold text-2xl">
-                    {overview.avgRating > 0 ? overview.avgRating.toFixed(1) : "—"}
+                    {overview.avgRating > 0
+                      ? overview.avgRating.toFixed(1)
+                      : "—"}
                   </p>
                 </div>
               </div>
             </div>
           </SlideUp>
         </div>
-
       </div>
     </div>
   );

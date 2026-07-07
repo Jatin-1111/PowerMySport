@@ -5,14 +5,20 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Find Sports Coaches | Professional Coach Booking",
-  description: "Connect with certified professional sports coaches for personalized training. The best coach booking platform for cricket, football, tennis, and more.",
+  description:
+    "Connect with certified professional sports coaches for personalized training. The best coach booking platform for cricket, football, tennis, and more.",
   openGraph: {
     title: "Find Sports Coaches | Professional Coach Booking",
-    description: "Connect with certified professional sports coaches for personalized training.",
+    description:
+      "Connect with certified professional sports coaches for personalized training.",
   },
 };
 
-export default function CoachesLayout({ children }: { children: React.ReactNode }) {
+export default function CoachesLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col min-h-screen">
       <Navigation variant="dark" sticky />

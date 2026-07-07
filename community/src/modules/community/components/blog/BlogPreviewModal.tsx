@@ -86,7 +86,11 @@ export default function BlogPreviewModal({
 
                 <div className="mt-4 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
                   {coverUrl ? (
-                    <img src={coverUrl} alt={title} className="h-full w-full object-cover" />
+                    <img
+                      src={coverUrl}
+                      alt={title}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <BlogCoverFallback topic={topic} />
                   )}
@@ -97,7 +101,11 @@ export default function BlogPreviewModal({
                 </h1>
 
                 <div className="mt-3 flex items-center gap-3 border-b border-slate-100 pb-5">
-                  <AuthorAvatar name={authorName} photoUrl={authorPhotoUrl} size={40} />
+                  <AuthorAvatar
+                    name={authorName}
+                    photoUrl={authorPhotoUrl}
+                    size={40}
+                  />
                   <span>
                     <span className="block text-sm font-semibold text-slate-900">
                       {authorName}

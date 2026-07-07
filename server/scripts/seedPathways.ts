@@ -22,7 +22,7 @@ const TOP_SPORTS = [
   "Shooting",
   "Cycling",
   "Judo",
-  "Taekwondo"
+  "Taekwondo",
 ];
 
 async function seed() {
@@ -52,9 +52,9 @@ async function seed() {
       } catch (error) {
         console.error(`Error processing ${sport}:`, error);
       }
-      
+
       // Sleep for 2 seconds to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     console.log(`\n===========================================`);

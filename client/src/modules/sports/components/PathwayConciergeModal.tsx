@@ -52,7 +52,9 @@ export function PathwayConciergeModal({
   const [reminderLoading, setReminderLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
   const [pastDocs, setPastDocs] = useState<string[]>([]);
-  const [applyTarget, setApplyTarget] = useState<"prerequisite" | "direct">("prerequisite");
+  const [applyTarget, setApplyTarget] = useState<"prerequisite" | "direct">(
+    "prerequisite",
+  );
 
   // FIX 7: auto-skip question if prerequisite already satisfied
   useEffect(() => {
@@ -186,8 +188,10 @@ export function PathwayConciergeModal({
         itemType: type,
         itemId: item._id || "unknown",
         itemName: item.name,
-        prerequisiteId: applyTarget === "prerequisite" ? item.prerequisiteId : undefined,
-        prerequisiteName: applyTarget === "prerequisite" ? item.prerequisiteName : undefined,
+        prerequisiteId:
+          applyTarget === "prerequisite" ? item.prerequisiteId : undefined,
+        prerequisiteName:
+          applyTarget === "prerequisite" ? item.prerequisiteName : undefined,
         documents,
       });
 
@@ -197,21 +201,25 @@ export function PathwayConciergeModal({
         itemType: type,
         sport: item.sportName || "General",
         status: "Submitted",
-        documents: documentChecklist.map((d: string) => ({ name: uploadedFiles[d]?.name || d })),
+        documents: documentChecklist.map((d: string) => ({
+          name: uploadedFiles[d]?.name || d,
+        })),
         submittedAt: new Date().toISOString(),
       });
 
       setStep("success");
     } catch (error) {
       console.error("Upload failed, falling back to local simulation:", error);
-      
+
       onSubmitSuccess?.({
         id: `app-${Date.now()}`,
         itemName: item.name,
         itemType: type,
         sport: item.sportName || "General",
         status: "Submitted",
-        documents: documentChecklist.map((d: string) => ({ name: uploadedFiles[d]?.name || d })),
+        documents: documentChecklist.map((d: string) => ({
+          name: uploadedFiles[d]?.name || d,
+        })),
         submittedAt: new Date().toISOString(),
       });
 
@@ -515,7 +523,9 @@ export function PathwayConciergeModal({
     <div className="space-y-6">
       {/* Back navigation */}
       <button
-        onClick={() => setStep(applyTarget === "prerequisite" ? "question" : "unlocked")}
+        onClick={() =>
+          setStep(applyTarget === "prerequisite" ? "question" : "unlocked")
+        }
         className="text-sm text-slate-500 hover:text-slate-700 transition-colors flex items-center gap-1"
       >
         ← Go back
@@ -537,7 +547,8 @@ export function PathwayConciergeModal({
             </>
           ) : (
             <>
-              Great, we can apply on your behalf! To process the {item.name} application, we require{" "}
+              Great, we can apply on your behalf! To process the {item.name}{" "}
+              application, we require{" "}
             </>
           )}
           the following documents:{" "}
@@ -660,9 +671,14 @@ export function PathwayConciergeModal({
         </div>
         <div className="flex-1 rounded-2xl rounded-tl-none bg-slate-100 p-4 text-slate-800 text-sm leading-relaxed">
           Excellent. Please upload the documents below, and our team will
-          process the {applyTarget === "prerequisite" && prerequisiteName ? prerequisiteName : item.name}{" "}
-          {applyTarget === "prerequisite" && type === "tournament" ? "registration " : "application "}for you—completely free
-          of charge.
+          process the{" "}
+          {applyTarget === "prerequisite" && prerequisiteName
+            ? prerequisiteName
+            : item.name}{" "}
+          {applyTarget === "prerequisite" && type === "tournament"
+            ? "registration "
+            : "application "}
+          for you—completely free of charge.
         </div>
       </div>
 
@@ -670,9 +686,14 @@ export function PathwayConciergeModal({
         {documentChecklist.map((docName: string, index: number) => {
           const file = uploadedFiles[docName];
           return (
-            <div key={index} className="relative space-y-2 rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+            <div
+              key={index}
+              className="relative space-y-2 rounded-2xl border border-slate-100 bg-slate-50/50 p-3"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700">{docName}</span>
+                <span className="text-xs font-bold text-slate-700">
+                  {docName}
+                </span>
                 {file && (
                   <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
                     <CheckCircle2 className="h-3 w-3" /> Ready
@@ -708,7 +729,9 @@ export function PathwayConciergeModal({
 
               {pastDocs.length > 0 && !file && (
                 <div className="rounded-xl border border-slate-200 bg-white p-2.5 space-y-1.5 shadow-sm">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Reuse a previously uploaded document:</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                    Reuse a previously uploaded document:
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     {pastDocs.map((docFileName) => (
                       <button

@@ -198,223 +198,249 @@ export default function DependentManagementModal({
             <TabsTrigger value="sports">Sports</TabsTrigger>
             <TabsTrigger value="ai">AI Guidance</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="basic" className="space-y-5">
             <ProfileEditPanel
-          title={mode === "add" ? "New dependent profile" : "Update profile"}
-          description={
-            mode === "add"
-              ? "Add a child or ward you manage bookings for. Dependents must be under 18."
-              : "Update this dependent's details and save when you're done."
-          }
-        >
-          <div className="space-y-4">
-            <ProfileEditField
-              label="Name"
-              htmlFor="dependent-name"
-              required
-              icon={UserRound}
-            >
-              <Input
-                id="dependent-name"
-                type="text"
-                value={formData.name}
-                onChange={(event) => handleChange("name", event.target.value)}
-                placeholder="e.g., John Doe"
-                autoComplete="name"
-              />
-            </ProfileEditField>
-
-            <ProfileEditField
-              label="Date of Birth"
-              htmlFor="dependent-dob"
-              required
-              icon={Calendar}
-              hint={
-                previewAge !== null
-                  ? `Age: ${previewAge} years · Must be under 18.`
-                  : "Must be under 18 years old."
+              title={
+                mode === "add" ? "New dependent profile" : "Update profile"
+              }
+              description={
+                mode === "add"
+                  ? "Add a child or ward you manage bookings for. Dependents must be under 18."
+                  : "Update this dependent's details and save when you're done."
               }
             >
-              <Input
-                id="dependent-dob"
-                type="date"
-                value={formData.dob as string}
-                onChange={(event) => handleChange("dob", event.target.value)}
-                min={minDob}
-                max={maxDob}
-              />
-            </ProfileEditField>
+              <div className="space-y-4">
+                <ProfileEditField
+                  label="Name"
+                  htmlFor="dependent-name"
+                  required
+                  icon={UserRound}
+                >
+                  <Input
+                    id="dependent-name"
+                    type="text"
+                    value={formData.name}
+                    onChange={(event) =>
+                      handleChange("name", event.target.value)
+                    }
+                    placeholder="e.g., John Doe"
+                    autoComplete="name"
+                  />
+                </ProfileEditField>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <ProfileEditField label="Gender" htmlFor="dependent-gender">
-                <ProfileFormSelect
-                  id="dependent-gender"
-                  value={formData.gender || "MALE"}
-                  onChange={(value) => handleChange("gender", value)}
-                  options={[
-                    { value: "MALE", label: "Male" },
-                    { value: "FEMALE", label: "Female" },
-                    { value: "OTHER", label: "Other" },
-                  ]}
+                <ProfileEditField
+                  label="Date of Birth"
+                  htmlFor="dependent-dob"
+                  required
+                  icon={Calendar}
+                  hint={
+                    previewAge !== null
+                      ? `Age: ${previewAge} years · Must be under 18.`
+                      : "Must be under 18 years old."
+                  }
+                >
+                  <Input
+                    id="dependent-dob"
+                    type="date"
+                    value={formData.dob as string}
+                    onChange={(event) =>
+                      handleChange("dob", event.target.value)
+                    }
+                    min={minDob}
+                    max={maxDob}
+                  />
+                </ProfileEditField>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <ProfileEditField label="Gender" htmlFor="dependent-gender">
+                    <ProfileFormSelect
+                      id="dependent-gender"
+                      value={formData.gender || "MALE"}
+                      onChange={(value) => handleChange("gender", value)}
+                      options={[
+                        { value: "MALE", label: "Male" },
+                        { value: "FEMALE", label: "Female" },
+                        { value: "OTHER", label: "Other" },
+                      ]}
+                    />
+                  </ProfileEditField>
+
+                  <ProfileEditField
+                    label="Relation"
+                    htmlFor="dependent-relation"
+                    required
+                  >
+                    <ProfileFormSelect
+                      id="dependent-relation"
+                      value={formData.relation || DEFAULT_DEPENDENT_RELATION}
+                      onChange={(value) => handleChange("relation", value)}
+                      options={DEPENDENT_RELATIONS.map((option) => ({
+                        value: option.value,
+                        label: option.label,
+                      }))}
+                    />
+                  </ProfileEditField>
+                </div>
+              </div>
+            </ProfileEditPanel>
+          </TabsContent>
+
+          <TabsContent value="sports" className="space-y-5">
+            <ProfileEditPanel
+              title="Sports interests"
+              description="Optional. Helps personalize venue and coach recommendations."
+            >
+              <ProfileEditField label="Sports">
+                <SportsMultiSelect
+                  value={formData.sportsFocus || []}
+                  onChange={(sports) => handleChange("sportsFocus", sports)}
                 />
               </ProfileEditField>
 
               <ProfileEditField
-                label="Relation"
-                htmlFor="dependent-relation"
-                required
+                label="Experience (Years)"
+                htmlFor="dependent-years-playing"
+                hint="Leave blank if they haven't started playing yet"
               >
-                <ProfileFormSelect
-                  id="dependent-relation"
-                  value={formData.relation || DEFAULT_DEPENDENT_RELATION}
-                  onChange={(value) => handleChange("relation", value)}
-                  options={DEPENDENT_RELATIONS.map((option) => ({
-                    value: option.value,
-                    label: option.label,
-                  }))}
-                />
-              </ProfileEditField>
-            </div>
-            </div>
-          </ProfileEditPanel>
-        </TabsContent>
-
-        <TabsContent value="sports" className="space-y-5">
-          <ProfileEditPanel
-          title="Sports interests"
-          description="Optional. Helps personalize venue and coach recommendations."
-        >
-          <ProfileEditField label="Sports">
-            <SportsMultiSelect
-              value={formData.sportsFocus || []}
-              onChange={(sports) => handleChange("sportsFocus", sports)}
-            />
-          </ProfileEditField>
-
-          <ProfileEditField
-            label="Experience (Years)"
-            htmlFor="dependent-years-playing"
-            hint="Leave blank if they haven't started playing yet"
-          >
-            <Input
-              id="dependent-years-playing"
-              type="number"
-              min="0"
-              max="20"
-              placeholder="e.g., 2"
-              value={formData.yearsPlaying ?? ""}
-              onChange={(event) =>
-                handleChange(
-                  "yearsPlaying",
-                  event.target.value === "" ? undefined : parseInt(event.target.value, 10),
-                )
-              }
-            />
-          </ProfileEditField>
-
-          {(formData.sportsFocus?.length ?? 0) > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {formData.sportsFocus?.map((sport) => (
-                <Badge
-                  key={sport}
-                  className="border-orange-200 bg-white text-orange-700 hover:bg-white"
-                >
-                  {sport}
-                </Badge>
-              ))}
-            </div>
-          )}
-          </ProfileEditPanel>
-        </TabsContent>
-
-        <TabsContent value="ai" className="space-y-5">
-          <ProfileEditPanel
-          title="AI Guidance Preferences"
-          description="Optional. Used to pre-fill AI recommendations."
-        >
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <ProfileEditField label="Primary Objective" htmlFor="primary-objective">
-                <ProfileFormSelect
-                  id="primary-objective"
-                  value={formData.primaryObjective || "Recreational"}
-                  onChange={(value) => handleChange("primaryObjective", value)}
-                  options={[
-                    { value: "Recreational", label: "Recreational" },
-                    { value: "Fitness", label: "Fitness" },
-                    { value: "Compete", label: "Compete" },
-                  ]}
+                <Input
+                  id="dependent-years-playing"
+                  type="number"
+                  min="0"
+                  max="20"
+                  placeholder="e.g., 2"
+                  value={formData.yearsPlaying ?? ""}
+                  onChange={(event) =>
+                    handleChange(
+                      "yearsPlaying",
+                      event.target.value === ""
+                        ? undefined
+                        : parseInt(event.target.value, 10),
+                    )
+                  }
                 />
               </ProfileEditField>
 
-              <ProfileEditField label="Budget Tier" htmlFor="budget-tier">
-                <ProfileFormSelect
-                  id="budget-tier"
-                  value={formData.budgetTier || "Moderate"}
-                  onChange={(value) => handleChange("budgetTier", value)}
-                  options={[
-                    { value: "Budget", label: "Budget" },
-                    { value: "Moderate", label: "Moderate" },
-                    { value: "Premium", label: "Premium" },
-                  ]}
-                />
-              </ProfileEditField>
-            </div>
-
-            <ProfileEditField label="State / Union Territory" htmlFor="dependent-location" hint="Used for local scheme & resource recommendations">
-              <ProfileFormSelect
-                id="dependent-location"
-                value={formData.location || ""}
-                onChange={(value) => handleChange("location", value)}
-                options={[
-                  { value: "", label: "— Select state —" },
-                  ...INDIAN_STATES.map((s) => ({ value: s, label: s })),
-                ]}
-              />
-            </ProfileEditField>
-
-            <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
-              <Input
-                id="weekly-time"
-                type="number"
-                min="1"
-                max="40"
-                value={formData.weeklyTimeCommitment || 3}
-                onChange={(e) => handleChange("weeklyTimeCommitment", parseInt(e.target.value) || 3)}
-              />
-            </ProfileEditField>
-
-            <ProfileEditField label="Personality Tags">
-              <div className="flex flex-wrap gap-2">
-                {PERSONALITY_OPTIONS.map((tag) => {
-                  const isSelected = formData.personalityTags?.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        const current = formData.personalityTags || [];
-                        const next = isSelected
-                          ? current.filter((t) => t !== tag)
-                          : [...current, tag];
-                        handleChange("personalityTags", next);
-                      }}
-                      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                        isSelected
-                          ? "border-blue-600 bg-indigo-50 font-medium text-indigo-700"
-                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                      }`}
+              {(formData.sportsFocus?.length ?? 0) > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.sportsFocus?.map((sport) => (
+                    <Badge
+                      key={sport}
+                      className="border-orange-200 bg-white text-orange-700 hover:bg-white"
                     >
-                      {tag}
-                    </button>
-                  );
-                })}
+                      {sport}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </ProfileEditPanel>
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-5">
+            <ProfileEditPanel
+              title="AI Guidance Preferences"
+              description="Optional. Used to pre-fill AI recommendations."
+            >
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <ProfileEditField
+                    label="Primary Objective"
+                    htmlFor="primary-objective"
+                  >
+                    <ProfileFormSelect
+                      id="primary-objective"
+                      value={formData.primaryObjective || "Recreational"}
+                      onChange={(value) =>
+                        handleChange("primaryObjective", value)
+                      }
+                      options={[
+                        { value: "Recreational", label: "Recreational" },
+                        { value: "Fitness", label: "Fitness" },
+                        { value: "Compete", label: "Compete" },
+                      ]}
+                    />
+                  </ProfileEditField>
+
+                  <ProfileEditField label="Budget Tier" htmlFor="budget-tier">
+                    <ProfileFormSelect
+                      id="budget-tier"
+                      value={formData.budgetTier || "Moderate"}
+                      onChange={(value) => handleChange("budgetTier", value)}
+                      options={[
+                        { value: "Budget", label: "Budget" },
+                        { value: "Moderate", label: "Moderate" },
+                        { value: "Premium", label: "Premium" },
+                      ]}
+                    />
+                  </ProfileEditField>
+                </div>
+
+                <ProfileEditField
+                  label="State / Union Territory"
+                  htmlFor="dependent-location"
+                  hint="Used for local scheme & resource recommendations"
+                >
+                  <ProfileFormSelect
+                    id="dependent-location"
+                    value={formData.location || ""}
+                    onChange={(value) => handleChange("location", value)}
+                    options={[
+                      { value: "", label: "— Select state —" },
+                      ...INDIAN_STATES.map((s) => ({ value: s, label: s })),
+                    ]}
+                  />
+                </ProfileEditField>
+
+                <ProfileEditField
+                  label="Weekly Time Commitment (Hours)"
+                  htmlFor="weekly-time"
+                >
+                  <Input
+                    id="weekly-time"
+                    type="number"
+                    min="1"
+                    max="40"
+                    value={formData.weeklyTimeCommitment || 3}
+                    onChange={(e) =>
+                      handleChange(
+                        "weeklyTimeCommitment",
+                        parseInt(e.target.value) || 3,
+                      )
+                    }
+                  />
+                </ProfileEditField>
+
+                <ProfileEditField label="Personality Tags">
+                  <div className="flex flex-wrap gap-2">
+                    {PERSONALITY_OPTIONS.map((tag) => {
+                      const isSelected =
+                        formData.personalityTags?.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            const current = formData.personalityTags || [];
+                            const next = isSelected
+                              ? current.filter((t) => t !== tag)
+                              : [...current, tag];
+                            handleChange("personalityTags", next);
+                          }}
+                          className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                            isSelected
+                              ? "border-blue-600 bg-indigo-50 font-medium text-indigo-700"
+                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ProfileEditField>
               </div>
-            </ProfileEditField>
-          </div>
-        </ProfileEditPanel>
-        </TabsContent>
+            </ProfileEditPanel>
+          </TabsContent>
         </Tabs>
       </form>
     </Modal>

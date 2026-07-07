@@ -1,5 +1,9 @@
 import crypto from "crypto";
-import { PaymentGateway, PaymentStatus, ApiResponse } from "../../types/ecommerce";
+import {
+  PaymentGateway,
+  PaymentStatus,
+  ApiResponse,
+} from "../../types/ecommerce";
 import {
   PaymentTransaction as PaymentTransactionModel,
   PaymentTransactionDocument,
@@ -79,10 +83,10 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
         merchantTransactionId: result.merchantOrderId,
         instrumentResponse: {
           redirectInfo: {
-            url: result.redirectUrl
-          }
-        }
-      }
+            url: result.redirectUrl,
+          },
+        },
+      },
     };
   }
 
@@ -132,7 +136,7 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
   async getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
     try {
       const result = await getPhonePeOrderStatus(paymentId);
-      
+
       if (result.state === "COMPLETED") return PaymentStatus.CAPTURED;
       if (result.state === "PENDING") return PaymentStatus.PENDING;
       return PaymentStatus.FAILED;
@@ -270,7 +274,8 @@ export class PaymentService {
     const transaction = new PaymentTransactionModel({
       orderId: new mongoose.Types.ObjectId(orderId),
       paymentGateway,
-      gatewayOrderId: gatewayOrder.id || gatewayOrder.data?.merchantTransactionId,
+      gatewayOrderId:
+        gatewayOrder.id || gatewayOrder.data?.merchantTransactionId,
       amount,
       currency,
       status: PaymentStatus.PENDING,

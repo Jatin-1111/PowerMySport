@@ -99,17 +99,25 @@ function StatCard({ icon, label, value, sub, accent }: StatCardProps) {
           accent ? "bg-white/20" : "bg-orange-50"
         }`}
       >
-        <span className={accent ? "text-white" : "text-power-orange"}>{icon}</span>
+        <span className={accent ? "text-white" : "text-power-orange"}>
+          {icon}
+        </span>
       </div>
       <div>
-        <p className={`text-2xl font-bold leading-none ${accent ? "text-white" : "text-slate-900"}`}>
+        <p
+          className={`text-2xl font-bold leading-none ${accent ? "text-white" : "text-slate-900"}`}
+        >
           {value}
         </p>
-        <p className={`text-sm mt-0.5 ${accent ? "text-orange-100" : "text-slate-500"}`}>
+        <p
+          className={`text-sm mt-0.5 ${accent ? "text-orange-100" : "text-slate-500"}`}
+        >
           {label}
         </p>
         {sub && (
-          <p className={`text-xs mt-0.5 ${accent ? "text-orange-200" : "text-slate-400"}`}>
+          <p
+            className={`text-xs mt-0.5 ${accent ? "text-orange-200" : "text-slate-400"}`}
+          >
             {sub}
           </p>
         )}
@@ -267,7 +275,6 @@ export default function CoachClientsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-
         {/* ── page header ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}

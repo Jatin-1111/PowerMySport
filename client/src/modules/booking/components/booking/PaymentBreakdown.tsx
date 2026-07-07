@@ -24,9 +24,7 @@ export default function PaymentBreakdown({
           >
             <div>
               <p className="font-medium text-foreground">
-                {payment.userType === "VenueLister"
-                  ? "Venue Fee"
-                  : "Coach Fee"}
+                {payment.userType === "VenueLister" ? "Venue Fee" : "Coach Fee"}
               </p>
               <p className="text-sm text-muted-foreground">
                 Status:{" "}

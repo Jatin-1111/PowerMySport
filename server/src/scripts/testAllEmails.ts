@@ -90,14 +90,22 @@ const cases: Case[] = [
     category: "Welcome",
     expectedTo: to("player@example.com"),
     run: () =>
-      email.sendWelcomeEmail({ name: "Asha", email: to("player@example.com"), role: "Player" }),
+      email.sendWelcomeEmail({
+        name: "Asha",
+        email: to("player@example.com"),
+        role: "Player",
+      }),
     expect: ["Asha"],
   },
   {
     category: "Password reset",
     expectedTo: to("reset@example.com"),
     run: () =>
-      email.sendPasswordResetEmail({ name: "Asha", email: to("reset@example.com"), resetToken: "tok_abc123" }),
+      email.sendPasswordResetEmail({
+        name: "Asha",
+        email: to("reset@example.com"),
+        resetToken: "tok_abc123",
+      }),
     expect: ["reset", "tok_abc123"],
   },
   {
@@ -105,9 +113,16 @@ const cases: Case[] = [
     expectedTo: to("lifecycle@example.com"),
     run: () =>
       email.sendBookingLifecycleEmail({
-        email: to("lifecycle@example.com"), name: "Asha", venueName: "Turf Arena", sport: "Football",
-        date: D, startTime: "18:00", endTime: "19:00", totalAmount: 500,
-        state: "PENDING_CONFIRMATION", recipientRole: "Player",
+        email: to("lifecycle@example.com"),
+        name: "Asha",
+        venueName: "Turf Arena",
+        sport: "Football",
+        date: D,
+        startTime: "18:00",
+        endTime: "19:00",
+        totalAmount: 500,
+        state: "PENDING_CONFIRMATION",
+        recipientRole: "Player",
       }),
     expect: ["Turf Arena", "Football"],
   },
@@ -116,9 +131,17 @@ const cases: Case[] = [
     expectedTo: to("lifecycle@example.com"),
     run: () =>
       email.sendBookingLifecycleEmail({
-        email: to("lifecycle@example.com"), name: "Asha", venueName: "Turf Arena", sport: "Football",
-        date: D, startTime: "18:00", endTime: "19:00", totalAmount: 500,
-        state: "CONFIRMED", recipientRole: "Player", checkInCode: "PMS-7788",
+        email: to("lifecycle@example.com"),
+        name: "Asha",
+        venueName: "Turf Arena",
+        sport: "Football",
+        date: D,
+        startTime: "18:00",
+        endTime: "19:00",
+        totalAmount: 500,
+        state: "CONFIRMED",
+        recipientRole: "Player",
+        checkInCode: "PMS-7788",
       }),
     expect: ["PMS-7788"],
   },
@@ -127,10 +150,19 @@ const cases: Case[] = [
     expectedTo: to("provider@example.com"),
     run: () =>
       email.sendBookingLifecycleEmail({
-        email: to("provider@example.com"), name: "Coach K", venueName: "Turf Arena", sport: "Football",
-        date: D, startTime: "18:00", endTime: "19:00", totalAmount: 500,
-        state: "CANCELLED", recipientRole: "PROVIDER",
-        refundAmount: 500, refundPercentage: 100, cancellationReason: "User cancelled",
+        email: to("provider@example.com"),
+        name: "Coach K",
+        venueName: "Turf Arena",
+        sport: "Football",
+        date: D,
+        startTime: "18:00",
+        endTime: "19:00",
+        totalAmount: 500,
+        state: "CANCELLED",
+        recipientRole: "PROVIDER",
+        refundAmount: 500,
+        refundPercentage: 100,
+        cancellationReason: "User cancelled",
       }),
     expect: ["Turf Arena"],
   },
@@ -139,8 +171,15 @@ const cases: Case[] = [
     expectedTo: to("confirm@example.com"),
     run: () =>
       email.sendBookingConfirmationEmail({
-        name: "Asha", email: to("confirm@example.com"), venueName: "Turf Arena", sport: "Football",
-        date: D, startTime: "18:00", endTime: "19:00", totalAmount: 500, checkInCode: "PMS-1234",
+        name: "Asha",
+        email: to("confirm@example.com"),
+        venueName: "Turf Arena",
+        sport: "Football",
+        date: D,
+        startTime: "18:00",
+        endTime: "19:00",
+        totalAmount: 500,
+        checkInCode: "PMS-1234",
       }),
     expect: ["PMS-1234"],
   },
@@ -149,8 +188,15 @@ const cases: Case[] = [
     expectedTo: to("reminder@example.com"),
     run: () =>
       email.sendBookingReminderEmail({
-        email: to("reminder@example.com"), name: "Asha", venueName: "Turf Arena", sport: "Football",
-        date: D, startTime: "18:00", endTime: "19:00", interval: "24_HOURS", bookingId: "bk_1",
+        email: to("reminder@example.com"),
+        name: "Asha",
+        venueName: "Turf Arena",
+        sport: "Football",
+        date: D,
+        startTime: "18:00",
+        endTime: "19:00",
+        interval: "24_HOURS",
+        bookingId: "bk_1",
       }),
   },
   {
@@ -158,8 +204,14 @@ const cases: Case[] = [
     expectedTo: to("invitee@example.com"),
     run: () =>
       email.sendBookingInvitationEmail({
-        inviteeName: "Ravi", inviteeEmail: to("invitee@example.com"), inviterName: "Asha",
-        venueName: "Turf Arena", sport: "Football", date: "2026-08-01", startTime: "18:00", endTime: "19:00",
+        inviteeName: "Ravi",
+        inviteeEmail: to("invitee@example.com"),
+        inviterName: "Asha",
+        venueName: "Turf Arena",
+        sport: "Football",
+        date: "2026-08-01",
+        startTime: "18:00",
+        endTime: "19:00",
         estimatedAmount: 250,
       }),
   },
@@ -167,65 +219,124 @@ const cases: Case[] = [
     category: "Friend request",
     expectedTo: to("recipient@example.com"),
     run: () =>
-      email.sendFriendRequestEmail({ recipientName: "Ravi", recipientEmail: to("recipient@example.com"), requesterName: "Asha" }),
+      email.sendFriendRequestEmail({
+        recipientName: "Ravi",
+        recipientEmail: to("recipient@example.com"),
+        requesterName: "Asha",
+      }),
   },
   {
     category: "Friend request accepted",
     expectedTo: to("requester@example.com"),
     run: () =>
-      email.sendFriendRequestAcceptedEmail({ requesterName: "Asha", requesterEmail: to("requester@example.com"), acceptedByName: "Ravi" }),
+      email.sendFriendRequestAcceptedEmail({
+        requesterName: "Asha",
+        requesterEmail: to("requester@example.com"),
+        acceptedByName: "Ravi",
+      }),
   },
   {
     category: "Coach verification — VERIFIED",
     expectedTo: to("coach@example.com"),
     run: () =>
-      email.sendCoachVerificationStatusEmail({ name: "Coach K", email: to("coach@example.com"), status: "VERIFIED" }),
+      email.sendCoachVerificationStatusEmail({
+        name: "Coach K",
+        email: to("coach@example.com"),
+        status: "VERIFIED",
+      }),
   },
   {
     category: "Coach verification — REJECTED (with notes)",
     expectedTo: to("coach@example.com"),
     run: () =>
-      email.sendCoachVerificationStatusEmail({ name: "Coach K", email: to("coach@example.com"), status: "REJECTED", notes: "ID unclear" }),
+      email.sendCoachVerificationStatusEmail({
+        name: "Coach K",
+        email: to("coach@example.com"),
+        status: "REJECTED",
+        notes: "ID unclear",
+      }),
     expect: ["ID unclear"],
   },
   {
     category: "Coach verification reminder",
     expectedTo: to("coach@example.com"),
     run: () =>
-      email.sendCoachVerificationReminderEmail({ name: "Coach K", email: to("coach@example.com") }),
+      email.sendCoachVerificationReminderEmail({
+        name: "Coach K",
+        email: to("coach@example.com"),
+      }),
   },
   {
     category: "Credentials (venue inquiry)",
     expectedTo: to("creds@example.com"),
     run: () =>
-      email.sendCredentialsEmail({ name: "Owner", email: to("creds@example.com"), password: "Temp@123", loginUrl: "https://app.powermysport.com/login" }),
+      email.sendCredentialsEmail({
+        name: "Owner",
+        email: to("creds@example.com"),
+        password: "Temp@123",
+        loginUrl: "https://app.powermysport.com/login",
+      }),
   },
   {
     category: "Coach admin credentials",
     expectedTo: to("coachadmin@example.com"),
     run: () =>
-      email.sendCoachAdminCredentialsEmail({ name: "Coach K", email: to("coachadmin@example.com"), password: "Temp@123", loginUrl: "https://app.powermysport.com/login" }),
+      email.sendCoachAdminCredentialsEmail({
+        name: "Coach K",
+        email: to("coachadmin@example.com"),
+        password: "Temp@123",
+        loginUrl: "https://app.powermysport.com/login",
+      }),
   },
   {
     category: "Venue admin credentials",
     expectedTo: to("venueadmin@example.com"),
     run: () =>
-      email.sendVenueAdminCredentialsEmail({ name: "Owner", email: to("venueadmin@example.com"), password: "Temp@123", loginUrl: "https://app.powermysport.com/login" }),
+      email.sendVenueAdminCredentialsEmail({
+        name: "Owner",
+        email: to("venueadmin@example.com"),
+        password: "Temp@123",
+        loginUrl: "https://app.powermysport.com/login",
+      }),
   },
   {
     category: "Admin temporary credentials",
     expectedTo: to("admin@example.com"),
     run: () =>
-      email.sendAdminTemporaryCredentialsEmail({ name: "Admin", email: to("admin@example.com"), role: "SUPPORT_ADMIN", temporaryPassword: "Temp@123", loginUrl: "https://admin.powermysport.com/login" }),
+      email.sendAdminTemporaryCredentialsEmail({
+        name: "Admin",
+        email: to("admin@example.com"),
+        role: "SUPPORT_ADMIN",
+        temporaryPassword: "Temp@123",
+        loginUrl: "https://admin.powermysport.com/login",
+      }),
   },
   {
     category: "Order confirmation",
     expectedTo: to("buyer@example.com"),
     run: () =>
       email.sendOrderConfirmationEmail({
-        email: to("buyer@example.com"), name: "Asha", orderNumber: "ORD-1001", totalAmount: 1299,
-        items: [{ productName: "Football", variantLabel: "Size 5", quantity: 1, unitPrice: 1299, lineTotal: 1299 }],
-        shippingAddress: { fullName: "Asha", addressLine1: "12 MG Road", city: "Bengaluru", state: "KA", postalCode: "560001", country: "India" },
+        email: to("buyer@example.com"),
+        name: "Asha",
+        orderNumber: "ORD-1001",
+        totalAmount: 1299,
+        items: [
+          {
+            productName: "Football",
+            variantLabel: "Size 5",
+            quantity: 1,
+            unitPrice: 1299,
+            lineTotal: 1299,
+          },
+        ],
+        shippingAddress: {
+          fullName: "Asha",
+          addressLine1: "12 MG Road",
+          city: "Bengaluru",
+          state: "KA",
+          postalCode: "560001",
+          country: "India",
+        },
         paymentMethod: "PhonePe",
       }),
     expect: ["ORD-1001", "Football"],
@@ -239,90 +350,170 @@ const cases: Case[] = [
     category: "Support ticket received",
     expectedTo: to("support1@example.com"),
     run: () =>
-      email.sendSupportTicketReceivedEmail({ name: "Asha", email: to("support1@example.com"), ticketId: "abc12345", subject: "Login issue", category: "TECHNICAL" }),
+      email.sendSupportTicketReceivedEmail({
+        name: "Asha",
+        email: to("support1@example.com"),
+        ticketId: "abc12345",
+        subject: "Login issue",
+        category: "TECHNICAL",
+      }),
     expect: ["abc1234", "Login issue"],
   },
   {
     category: "Support ticket status change",
     expectedTo: to("support2@example.com"),
     run: () =>
-      email.sendSupportTicketStatusEmail({ name: "Asha", email: to("support2@example.com"), ticketId: "abc12345", subject: "Login issue", status: "RESOLVED", note: "Fixed on our end." }),
+      email.sendSupportTicketStatusEmail({
+        name: "Asha",
+        email: to("support2@example.com"),
+        ticketId: "abc12345",
+        subject: "Login issue",
+        status: "RESOLVED",
+        note: "Fixed on our end.",
+      }),
     expect: ["RESOLVED"],
   },
   {
     category: "Payout processed",
     expectedTo: to("payout@example.com"),
     run: () =>
-      email.sendPayoutProcessedEmail({ name: "Coach K", email: to("payout@example.com"), amount: 4500, bookingCount: 3, role: "Coach" }),
+      email.sendPayoutProcessedEmail({
+        name: "Coach K",
+        email: to("payout@example.com"),
+        amount: 4500,
+        bookingCount: 3,
+        role: "Coach",
+      }),
     expect: ["4,500"],
   },
   {
     category: "Dispute raised",
     expectedTo: to("dispute1@example.com"),
     run: () =>
-      email.sendDisputeStatusEmail({ name: "Asha", email: to("dispute1@example.com"), disputeType: "NO_SHOW", status: "OPEN", bookingId: "bk123456" }),
+      email.sendDisputeStatusEmail({
+        name: "Asha",
+        email: to("dispute1@example.com"),
+        disputeType: "NO_SHOW",
+        status: "OPEN",
+        bookingId: "bk123456",
+      }),
     expect: ["bk123456"],
   },
   {
     category: "Dispute resolved (with refund)",
     expectedTo: to("dispute2@example.com"),
     run: () =>
-      email.sendDisputeStatusEmail({ name: "Asha", email: to("dispute2@example.com"), disputeType: "POOR_QUALITY", status: "RESOLVED", bookingId: "bk123456", resolution: "PARTIAL_REFUND", refundAmount: 250 }),
+      email.sendDisputeStatusEmail({
+        name: "Asha",
+        email: to("dispute2@example.com"),
+        disputeType: "POOR_QUALITY",
+        status: "RESOLVED",
+        bookingId: "bk123456",
+        resolution: "PARTIAL_REFUND",
+        refundAmount: 250,
+      }),
     expect: ["PARTIAL REFUND"],
   },
   {
     category: "Waitlist slot available",
     expectedTo: to("waitlist@example.com"),
     run: () =>
-      email.sendWaitlistSlotAvailableEmail({ name: "Asha", email: to("waitlist@example.com"), venueName: "Turf Arena", sport: "Football", date: D, startTime: "18:00", endTime: "19:00" }),
+      email.sendWaitlistSlotAvailableEmail({
+        name: "Asha",
+        email: to("waitlist@example.com"),
+        venueName: "Turf Arena",
+        sport: "Football",
+        date: D,
+        startTime: "18:00",
+        endTime: "19:00",
+      }),
     expect: ["Turf Arena"],
   },
   {
     category: "Coach subscription purchased (player)",
     expectedTo: to("subplayer@example.com"),
     run: () =>
-      email.sendCoachSubscriptionPurchasedEmail({ name: "Asha", email: to("subplayer@example.com"), packageName: "Pro Monthly", price: 999, counterpartName: "Coach K", recipientRole: "Player" }),
+      email.sendCoachSubscriptionPurchasedEmail({
+        name: "Asha",
+        email: to("subplayer@example.com"),
+        packageName: "Pro Monthly",
+        price: 999,
+        counterpartName: "Coach K",
+        recipientRole: "Player",
+      }),
     expect: ["Pro Monthly", "Coach K"],
   },
   {
     category: "Coach subscription purchased (coach)",
     expectedTo: to("subcoach@example.com"),
     run: () =>
-      email.sendCoachSubscriptionPurchasedEmail({ name: "Coach K", email: to("subcoach@example.com"), packageName: "Pro Monthly", price: 999, counterpartName: "Asha", recipientRole: "Coach" }),
+      email.sendCoachSubscriptionPurchasedEmail({
+        name: "Coach K",
+        email: to("subcoach@example.com"),
+        packageName: "Pro Monthly",
+        price: 999,
+        counterpartName: "Asha",
+        recipientRole: "Coach",
+      }),
     expect: ["Pro Monthly"],
   },
   {
     category: "Coach subscription cancelled",
     expectedTo: to("subcancel@example.com"),
     run: () =>
-      email.sendCoachSubscriptionCancelledEmail({ name: "Asha", email: to("subcancel@example.com"), packageName: "Pro Monthly", counterpartName: "Coach K", recipientRole: "Player" }),
+      email.sendCoachSubscriptionCancelledEmail({
+        name: "Asha",
+        email: to("subcancel@example.com"),
+        packageName: "Pro Monthly",
+        counterpartName: "Coach K",
+        recipientRole: "Player",
+      }),
     expect: ["Pro Monthly"],
   },
   {
     category: "Review received",
     expectedTo: to("review@example.com"),
     run: () =>
-      email.sendReviewReceivedEmail({ name: "Coach K", email: to("review@example.com"), rating: 5, review: "Excellent session!", reviewerName: "Asha", targetType: "Coach" }),
+      email.sendReviewReceivedEmail({
+        name: "Coach K",
+        email: to("review@example.com"),
+        rating: 5,
+        review: "Excellent session!",
+        reviewerName: "Asha",
+        targetType: "Coach",
+      }),
     expect: ["Excellent session!"],
   },
   {
     category: "Account suspended",
     expectedTo: to("suspend@example.com"),
     run: () =>
-      email.sendAccountStatusEmail({ name: "Asha", email: to("suspend@example.com"), action: "SUSPEND", reason: "Policy violation" }),
+      email.sendAccountStatusEmail({
+        name: "Asha",
+        email: to("suspend@example.com"),
+        action: "SUSPEND",
+        reason: "Policy violation",
+      }),
     expect: ["Policy violation"],
   },
   {
     category: "Account reactivated",
     expectedTo: to("reactivate@example.com"),
     run: () =>
-      email.sendAccountStatusEmail({ name: "Asha", email: to("reactivate@example.com"), action: "REACTIVATE" }),
+      email.sendAccountStatusEmail({
+        name: "Asha",
+        email: to("reactivate@example.com"),
+        action: "REACTIVATE",
+      }),
   },
   {
     category: "Password changed confirmation",
     expectedTo: to("pwchanged@example.com"),
     run: () =>
-      email.sendPasswordChangedEmail({ name: "Asha", email: to("pwchanged@example.com") }),
+      email.sendPasswordChangedEmail({
+        name: "Asha",
+        email: to("pwchanged@example.com"),
+      }),
   },
 ];
 
@@ -348,7 +539,9 @@ interface Result {
 }
 
 async function main(): Promise<void> {
-  console.log(`\nEmail template test — mode: ${SEND ? "LIVE SEND" : "DRY RUN (no mail sent)"}`);
+  console.log(
+    `\nEmail template test — mode: ${SEND ? "LIVE SEND" : "DRY RUN (no mail sent)"}`,
+  );
   if (SEND && !OVERRIDE_TO) {
     console.error("--send requires --to <address>. Aborting.");
     process.exit(1);
@@ -380,7 +573,9 @@ async function main(): Promise<void> {
       subject: produced ? rec!.subject : "",
       toMatch: produced ? rec!.to === c.expectedTo : false,
       validRecipient: produced ? emailish.test(rec!.to) : false,
-      subjectOk: produced ? Boolean(rec!.subject && rec!.subject.length > 0) : false,
+      subjectOk: produced
+        ? Boolean(rec!.subject && rec!.subject.length > 0)
+        : false,
       htmlOk: produced ? html.length > 0 && badTokens.length === 0 : false,
       badTokens,
       expectOk,
@@ -414,7 +609,9 @@ async function main(): Promise<void> {
   const failed = results.length - passed;
 
   console.log(`\n──────────────────────────────────────────────`);
-  console.log(`RESULT: ${passed}/${results.length} passed${failed ? `, ${failed} FAILED` : ""}`);
+  console.log(
+    `RESULT: ${passed}/${results.length} passed${failed ? `, ${failed} FAILED` : ""}`,
+  );
 
   process.exit(failed ? 1 : 0);
 }

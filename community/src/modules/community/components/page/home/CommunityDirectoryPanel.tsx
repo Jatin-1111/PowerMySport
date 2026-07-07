@@ -17,7 +17,10 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { GroupInviteLink } from "@/modules/community/components/GroupInviteLink";
 import { ConversationListItem } from "@/modules/community/components/chat/ConversationListItem";
-import { getAvatarCharacter, formatUserMeta } from "@/modules/community/utils/chatUtils";
+import {
+  getAvatarCharacter,
+  formatUserMeta,
+} from "@/modules/community/utils/chatUtils";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
 
 type Props = { page: CommunityPageViewModel };
@@ -84,7 +87,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
               Conversations
             </h2>
           </div>
-          
+
           {/* Inbox / Tools Toggle */}
           <div className="flex rounded-lg border border-border bg-slate-50 p-0.5 shadow-xs">
             {["INBOX", "TOOLS"].map((mode) => (
@@ -124,33 +127,23 @@ export default function CommunityDirectoryPanel({ page }: Props) {
             <div className="relative z-10 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-600/80">
-                  {directoryView === "GROUPS"
-                    ? "Community"
-                    : "Direct Messages"}
+                  {directoryView === "GROUPS" ? "Community" : "Direct Messages"}
                 </p>
                 <h3 className="font-title mt-1 text-lg font-bold text-slate-900">
-                  {directoryView === "GROUPS"
-                    ? "Group Tools"
-                    : "Chat Tools"}
+                  {directoryView === "GROUPS" ? "Group Tools" : "Chat Tools"}
                 </h3>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/60 shadow-sm backdrop-blur-md">
                 {directoryView === "GROUPS" ? (
                   <Users size={20} className="text-sky-600" />
                 ) : (
-                  <MessageSquare
-                    size={20}
-                    className="text-sky-600"
-                  />
+                  <MessageSquare size={20} className="text-sky-600" />
                 )}
               </div>
             </div>
             <div className="mt-4 flex gap-1">
               {toolsSteps.map((step) => (
-                <div
-                  key={step.id}
-                  className="group relative flex-1"
-                >
+                <div key={step.id} className="group relative flex-1">
                   <div
                     className={`h-1.5 w-full rounded-full transition-colors duration-300 ${step.done ? "bg-turf-green" : "bg-white/60 shadow-inner"}`}
                   />
@@ -162,8 +155,8 @@ export default function CommunityDirectoryPanel({ page }: Props) {
           {directoryView === "CONTACTS" ? (
             <div className="space-y-3 rounded-2xl border border-slate-200/60 bg-white/80 p-3 shadow-sm backdrop-blur-md flex-none">
               <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-sm">
-                Search a user and tap their card to instantly create
-                or open a DM thread.
+                Search a user and tap their card to instantly create or open a
+                DM thread.
               </div>
               <div className="relative">
                 <Search
@@ -172,9 +165,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                 />
                 <input
                   value={playerSearchQuery}
-                  onChange={(e) =>
-                    setPlayerSearchQuery(e.target.value)
-                  }
+                  onChange={(e) => setPlayerSearchQuery(e.target.value)}
                   placeholder="Search by name or alias"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20"
                 />
@@ -189,9 +180,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                     playerSearchResults.map((user) => (
                       <button
                         key={user.id}
-                        onClick={() =>
-                          void handleStartConversation(user.id)
-                        }
+                        onClick={() => void handleStartConversation(user.id)}
                         className="flex w-full items-start gap-3 rounded-lg bg-white px-3 py-2.5 text-left text-sm shadow-sm hover:border-power-orange/30 hover:bg-power-orange/5"
                       >
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-bold text-slate-600">
@@ -213,9 +202,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                           </div>
                           <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
                             <span>
-                              {user.isIdentityPublic
-                                ? "Public"
-                                : "Anonymous"}
+                              {user.isIdentityPublic ? "Public" : "Anonymous"}
                             </span>
                             {formatUserMeta(user) && (
                               <span>{formatUserMeta(user)}</span>
@@ -259,10 +246,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                       key={item.value}
                       onClick={() =>
                         setGroupToolsMode(
-                          item.value as
-                            | "DISCOVER"
-                            | "MANAGE"
-                            | "INVITE",
+                          item.value as "DISCOVER" | "MANAGE" | "INVITE",
                         )
                       }
                       className={`relative flex flex-1 items-center justify-center gap-1 rounded-lg py-1 text-[10px] font-semibold transition-colors z-10 ${isActive ? "text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
@@ -276,9 +260,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                       <span className="relative z-10 flex items-center gap-1">
                         <Icon
                           size={12}
-                          className={
-                            isActive ? "text-power-orange" : ""
-                          }
+                          className={isActive ? "text-power-orange" : ""}
                         />
                         {item.label}
                       </span>
@@ -298,10 +280,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                       key={item.value}
                       onClick={() =>
                         setGroupMode(
-                          item.value as
-                            | "ALL"
-                            | "JOINED"
-                            | "DISCOVER",
+                          item.value as "ALL" | "JOINED" | "DISCOVER",
                         )
                       }
                       className={`flex-1 rounded-md py-1 text-[9px] font-bold uppercase tracking-wider transition-all ${groupMode === item.value ? "bg-white text-slate-800 shadow-xs border border-slate-200/50" : "text-slate-500 hover:bg-slate-100"}`}
@@ -319,9 +298,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                 />
                 <input
                   value={groupSearchQuery}
-                  onChange={(e) =>
-                    setGroupSearchQuery(e.target.value)
-                  }
+                  onChange={(e) => setGroupSearchQuery(e.target.value)}
                   placeholder="Search groups"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
                 />
@@ -334,8 +311,9 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                   </div>
                 ) : toolVisibleGroups.length ? (
                   toolVisibleGroups.map((group) => {
-                    const groupConversation =
-                      getGroupConversationByGroupId(group.id);
+                    const groupConversation = getGroupConversationByGroupId(
+                      group.id,
+                    );
                     return (
                       <motion.div
                         layout
@@ -373,26 +351,19 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                                 }}
                                 className="rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-700"
                               >
-                                {groupConversation
-                                  ? "Chat"
-                                  : "View"}
+                                {groupConversation ? "Chat" : "View"}
                               </button>
                             ) : (
                               <>
                                 <button
-                                  onClick={() =>
-                                    void handleJoinGroup(group.id)
-                                  }
+                                  onClick={() => void handleJoinGroup(group.id)}
                                   className="rounded-lg bg-power-orange px-3 py-1.5 text-[11px] font-semibold text-white hover:opacity-90"
                                 >
                                   Join
                                 </button>
                                 <button
                                   onClick={() =>
-                                    handleOpenReportModal(
-                                      "GROUP",
-                                      group.id,
-                                    )
+                                    handleOpenReportModal("GROUP", group.id)
                                   }
                                   className="flex h-7 w-7 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
                                 >
@@ -403,81 +374,68 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                           </div>
                         </div>
                         <AnimatePresence>
-                          {group.isMember &&
-                            groupToolsMode === "MANAGE" && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{
-                                  opacity: 1,
-                                  height: "auto",
-                                }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="mt-4 border-t border-slate-100 pt-3"
-                              >
-                                <div className="flex items-center gap-2">
+                          {group.isMember && groupToolsMode === "MANAGE" && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{
+                                opacity: 1,
+                                height: "auto",
+                              }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="mt-4 border-t border-slate-100 pt-3"
+                            >
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() =>
+                                    void handleLeaveGroup(group.id)
+                                  }
+                                  disabled={isLeavingGroupId === group.id}
+                                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-bold text-rose-600 hover:bg-rose-100 disabled:opacity-60"
+                                >
+                                  <LogOut size={14} /> Leave Group
+                                </button>
+                                {group.isAdmin && (
                                   <button
                                     onClick={() =>
-                                      void handleLeaveGroup(
-                                        group.id,
-                                      )
+                                      void handleDeleteGroup(group.id)
                                     }
-                                    disabled={
-                                      isLeavingGroupId === group.id
-                                    }
-                                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] font-bold text-rose-600 hover:bg-rose-100 disabled:opacity-60"
+                                    disabled={isDeletingGroupId === group.id}
+                                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-600 hover:bg-red-100 disabled:opacity-60"
                                   >
-                                    <LogOut size={14} /> Leave Group
+                                    <Trash size={14} /> Delete Group
                                   </button>
-                                  {group.isAdmin && (
-                                    <button
-                                      onClick={() =>
-                                        void handleDeleteGroup(
-                                          group.id,
-                                        )
-                                      }
-                                      disabled={
-                                        isDeletingGroupId === group.id
-                                      }
-                                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-600 hover:bg-red-100 disabled:opacity-60"
-                                    >
-                                      <Trash size={14} /> Delete Group
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() =>
-                                      handleOpenReportModal(
-                                        "GROUP",
-                                        group.id,
-                                      )
-                                    }
-                                    className="flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600 hover:bg-slate-100"
-                                  >
-                                    <Flag size={14} />
-                                  </button>
-                                </div>
-                              </motion.div>
-                            )}
+                                )}
+                                <button
+                                  onClick={() =>
+                                    handleOpenReportModal("GROUP", group.id)
+                                  }
+                                  className="flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-600 hover:bg-slate-100"
+                                >
+                                  <Flag size={14} />
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
                         </AnimatePresence>
                         <AnimatePresence>
-                          {group.isMember &&
-                            groupToolsMode === "INVITE" && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{
-                                  opacity: 1,
-                                  height: "auto",
-                                }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="mt-4 border-t border-slate-100 pt-3"
-                              >
-                                {group.isAdmin && (
-                                  <GroupInviteLink
-                                    groupId={group.id}
-                                    groupName={group.name}
-                                  />
-                                )}
-                              </motion.div>
-                            )}
+                          {group.isMember && groupToolsMode === "INVITE" && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{
+                                opacity: 1,
+                                height: "auto",
+                              }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="mt-4 border-t border-slate-100 pt-3"
+                            >
+                              {group.isAdmin && (
+                                <GroupInviteLink
+                                  groupId={group.id}
+                                  groupName={group.name}
+                                />
+                              )}
+                            </motion.div>
+                          )}
                         </AnimatePresence>
                       </motion.div>
                     );
@@ -494,7 +452,9 @@ export default function CommunityDirectoryPanel({ page }: Props) {
       ) : (
         <div className="flex-1 min-h-0 flex flex-col mt-3">
           {/* Dynamic Grid for Filters */}
-          <div className={`grid gap-1.5 rounded-xl border border-border bg-slate-50 p-0.5 shadow-xs ${directoryView === "GROUPS" ? "w-36 grid-cols-2" : "w-52 grid-cols-3"}`}>
+          <div
+            className={`grid gap-1.5 rounded-xl border border-border bg-slate-50 p-0.5 shadow-xs ${directoryView === "GROUPS" ? "w-36 grid-cols-2" : "w-52 grid-cols-3"}`}
+          >
             {conversationModeOptions.map((item) => (
               <button
                 key={item.value}
@@ -515,9 +475,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
               <ConversationListItem
                 key={conversation.id}
                 conversation={conversation}
-                isSelected={
-                  conversation.id === selectedConversationId
-                }
+                isSelected={conversation.id === selectedConversationId}
                 onOpenConversation={handleOpenConversation}
               />
             ))}
@@ -534,9 +492,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                 disabled={isLoadingMoreConversations}
                 className="w-full border border-border bg-white px-3 py-2 text-sm font-medium text-slate-700"
               >
-                {isLoadingMoreConversations
-                  ? "Loading..."
-                  : "Load more"}
+                {isLoadingMoreConversations ? "Loading..." : "Load more"}
               </button>
             )}
           </div>

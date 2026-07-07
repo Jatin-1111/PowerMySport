@@ -29,7 +29,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 export default function DiscoverPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const initialQuery = searchParams.get("q") || "";
   const initialSport = searchParams.get("sport") || "All";
   const initialTab = (searchParams.get("tab") as any) || "COMMUNITIES";
@@ -73,18 +73,18 @@ export default function DiscoverPageClient() {
   const availableSports = Array.from(
     new Set([
       ...(selectedSport !== "All" ? [selectedSport] : []),
-      ...(activeTab === "COMMUNITIES" 
-        ? (communities.map(c => c.sport).filter(Boolean) as string[])
-        : (players.flatMap(p => p.sports || []) as string[]))
-    ])
+      ...(activeTab === "COMMUNITIES"
+        ? (communities.map((c) => c.sport).filter(Boolean) as string[])
+        : (players.flatMap((p) => p.sports || []) as string[])),
+    ]),
   ).sort();
 
   const availableCities = Array.from(
     new Set(
       activeTab === "COMMUNITIES"
-        ? (communities.map(c => c.city).filter(Boolean) as string[])
-        : (players.map(p => p.city).filter(Boolean) as string[])
-    )
+        ? (communities.map((c) => c.city).filter(Boolean) as string[])
+        : (players.map((p) => p.city).filter(Boolean) as string[]),
+    ),
   ).sort();
 
   // Debounce search
@@ -112,8 +112,10 @@ export default function DiscoverPageClient() {
           if (activeTab === "PLAYERS") filters = { userType: "Player" };
           if (activeTab === "COACHES") filters = { role: "Coach" };
 
-          const playersData =
-            await communityService.searchPlayers(debouncedQuery, filters);
+          const playersData = await communityService.searchPlayers(
+            debouncedQuery,
+            filters,
+          );
           if (isMounted) {
             setPlayers(playersData);
             setCommunities([]);
@@ -163,10 +165,14 @@ export default function DiscoverPageClient() {
 
   const handleCommunityChat = async (groupId: string) => {
     try {
-      const convs = await communityService.listConversationsItems(1, 100, { type: "GROUPS" });
+      const convs = await communityService.listConversationsItems(1, 100, {
+        type: "GROUPS",
+      });
       const groupConv = convs.find((c) => c.group?.id === groupId);
       if (groupConv) {
-        router.push(`/chats?sidebar=conversations&directory=groups&conversation=${groupConv.id}`);
+        router.push(
+          `/chats?sidebar=conversations&directory=groups&conversation=${groupConv.id}`,
+        );
       } else {
         router.push("/chats?sidebar=conversations&directory=groups");
       }
@@ -185,19 +191,23 @@ export default function DiscoverPageClient() {
     }
   };
 
-  const filteredCommunities = communities.filter(c => {
+  const filteredCommunities = communities.filter((c) => {
     if (selectedSport !== "All" && c.sport !== selectedSport) return false;
     if (selectedCity !== "All" && c.city !== selectedCity) return false;
     return true;
   });
 
   const filteredPlayers = players.filter((p) => {
-    if (activeTab === "PARENTS") { if (p.userType !== "Parent") return false; }
-    else if (activeTab === "PLAYERS") { if (p.userType !== "Player") return false; }
-    else if (activeTab === "COACHES") { if (p.role !== "Coach") return false; }
-    else return false;
+    if (activeTab === "PARENTS") {
+      if (p.userType !== "Parent") return false;
+    } else if (activeTab === "PLAYERS") {
+      if (p.userType !== "Player") return false;
+    } else if (activeTab === "COACHES") {
+      if (p.role !== "Coach") return false;
+    } else return false;
 
-    if (selectedSport !== "All" && !(p.sports || []).includes(selectedSport)) return false;
+    if (selectedSport !== "All" && !(p.sports || []).includes(selectedSport))
+      return false;
     if (selectedCity !== "All" && p.city !== selectedCity) return false;
     return true;
   });
@@ -230,7 +240,9 @@ export default function DiscoverPageClient() {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`shrink-0 flex items-center gap-2 rounded-2xl border px-4 py-3.5 text-sm font-bold shadow-sm backdrop-blur transition-all ${
-                  showFilters || selectedSport !== "All" || selectedCity !== "All"
+                  showFilters ||
+                  selectedSport !== "All" ||
+                  selectedCity !== "All"
                     ? "border-power-orange/30 bg-power-orange/10 text-power-orange"
                     : "border-slate-200 bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900"
                 }`}
@@ -239,12 +251,13 @@ export default function DiscoverPageClient() {
                 <span className="hidden sm:inline">Filters</span>
                 {(selectedSport !== "All" || selectedCity !== "All") && (
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-power-orange text-[10px] text-white">
-                    {(selectedSport !== "All" ? 1 : 0) + (selectedCity !== "All" ? 1 : 0)}
+                    {(selectedSport !== "All" ? 1 : 0) +
+                      (selectedCity !== "All" ? 1 : 0)}
                   </span>
                 )}
               </button>
             </div>
-            
+
             <AnimatePresence>
               {showFilters && (
                 <motion.div
@@ -256,34 +269,49 @@ export default function DiscoverPageClient() {
                   <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Sport</label>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                          Sport
+                        </label>
                         <select
                           value={selectedSport}
                           onChange={(e) => setSelectedSport(e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
                         >
                           <option value="All">All Sports</option>
-                          {availableSports.map(s => <option key={s} value={s}>{s}</option>)}
+                          {availableSports.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
                         </select>
                       </div>
-                      
+
                       <div>
-                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">City</label>
+                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+                          City
+                        </label>
                         <select
                           value={selectedCity}
                           onChange={(e) => setSelectedCity(e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
                         >
                           <option value="All">All Cities</option>
-                          {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
+                          {availableCities.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
-                    
+
                     {(selectedSport !== "All" || selectedCity !== "All") && (
                       <div className="mt-4 flex justify-end">
                         <button
-                          onClick={() => { setSelectedSport("All"); setSelectedCity("All"); }}
+                          onClick={() => {
+                            setSelectedSport("All");
+                            setSelectedCity("All");
+                          }}
                           className="text-xs font-bold text-power-orange hover:text-orange-600 transition-colors"
                         >
                           Clear Filters
@@ -489,7 +517,11 @@ export default function DiscoverPageClient() {
                   <div className="mb-4 flex items-center justify-between">
                     <div>
                       <h2 className="community-section-title">
-                        {activeTab === "PARENTS" ? "Sports Parents" : activeTab === "PLAYERS" ? "Athletes" : "Coaches"}
+                        {activeTab === "PARENTS"
+                          ? "Sports Parents"
+                          : activeTab === "PLAYERS"
+                            ? "Athletes"
+                            : "Coaches"}
                       </h2>
                       <p className="community-section-copy">
                         {activeTab === "PARENTS"
@@ -543,7 +575,11 @@ export default function DiscoverPageClient() {
                               {player.displayName}
                             </h3>
                             <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-power-orange">
-                              {player.userType === "Parent" ? "Parent" : player.role === "Coach" ? "Coach" : "Player"}
+                              {player.userType === "Parent"
+                                ? "Parent"
+                                : player.role === "Coach"
+                                  ? "Coach"
+                                  : "Player"}
                             </p>
                             <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
                               {player.sports?.slice(0, 2).map((s) => (

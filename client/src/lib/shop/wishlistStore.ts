@@ -23,9 +23,15 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
       const res = await api.get("/v1/wishlist");
       if (res.data?.ok) {
         const items = res.data.data || [];
-        const products = items.map((item: any) => item.productId).filter(Boolean);
+        const products = items
+          .map((item: any) => item.productId)
+          .filter(Boolean);
         const ids = products.map((p: any) => p.id || p._id);
-        set({ wishlistProductIds: ids, wishlistProducts: products, isLoaded: true });
+        set({
+          wishlistProductIds: ids,
+          wishlistProducts: products,
+          isLoaded: true,
+        });
       }
     } catch (err) {
       console.error("Failed to load wishlist", err);
@@ -37,10 +43,10 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
     const currentIds = get().wishlistProductIds;
     const currentProducts = get().wishlistProducts;
     const isWished = currentIds.includes(productId);
-    
+
     // Optimistic update
-    const newIds = isWished 
-      ? currentIds.filter(id => id !== productId)
+    const newIds = isWished
+      ? currentIds.filter((id) => id !== productId)
       : [...currentIds, productId];
     set({ wishlistProductIds: newIds });
 
@@ -48,20 +54,32 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
       const res = await api.post("/v1/wishlist/toggle", { productId });
       if (res.data?.ok) {
         const items = res.data.data || [];
-        const products = items.map((item: any) => item.productId).filter(Boolean);
+        const products = items
+          .map((item: any) => item.productId)
+          .filter(Boolean);
         const ids = products.map((p: any) => p.id || p._id);
-        set({ wishlistProductIds: ids, wishlistProducts: products, isLoaded: true });
+        set({
+          wishlistProductIds: ids,
+          wishlistProducts: products,
+          isLoaded: true,
+        });
         return ids.includes(productId);
       }
-      set({ wishlistProductIds: currentIds, wishlistProducts: currentProducts });
+      set({
+        wishlistProductIds: currentIds,
+        wishlistProducts: currentProducts,
+      });
       return isWished;
     } catch (err) {
       console.error("Toggle wishlist error", err);
-      set({ wishlistProductIds: currentIds, wishlistProducts: currentProducts });
+      set({
+        wishlistProductIds: currentIds,
+        wishlistProducts: currentProducts,
+      });
       throw err;
     }
   },
   clearWishlist: () => {
     set({ wishlistProductIds: [], wishlistProducts: [], isLoaded: false });
-  }
+  },
 }));

@@ -43,14 +43,8 @@ function SkewPolygon({ className }: { className?: string }) {
       aria-hidden
       preserveAspectRatio="none"
     >
-      <polygon
-        points="0,40 600,0 600,160 0,200"
-        fill="rgba(233,115,22,0.06)"
-      />
-      <polygon
-        points="0,60 600,20 600,180 0,220"
-        fill="rgba(34,197,94,0.04)"
-      />
+      <polygon points="0,40 600,0 600,160 0,200" fill="rgba(233,115,22,0.06)" />
+      <polygon points="0,60 600,20 600,180 0,220" fill="rgba(34,197,94,0.04)" />
     </svg>
   );
 }
@@ -90,7 +84,13 @@ function AnimatedCTAButton({
 
 // ─── DEFAULT VARIANT ──────────────────────────────────────────────────────────
 
-function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTAProps) {
+function DefaultCTA({
+  title,
+  description,
+  primaryCTA,
+  secondaryCTA,
+  label,
+}: CTAProps) {
   return (
     <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -106,7 +106,10 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
             className="relative"
           >
             {label && (
-              <motion.div variants={itemVariants} className="mb-5 flex justify-center">
+              <motion.div
+                variants={itemVariants}
+                className="mb-5 flex justify-center"
+              >
                 <SectionLabel label={label} color="orange" />
               </motion.div>
             )}
@@ -130,7 +133,11 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
                 {primaryCTA.label}
               </AnimatedCTAButton>
               {secondaryCTA && (
-                <AnimatedCTAButton href={secondaryCTA.href} variant="outline" className="bg-white">
+                <AnimatedCTAButton
+                  href={secondaryCTA.href}
+                  variant="outline"
+                  className="bg-white"
+                >
                   {secondaryCTA.label}
                 </AnimatedCTAButton>
               )}
@@ -144,7 +151,13 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
 
 // ─── GRADIENT VARIANT ─────────────────────────────────────────────────────────
 
-function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CTAProps) {
+function GradientCTA({
+  title,
+  description,
+  primaryCTA,
+  secondaryCTA,
+  label,
+}: CTAProps) {
   return (
     <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -179,7 +192,10 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
             className="relative px-8 py-16 text-center sm:px-12 sm:py-20"
           >
             {label && (
-              <motion.div variants={itemVariants} className="mb-5 flex justify-center">
+              <motion.div
+                variants={itemVariants}
+                className="mb-5 flex justify-center"
+              >
                 <SectionLabel label={label} color="orange" />
               </motion.div>
             )}
@@ -207,7 +223,11 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
                 {primaryCTA.label}
               </AnimatedCTAButton>
               {secondaryCTA && (
-                <AnimatedCTAButton href={secondaryCTA.href} variant="outline" className="bg-white/90">
+                <AnimatedCTAButton
+                  href={secondaryCTA.href}
+                  variant="outline"
+                  className="bg-white/90"
+                >
                   {secondaryCTA.label}
                 </AnimatedCTAButton>
               )}
@@ -221,13 +241,26 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
 
 // ─── IMAGE VARIANT ────────────────────────────────────────────────────────────
 
-function ImageCTA({ title, description, primaryCTA, secondaryCTA, backgroundImage, label }: CTAProps) {
+function ImageCTA({
+  title,
+  description,
+  primaryCTA,
+  secondaryCTA,
+  backgroundImage,
+  label,
+}: CTAProps) {
   return (
     <section className="relative overflow-hidden py-20 sm:py-24 lg:py-28">
       {/* Background image */}
       {backgroundImage && (
         <div className="absolute inset-0">
-          <Image src={backgroundImage} alt="" fill className="object-cover" aria-hidden />
+          <Image
+            src={backgroundImage}
+            alt=""
+            fill
+            className="object-cover"
+            aria-hidden
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/75 to-slate-900/50" />
         </div>
       )}
@@ -241,7 +274,10 @@ function ImageCTA({ title, description, primaryCTA, secondaryCTA, backgroundImag
           viewport={{ once: true, margin: "-100px" }}
         >
           {label && (
-            <motion.div variants={itemVariants} className="mb-5 flex justify-center">
+            <motion.div
+              variants={itemVariants}
+              className="mb-5 flex justify-center"
+            >
               <SectionLabel label={label} color="orange" />
             </motion.div>
           )}
@@ -251,7 +287,10 @@ function ImageCTA({ title, description, primaryCTA, secondaryCTA, backgroundImag
           >
             {title}
           </motion.h2>
-          <motion.p variants={itemVariants} className="mb-10 text-lg text-white/90 sm:text-xl">
+          <motion.p
+            variants={itemVariants}
+            className="mb-10 text-lg text-white/90 sm:text-xl"
+          >
             {description}
           </motion.p>
           <motion.div
@@ -262,7 +301,11 @@ function ImageCTA({ title, description, primaryCTA, secondaryCTA, backgroundImag
               {primaryCTA.label}
             </AnimatedCTAButton>
             {secondaryCTA && (
-              <AnimatedCTAButton href={secondaryCTA.href} variant="outline" className="border-white/60 bg-white/10 text-white hover:bg-white/20">
+              <AnimatedCTAButton
+                href={secondaryCTA.href}
+                variant="outline"
+                className="border-white/60 bg-white/10 text-white hover:bg-white/20"
+              >
                 {secondaryCTA.label}
               </AnimatedCTAButton>
             )}

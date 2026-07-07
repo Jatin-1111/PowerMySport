@@ -27,7 +27,10 @@ export const getCalendarBookings = async (
     if (!startDate || !endDate) {
       res
         .status(400)
-        .json({ success: false, message: "startDate and endDate are required" });
+        .json({
+          success: false,
+          message: "startDate and endDate are required",
+        });
       return;
     }
 
@@ -151,7 +154,10 @@ export const createCalendarEvent = async (
     if (count >= 200) {
       res
         .status(400)
-        .json({ success: false, message: "Maximum 200 calendar events allowed" });
+        .json({
+          success: false,
+          message: "Maximum 200 calendar events allowed",
+        });
       return;
     }
 

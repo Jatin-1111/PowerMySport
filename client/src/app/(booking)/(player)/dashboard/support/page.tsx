@@ -124,8 +124,12 @@ export default function SupportTicketsPage() {
   };
 
   // Stats
-  const openCount = tickets.filter((t) => t.status === "OPEN" || t.status === "IN_PROGRESS").length;
-  const resolvedCount = tickets.filter((t) => t.status === "RESOLVED" || t.status === "CLOSED").length;
+  const openCount = tickets.filter(
+    (t) => t.status === "OPEN" || t.status === "IN_PROGRESS",
+  ).length;
+  const resolvedCount = tickets.filter(
+    (t) => t.status === "RESOLVED" || t.status === "CLOSED",
+  ).length;
 
   if (isLoading) {
     return (

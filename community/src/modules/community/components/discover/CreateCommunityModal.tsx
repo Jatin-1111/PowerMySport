@@ -5,7 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
 import { CommunityGroupAudience } from "@/modules/community/types";
 import SportsSelect from "@/modules/sports/components/SportsSelect";
-import { X, Upload, Loader2, Users, MapPin, AlignLeft, Shield } from "lucide-react";
+import {
+  X,
+  Upload,
+  Loader2,
+  Users,
+  MapPin,
+  AlignLeft,
+  Shield,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface CreateCommunityModalProps {
@@ -20,15 +28,15 @@ export default function CreateCommunityModal({
   onSuccess,
 }: CreateCommunityModalProps) {
   const router = useRouter();
-  
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [sport, setSport] = useState("");
   const [city, setCity] = useState("");
   const [audience, setAudience] = useState<CommunityGroupAudience>("ALL");
-  
+
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -118,12 +126,20 @@ export default function CreateCommunityModal({
 
               {/* Form Body */}
               <div className="overflow-y-auto px-6 py-6 sm:px-8">
-                <form id="create-community-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <form
+                  id="create-community-form"
+                  onSubmit={handleSubmit}
+                  className="flex flex-col gap-6"
+                >
                   {/* Profile Picture Mock */}
                   <div className="flex flex-col items-center gap-4 sm:flex-row">
                     <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 ring-4 ring-white shadow-sm">
                       {profilePicture ? (
-                        <img src={profilePicture} alt="Community preview" className="h-full w-full object-cover" />
+                        <img
+                          src={profilePicture}
+                          alt="Community preview"
+                          className="h-full w-full object-cover"
+                        />
                       ) : (
                         <Users size={32} className="text-slate-300" />
                       )}
@@ -230,7 +246,13 @@ export default function CreateCommunityModal({
                       Who can join?
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {(["ALL", "PLAYERS_ONLY", "COACHES_ONLY"] as CommunityGroupAudience[]).map((opt) => (
+                      {(
+                        [
+                          "ALL",
+                          "PLAYERS_ONLY",
+                          "COACHES_ONLY",
+                        ] as CommunityGroupAudience[]
+                      ).map((opt) => (
                         <button
                           key={opt}
                           type="button"

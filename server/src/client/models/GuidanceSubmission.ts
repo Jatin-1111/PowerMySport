@@ -67,7 +67,13 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       recommendedSports: { type: [String] },
       mentalSkillsRoadmap: {
         currentFocus: { type: String },
-        skills: [{ skill: { type: String }, howToDevelop: { type: String }, _id: false }],
+        skills: [
+          {
+            skill: { type: String },
+            howToDevelop: { type: String },
+            _id: false,
+          },
+        ],
       },
       talentIdentifiers: { type: [String] },
       multiSportAdvisory: { type: String },

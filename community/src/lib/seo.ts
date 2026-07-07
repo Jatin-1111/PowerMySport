@@ -141,12 +141,12 @@ export function buildMetadata({
   const openGraph: Metadata["openGraph"] =
     type === "article"
       ? {
-        ...baseOpenGraph,
-        type: "article",
-        ...(publishedTime ? { publishedTime } : {}),
-        ...(modifiedTime ? { modifiedTime } : {}),
-        ...(authors ? { authors } : {}),
-      }
+          ...baseOpenGraph,
+          type: "article",
+          ...(publishedTime ? { publishedTime } : {}),
+          ...(modifiedTime ? { modifiedTime } : {}),
+          ...(authors ? { authors } : {}),
+        }
       : type === "profile"
         ? { ...baseOpenGraph, type: "profile" }
         : { ...baseOpenGraph, type: "website" };
@@ -159,16 +159,16 @@ export function buildMetadata({
     robots: noindex
       ? { index: false, follow: false }
       : {
-        index: true,
-        follow: true,
-        googleBot: {
           index: true,
           follow: true,
-          "max-image-preview": "large",
-          "max-snippet": -1,
-          "max-video-preview": -1,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1,
+          },
         },
-      },
     openGraph,
     twitter: {
       card: "summary_large_image",
@@ -184,8 +184,7 @@ export const rootMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: SITE_NAME,
   title: {
-    default:
-      "PowerMySport Community | Ask, Learn & Connect in Youth Sports",
+    default: "PowerMySport Community | Ask, Learn & Connect in Youth Sports",
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,

@@ -46,10 +46,16 @@ export default function AdminExpertsPage() {
 
   const applyUpdate = useCallback((updated: AdminExpert) => {
     setExperts((list) =>
-      list.map((e) => ((e.id || e._id) === (updated.id || updated._id) ? { ...e, ...updated } : e)),
+      list.map((e) =>
+        (e.id || e._id) === (updated.id || updated._id)
+          ? { ...e, ...updated }
+          : e,
+      ),
     );
     setSelected((prev) =>
-      prev && (prev.id || prev._id) === (updated.id || updated._id) ? { ...prev, ...updated } : prev,
+      prev && (prev.id || prev._id) === (updated.id || updated._id)
+        ? { ...prev, ...updated }
+        : prev,
     );
   }, []);
 
@@ -98,7 +104,9 @@ export default function AdminExpertsPage() {
       key: "fee",
       header: "Fee",
       align: "right",
-      render: (e) => <span className="text-slate-700">{formatInr(e.sessionFee)}</span>,
+      render: (e) => (
+        <span className="text-slate-700">{formatInr(e.sessionFee)}</span>
+      ),
     },
     {
       key: "mode",

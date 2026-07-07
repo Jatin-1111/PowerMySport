@@ -5,7 +5,11 @@ import {
   updatePathwayAdmin,
   setPathwayVerifiedAdmin,
 } from "../controllers/pathwayAdminController";
-import { authMiddleware, adminMiddleware, requirePermission } from "../../middleware/auth";
+import {
+  authMiddleware,
+  adminMiddleware,
+  requirePermission,
+} from "../../middleware/auth";
 
 const pathwayAdminRouter = Router();
 

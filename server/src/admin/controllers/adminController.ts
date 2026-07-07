@@ -806,7 +806,10 @@ export const listWebhookErrors = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch webhook errors",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch webhook errors",
     });
   }
 };
@@ -818,7 +821,7 @@ export const listWebhookErrors = async (req: Request, res: Response) => {
 export const retryWebhookError = async (req: Request, res: Response) => {
   try {
     const { key } = req.params;
-    
+
     // We instantiate the service and call retryFailedWebhook
     const recoveryService = new WebhookRecoveryService();
     await recoveryService.retryFailedWebhook(key as string);
@@ -830,7 +833,8 @@ export const retryWebhookError = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to retry webhook",
+      message:
+        error instanceof Error ? error.message : "Failed to retry webhook",
     });
   }
 };
@@ -855,7 +859,9 @@ export const reconcileOrderAdmin = async (req: Request, res: Response) => {
       consistent = await recoveryService.reconcileOrderRefund(orderId);
       details = { status: "CHECKED_REFUND" };
     } else {
-      res.status(400).json({ success: false, message: "Invalid reconciliation type" });
+      res
+        .status(400)
+        .json({ success: false, message: "Invalid reconciliation type" });
       return;
     }
 
@@ -864,12 +870,13 @@ export const reconcileOrderAdmin = async (req: Request, res: Response) => {
       data: {
         isConsistent: consistent,
         details,
-      }
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to reconcile order",
+      message:
+        error instanceof Error ? error.message : "Failed to reconcile order",
     });
   }
 };
@@ -1142,9 +1149,7 @@ const truncatePreview = (value: string): string =>
 
 const resolveCommunityReportTargets = async (
   reports: Array<{ targetType: string; targetId: mongoose.Types.ObjectId }>,
-): Promise<
-  Map<string, { preview: string; deleted: boolean } | null>
-> => {
+): Promise<Map<string, { preview: string; deleted: boolean } | null>> => {
   const idsByType: Record<
     "MESSAGE" | "GROUP" | "POST" | "ANSWER",
     mongoose.Types.ObjectId[]
@@ -1163,7 +1168,10 @@ const resolveCommunityReportTargets = async (
     }
   }
 
-  const result = new Map<string, { preview: string; deleted: boolean } | null>();
+  const result = new Map<
+    string,
+    { preview: string; deleted: boolean } | null
+  >();
 
   const [messages, groups, posts, answers] = await Promise.all([
     idsByType.MESSAGE.length
@@ -1283,7 +1291,10 @@ export const listCommunityReports = async (
           resolutionNote: report.resolutionNote || "",
           reviewedBy:
             reviewer && typeof reviewer === "object" && "name" in reviewer
-              ? { id: String(reviewer._id), name: reviewer.name || "Unknown admin" }
+              ? {
+                  id: String(reviewer._id),
+                  name: reviewer.name || "Unknown admin",
+                }
               : null,
           reviewedAt: report.reviewedAt || null,
           createdAt: report.createdAt,
@@ -1397,7 +1408,10 @@ export const bulkReviewCommunityReports = async (
     if (!Array.isArray(reportIds) || reportIds.length === 0) {
       res
         .status(400)
-        .json({ success: false, message: "reportIds must be a non-empty array" });
+        .json({
+          success: false,
+          message: "reportIds must be a non-empty array",
+        });
       return;
     }
 
@@ -1431,7 +1445,11 @@ export const bulkReviewCommunityReports = async (
       adminEmail: req.user.email || "",
       action: "communityReport.bulkReview",
       targetType: "CommunityReport",
-      metadata: { reportIds: validIds, status, modifiedCount: result.modifiedCount },
+      metadata: {
+        reportIds: validIds,
+        status,
+        modifiedCount: result.modifiedCount,
+      },
     });
 
     res.status(200).json({
@@ -1532,7 +1550,7 @@ export const listRefunds = async (
     const skip = (page - 1) * limit;
 
     const query: any = {
-      refundStatus: { $exists: true, $ne: null }
+      refundStatus: { $exists: true, $ne: null },
     };
 
     if (refundStatus) {
@@ -1550,22 +1568,28 @@ export const listRefunds = async (
       Booking.countDocuments(query),
       Booking.aggregate([
         { $match: { refundStatus: { $exists: true, $ne: null } } },
-        { $group: { _id: "$refundStatus", count: { $sum: 1 }, amount: { $sum: "$refundAmount" } } }
-      ])
+        {
+          $group: {
+            _id: "$refundStatus",
+            count: { $sum: 1 },
+            amount: { $sum: "$refundAmount" },
+          },
+        },
+      ]),
     ]);
 
     const stats = {
       pendingCount: 0,
       completedCount: 0,
       failedCount: 0,
-      totalAmount: 0
+      totalAmount: 0,
     };
 
-    statsResult.forEach(s => {
+    statsResult.forEach((s) => {
       if (s._id === "PENDING") stats.pendingCount = s.count;
       else if (s._id === "PROCESSED") stats.completedCount = s.count;
       else if (s._id === "REJECTED") stats.failedCount = s.count;
-      
+
       // Sum the amounts (in rupees)
       stats.totalAmount += s.amount || 0;
     });
@@ -1578,7 +1602,12 @@ export const listRefunds = async (
       playerEmail: booking.userId?.email || "",
       amount: booking.refundAmount || 0,
       originalPaymentMethod: "ONLINE",
-      status: booking.refundStatus === "PROCESSED" ? "COMPLETED" : (booking.refundStatus === "REJECTED" ? "FAILED" : "PENDING"),
+      status:
+        booking.refundStatus === "PROCESSED"
+          ? "COMPLETED"
+          : booking.refundStatus === "REJECTED"
+            ? "FAILED"
+            : "PENDING",
       requestedAt: booking.updatedAt || booking.createdAt,
     }));
 
@@ -1596,7 +1625,10 @@ export const listRefunds = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch refund bookings",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch refund bookings",
     });
   }
 };
@@ -1717,7 +1749,12 @@ export const handleDispute = async (
       return;
     }
 
-    const validDisputeTypes = ["NO_SHOW", "POOR_QUALITY", "PAYMENT_ISSUE", "OTHER"];
+    const validDisputeTypes = [
+      "NO_SHOW",
+      "POOR_QUALITY",
+      "PAYMENT_ISSUE",
+      "OTHER",
+    ];
     const validResolutions = ["FULL_REFUND", "PARTIAL_REFUND", "NO_REFUND"];
 
     if (!validDisputeTypes.includes(disputeType)) {
@@ -1736,11 +1773,16 @@ export const handleDispute = async (
       return;
     }
 
-    const disputeReason = reason?.trim() ||
+    const disputeReason =
+      reason?.trim() ||
       `Dispute resolved: ${disputeType.replace(/_/g, " ").toLowerCase()} — ${resolution.replace(/_/g, " ").toLowerCase()}`;
 
     // Determine refund percentage based on resolution
-    let refundResult: { refundAmount: number; refundPercentage: number; refundStatus: string } | null = null;
+    let refundResult: {
+      refundAmount: number;
+      refundPercentage: number;
+      refundStatus: string;
+    } | null = null;
 
     if (resolution === "FULL_REFUND") {
       refundResult = await processBookingRefund(bookingId, 100, disputeReason);
@@ -1782,7 +1824,9 @@ export const handleDispute = async (
           userId: booking.userId.toString(),
           type: "PAYMENT_REFUND",
           title: "Dispute Resolved",
-          message: notifMessages[resolution] ?? `Your dispute for booking has been reviewed. Resolution: ${resolution.replace(/_/g, " ").toLowerCase()}.`,
+          message:
+            notifMessages[resolution] ??
+            `Your dispute for booking has been reviewed. Resolution: ${resolution.replace(/_/g, " ").toLowerCase()}.`,
           data: {
             bookingId,
             disputeType,
@@ -1793,7 +1837,10 @@ export const handleDispute = async (
         });
       }
     } catch (notifError) {
-      console.error("[handleDispute] Failed to send dispute notification:", notifError);
+      console.error(
+        "[handleDispute] Failed to send dispute notification:",
+        notifError,
+      );
     }
 
     const auditDispute = auditContext(req);
@@ -1845,12 +1892,7 @@ export const listCoachVerifications = async (
 ): Promise<void> => {
   try {
     const status = req.query.status as
-      | "UNVERIFIED"
-      | "PENDING"
-      | "REVIEW"
-      | "VERIFIED"
-      | "REJECTED"
-      | undefined;
+      "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED" | undefined;
     const page = parseInt((req.query.page as string) || "1", 10);
     const limit = parseInt((req.query.limit as string) || "20", 10);
 

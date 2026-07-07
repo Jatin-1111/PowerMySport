@@ -37,7 +37,7 @@ const run = async () => {
       totalAmount: 1000,
       status: "CONFIRMED",
       sport: "Badminton",
-      participantName: "Test Player"
+      participantName: "Test Player",
     });
     console.log("Created booking:", booking._id);
 
@@ -102,13 +102,18 @@ const run = async () => {
       });
       console.log("ORIGINAL_CARD Result:", result3);
     } catch (err: any) {
-      console.log("ORIGINAL_CARD threw an expected error (likely PhonePe auth/config):", err.message);
+      console.log(
+        "ORIGINAL_CARD threw an expected error (likely PhonePe auth/config):",
+        err.message,
+      );
     }
 
     // Cleanup
     await User.findByIdAndDelete(user._id);
     await Booking.findByIdAndDelete(booking._id);
-    await BookingPaymentTransaction.deleteMany({ _id: { $in: [transaction1._id, transaction2._id, transaction3._id] } });
+    await BookingPaymentTransaction.deleteMany({
+      _id: { $in: [transaction1._id, transaction2._id, transaction3._id] },
+    });
     console.log("\nCleanup successful.");
 
     process.exit(0);

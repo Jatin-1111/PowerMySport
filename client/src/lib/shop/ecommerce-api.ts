@@ -29,12 +29,7 @@ export interface Product {
   seller?: string;
   sellerName?: string;
   sellerType?:
-    | "MERCHANT"
-    | "PARENT"
-    | "Player"
-    | "Coach"
-    | "ACADEMY"
-    | "SYSTEM";
+    "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
   condition?: "NEW" | "USED";
   createdAt: string;
 }
@@ -405,7 +400,9 @@ export async function downloadOrderInvoice(orderId: string): Promise<Blob> {
       }
       throw new Error(message);
     }
-    throw new Error(err instanceof Error ? err.message : "Unable to download invoice");
+    throw new Error(
+      err instanceof Error ? err.message : "Unable to download invoice",
+    );
   }
 }
 

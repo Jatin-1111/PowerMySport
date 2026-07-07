@@ -59,7 +59,11 @@ function StarRow({ rating, size = 16, className = "" }: StarRowProps) {
         const filled = rating >= n;
         const half = !filled && rating >= n - 0.5;
         return (
-          <span key={n} className="relative" style={{ width: size, height: size }}>
+          <span
+            key={n}
+            className="relative"
+            style={{ width: size, height: size }}
+          >
             {/* Background star (empty) */}
             <Star
               size={size}
@@ -293,7 +297,11 @@ export default function CoachReviewsPage() {
                         className={`h-2 rounded-full ${STAR_COLORS[star]}`}
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                        transition={{
+                          duration: 0.6,
+                          ease: "easeOut",
+                          delay: 0.2,
+                        }}
                       />
                     </div>
                     <span className="w-6 text-xs text-slate-400">{count}</span>
@@ -381,10 +389,7 @@ function ReviewCard({ review }: { review: ReviewItem }) {
     "bg-amber-100 text-amber-700",
   ];
   // Deterministic colour based on name
-  const colorClass =
-    avatarColors[
-      name.charCodeAt(0) % avatarColors.length
-    ];
+  const colorClass = avatarColors[name.charCodeAt(0) % avatarColors.length];
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -429,7 +434,10 @@ function ReviewCard({ review }: { review: ReviewItem }) {
             <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
               <ThumbsUp size={13} />
               <span>
-                {(review as ReviewItem & { helpfulCount?: number }).helpfulCount}{" "}
+                {
+                  (review as ReviewItem & { helpfulCount?: number })
+                    .helpfulCount
+                }{" "}
                 helpful
               </span>
             </div>

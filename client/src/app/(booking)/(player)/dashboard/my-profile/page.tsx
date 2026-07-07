@@ -20,11 +20,7 @@ import { ProfileCompletionRing } from "@/modules/player/components/ProfileComple
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-} from "@/modules/shared/ui/Card";
+import { Card, CardContent, CardFooter } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Modal } from "@/modules/shared/ui/Modal";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
@@ -479,7 +475,9 @@ export default function ProfilePage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Sports
           </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{sportsCount}</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">
+            {sportsCount}
+          </p>
         </div>
         <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -627,7 +625,9 @@ export default function ProfilePage() {
                     <div className="sm:col-span-2">
                       <ProfileInfoField label="Account Type">
                         <span className="capitalize">
-                          {user.userType === "Parent" ? "Parent" : user.role.toLowerCase().replace("_", " ")}
+                          {user.userType === "Parent"
+                            ? "Parent"
+                            : user.role.toLowerCase().replace("_", " ")}
                         </span>
                       </ProfileInfoField>
                     </div>
@@ -677,164 +677,209 @@ export default function ProfilePage() {
           onSave={handleSaveSports}
           saving={isSavingSports}
           saveLabel="Save Profile"
-          completionPercent={calculateProfileCompletion(user.playerProfile).percent}
+          completionPercent={
+            calculateProfileCompletion(user.playerProfile).percent
+          }
         />
 
         <CardContent className="px-6 py-6">
           {isEditingSports ? (
             <div className="space-y-6">
               <ProfileEditPanel description="Choose the sports you play or are interested in. You can select multiple.">
-              <ProfileEditField
-                label="Your sports"
-                hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
-              >
-                <SportsMultiSelect
-                  value={selectedSports}
-                  onChange={setSelectedSports}
-                />
-              </ProfileEditField>
-
-              <ProfileEditField
-                label="Experience (Years)"
-                htmlFor="self-years-playing"
-                hint="Leave blank if you haven't started playing yet"
-              >
-                <Input
-                  id="self-years-playing"
-                  type="number"
-                  min="0"
-                  max="20"
-                  placeholder="e.g., 2"
-                  value={playerProfileForm.yearsPlaying ?? ""}
-                  onChange={(e) =>
-                    setPlayerProfileForm(f => ({
-                      ...f,
-                      yearsPlaying: e.target.value === "" ? undefined : parseInt(e.target.value, 10),
-                    }))
-                  }
-                />
-              </ProfileEditField>
-
-              {selectedSports.length > 0 ? (
-                <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Selected
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedSports.map((sport) => (
-                      <Badge
-                        key={sport}
-                        className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                      >
-                        {sport}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center">
-                  <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
-                  <p className="text-sm text-slate-500">
-                    No sports selected yet. Search above to add some.
-                  </p>
-                </div>
-              )}
-            </ProfileEditPanel>
-            
-            <ProfileEditPanel
-              title="AI Guidance Preferences"
-              description="Used to pre-fill AI recommendations for you."
-            >
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <ProfileEditField label="Primary Objective" htmlFor="primary-objective">
-                    <ProfileFormSelect
-                      id="primary-objective"
-                      value={playerProfileForm.primaryObjective}
-                      onChange={(value: any) => setPlayerProfileForm(f => ({ ...f, primaryObjective: value }))}
-                      options={[
-                        { value: "Recreational", label: "Recreational" },
-                        { value: "Fitness", label: "Fitness" },
-                        { value: "Compete", label: "Compete" },
-                      ]}
-                    />
-                  </ProfileEditField>
-
-                  <ProfileEditField label="Budget Tier" htmlFor="budget-tier">
-                    <ProfileFormSelect
-                      id="budget-tier"
-                      value={playerProfileForm.budgetTier}
-                      onChange={(value: any) => setPlayerProfileForm(f => ({ ...f, budgetTier: value }))}
-                      options={[
-                        { value: "Budget", label: "Budget" },
-                        { value: "Moderate", label: "Moderate" },
-                        { value: "Premium", label: "Premium" },
-                      ]}
-                    />
-                  </ProfileEditField>
-                </div>
-
-                <ProfileEditField label="State / Union Territory" htmlFor="self-location" hint="Used for local scheme & resource recommendations">
-                  <ProfileFormSelect
-                    id="self-location"
-                    value={playerProfileForm.location}
-                    onChange={(value: string) => setPlayerProfileForm(f => ({ ...f, location: value }))}
-                    options={[
-                      { value: "", label: "— Select state —" },
-                      ...INDIAN_STATES.map((s) => ({ value: s, label: s })),
-                    ]}
+                <ProfileEditField
+                  label="Your sports"
+                  hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
+                >
+                  <SportsMultiSelect
+                    value={selectedSports}
+                    onChange={setSelectedSports}
                   />
                 </ProfileEditField>
 
-                <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
+                <ProfileEditField
+                  label="Experience (Years)"
+                  htmlFor="self-years-playing"
+                  hint="Leave blank if you haven't started playing yet"
+                >
                   <Input
-                    id="weekly-time"
+                    id="self-years-playing"
                     type="number"
-                    min="1"
-                    max="40"
-                    value={playerProfileForm.weeklyTimeCommitment}
-                    onChange={(e) => setPlayerProfileForm(f => ({ ...f, weeklyTimeCommitment: parseInt(e.target.value) || 3 }))}
+                    min="0"
+                    max="20"
+                    placeholder="e.g., 2"
+                    value={playerProfileForm.yearsPlaying ?? ""}
+                    onChange={(e) =>
+                      setPlayerProfileForm((f) => ({
+                        ...f,
+                        yearsPlaying:
+                          e.target.value === ""
+                            ? undefined
+                            : parseInt(e.target.value, 10),
+                      }))
+                    }
                   />
                 </ProfileEditField>
 
-                <ProfileEditField label="Personality Tags">
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      "Shy", "Energetic", "Competitive", "Social",
-                      "Focused", "Curious", "Patient", "Team-oriented"
-                    ].map((tag) => {
-                      const isSelected = playerProfileForm.personalityTags.includes(tag);
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => {
-                            const current = playerProfileForm.personalityTags;
-                            const next = isSelected
-                              ? current.filter((t) => t !== tag)
-                              : [...current, tag];
-                            setPlayerProfileForm(f => ({ ...f, personalityTags: next }));
-                          }}
-                          className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                            isSelected
-                              ? "border-blue-600 bg-indigo-50 font-medium text-indigo-700"
-                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                          }`}
+                {selectedSports.length > 0 ? (
+                  <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Selected
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSports.map((sport) => (
+                        <Badge
+                          key={sport}
+                          className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
                         >
-                          {tag}
-                        </button>
-                      );
-                    })}
+                          {sport}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </ProfileEditField>
-              </div>
-            </ProfileEditPanel>
+                ) : (
+                  <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center">
+                    <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
+                    <p className="text-sm text-slate-500">
+                      No sports selected yet. Search above to add some.
+                    </p>
+                  </div>
+                )}
+              </ProfileEditPanel>
+
+              <ProfileEditPanel
+                title="AI Guidance Preferences"
+                description="Used to pre-fill AI recommendations for you."
+              >
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <ProfileEditField
+                      label="Primary Objective"
+                      htmlFor="primary-objective"
+                    >
+                      <ProfileFormSelect
+                        id="primary-objective"
+                        value={playerProfileForm.primaryObjective}
+                        onChange={(value: any) =>
+                          setPlayerProfileForm((f) => ({
+                            ...f,
+                            primaryObjective: value,
+                          }))
+                        }
+                        options={[
+                          { value: "Recreational", label: "Recreational" },
+                          { value: "Fitness", label: "Fitness" },
+                          { value: "Compete", label: "Compete" },
+                        ]}
+                      />
+                    </ProfileEditField>
+
+                    <ProfileEditField label="Budget Tier" htmlFor="budget-tier">
+                      <ProfileFormSelect
+                        id="budget-tier"
+                        value={playerProfileForm.budgetTier}
+                        onChange={(value: any) =>
+                          setPlayerProfileForm((f) => ({
+                            ...f,
+                            budgetTier: value,
+                          }))
+                        }
+                        options={[
+                          { value: "Budget", label: "Budget" },
+                          { value: "Moderate", label: "Moderate" },
+                          { value: "Premium", label: "Premium" },
+                        ]}
+                      />
+                    </ProfileEditField>
+                  </div>
+
+                  <ProfileEditField
+                    label="State / Union Territory"
+                    htmlFor="self-location"
+                    hint="Used for local scheme & resource recommendations"
+                  >
+                    <ProfileFormSelect
+                      id="self-location"
+                      value={playerProfileForm.location}
+                      onChange={(value: string) =>
+                        setPlayerProfileForm((f) => ({ ...f, location: value }))
+                      }
+                      options={[
+                        { value: "", label: "— Select state —" },
+                        ...INDIAN_STATES.map((s) => ({ value: s, label: s })),
+                      ]}
+                    />
+                  </ProfileEditField>
+
+                  <ProfileEditField
+                    label="Weekly Time Commitment (Hours)"
+                    htmlFor="weekly-time"
+                  >
+                    <Input
+                      id="weekly-time"
+                      type="number"
+                      min="1"
+                      max="40"
+                      value={playerProfileForm.weeklyTimeCommitment}
+                      onChange={(e) =>
+                        setPlayerProfileForm((f) => ({
+                          ...f,
+                          weeklyTimeCommitment: parseInt(e.target.value) || 3,
+                        }))
+                      }
+                    />
+                  </ProfileEditField>
+
+                  <ProfileEditField label="Personality Tags">
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "Shy",
+                        "Energetic",
+                        "Competitive",
+                        "Social",
+                        "Focused",
+                        "Curious",
+                        "Patient",
+                        "Team-oriented",
+                      ].map((tag) => {
+                        const isSelected =
+                          playerProfileForm.personalityTags.includes(tag);
+                        return (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => {
+                              const current = playerProfileForm.personalityTags;
+                              const next = isSelected
+                                ? current.filter((t) => t !== tag)
+                                : [...current, tag];
+                              setPlayerProfileForm((f) => ({
+                                ...f,
+                                personalityTags: next,
+                              }));
+                            }}
+                            className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                              isSelected
+                                ? "border-blue-600 bg-indigo-50 font-medium text-indigo-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {tag}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </ProfileEditField>
+                </div>
+              </ProfileEditPanel>
             </div>
           ) : (
             <div className="space-y-8">
               <div>
-                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">My Sports</h4>
-                {user.playerProfile?.sportsFocus && user.playerProfile.sportsFocus.length > 0 ? (
+                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  My Sports
+                </h4>
+                {user.playerProfile?.sportsFocus &&
+                user.playerProfile.sportsFocus.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {user.playerProfile.sportsFocus.map((sport: string) => (
                       <Badge
@@ -874,19 +919,36 @@ export default function ProfilePage() {
               </div>
 
               <div className="border-t border-slate-100 pt-6">
-                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">AI Guidance Preferences</h4>
+                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  AI Guidance Preferences
+                </h4>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <ProfileInfoField label="Primary Objective">{user.playerProfile?.primaryObjective || "Not specified"}</ProfileInfoField>
-                  <ProfileInfoField label="Budget">{user.playerProfile?.budgetTier || "Not specified"}</ProfileInfoField>
-                  <ProfileInfoField label="State">{user.playerProfile?.location || "Not specified"}</ProfileInfoField>
+                  <ProfileInfoField label="Primary Objective">
+                    {user.playerProfile?.primaryObjective || "Not specified"}
+                  </ProfileInfoField>
+                  <ProfileInfoField label="Budget">
+                    {user.playerProfile?.budgetTier || "Not specified"}
+                  </ProfileInfoField>
+                  <ProfileInfoField label="State">
+                    {user.playerProfile?.location || "Not specified"}
+                  </ProfileInfoField>
                   <ProfileInfoField label="Weekly Time">
-                    {user.playerProfile?.weeklyTimeCommitment ? `${user.playerProfile.weeklyTimeCommitment} hours` : "Not specified"}
+                    {user.playerProfile?.weeklyTimeCommitment
+                      ? `${user.playerProfile.weeklyTimeCommitment} hours`
+                      : "Not specified"}
                   </ProfileInfoField>
                   <ProfileInfoField label="Personality">
-                    {user.playerProfile?.personalityTags && user.playerProfile.personalityTags.length > 0 ? (
+                    {user.playerProfile?.personalityTags &&
+                    user.playerProfile.personalityTags.length > 0 ? (
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {user.playerProfile.personalityTags.map(tag => (
-                          <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
+                        {user.playerProfile.personalityTags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {tag}
+                          </Badge>
                         ))}
                       </div>
                     ) : (
@@ -900,7 +962,8 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {(user.userType === "Parent" || (user.dependents && user.dependents.length > 0)) && (
+      {(user.userType === "Parent" ||
+        (user.dependents && user.dependents.length > 0)) && (
         <Card className="shop-surface premium-shadow overflow-hidden p-0">
           <ProfileSectionHeader
             icon={Users}
@@ -924,10 +987,12 @@ export default function ProfilePage() {
             {user.dependents && user.dependents.length > 0 ? (
               <div className="grid gap-4">
                 {user.dependents.map((dependent) => {
-                  const age = getDependentAge(dependent.dob) ?? dependent.age ?? null;
+                  const age =
+                    getDependentAge(dependent.dob) ?? dependent.age ?? null;
                   const isEligible = age !== null && age >= 18;
                   const genderLabel = formatGender(dependent.gender);
-                  const dependentCompletion = calculateProfileCompletion(dependent);
+                  const dependentCompletion =
+                    calculateProfileCompletion(dependent);
 
                   return (
                     <div
@@ -991,18 +1056,21 @@ export default function ProfilePage() {
                               </p>
                             )}
 
-                            {dependent.sportsFocus && dependent.sportsFocus.length > 0 && (
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {dependent.sportsFocus.map((sport: string) => (
-                                  <Badge
-                                    key={sport}
-                                    className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
-                                  >
-                                    {sport}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
+                            {dependent.sportsFocus &&
+                              dependent.sportsFocus.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {dependent.sportsFocus.map(
+                                    (sport: string) => (
+                                      <Badge
+                                        key={sport}
+                                        className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50"
+                                      >
+                                        {sport}
+                                      </Badge>
+                                    ),
+                                  )}
+                                </div>
+                              )}
                           </div>
                         </div>
 
@@ -1059,8 +1127,12 @@ export default function ProfilePage() {
                 icon={Users}
                 title="No dependents yet"
                 description="Add a child or ward to manage their bookings, sports, and player profile from your account."
-                actionLabel={user.userType === "Parent" ? "Add Dependent" : undefined}
-                onAction={user.userType === "Parent" ? handleAddDependent : undefined}
+                actionLabel={
+                  user.userType === "Parent" ? "Add Dependent" : undefined
+                }
+                onAction={
+                  user.userType === "Parent" ? handleAddDependent : undefined
+                }
               />
             )}
           </CardContent>

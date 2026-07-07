@@ -55,9 +55,7 @@ export default async function CommunityQnADetailPage({
   const detail = await getPost(postId);
   const post = detail?.post;
   const answers = detail?.answers ?? [];
-  const topAnswer = [...answers].sort(
-    (a, b) => b.voteScore - a.voteScore,
-  )[0];
+  const topAnswer = [...answers].sort((a, b) => b.voteScore - a.voteScore)[0];
 
   const qaSchema = post
     ? {
@@ -86,8 +84,7 @@ export default async function CommunityQnADetailPage({
                   author: {
                     "@type": "Person",
                     name:
-                      topAnswer.author?.displayName ||
-                      "PowerMySport Community",
+                      topAnswer.author?.displayName || "PowerMySport Community",
                   },
                 },
               }

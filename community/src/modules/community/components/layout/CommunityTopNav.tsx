@@ -31,8 +31,8 @@ import {
 // ─── Additional Settings dropdown items ────────────────────────────────────
 const SETTINGS_ITEMS = [
   { href: "/reports", icon: FileWarning, label: "Reports" },
-  { href: "/safety",  icon: UserX,       label: "Safety"  },
-  { href: "/privacy", icon: Shield,      label: "Privacy" },
+  { href: "/safety", icon: UserX, label: "Safety" },
+  { href: "/privacy", icon: Shield, label: "Privacy" },
 ];
 
 export default function CommunityTopNav() {
@@ -41,16 +41,17 @@ export default function CommunityTopNav() {
   const sidebar = searchParams?.get("sidebar");
   const mainAppUrl = getMainAppUrl();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen]     = useState(false);
-  const [unreadCount, setUnreadCount]           = useState(0);
-  const isMounted  = typeof document !== "undefined";
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const isMounted = typeof document !== "undefined";
   const settingsRef = useRef<HTMLDivElement>(null);
 
   // ── load / refresh unread badge ──────────────────────────────────────────
   useEffect(() => {
     const loadUnreadCount = async () => {
       try {
-        const count = await communityService.getCommunityUnreadNotificationCount();
+        const count =
+          await communityService.getCommunityUnreadNotificationCount();
         setUnreadCount(count);
       } catch {
         setUnreadCount(0);
@@ -67,7 +68,7 @@ export default function CommunityTopNav() {
 
     socket.on("notification:new", handleNewNotification);
     if (!socket.connected) socket.connect();
-    
+
     // Also update badge when notifications are marked read locally
     const handleLocalRead = () => {
       void loadUnreadCount();
@@ -76,7 +77,10 @@ export default function CommunityTopNav() {
 
     return () => {
       socket.off("notification:new", handleNewNotification);
-      window.removeEventListener("community:notificationsRead", handleLocalRead);
+      window.removeEventListener(
+        "community:notificationsRead",
+        handleLocalRead,
+      );
     };
   }, []);
 
@@ -84,7 +88,10 @@ export default function CommunityTopNav() {
   useEffect(() => {
     if (!isSettingsOpen) return;
     const handler = (e: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(e.target as Node)
+      ) {
         setIsSettingsOpen(false);
       }
     };
@@ -111,7 +118,6 @@ export default function CommunityTopNav() {
     <header className="sticky top-0 z-120 border-b border-white/70 bg-white/90 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/75 px-3 py-2.5 shadow-sm shadow-slate-900/5 backdrop-blur sm:px-4">
-
           {/* Left section: Back button & Logo */}
           <div className="flex items-center flex-shrink-0">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
@@ -144,10 +150,7 @@ export default function CommunityTopNav() {
               Chats
             </Link>
 
-            <Link
-              href="/q"
-              className={navLinkCls(pathname.startsWith("/q"))}
-            >
+            <Link href="/q" className={navLinkCls(pathname.startsWith("/q"))}>
               <MessageSquare size={16} />
               Knowledge
             </Link>
@@ -328,7 +331,9 @@ export default function CommunityTopNav() {
                         <p className="text-sm font-semibold text-slate-900">
                           PowerMySport Home
                         </p>
-                        <p className="text-xs text-slate-500">Overview and chat</p>
+                        <p className="text-xs text-slate-500">
+                          Overview and chat
+                        </p>
                       </div>
                     </Link>
                   </div>
@@ -348,12 +353,20 @@ export default function CommunityTopNav() {
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { href: "/chats?sidebar=conversations",           icon: MessagesSquare, label: "Chats"        },
-                      { href: "/discover",        icon: Compass,        label: "Discover"     },
-                      { href: "/q",               icon: MessageSquare,  label: "Knowledge"    },
-                      { href: "/blog",            icon: Newspaper,      label: "Blog"         },
-                      { href: "/contributors",    icon: Trophy,         label: "Contributors" },
-                      { href: "/following",       icon: Heart,          label: "Following"    },
+                      {
+                        href: "/chats?sidebar=conversations",
+                        icon: MessagesSquare,
+                        label: "Chats",
+                      },
+                      { href: "/discover", icon: Compass, label: "Discover" },
+                      { href: "/q", icon: MessageSquare, label: "Knowledge" },
+                      { href: "/blog", icon: Newspaper, label: "Blog" },
+                      {
+                        href: "/contributors",
+                        icon: Trophy,
+                        label: "Contributors",
+                      },
+                      { href: "/following", icon: Heart, label: "Following" },
                     ].map(({ href, icon: Icon, label }) => (
                       <Link
                         key={href}

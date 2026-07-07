@@ -167,7 +167,6 @@ export const onboardingAuthMiddleware = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-
   try {
     const authHeader = req.headers.authorization;
     const bearerToken =
@@ -194,7 +193,10 @@ export const onboardingAuthMiddleware = async (
       return;
     }
 
-    if (decoded.role !== "VENUE_ONBOARDING" && !isSystemAdminRole(decoded.role)) {
+    if (
+      decoded.role !== "VENUE_ONBOARDING" &&
+      !isSystemAdminRole(decoded.role)
+    ) {
       res.status(403).json({
         success: false,
         message: "Invalid token for venue onboarding.",
@@ -204,7 +206,11 @@ export const onboardingAuthMiddleware = async (
 
     // Enforce strict ownership verification
     const requestedVenueId = req.body?.venueId || req.params?.venueId;
-    if (requestedVenueId && requestedVenueId !== decoded.id && !isSystemAdminRole(decoded.role)) {
+    if (
+      requestedVenueId &&
+      requestedVenueId !== decoded.id &&
+      !isSystemAdminRole(decoded.role)
+    ) {
       res.status(403).json({
         success: false,
         message: "Unauthorized access to this venue.",

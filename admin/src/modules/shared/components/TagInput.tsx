@@ -16,7 +16,12 @@ interface TagInputProps {
   error?: boolean;
 }
 
-export function TagInput({ value = [], onChange, placeholder, error }: TagInputProps) {
+export function TagInput({
+  value = [],
+  onChange,
+  placeholder,
+  error,
+}: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -47,7 +52,7 @@ export function TagInput({ value = [], onChange, placeholder, error }: TagInputP
         "flex min-h-[44px] w-full flex-wrap items-center gap-2 rounded-xl border bg-slate-50 px-3 py-2 text-sm transition-all focus-within:bg-white focus-within:ring-2",
         error
           ? "border-red-300 focus-within:border-red-500 focus-within:ring-red-500/20"
-          : "border-slate-200 focus-within:border-power-orange focus-within:ring-power-orange/20"
+          : "border-slate-200 focus-within:border-power-orange focus-within:ring-power-orange/20",
       )}
       onClick={() => inputRef.current?.focus()}
     >

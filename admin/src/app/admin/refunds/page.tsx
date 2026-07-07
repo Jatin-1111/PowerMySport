@@ -72,7 +72,7 @@ export default function AdminRefundsPage() {
     pendingCount: 0,
     completedCount: 0,
     failedCount: 0,
-    totalAmount: 0
+    totalAmount: 0,
   });
 
   const loadRefunds = async () => {
@@ -90,13 +90,13 @@ export default function AdminRefundsPage() {
           setCurrentPage((prev) => prev - 1);
           return;
         }
-        
+
         setRefunds(response.data as RefundRequest[]);
-        
+
         if (response.stats) {
           setStats(response.stats);
         }
-        
+
         if (response.pagination) {
           setPagination({
             total: response.pagination.total || 0,
@@ -151,9 +151,7 @@ export default function AdminRefundsPage() {
       const response = await adminApi.getPhonePeRefundStatus(refundId);
       if (response.success && response.data) {
         const { refundStatus, refundAmount } = response.data;
-        toast.info(
-          `Refund status: ${refundStatus} — ₹${refundAmount}`,
-        );
+        toast.info(`Refund status: ${refundStatus} — ₹${refundAmount}`);
       } else {
         toast.info("Refund status updated");
       }
@@ -317,7 +315,8 @@ export default function AdminRefundsPage() {
                         Return to Original Source
                       </p>
                       <p className="text-sm text-slate-600 mt-1">
-                        Refund will be reversed via PhonePe to the original payment method (UPI, Card, etc.).
+                        Refund will be reversed via PhonePe to the original
+                        payment method (UPI, Card, etc.).
                         <br />
                         <span className="text-xs text-slate-500">
                           Processing time: 3-5 business days
@@ -553,8 +552,6 @@ export default function AdminRefundsPage() {
         </div>
       )}
 
-
-
       {/* Pagination Controls */}
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between pt-4 border-t border-slate-200 mt-6">
@@ -579,7 +576,7 @@ export default function AdminRefundsPage() {
             >
               <ChevronLeft size={16} />
             </Button>
-            
+
             <div className="flex gap-1">
               {Array.from(
                 { length: pagination.totalPages },

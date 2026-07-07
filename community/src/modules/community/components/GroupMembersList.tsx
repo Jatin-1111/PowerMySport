@@ -87,8 +87,6 @@ export function GroupMembersList({
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="py-2"
     >
-
-
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50/80 p-3">
           <p className="text-sm text-red-700">

@@ -45,14 +45,16 @@ export default function ConciergeRequestsPage() {
           icon: <Clock className="h-5 w-5 text-amber-500" />,
           color: "bg-amber-50 text-amber-700 border-amber-200",
           text: "Pending Review",
-          detail: "Our team has received your documents and will begin processing shortly.",
+          detail:
+            "Our team has received your documents and will begin processing shortly.",
         };
       case "processing":
         return {
           icon: <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />,
           color: "bg-indigo-50 text-indigo-700 border-indigo-200",
           text: "Processing",
-          detail: "Your documents are currently being reviewed. We'll update you as soon as there's progress.",
+          detail:
+            "Your documents are currently being reviewed. We'll update you as soon as there's progress.",
         };
       case "completed":
         return {
@@ -66,7 +68,8 @@ export default function ConciergeRequestsPage() {
           icon: <XCircle className="h-5 w-5 text-rose-500" />,
           color: "bg-rose-50 text-rose-700 border-rose-200",
           text: "Rejected",
-          detail: "Unfortunately we were unable to process this request. See the team's note below for details.",
+          detail:
+            "Unfortunately we were unable to process this request. See the team's note below for details.",
         };
       default:
         return {
@@ -89,9 +92,12 @@ export default function ConciergeRequestsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Concierge Requests</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          Concierge Requests
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Track the status of your document submissions. Our team's responses will appear here.
+          Track the status of your document submissions. Our team's responses
+          will appear here.
         </p>
       </div>
 
@@ -102,7 +108,8 @@ export default function ConciergeRequestsPage() {
           </div>
           <h3 className="text-lg font-bold text-slate-800">No requests yet</h3>
           <p className="mt-1 text-sm text-slate-500 max-w-sm mx-auto">
-            You haven't submitted any concierge requests. Explore the Sports Pathway to discover tournaments to register for.
+            You haven't submitted any concierge requests. Explore the Sports
+            Pathway to discover tournaments to register for.
           </p>
         </div>
       ) : (
@@ -133,7 +140,9 @@ export default function ConciergeRequestsPage() {
                       </span>
                     </div>
                     <h3 className="text-base font-bold text-slate-900">
-                      {request.prerequisiteName || request.itemName || "Registration Request"}
+                      {request.prerequisiteName ||
+                        request.itemName ||
+                        "Registration Request"}
                     </h3>
                     {(request.itemName || request.tournamentName) && (
                       <p className="text-sm text-slate-500">
@@ -143,11 +152,17 @@ export default function ConciergeRequestsPage() {
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
-                    <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${statusConfig.color}`}>
+                    <div
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${statusConfig.color}`}
+                    >
                       {statusConfig.icon}
                       {statusConfig.text}
                     </div>
-                    {isOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                    {isOpen ? (
+                      <ChevronUp className="h-4 w-4 text-slate-400" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-slate-400" />
+                    )}
                   </div>
                 </button>
 
@@ -155,7 +170,9 @@ export default function ConciergeRequestsPage() {
                 {isOpen && (
                   <div className="border-t border-slate-100 px-5 py-4 space-y-4 bg-slate-50/30">
                     {/* Status explanation */}
-                    <div className={`flex items-start gap-2.5 rounded-xl border p-3 ${statusConfig.color}`}>
+                    <div
+                      className={`flex items-start gap-2.5 rounded-xl border p-3 ${statusConfig.color}`}
+                    >
                       {statusConfig.icon}
                       <p className="text-sm">{statusConfig.detail}</p>
                     </div>
@@ -164,7 +181,8 @@ export default function ConciergeRequestsPage() {
                     {request.adminNotes && (
                       <div className="rounded-xl border border-slate-200 bg-white p-4">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" /> Message from PowerMySport Team
+                          <MessageSquare className="h-3 w-3" /> Message from
+                          PowerMySport Team
                         </p>
                         <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
                           {request.adminNotes}
@@ -175,7 +193,9 @@ export default function ConciergeRequestsPage() {
                     {/* Documents submitted */}
                     {request.documents && request.documents.length > 0 && (
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Documents Submitted</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                          Documents Submitted
+                        </p>
                         <div className="flex flex-wrap gap-2">
                           {request.documents.map((doc: any, i: number) => (
                             <span
@@ -196,9 +216,13 @@ export default function ConciergeRequestsPage() {
                         <div className="flex items-start gap-2.5">
                           <Sparkles className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                           <div className="flex-1">
-                            <h4 className="font-bold text-emerald-800 text-sm">What's Next?</h4>
+                            <h4 className="font-bold text-emerald-800 text-sm">
+                              What's Next?
+                            </h4>
                             <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-                              Now that your prerequisite is sorted, explore the Sports Pathway to discover tournaments your child can now register for.
+                              Now that your prerequisite is sorted, explore the
+                              Sports Pathway to discover tournaments your child
+                              can now register for.
                             </p>
                             <a
                               href="/roadmap"
@@ -218,7 +242,10 @@ export default function ConciergeRequestsPage() {
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="text-sm text-slate-600">
                           Please contact us at{" "}
-                          <a href="mailto:teams@powermysport.com" className="font-bold text-power-orange hover:underline">
+                          <a
+                            href="mailto:teams@powermysport.com"
+                            className="font-bold text-power-orange hover:underline"
+                          >
                             teams@powermysport.com
                           </a>{" "}
                           for more information on why this request was rejected.

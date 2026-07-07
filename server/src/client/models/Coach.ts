@@ -93,11 +93,7 @@ export interface CoachDocumentFile {
 }
 
 export type CoachVerificationStatus =
-  | "UNVERIFIED"
-  | "PENDING"
-  | "REVIEW"
-  | "VERIFIED"
-  | "REJECTED";
+  "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
 const coachSchema = new Schema<CoachDocument>(
   {

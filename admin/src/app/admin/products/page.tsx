@@ -32,7 +32,9 @@ type SortBy = "name" | "basePrice" | "totalStock" | "createdAt";
 
 export default function AdminProductsPage() {
   return (
-    <Suspense fallback={<div className="text-center py-12">Loading products...</div>}>
+    <Suspense
+      fallback={<div className="text-center py-12">Loading products...</div>}
+    >
       <AdminProductsPageContent />
     </Suspense>
   );
@@ -61,9 +63,8 @@ function AdminProductsPageContent() {
   const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState<SortBy>("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [editingProduct, setEditingProduct] = useState<AdminProductRecord | null>(
-    null,
-  );
+  const [editingProduct, setEditingProduct] =
+    useState<AdminProductRecord | null>(null);
   const [editForm, setEditForm] = useState<ProductEditableFields>({});
   const [saving, setSaving] = useState(false);
 
@@ -244,7 +245,11 @@ function AdminProductsPageContent() {
               onChange: setSearch,
               placeholder: "Search by name or SKU...",
             }}
-            sort={{ column: sortBy, direction: sortOrder, onChange: handleSortChange }}
+            sort={{
+              column: sortBy,
+              direction: sortOrder,
+              onChange: handleSortChange,
+            }}
             pagination={{ page, totalPages, onPageChange: setPage, total }}
             onRowClick={openEdit}
             toolbarExtra={
@@ -262,7 +267,8 @@ function AdminProductsPageContent() {
                   },
                   {
                     header: "Sale Price (INR)",
-                    value: (p) => (p.salePrice ? (p.salePrice / 100).toFixed(2) : ""),
+                    value: (p) =>
+                      p.salePrice ? (p.salePrice / 100).toFixed(2) : "",
                   },
                   { header: "Stock", value: (p) => p.totalStock },
                   {
@@ -287,8 +293,12 @@ function AdminProductsPageContent() {
           >
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Edit product</h2>
-                <p className="text-sm text-slate-500">SKU: {editingProduct.sku}</p>
+                <h2 className="text-lg font-bold text-slate-900">
+                  Edit product
+                </h2>
+                <p className="text-sm text-slate-500">
+                  SKU: {editingProduct.sku}
+                </p>
               </div>
               <button
                 onClick={closeEdit}
@@ -336,7 +346,10 @@ function AdminProductsPageContent() {
                   rows={3}
                   value={editForm.description ?? ""}
                   onChange={(e) =>
-                    setEditForm((prev) => ({ ...prev, description: e.target.value }))
+                    setEditForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
@@ -350,7 +363,10 @@ function AdminProductsPageContent() {
                   <select
                     value={editForm.category ?? ""}
                     onChange={(e) =>
-                      setEditForm((prev) => ({ ...prev, category: e.target.value }))
+                      setEditForm((prev) => ({
+                        ...prev,
+                        category: e.target.value,
+                      }))
                     }
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   >

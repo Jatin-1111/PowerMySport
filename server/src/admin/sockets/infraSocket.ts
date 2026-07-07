@@ -12,8 +12,7 @@ const METRICS_INTERVAL_MS = 30000;
 const DEFAULT_HOURS = 6;
 
 const isAdminRole = (role?: string): boolean =>
-  isSystemAdminRole(role) ||
-  Object.values(ADMIN_ROLES).includes(role as never);
+  isSystemAdminRole(role) || Object.values(ADMIN_ROLES).includes(role as never);
 
 const extractToken = (socket: Socket): string | null => {
   const authToken = (

@@ -15,8 +15,18 @@ export interface CoachClientNoteDocument extends Document {
 
 const coachClientNoteSchema = new Schema<CoachClientNoteDocument>(
   {
-    coachId: { type: Schema.Types.ObjectId, ref: "Coach", required: true, index: true },
-    clientId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    coachId: {
+      type: Schema.Types.ObjectId,
+      ref: "Coach",
+      required: true,
+      index: true,
+    },
+    clientId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     note: { type: String, required: true, trim: true, maxlength: 2000 },
     noteType: {
       type: String,

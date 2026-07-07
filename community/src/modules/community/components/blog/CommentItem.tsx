@@ -5,7 +5,10 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CornerDownRight, Heart, Loader2, Trash2 } from "lucide-react";
 import { BlogComment } from "@/modules/community/types";
-import { toRelativeTime, formatCount } from "@/modules/community/utils/blogFormat";
+import {
+  toRelativeTime,
+  formatCount,
+} from "@/modules/community/utils/blogFormat";
 import AuthorAvatar from "./AuthorAvatar";
 
 interface CommentItemProps {
@@ -152,7 +155,9 @@ export default function CommentItem({
             >
               <Heart
                 size={13}
-                className={comment.likedByMe ? "fill-rose-500 text-rose-500" : ""}
+                className={
+                  comment.likedByMe ? "fill-rose-500 text-rose-500" : ""
+                }
               />
               {comment.likeCount > 0 ? formatCount(comment.likeCount) : "Like"}
             </button>
@@ -191,7 +196,11 @@ export default function CommentItem({
                 disabled={submitting || !replyText.trim()}
                 className="inline-flex h-9 shrink-0 items-center gap-1 rounded-xl bg-slate-900 px-3 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
               >
-                {submitting ? <Loader2 size={13} className="animate-spin" /> : "Send"}
+                {submitting ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  "Send"
+                )}
               </button>
             </div>
           ) : null}

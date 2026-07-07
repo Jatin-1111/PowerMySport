@@ -65,7 +65,10 @@ export async function deleteCachedMessage(
   try {
     if (typeof window === "undefined") return;
     const messages = await getCachedMessages(conversationId);
-    await setCachedMessages(conversationId, messages.filter(m => m.id !== messageId));
+    await setCachedMessages(
+      conversationId,
+      messages.filter((m) => m.id !== messageId),
+    );
   } catch (error) {
     console.error("[chatDB] Failed to delete message", error);
   }

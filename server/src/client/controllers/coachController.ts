@@ -34,8 +34,7 @@ const buildCoachDiscoveryContext = (req: Request): CoachDiscoveryContext => {
   const lat = (req.query.lat || req.query.latitude) as string | undefined;
   const lng = (req.query.lng || req.query.longitude) as string | undefined;
   const radius = (req.query.radius || req.query.maxDistance) as
-    | string
-    | undefined;
+    string | undefined;
   const { sport } = req.query;
 
   const sportFilter = sport as string | undefined;
@@ -1530,8 +1529,7 @@ export const blockCoachDatesHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to block dates",
+      message: error instanceof Error ? error.message : "Failed to block dates",
     });
   }
 };

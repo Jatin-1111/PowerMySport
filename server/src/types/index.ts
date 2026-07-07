@@ -144,11 +144,7 @@ export interface ICoach {
   onboardingProgressStep?: 1 | 2 | 3;
   verificationDocuments?: Array<{
     type:
-      | "CERTIFICATION"
-      | "ID_PROOF"
-      | "BACKGROUND_CHECK"
-      | "INSURANCE"
-      | "OTHER";
+      "CERTIFICATION" | "ID_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
     url: string;
     s3Key?: string; // S3 key for document
     fileName: string;

@@ -18,4 +18,3 @@ export const useVenueStore = create<VenueStore>((set) => ({
   setSelectedVenue: (venue) => set({ selectedVenue: venue }),
   setLoading: (loading) => set({ isLoading: loading }),
 }));
-

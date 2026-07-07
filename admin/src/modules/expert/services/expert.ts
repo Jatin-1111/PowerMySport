@@ -139,7 +139,10 @@ export const expertAdminApi = {
     expertId: string,
     payload: UpdateExpertPayload,
   ): Promise<ApiResponse<AdminExpert>> => {
-    const res = await axiosInstance.patch(`/experts/admin/${expertId}`, payload);
+    const res = await axiosInstance.patch(
+      `/experts/admin/${expertId}`,
+      payload,
+    );
     return res.data;
   },
 

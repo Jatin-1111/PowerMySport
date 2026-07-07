@@ -11,10 +11,7 @@ import {
 import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
-import {
-  Card,
-  CardContent,
-} from "@/modules/shared/ui/Card";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -671,15 +668,13 @@ export default function FriendsPage() {
                   </div>
                 )}
 
-                {searchQuery &&
-                  searchResults.length === 0 &&
-                  !searching && (
-                    <EmptyState
-                      icon={Search}
-                      title="No users found"
-                      description="Try searching with a different name or email"
-                    />
-                  )}
+                {searchQuery && searchResults.length === 0 && !searching && (
+                  <EmptyState
+                    icon={Search}
+                    title="No users found"
+                    description="Try searching with a different name or email"
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>

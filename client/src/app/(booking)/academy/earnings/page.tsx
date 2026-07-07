@@ -16,7 +16,13 @@ import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { toast } from "@/lib/toast";
 import Link from "next/link";
 import axiosInstance from "@/lib/api/axios";
-import type { EarningsData, MonthlyEarning, SportEarning, Booking, User } from "@/types";
+import type {
+  EarningsData,
+  MonthlyEarning,
+  SportEarning,
+  Booking,
+  User,
+} from "@/types";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -56,7 +62,14 @@ interface StatCardProps {
   trend?: { value: number; positive: boolean } | null;
 }
 
-function StatCard({ title, amount, subtitle, icon, accent, trend }: StatCardProps) {
+function StatCard({
+  title,
+  amount,
+  subtitle,
+  icon,
+  accent,
+  trend,
+}: StatCardProps) {
   return (
     <div
       className={`rounded-2xl p-5 flex flex-col gap-3 shadow-sm border transition-shadow hover:shadow-md ${
@@ -81,8 +94,8 @@ function StatCard({ title, amount, subtitle, icon, accent, trend }: StatCardProp
               accent
                 ? "bg-white/20 text-white"
                 : trend.positive
-                ? "bg-emerald-50 text-emerald-600"
-                : "bg-red-50 text-red-600"
+                  ? "bg-emerald-50 text-emerald-600"
+                  : "bg-red-50 text-red-600"
             }`}
           >
             {trend.positive ? (
@@ -153,11 +166,23 @@ function MonthlyChart({ months }: { months: MonthlyEarning[] }) {
         aria-label="Monthly earnings bar chart"
       >
         <defs>
-          <linearGradient id="academyEarningsBarNormal" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient
+            id="academyEarningsBarNormal"
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
             <stop offset="0%" stopColor="#fb923c" />
             <stop offset="100%" stopColor="#f97316" />
           </linearGradient>
-          <linearGradient id="academyEarningsBarHighlight" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient
+            id="academyEarningsBarHighlight"
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
             <stop offset="0%" stopColor="#ea580c" />
             <stop offset="100%" stopColor="#c2410c" />
           </linearGradient>
@@ -170,8 +195,8 @@ function MonthlyChart({ months }: { months: MonthlyEarning[] }) {
             tick >= 100000
               ? `${(tick / 100000).toFixed(0)}L`
               : tick >= 1000
-              ? `${(tick / 1000).toFixed(0)}k`
-              : `${tick.toFixed(0)}`;
+                ? `${(tick / 1000).toFixed(0)}k`
+                : `${tick.toFixed(0)}`;
           return (
             <g key={i}>
               <line
@@ -249,8 +274,8 @@ function MonthlyChart({ months }: { months: MonthlyEarning[] }) {
                   {m.total >= 100000
                     ? `${(m.total / 100000).toFixed(1)}L`
                     : m.total >= 1000
-                    ? `${(m.total / 1000).toFixed(0)}k`
-                    : fmt(m.total)}
+                      ? `${(m.total / 1000).toFixed(0)}k`
+                      : fmt(m.total)}
                 </text>
               )}
 
@@ -349,7 +374,9 @@ function RecentTransactions({ bookings }: { bookings: Booking[] }) {
                   {b.sport}
                 </span>
                 <span className="text-slate-200">·</span>
-                <span className="text-xs text-slate-400">{fmtDate(b.date)}</span>
+                <span className="text-xs text-slate-400">
+                  {fmtDate(b.date)}
+                </span>
               </div>
             </div>
           </div>
@@ -379,9 +406,11 @@ export default function AcademyEarningsPage() {
       try {
         setLoading(true);
         setError(null);
-        const res = await axiosInstance.get<{ success: boolean; message: string; data?: EarningsData }>(
-          "/academies/my/earnings"
-        );
+        const res = await axiosInstance.get<{
+          success: boolean;
+          message: string;
+          data?: EarningsData;
+        }>("/academies/my/earnings");
         if (res.data.success && res.data.data) {
           setData(res.data.data);
         } else {
@@ -459,7 +488,6 @@ export default function AcademyEarningsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">
-
         {/* ── Page header ── */}
         <SlideUp delay={0}>
           <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -546,7 +574,6 @@ export default function AcademyEarningsPage() {
         {/* ── Two-column section ── */}
         <SlideUp delay={0.15}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-
             {/* By sport */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col gap-5">
               <div>
@@ -567,12 +594,12 @@ export default function AcademyEarningsPage() {
                   Recent Transactions
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Last {Math.min(10, data.recentBookings.length)} completed bookings
+                  Last {Math.min(10, data.recentBookings.length)} completed
+                  bookings
                 </p>
               </div>
               <RecentTransactions bookings={data.recentBookings} />
             </div>
-
           </div>
         </SlideUp>
 
@@ -609,7 +636,6 @@ export default function AcademyEarningsPage() {
             </Link>
           </motion.div>
         </SlideUp>
-
       </div>
     </div>
   );

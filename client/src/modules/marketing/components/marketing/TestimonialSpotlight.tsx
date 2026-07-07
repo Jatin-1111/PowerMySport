@@ -77,7 +77,9 @@ export function TestimonialSpotlight({
                 {current.author.charAt(0)}
               </span>
               <div className="text-left">
-                <p className="text-sm font-bold text-slate-900">{current.author}</p>
+                <p className="text-sm font-bold text-slate-900">
+                  {current.author}
+                </p>
                 <p className="text-xs text-slate-500">{current.role}</p>
               </div>
             </div>

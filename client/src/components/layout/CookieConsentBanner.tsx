@@ -67,7 +67,9 @@ export function CookieConsentBanner() {
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-power-orange">
                   <Cookie className="h-5 w-5" />
                 </span>
-                <p className="flex-1 font-bold text-slate-900">We use cookies</p>
+                <p className="flex-1 font-bold text-slate-900">
+                  We use cookies
+                </p>
                 <button
                   onClick={dismiss}
                   aria-label="Dismiss cookie notice"

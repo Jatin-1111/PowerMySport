@@ -192,11 +192,7 @@ router.post(
 );
 
 // Reschedule booking — coach only
-router.post(
-  "/:bookingId/reschedule",
-  authMiddleware,
-  rescheduleBookingHandler,
-);
+router.post("/:bookingId/reschedule", authMiddleware, rescheduleBookingHandler);
 
 // Cancel booking
 router.delete(

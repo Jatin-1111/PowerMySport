@@ -42,13 +42,19 @@ export default function RootLayout({
     >
       <body className="bg-app text-slate-900 overflow-hidden">
         <div className="flex h-dvh flex-col">
-          <Suspense fallback={<div className="h-16 w-full bg-white/90 border-b border-white/70" />}>
+          <Suspense
+            fallback={
+              <div className="h-16 w-full bg-white/90 border-b border-white/70" />
+            }
+          >
             <CommunityTopNav />
           </Suspense>
           <Suspense fallback={null}>
             <CommunityNotificationToastListener />
           </Suspense>
-          <main className="min-h-0 flex-1 relative overflow-y-auto">{children}</main>
+          <main className="min-h-0 flex-1 relative overflow-y-auto">
+            {children}
+          </main>
         </div>
         <Toaster richColors closeButton position="top-right" />
       </body>

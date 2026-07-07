@@ -10,20 +10,29 @@ export function Step4Details({
   update,
 }: {
   form: GuidanceFormState;
-  update: <K extends keyof GuidanceFormState>(k: K, v: GuidanceFormState[K]) => void;
+  update: <K extends keyof GuidanceFormState>(
+    k: K,
+    v: GuidanceFormState[K],
+  ) => void;
 }) {
   const toggleTag = (tag: string) => {
     const has = form.personality_tags.includes(tag);
     update(
       "personality_tags",
-      has ? form.personality_tags.filter((t) => t !== tag) : [...form.personality_tags, tag],
+      has
+        ? form.personality_tags.filter((t) => t !== tag)
+        : [...form.personality_tags, tag],
     );
   };
 
   // Smart question chips based on context
   const smartChips: string[] = [
-    ...(form.child_age <= 11 ? ["Should my child play multiple sports at this age, or specialise?"] : []),
-    ...(form.primary_objective === "Compete" ? ["What talent indicators should I watch for in my child?"] : []),
+    ...(form.child_age <= 11
+      ? ["Should my child play multiple sports at this age, or specialise?"]
+      : []),
+    ...(form.primary_objective === "Compete"
+      ? ["What talent indicators should I watch for in my child?"]
+      : []),
     "How do I find and evaluate the right coach for my child's age?",
     "What documents should I start collecting from Day 1 for future trials?",
     "How do I balance school academics with serious sport training?",
@@ -72,11 +81,11 @@ export function Step4Details({
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 }`}
               >
-                <div className="text-slate-600 flex items-center justify-center"><Icon className="h-4 w-4" /></div>
+                <div className="text-slate-600 flex items-center justify-center">
+                  <Icon className="h-4 w-4" />
+                </div>
                 <span className="truncate">{label}</span>
-                {selected && (
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                )}
+                {selected && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
               </button>
             );
           })}
@@ -86,7 +95,9 @@ export function Step4Details({
       <div className="space-y-2">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
           Your biggest concern or question{" "}
-          <span className="text-slate-400 normal-case font-normal">(optional)</span>
+          <span className="text-slate-400 normal-case font-normal">
+            (optional)
+          </span>
         </span>
         {/* Smart question chips */}
         <div>
@@ -108,7 +119,11 @@ export function Step4Details({
                       : "border-slate-200 bg-white text-slate-600 hover:border-power-orange hover:text-power-orange hover:bg-power-orange/5"
                   }`}
                 >
-                  {alreadyAdded ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <span className="text-[10px] shrink-0">+</span>}
+                  {alreadyAdded ? (
+                    <CheckCircle2 className="h-3 w-3 shrink-0" />
+                  ) : (
+                    <span className="text-[10px] shrink-0">+</span>
+                  )}
                   {chip}
                 </button>
               );

@@ -3,8 +3,11 @@ export interface CsvColumn<T> {
   value: (row: T) => string | number | boolean | null | undefined;
 }
 
-const escapeCsvCell = (value: string | number | boolean | null | undefined): string => {
-  const stringValue = value === null || value === undefined ? "" : String(value);
+const escapeCsvCell = (
+  value: string | number | boolean | null | undefined,
+): string => {
+  const stringValue =
+    value === null || value === undefined ? "" : String(value);
   if (/[",\n]/.test(stringValue)) {
     return `"${stringValue.replace(/"/g, '""')}"`;
   }

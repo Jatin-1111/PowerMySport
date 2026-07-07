@@ -24,21 +24,25 @@ export interface PathwayExpertVerificationDocument extends Document {
   updatedAt: Date;
 }
 
-const pathwayExpertVerificationSchema = new Schema<PathwayExpertVerificationDocument>(
-  {
-    sportSlug: { type: String, required: true, lowercase: true, index: true },
-    sportName: { type: String, required: true, trim: true },
-    expertId: { type: Schema.Types.ObjectId, ref: "Expert", required: true },
-    expertName: { type: String, required: true },
-    expertPhotoUrl: { type: String },
-    verifiedAt: { type: Date, default: Date.now },
-    note: { type: String, trim: true, maxlength: 500 },
-  },
-  { timestamps: true },
-);
+const pathwayExpertVerificationSchema =
+  new Schema<PathwayExpertVerificationDocument>(
+    {
+      sportSlug: { type: String, required: true, lowercase: true, index: true },
+      sportName: { type: String, required: true, trim: true },
+      expertId: { type: Schema.Types.ObjectId, ref: "Expert", required: true },
+      expertName: { type: String, required: true },
+      expertPhotoUrl: { type: String },
+      verifiedAt: { type: Date, default: Date.now },
+      note: { type: String, trim: true, maxlength: 500 },
+    },
+    { timestamps: true },
+  );
 
 // One verification per expert per sport (upserted, not duplicated).
-pathwayExpertVerificationSchema.index({ sportSlug: 1, expertId: 1 }, { unique: true });
+pathwayExpertVerificationSchema.index(
+  { sportSlug: 1, expertId: 1 },
+  { unique: true },
+);
 
 export const PathwayExpertVerification =
   mongoose.models.PathwayExpertVerification ||

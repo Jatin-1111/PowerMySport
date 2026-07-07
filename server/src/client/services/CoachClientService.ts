@@ -2,7 +2,11 @@ import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { User } from "../models/User";
-import { CoachClientNote, NoteType, CoachClientNoteDocument } from "../models/CoachClientNote";
+import {
+  CoachClientNote,
+  NoteType,
+  CoachClientNoteDocument,
+} from "../models/CoachClientNote";
 
 export interface ClientSummary {
   clientId: string;
@@ -49,7 +53,12 @@ export const getCoachClients = async (
         pendingSessions: {
           $sum: {
             $cond: [
-              { $in: ["$status", ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"]] },
+              {
+                $in: [
+                  "$status",
+                  ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"],
+                ],
+              },
               1,
               0,
             ],
@@ -78,7 +87,9 @@ export const getCoachClients = async (
     .map((agg) => {
       const user = userMap.get(agg._id.toString()) as any;
       if (!user) return null;
-      const lastDate = agg.lastSessionDate ? new Date(agg.lastSessionDate) : null;
+      const lastDate = agg.lastSessionDate
+        ? new Date(agg.lastSessionDate)
+        : null;
       return {
         clientId: agg._id.toString(),
         name: user.name ?? "Unknown",
@@ -130,13 +141,21 @@ export const getClientDetails = async (
   if (!user) throw new Error("Client not found");
 
   const totalSessions = bookings.length;
-  const completedSessions = bookings.filter((b: any) => b.status === "COMPLETED").length;
+  const completedSessions = bookings.filter(
+    (b: any) => b.status === "COMPLETED",
+  ).length;
   const pendingSessions = bookings.filter((b: any) =>
     ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"].includes(b.status),
   ).length;
-  const dates = bookings.map((b: any) => new Date(b.date).getTime()).filter(Boolean);
-  const firstSessionDate = dates.length ? new Date(Math.min(...dates)).toISOString() : null;
-  const lastSessionDate = dates.length ? new Date(Math.max(...dates)).toISOString() : null;
+  const dates = bookings
+    .map((b: any) => new Date(b.date).getTime())
+    .filter(Boolean);
+  const firstSessionDate = dates.length
+    ? new Date(Math.min(...dates)).toISOString()
+    : null;
+  const lastSessionDate = dates.length
+    ? new Date(Math.max(...dates)).toISOString()
+    : null;
   const sports = [...new Set(bookings.map((b: any) => b.sport as string))];
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - ACTIVE_THRESHOLD_DAYS);
@@ -163,7 +182,12 @@ export const getClientDetails = async (
 export const addClientNote = async (
   coachUserId: string,
   clientUserId: string,
-  payload: { note: string; noteType?: NoteType; sessionDate?: string; bookingId?: string },
+  payload: {
+    note: string;
+    noteType?: NoteType;
+    sessionDate?: string;
+    bookingId?: string;
+  },
 ): Promise<CoachClientNoteDocument> => {
   const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
   if (!coach) throw new Error("Coach profile not found");
@@ -177,7 +201,9 @@ export const addClientNote = async (
     clientId: new mongoose.Types.ObjectId(clientUserId),
     note: payload.note.trim(),
     noteType: payload.noteType ?? "GENERAL",
-    ...(payload.sessionDate ? { sessionDate: new Date(payload.sessionDate) } : {}),
+    ...(payload.sessionDate
+      ? { sessionDate: new Date(payload.sessionDate) }
+      : {}),
     ...(payload.bookingId && mongoose.Types.ObjectId.isValid(payload.bookingId)
       ? { bookingId: new mongoose.Types.ObjectId(payload.bookingId) }
       : {}),
@@ -194,7 +220,8 @@ export const deleteClientNote = async (
   const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
   if (!coach) throw new Error("Coach profile not found");
 
-  if (!mongoose.Types.ObjectId.isValid(noteId)) throw new Error("Invalid note ID");
+  if (!mongoose.Types.ObjectId.isValid(noteId))
+    throw new Error("Invalid note ID");
 
   const result = await CoachClientNote.findOneAndDelete({
     _id: new mongoose.Types.ObjectId(noteId),

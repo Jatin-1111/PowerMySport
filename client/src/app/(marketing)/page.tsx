@@ -189,7 +189,7 @@ export default function HomePage() {
           user?.role === "VenueLister"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
             : {
-                label: user ? "Go to Roadmap" : "Build a Sports Plan",
+                label: user ? "Sports Pathways" : "Build a Sports Plan",
                 href: "/roadmap",
               }
         }

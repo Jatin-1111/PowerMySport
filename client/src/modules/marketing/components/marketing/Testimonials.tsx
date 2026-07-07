@@ -82,7 +82,14 @@ function TestimonialCard({
       )}
 
       {/* Quote icon */}
-      <div className={cn("mb-4 flex h-8 w-8 items-center justify-center rounded-lg", isHighlighted ? "bg-power-orange/10 text-power-orange" : "bg-slate-100 text-slate-400")}>
+      <div
+        className={cn(
+          "mb-4 flex h-8 w-8 items-center justify-center rounded-lg",
+          isHighlighted
+            ? "bg-power-orange/10 text-power-orange"
+            : "bg-slate-100 text-slate-400",
+        )}
+      >
         <Quote className="h-4 w-4" />
       </div>
 
@@ -136,7 +143,9 @@ function TestimonialCard({
           )}
         </div>
         <div>
-          <p className="text-sm font-bold text-slate-900">{testimonial.author}</p>
+          <p className="text-sm font-bold text-slate-900">
+            {testimonial.author}
+          </p>
           <p className="text-xs text-slate-500">{testimonial.role}</p>
         </div>
       </div>
@@ -180,7 +189,10 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
             className="mb-12 text-center sm:mb-16"
           >
             {subtitle && (
-              <motion.div variants={headerItemVariants} className="mb-4 flex justify-center">
+              <motion.div
+                variants={headerItemVariants}
+                className="mb-4 flex justify-center"
+              >
                 <SectionLabel label={subtitle} color="orange" />
               </motion.div>
             )}
@@ -204,7 +216,11 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
           className="grid grid-cols-1 gap-5 md:grid-cols-3 sm:gap-6"
         >
           {testimonials.map((testimonial, index) => (
-            <TestimonialCard key={index} testimonial={testimonial} index={index} />
+            <TestimonialCard
+              key={index}
+              testimonial={testimonial}
+              index={index}
+            />
           ))}
         </motion.div>
       </div>

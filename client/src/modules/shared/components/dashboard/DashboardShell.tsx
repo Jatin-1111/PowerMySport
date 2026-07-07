@@ -61,7 +61,10 @@ const NavItems = ({
   }, []);
 
   return (
-    <nav className="mt-1 flex-1 space-y-3 overflow-y-auto px-4 pb-4" aria-label="Main navigation">
+    <nav
+      className="mt-1 flex-1 space-y-3 overflow-y-auto px-4 pb-4"
+      aria-label="Main navigation"
+    >
       {sections.map((section, sectionIndex) => (
         <div key={`${section.title ?? "general"}-${sectionIndex}`}>
           {section.title && (

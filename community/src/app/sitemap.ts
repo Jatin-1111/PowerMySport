@@ -11,7 +11,11 @@ interface ListResponse {
 }
 
 // Public, indexable routes within the community app.
-const staticRoutes: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }[] = [
+const staticRoutes: {
+  path: string;
+  priority: number;
+  changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
+}[] = [
   { path: "/", priority: 1, changeFrequency: "daily" },
   { path: "/blog", priority: 0.9, changeFrequency: "daily" },
   { path: "/q", priority: 0.9, changeFrequency: "daily" },

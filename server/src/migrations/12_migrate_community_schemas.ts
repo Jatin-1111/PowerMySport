@@ -19,35 +19,46 @@ export const migrateCommunitySchemas = async (): Promise<void> => {
     const conversationCollection = db.collection("communityconversations");
     const conversationUpdateResult = await conversationCollection.updateMany(
       { conversationType: { $exists: false } },
-      { $set: { conversationType: "DM" } }
+      { $set: { conversationType: "DM" } },
     );
-    const conversationStatusUpdateResult = await conversationCollection.updateMany(
-      { status: { $exists: false } },
-      { $set: { status: "ACTIVE" } }
+    const conversationStatusUpdateResult =
+      await conversationCollection.updateMany(
+        { status: { $exists: false } },
+        { $set: { status: "ACTIVE" } },
+      );
+    console.log(
+      `✓ Migrated ${conversationUpdateResult.modifiedCount} conversations to have conversationType`,
     );
-    console.log(`✓ Migrated ${conversationUpdateResult.modifiedCount} conversations to have conversationType`);
-    console.log(`✓ Migrated ${conversationStatusUpdateResult.modifiedCount} conversations to have status`);
+    console.log(
+      `✓ Migrated ${conversationStatusUpdateResult.modifiedCount} conversations to have status`,
+    );
 
     // 2. Migrate CommunityMessage
     const messageCollection = db.collection("communitymessages");
     const messageUpdateResult = await messageCollection.updateMany(
       { isDeleted: { $exists: false } },
-      { $set: { isDeleted: false } }
+      { $set: { isDeleted: false } },
     );
-    console.log(`✓ Migrated ${messageUpdateResult.modifiedCount} messages to have isDeleted flag`);
+    console.log(
+      `✓ Migrated ${messageUpdateResult.modifiedCount} messages to have isDeleted flag`,
+    );
 
     // 3. Migrate CommunityGroup
     const groupCollection = db.collection("communitygroups");
     const groupAudienceUpdateResult = await groupCollection.updateMany(
       { audience: { $exists: false } },
-      { $set: { audience: "ALL" } }
+      { $set: { audience: "ALL" } },
     );
     const groupMemberPolicyUpdateResult = await groupCollection.updateMany(
       { memberAddPolicy: { $exists: false } },
-      { $set: { memberAddPolicy: "ADMIN_ONLY" } }
+      { $set: { memberAddPolicy: "ADMIN_ONLY" } },
     );
-    console.log(`✓ Migrated ${groupAudienceUpdateResult.modifiedCount} groups to have audience policy`);
-    console.log(`✓ Migrated ${groupMemberPolicyUpdateResult.modifiedCount} groups to have memberAddPolicy`);
+    console.log(
+      `✓ Migrated ${groupAudienceUpdateResult.modifiedCount} groups to have audience policy`,
+    );
+    console.log(
+      `✓ Migrated ${groupMemberPolicyUpdateResult.modifiedCount} groups to have memberAddPolicy`,
+    );
 
     console.log("✓ Successfully migrated all community schemas");
   } catch (error) {

@@ -82,7 +82,9 @@ export function InfiniteMovingCards({
                   {item.name.charAt(0)}
                 </span>
                 <span className="flex flex-col">
-                  <span className="text-sm font-bold text-slate-900">{item.name}</span>
+                  <span className="text-sm font-bold text-slate-900">
+                    {item.name}
+                  </span>
                   <span className="text-xs text-slate-500">{item.title}</span>
                 </span>
               </footer>

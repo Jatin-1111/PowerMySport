@@ -25,9 +25,7 @@ export const getCommunityAppUrl = (
   options: CommunityUrlOptions = {},
 ): string => {
   const configured = process.env.NEXT_PUBLIC_COMMUNITY_APP_URL;
-  const baseUrl = configured
-    ? normalizeUrl(configured)
-    : "/community";
+  const baseUrl = configured ? normalizeUrl(configured) : "/community";
 
   return buildCommunityUrl(baseUrl, options);
 };

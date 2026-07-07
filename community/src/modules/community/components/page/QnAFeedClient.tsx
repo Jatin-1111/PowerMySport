@@ -307,7 +307,15 @@ export default function QnAFeedClient() {
         setIsLoadingMore(false);
       }
     },
-    [sort, q, activeTag, selectedSports, selectedCities, categoryFilter, viewMode],
+    [
+      sort,
+      q,
+      activeTag,
+      selectedSports,
+      selectedCities,
+      categoryFilter,
+      viewMode,
+    ],
   );
 
   const loadActivity = useCallback(async () => {
@@ -1071,17 +1079,29 @@ export default function QnAFeedClient() {
                       {/* Footer */}
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/50 pt-4">
                         <div className="flex items-center gap-2 text-xs text-slate-600">
+<<<<<<< HEAD
                           <AuthorAvatar author={featuredPost.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : featuredPost.author} size={32} />
+=======
+                          <AuthorAvatar
+                            author={featuredPost.author}
+                            size={32}
+                          />
+>>>>>>> 4a9c5681645e045e292a2685b6a04a64d1b30b9a
                           <span className="font-semibold text-slate-900">
                             {featuredPost.isAnonymous ? "Anonymous" : featuredPost.author.displayName}
                           </span>
                           {featuredPost.author.isVerifiedExpert ? (
                             <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                              ★ {featuredPost.author.expertTitle || "Verified Coach"}
+                              ★{" "}
+                              {featuredPost.author.expertTitle ||
+                                "Verified Coach"}
                             </span>
                           ) : null}
                           <span className="inline-flex items-center gap-1 text-slate-500">
-                            <CalendarDays size={12} className="text-slate-400" />
+                            <CalendarDays
+                              size={12}
+                              className="text-slate-400"
+                            />
                             {formatPostedDate(featuredPost.createdAt)}
                           </span>
                         </div>
@@ -1193,7 +1213,8 @@ export default function QnAFeedClient() {
                               </span>
                               {post.author.isVerifiedExpert ? (
                                 <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                                  ★ {post.author.expertTitle || "Verified Coach"}
+                                  ★{" "}
+                                  {post.author.expertTitle || "Verified Coach"}
                                 </span>
                               ) : null}
                               <span className="inline-flex items-center gap-1 text-slate-400">

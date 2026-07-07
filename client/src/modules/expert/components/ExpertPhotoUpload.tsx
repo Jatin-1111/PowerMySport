@@ -31,7 +31,9 @@ export function ExpertPhotoUpload({
   size = "xl",
 }: ExpertPhotoUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>(currentPhotoUrl);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(
+    currentPhotoUrl,
+  );
 
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -48,7 +50,10 @@ export function ExpertPhotoUpload({
     setPreviewUrl(localPreview);
 
     try {
-      const urlRes = await authApi.getProfilePictureUploadUrl(file.name, file.type);
+      const urlRes = await authApi.getProfilePictureUploadUrl(
+        file.name,
+        file.type,
+      );
       if (!urlRes.success || !urlRes.data) {
         throw new Error("Failed to get an upload URL.");
       }
@@ -58,7 +63,9 @@ export function ExpertPhotoUpload({
       onPhotoReady(downloadUrl, key);
       toast.success("Photo uploaded — click Save changes to apply it.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to upload photo.");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to upload photo.",
+      );
       setPreviewUrl(currentPhotoUrl);
     } finally {
       setUploading(false);
@@ -72,7 +79,11 @@ export function ExpertPhotoUpload({
       >
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={previewUrl} alt="Profile" className="h-full w-full object-cover" />
+          <img
+            src={previewUrl}
+            alt="Profile"
+            className="h-full w-full object-cover"
+          />
         ) : (
           <span className="text-3xl font-bold text-slate-300">
             <Camera className="h-8 w-8" />
@@ -90,7 +101,9 @@ export function ExpertPhotoUpload({
           accept="image/*"
           className="hidden"
           disabled={uploading}
-          onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+          onChange={(e) =>
+            e.target.files?.[0] && handleFileSelect(e.target.files[0])
+          }
         />
       </label>
     </div>

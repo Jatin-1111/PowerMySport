@@ -144,8 +144,6 @@ function ValuePropCard({ title, description, icon: Icon }: ValueProp) {
   );
 }
 
-
-
 function CoachMarketplaceCard({ coach }: { coach: CoachCard }) {
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10">
@@ -220,7 +218,11 @@ export default function CommunityLandingPage() {
     return (
       <FeatureWaitlist
         title="Community."
-        subtitle={<span className="text-transparent bg-clip-text bg-gradient-to-r from-power-orange to-amber-500">Coming Soon.</span>}
+        subtitle={
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-power-orange to-amber-500">
+            Coming Soon.
+          </span>
+        }
         description="Our Community platform is almost here. Get ready to connect with parents, coaches, and sports enthusiasts."
         icon={Users}
         gradientFrom="#E97316"
@@ -247,7 +249,9 @@ export default function CommunityLandingPage() {
                   Learn, connect, and plan your child's sports journey.
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                  Before you book a coach or a venue, get the knowledge you need. Ask questions, read expert insights, and connect with parents who have been there.
+                  Before you book a coach or a venue, get the knowledge you
+                  need. Ask questions, read expert insights, and connect with
+                  parents who have been there.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3 text-sm text-slate-600">
@@ -292,7 +296,9 @@ export default function CommunityLandingPage() {
                     Learn before you commit.
                   </p>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Use our roadmap to see the big picture, get a personalised AI plan, and ask the community for local insights before booking any sessions.
+                    Use our roadmap to see the big picture, get a personalised
+                    AI plan, and ask the community for local insights before
+                    booking any sessions.
                   </p>
                 </div>
               </div>
@@ -334,7 +340,8 @@ export default function CommunityLandingPage() {
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
                     <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
                     <span>
-                      Strict moderation to ensure helpful, respectful discussions.
+                      Strict moderation to ensure helpful, respectful
+                      discussions.
                     </span>
                   </div>
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
@@ -346,7 +353,8 @@ export default function CommunityLandingPage() {
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
                     <BrainCircuit className="mt-0.5 h-4 w-4 text-sky-600" />
                     <span>
-                      AI synthesis helps summarize complex debates into clear takeaways.
+                      AI synthesis helps summarize complex debates into clear
+                      takeaways.
                     </span>
                   </div>
                 </div>

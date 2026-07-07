@@ -961,9 +961,7 @@ export class EcommerceController {
       }
 
       // Can only generate invoice for paid orders
-      if (
-        order.paymentStatus !== PaymentStatus.CAPTURED
-      ) {
+      if (order.paymentStatus !== PaymentStatus.CAPTURED) {
         res.status(409).json({
           ok: false,
           error: {
@@ -1004,7 +1002,9 @@ export class EcommerceController {
       // Invoice details
       doc.fontSize(10).font("Helvetica");
       doc.text(`Invoice Number: ${invoiceNumber}`);
-      doc.text(`Order Date: ${invoiceDate.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`);
+      doc.text(
+        `Order Date: ${invoiceDate.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`,
+      );
       doc.text(`Order Number: ${order.orderNumber}`);
       doc.moveDown();
 
@@ -1069,7 +1069,9 @@ export class EcommerceController {
       doc.fontSize(10).font("Helvetica");
       doc.text("Subtotal:", col3X, currentY);
       doc.text(
-        money(order.totalAmount - order.taxAmount - (order.shippingAmount || 0)),
+        money(
+          order.totalAmount - order.taxAmount - (order.shippingAmount || 0),
+        ),
         col4X,
         currentY,
       );
@@ -1117,12 +1119,10 @@ export class EcommerceController {
     try {
       const userId = (req as any).user?.id;
       if (!userId) {
-        res
-          .status(401)
-          .json({
-            ok: false,
-            error: { code: "UNAUTHORIZED", message: "User not authenticated" },
-          });
+        res.status(401).json({
+          ok: false,
+          error: { code: "UNAUTHORIZED", message: "User not authenticated" },
+        });
         return;
       }
       const wishlist = await WishlistModel.findOne({ userId }).populate(
@@ -1130,12 +1130,10 @@ export class EcommerceController {
       );
       res.json({ ok: true, data: wishlist?.products || [] });
     } catch (error: any) {
-      res
-        .status(500)
-        .json({
-          ok: false,
-          error: { code: "INTERNAL_ERROR", message: error.message },
-        });
+      res.status(500).json({
+        ok: false,
+        error: { code: "INTERNAL_ERROR", message: error.message },
+      });
     }
   }
 
@@ -1147,12 +1145,10 @@ export class EcommerceController {
       const userId = (req as any).user?.id;
       const { productId } = req.body;
       if (!userId || !productId) {
-        res
-          .status(400)
-          .json({
-            ok: false,
-            error: { code: "INVALID_REQUEST", message: "Missing params" },
-          });
+        res.status(400).json({
+          ok: false,
+          error: { code: "INVALID_REQUEST", message: "Missing params" },
+        });
         return;
       }
       let wishlist = await WishlistModel.findOne({ userId });
@@ -1169,12 +1165,10 @@ export class EcommerceController {
       await wishlist.populate("products.productId");
       res.json({ ok: true, data: wishlist.products });
     } catch (error: any) {
-      res
-        .status(500)
-        .json({
-          ok: false,
-          error: { code: "INTERNAL_ERROR", message: error.message },
-        });
+      res.status(500).json({
+        ok: false,
+        error: { code: "INTERNAL_ERROR", message: error.message },
+      });
     }
   }
 
@@ -1190,33 +1184,28 @@ export class EcommerceController {
       const { rating, review } = req.body;
 
       if (!userId) {
-        res
-          .status(401)
-          .json({
-            ok: false,
-            error: { code: "UNAUTHORIZED", message: "User not authenticated" },
-          });
+        res.status(401).json({
+          ok: false,
+          error: { code: "UNAUTHORIZED", message: "User not authenticated" },
+        });
         return;
       }
       if (!rating || rating < 1 || rating > 5) {
-        res
-          .status(400)
-          .json({
-            ok: false,
-            error: {
-              code: "INVALID_REQUEST",
-              message: "Rating must be between 1 and 5",
-            },
-          });
+        res.status(400).json({
+          ok: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: "Rating must be between 1 and 5",
+          },
+        });
         return;
       }
 
       // Verify the user actually purchased THIS product (a DELIVERED order
       // containing one of this product's variants) before marking the review a
       // verified purchase — previously any delivered order of anything counted.
-      const product = await ProductModel.findById(productId).select(
-        "variants._id",
-      );
+      const product =
+        await ProductModel.findById(productId).select("variants._id");
       if (!product) {
         res.status(404).json({
           ok: false,
@@ -1238,15 +1227,13 @@ export class EcommerceController {
         targetId: productId,
       });
       if (existingReview) {
-        res
-          .status(400)
-          .json({
-            ok: false,
-            error: {
-              code: "INVALID_REQUEST",
-              message: "You have already reviewed this product",
-            },
-          });
+        res.status(400).json({
+          ok: false,
+          error: {
+            code: "INVALID_REQUEST",
+            message: "You have already reviewed this product",
+          },
+        });
         return;
       }
 
@@ -1275,12 +1262,10 @@ export class EcommerceController {
 
       res.json({ ok: true, data: newReview });
     } catch (error: any) {
-      res
-        .status(500)
-        .json({
-          ok: false,
-          error: { code: "INTERNAL_ERROR", message: error.message },
-        });
+      res.status(500).json({
+        ok: false,
+        error: { code: "INTERNAL_ERROR", message: error.message },
+      });
     }
   }
 
@@ -1313,12 +1298,10 @@ export class EcommerceController {
 
       res.json({ ok: true, data: { reviews, stats } });
     } catch (error: any) {
-      res
-        .status(500)
-        .json({
-          ok: false,
-          error: { code: "INTERNAL_ERROR", message: error.message },
-        });
+      res.status(500).json({
+        ok: false,
+        error: { code: "INTERNAL_ERROR", message: error.message },
+      });
     }
   }
 }
@@ -1422,7 +1405,14 @@ export class AdminEcommerceController {
    */
   async listAllProducts(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 1, limit = 20, search, isActive, sortBy, sortOrder } = req.query;
+      const {
+        page = 1,
+        limit = 20,
+        search,
+        isActive,
+        sortBy,
+        sortOrder,
+      } = req.query;
 
       const options: {
         search?: string;
@@ -1587,7 +1577,11 @@ export class AdminEcommerceController {
       if (typeof search === "string") {
         filters.search = search;
       }
-      if (sortBy === "createdAt" || sortBy === "totalAmount" || sortBy === "orderNumber") {
+      if (
+        sortBy === "createdAt" ||
+        sortBy === "totalAmount" ||
+        sortBy === "orderNumber"
+      ) {
         filters.sortBy = sortBy;
       }
       if (sortOrder === "asc" || sortOrder === "desc") {

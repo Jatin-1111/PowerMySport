@@ -43,12 +43,17 @@ export const listPathwaysAdmin = async (
     res.status(200).json({
       success: true,
       data: docs,
-      pagination: { total, page, totalPages: Math.max(1, Math.ceil(total / limit)) },
+      pagination: {
+        total,
+        page,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch pathways",
+      message:
+        error instanceof Error ? error.message : "Failed to fetch pathways",
     });
   }
 };
@@ -78,7 +83,8 @@ export const getPathwayAdminDetail = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch pathway",
+      message:
+        error instanceof Error ? error.message : "Failed to fetch pathway",
     });
   }
 };
@@ -121,12 +127,22 @@ export const updatePathwayAdmin = async (
     }
 
     if (Object.keys(update).length === 0) {
-      res.status(400).json({ success: false, message: "No editable fields provided" });
+      res
+        .status(400)
+        .json({ success: false, message: "No editable fields provided" });
       return;
     }
 
-    if (update.levels && (!Array.isArray(update.levels) || update.levels.length !== 5)) {
-      res.status(400).json({ success: false, message: "levels must be an array of exactly 5 items" });
+    if (
+      update.levels &&
+      (!Array.isArray(update.levels) || update.levels.length !== 5)
+    ) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "levels must be an array of exactly 5 items",
+        });
       return;
     }
 
@@ -150,11 +166,14 @@ export const updatePathwayAdmin = async (
       metadata: { fields: Object.keys(update) },
     });
 
-    res.status(200).json({ success: true, message: "Pathway updated", data: pathway });
+    res
+      .status(200)
+      .json({ success: true, message: "Pathway updated", data: pathway });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to update pathway",
+      message:
+        error instanceof Error ? error.message : "Failed to update pathway",
     });
   }
 };
@@ -194,7 +213,8 @@ export const setPathwayVerifiedAdmin = async (
           if (!scheme.sourceURL || !scheme.verifiedAsOf) {
             res.status(400).json({
               success: false,
-              message: "Cannot verify: All government schemes must have a sourceURL and a verifiedAsOf date.",
+              message:
+                "Cannot verify: All government schemes must have a sourceURL and a verifiedAsOf date.",
             });
             return;
           }
@@ -205,7 +225,13 @@ export const setPathwayVerifiedAdmin = async (
     const pathway = await SportPathway.findByIdAndUpdate(
       id,
       verified
-        ? { $set: { isVerified: true, verifiedAt: new Date(), verifiedBy: req.user.id } }
+        ? {
+            $set: {
+              isVerified: true,
+              verifiedAt: new Date(),
+              verifiedBy: req.user.id,
+            },
+          }
         : { $set: { isVerified: false, verifiedAt: null, verifiedBy: null } },
       { new: true },
     ).populate("verifiedBy", "name email");
@@ -225,13 +251,18 @@ export const setPathwayVerifiedAdmin = async (
 
     res.status(200).json({
       success: true,
-      message: verified ? "Pathway marked as verified" : "Pathway verification removed",
+      message: verified
+        ? "Pathway marked as verified"
+        : "Pathway verification removed",
       data: pathway,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to update verification status",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to update verification status",
     });
   }
 };

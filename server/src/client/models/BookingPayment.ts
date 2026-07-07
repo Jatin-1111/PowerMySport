@@ -1,9 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export type BookingPaymentTransactionStatus =
-  | "PENDING"
-  | "COMPLETED"
-  | "FAILED";
+  "PENDING" | "COMPLETED" | "FAILED";
 
 export interface BookingPaymentTransactionDocument extends Document {
   bookingId: mongoose.Types.ObjectId;

@@ -22,7 +22,7 @@ export const FadeIn = forwardRef<HTMLDivElement, FadeInProps>(
         {children}
       </motion.div>
     );
-  }
+  },
 );
 
 FadeIn.displayName = "FadeIn";

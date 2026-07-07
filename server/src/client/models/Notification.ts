@@ -35,12 +35,7 @@ export type NotificationType =
   | "MESSAGE_RECEIVED";
 
 export type NotificationCategory =
-  | "SOCIAL"
-  | "BOOKING"
-  | "Admin"
-  | "REVIEW"
-  | "PAYMENT"
-  | "COMMUNITY";
+  "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;

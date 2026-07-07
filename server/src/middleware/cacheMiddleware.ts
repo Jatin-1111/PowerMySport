@@ -32,9 +32,11 @@ export const cacheResponse = (ttlSeconds: number = 300) => {
       res.json = (body: any) => {
         // Only cache successful 2xx responses
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          redis.set(cacheKey, JSON.stringify(body), "EX", ttlSeconds).catch((err) => {
-            console.error("Redis Cache Set Error:", err);
-          });
+          redis
+            .set(cacheKey, JSON.stringify(body), "EX", ttlSeconds)
+            .catch((err) => {
+              console.error("Redis Cache Set Error:", err);
+            });
         }
         return originalJson(body);
       };

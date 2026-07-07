@@ -45,7 +45,8 @@ export default function VenueDetailsPage() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString());
+  const [selectedDate, setSelectedDate] =
+    useState<string>(getLocalDateString());
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     startTime: string;
@@ -72,7 +73,9 @@ export default function VenueDetailsPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
-  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(null);
+  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(
+    null,
+  );
   const [reviewEligibilityReason, setReviewEligibilityReason] = useState("");
 
   const slotsToDisplay = (() => {
@@ -101,7 +104,8 @@ export default function VenueDetailsPage() {
       availability?.availableSlots?.some(
         (availSlot) =>
           (availSlot.split("-")[0] || availSlot) === selectedSlot.startTime,
-      )) ?? false;
+      )) ??
+    false;
 
   const communityUrl = getCommunityAppUrl({
     path: "q",
@@ -113,7 +117,10 @@ export default function VenueDetailsPage() {
     },
   });
 
-  const selectedSportPhotoCountLabel = (sport: string, count: number): string => {
+  const selectedSportPhotoCountLabel = (
+    sport: string,
+    count: number,
+  ): string => {
     if (!sport || count <= 0) return "";
     return `${sport}: ${count} photos`;
   };
@@ -182,7 +189,10 @@ export default function VenueDetailsPage() {
   useEffect(() => {
     if (!lightboxOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { setLightboxOpen(false); return; }
+      if (event.key === "Escape") {
+        setLightboxOpen(false);
+        return;
+      }
       if (event.key === "ArrowLeft") showPreviousImage();
       if (event.key === "ArrowRight") showNextImage();
     };
@@ -209,7 +219,10 @@ export default function VenueDetailsPage() {
 
   const loadAvailability = async () => {
     try {
-      const response = await bookingApi.getVenueAvailability(venueId, selectedDate);
+      const response = await bookingApi.getVenueAvailability(
+        venueId,
+        selectedDate,
+      );
       if (response.success && response.data) setAvailability(response.data);
     } catch (error) {
       console.error("Failed to load availability:", error);
@@ -247,14 +260,25 @@ export default function VenueDetailsPage() {
       }
     } catch {
       setEligibleBookingId(null);
-      setReviewEligibilityReason("Unable to verify review eligibility right now");
+      setReviewEligibilityReason(
+        "Unable to verify review eligibility right now",
+      );
     }
   };
 
   const handleSubmitReview = async () => {
-    if (!user) { router.push(`/login?redirect=/venues/${venueId}`); return; }
-    if (!eligibleBookingId) { toast.error("No eligible completed booking found for review"); return; }
-    if (!reviewRating) { toast.error("Please select a rating"); return; }
+    if (!user) {
+      router.push(`/login?redirect=/venues/${venueId}`);
+      return;
+    }
+    if (!eligibleBookingId) {
+      toast.error("No eligible completed booking found for review");
+      return;
+    }
+    if (!reviewRating) {
+      toast.error("Please select a rating");
+      return;
+    }
     setReviewSubmitting(true);
     try {
       const response = await reviewApi.createReview({
@@ -273,7 +297,9 @@ export default function VenueDetailsPage() {
       }
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || error?.message || "Failed to submit review",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to submit review",
       );
     } finally {
       setReviewSubmitting(false);
@@ -281,9 +307,18 @@ export default function VenueDetailsPage() {
   };
 
   const handleBooking = async () => {
-    if (!user) { router.push("/login?redirect=/venues/" + venueId); return; }
-    if (user.role !== "Player" && user.role !== "Parent") { toast.error("Only player accounts can create bookings."); return; }
-    if (!selectedSlot || !selectedSport) { toast.error("Please select a sport and time slot"); return; }
+    if (!user) {
+      router.push("/login?redirect=/venues/" + venueId);
+      return;
+    }
+    if (user.role !== "Player" && user.role !== "Parent") {
+      toast.error("Only player accounts can create bookings.");
+      return;
+    }
+    if (!selectedSlot || !selectedSport) {
+      toast.error("Please select a sport and time slot");
+      return;
+    }
     setBookingLoading(true);
     try {
       const checkoutParams = new URLSearchParams({
@@ -292,16 +327,27 @@ export default function VenueDetailsPage() {
         endTime: selectedSlot.endTime,
         sport: selectedSport,
       });
-      router.push(`/checkout?type=venue&venueId=${venueId}&${checkoutParams.toString()}`);
+      router.push(
+        `/checkout?type=venue&venueId=${venueId}&${checkoutParams.toString()}`,
+      );
     } finally {
       setBookingLoading(false);
     }
   };
 
   const handleJoinWaitlist = async () => {
-    if (!user) { router.push(`/login?redirect=/venues/${venueId}`); return; }
-    if (user.role !== "Player" && user.role !== "Parent") { toast.error("Only player accounts can join waitlists."); return; }
-    if (!selectedSlot || !selectedSport) { toast.error("Please select a sport and time slot"); return; }
+    if (!user) {
+      router.push(`/login?redirect=/venues/${venueId}`);
+      return;
+    }
+    if (user.role !== "Player" && user.role !== "Parent") {
+      toast.error("Only player accounts can join waitlists.");
+      return;
+    }
+    if (!selectedSlot || !selectedSport) {
+      toast.error("Please select a sport and time slot");
+      return;
+    }
     setBookingLoading(true);
     try {
       await bookingApi.joinWaitlist({
@@ -311,11 +357,15 @@ export default function VenueDetailsPage() {
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
       });
-      toast.success("You were added to the waitlist for this slot! We will notify you if it becomes available.");
+      toast.success(
+        "You were added to the waitlist for this slot! We will notify you if it becomes available.",
+      );
       setSelectedSlot(null);
     } catch (error: any) {
       toast.error(
-        error?.response?.data?.message || error?.message || "Failed to join waitlist. Please try again.",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to join waitlist. Please try again.",
       );
     } finally {
       setBookingLoading(false);
@@ -336,7 +386,8 @@ export default function VenueDetailsPage() {
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold text-slate-900">Venue not found</h1>
           <p className="text-slate-600">
-            The venue you&apos;re looking for doesn&apos;t exist or has been removed.
+            The venue you&apos;re looking for doesn&apos;t exist or has been
+            removed.
           </p>
           <Link href="/booking?tab=venues">
             <Button variant="primary">Browse All Venues</Button>
@@ -375,7 +426,10 @@ export default function VenueDetailsPage() {
                   )}
                   <div className="flex items-center gap-4 mt-4">
                     <div className="flex items-center gap-1">
-                      <Star size={18} className="text-yellow-400 fill-yellow-400" />
+                      <Star
+                        size={18}
+                        className="text-yellow-400 fill-yellow-400"
+                      />
                       <span className="font-semibold">
                         {venue.rating?.toFixed(1) || "5.0"}
                       </span>
@@ -427,7 +481,10 @@ export default function VenueDetailsPage() {
                       </span>
                       {sportPhotoCount > 0 && (
                         <span className="rounded-full bg-power-orange/10 px-3 py-1 text-power-orange">
-                          {selectedSportPhotoCountLabel(selectedSport, sportPhotoCount)}
+                          {selectedSportPhotoCountLabel(
+                            selectedSport,
+                            sportPhotoCount,
+                          )}
                         </span>
                       )}
                     </div>
@@ -462,7 +519,10 @@ export default function VenueDetailsPage() {
                       <>
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); showPreviousImage(); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showPreviousImage();
+                          }}
                           className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
                           aria-label="Previous image"
                         >
@@ -470,7 +530,10 @@ export default function VenueDetailsPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); showNextImage(); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            showNextImage();
+                          }}
                           className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
                           aria-label="Next image"
                         >
@@ -482,7 +545,9 @@ export default function VenueDetailsPage() {
 
                   <div className="border-t border-slate-200/70 bg-white lg:border-t-0 lg:border-l">
                     <div className="flex items-center justify-between px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-900">Photos</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Photos
+                      </p>
                       <p className="text-xs text-slate-500">Scroll to browse</p>
                     </div>
                     <div className="overflow-y-auto overflow-x-hidden lg:h-112">
@@ -531,7 +596,10 @@ export default function VenueDetailsPage() {
                   <>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); showPreviousImage(); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showPreviousImage();
+                      }}
                       className="absolute left-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
                       aria-label="Previous image"
                     >
@@ -539,7 +607,10 @@ export default function VenueDetailsPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); showNextImage(); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showNextImage();
+                      }}
                       className="absolute right-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
                       aria-label="Next image"
                     >
@@ -565,7 +636,9 @@ export default function VenueDetailsPage() {
 
             {/* Description */}
             <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
-              <h2 className="text-xl font-bold mb-4 text-slate-900">About this Venue</h2>
+              <h2 className="text-xl font-bold mb-4 text-slate-900">
+                About this Venue
+              </h2>
               <p className="text-slate-600 leading-relaxed">
                 {venue.description ||
                   "Experience world-class sports facilities at this premium venue. Perfect for athletes of all levels looking for quality training and play spaces."}
@@ -578,12 +651,16 @@ export default function VenueDetailsPage() {
               q={`${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`}
               sport={selectedSport || venue?.sports?.[0] || ""}
               ctaUrl={communityUrl}
-              enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
+              enabled={Boolean(
+                user && (user.role === "Player" || user.role === "Coach"),
+              )}
             />
 
             {/* Sports Available */}
             <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
-              <h2 className="text-lg font-semibold mb-4 text-slate-900">Sports Available</h2>
+              <h2 className="text-lg font-semibold mb-4 text-slate-900">
+                Sports Available
+              </h2>
               <div className="flex flex-wrap gap-2">
                 {venue.sports?.map((sport, index) => (
                   <button
@@ -627,7 +704,9 @@ export default function VenueDetailsPage() {
                         <button
                           type="button"
                           key={`${selectedSport}-${index}-${image}`}
-                          onClick={() => openLightbox(globalIndex >= 0 ? globalIndex : 0)}
+                          onClick={() =>
+                            openLightbox(globalIndex >= 0 ? globalIndex : 0)
+                          }
                           className="group relative aspect-4/3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                           aria-label={`Open ${selectedSport} image ${index + 1}`}
                         >
@@ -672,9 +751,14 @@ export default function VenueDetailsPage() {
             <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">Venue Reviews</h2>
+                  <h2 className="text-xl font-bold text-slate-900">
+                    Venue Reviews
+                  </h2>
                   <p className="text-sm text-slate-600 mt-1 inline-flex items-center gap-1">
-                    <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                    <Star
+                      size={14}
+                      className="text-yellow-500 fill-yellow-500"
+                    />
                     {reviewSummary.averageRating.toFixed(1)} average ·{" "}
                     {reviewSummary.reviewCount} reviews
                   </p>
@@ -742,7 +826,8 @@ export default function VenueDetailsPage() {
                 <div className="space-y-4">
                   {reviews.map((review) => {
                     const reviewer =
-                      typeof review.userId === "object" && review.userId !== null
+                      typeof review.userId === "object" &&
+                      review.userId !== null
                         ? review.userId
                         : null;
                     return (
@@ -769,7 +854,9 @@ export default function VenueDetailsPage() {
                           </div>
                         </div>
                         {review.review && (
-                          <p className="text-sm text-slate-700">{review.review}</p>
+                          <p className="text-sm text-slate-700">
+                            {review.review}
+                          </p>
                         )}
                       </div>
                     );
@@ -782,7 +869,9 @@ export default function VenueDetailsPage() {
           {/* Right Column - Booking Widget */}
           <div className="lg:col-span-1">
             <Card className="premium-shadow sticky top-24 rounded-3xl border border-slate-200/70 bg-white/95 p-6 backdrop-blur-sm">
-              <h2 className="text-xl font-bold mb-6 text-slate-900">Book Your Slot</h2>
+              <h2 className="text-xl font-bold mb-6 text-slate-900">
+                Book Your Slot
+              </h2>
               <div className="space-y-5">
                 {/* Sport Selection */}
                 <div>
@@ -839,20 +928,27 @@ export default function VenueDetailsPage() {
                     <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
                       {slotsToDisplay.map((slot: any) => {
                         const startTime = slot.split("-")[0] || slot;
-                        const startHour = parseInt(startTime.split(":")[0] || "0", 10);
+                        const startHour = parseInt(
+                          startTime.split(":")[0] || "0",
+                          10,
+                        );
                         const endTime =
                           slot.split("-")[1] ||
                           `${String(startHour + 1).padStart(2, "0")}:00`;
                         const isSlotAvailable =
                           availability?.availableSlots?.some(
                             (availSlot) =>
-                              (availSlot.split("-")[0] || availSlot) === startTime,
+                              (availSlot.split("-")[0] || availSlot) ===
+                              startTime,
                           ) ?? false;
-                        const isSelected = selectedSlot?.startTime === startTime;
+                        const isSelected =
+                          selectedSlot?.startTime === startTime;
                         return (
                           <button
                             key={slot}
-                            onClick={() => setSelectedSlot({ startTime, endTime })}
+                            onClick={() =>
+                              setSelectedSlot({ startTime, endTime })
+                            }
                             className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
                               isSlotAvailable
                                 ? isSelected
@@ -876,7 +972,9 @@ export default function VenueDetailsPage() {
                               {!isSlotAvailable && (
                                 <span
                                   className={`text-[10px] font-semibold ${
-                                    isSelected ? "text-white/90" : "text-amber-600"
+                                    isSelected
+                                      ? "text-white/90"
+                                      : "text-amber-600"
                                   }`}
                                 >
                                   Join Waitlist
@@ -900,7 +998,9 @@ export default function VenueDetailsPage() {
                     <div className="mb-4 p-4 bg-slate-50 rounded-lg space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Sport:</span>
-                        <span className="font-semibold text-slate-900">{selectedSport}</span>
+                        <span className="font-semibold text-slate-900">
+                          {selectedSport}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Time:</span>
@@ -912,19 +1012,26 @@ export default function VenueDetailsPage() {
                         <span className="text-slate-600">Status:</span>
                         <span
                           className={`font-semibold ${
-                            isSelectedSlotAvailable ? "text-turf-green" : "text-power-orange"
+                            isSelectedSlotAvailable
+                              ? "text-turf-green"
+                              : "text-power-orange"
                           }`}
                         >
-                          {isSelectedSlotAvailable ? "Available" : "Booked (Waitlist)"}
+                          {isSelectedSlotAvailable
+                            ? "Available"
+                            : "Booked (Waitlist)"}
                         </span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                        <span className="text-slate-600 font-medium">Total:</span>
+                        <span className="text-slate-600 font-medium">
+                          Total:
+                        </span>
                         <span className="text-xl font-bold text-slate-900 flex items-center">
                           {isSelectedSlotAvailable ? (
                             <>
                               <IndianRupee size={18} />
-                              {venue.sportPricing?.[selectedSport] || venue.pricePerHour}
+                              {venue.sportPricing?.[selectedSport] ||
+                                venue.pricePerHour}
                             </>
                           ) : (
                             "Free (Join Waitlist)"
@@ -940,7 +1047,9 @@ export default function VenueDetailsPage() {
                         variant="primary"
                         className="w-full h-12 text-base font-semibold shadow-lg"
                         onClick={handleBooking}
-                        disabled={bookingLoading || !selectedSlot || !selectedSport}
+                        disabled={
+                          bookingLoading || !selectedSlot || !selectedSport
+                        }
                       >
                         {bookingLoading ? (
                           <>
@@ -959,7 +1068,9 @@ export default function VenueDetailsPage() {
                         variant="primary"
                         className="w-full h-12 text-base font-semibold shadow-lg bg-power-orange hover:bg-power-orange/90 text-white border-power-orange"
                         onClick={handleJoinWaitlist}
-                        disabled={bookingLoading || !selectedSlot || !selectedSport}
+                        disabled={
+                          bookingLoading || !selectedSlot || !selectedSport
+                        }
                       >
                         {bookingLoading ? (
                           <>
@@ -976,7 +1087,10 @@ export default function VenueDetailsPage() {
                     )
                   ) : (
                     <Link href={`/login?redirect=/venues/${venueId}`}>
-                      <Button variant="secondary" className="w-full h-12 text-base font-semibold">
+                      <Button
+                        variant="secondary"
+                        className="w-full h-12 text-base font-semibold"
+                      >
                         Sign In to Book
                       </Button>
                     </Link>

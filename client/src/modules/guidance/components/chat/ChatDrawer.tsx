@@ -108,11 +108,15 @@ function MarkdownContent({ content }: { content: string }) {
         // Tables (remark-gfm)
         table: ({ children }) => (
           <div className="my-2 overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full text-[12px] text-slate-700">{children}</table>
+            <table className="w-full text-[12px] text-slate-700">
+              {children}
+            </table>
           </div>
         ),
         thead: ({ children }) => (
-          <thead className="bg-slate-50 font-semibold text-slate-600">{children}</thead>
+          <thead className="bg-slate-50 font-semibold text-slate-600">
+            {children}
+          </thead>
         ),
         tbody: ({ children }) => <tbody>{children}</tbody>,
         tr: ({ children }) => (
@@ -121,9 +125,7 @@ function MarkdownContent({ content }: { content: string }) {
         th: ({ children }) => (
           <th className="px-3 py-1.5 text-left font-semibold">{children}</th>
         ),
-        td: ({ children }) => (
-          <td className="px-3 py-1.5">{children}</td>
-        ),
+        td: ({ children }) => <td className="px-3 py-1.5">{children}</td>,
       }}
     >
       {content}
@@ -267,7 +269,8 @@ export function ChatDrawer({
     [isStreaming, sendMessage],
   );
 
-  const rateLimitHit = meta.dailyRemaining === 0 || meta.lifetimeRemaining === 0;
+  const rateLimitHit =
+    meta.dailyRemaining === 0 || meta.lifetimeRemaining === 0;
 
   return (
     <AnimatePresence>
@@ -323,7 +326,7 @@ export function ChatDrawer({
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            
+
             {/* Header addon area for disclaimers/badges */}
             {children && (
               <div className="bg-slate-50 border-b border-slate-100 px-4 py-2">
@@ -337,7 +340,9 @@ export function ChatDrawer({
                 <div className="flex h-full items-center justify-center">
                   <div className="flex flex-col items-center gap-3 text-center">
                     <Loader2 className="h-6 w-6 animate-spin text-power-orange" />
-                    <p className="text-sm text-slate-500">Loading your conversation…</p>
+                    <p className="text-sm text-slate-500">
+                      Loading your conversation…
+                    </p>
                   </div>
                 </div>
               ) : (

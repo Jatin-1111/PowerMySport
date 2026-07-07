@@ -74,4 +74,3 @@ export const formatCurrency = (amount: number): string => {
     maximumFractionDigits: Number.isInteger(amount) ? 0 : 2,
   }).format(amount);
 };
-

@@ -101,11 +101,7 @@ export const submitConciergeRequest = async (
       documents,
     } = req.body;
 
-    if (
-      !sportSlug ||
-      !documents ||
-      !Array.isArray(documents)
-    ) {
+    if (!sportSlug || !documents || !Array.isArray(documents)) {
       res.status(400).json({ error: "Missing required fields" });
       return;
     }

@@ -62,7 +62,11 @@ export default function ExpertDashboardPage() {
 
   const updateOne = (updated: ExpertSession) =>
     setSessions((list) =>
-      list.map((s) => ((s.id || s._id) === (updated.id || updated._id) ? { ...s, ...updated } : s)),
+      list.map((s) =>
+        (s.id || s._id) === (updated.id || updated._id)
+          ? { ...s, ...updated }
+          : s,
+      ),
     );
 
   return (
@@ -81,13 +85,29 @@ export default function ExpertDashboardPage() {
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={<Users className="h-5 w-5" />} label="Total sessions" value={String(stats.total)} />
-        <StatCard icon={<CalendarClock className="h-5 w-5" />} label="Upcoming" value={String(stats.upcoming)} />
-        <StatCard icon={<Wallet className="h-5 w-5" />} label="Collected" value={formatInr(stats.earnings)} />
+        <StatCard
+          icon={<Users className="h-5 w-5" />}
+          label="Total sessions"
+          value={String(stats.total)}
+        />
+        <StatCard
+          icon={<CalendarClock className="h-5 w-5" />}
+          label="Upcoming"
+          value={String(stats.upcoming)}
+        />
+        <StatCard
+          icon={<Wallet className="h-5 w-5" />}
+          label="Collected"
+          value={formatInr(stats.earnings)}
+        />
         <StatCard
           icon={<Star className="h-5 w-5" />}
           label="Avg rating"
-          value={stats.reviewCount ? `${stats.avg.toFixed(1)} (${stats.reviewCount})` : "—"}
+          value={
+            stats.reviewCount
+              ? `${stats.avg.toFixed(1)} (${stats.reviewCount})`
+              : "—"
+          }
         />
       </div>
 
@@ -113,7 +133,11 @@ export default function ExpertDashboardPage() {
         ) : (
           <div className="space-y-3">
             {sessions.map((s) => (
-              <SessionRow key={s.id || s._id} session={s} onChange={updateOne} />
+              <SessionRow
+                key={s.id || s._id}
+                session={s}
+                onChange={updateOne}
+              />
             ))}
           </div>
         )}
@@ -140,7 +164,13 @@ function SessionRow({
   const canManage = ["PAID", "SCHEDULED"].includes(session.status);
   const needsResponse = canManage && session.expertAcceptance !== "ACCEPTED";
 
-  const run = async (fn: () => Promise<{ success: boolean; message: string; data?: ExpertSession }>) => {
+  const run = async (
+    fn: () => Promise<{
+      success: boolean;
+      message: string;
+      data?: ExpertSession;
+    }>,
+  ) => {
     setBusy(true);
     try {
       const res = await fn();
@@ -175,7 +205,10 @@ function SessionRow({
       return;
     }
     await run(() =>
-      expertApi.respondSession(id, { action: "RESCHEDULE", scheduledAt: newSlot }),
+      expertApi.respondSession(id, {
+        action: "RESCHEDULE",
+        scheduledAt: newSlot,
+      }),
     );
     setRescheduleOpen(false);
     setNewSlot(null);
@@ -185,15 +218,24 @@ function SessionRow({
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-semibold text-slate-900">{session.clientName || "Client"}</p>
+          <p className="font-semibold text-slate-900">
+            {session.clientName || "Client"}
+          </p>
           <p className="text-sm text-slate-500">
             {session.scheduledAt
-              ? formatSessionTimeWithZone(session.scheduledAt, session.expertTimezone)
+              ? formatSessionTimeWithZone(
+                  session.scheduledAt,
+                  session.expertTimezone,
+                )
               : "Not scheduled yet"}
-            {session.mode ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}` : ""}
+            {session.mode
+              ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}`
+              : ""}
           </p>
           {session.clientNote && (
-            <p className="mt-1 text-sm italic text-slate-500">“{session.clientNote}”</p>
+            <p className="mt-1 text-sm italic text-slate-500">
+              “{session.clientNote}”
+            </p>
           )}
           {session.reviewed && session.rating && (
             <p className="mt-1 flex items-center gap-1 text-sm text-amber-600">
@@ -204,7 +246,9 @@ function SessionRow({
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-900">{formatInr(session.amount)}</span>
+            <span className="font-semibold text-slate-900">
+              {formatInr(session.amount)}
+            </span>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${STATUS_STYLES[session.status] || "bg-slate-100 text-slate-600"}`}
             >
@@ -219,7 +263,9 @@ function SessionRow({
                   : "bg-amber-50 text-amber-700"
               }`}
             >
-              {session.expertAcceptance === "ACCEPTED" ? "Confirmed by you" : "Awaiting your response"}
+              {session.expertAcceptance === "ACCEPTED"
+                ? "Confirmed by you"
+                : "Awaiting your response"}
             </span>
           )}
         </div>
@@ -265,7 +311,11 @@ function SessionRow({
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
-                  onClick={() => run(() => expertApi.respondSession(id, { action: "ACCEPT" }))}
+                  onClick={() =>
+                    run(() =>
+                      expertApi.respondSession(id, { action: "ACCEPT" }),
+                    )
+                  }
                   disabled={busy}
                   className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
                 >
@@ -359,7 +409,9 @@ function SessionRow({
       <ConfirmDialog
         isOpen={showDecline}
         onClose={() => setShowDecline(false)}
-        onConfirm={() => run(() => expertApi.respondSession(id, { action: "DECLINE" }))}
+        onConfirm={() =>
+          run(() => expertApi.respondSession(id, { action: "DECLINE" }))
+        }
         title="Decline this session?"
         message="The client will be notified and, if they've paid, a manual refund will be required."
         confirmLabel="Decline"
@@ -383,7 +435,9 @@ function StatCard({
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center gap-2 text-slate-400">{icon}</div>
-      <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
     </div>
   );

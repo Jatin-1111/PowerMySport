@@ -127,7 +127,8 @@ export default function AdminsManagementPage() {
       window.addEventListener("storage", onStoreChange);
       return () => window.removeEventListener("storage", onStoreChange);
     },
-    () => (typeof window === "undefined" ? null : localStorage.getItem("admin")),
+    () =>
+      typeof window === "undefined" ? null : localStorage.getItem("admin"),
     () => null,
   );
 
@@ -258,7 +259,10 @@ export default function AdminsManagementPage() {
     setEditSaving(true);
     try {
       if (editForm.name.trim() !== editingAdmin.name) {
-        await adminApi.updateAdminProfile(editingAdmin.id, editForm.name.trim());
+        await adminApi.updateAdminProfile(
+          editingAdmin.id,
+          editForm.name.trim(),
+        );
       }
       if (editForm.role !== editingAdmin.role) {
         await adminApi.updateAdminRole(editingAdmin.id, editForm.role);
@@ -510,7 +514,10 @@ export default function AdminsManagementPage() {
                 { header: "Name", value: (a) => a.name },
                 { header: "Email", value: (a) => a.email },
                 { header: "Role", value: (a) => a.role },
-                { header: "Status", value: (a) => (a.isActive ? "Active" : "Inactive") },
+                {
+                  header: "Status",
+                  value: (a) => (a.isActive ? "Active" : "Inactive"),
+                },
                 { header: "Last Login", value: (a) => a.lastLogin || "" },
                 {
                   header: "Permissions",

@@ -3,7 +3,10 @@
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { Timeline, type TimelineEntry } from "@/modules/marketing/components/marketing/Timeline";
+import {
+  Timeline,
+  type TimelineEntry,
+} from "@/modules/marketing/components/marketing/Timeline";
 import { cn } from "@/utils/cn";
 import { motion, Variants } from "framer-motion";
 import { BrainCircuit, CheckCircle, Map, UserPlus } from "lucide-react";
@@ -329,7 +332,10 @@ export default function HowItWorksPage() {
           text: "Add more than one child if you need to",
           iconColor: "text-orange-400",
         },
-        { text: "Free to start—no card required", iconColor: "text-orange-400" },
+        {
+          text: "Free to start—no card required",
+          iconColor: "text-orange-400",
+        },
       ],
       image: {
         src: "https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=800&q=80",
@@ -357,7 +363,10 @@ export default function HowItWorksPage() {
           text: "See the time and cost it really takes",
           iconColor: "text-indigo-400",
         },
-        { text: "Clear next steps, not vague advice", iconColor: "text-indigo-400" },
+        {
+          text: "Clear next steps, not vague advice",
+          iconColor: "text-indigo-400",
+        },
       ],
       image: {
         src: "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=800&q=80",
@@ -381,7 +390,10 @@ export default function HowItWorksPage() {
           text: "Ask questions, get clear answers",
           iconColor: "text-emerald-400",
         },
-        { text: "Guidance built around your child's goals", iconColor: "text-emerald-400" },
+        {
+          text: "Guidance built around your child's goals",
+          iconColor: "text-emerald-400",
+        },
         {
           text: "Move forward with confidence, not guesswork",
           iconColor: "text-emerald-400",
@@ -528,7 +540,10 @@ export default function HowItWorksPage() {
               variants={fadeSlideUp}
               className="mb-5 flex justify-center"
             >
-              <SectionLabel label="For Venue & Academy Owners · Phase 2" color="blue" />
+              <SectionLabel
+                label="For Venue & Academy Owners · Phase 2"
+                color="blue"
+              />
             </motion.div>
             <motion.h2
               variants={fadeSlideUp}
@@ -540,8 +555,8 @@ export default function HowItWorksPage() {
               variants={fadeSlideUp}
               className="mx-auto mt-4 max-w-xl text-lg text-slate-500"
             >
-              Bookings launch in Phase 2. Set up your listing now so families can
-              find and book you the moment we open.
+              Bookings launch in Phase 2. Set up your listing now so families
+              can find and book you the moment we open.
             </motion.p>
           </motion.div>
 
@@ -608,8 +623,8 @@ export default function HowItWorksPage() {
               variants={fadeSlideUp}
               className="mx-auto mt-4 max-w-xl text-lg text-slate-500"
             >
-              Coach bookings open in Phase 2. Set up your profile now and connect
-              with serious families from day one.
+              Coach bookings open in Phase 2. Set up your profile now and
+              connect with serious families from day one.
             </motion.p>
           </motion.div>
 

@@ -139,7 +139,8 @@ export function SelectDropdown({
 }: SelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(() => setOpen(false));
-  const current = options.find((option) => option.value === value) ?? options[0];
+  const current =
+    options.find((option) => option.value === value) ?? options[0];
 
   return (
     <div ref={ref} className={`relative ${className}`}>
@@ -168,7 +169,10 @@ export function SelectDropdown({
             const active = option.value === value;
             const suffix = renderSuffix ? renderSuffix(option.value) : null;
             return (
-              <div key={option.value || "all"} className="flex items-center gap-1">
+              <div
+                key={option.value || "all"}
+                className="flex items-center gap-1"
+              >
                 <button
                   type="button"
                   onClick={() => {

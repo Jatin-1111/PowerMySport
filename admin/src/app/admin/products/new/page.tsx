@@ -4,42 +4,67 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminEcommerceApi } from "@/modules/admin/services/ecommerce";
 import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
-const Input = ({ error, className, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
+const Input = ({
+  error,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
   <div className="w-full">
     <input
       {...props}
-      className={`w-full rounded-md border ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-power-orange focus:ring-power-orange'} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-slate-300 focus:border-power-orange focus:ring-power-orange"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
 );
 
-const Textarea = ({ error, className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { error?: string }) => (
+const Textarea = ({
+  error,
+  className,
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { error?: string }) => (
   <div className="w-full">
     <textarea
       {...props}
-      className={`w-full rounded-md border ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-power-orange focus:ring-power-orange'} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-slate-300 focus:border-power-orange focus:ring-power-orange"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
 );
 
-const Select = ({ error, className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
+const Select = ({
+  error,
+  className,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
   <div className="w-full">
     <select
       {...props}
-      className={`w-full rounded-md border ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-power-orange focus:ring-power-orange'} bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-slate-300 focus:border-power-orange focus:ring-power-orange"} bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
 );
 
-const Label = ({ children, className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) => (
-  <label {...props} className={`block text-sm font-medium text-slate-700 ${className || ""}`}>
+const Label = ({
+  children,
+  className,
+  ...props
+}: React.LabelHTMLAttributes<HTMLLabelElement>) => (
+  <label
+    {...props}
+    className={`block text-sm font-medium text-slate-700 ${className || ""}`}
+  >
     {children}
   </label>
 );
-import { Trash2, Plus, UploadCloud, Link as LinkIcon, Image as ImageIcon } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  UploadCloud,
+  Link as LinkIcon,
+  Image as ImageIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 
@@ -51,8 +76,10 @@ export default function AddProductPage() {
 
   const validateField = (field: string, value: string) => {
     let errMsg = "";
-    if (field === "name" && value.trim().length < 3) errMsg = "Name must be at least 3 characters.";
-    if (field === "sku" && value.trim().length < 3) errMsg = "SKU must be at least 3 characters.";
+    if (field === "name" && value.trim().length < 3)
+      errMsg = "Name must be at least 3 characters.";
+    if (field === "sku" && value.trim().length < 3)
+      errMsg = "SKU must be at least 3 characters.";
     if (field === "basePrice") {
       const num = parseFloat(value);
       if (isNaN(num) || num <= 0) errMsg = "Base Price must be greater than 0.";
@@ -60,7 +87,8 @@ export default function AddProductPage() {
     if (field === "salePrice" && value.trim() !== "") {
       const num = parseFloat(value);
       if (isNaN(num) || num < 0) errMsg = "Sale Price must be valid.";
-      if (formData.basePrice && num >= parseFloat(formData.basePrice)) errMsg = "Sale Price must be less than Base Price.";
+      if (formData.basePrice && num >= parseFloat(formData.basePrice))
+        errMsg = "Sale Price must be less than Base Price.";
     }
     if (field === "weight") {
       const num = parseFloat(value);
@@ -70,11 +98,15 @@ export default function AddProductPage() {
       const num = parseFloat(value);
       if (isNaN(num) || num <= 0) errMsg = "Dimension must be greater than 0.";
     }
-    setErrors(prev => ({ ...prev, [field]: errMsg }));
+    setErrors((prev) => ({ ...prev, [field]: errMsg }));
     return errMsg === "";
   };
 
-  const validateVariantField = (index: number, field: string, value: string) => {
+  const validateVariantField = (
+    index: number,
+    field: string,
+    value: string,
+  ) => {
     let errMsg = "";
     if (field === "price" && value.trim() !== "") {
       const num = parseFloat(value);
@@ -88,7 +120,7 @@ export default function AddProductPage() {
       // It's technically okay if both are empty (label becomes "Standard"), but usually we want at least one or it's just the default variant.
       // We will allow empty, so no error here unless we specifically require variants to be named.
     }
-    setErrors(prev => ({ ...prev, [`variant_${index}_${field}`]: errMsg }));
+    setErrors((prev) => ({ ...prev, [`variant_${index}_${field}`]: errMsg }));
     return errMsg === "";
   };
 
@@ -128,7 +160,10 @@ export default function AddProductPage() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
@@ -154,13 +189,13 @@ export default function AddProductPage() {
     try {
       setUploadingImage(true);
       setError(null);
-      
+
       const uploadPromises = files.map(async (file) => {
         const res = await adminEcommerceApi.generateProductImageUploadUrl(
           file.name,
-          file.type
+          file.type,
         );
-        
+
         if (!res?.data) throw new Error("Failed to get upload URL");
 
         await fetch(res.data.uploadUrl, {
@@ -170,15 +205,17 @@ export default function AddProductPage() {
             "Content-Type": file.type,
           },
         });
-        
+
         return res.data.downloadUrl;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
-      setImages(prev => [...prev, ...uploadedUrls].filter(Boolean));
+      setImages((prev) => [...prev, ...uploadedUrls].filter(Boolean));
     } catch (err: any) {
       console.error(err);
-      setError("Failed to upload image. Ensure S3 CORS is properly configured.");
+      setError(
+        "Failed to upload image. Ensure S3 CORS is properly configured.",
+      );
     } finally {
       setUploadingImage(false);
       e.target.value = "";
@@ -192,7 +229,7 @@ export default function AddProductPage() {
   const handleAddImageUrl = () => {
     const url = window.prompt("Enter image URL:");
     if (url && url.trim()) {
-      setImages(prev => [...prev, url.trim()]);
+      setImages((prev) => [...prev, url.trim()]);
     }
   };
 
@@ -216,8 +253,8 @@ export default function AddProductPage() {
 
   const handleVariantChange = (
     index: number,
-    field: keyof typeof variants[0],
-    value: string
+    field: keyof (typeof variants)[0],
+    value: string,
   ) => {
     const newVariants = [...variants];
     newVariants[index][field] = value;
@@ -240,8 +277,9 @@ export default function AddProductPage() {
         const attrs: Record<string, string> = {};
         if (v.size) attrs.size = v.size;
         if (v.color) attrs.color = v.color;
-        
-        const variantLabel = [v.size, v.color].filter(Boolean).join(" - ") || "Standard";
+
+        const variantLabel =
+          [v.size, v.color].filter(Boolean).join(" - ") || "Standard";
 
         return {
           sku: v.sku || `${formData.sku}-V${Math.floor(Math.random() * 1000)}`,
@@ -268,10 +306,15 @@ export default function AddProductPage() {
         ageGroup: formData.ageGroup,
         skillLevel: formData.skillLevel,
         gender: formData.gender,
-        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+        tags: tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         category: formData.category,
         basePrice: Math.round(parseFloat(formData.basePrice) * 100),
-        salePrice: formData.salePrice ? Math.round(parseFloat(formData.salePrice) * 100) : undefined,
+        salePrice: formData.salePrice
+          ? Math.round(parseFloat(formData.salePrice) * 100)
+          : undefined,
         weight: parseFloat(formData.weight),
         dimensions: {
           length: parseFloat(dimensions.length),
@@ -314,7 +357,9 @@ export default function AddProductPage() {
           <div className="md:col-span-2 space-y-6">
             {/* Basic Info */}
             <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">Basic Information</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                Basic Information
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Name *</Label>
@@ -375,7 +420,10 @@ export default function AddProductPage() {
                   <Input
                     value={formData.shortDescription}
                     onChange={(e) =>
-                      setFormData({ ...formData, shortDescription: e.target.value })
+                      setFormData({
+                        ...formData,
+                        shortDescription: e.target.value,
+                      })
                     }
                     placeholder="Punchy one-liner for the catalog"
                   />
@@ -397,7 +445,9 @@ export default function AddProductPage() {
 
             {/* Targeting & Details */}
             <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">Targeting & Specifications</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                Targeting & Specifications
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Age Group</Label>
@@ -507,7 +557,7 @@ export default function AddProductPage() {
                           <ImageIcon className="h-8 w-8 text-slate-300" />
                         </div>
                       )}
-                      
+
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}
@@ -520,7 +570,7 @@ export default function AddProductPage() {
                   ))}
                 </div>
               )}
-              
+
               <div className="relative" ref={dropdownRef}>
                 <Button
                   type="button"
@@ -529,7 +579,7 @@ export default function AddProductPage() {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={uploadingImage}
                 >
-                  <Plus className="mr-2 h-4 w-4" /> 
+                  <Plus className="mr-2 h-4 w-4" />
                   {uploadingImage ? "Uploading..." : "Add Image"}
                 </Button>
 
@@ -537,7 +587,8 @@ export default function AddProductPage() {
                   <div className="absolute top-full left-0 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg z-10">
                     <div className="p-1">
                       <label className="flex w-full cursor-pointer items-center rounded-sm px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <UploadCloud className="mr-2 h-4 w-4 text-slate-500" /> Upload File to S3
+                        <UploadCloud className="mr-2 h-4 w-4 text-slate-500" />{" "}
+                        Upload File to S3
                         <input
                           type="file"
                           accept="image/*"
@@ -557,7 +608,8 @@ export default function AddProductPage() {
                           handleAddImageUrl();
                         }}
                       >
-                        <LinkIcon className="mr-2 h-4 w-4 text-slate-500" /> Enter Image URL
+                        <LinkIcon className="mr-2 h-4 w-4 text-slate-500" />{" "}
+                        Enter Image URL
                       </button>
                     </div>
                   </div>
@@ -628,9 +680,16 @@ export default function AddProductPage() {
                           value={variant.price}
                           onChange={(e) => {
                             handleVariantChange(index, "price", e.target.value);
-                            if (errors[`variant_${index}_price`]) validateVariantField(index, "price", e.target.value);
+                            if (errors[`variant_${index}_price`])
+                              validateVariantField(
+                                index,
+                                "price",
+                                e.target.value,
+                              );
                           }}
-                          onBlur={(e) => validateVariantField(index, "price", e.target.value)}
+                          onBlur={(e) =>
+                            validateVariantField(index, "price", e.target.value)
+                          }
                           error={errors[`variant_${index}_price`]}
                         />
                       </div>
@@ -642,9 +701,16 @@ export default function AddProductPage() {
                           value={variant.stock}
                           onChange={(e) => {
                             handleVariantChange(index, "stock", e.target.value);
-                            if (errors[`variant_${index}_stock`]) validateVariantField(index, "stock", e.target.value);
+                            if (errors[`variant_${index}_stock`])
+                              validateVariantField(
+                                index,
+                                "stock",
+                                e.target.value,
+                              );
                           }}
-                          onBlur={(e) => validateVariantField(index, "stock", e.target.value)}
+                          onBlur={(e) =>
+                            validateVariantField(index, "stock", e.target.value)
+                          }
                           error={errors[`variant_${index}_stock`]}
                         />
                       </div>
@@ -700,7 +766,8 @@ export default function AddProductPage() {
                   value={formData.basePrice}
                   onChange={(e) => {
                     setFormData({ ...formData, basePrice: e.target.value });
-                    if (errors.basePrice) validateField("basePrice", e.target.value);
+                    if (errors.basePrice)
+                      validateField("basePrice", e.target.value);
                   }}
                   onBlur={(e) => validateField("basePrice", e.target.value)}
                   error={errors.basePrice}
@@ -715,7 +782,8 @@ export default function AddProductPage() {
                   value={formData.salePrice}
                   onChange={(e) => {
                     setFormData({ ...formData, salePrice: e.target.value });
-                    if (errors.salePrice) validateField("salePrice", e.target.value);
+                    if (errors.salePrice)
+                      validateField("salePrice", e.target.value);
                   }}
                   onBlur={(e) => validateField("salePrice", e.target.value)}
                   error={errors.salePrice}
@@ -752,7 +820,8 @@ export default function AddProductPage() {
                     value={dimensions.length}
                     onChange={(e) => {
                       setDimensions({ ...dimensions, length: e.target.value });
-                      if (errors.dim_length) validateField("dim_length", e.target.value);
+                      if (errors.dim_length)
+                        validateField("dim_length", e.target.value);
                     }}
                     onBlur={(e) => validateField("dim_length", e.target.value)}
                     error={errors.dim_length}
@@ -767,7 +836,8 @@ export default function AddProductPage() {
                     value={dimensions.width}
                     onChange={(e) => {
                       setDimensions({ ...dimensions, width: e.target.value });
-                      if (errors.dim_width) validateField("dim_width", e.target.value);
+                      if (errors.dim_width)
+                        validateField("dim_width", e.target.value);
                     }}
                     onBlur={(e) => validateField("dim_width", e.target.value)}
                     error={errors.dim_width}
@@ -782,7 +852,8 @@ export default function AddProductPage() {
                     value={dimensions.height}
                     onChange={(e) => {
                       setDimensions({ ...dimensions, height: e.target.value });
-                      if (errors.dim_height) validateField("dim_height", e.target.value);
+                      if (errors.dim_height)
+                        validateField("dim_height", e.target.value);
                     }}
                     onBlur={(e) => validateField("dim_height", e.target.value)}
                     error={errors.dim_height}

@@ -42,20 +42,26 @@ export const getGuidanceChat = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
+      res
+        .status(401)
+        .json({ success: false, message: "Authentication required" });
       return;
     }
 
     const { submissionId } = req.params;
     if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
-      res.status(400).json({ success: false, message: "Invalid submission ID" });
+      res
+        .status(400)
+        .json({ success: false, message: "Invalid submission ID" });
       return;
     }
 
     // Load submission to verify existence & ownership
     const submission = await GuidanceSubmission.findById(submissionId).lean();
     if (!submission) {
-      res.status(404).json({ success: false, message: "Guidance submission not found" });
+      res
+        .status(404)
+        .json({ success: false, message: "Guidance submission not found" });
       return;
     }
 
@@ -109,13 +115,17 @@ export const getGuidanceChat = async (
         dailyMessageCount,
         totalMessageCount: session.totalMessageCount,
         dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
-        lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0)),
+        lifetimeRemaining: Math.max(
+          0,
+          LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0),
+        ),
       },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch chat session",
+      message:
+        error instanceof Error ? error.message : "Failed to fetch chat session",
     });
   }
 };
@@ -128,13 +138,17 @@ export const sendGuidanceChatMessage = async (
 ): Promise<void> => {
   try {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
+      res
+        .status(401)
+        .json({ success: false, message: "Authentication required" });
       return;
     }
 
     const { submissionId } = req.params;
     if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
-      res.status(400).json({ success: false, message: "Invalid submission ID" });
+      res
+        .status(400)
+        .json({ success: false, message: "Invalid submission ID" });
       return;
     }
 
@@ -144,14 +158,21 @@ export const sendGuidanceChatMessage = async (
       return;
     }
     if (userMessage.length > 2000) {
-      res.status(400).json({ success: false, message: "Message too long (max 2000 characters)" });
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "Message too long (max 2000 characters)",
+        });
       return;
     }
 
     // Load submission
     const submission = await GuidanceSubmission.findById(submissionId).lean();
     if (!submission) {
-      res.status(404).json({ success: false, message: "Guidance submission not found" });
+      res
+        .status(404)
+        .json({ success: false, message: "Guidance submission not found" });
       return;
     }
 
@@ -258,7 +279,11 @@ export const sendGuidanceChatMessage = async (
     res.end();
 
     // ── Persist both turns to the session ────────────────────────────────────
-    const userTurn = { role: "user" as const, content: userMessage, createdAt: new Date() };
+    const userTurn = {
+      role: "user" as const,
+      content: userMessage,
+      createdAt: new Date(),
+    };
     const assistantTurn = {
       role: "assistant" as const,
       content: fullAssistantResponse,

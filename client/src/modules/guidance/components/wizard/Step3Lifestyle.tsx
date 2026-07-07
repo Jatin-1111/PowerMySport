@@ -12,7 +12,10 @@ export function Step3Lifestyle({
   autofillFields,
 }: {
   form: GuidanceFormState;
-  update: <K extends keyof GuidanceFormState>(k: K, v: GuidanceFormState[K]) => void;
+  update: <K extends keyof GuidanceFormState>(
+    k: K,
+    v: GuidanceFormState[K],
+  ) => void;
   autofillFields: Set<string>;
 }) {
   return (
@@ -36,8 +39,12 @@ export function Step3Lifestyle({
       <div className="space-y-2">
         <label className="flex items-center text-xs font-bold uppercase tracking-wider text-slate-500">
           State / Union Territory
-          <span className="ml-1.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-black text-rose-600">Required</span>
-          <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">For local schemes & resources</span>
+          <span className="ml-1.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-black text-rose-600">
+            Required
+          </span>
+          <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">
+            For local schemes & resources
+          </span>
         </label>
         <div className="relative">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
@@ -52,13 +59,16 @@ export function Step3Lifestyle({
           >
             <option value="">— Select your state —</option>
             {INDIAN_STATES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </div>
         {form.location && (
           <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5" /> We'll include schemes and resources available in {form.location}
+            <CheckCircle2 className="h-3.5 w-3.5" /> We'll include schemes and
+            resources available in {form.location}
           </p>
         )}
       </div>
@@ -117,7 +127,9 @@ export function Step3Lifestyle({
               onClick={() => update("budget_tier", b.value)}
             >
               <div className="text-center py-1 flex flex-col items-center">
-                <div className="mb-2 text-slate-700"><b.icon className="h-6 w-6" /></div>
+                <div className="mb-2 text-slate-700">
+                  <b.icon className="h-6 w-6" />
+                </div>
                 <p className="font-bold text-slate-900 text-sm">{b.label}</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">{b.desc}</p>
               </div>

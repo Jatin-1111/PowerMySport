@@ -5,7 +5,10 @@ import { motion } from "framer-motion";
 import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { BlogListItem } from "@/modules/community/types";
 import { getBlogTopic } from "@/modules/community/constants/blogTopics";
-import { formatBlogDate, formatCount } from "@/modules/community/utils/blogFormat";
+import {
+  formatBlogDate,
+  formatCount,
+} from "@/modules/community/utils/blogFormat";
 import BlogCoverFallback from "./BlogCoverFallback";
 
 interface MyBlogListItemProps {
@@ -36,7 +39,11 @@ export default function MyBlogListItem({
         className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-40"
       >
         {coverUrl ? (
-          <img src={coverUrl} alt={blog.title} className="h-full w-full object-cover" />
+          <img
+            src={coverUrl}
+            alt={blog.title}
+            className="h-full w-full object-cover"
+          />
         ) : (
           <BlogCoverFallback topic={blog.topic} />
         )}
@@ -50,7 +57,9 @@ export default function MyBlogListItem({
           </h3>
         </Link>
         {blog.excerpt ? (
-          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{blog.excerpt}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+            {blog.excerpt}
+          </p>
         ) : null}
 
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">

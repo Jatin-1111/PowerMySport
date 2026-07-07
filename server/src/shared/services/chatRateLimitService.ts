@@ -22,7 +22,9 @@ export async function getDailyMessageCount(userId: string): Promise<number> {
 }
 
 /** Atomically reserves one message slot for today. Returns the new count. */
-export async function incrementDailyMessageCount(userId: string): Promise<number> {
+export async function incrementDailyMessageCount(
+  userId: string,
+): Promise<number> {
   const key = getDailyLimitKey(userId);
   const count = await redis.incr(key);
   if (count === 1) {
@@ -32,6 +34,8 @@ export async function incrementDailyMessageCount(userId: string): Promise<number
 }
 
 /** Releases a reserved slot — used when a reserved message ends up not counting (over cap, or the AI call failed). */
-export async function decrementDailyMessageCount(userId: string): Promise<void> {
+export async function decrementDailyMessageCount(
+  userId: string,
+): Promise<void> {
   await redis.decr(getDailyLimitKey(userId));
 }

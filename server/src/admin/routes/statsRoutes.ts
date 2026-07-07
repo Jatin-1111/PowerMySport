@@ -121,7 +121,11 @@ router.get(
 // equivalent admin CRUD routes, since they back the Users/Venues/Bookings
 // admin pages (shared by every role that already needs those pages, not
 // just Analytics Admin).
-router.get("/users/summary", requirePermission("users:view"), getUserRoleSummary);
+router.get(
+  "/users/summary",
+  requirePermission("users:view"),
+  getUserRoleSummary,
+);
 router.get("/users/players", requirePermission("users:view"), getPlayersUsers);
 router.get("/users/coaches", requirePermission("users:view"), getCoachUsers);
 router.get(

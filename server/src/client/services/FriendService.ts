@@ -276,7 +276,7 @@ export class FriendService {
 
     // Filter out connections where either user was deleted
     const validConnections = connections.filter(
-      (conn: any) => conn.requesterId && conn.recipientId
+      (conn: any) => conn.requesterId && conn.recipientId,
     );
 
     // Extract the friend user object (the one that's not the current user)
@@ -324,7 +324,7 @@ export class FriendService {
       .sort({ createdAt: -1 });
 
     const validRequests = requests.filter(
-      (req: any) => req.requesterId && req.recipientId
+      (req: any) => req.requesterId && req.recipientId,
     );
 
     return await Promise.all(
@@ -406,11 +406,7 @@ export class FriendService {
       email: string;
       photoUrl?: string;
       friendStatus:
-        | "FRIENDS"
-        | "PENDING_SENT"
-        | "PENDING_RECEIVED"
-        | "BLOCKED"
-        | "NONE";
+        "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE";
     }>
   > {
     if (!query || query.trim().length < 2) {

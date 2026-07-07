@@ -3,10 +3,7 @@ import { emitCommunityUserEvent } from "../services/CommunityRealtimeService";
 
 export type CommunityReportTargetType = "MESSAGE" | "GROUP" | "POST" | "ANSWER";
 export type CommunityReportStatus =
-  | "OPEN"
-  | "UNDER_REVIEW"
-  | "RESOLVED"
-  | "REJECTED";
+  "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
 
 export interface CommunityReportDocument extends Document {
   reporterUserId: mongoose.Types.ObjectId;
@@ -76,7 +73,11 @@ communityReportSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
 
 const notifyReportUpdated = (doc: any) => {
   if (!doc || !doc.reporterUserId) return;
-  emitCommunityUserEvent(doc.reporterUserId.toString(), "community:reportUpdated", { reportId: doc._id?.toString() });
+  emitCommunityUserEvent(
+    doc.reporterUserId.toString(),
+    "community:reportUpdated",
+    { reportId: doc._id?.toString() },
+  );
 };
 
 communityReportSchema.post("save", function (doc) {

@@ -3,10 +3,7 @@
 // ============================================
 
 export type VenueApprovalStatus =
-  | "PENDING"
-  | "APPROVED"
-  | "REJECTED"
-  | "REVIEW";
+  "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
 
 export interface VenueCoach {
   name: string;

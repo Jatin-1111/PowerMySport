@@ -58,13 +58,23 @@ const availabilityWindowSchema = new Schema<ExpertAvailabilityWindow>(
 
 const expertSchema = new Schema<ExpertDocument>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+      index: true,
+    },
     bio: { type: String, default: "", trim: true, maxlength: 4000 },
     sports: { type: [String], default: [] },
     expertise: { type: [String], default: [] },
     achievements: { type: String, trim: true },
     sessionFee: { type: Number, required: true, min: 0 },
-    sessionMode: { type: String, enum: ["ONLINE", "IN_PERSON", "BOTH"], default: "ONLINE" },
+    sessionMode: {
+      type: String,
+      enum: ["ONLINE", "IN_PERSON", "BOTH"],
+      default: "ONLINE",
+    },
     sessionDurationMinutes: { type: Number, default: 60, min: 15, max: 480 },
     timezone: { type: String, default: "Asia/Kolkata" },
     weeklyAvailability: { type: [availabilityWindowSchema], default: [] },
@@ -101,7 +111,12 @@ const expertSchema = new Schema<ExpertDocument>(
 
 expertSchema.index({ isActive: 1, rating: -1 });
 // Text index to support server-side search across name-adjacent fields.
-expertSchema.index({ bio: "text", expertise: "text", sports: "text", city: "text" });
+expertSchema.index({
+  bio: "text",
+  expertise: "text",
+  sports: "text",
+  city: "text",
+});
 
 export const Expert =
   mongoose.models.Expert ||

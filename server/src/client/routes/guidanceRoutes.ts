@@ -1,7 +1,16 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { submitGuidance, getGuidanceHistory, deleteGuidance, downloadGuidanceReportPdf, recommendSport } from "../controllers/guidanceController";
-import { getGuidanceChat, sendGuidanceChatMessage } from "../controllers/guidanceChatController";
+import {
+  submitGuidance,
+  getGuidanceHistory,
+  deleteGuidance,
+  downloadGuidanceReportPdf,
+  recommendSport,
+} from "../controllers/guidanceController";
+import {
+  getGuidanceChat,
+  sendGuidanceChatMessage,
+} from "../controllers/guidanceChatController";
 import { authMiddleware, optionalAuthMiddleware } from "../../middleware/auth";
 import { createRedisRateLimitStore } from "../../middleware/rateLimit";
 
@@ -13,7 +22,11 @@ const guidanceRouter = Router();
 guidanceRouter.post("/", optionalAuthMiddleware, submitGuidance);
 guidanceRouter.get("/", authMiddleware, getGuidanceHistory);
 guidanceRouter.delete("/:id", authMiddleware, deleteGuidance);
-guidanceRouter.get("/:id/report/pdf", optionalAuthMiddleware, downloadGuidanceReportPdf);
+guidanceRouter.get(
+  "/:id/report/pdf",
+  optionalAuthMiddleware,
+  downloadGuidanceReportPdf,
+);
 
 // ── Recommend Sport ───────────────────────────────────────────────────────────
 guidanceRouter.post("/recommend-sport", optionalAuthMiddleware, recommendSport);
@@ -36,6 +49,11 @@ const chatBurstLimiter = rateLimit({
 });
 
 guidanceRouter.get("/:submissionId/chat", authMiddleware, getGuidanceChat);
-guidanceRouter.post("/:submissionId/chat", authMiddleware, chatBurstLimiter, sendGuidanceChatMessage);
+guidanceRouter.post(
+  "/:submissionId/chat",
+  authMiddleware,
+  chatBurstLimiter,
+  sendGuidanceChatMessage,
+);
 
 export default guidanceRouter;

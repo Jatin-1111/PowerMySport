@@ -231,9 +231,7 @@ export const getAllUsers = async (
     const [total, users] = await Promise.all([
       User.countDocuments(query),
       User.find(query)
-        .select(
-          "name email phone role createdAt lastActiveAt",
-        )
+        .select("name email phone role createdAt lastActiveAt")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -405,9 +403,7 @@ export const getPlayersUsers = async (
     const [total, users] = await Promise.all([
       User.countDocuments(query),
       User.find(query)
-        .select(
-          "name email phone createdAt lastActiveAt",
-        )
+        .select("name email phone createdAt lastActiveAt")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -415,7 +411,9 @@ export const getPlayersUsers = async (
     ]);
 
     const userIds = users.map((user) => user._id);
-    const playerProfiles = await Player.find({ userId: { $in: userIds } }).lean();
+    const playerProfiles = await Player.find({
+      userId: { $in: userIds },
+    }).lean();
 
     const profilesByUserId = new Map<string, any[]>();
     for (const profile of playerProfiles) {
@@ -429,9 +427,11 @@ export const getPlayersUsers = async (
     const data = await Promise.all(
       users.map(async (user) => {
         const userProfiles = profilesByUserId.get(user._id.toString()) || [];
-        
+
         const selfProfile = userProfiles.find((p) => p.type === "SELF");
-        const dependentsProfiles = userProfiles.filter((p) => p.type === "DEPENDENT");
+        const dependentsProfiles = userProfiles.filter(
+          (p) => p.type === "DEPENDENT",
+        );
 
         const sports = selfProfile?.sportsFocus || [];
         const sportsCount = sports.length;
@@ -462,7 +462,7 @@ export const getPlayersUsers = async (
           dependents,
           dependentsCount,
         };
-      })
+      }),
     );
 
     res.status(200).json({
@@ -574,9 +574,7 @@ export const getVenueListerUsers = async (
     const query = { role: "VenueLister" };
     const total = await User.countDocuments(query);
     const users = await User.find(query)
-      .select(
-        "name email phone createdAt lastActiveAt",
-      )
+      .select("name email phone createdAt lastActiveAt")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

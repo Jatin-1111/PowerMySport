@@ -4,7 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import api from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { initialForm, buildLevelPlanQuestion } from "../constants";
-import type { GuidanceFormState, GuidanceSubmission, PlayerProfile } from "../types";
+import type {
+  GuidanceFormState,
+  GuidanceSubmission,
+  PlayerProfile,
+} from "../types";
 
 export function useGuidanceForm({
   initialSport,
@@ -16,7 +20,8 @@ export function useGuidanceForm({
   initialLevelLabel?: string;
 } = {}) {
   const isLevelPlan = !!initialSport && !!initialLevel;
-  const levelLabel = initialLevelLabel || (initialLevel ? `Level ${initialLevel}` : "");
+  const levelLabel =
+    initialLevelLabel || (initialLevel ? `Level ${initialLevel}` : "");
 
   // NOTE: current_pathway_level intentionally does NOT default to initialLevel
   // here. initialLevel is "which level's plan/roadmap page the parent is
@@ -33,7 +38,11 @@ export function useGuidanceForm({
       ...(initialSport ? { sport: initialSport } : {}),
     };
     if (isLevelPlan) {
-      base.parent_specific_question = buildLevelPlanQuestion(initialSport!, levelLabel, false);
+      base.parent_specific_question = buildLevelPlanQuestion(
+        initialSport!,
+        levelLabel,
+        false,
+      );
     }
     return base;
   };
@@ -43,13 +52,19 @@ export function useGuidanceForm({
   // Tracks the last auto-generated level-plan question so the toggle-driven
   // regeneration below never clobbers text the parent has since hand-edited.
   const lastAutoQuestion = useRef<string | null>(
-    isLevelPlan ? buildLevelPlanQuestion(initialSport!, levelLabel, false) : null,
+    isLevelPlan
+      ? buildLevelPlanQuestion(initialSport!, levelLabel, false)
+      : null,
   );
 
   useEffect(() => {
     if (!isLevelPlan) return;
     const alreadyAtLevel = form.current_pathway_level === initialLevel;
-    const next = buildLevelPlanQuestion(initialSport!, levelLabel, alreadyAtLevel);
+    const next = buildLevelPlanQuestion(
+      initialSport!,
+      levelLabel,
+      alreadyAtLevel,
+    );
     // The comparison + ref mutation happen here, outside the setForm updater —
     // mutating a ref inside a functional updater is impure and breaks under
     // React Strict Mode's double-invocation of updaters (the second, discarded
@@ -95,21 +110,55 @@ export function useGuidanceForm({
     // GuidanceFormState only models male/female — "OTHER" has no equivalent
     // slot, so leave the existing selection untouched rather than guess.
     const gender: GuidanceFormState["child_gender"] | undefined =
-      player.gender === "MALE" ? "male" : player.gender === "FEMALE" ? "female" : undefined;
+      player.gender === "MALE"
+        ? "male"
+        : player.gender === "FEMALE"
+          ? "female"
+          : undefined;
 
     const filled = new Set<string>();
     setForm((f) => {
       const next = { ...f };
-      if (age) { next.child_age = age; filled.add("child_age"); }
-      if (gender) { next.child_gender = gender; filled.add("child_gender"); }
-      if (player.skillLevel) { next.current_fitness_level = fitness; filled.add("current_fitness_level"); }
-      if (player.yearsPlaying !== undefined) { next.years_playing = player.yearsPlaying; filled.add("years_playing"); }
-      if (player.personalityTags?.length) { next.personality_tags = player.personalityTags; filled.add("personality_tags"); }
-      if (player.primaryObjective) { next.primary_objective = player.primaryObjective; filled.add("primary_objective"); }
-      if (player.weeklyTimeCommitment) { next.weekly_time_commitment = player.weeklyTimeCommitment; filled.add("weekly_time_commitment"); }
-      if (player.budgetTier) { next.budget_tier = player.budgetTier; filled.add("budget_tier"); }
-      if (player.sportsFocus?.length && !initialSport) { next.sport = player.sportsFocus.join(", "); filled.add("sport"); }
-      if (player.location) { next.location = player.location; filled.add("location"); }
+      if (age) {
+        next.child_age = age;
+        filled.add("child_age");
+      }
+      if (gender) {
+        next.child_gender = gender;
+        filled.add("child_gender");
+      }
+      if (player.skillLevel) {
+        next.current_fitness_level = fitness;
+        filled.add("current_fitness_level");
+      }
+      if (player.yearsPlaying !== undefined) {
+        next.years_playing = player.yearsPlaying;
+        filled.add("years_playing");
+      }
+      if (player.personalityTags?.length) {
+        next.personality_tags = player.personalityTags;
+        filled.add("personality_tags");
+      }
+      if (player.primaryObjective) {
+        next.primary_objective = player.primaryObjective;
+        filled.add("primary_objective");
+      }
+      if (player.weeklyTimeCommitment) {
+        next.weekly_time_commitment = player.weeklyTimeCommitment;
+        filled.add("weekly_time_commitment");
+      }
+      if (player.budgetTier) {
+        next.budget_tier = player.budgetTier;
+        filled.add("budget_tier");
+      }
+      if (player.sportsFocus?.length && !initialSport) {
+        next.sport = player.sportsFocus.join(", ");
+        filled.add("sport");
+      }
+      if (player.location) {
+        next.location = player.location;
+        filled.add("location");
+      }
       return next;
     });
     setAutofillFields(filled);
@@ -144,7 +193,9 @@ export function useGuidanceForm({
     setSelectedProfileId(id);
     if (!id) {
       const next = buildInitialForm();
-      lastAutoQuestion.current = isLevelPlan ? next.parent_specific_question : null;
+      lastAutoQuestion.current = isLevelPlan
+        ? next.parent_specific_question
+        : null;
       setForm(next);
       setAutofillFields(new Set());
       return;
@@ -168,9 +219,7 @@ export function useGuidanceForm({
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
-  const handleSubmit = async (
-    onSuccess: (sub: GuidanceSubmission) => void,
-  ) => {
+  const handleSubmit = async (onSuccess: (sub: GuidanceSubmission) => void) => {
     setLoading(true);
     const payload = {
       ...form,
@@ -207,7 +256,9 @@ export function useGuidanceForm({
 
   const resetForm = () => {
     const next = buildInitialForm();
-    lastAutoQuestion.current = isLevelPlan ? next.parent_specific_question : null;
+    lastAutoQuestion.current = isLevelPlan
+      ? next.parent_specific_question
+      : null;
     setForm(next);
     setStep(1);
     setShowResults(false);

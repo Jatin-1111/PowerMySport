@@ -219,17 +219,19 @@ const hasConflictingVenueBooking = async (
   }
 
   const conflicts = await query;
-  
+
   if (conflicts) {
     // If the conflict is an unpaid checkout by the same user, cancel it and ignore the conflict
     if (
       userId &&
       conflicts.userId.toString() === userId &&
-      (conflicts.status === "PENDING_CONFIRMATION" || conflicts.status === "PENDING_INVITES") &&
+      (conflicts.status === "PENDING_CONFIRMATION" ||
+        conflicts.status === "PENDING_INVITES") &&
       !conflicts.paymentConfirmedAt
     ) {
       conflicts.status = "CANCELLED";
-      conflicts.cancellationReason = "Overwritten by a new booking attempt from the same user";
+      conflicts.cancellationReason =
+        "Overwritten by a new booking attempt from the same user";
       if (session) {
         await conflicts.save({ session });
       } else {
@@ -283,11 +285,13 @@ const hasConflictingCoachBooking = async (
     if (
       userId &&
       conflicts.userId.toString() === userId &&
-      (conflicts.status === "PENDING_CONFIRMATION" || conflicts.status === "PENDING_INVITES") &&
+      (conflicts.status === "PENDING_CONFIRMATION" ||
+        conflicts.status === "PENDING_INVITES") &&
       !conflicts.paymentConfirmedAt
     ) {
       conflicts.status = "CANCELLED";
-      conflicts.cancellationReason = "Overwritten by a new booking attempt from the same user";
+      conflicts.cancellationReason =
+        "Overwritten by a new booking attempt from the same user";
       if (session) {
         await conflicts.save({ session });
       } else {
@@ -632,7 +636,10 @@ export const initiateBooking = async (
       payload.date,
       normalizedStartTime,
     );
-    const requestedEndAt = combineDateAndTimeIST(payload.date, normalizedEndTime);
+    const requestedEndAt = combineDateAndTimeIST(
+      payload.date,
+      normalizedEndTime,
+    );
     const now = new Date();
 
     if (requestedEndAt <= requestedStartAt) {
@@ -712,7 +719,9 @@ export const initiateBooking = async (
 
     const deletedAbandoned = await Booking.deleteMany(cleanupQuery);
     if (deletedAbandoned.deletedCount > 0) {
-      console.log(`[initiateBooking] Cleaned up ${deletedAbandoned.deletedCount} abandoned booking(s) for user ${user._id} attempting to re-book`);
+      console.log(
+        `[initiateBooking] Cleaned up ${deletedAbandoned.deletedCount} abandoned booking(s) for user ${user._id} attempting to re-book`,
+      );
     }
 
     // Determine participant details
@@ -887,20 +896,22 @@ export const initiateBooking = async (
           userId: user._id,
           status: { $in: ["ACTIVE", "PAST_DUE"] },
         };
-        
+
         if (payload.dependentId) {
           query.dependentId = payload.dependentId;
         } else {
           query.dependentId = { $exists: false };
         }
 
-        const coachSubscription = await CoachSubscription.findOne(query).sort({ createdAt: -1 });
+        const coachSubscription = await CoachSubscription.findOne(query).sort({
+          createdAt: -1,
+        });
 
         if (!coachSubscription) {
           throw new Error(
             payload.dependentId
               ? "No active coach subscription found for this dependent"
-              : "No active coach subscription found for your account"
+              : "No active coach subscription found for your account",
           );
         }
 
@@ -914,7 +925,7 @@ export const initiateBooking = async (
           throw new Error(
             payload.dependentId
               ? "No active coach subscription found for this dependent"
-              : "No active coach subscription found for your account"
+              : "No active coach subscription found for your account",
           );
         }
       }
@@ -1425,8 +1436,7 @@ const getBookingLifecycleRecipients = async (
       .populate("userId", "name email")
       .select("userId");
     const coachUser = coach?.userId as
-      | { name?: string; email?: string }
-      | undefined;
+      { name?: string; email?: string } | undefined;
     if (coachUser?.email) {
       recipients.push({
         name: coachUser.name || "Coach",
@@ -1441,8 +1451,7 @@ const getBookingLifecycleRecipients = async (
       .populate("ownerId", "name email")
       .select("ownerId");
     const venueOwner = venue?.ownerId as
-      | { name?: string; email?: string }
-      | undefined;
+      { name?: string; email?: string } | undefined;
     if (venueOwner?.email) {
       recipients.push({
         name: venueOwner.name || "Venue Owner",
@@ -1600,11 +1609,11 @@ const initiateBookingRefunds = async (
 
   if (totalRefundPaise === 0) {
     if (hasPending) {
-      // If we skipped transactions because they already have a refundState, 
+      // If we skipped transactions because they already have a refundState,
       // but the booking status was somehow still PENDING.
       return {
         refundStatus: "PROCESSED",
-        refundAmount: 0 // The amount is already tracked in transactions
+        refundAmount: 0, // The amount is already tracked in transactions
       };
     }
     throw new Error("No eligible payment transactions found for refund");
@@ -1800,7 +1809,10 @@ export const cancelBooking = async (
   }
 
   // Calculate booking start time (UTC-safe — see combineDateAndTimeIST)
-  const bookingStartTime = combineDateAndTimeIST(booking.date, booking.startTime);
+  const bookingStartTime = combineDateAndTimeIST(
+    booking.date,
+    booking.startTime,
+  );
 
   const now = new Date();
   const hoursUntilBooking =
@@ -2029,7 +2041,10 @@ export const checkInBookingByCode = async (
   }
 
   // UTC-safe — see combineDateAndTimeIST
-  const bookingDateTime = combineDateAndTimeIST(booking.date, booking.startTime);
+  const bookingDateTime = combineDateAndTimeIST(
+    booking.date,
+    booking.startTime,
+  );
 
   // Check-in window: 15 minutes before start time
   const checkInWindow = new Date(bookingDateTime.getTime() - 15 * 60 * 1000);
@@ -2040,7 +2055,10 @@ export const checkInBookingByCode = async (
   }
 
   // Check-in code expiration: exactly at booking end time
-  const bookingEndDateTime = combineDateAndTimeIST(booking.date, booking.endTime);
+  const bookingEndDateTime = combineDateAndTimeIST(
+    booking.date,
+    booking.endTime,
+  );
 
   if (now > bookingEndDateTime) {
     throw new Error(
@@ -3115,9 +3133,7 @@ export const rescheduleBookingByCoach = async (
     coachId: coach._id,
     date: newDate,
     status: { $in: ["CONFIRMED", "IN_PROGRESS", "PENDING_CONFIRMATION"] },
-    $or: [
-      { startTime: { $lt: newEndTime }, endTime: { $gt: newStartTime } },
-    ],
+    $or: [{ startTime: { $lt: newEndTime }, endTime: { $gt: newStartTime } }],
   });
 
   if (conflict) {
@@ -3380,13 +3396,11 @@ export const cleanupStaleBookingLocks = async (): Promise<number> => {
 export const cleanupExpiredBookings = async (): Promise<number> => {
   const now = new Date();
 
-  const result = await Booking.deleteMany(
-    {
-      status: { $in: ["PENDING_CONFIRMATION", "PENDING_INVITES"] },
-      paymentConfirmedAt: { $exists: false },
-      expiresAt: { $lt: now },
-    }
-  );
+  const result = await Booking.deleteMany({
+    status: { $in: ["PENDING_CONFIRMATION", "PENDING_INVITES"] },
+    paymentConfirmedAt: { $exists: false },
+    expiresAt: { $lt: now },
+  });
 
   return result.deletedCount || 0;
 };

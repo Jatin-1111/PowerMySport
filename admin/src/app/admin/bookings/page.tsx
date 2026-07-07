@@ -469,9 +469,15 @@ export default function AdminBookingsPage() {
                     : selectedBooking.venueName || "Unknown venue"
                 }
               />
-              <DetailRow label="Player" value={selectedBooking.playerName || "—"} />
+              <DetailRow
+                label="Player"
+                value={selectedBooking.playerName || "—"}
+              />
               <DetailRow label="Sport" value={selectedBooking.sport || "—"} />
-              <DetailRow label="Date" value={formatDate(selectedBooking.date)} />
+              <DetailRow
+                label="Date"
+                value={formatDate(selectedBooking.date)}
+              />
               <DetailRow
                 label="Time"
                 value={`${formatTime(selectedBooking.startTime)} – ${formatTime(selectedBooking.endTime)}`}
@@ -515,40 +521,43 @@ export default function AdminBookingsPage() {
               )}
             </DetailSection>
 
-            {selectedBooking.payments && selectedBooking.payments.length > 0 && (
-              <DetailSection title="Payout splits">
-                <div className="overflow-hidden rounded-lg border border-slate-200">
-                  <table className="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                      <tr>
-                        <th className="px-3 py-2 text-left">Payee</th>
-                        <th className="px-3 py-2 text-right">Amount</th>
-                        <th className="px-3 py-2 text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {selectedBooking.payments.map((payment, index) => (
-                        <tr key={`${payment.userType}-${index}`}>
-                          <td className="px-3 py-2 text-slate-700">
-                            {payment.userType.replace(/_/g, " ")}
-                          </td>
-                          <td className="px-3 py-2 text-right text-slate-700">
-                            {formatCurrency(payment.amount)}
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <StatusBadge status={payment.status} size="sm" />
-                          </td>
+            {selectedBooking.payments &&
+              selectedBooking.payments.length > 0 && (
+                <DetailSection title="Payout splits">
+                  <div className="overflow-hidden rounded-lg border border-slate-200">
+                    <table className="min-w-full divide-y divide-slate-200 text-sm">
+                      <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2 text-left">Payee</th>
+                          <th className="px-3 py-2 text-right">Amount</th>
+                          <th className="px-3 py-2 text-right">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </DetailSection>
-            )}
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedBooking.payments.map((payment, index) => (
+                          <tr key={`${payment.userType}-${index}`}>
+                            <td className="px-3 py-2 text-slate-700">
+                              {payment.userType.replace(/_/g, " ")}
+                            </td>
+                            <td className="px-3 py-2 text-right text-slate-700">
+                              {formatCurrency(payment.amount)}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <StatusBadge status={payment.status} size="sm" />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </DetailSection>
+              )}
 
             {actionType && (
               <DetailSection
-                title={actionType === "REFUND" ? "Process refund" : "Handle dispute"}
+                title={
+                  actionType === "REFUND" ? "Process refund" : "Handle dispute"
+                }
               >
                 {actionType === "REFUND" ? (
                   <select
@@ -586,9 +595,7 @@ export default function AdminBookingsPage() {
                       onChange={(event) =>
                         setResolution(
                           event.target.value as
-                            | "FULL_REFUND"
-                            | "PARTIAL_REFUND"
-                            | "NO_REFUND",
+                            "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND",
                         )
                       }
                       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"

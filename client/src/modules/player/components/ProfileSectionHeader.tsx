@@ -59,7 +59,11 @@ export function ProfileSectionHeader({
     >
       <div className="flex items-start gap-3">
         {completionPercent !== undefined ? (
-          <ProfileCompletionRing percent={completionPercent} size={48} strokeWidth={3}>
+          <ProfileCompletionRing
+            percent={completionPercent}
+            size={48}
+            strokeWidth={3}
+          >
             {iconBox}
           </ProfileCompletionRing>
         ) : (
@@ -75,11 +79,13 @@ export function ProfileSectionHeader({
                 Editing
               </Badge>
             )}
-            {!isEditing && completionPercent !== undefined && completionPercent < 100 && (
-              <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
-                {completionPercent}% complete
-              </Badge>
-            )}
+            {!isEditing &&
+              completionPercent !== undefined &&
+              completionPercent < 100 && (
+                <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
+                  {completionPercent}% complete
+                </Badge>
+              )}
           </div>
           <p className="mt-0.5 text-sm text-slate-500">
             {isEditing
@@ -103,12 +109,7 @@ export function ProfileSectionHeader({
             >
               Cancel
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={onSave}
-              loading={saving}
-            >
+            <Button type="button" size="sm" onClick={onSave} loading={saving}>
               {saveLabel}
             </Button>
           </>

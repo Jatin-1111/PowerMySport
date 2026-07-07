@@ -25,7 +25,10 @@ export function tzLabel(tz?: string): string {
 }
 
 /** ISO instant + timezone → "4 Jul 2026, 3:00 pm (Asia/Kolkata)". */
-export function formatSessionTimeWithZone(iso?: string | null, tz?: string): string {
+export function formatSessionTimeWithZone(
+  iso?: string | null,
+  tz?: string,
+): string {
   const t = formatSessionTime(iso, tz);
   return t ? `${t} (${tzLabel(tz)})` : t;
 }

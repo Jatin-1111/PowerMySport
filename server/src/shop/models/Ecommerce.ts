@@ -53,63 +53,67 @@ export interface ProductDocument extends Document {
   totalReviews: number;
   seller?: mongoose.Types.ObjectId;
   sellerName?: string;
-  sellerType?: "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
+  sellerType?:
+    "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
   condition?: "NEW" | "USED";
   createdAt: Date;
   updatedAt: Date;
 }
 
-const productVariantSchema = new Schema<ProductVariantDocument>({
-  sku: {
-    type: String,
-    required: [true, "Variant SKU is required"],
-    trim: true,
-  },
-  variantLabel: {
-    type: String,
-    required: [true, "Variant label is required"],
-    trim: true,
-  },
-  attributes: {
-    type: Map,
-    of: String,
-    required: true,
-  },
-  price: {
-    type: Number,
-    required: [true, "Price is required"],
-    min: [0, "Price must be non-negative"],
-  },
-  stock: {
-    type: Number,
-    required: [true, "Stock is required"],
-    min: [0, "Stock cannot be negative"],
-    default: 0,
-  },
-  reorderLevel: {
-    type: Number,
-    default: 10,
-    min: 0,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-}, {
-  toJSON: {
-    virtuals: true,
-    transform: (doc, ret: any) => {
-      ret.id = ret._id;
-      delete ret._id;
-      delete ret.__v;
-      return ret;
+const productVariantSchema = new Schema<ProductVariantDocument>(
+  {
+    sku: {
+      type: String,
+      required: [true, "Variant SKU is required"],
+      trim: true,
+    },
+    variantLabel: {
+      type: String,
+      required: [true, "Variant label is required"],
+      trim: true,
+    },
+    attributes: {
+      type: Map,
+      of: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: [true, "Price is required"],
+      min: [0, "Price must be non-negative"],
+    },
+    stock: {
+      type: Number,
+      required: [true, "Stock is required"],
+      min: [0, "Stock cannot be negative"],
+      default: 0,
+    },
+    reorderLevel: {
+      type: Number,
+      default: 10,
+      min: 0,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
     },
   },
-});
+  {
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret: any) => {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  },
+);
 
 const productSchema = new Schema<ProductDocument>(
   {
@@ -137,22 +141,55 @@ const productSchema = new Schema<ProductDocument>(
     brand: {
       type: String,
       trim: true,
-      enum: ["SG", "SS", "KOOKABURRA", "MRF", "CEAT", "NIKE", "ADIDAS", "PUMA", "UNDER_ARMOUR", "ASICS", "WILSON", "YONEX", "BABOLAT", "HEAD", "GENERIC", "OTHER"],
+      enum: [
+        "SG",
+        "SS",
+        "KOOKABURRA",
+        "MRF",
+        "CEAT",
+        "NIKE",
+        "ADIDAS",
+        "PUMA",
+        "UNDER_ARMOUR",
+        "ASICS",
+        "WILSON",
+        "YONEX",
+        "BABOLAT",
+        "HEAD",
+        "GENERIC",
+        "OTHER",
+      ],
     },
     material: {
       type: String,
       trim: true,
-      enum: ["ENGLISH_WILLOW", "KASHMIR_WILLOW", "CARBON_FIBER", "FIBERGLASS", "ALUMINUM", "LEATHER", "SYNTHETIC_LEATHER", "RUBBER", "COTTON", "POLYESTER", "NYLON", "BLENDED", "OTHER"],
+      enum: [
+        "ENGLISH_WILLOW",
+        "KASHMIR_WILLOW",
+        "CARBON_FIBER",
+        "FIBERGLASS",
+        "ALUMINUM",
+        "LEATHER",
+        "SYNTHETIC_LEATHER",
+        "RUBBER",
+        "COTTON",
+        "POLYESTER",
+        "NYLON",
+        "BLENDED",
+        "OTHER",
+      ],
     },
     warranty: {
       type: String,
       trim: true,
     },
-    tags: [{
-      type: String,
-      trim: true,
-      lowercase: true,
-    }],
+    tags: [
+      {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+    ],
     ageGroup: {
       type: String,
       enum: ["KIDS", "YOUTH", "ADULT", "ALL"],
@@ -521,81 +558,84 @@ export interface OrderDocument extends Document {
   cancelReason?: string;
 }
 
-const orderItemSchema = new Schema<OrderItemDocument>({
-  orderId: {
-    type: Schema.Types.ObjectId,
-    ref: "Order",
-  },
-  productVariantId: {
-    type: Schema.Types.ObjectId,
-    required: [true, "Product variant ID is required"],
-  },
-  productName: {
-    type: String,
-    required: true,
-  },
-  variantLabel: {
-    type: String,
-    required: true,
-  },
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
-  unitPrice: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  lineTotal: {
-    type: Number,
-    required: true,
-    min: 0,
-  },
-  sellerId: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    default: null,
-  },
-  condition: {
-    type: String,
-    enum: ["NEW", "USED"],
-    default: "NEW",
-  },
-  fulfillmentStatus: {
-    type: String,
-    enum: Object.values(FulfillmentStatus),
-    default: FulfillmentStatus.PENDING,
-  },
-  trackingNumber: {
-    type: String,
-    trim: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-}, {
-  toJSON: {
-    virtuals: true,
-    transform: (doc, ret: any) => {
-      ret.id = ret._id;
-      delete ret._id;
-      delete ret.__v;
-      return ret;
+const orderItemSchema = new Schema<OrderItemDocument>(
+  {
+    orderId: {
+      type: Schema.Types.ObjectId,
+      ref: "Order",
+    },
+    productVariantId: {
+      type: Schema.Types.ObjectId,
+      required: [true, "Product variant ID is required"],
+    },
+    productName: {
+      type: String,
+      required: true,
+    },
+    variantLabel: {
+      type: String,
+      required: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    unitPrice: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    lineTotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    sellerId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    condition: {
+      type: String,
+      enum: ["NEW", "USED"],
+      default: "NEW",
+    },
+    fulfillmentStatus: {
+      type: String,
+      enum: Object.values(FulfillmentStatus),
+      default: FulfillmentStatus.PENDING,
+    },
+    trackingNumber: {
+      type: String,
+      trim: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
     },
   },
-  toObject: {
-    virtuals: true,
-    transform: (doc, ret: any) => {
-      ret.id = ret._id;
-      delete ret._id;
-      delete ret.__v;
-      return ret;
+  {
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret: any) => {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: (doc, ret: any) => {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
     },
   },
-});
+);
 
 const orderSchema = new Schema<OrderDocument>(
   {
@@ -820,10 +860,13 @@ const wishlistSchema = new Schema<WishlistDocument>(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const Wishlist = mongoose.model<WishlistDocument>("Wishlist", wishlistSchema);
+export const Wishlist = mongoose.model<WishlistDocument>(
+  "Wishlist",
+  wishlistSchema,
+);
 
 // ============ PAYMENT TRANSACTION MODEL ============
 

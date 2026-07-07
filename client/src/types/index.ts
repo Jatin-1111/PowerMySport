@@ -92,7 +92,8 @@ export interface User {
   isIdentityPublic?: boolean;
   dob?: string;
   role: UserRole;
-  userType?: "Parent" | "Player" | "Coach" | "VenueLister" | "Admin" | "Academy";
+  userType?:
+    "Parent" | "Player" | "Coach" | "VenueLister" | "Admin" | "Academy";
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
   playerProfile?: IPlayerProfile;
@@ -140,21 +141,12 @@ export interface IOwnVenueDetails {
 }
 
 export type CoachVerificationStatus =
-  | "UNVERIFIED"
-  | "PENDING"
-  | "REVIEW"
-  | "VERIFIED"
-  | "REJECTED";
+  "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
 export type CoachSubscriptionPackageFrequency =
-  | "MONTHLY"
-  | "QUARTERLY"
-  | "YEARLY";
+  "MONTHLY" | "QUARTERLY" | "YEARLY";
 export type CoachSubscriptionStatus =
-  | "ACTIVE"
-  | "PAST_DUE"
-  | "CANCELLED"
-  | "EXPIRED";
+  "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
 
 export interface CoachSubscription {
   id?: string;

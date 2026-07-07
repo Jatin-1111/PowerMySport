@@ -37,7 +37,7 @@ export const INDIAN_STATES_AND_UTS = [
   "West Bengal",
 ] as const;
 
-export type IndianStateOrUT = typeof INDIAN_STATES_AND_UTS[number];
+export type IndianStateOrUT = (typeof INDIAN_STATES_AND_UTS)[number];
 
 export function normalizeState(state: string): string {
   return state.trim().toLowerCase().replace(/\s+/g, "-");

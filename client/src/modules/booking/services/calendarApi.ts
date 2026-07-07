@@ -1,11 +1,7 @@
 import axiosInstance from "@/lib/api/axios";
 
 export type CalendarEventType =
-  | "IMPORTANT"
-  | "COMPETITION"
-  | "TRAINING"
-  | "REMINDER"
-  | "OTHER";
+  "IMPORTANT" | "COMPETITION" | "TRAINING" | "REMINDER" | "OTHER";
 
 export interface CalendarBooking {
   id: string;
@@ -68,8 +64,7 @@ export const calendarApi = {
     endDate?: string,
   ): Promise<CalendarEvent[]> => {
     const res = await axiosInstance.get("/calendar/events", {
-      params:
-        startDate && endDate ? { startDate, endDate } : {},
+      params: startDate && endDate ? { startDate, endDate } : {},
     });
     return res.data.data.events as CalendarEvent[];
   },
