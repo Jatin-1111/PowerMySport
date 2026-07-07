@@ -291,6 +291,19 @@ export interface InfraMetrics {
   };
 }
 
+export interface UnsupportedSportRow {
+  sport: string;
+  count: number;
+  lastSearched: string;
+  sources: string[];
+}
+
+export interface UnsupportedSportsStats {
+  rows: UnsupportedSportRow[];
+  totalSearches: number;
+  days: number;
+}
+
 export const statsApi = {
   getPlatformStats: async (): Promise<ApiResponse<PlatformStats>> => {
     const response = await axiosInstance.get("/stats/platform");
@@ -478,6 +491,15 @@ export const statsApi = {
 
   getVenueById: async (venueId: string): Promise<ApiResponse<Venue>> => {
     const response = await axiosInstance.get(`/venues/${venueId}`);
+    return response.data;
+  },
+
+  getUnsupportedSportsStats: async (
+    days = 30,
+  ): Promise<ApiResponse<UnsupportedSportsStats>> => {
+    const response = await axiosInstance.get("/stats/unsupported-sports", {
+      params: { days },
+    });
     return response.data;
   },
 };

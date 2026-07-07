@@ -182,9 +182,9 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="Your child's gateway to a dream sports journey"
+        title="The Trusted Guide for Every Sports Parent."
         subtitle="Built for sports parents"
-        description="PowerMySport is a sports guidance platform for parents that helps you understand, plan, and execute your child's sports journey. All this with the help of experts on call."
+        description="AI-powered pathways, expert guidance, trusted community and personalised support — everything you need to confidently navigate your child's sporting journey."
         primaryCTA={
           user?.role === "VenueLister"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }

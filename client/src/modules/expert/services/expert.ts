@@ -9,6 +9,8 @@ export interface ExpertAvailabilityWindow {
   end: string; // "HH:mm"
 }
 
+export type ExpertVerificationStatus = "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
+
 export interface Expert {
   id: string;
   _id?: string;
@@ -30,6 +32,8 @@ export interface Expert {
   /** Where an IN_PERSON/BOTH-mode session happens — owner/admin-only, never public. */
   inPersonAddress?: string;
   isActive: boolean;
+  verificationStatus?: ExpertVerificationStatus;
+  rejectionReason?: string;
   rating: number;
   reviewCount: number;
   createdAt?: string;
@@ -278,6 +282,11 @@ export const expertApi = {
     >,
   ): Promise<ApiResponse<Expert>> => {
     const res = await axiosInstance.patch(`/experts/me`, patch);
+    return res.data;
+  },
+
+  submitForReview: async (): Promise<ApiResponse<Expert>> => {
+    const res = await axiosInstance.post(`/experts/me/review`);
     return res.data;
   },
 };

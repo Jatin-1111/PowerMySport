@@ -19,20 +19,44 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
+type Tab = "ALL" | "PENDING";
+
+const STATUS_LABEL: Record<string, string> = {
+  UNVERIFIED: "UNVERIFIED",
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+};
+
+const VERIFICATION_BADGE_STYLES: Record<string, string> = {
+  UNVERIFIED: "bg-slate-100 text-slate-600",
+  PENDING: "bg-amber-50 text-amber-700",
+  APPROVED: "bg-emerald-50 text-emerald-700",
+  REJECTED: "bg-red-50 text-red-600",
+};
+
 export default function AdminExpertsPage() {
   const [experts, setExperts] = useState<AdminExpert[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<AdminExpert | null>(null);
+  const [tab, setTab] = useState<Tab>("ALL");
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (activeTab: Tab = "ALL") => {
     try {
       setLoading(true);
       setError(null);
-      const res = await expertAdminApi.list({ limit: 100 });
-      if (res.success && res.data) setExperts(res.data);
-      else setError(res.message || "Failed to load experts.");
+      const params: Parameters<typeof expertAdminApi.list>[0] = { limit: 100 };
+      if (activeTab === "PENDING") params.verificationStatus = "PENDING";
+      const res = await expertAdminApi.list(params);
+      if (res.success && res.data) {
+        setExperts(res.data);
+        if (res.pendingCount !== undefined) setPendingCount(res.pendingCount);
+      } else {
+        setError(res.message || "Failed to load experts.");
+      }
     } catch {
       setError("Failed to load experts.");
     } finally {
@@ -41,8 +65,8 @@ export default function AdminExpertsPage() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load(tab);
+  }, [load, tab]);
 
   const applyUpdate = useCallback((updated: AdminExpert) => {
     setExperts((list) =>
@@ -57,6 +81,10 @@ export default function AdminExpertsPage() {
         ? { ...prev, ...updated }
         : prev,
     );
+    // Refresh pending count after any status change
+    expertAdminApi.list({ limit: 1 }).then((r) => {
+      if (r.pendingCount !== undefined) setPendingCount(r.pendingCount);
+    }).catch(() => {});
   }, []);
 
   const visible = useMemo(() => {
@@ -137,8 +165,20 @@ export default function AdminExpertsPage() {
         ),
     },
     {
+      key: "verificationStatus",
+      header: "Review",
+      render: (e) => {
+        const status = e.verificationStatus || "APPROVED";
+        return (
+          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${VERIFICATION_BADGE_STYLES[status] || ""}`}>
+            {STATUS_LABEL[status] || status}
+          </span>
+        );
+      },
+    },
+    {
       key: "status",
-      header: "Status",
+      header: "Active",
       render: (e) => (
         <StatusBadge status={e.isActive ? "ACTIVE" : "INACTIVE"} />
       ),
@@ -150,7 +190,7 @@ export default function AdminExpertsPage() {
       <AdminPageHeader
         badge="Admin"
         title="Experts"
-        subtitle="Create and manage expert-player profiles. Experts log in with emailed credentials."
+        subtitle="Manage expert-player profiles. Self-registered experts require approval before going live."
         action={
           <Link
             href="/admin/experts/add"
@@ -161,11 +201,40 @@ export default function AdminExpertsPage() {
         }
       />
 
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 w-fit">
+        <button
+          onClick={() => setTab("ALL")}
+          className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-all ${
+            tab === "ALL"
+              ? "bg-white shadow-sm text-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setTab("PENDING")}
+          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition-all ${
+            tab === "PENDING"
+              ? "bg-white shadow-sm text-slate-900"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Pending Review
+          {pendingCount > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
+              {pendingCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 py-10 text-center">
           <p className="font-semibold text-red-600">{error}</p>
           <button
-            onClick={load}
+            onClick={() => load(tab)}
             className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
           >
             Retry
@@ -177,7 +246,7 @@ export default function AdminExpertsPage() {
           rows={visible}
           getRowKey={(e) => e.id || e._id || e.email || ""}
           loading={loading}
-          emptyMessage="No experts yet. Use “Add expert” to create one."
+          emptyMessage={tab === "PENDING" ? "No experts pending review." : "No experts yet. Use Add expert to create one."}
           onRowClick={setSelected}
           search={{
             value: search,
@@ -194,7 +263,14 @@ export default function AdminExpertsPage() {
         subtitle={selected?.email}
         headerExtra={
           selected ? (
-            <StatusBadge status={selected.isActive ? "ACTIVE" : "INACTIVE"} />
+            <div className="flex items-center gap-2">
+              {selected.verificationStatus && selected.verificationStatus !== "APPROVED" && (
+                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${VERIFICATION_BADGE_STYLES[selected.verificationStatus] || ""}`}>
+                  {selected.verificationStatus}
+                </span>
+              )}
+              <StatusBadge status={selected.isActive ? "ACTIVE" : "INACTIVE"} />
+            </div>
           ) : null
         }
       >

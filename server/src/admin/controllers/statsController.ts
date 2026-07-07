@@ -1616,3 +1616,66 @@ export const getPendingCounts = async (
     });
   }
 };
+
+/**
+ * GET /admin/stats/unsupported-sports
+ * Returns the top unsupported sports searched by users, ranked by frequency.
+ */
+export const getUnsupportedSportsStats = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const days = Math.min(365, Math.max(7, Number(req.query.days) || 30));
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const rows = await AnalyticsEvent.aggregate<{
+      sport: string;
+      count: number;
+      lastSearched: Date;
+      sources: string[];
+    }>([
+      {
+        $match: {
+          eventName: "unsupported_sport_search",
+          createdAt: { $gte: since },
+        },
+      },
+      {
+        $group: {
+          _id: { $toLower: "$metadata.sport" },
+          count: { $sum: 1 },
+          lastSearched: { $max: "$createdAt" },
+          sources: { $addToSet: "$metadata.source" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 25 },
+      {
+        $project: {
+          _id: 0,
+          sport: "$_id",
+          count: 1,
+          lastSearched: 1,
+          sources: 1,
+        },
+      },
+    ]);
+
+    const totalSearches = rows.reduce((sum, r) => sum + r.count, 0);
+
+    res.status(200).json({
+      success: true,
+      data: { rows, totalSearches, days },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to retrieve unsupported sports stats",
+    });
+  }
+};

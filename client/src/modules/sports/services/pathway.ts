@@ -57,11 +57,35 @@ export interface PathwayLevel {
   proactiveDocuments?: string[];
 }
 
-export interface Tournament {
+export interface FederationInfo {
   name: string;
+  acronym: string;
+  website?: string;
+  type: "govt" | "private" | "hybrid";
+  about?: string;
+}
+
+export interface Tournament {
+  _id?: string;
+  name: string;
+  sportSlug?: string;
+  slug?: string;
   level: string;
   description: string;
   ageGroup: string;
+  typicalDates?: string;
+  registrationDeadline?: string;
+  isCurated?: boolean;
+  isVerified?: boolean;
+  federation?: FederationInfo | string;
+  participationGuide?: string[];
+  qualificationPath?: string;
+  format?: string;
+  prestige?: "flagship" | "developmental" | "ranking";
+  prizePool?: string;
+  registrationUrl?: string;
+  sourceUrls?: string[];
+  city?: string;
   prerequisiteId?: string;
   prerequisiteName?: string;
   prerequisiteGuide?: string[];
@@ -159,6 +183,10 @@ interface ApiResponse<T> {
   isStale?: boolean;
   entitiesReady?: boolean;
   data?: T;
+  // returned when the sport is real but not yet supported on the platform
+  status?: string;
+  sport?: string;
+  supportedSports?: Array<{ slug: string; name: string }>;
 }
 
 // ─── API ─────────────────────────────────────────────────────────────────────
@@ -174,12 +202,11 @@ export const pathwayApi = {
     sportName: string,
     childAge?: number,
     state?: string,
-  ): Promise<{
-    pathway: SportPathway;
-    source: "db" | "generated";
-    isStale?: boolean;
-    entitiesReady?: boolean;
-  } | null> => {
+  ): Promise<
+    | { pathway: SportPathway; source: "db" | "generated"; isStale?: boolean; entitiesReady?: boolean }
+    | { notSupported: true; sport: string; supportedSports: Array<{ slug: string; name: string }>; message: string }
+    | null
+  > => {
     try {
       const params = new URLSearchParams({ sport: sportName });
       if (childAge) params.append("age", String(childAge));
@@ -187,6 +214,14 @@ export const pathwayApi = {
       const resp = await axiosInstance.get<ApiResponse<SportPathway>>(
         `/pathways?${params.toString()}`,
       );
+      if (resp.data.status === "not_supported") {
+        return {
+          notSupported: true,
+          sport: resp.data.sport ?? sportName,
+          supportedSports: resp.data.supportedSports ?? [],
+          message: resp.data.message ?? `${sportName} pathways are coming soon.`,
+        };
+      }
       if (resp.data.success && resp.data.data) {
         return {
           pathway: resp.data.data,
@@ -311,5 +346,34 @@ export const pathwayApi = {
       `/pathways/expert/${sportSlug}/verify`,
     );
     return resp.data;
+  },
+
+  /** Fetch all curated tournaments, optionally filtered by sportSlug. */
+  getCuratedTournaments: async (
+    sportSlug?: string,
+  ): Promise<Tournament[]> => {
+    try {
+      const params = sportSlug ? `?sport=${encodeURIComponent(sportSlug)}` : "";
+      const resp = await axiosInstance.get<ApiResponse<Tournament[]>>(
+        `/pathways/tournaments${params}`,
+      );
+      return resp.data.data ?? [];
+    } catch {
+      return [];
+    }
+  },
+
+  /** Fetch a single curated tournament by slug (for the detail page). */
+  getCuratedTournamentBySlug: async (
+    slug: string,
+  ): Promise<Tournament | null> => {
+    try {
+      const resp = await axiosInstance.get<ApiResponse<Tournament>>(
+        `/pathways/tournaments/${encodeURIComponent(slug)}`,
+      );
+      return resp.data.data ?? null;
+    } catch {
+      return null;
+    }
   },
 };

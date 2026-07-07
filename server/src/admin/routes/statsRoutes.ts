@@ -22,6 +22,7 @@ import {
   getGuestActivity,
   clearAnalyticsData,
   getPendingCounts,
+  getUnsupportedSportsStats,
 } from "../controllers/statsController";
 import {
   getInfraOverviewController,
@@ -151,5 +152,11 @@ router.get(
 router.get("/users", requirePermission("users:view"), getAllUsers);
 router.get("/venues", requirePermission("venues:view"), getAllVenues);
 router.get("/bookings", requirePermission("bookings:view"), getAllBookings);
+
+router.get(
+  "/unsupported-sports",
+  requirePermission("analytics:view"),
+  getUnsupportedSportsStats,
+);
 
 export default router;

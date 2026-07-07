@@ -59,6 +59,7 @@ const serializeExpert = (expert: any) => {
     languages: expert.languages || [],
     photoUrl: expert.photoUrl,
     isActive: expert.isActive,
+    verificationStatus: expert.verificationStatus || "UNVERIFIED",
     rating: expert.rating || 0,
     reviewCount: expert.reviewCount || 0,
     createdAt: expert.createdAt,
@@ -72,6 +73,7 @@ const serializeExpertFull = (expert: any) => ({
   weeklyAvailability: expert.weeklyAvailability || [],
   blackoutDates: expert.blackoutDates || [],
   inPersonAddress: expert.inPersonAddress,
+  rejectionReason: expert.rejectionReason,
 });
 
 const serializeSession = (
@@ -213,6 +215,7 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
     photoUrl: payload.photoUrl,
     photoKey: payload.photoKey,
     isActive: true,
+    verificationStatus: "APPROVED",
     ...(payload.createdBy ? { createdBy: toObjectId(payload.createdBy) } : {}),
   });
 
@@ -222,21 +225,27 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
 export const listExpertsForAdmin = async (params: {
   page?: number | undefined;
   limit?: number | undefined;
+  verificationStatus?: string | undefined;
 }) => {
   const page = Math.max(1, params.page || 1);
   const limit = Math.min(100, Math.max(1, params.limit || 20));
+  const filter: Record<string, unknown> = {};
+  if (params.verificationStatus) filter.verificationStatus = params.verificationStatus;
   const [experts, total] = await Promise.all([
-    Expert.find({})
+    Expert.find(filter)
       .populate("userId", "name email")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean(),
-    Expert.countDocuments({}),
+    Expert.countDocuments(filter),
   ]);
+  // Always include pending count for the badge
+  const pendingCount = await Expert.countDocuments({ verificationStatus: "PENDING" });
   return {
     data: experts.map(serializeExpertFull),
     pagination: { total, page, totalPages: Math.ceil(total / limit) },
+    pendingCount,
   };
 };
 
@@ -305,6 +314,42 @@ export const setExpertActive = async (expertId: string, isActive: boolean) => {
   const expert = await Expert.findByIdAndUpdate(
     expertId,
     { isActive },
+    { new: true },
+  )
+    .populate("userId", "name email")
+    .lean();
+  if (!expert) throw new Error("Expert not found");
+  return serializeExpertFull(expert);
+};
+
+export const submitExpertForReview = async (userId: string) => {
+  const expert = await Expert.findOneAndUpdate(
+    { userId: toObjectId(userId), verificationStatus: { $in: ["UNVERIFIED", "REJECTED"] } },
+    { verificationStatus: "PENDING" },
+    { new: true },
+  )
+    .populate("userId", "name email")
+    .lean();
+  if (!expert) throw new Error("Expert profile not found or not eligible for review submission");
+  return serializeExpertFull(expert);
+};
+
+export const approveExpert = async (expertId: string) => {
+  const expert = await Expert.findByIdAndUpdate(
+    expertId,
+    { verificationStatus: "APPROVED", isActive: true, $unset: { rejectionReason: 1 } },
+    { new: true },
+  )
+    .populate("userId", "name email")
+    .lean();
+  if (!expert) throw new Error("Expert not found");
+  return serializeExpertFull(expert);
+};
+
+export const rejectExpert = async (expertId: string, reason: string) => {
+  const expert = await Expert.findByIdAndUpdate(
+    expertId,
+    { verificationStatus: "REJECTED", isActive: false, rejectionReason: reason.trim() },
     { new: true },
   )
     .populate("userId", "name email")

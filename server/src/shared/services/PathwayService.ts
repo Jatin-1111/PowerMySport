@@ -726,11 +726,23 @@ export class PathwayService {
   ): Promise<CanonicalAttachResult> {
     const stateQuery = this.buildStateQuery(state);
 
+    // Prefer curated tournaments (hand-seeded, complete data).
+    // Only fall back to scraped entries when no curated ones exist for this sport.
+    const curatedTournaments = await Tournament.find({
+      sportSlug,
+      isCurated: true,
+    })
+      .sort({ prestige: 1 })
+      .limit(6)
+      .lean();
+
     const [tournaments, scholarships, universities] = await Promise.all([
-      Tournament.find({ sportSlug, ...stateQuery })
-        .sort({ updatedAt: -1 })
-        .limit(6)
-        .lean(),
+      curatedTournaments.length > 0
+        ? Promise.resolve(curatedTournaments)
+        : Tournament.find({ sportSlug, ...stateQuery })
+            .sort({ updatedAt: -1 })
+            .limit(6)
+            .lean(),
       Scholarship.find({ sportSlug, ...stateQuery })
         .sort({ updatedAt: -1 })
         .limit(6)
@@ -746,11 +758,14 @@ export class PathwayService {
         ? (pathway as any).toObject()
         : pathway;
 
+    // Curated tournaments are complete — no scraping needed for them.
+    const hasCuratedTournaments = curatedTournaments.length > 0;
     const missingEntities =
-      tournaments.length === 0 ||
+      (!hasCuratedTournaments && tournaments.length === 0) ||
       scholarships.length === 0 ||
       universities.length === 0;
     const missingDates =
+      !hasCuratedTournaments &&
       tournaments.length > 0 &&
       (tournaments as any[]).some(
         (t) => !t.typicalDates && !t.registrationDeadline,

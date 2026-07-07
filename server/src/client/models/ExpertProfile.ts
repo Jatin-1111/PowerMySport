@@ -2,11 +2,12 @@ import mongoose, { Document, Schema } from "mongoose";
 import { IPayoutMethod } from "./Coach";
 
 /**
- * Expert = an admin-vetted expert player who offers paid 1:1 sessions.
- * Profiles are created ONLY via the admin panel (experts cannot self-register),
- * but the expert can subsequently edit their own profile + availability.
- * The linked User (role EXPERT) logs into the client app with emailed credentials.
- * (File is named ExpertProfile.ts; the Mongoose model name is "Expert".)
+ * Expert = an elite/ex-professional player who offers paid 1:1 sessions.
+ * Profiles can be created by the admin panel OR by self-registration.
+ * Self-registered experts start with verificationStatus "UNVERIFIED" and isActive
+ * false; they complete an onboarding wizard, submit for review (PENDING), and go
+ * live only after an admin approves (APPROVED → isActive true).
+ * Admin-created experts are provisioned with verificationStatus "APPROVED" directly.
  */
 
 /**
@@ -39,6 +40,8 @@ export interface ExpertDocument extends Document {
    *  to a client with an active booking — never on the public discovery listing. */
   inPersonAddress?: string;
   isActive: boolean;
+  verificationStatus: "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
   rating: number;
   reviewCount: number;
   payoutMethods: IPayoutMethod[];
@@ -84,7 +87,14 @@ const expertSchema = new Schema<ExpertDocument>(
     photoUrl: { type: String },
     photoKey: { type: String },
     inPersonAddress: { type: String, trim: true, maxlength: 500 },
-    isActive: { type: Boolean, default: true, index: true },
+    isActive: { type: Boolean, default: false, index: true },
+    verificationStatus: {
+      type: String,
+      enum: ["UNVERIFIED", "PENDING", "APPROVED", "REJECTED"],
+      default: "UNVERIFIED",
+      index: true,
+    },
+    rejectionReason: { type: String, trim: true },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0, min: 0 },
     payoutMethods: {

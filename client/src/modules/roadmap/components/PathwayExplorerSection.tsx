@@ -99,8 +99,9 @@ export function PathwayExplorerSection() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [status, setStatus] = useState<
-    "idle" | "loading" | "success" | "error"
+    "idle" | "loading" | "success" | "error" | "not_supported"
   >("idle");
+  const [notSupportedSport, setNotSupportedSport] = useState<string>("");
   const [result, setResult] = useState<{
     pathway: SportPathway;
     source: "db" | "generated";
@@ -315,25 +316,35 @@ export function PathwayExplorerSection() {
     try {
       const res = await pathwayApi.getPathway(name, undefined, state);
       if (!res) throw new Error("Not found");
-      if ((res.pathway as any).status === "pending_review") {
+
+      if ("notSupported" in res) {
+        setNotSupportedSport(res.sport);
+        setStatus("not_supported");
+        return;
+      }
+
+      // TypeScript narrowed: res is the normal pathway result from here.
+      const pr = res as { pathway: SportPathway; source: "db" | "generated"; isStale?: boolean; entitiesReady?: boolean };
+
+      if ((pr.pathway as any).status === "pending_review") {
         setErrorMsg(
-          (res.pathway as any).message ||
+          (pr.pathway as any).message ||
             "This pathway is being reviewed by experts and is not yet available for your state.",
         );
         setStatus("error");
         return;
       }
 
-      setResult(res as any);
-      setQuery(res.pathway.sportName);
+      setResult(pr as any);
+      setQuery(pr.pathway.sportName);
       setStatus("success");
 
       // If entities (tournaments/scholarships/universities) weren't ready yet,
       // fetch them in the background and merge when done.
-      if (!res.entitiesReady) {
+      if (!pr.entitiesReady) {
         setEntitiesStatus("loading");
         pathwayApi
-          .getEntities(res.pathway.sportName, state)
+          .getEntities(pr.pathway.sportName, state)
           .then((entities) => {
             if (!entities) {
               setEntitiesStatus("ready");
@@ -373,6 +384,7 @@ export function PathwayExplorerSection() {
     setResult(null);
     setStatus("idle");
     setErrorMsg("");
+    setNotSupportedSport("");
     setSuggestions([]);
     setShowSuggestions(false);
     inputRef.current?.focus();
@@ -761,13 +773,15 @@ export function PathwayExplorerSection() {
               <div className="flex flex-wrap justify-center gap-2">
                 {[
                   "Cricket",
-                  "Badminton",
                   "Football",
-                  "Kabaddi",
-                  "Wrestling",
-                  "Archery",
+                  "Badminton",
+                  "Tennis",
+                  "Basketball",
+                  "Hockey",
+                  "Swimming",
+                  "Chess",
                   "Table Tennis",
-                  "Boxing",
+                  "Volleyball",
                 ].map((s) => (
                   <button
                     key={s}
@@ -893,6 +907,53 @@ export function PathwayExplorerSection() {
                 className="mt-5 rounded-xl bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
               >
                 Try Another Sport
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Sport not yet supported ── */}
+        <AnimatePresence>
+          {status === "not_supported" && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mx-auto mt-12 max-w-xl rounded-3xl border border-amber-100 bg-amber-50 p-6 sm:p-8 text-center shadow"
+            >
+              <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-700">
+                Coming Soon
+              </span>
+              <p className="mt-3 text-lg font-bold text-slate-900 capitalize">
+                {notSupportedSport} Pathway
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Our team is actively building the{" "}
+                <span className="font-semibold capitalize">
+                  {notSupportedSport}
+                </span>{" "}
+                pathway. We&apos;ll have it ready soon — meanwhile, explore one
+                of our 10 fully mapped sports below.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                {[
+                  "Cricket", "Tennis", "Chess", "Football", "Basketball",
+                  "Hockey", "Table Tennis", "Swimming", "Badminton", "Volleyball",
+                ].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleSearch(s)}
+                    className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-power-orange hover:bg-orange-50 hover:text-power-orange"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={clearSearch}
+                className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                Back to Search
               </button>
             </motion.div>
           )}

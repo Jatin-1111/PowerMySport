@@ -76,12 +76,14 @@ export function ComparePanel({
         undefined,
         primaryPathway.state,
       );
-      if (res && (res.pathway as any).status !== "pending_review") {
-        setCompareList((prev) => [...prev, res.pathway]);
-      } else if (res && (res.pathway as any).status === "pending_review") {
+      if (!res || "notSupported" in res) {
+        // Silently skip — unsupported or not found
+      } else if ((res.pathway as any).status === "pending_review") {
         alert(
           "This pathway is being reviewed by experts and is not yet available for comparison.",
         );
+      } else {
+        setCompareList((prev) => [...prev, res.pathway]);
       }
     } catch {}
     setLoadingIdx(null);
