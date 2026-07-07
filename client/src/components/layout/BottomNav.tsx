@@ -1,10 +1,10 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/utils/cn";
+import { type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type LucideIcon } from "lucide-react";
-import { cn } from "@/utils/cn";
-import { Badge } from "@/components/ui/badge";
 
 export interface BottomNavItem {
   href: string;

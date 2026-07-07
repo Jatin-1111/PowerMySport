@@ -1,15 +1,15 @@
 "use client";
 
-import {
-  expertApi,
-  type ExpertSession,
-} from "@/modules/expert/services/expert";
-import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
+import {
+    expertApi,
+    type ExpertSession,
+} from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
-import { toast } from "sonner";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { CalendarClock, Check, Star, Users, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 

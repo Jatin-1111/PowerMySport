@@ -1,6 +1,6 @@
 "use client";
 
-import { UserCircle2, Dumbbell, Trophy, Wallet } from "lucide-react";
+import { Dumbbell, Trophy, UserCircle2, Wallet } from "lucide-react";
 import type { CostBreakdown } from "../../types";
 
 export function CostBreakdownCard({ c }: { c: CostBreakdown }) {

@@ -3,13 +3,13 @@
 import { cn } from "@/utils/cn";
 import { motion, Variants } from "framer-motion";
 import {
-  ArrowRight,
-  CalendarCheck,
-  Check,
-  Compass,
-  LucideIcon,
-  ShoppingBag,
-  Users,
+    ArrowRight,
+    CalendarCheck,
+    Check,
+    Compass,
+    LucideIcon,
+    ShoppingBag,
+    Users,
 } from "lucide-react";
 import Link from "next/link";
 import { SectionLabel } from "./SectionLabel";

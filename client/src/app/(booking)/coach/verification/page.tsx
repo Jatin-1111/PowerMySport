@@ -6,23 +6,23 @@ import { authApi } from "@/modules/auth/services/auth";
 import { coachApi } from "@/modules/coach/services/coach";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import OpeningHoursInput, {
-  getDefaultOpeningHours,
-  OpeningHours,
+    getDefaultOpeningHours,
+    OpeningHours,
 } from "@/modules/onboarding/components/onboarding/OpeningHoursInput";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Coach, CoachVerificationDocument, ServiceMode, User } from "@/types";
 import {
-  Award,
-  Briefcase,
-  Clock,
-  Lightbulb,
-  MapPin,
-  Star,
-  Target,
-  Upload,
-  Users,
+    Award,
+    Briefcase,
+    Clock,
+    Lightbulb,
+    MapPin,
+    Star,
+    Target,
+    Upload,
+    Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

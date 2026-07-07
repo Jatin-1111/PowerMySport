@@ -1,18 +1,16 @@
 "use client";
 
+import { getShopCartTotals, useShopCart } from "@/lib/shop/cart";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft,
-  Search,
-  User,
-  ShoppingCart,
-  ChevronDown,
+    ArrowLeft,
+    ChevronDown,
+    Search,
+    ShoppingCart,
+    User,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useMemo } from "react";
-import { getShopCartTotals, useShopCart } from "@/lib/shop/cart";
-import { cn } from "@/utils/cn";
 
 const collections = [
   "Running",
@@ -24,7 +22,6 @@ const collections = [
 ];
 
 export function ShopChrome() {
-  const pathname = usePathname();
   const items = useShopCart();
   const totals = useMemo(() => getShopCartTotals(items), [items]);
 

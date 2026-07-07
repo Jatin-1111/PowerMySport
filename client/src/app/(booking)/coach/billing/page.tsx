@@ -1,33 +1,33 @@
 "use client";
 
-import { toast } from "@/lib/toast";
-import { coachApi } from "@/modules/coach/services/coach";
-import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
-import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/lib/toast";
+import { coachApi } from "@/modules/coach/services/coach";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card } from "@/modules/shared/ui/Card";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import {
-  AlertCircle,
-  CheckCircle2,
-  Coins,
-  CalendarRange,
-  Loader2,
-  PencilLine,
-  Plus,
-  Sparkles,
-  Ticket,
-  TrendingUp,
-  Trash2,
-  Users,
-  Zap,
+    AlertCircle,
+    CalendarRange,
+    CheckCircle2,
+    Coins,
+    Loader2,
+    PencilLine,
+    Plus,
+    Sparkles,
+    Ticket,
+    Trash2,
+    TrendingUp,
+    Users,
+    Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
-  CoachSubscriptionPackage,
-  CoachSubscriptionPackageCreateInput,
-  CoachSubscriptionPackageFrequency,
+    CoachSubscriptionPackage,
+    CoachSubscriptionPackageCreateInput,
+    CoachSubscriptionPackageFrequency,
 } from "@/types";
 
 const FREQUENCY_OPTIONS: Array<{

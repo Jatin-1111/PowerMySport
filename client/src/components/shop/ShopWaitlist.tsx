@@ -1,10 +1,10 @@
 "use client";
 
+import axiosInstance from "@/lib/api/axios";
 import { motion } from "framer-motion";
-import { ShoppingBag, ArrowRight, BellRing } from "lucide-react";
+import { ArrowRight, BellRing, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import axiosInstance from "@/lib/api/axios";
 import { toast } from "sonner";
 
 export default function ShopWaitlist() {

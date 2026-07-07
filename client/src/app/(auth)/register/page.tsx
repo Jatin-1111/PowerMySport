@@ -10,19 +10,13 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { Suspense, useState, useEffect } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || null;
   const roleParam = searchParams.get("role") || "Player";
-  const initialRole =
-    roleParam === "Player" ||
-    roleParam === "VenueLister" ||
-    roleParam === "Coach"
-      ? roleParam
-      : "Player";
   const { user, setUser, setToken, setLoading } = useAuthStore();
   const [formData, setFormData] = useState({
     name: "",

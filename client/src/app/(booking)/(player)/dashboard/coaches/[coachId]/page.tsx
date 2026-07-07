@@ -1,11 +1,11 @@
 "use client";
 
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { venueApi } from "@/modules/venue/services/venue";

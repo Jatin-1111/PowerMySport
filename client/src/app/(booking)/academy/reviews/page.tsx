@@ -7,12 +7,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
-import {
-  ReviewCard,
-  ReviewSummaryCard,
-  StarDisplay,
-} from "@/modules/shared/components/dashboard/reviews";
 import { reviewApi } from "@/modules/review/services/review";
+import {
+    ReviewCard,
+    ReviewSummaryCard,
+} from "@/modules/shared/components/dashboard/reviews";
 import type { ReviewItem, ReviewSummary, Venue } from "@/types";
 
 // ---------------------------------------------------------------------------

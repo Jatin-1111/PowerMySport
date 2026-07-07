@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { friendService } from "@/modules/shared/services/friend";
-import { bookingApi } from "@/modules/booking/services/booking";
 import { notificationApi } from "@/lib/api/notification";
+import { bookingApi } from "@/modules/booking/services/booking";
+import { friendService } from "@/modules/shared/services/friend";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface NotificationCounts {
   friendRequests: number;

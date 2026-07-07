@@ -3,14 +3,14 @@
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import {
-  Briefcase,
-  Globe,
-  Heart,
-  Mail,
-  MapPin,
-  TrendingUp,
-  Users,
-  Zap,
+    Briefcase,
+    Globe,
+    Heart,
+    Mail,
+    MapPin,
+    TrendingUp,
+    Users,
+    Zap,
 } from "lucide-react";
 import Link from "next/link";
 

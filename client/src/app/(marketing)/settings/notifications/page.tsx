@@ -1,28 +1,28 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { PushNotificationPermission } from "@/components/layout/PushNotificationPermission";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    notificationApi,
+    NotificationChannelPreferences,
+    NotificationPreferences,
+} from "@/lib/api/notification";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { PushNotificationPermission } from "@/components/layout/PushNotificationPermission";
 import {
-  notificationApi,
-  NotificationPreferences,
-  NotificationChannelPreferences,
-} from "@/lib/api/notification";
-import {
-  Bell,
-  Mail,
-  Smartphone,
-  MonitorSmartphone,
-  Save,
-  Lightbulb,
-  X,
+    Bell,
+    Lightbulb,
+    Mail,
+    MonitorSmartphone,
+    Save,
+    Smartphone,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
+import React, { useEffect, useState } from "react";
 
 interface NotificationType {
   key: keyof NotificationChannelPreferences;

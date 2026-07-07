@@ -1,7 +1,7 @@
-import React from "react";
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
 import type { Metadata } from "next";
+import React from "react";
 
 export const metadata: Metadata = {
   title: "PowerMySport — Sports Career Planner for Parents",

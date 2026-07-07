@@ -2,19 +2,19 @@
 
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
-import { authApi } from "@/modules/auth/services/auth";
-import { toast } from "@/lib/toast";
 import { getCommunityAppUrl } from "@/lib/community/url";
+import { toast } from "@/lib/toast";
+import { authApi } from "@/modules/auth/services/auth";
+import { bookingApi } from "@/modules/booking/services/booking";
+import { coachApi } from "@/modules/coach/services/coach";
 import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { Booking, CoachSubscriptionPackage } from "@/types";
+import { formatCurrency } from "@/utils/format";
 import { CheckCircle, Clock, XCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { bookingApi } from "@/modules/booking/services/booking";
-import { CoachSubscriptionPackage, Booking } from "@/types";
-import { coachApi } from "@/modules/coach/services/coach";
-import { formatCurrency } from "@/utils/format";
 
 function PaymentPageContent() {
   const router = useRouter();

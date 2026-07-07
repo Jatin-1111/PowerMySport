@@ -1,10 +1,10 @@
 "use client";
 
-import { sportsApi, Sport } from "@/modules/sports/services/sports";
 import { Button } from "@/modules/shared/ui/Button";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronDown, X, Loader, Plus, AlertCircle } from "lucide-react";
+import { Sport, sportsApi } from "@/modules/sports/services/sports";
 import Fuse from "fuse.js";
+import { AlertCircle, ChevronDown, Loader, Plus, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface SportsMultiSelectProps {
   value: string[];

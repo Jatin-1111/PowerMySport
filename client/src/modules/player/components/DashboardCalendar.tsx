@@ -1,45 +1,43 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/lib/toast";
+import {
+    calendarApi,
+    type CalendarBooking,
+    type CalendarEvent,
+    type CalendarEventType,
+    EVENT_TYPE_BG,
+    EVENT_TYPE_COLORS,
+    EVENT_TYPE_LABELS,
+} from "@/modules/booking/services/calendarApi";
+import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
+import { cn } from "@/utils/cn";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  MapPin,
-  Plus,
-  Star,
-  Tag,
-  Trash2,
-  Trophy,
-  Users,
-  X,
-  Zap,
-  Dumbbell,
-  Bell,
+    Bell,
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    Dumbbell,
+    Plus,
+    Star,
+    Tag,
+    Trash2,
+    Trophy,
+    X,
+    Zap,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
-import { Button } from "@/modules/shared/ui/Button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { cn } from "@/utils/cn";
-import {
-  calendarApi,
-  type CalendarBooking,
-  type CalendarEvent,
-  type CalendarEventType,
-  EVENT_TYPE_LABELS,
-  EVENT_TYPE_COLORS,
-  EVENT_TYPE_BG,
-} from "@/modules/booking/services/calendarApi";
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 

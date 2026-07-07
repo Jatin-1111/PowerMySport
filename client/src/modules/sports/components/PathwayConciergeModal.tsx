@@ -1,16 +1,16 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Sparkles,
-  ShieldAlert,
-  CheckCircle2,
-  Loader2,
-  UploadCloud,
-} from "lucide-react";
-import { useState, useRef, useEffect } from "react";
 import axiosInstance from "@/lib/api/axios";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    CheckCircle2,
+    Loader2,
+    ShieldAlert,
+    Sparkles,
+    UploadCloud,
+    X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface PathwayConciergeModalProps {
   isOpen: boolean;

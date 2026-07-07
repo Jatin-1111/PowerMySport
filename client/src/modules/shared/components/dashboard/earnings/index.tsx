@@ -1,13 +1,13 @@
 "use client";
 
-import React from "react";
 import { motion } from "framer-motion";
 import {
-  IndianRupee,
-  TrendingUp,
-  TrendingDown,
-  CheckCircle,
+    CheckCircle,
+    IndianRupee,
+    TrendingDown,
+    TrendingUp,
 } from "lucide-react";
+import React from "react";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -242,7 +242,7 @@ export default function Step2VenueDetails({
   const handleBasePriceChange = (value: number) => {
     setBasePricePerHour(value);
     if (samePriceForAll) {
-      setSportPricing((prev) => {
+      setSportPricing(() => {
         const nextPricing: Record<string, number> = {};
         formData.sports.forEach((sport) => {
           nextPricing[sport] = value;

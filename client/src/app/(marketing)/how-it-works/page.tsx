@@ -4,8 +4,8 @@ import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import {
-  Timeline,
-  type TimelineEntry,
+    Timeline,
+    type TimelineEntry,
 } from "@/modules/marketing/components/marketing/Timeline";
 import { cn } from "@/utils/cn";
 import { motion, Variants } from "framer-motion";

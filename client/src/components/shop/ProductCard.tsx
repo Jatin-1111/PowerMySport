@@ -1,14 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { BadgePercent } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
 import { AddToCartButton } from "@/components/shop/AddToCartButton";
 import { WishlistButton } from "@/components/shop/WishlistButton";
 import type { Product } from "@/lib/shop/ecommerce-api";
 import { formatInr, getProductPrice } from "@/lib/shop/format";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { BadgePercent } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 function primaryVariant(product: Product) {
   return (

@@ -1,16 +1,16 @@
 "use client";
 
-import { Button } from "@/modules/shared/ui/Button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
 import type {
-  AcademyPayoutFrequency,
-  AcademyStep6Payload,
+    AcademyPayoutFrequency,
+    AcademyStep6Payload,
 } from "@/modules/onboarding/types/academy";
+import { Button } from "@/modules/shared/ui/Button";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
 
 interface Step6PayoutsProps {
   academyId: string;

@@ -1,37 +1,37 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Trophy,
-  Users,
-  MapPin,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  CalendarPlus,
-  ArrowRight,
-  Shield,
-  ExternalLink,
-  Loader2,
-  Heart,
-  ChevronRight,
-  Globe,
-  Target,
-  Award,
-  Info,
-  CheckCheck,
-  ChevronLeft,
-  UploadCloud,
-  ShieldAlert,
-  CalendarDays,
-  Clock,
-} from "lucide-react";
-import { useState, useEffect } from "react";
-import { calendarApi } from "@/modules/booking/services/calendarApi";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 import axiosInstance from "@/lib/api/axios";
+import { useAuthStore } from "@/modules/auth/store/authStore";
+import { calendarApi } from "@/modules/booking/services/calendarApi";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    AlertCircle,
+    ArrowRight,
+    Award,
+    CalendarDays,
+    CalendarPlus,
+    CheckCheck,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    ExternalLink,
+    FileText,
+    Globe,
+    Heart,
+    Info,
+    Loader2,
+    MapPin,
+    Shield,
+    ShieldAlert,
+    Sparkles,
+    Target,
+    Trophy,
+    UploadCloud,
+    Users,
+    X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

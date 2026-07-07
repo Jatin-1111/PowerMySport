@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { Fragment } from "react";
 import { STEPS } from "../../constants";
 
 export function StepIndicator({

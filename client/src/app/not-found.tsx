@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Compass, Home } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "Page not found",

@@ -3,15 +3,14 @@
 import { cn } from "@/utils/cn";
 import { motion, Variants } from "framer-motion";
 import {
-  BarChart3,
-  Calendar,
-  CreditCard,
-  MapPin,
-  ShieldCheck,
-  Star,
-  Users,
-  Zap,
-  LucideIcon,
+    BarChart3,
+    Calendar,
+    CreditCard,
+    MapPin,
+    ShieldCheck,
+    Star,
+    Users,
+    Zap,
 } from "lucide-react";
 import Image from "next/image";
 import React from "react";

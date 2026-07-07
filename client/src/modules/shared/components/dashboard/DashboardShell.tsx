@@ -1,15 +1,15 @@
 "use client";
 
+import {
+    BottomNav,
+    BottomNavSpacer,
+    type BottomNavItem,
+} from "@/components/layout/BottomNav";
+import { Badge } from "@/components/ui/badge";
 import { Menu, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import {
-  BottomNav,
-  BottomNavSpacer,
-  type BottomNavItem,
-} from "@/components/layout/BottomNav";
 
 export interface DashboardNavItem {
   href: string;

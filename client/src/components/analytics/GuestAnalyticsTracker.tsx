@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  flushGuestEvents,
-  getGuestId,
-  isGuest,
-  trackGuest,
+    flushGuestEvents,
+    getGuestId,
+    isGuest,
+    trackGuest,
 } from "@/modules/analytics/guestTracking";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";

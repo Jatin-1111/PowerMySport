@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Button } from "@/modules/shared/ui/Button";
-import { Building2, BookOpen, Globe2, ShieldCheck } from "lucide-react";
+import { BookOpen, Building2, Globe2, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "Academy Dashboard - PowerMySport",

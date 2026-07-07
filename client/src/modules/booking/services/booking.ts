@@ -1,10 +1,10 @@
 import axiosInstance from "@/lib/api/axios";
 import { clearRequestCache, withRequestCache } from "@/lib/api/requestCache";
 import {
-  ApiResponse,
-  Availability,
-  Booking,
-  InitiateBookingResponse,
+    ApiResponse,
+    Availability,
+    Booking,
+    InitiateBookingResponse,
 } from "@/types";
 
 const INVITATIONS_TTL_MS = 5000;

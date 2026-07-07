@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle2, MessageCircle } from "lucide-react";
-import { slideIn, PERSONALITY_OPTIONS } from "../../constants";
+import { PERSONALITY_OPTIONS, slideIn } from "../../constants";
 import type { GuidanceFormState } from "../../types";
 
 export function Step4Details({

@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  pathwayApi,
-  type ExpertVerifiablePathway,
+    pathwayApi,
+    type ExpertVerifiablePathway,
 } from "@/modules/sports/services/pathway";
-import { toast } from "sonner";
 import { BadgeCheck, Eye, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function ExpertPathwaysPage() {
   const [pathways, setPathways] = useState<ExpertVerifiablePathway[]>([]);

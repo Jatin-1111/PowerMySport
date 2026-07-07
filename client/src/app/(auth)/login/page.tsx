@@ -10,7 +10,7 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useState, useEffect, Suspense } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 
 function LoginContent() {
   const router = useRouter();

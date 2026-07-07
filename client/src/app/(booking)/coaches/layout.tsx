@@ -1,7 +1,7 @@
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
-import React from "react";
 import type { Metadata } from "next";
+import React from "react";
 
 export const metadata: Metadata = {
   title: "Find Sports Coaches | Professional Coach Booking",

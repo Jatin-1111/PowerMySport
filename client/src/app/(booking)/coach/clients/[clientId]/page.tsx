@@ -2,18 +2,17 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Activity,
-  AlertTriangle,
-  ArrowLeft,
-  Calendar,
-  CheckCircle,
-  Clock,
-  FileText,
-  Loader2,
-  Plus,
-  Target,
-  Trash2,
-  User,
+    Activity,
+    AlertTriangle,
+    ArrowLeft,
+    Calendar,
+    CheckCircle,
+    Clock,
+    FileText,
+    Loader2,
+    Plus,
+    Target,
+    Trash2,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

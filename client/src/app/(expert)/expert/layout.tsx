@@ -3,16 +3,15 @@
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-  DashboardShell,
-  type DashboardNavItem,
+    DashboardShell,
+    type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import {
-  LayoutDashboard,
-  Settings,
-  CalendarCheck,
-  BadgeIndianRupee,
-  ShieldCheck,
-  UserCog,
+    BadgeIndianRupee,
+    LayoutDashboard,
+    Settings,
+    ShieldCheck,
+    UserCog,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";

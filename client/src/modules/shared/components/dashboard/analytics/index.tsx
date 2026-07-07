@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { motion } from "framer-motion";
 import { BarChart2 } from "lucide-react";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import React from "react";
 
 // ---------------------------------------------------------------------------
 // KpiCard

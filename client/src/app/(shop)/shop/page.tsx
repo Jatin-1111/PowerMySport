@@ -1,7 +1,7 @@
-import ShopWaitlist from "../../../components/shop/ShopWaitlist";
 import { ShopCatalogClient } from "@/components/shop/ShopCatalogClient";
 import { listProducts, type Product } from "@/lib/shop/ecommerce-api";
 import { Suspense } from "react";
+import ShopWaitlist from "../../../components/shop/ShopWaitlist";
 
 export default async function ShopPage({
   searchParams,

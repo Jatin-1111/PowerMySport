@@ -1,27 +1,27 @@
 "use client";
 
+import { toast } from "@/lib/toast";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import { Modal } from "@/modules/shared/ui/Modal";
-import { toast } from "@/lib/toast";
 import { Booking, CoachCalendarData, IBlockedDate } from "@/types";
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Ban,
-  CalendarCheck,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  IndianRupee,
-  Loader2,
-  MapPin,
-  RefreshCw,
-  Trash2,
-  User,
-  X,
+    Ban,
+    CalendarCheck,
+    CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    IndianRupee,
+    Loader2,
+    MapPin,
+    RefreshCw,
+    Trash2,
+    User,
+    X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -136,14 +136,6 @@ function bookingsForDay(day: Date, bookings: Booking[]): Booking[] {
   return bookings.filter((b) => sameDay(new Date(b.date), day));
 }
 
-const STATUS_DOT: Record<string, string> = {
-  PENDING_CONFIRMATION: "bg-amber-400",
-  CONFIRMED: "bg-turf-green",
-  IN_PROGRESS: "bg-blue-400",
-  COMPLETED: "bg-slate-300",
-  NO_SHOW: "bg-rose-300",
-  EXPIRED: "bg-red-300",
-};
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_CONFIRMATION: "Awaiting Approval",

@@ -1,37 +1,36 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from "react";
+import { Container } from "@/components/layout/Container";
 import {
-  notificationApi,
-  type Notification,
-  type NotificationChannelPreferences,
-  type NotificationPreferences,
+    notificationApi,
+    type Notification,
+    type NotificationChannelPreferences,
+    type NotificationPreferences,
 } from "@/lib/api/notification";
 import { getCommunityAppUrl } from "@/lib/community/url";
-import {
-  Bell,
-  Calendar,
-  Check,
-  CheckCheck,
-  CreditCard,
-  Filter,
-  ExternalLink,
-  MessageCircle,
-  Settings,
-  Star,
-  Trash2,
-  Users,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Inbox,
-  Zap,
-} from "lucide-react";
 import { cn } from "@/utils/cn";
 import { formatDistanceToNow } from "@/utils/date";
-import { Container } from "@/components/layout/Container";
+import {
+    Bell,
+    Calendar,
+    Check,
+    CheckCheck,
+    ChevronLeft,
+    ChevronRight,
+    CreditCard,
+    ExternalLink,
+    Inbox,
+    Loader2,
+    MessageCircle,
+    Settings,
+    Star,
+    Trash2,
+    Users,
+    X,
+    Zap,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect, useState } from "react";
 
 type FilterType =
   | "all"
@@ -472,7 +471,6 @@ export default function NotificationsPage() {
 }
 
 function NotificationsPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);

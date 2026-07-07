@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import Link from "next/link";
 import { AlertTriangle, Users } from "lucide-react";
+import Link from "next/link";
+import React, { useState } from "react";
 
 interface LegalConsentProps {
   onConsentChange: (accepted: boolean) => void;

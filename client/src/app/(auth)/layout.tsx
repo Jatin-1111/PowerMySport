@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 export default function AuthLayout({

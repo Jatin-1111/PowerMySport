@@ -1,21 +1,20 @@
 "use client";
 
-import { Card } from "@/modules/shared/ui/Card";
-import { Button } from "@/modules/shared/ui/Button";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { bookingApi } from "@/modules/booking/services/booking";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card } from "@/modules/shared/ui/Card";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import {
+    StaggerContainer,
+    StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Booking, Venue } from "@/types";
 import { formatCurrency } from "@/utils/format";
 import { ArrowRight, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
-import {
-  StaggerContainer,
-  StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
 
 export default function VenueListerDashboard() {
   const [stats, setStats] = useState({

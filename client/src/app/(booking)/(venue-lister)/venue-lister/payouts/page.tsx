@@ -1,17 +1,16 @@
 "use client";
 
-import { payoutApi } from "@/modules/shared/services/payout";
 import { PayoutMethodManager } from "@/modules/shared/components/payout/PayoutMethodManager";
+import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
-import { useCallback } from "react";
-import React from "react";
 import {
-  BadgeIndianRupee,
-  Building2,
-  Info,
-  ShieldCheck,
-  Zap,
+    BadgeIndianRupee,
+    Building2,
+    Info,
+    ShieldCheck,
+    Zap,
 } from "lucide-react";
+import React, { useCallback } from "react";
 
 export default function VenuePayoutsPage() {
   const handleLoad = useCallback(async (): Promise<IPayoutMethod | null> => {

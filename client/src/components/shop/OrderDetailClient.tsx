@@ -1,23 +1,23 @@
 "use client";
 
 import {
-  downloadOrderInvoice,
-  getOrderById,
-  syncOrderPayment,
-  type Order,
+    downloadOrderInvoice,
+    getOrderById,
+    syncOrderPayment,
+    type Order,
 } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
-  AlertCircle,
-  ArrowLeft,
-  CheckCircle2,
-  Clock,
-  Download,
-  MapPin,
-  Package,
-  Truck,
+    AlertCircle,
+    ArrowLeft,
+    CheckCircle2,
+    Clock,
+    Download,
+    MapPin,
+    Package,
+    Truck,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";

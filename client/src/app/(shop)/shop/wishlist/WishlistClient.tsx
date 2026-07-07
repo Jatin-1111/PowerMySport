@@ -1,10 +1,10 @@
 "use client";
 
+import { ProductCard } from "@/components/shop/ProductCard";
+import type { Product } from "@/lib/shop/ecommerce-api";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag } from "lucide-react";
 import Link from "next/link";
-import { ProductCard } from "@/components/shop/ProductCard";
-import type { Product } from "@/lib/shop/ecommerce-api";
 
 export function WishlistClient({
   initialProducts,

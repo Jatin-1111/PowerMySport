@@ -1,15 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MapPin, CheckCircle2 } from "lucide-react";
-import { slideIn, INDIAN_STATES, BUDGET_OPTIONS } from "../../constants";
-import { SelectCard } from "../shared/SelectCard";
+import { CheckCircle2, MapPin } from "lucide-react";
+import { BUDGET_OPTIONS, INDIAN_STATES, slideIn } from "../../constants";
 import type { GuidanceFormState } from "../../types";
+import { SelectCard } from "../shared/SelectCard";
 
 export function Step3Lifestyle({
   form,
   update,
-  autofillFields,
 }: {
   form: GuidanceFormState;
   update: <K extends keyof GuidanceFormState>(

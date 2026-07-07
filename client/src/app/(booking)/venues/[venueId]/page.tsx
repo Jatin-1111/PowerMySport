@@ -14,14 +14,14 @@ import { Card } from "@/modules/shared/ui/Card";
 import { Availability, ReviewItem, ReviewSummary, Venue } from "@/types";
 import { getVenueImageUrls, getVenueSportImageUrls } from "@/utils/venueImages";
 import {
-  Calendar,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  IndianRupee,
-  MapPin,
-  Star,
-  X,
+    Calendar,
+    Check,
+    ChevronLeft,
+    ChevronRight,
+    IndianRupee,
+    MapPin,
+    Star,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";

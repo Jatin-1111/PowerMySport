@@ -1,25 +1,25 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { Modal } from "@/modules/shared/ui/Modal";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
+import { Modal } from "@/modules/shared/ui/Modal";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import axiosInstance from "@/lib/api/axios";
 import {
-  LifeBuoy,
-  Plus,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  MessageSquare,
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    LifeBuoy,
+    MessageSquare,
+    Plus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 
 interface SupportTicket {
   _id: string;

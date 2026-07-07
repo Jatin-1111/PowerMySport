@@ -1,5 +1,5 @@
-import { create } from "zustand";
 import api from "@/lib/api/client";
+import { create } from "zustand";
 
 interface WishlistStore {
   wishlistProductIds: string[];

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { walletApi } from "@/modules/wallet/services/wallet";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/modules/shared/ui/Button";
+import { walletApi } from "@/modules/wallet/services/wallet";
+import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 function VerifyWalletContent() {
   const searchParams = useSearchParams();

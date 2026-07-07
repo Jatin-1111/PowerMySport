@@ -1,5 +1,5 @@
-﻿import { create } from "zustand";
-import { Venue } from "@/types";
+﻿import { Venue } from "@/types";
+import { create } from "zustand";
 
 interface VenueStore {
   venues: Venue[];

@@ -1,6 +1,5 @@
 "use client";
 
-import { getCommunityAppUrl } from "@/lib/community/url";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
 import { ArrowRight, MessageCircle } from "lucide-react";

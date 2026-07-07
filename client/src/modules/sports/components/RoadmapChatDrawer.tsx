@@ -1,9 +1,9 @@
 "use client";
 
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import { ChatDrawer } from "@/modules/guidance/components/chat/ChatDrawer";
 import { useEffect, useState } from "react";
 import { useRoadmapChat } from "../hooks/useRoadmapChat";
-import { ChatDrawer } from "@/modules/guidance/components/chat/ChatDrawer";
-import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 
 const QUICK_REPLIES = [
   "Explain this level in simple terms",

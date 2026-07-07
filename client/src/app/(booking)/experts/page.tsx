@@ -1,36 +1,32 @@
 "use client";
 
+import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
+import {
+    FilterBar,
+    type ActiveFilter,
+} from "@/modules/discovery/components/FilterBar";
 import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
-import FeatureWaitlist from "@/components/shared/FeatureWaitlist";
 import {
-  StaggerContainer,
-  StaggerItem,
+    StaggerContainer,
+    StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
-import {
-  FilterBar,
-  type ActiveFilter,
-} from "@/modules/discovery/components/FilterBar";
 import { cn } from "@/utils/cn";
 import {
-  Award,
-  CalendarCheck,
-  CheckCircle2,
-  ChevronRight,
-  Filter,
-  MapPin,
-  Search,
-  ServerCrash,
-  Star,
-  Users,
-  ShieldCheck,
-  CircleCheck,
-  Zap,
-  Globe,
-  Languages,
-  ArrowRight,
+    ArrowRight,
+    CalendarCheck,
+    CircleCheck,
+    Globe,
+    Languages,
+    MapPin,
+    Search,
+    ServerCrash,
+    ShieldCheck,
+    Star,
+    Users,
+    Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";

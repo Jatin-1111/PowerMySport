@@ -6,19 +6,19 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
-import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Booking, Coach, IAvailability, ServiceMode, User } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import {
-  AlertCircle,
-  CheckCircle,
-  Clock3,
-  LogOut,
-  Plus,
-  Trash2,
-  X,
+    AlertCircle,
+    CheckCircle,
+    Clock3,
+    LogOut,
+    Plus,
+    Trash2,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

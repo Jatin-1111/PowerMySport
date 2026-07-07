@@ -2,8 +2,8 @@
 
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import {
-  FeatureIcons,
-  Features,
+    FeatureIcons,
+    Features,
 } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";

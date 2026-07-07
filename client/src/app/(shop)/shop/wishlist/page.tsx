@@ -1,6 +1,6 @@
 import { Metadata } from "next";
-import { WishlistClient } from "./WishlistClient";
 import { cookies } from "next/headers";
+import { WishlistClient } from "./WishlistClient";
 
 export const metadata: Metadata = {
   title: "Wishlist | PowerMySport",

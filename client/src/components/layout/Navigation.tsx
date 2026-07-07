@@ -2,30 +2,27 @@
 
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
 import { getDashboardPathByRole } from "@/utils/roleDashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  BrainCircuit,
-  Building2,
-  CalendarCheck,
-  ChevronDown,
-  GraduationCap,
-  LayoutDashboard,
-  LogOut,
-  Map,
-  MapPin,
-  Menu,
-  Settings,
-  ShoppingBag,
-  User,
-  Users,
-  X,
+    BrainCircuit,
+    CalendarCheck,
+    ChevronDown,
+    LayoutDashboard,
+    LogOut,
+    Map,
+    Menu,
+    Settings,
+    ShoppingBag,
+    User,
+    Users,
+    X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import { Button } from "@/modules/shared/ui/Button";
 import { NotificationDropdown } from "./NotificationDropdown";
 
 export interface NavProps {

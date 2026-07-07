@@ -1,21 +1,21 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
 import { INDIAN_STATES } from "@/modules/guidance/constants";
-import {
-  DEFAULT_DEPENDENT_RELATION,
-  DEPENDENT_RELATIONS,
-  normalizeDependentRelation,
-} from "@/modules/player/constants/dependentRelations";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
 import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
+import {
+    DEFAULT_DEPENDENT_RELATION,
+    DEPENDENT_RELATIONS,
+    normalizeDependentRelation,
+} from "@/modules/player/constants/dependentRelations";
 import { Button } from "@/modules/shared/ui/Button";
 import { Modal } from "@/modules/shared/ui/Modal";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 

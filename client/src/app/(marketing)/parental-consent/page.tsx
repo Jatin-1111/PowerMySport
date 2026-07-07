@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { ShieldAlert } from "lucide-react";
+import { useEffect } from "react";
 
 export default function ParentalConsent() {
   useEffect(() => {

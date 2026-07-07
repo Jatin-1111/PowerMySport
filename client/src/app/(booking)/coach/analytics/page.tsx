@@ -1,29 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  TrendingUp,
-  Users,
-  CheckCircle,
-  Star,
-  Target,
-  Clock,
-  BarChart2,
-  Loader2,
-  Activity,
-} from "lucide-react";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
+import {
+    BusyHoursHeatmap,
+    DonutChart,
+    KpiCard,
+    RetentionCard,
+    SparklineBarChart,
+    SportBreakdownPanel,
+} from "@/modules/shared/components/dashboard/analytics";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import type { AnalyticsData } from "@/types";
 import {
-  KpiCard,
-  SparklineBarChart,
-  SportBreakdownPanel,
-  BusyHoursHeatmap,
-  DonutChart,
-  RetentionCard,
-} from "@/modules/shared/components/dashboard/analytics";
+    Activity,
+    BarChart2,
+    CheckCircle,
+    Clock,
+    Loader2,
+    Star,
+    Target,
+    TrendingUp,
+    Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 

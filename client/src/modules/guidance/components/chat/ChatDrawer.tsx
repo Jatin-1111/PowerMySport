@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    AlertCircle,
+    Loader2,
+    MessageCircle,
+    Send,
+    X,
+    Zap,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import {
-  X,
-  Send,
-  Loader2,
-  MessageCircle,
-  AlertCircle,
-  Zap,
-} from "lucide-react";
 import type { ChatMessage } from "../../hooks/useGuidanceChat";
 
 // ─── Markdown renderer for assistant messages ────────────────────────────────

@@ -1,46 +1,46 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { AddressManagement } from "@/components/shop/AddressManagement";
+import { ProductCard } from "@/components/shop/ProductCard";
 import {
-  Package,
-  Wallet,
-  MapPin,
-  UserSquare,
-  ChevronRight,
-  CreditCard,
-  Edit2,
-  Plus,
-  Trash2,
-  Check,
-  RefreshCw,
-  ShoppingBag,
-  Truck,
-  Heart,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/utils/cn";
-import {
-  listSellerProducts,
-  createSellerProduct,
-  updateSellerProduct,
-  deleteSellerProduct,
-  listSellerOrders,
-  updateSellerOrderItemFulfillment,
-  listOrders,
-  type Product,
-  type Order,
+    createSellerProduct,
+    deleteSellerProduct,
+    listOrders,
+    listSellerOrders,
+    listSellerProducts,
+    updateSellerOrderItemFulfillment,
+    updateSellerProduct,
+    type Order,
+    type Product,
 } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
+import { useWishlistStore } from "@/lib/shop/wishlistStore";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-  walletApi,
-  type Wallet as WalletType,
+    walletApi,
+    type Wallet as WalletType,
 } from "@/modules/wallet/services/wallet";
-import { toast } from "sonner";
+import { cn } from "@/utils/cn";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    Check,
+    ChevronRight,
+    CreditCard,
+    Edit2,
+    Heart,
+    MapPin,
+    Package,
+    Plus,
+    RefreshCw,
+    ShoppingBag,
+    Trash2,
+    Truck,
+    UserSquare,
+    Wallet,
+} from "lucide-react";
 import Link from "next/link";
-import { useWishlistStore } from "@/lib/shop/wishlistStore";
-import { ProductCard } from "@/components/shop/ProductCard";
-import { AddressManagement } from "@/components/shop/AddressManagement";
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const tabs = [
   { id: "orders", name: "Orders", icon: Package },

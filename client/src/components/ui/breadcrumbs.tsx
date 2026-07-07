@@ -1,7 +1,7 @@
+import { cn } from "@/utils/cn";
 import { ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-import { cn } from "@/utils/cn";
 
 export interface BreadcrumbItem {
   label: string;

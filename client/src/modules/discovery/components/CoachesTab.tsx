@@ -1,33 +1,31 @@
 "use client";
 
-import { discoveryApi } from "@/modules/discovery/services/discovery";
-import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
-import {
-  StaggerContainer,
-  StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
-import { clientFollowStore } from "@/modules/shared/lib/followStore";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
-import { getCommunityAppUrl } from "@/lib/community/url";
+import {
+    ActiveFilter,
+    FilterBar,
+} from "@/modules/discovery/components/FilterBar";
+import { discoveryApi } from "@/modules/discovery/services/discovery";
+import { clientFollowStore } from "@/modules/shared/lib/followStore";
+import { Button } from "@/modules/shared/ui/Button";
+import {
+    StaggerContainer,
+    StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
 import { Coach } from "@/types";
 import { cn } from "@/utils/cn";
 import {
-  ArrowRight,
-  Award,
-  Bookmark,
-  ImageIcon,
-  MapPin,
-  MessageCircle,
-  Star,
-  Users,
-  X,
+    ArrowRight,
+    Award,
+    Bookmark,
+    ImageIcon,
+    MapPin,
+    MessageCircle,
+    Star,
+    Users,
 } from "lucide-react";
-import {
-  FilterBar,
-  ActiveFilter,
-} from "@/modules/discovery/components/FilterBar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
@@ -443,10 +441,6 @@ function CoachesTabContent() {
     e.preventDefault();
     setAppliedSportFilter(normalizeSearchTerm(sportInput));
   };
-  const handleQuickFilter = (sport: string) => {
-    setSportInput(sport);
-    setAppliedSportFilter(normalizeSearchTerm(sport));
-  };
   const handleClear = () => {
     setSportInput("");
     setAppliedSportFilter("");
@@ -761,10 +755,6 @@ function CoachesTabContent() {
                   dist !== null;
                 const coachRoute = `/coaches/${coachId}`;
                 const isFollowed = followedCoachIds.includes(coachId);
-                const knownInCommunity =
-                  Number(coach.reviewCount || 0) >= 8 ||
-                  (Number(coach.rating || 0) >= 4.4 &&
-                    Number(coach.reviewCount || 0) >= 4);
                 const badge = getVerificationBadge(coach);
                 const name = getDisplayName(coach);
                 const initials = getInitials(coach);

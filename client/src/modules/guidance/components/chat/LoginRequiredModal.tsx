@@ -1,8 +1,8 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
+import { LogIn, MessageCircle, Sparkles, UserPlus, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, LogIn, UserPlus, MessageCircle, Sparkles } from "lucide-react";
 
 interface LoginRequiredModalProps {
   isOpen: boolean;

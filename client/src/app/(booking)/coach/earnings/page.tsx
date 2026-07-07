@@ -1,27 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import {
-  TrendingUp,
-  IndianRupee,
-  Clock,
-  Calendar,
-  ArrowRight,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/modules/shared/ui/Button";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
-import type { EarningsData, Booking } from "@/types";
-import Link from "next/link";
 import {
-  EarningsStatCard,
-  MonthlyBarChart,
-  CategoryBreakdownList,
-  RecentTransactionsList,
+    CategoryBreakdownList,
+    EarningsStatCard,
+    MonthlyBarChart,
+    RecentTransactionsList,
 } from "@/modules/shared/components/dashboard/earnings";
+import { Button } from "@/modules/shared/ui/Button";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import type { Booking, EarningsData } from "@/types";
+import { motion } from "framer-motion";
+import {
+    ArrowRight,
+    Calendar,
+    Clock,
+    IndianRupee,
+    Loader2,
+    TrendingUp,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 

@@ -3,20 +3,20 @@
 import { toast } from "@/lib/toast";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
 import {
-  OnboardingStep1Payload,
-  OnboardingStep2Payload,
-  PresignedUrl,
-  VenueCoach,
+    OnboardingStep1Payload,
+    OnboardingStep2Payload,
+    PresignedUrl,
+    VenueCoach,
 } from "@/modules/onboarding/types/onboarding";
 import { ArrowLeft, Check, CircleDot } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import EmailVerificationModal from "./EmailVerificationModal";
 import { getDefaultOpeningHours } from "./OpeningHoursInput";
 import Step1ContactInfo from "./Step1ContactInfo";
 import Step2ImageUpload from "./Step2ImageUpload";
 import Step2VenueDetails from "./Step2VenueDetails";
 import Step3DocumentUpload from "./Step3DocumentUpload";
 import Step5CoachList from "./Step5CoachList";
-import EmailVerificationModal from "./EmailVerificationModal";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 

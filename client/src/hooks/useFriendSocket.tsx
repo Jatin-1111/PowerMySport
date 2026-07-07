@@ -1,8 +1,8 @@
 "use client";
 
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { createContext, useContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 import { toast } from "sonner";
 
 type FriendSocketContextType = {

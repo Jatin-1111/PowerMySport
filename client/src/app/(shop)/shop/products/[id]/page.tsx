@@ -1,11 +1,11 @@
-import { ArrowLeft, ShieldCheck, Truck } from "lucide-react";
-import Link from "next/link";
 import { AddToCartButton } from "@/components/shop/AddToCartButton";
-import { WishlistButton } from "@/components/shop/WishlistButton";
 import { ProductReviews } from "@/components/shop/ProductReviews";
 import { RelatedProducts } from "@/components/shop/RelatedProducts";
+import { WishlistButton } from "@/components/shop/WishlistButton";
 import { getProductById } from "@/lib/shop/ecommerce-api";
 import { formatInr, getProductPrice } from "@/lib/shop/format";
+import { ArrowLeft, ShieldCheck, Truck } from "lucide-react";
+import Link from "next/link";
 
 export default async function ProductDetailPage({
   params,

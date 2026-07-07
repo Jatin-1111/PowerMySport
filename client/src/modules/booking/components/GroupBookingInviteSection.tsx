@@ -1,11 +1,11 @@
 "use client";
 
+import { Friend } from "@/modules/shared/services/friend";
+import { cn } from "@/utils/cn";
+import { ChevronDown, ChevronUp, Users } from "lucide-react";
 import { useState } from "react";
 import { FriendSelector } from "./FriendSelector";
-import { PaymentTypeSelector, PaymentType } from "./PaymentTypeSelector";
-import { Friend } from "@/modules/shared/services/friend";
-import { Users, ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/utils/cn";
+import { PaymentType, PaymentTypeSelector } from "./PaymentTypeSelector";
 
 interface GroupBookingInviteSectionProps {
   isGroupBooking: boolean;

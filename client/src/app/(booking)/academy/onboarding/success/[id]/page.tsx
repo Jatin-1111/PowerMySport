@@ -1,6 +1,6 @@
 import { Button } from "@/modules/shared/ui/Button";
-import Link from "next/link";
 import { CheckCircle, Mail } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = {
   title: "Application Submitted - PowerMySport",

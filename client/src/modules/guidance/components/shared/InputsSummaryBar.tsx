@@ -1,16 +1,16 @@
 "use client";
 
+import type { Compass } from "lucide-react";
 import {
-  UserCircle2,
-  Target,
-  Activity,
-  Timer,
-  Wallet,
-  MapPin,
-  Pencil,
+    Activity,
+    MapPin,
+    Pencil,
+    Target,
+    Timer,
+    UserCircle2,
+    Wallet,
 } from "lucide-react";
 import type { GuidanceFormState } from "../../types";
-import type { Compass } from "lucide-react";
 
 export function InputsSummaryBar({
   query,

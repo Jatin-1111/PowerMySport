@@ -1,11 +1,10 @@
 "use client";
 
-import { payoutApi } from "@/modules/shared/services/payout";
 import { PayoutMethodManager } from "@/modules/shared/components/payout/PayoutMethodManagerV2";
+import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
-import { useCallback } from "react";
-import React from "react";
 import { BadgeIndianRupee, Info, ShieldCheck, Zap } from "lucide-react";
+import React, { useCallback } from "react";
 
 export default function CoachPayoutsPage() {
   const handleLoad = useCallback(async (): Promise<IPayoutMethod[]> => {

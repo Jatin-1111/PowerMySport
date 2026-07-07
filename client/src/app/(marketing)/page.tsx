@@ -7,20 +7,20 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { TrustMarquee } from "@/modules/marketing/components/marketing/TrustMarquee";
 import {
-  ArrowRight,
-  BrainCircuit,
-  Building2,
-  Check,
-  Clock,
-  Compass,
-  HelpCircle,
-  Map,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Target,
-  Trophy,
-  Users2,
+    ArrowRight,
+    BrainCircuit,
+    Building2,
+    Check,
+    Clock,
+    Compass,
+    HelpCircle,
+    Map,
+    Search,
+    ShieldCheck,
+    Sparkles,
+    Target,
+    Trophy,
+    Users2,
 } from "lucide-react";
 
 import { motion, Variants } from "framer-motion";

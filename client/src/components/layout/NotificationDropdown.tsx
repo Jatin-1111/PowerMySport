@@ -1,25 +1,25 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
-import {
-  Bell,
-  Calendar,
-  Check,
-  CreditCard,
-  MessageCircle,
-  Settings,
-  Star,
-  Trash2,
-  Users,
-  X,
-} from "lucide-react";
-import { cn } from "@/utils/cn";
 import { notificationApi, type Notification } from "@/lib/api/notification";
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { cn } from "@/utils/cn";
+import { formatDistanceToNow } from "@/utils/date";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+    Bell,
+    Calendar,
+    Check,
+    CreditCard,
+    MessageCircle,
+    Settings,
+    Star,
+    Trash2,
+    Users,
+    X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatDistanceToNow } from "@/utils/date";
-import { getCommunityAppUrl } from "@/lib/community/url";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 interface NotificationDropdownProps {
   className?: string;

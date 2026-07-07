@@ -1,18 +1,18 @@
 "use client";
 
 import {
-  expertApi,
-  type ExpertSession,
+    expertApi,
+    type ExpertSession,
 } from "@/modules/expert/services/expert";
+import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { Button } from "@/modules/shared/ui/Button";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
-import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import {
-  ArrowLeft,
-  ArrowRight,
-  CalendarClock,
-  Clock,
-  Star,
+    ArrowLeft,
+    ArrowRight,
+    CalendarClock,
+    Clock,
+    Star,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

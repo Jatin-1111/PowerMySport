@@ -1,5 +1,4 @@
-﻿import React from "react";
-import { IPayment } from "@/types";
+﻿import { IPayment } from "@/types";
 
 interface PaymentBreakdownProps {
   payments: IPayment[];

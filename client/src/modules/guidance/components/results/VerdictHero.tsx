@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCircle2, AlertCircle, Clock, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
 import type { GoalAssessment } from "../../types";
 

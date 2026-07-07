@@ -31,7 +31,6 @@ const isDev =
   typeof window !== "undefined" && process.env.NODE_ENV === "development";
 
 export default function Step2ImageUpload({
-  venueId,
   presignedUrls,
   onImagesConfirmed,
   loading,

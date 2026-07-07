@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Star, MessageCircle, User } from "lucide-react";
 import api from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { MessageCircle, Star, User } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function ProductReviews({ productId }: { productId: string }) {
   const [reviews, setReviews] = useState<any[]>([]);

@@ -1,8 +1,8 @@
 "use client";
 
+import { parentTestimonials } from "@/modules/marketing/data/testimonials";
 import { InfiniteMovingCards } from "@/modules/shared/ui/InfiniteMovingCards";
 import { motion, Variants } from "framer-motion";
-import { parentTestimonials } from "@/modules/marketing/data/testimonials";
 import { SectionLabel } from "./SectionLabel";
 
 interface TrustMarqueeProps {

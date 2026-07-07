@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { friendService, Friend } from "@/modules/shared/services/friend";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Loader2, UserPlus } from "lucide-react";
+import { Friend, friendService } from "@/modules/shared/services/friend";
 import { cn } from "@/utils/cn";
+import { Loader2, UserPlus, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface FriendSelectorProps {
   selectedFriendIds: string[];

@@ -1,5 +1,5 @@
-import React, { Suspense } from "react";
 import { AcademyOnboardingContainer } from "@/modules/onboarding/components/academy";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "Academy Onboarding - PowerMySport",

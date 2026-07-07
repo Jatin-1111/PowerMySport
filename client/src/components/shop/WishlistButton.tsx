@@ -1,15 +1,14 @@
 "use client";
 
-import { Heart } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useWishlistStore } from "@/lib/shop/wishlistStore";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/modules/auth/store/authStore";
+import { Heart } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function WishlistButton({
   productId,
-  initialIsWished,
   className,
 }: {
   productId: string;
