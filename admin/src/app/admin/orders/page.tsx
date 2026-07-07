@@ -46,7 +46,9 @@ type SortBy = "createdAt" | "totalAmount" | "orderNumber";
 
 export default function AdminOrdersPage() {
   return (
-    <Suspense fallback={<div className="text-center py-12">Loading orders...</div>}>
+    <Suspense
+      fallback={<div className="text-center py-12">Loading orders...</div>}
+    >
       <AdminOrdersPageContent />
     </Suspense>
   );
@@ -186,7 +188,9 @@ function AdminOrdersPageContent() {
       header: "Customer",
       render: (order) => {
         const customer = getCustomer(order.userId);
-        return <EntityBadge name={customer.name} email={customer.email} size="sm" />;
+        return (
+          <EntityBadge name={customer.name} email={customer.email} size="sm" />
+        );
       },
     },
     {
@@ -267,7 +271,11 @@ function AdminOrdersPageContent() {
               onChange: setSearch,
               placeholder: "Search by order number...",
             }}
-            sort={{ column: sortBy, direction: sortOrder, onChange: handleSortChange }}
+            sort={{
+              column: sortBy,
+              direction: sortOrder,
+              onChange: handleSortChange,
+            }}
             pagination={{ page, totalPages, onPageChange: setPage, total }}
             onRowClick={openOrderDetail}
             toolbarExtra={
@@ -327,7 +335,8 @@ function AdminOrdersPageContent() {
                       {orderDetail.orderNumber}
                     </h2>
                     <p className="text-sm text-slate-500">
-                      Placed {new Date(orderDetail.createdAt).toLocaleString("en-IN")}
+                      Placed{" "}
+                      {new Date(orderDetail.createdAt).toLocaleString("en-IN")}
                     </p>
                   </div>
                   <button
@@ -360,7 +369,8 @@ function AdminOrdersPageContent() {
                             {item.productName}
                           </p>
                           <p className="text-xs text-slate-500">
-                            {item.variantLabel} · Qty {item.quantity} · {item.fulfillmentStatus}
+                            {item.variantLabel} · Qty {item.quantity} ·{" "}
+                            {item.fulfillmentStatus}
                           </p>
                         </div>
                         <p className="font-semibold text-slate-900">
@@ -426,16 +436,22 @@ function AdminOrdersPageContent() {
                   <select
                     value={orderDetail.fulfillmentStatus}
                     disabled={statusUpdating}
-                    onChange={(e) => handleFulfillmentStatusChange(e.target.value)}
+                    onChange={(e) =>
+                      handleFulfillmentStatusChange(e.target.value)
+                    }
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
                   >
-                    {["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"].map(
-                      (option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ),
-                    )}
+                    {[
+                      "PENDING",
+                      "PROCESSING",
+                      "SHIPPED",
+                      "DELIVERED",
+                      "CANCELLED",
+                    ].map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </>

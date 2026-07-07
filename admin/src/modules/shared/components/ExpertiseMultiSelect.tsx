@@ -20,7 +20,7 @@ const EXPERTISE_OPTIONS = [
   "Professional Mentorship",
   "Fitness Training",
   "Biomechanics",
-  "Other"
+  "Other",
 ];
 
 interface ExpertiseMultiSelectProps {
@@ -100,15 +100,22 @@ export default function ExpertiseMultiSelect({
           disabled={disabled}
           className={cn(
             "flex w-full items-center justify-between rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:outline-none",
-            isOpen ? "border-power-orange ring-2 ring-power-orange/20 bg-white" : "border-slate-200 hover:bg-slate-100",
-            disabled && "opacity-50 cursor-not-allowed"
+            isOpen
+              ? "border-power-orange ring-2 ring-power-orange/20 bg-white"
+              : "border-slate-200 hover:bg-slate-100",
+            disabled && "opacity-50 cursor-not-allowed",
           )}
         >
           <span className="text-slate-500">
-            {value.length === 0 ? "Select expertise..." : `Add more expertise...`}
+            {value.length === 0
+              ? "Select expertise..."
+              : `Add more expertise...`}
           </span>
           <ChevronDown
-            className={cn("h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")}
+            className={cn(
+              "h-4 w-4 text-slate-400 transition-transform",
+              isOpen && "rotate-180",
+            )}
           />
         </button>
 
@@ -126,7 +133,7 @@ export default function ExpertiseMultiSelect({
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition-colors",
                     isSelected
                       ? "bg-power-orange/10 text-power-orange font-semibold"
-                      : "text-slate-700 hover:bg-slate-50"
+                      : "text-slate-700 hover:bg-slate-50",
                   )}
                 >
                   {exp}

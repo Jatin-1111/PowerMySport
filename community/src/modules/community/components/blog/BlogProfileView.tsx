@@ -12,8 +12,14 @@ import {
   PenLine,
 } from "lucide-react";
 import { BlogAuthorProfile, BlogListItem } from "@/modules/community/types";
-import { formatBlogDate, formatCount } from "@/modules/community/utils/blogFormat";
-import { SOCIAL_META, buildSocialUrl } from "@/modules/community/utils/socialLinks";
+import {
+  formatBlogDate,
+  formatCount,
+} from "@/modules/community/utils/blogFormat";
+import {
+  SOCIAL_META,
+  buildSocialUrl,
+} from "@/modules/community/utils/socialLinks";
 import AuthorAvatar from "./AuthorAvatar";
 import MyBlogListItem from "./MyBlogListItem";
 
@@ -80,7 +86,9 @@ export default function BlogProfileView({
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                   <Newspaper size={22} />
                 </span>
-                <p className="mt-3 font-semibold text-slate-700">No stories yet</p>
+                <p className="mt-3 font-semibold text-slate-700">
+                  No stories yet
+                </p>
                 <p className="mt-1 text-sm text-slate-500">
                   {isOwner
                     ? "Publish your first story to see it here."
@@ -143,7 +151,10 @@ export default function BlogProfileView({
                   </div>
                   <div className="flex-1 rounded-2xl bg-slate-50 py-2.5">
                     <p className="inline-flex items-center gap-1 text-lg font-bold text-slate-900">
-                      <Heart size={15} className="fill-rose-500 text-rose-500" />
+                      <Heart
+                        size={15}
+                        className="fill-rose-500 text-rose-500"
+                      />
                       {formatCount(profile.totalLikes)}
                     </p>
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">

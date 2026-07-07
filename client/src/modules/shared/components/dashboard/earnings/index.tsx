@@ -2,7 +2,12 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { IndianRupee, TrendingUp, TrendingDown, CheckCircle } from "lucide-react";
+import {
+  IndianRupee,
+  TrendingUp,
+  TrendingDown,
+  CheckCircle,
+} from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -80,10 +85,15 @@ export function EarningsStatCard({
       {/* Amount */}
       <div className="flex items-baseline gap-1">
         <IndianRupee
-          className={["w-5 h-5", accent ? "text-orange-100" : "text-slate-400"].join(" ")}
+          className={[
+            "w-5 h-5",
+            accent ? "text-orange-100" : "text-slate-400",
+          ].join(" ")}
           strokeWidth={2.5}
         />
-        <span className="text-2xl font-bold tracking-tight">{fmtAmount(amount)}</span>
+        <span className="text-2xl font-bold tracking-tight">
+          {fmtAmount(amount)}
+        </span>
       </div>
 
       {/* Subtitle + Trend */}
@@ -105,8 +115,8 @@ export function EarningsStatCard({
                   ? "bg-white/20 text-white"
                   : "bg-emerald-50 text-emerald-600"
                 : accent
-                ? "bg-white/20 text-white"
-                : "bg-red-50 text-red-500",
+                  ? "bg-white/20 text-white"
+                  : "bg-red-50 text-red-500",
             ].join(" ")}
           >
             {trend.positive ? (
@@ -317,7 +327,10 @@ export function CategoryBreakdownList({
                   {item.sessions} session{item.sessions !== 1 ? "s" : ""}
                 </span>
                 <span className="flex items-center gap-0.5 font-semibold text-slate-800">
-                  <IndianRupee className="w-3.5 h-3.5 text-slate-400" strokeWidth={2.5} />
+                  <IndianRupee
+                    className="w-3.5 h-3.5 text-slate-400"
+                    strokeWidth={2.5}
+                  />
                   {fmtAmount(item.total)}
                 </span>
               </div>
@@ -392,7 +405,10 @@ export function RecentTransactionsList({
           {/* Amount + status */}
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             <span className="flex items-center gap-0.5 text-sm font-bold text-slate-800">
-              <IndianRupee className="w-3.5 h-3.5 text-slate-400" strokeWidth={2.5} />
+              <IndianRupee
+                className="w-3.5 h-3.5 text-slate-400"
+                strokeWidth={2.5}
+              />
               {fmtAmount(tx.amount)}
             </span>
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">

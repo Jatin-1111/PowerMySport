@@ -181,8 +181,6 @@ export default function PrivacyPage() {
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap-narrow space-y-4">
-
-
         <section className="community-card">
           <div className="flex items-center gap-2">
             <Shield size={17} className="text-slate-600" />

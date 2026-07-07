@@ -274,7 +274,8 @@ export class ScheduledNotificationService {
                   date: booking.date,
                   startTime: booking.startTime,
                   endTime: booking.endTime,
-                  interval: reminder.interval as "24_HOURS" | "1_HOUR" | "15_MINUTES",
+                  interval: reminder.interval as
+                    "24_HOURS" | "1_HOUR" | "15_MINUTES",
                   bookingId: reminder.bookingId?.toString() || "",
                 }).catch((err) => {
                   console.error("Failed to send reminder email:", err);

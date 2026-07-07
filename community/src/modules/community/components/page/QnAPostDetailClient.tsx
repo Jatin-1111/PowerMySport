@@ -435,7 +435,9 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
               toast.success("Report submitted");
             } catch (error) {
               toast.error(
-                error instanceof Error ? error.message : "Failed to submit report",
+                error instanceof Error
+                  ? error.message
+                  : "Failed to submit report",
               );
             }
           };
@@ -653,11 +655,13 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
       <section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
         <h2 className="text-lg font-bold text-slate-900">Share Your Answer</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Be specific and actionable. Share what worked, include context, and explain your reasoning.
+          Be specific and actionable. Share what worked, include context, and
+          explain your reasoning.
         </p>
         {post.status === "CLOSED" ? (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-            ⓘ This question is closed. You can still vote and read existing answers.
+            ⓘ This question is closed. You can still vote and read existing
+            answers.
           </div>
         ) : null}
         <textarea
@@ -693,11 +697,17 @@ export default function QnAPostDetailClient({ postId }: { postId: string }) {
                 disabled={post.status === "CLOSED"}
                 className="sr-only"
               />
-              <div className={`h-4 w-8 rounded-full transition-colors ${answerIsAnonymous ? "bg-slate-700" : "bg-slate-300"}`} />
-              <div className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${answerIsAnonymous ? "translate-x-4" : "translate-x-0.5"}`} />
+              <div
+                className={`h-4 w-8 rounded-full transition-colors ${answerIsAnonymous ? "bg-slate-700" : "bg-slate-300"}`}
+              />
+              <div
+                className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${answerIsAnonymous ? "translate-x-4" : "translate-x-0.5"}`}
+              />
             </div>
             <EyeOff size={13} className="text-slate-500" />
-            <span className="text-xs font-semibold text-slate-700">Post anonymously</span>
+            <span className="text-xs font-semibold text-slate-700">
+              Post anonymously
+            </span>
           </label>
           <span className="text-xs text-slate-500">
             {answerDraft.length} characters

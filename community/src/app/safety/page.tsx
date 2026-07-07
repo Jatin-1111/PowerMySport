@@ -69,8 +69,6 @@ export default function SafetyPage() {
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap space-y-4">
-
-
         <section className="community-card">
           <div className="flex items-center gap-2">
             <Shield size={18} className="text-power-orange" />

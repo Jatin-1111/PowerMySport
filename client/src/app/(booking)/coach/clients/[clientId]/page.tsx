@@ -323,8 +323,7 @@ export default function ClientProfilePage() {
           ),
           notes: [...(res.data.notes ?? [])].sort(
             (a, b) =>
-              new Date(b.createdAt).getTime() -
-              new Date(a.createdAt).getTime(),
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           ),
         };
         setClient(sorted);
@@ -471,7 +470,6 @@ export default function ClientProfilePage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-
         {/* Back button */}
         <motion.button
           initial={{ opacity: 0, x: -8 }}
@@ -572,7 +570,6 @@ export default function ClientProfilePage() {
 
         {/* ── Body: 2-column grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
           {/* LEFT: Session Notes */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}

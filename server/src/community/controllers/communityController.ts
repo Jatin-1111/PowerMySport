@@ -82,7 +82,7 @@ export const searchPlayers = async (
 
     const userTypeRaw = req.query.userType;
     const userType = typeof userTypeRaw === "string" ? userTypeRaw : undefined;
-    
+
     const roleRaw = req.query.role;
     const role = typeof roleRaw === "string" ? roleRaw : undefined;
 
@@ -91,7 +91,7 @@ export const searchPlayers = async (
       query,
       limit,
       userType,
-      role
+      role,
     );
 
     res.status(200).json({
@@ -1072,7 +1072,10 @@ export const voteCommunityTarget = async (
   }
 };
 
-export const getCommunityPulseStats = async (req: Request, res: Response): Promise<void> => {
+export const getCommunityPulseStats = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const count = await CommunityService.getCommunityPulseStats();
     res.status(200).json({ success: true, count });

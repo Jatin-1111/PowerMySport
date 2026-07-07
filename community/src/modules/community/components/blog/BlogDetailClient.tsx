@@ -78,7 +78,9 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
         typeof payload.likeCount === "number"
       ) {
         setBlog((current) =>
-          current ? { ...current, likeCount: payload.likeCount as number } : current,
+          current
+            ? { ...current, likeCount: payload.likeCount as number }
+            : current,
         );
       }
     };
@@ -199,7 +201,11 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
           className="mt-5 aspect-[16/9] w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100"
         >
           {coverUrl ? (
-            <img src={coverUrl} alt={blog.title} className="h-full w-full object-cover" />
+            <img
+              src={coverUrl}
+              alt={blog.title}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <BlogCoverFallback topic={blog.topic} />
           )}
@@ -212,7 +218,10 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
 
         {/* Author + date */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
-          <Link href={authorHref(blog.author)} className="flex items-center gap-3">
+          <Link
+            href={authorHref(blog.author)}
+            className="flex items-center gap-3"
+          >
             <AuthorAvatar
               name={blog.author.name}
               photoUrl={blog.author.photoUrl}
@@ -289,7 +298,9 @@ export default function BlogDetailClient({ blogId }: { blogId: string }) {
 
         {/* Share */}
         <div className="mt-8 flex items-center justify-between gap-3 border-t border-slate-100 pt-6">
-          <p className="text-sm text-slate-500">Enjoyed this story? Share it.</p>
+          <p className="text-sm text-slate-500">
+            Enjoyed this story? Share it.
+          </p>
           <button
             onClick={shareOnTwitter}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600"

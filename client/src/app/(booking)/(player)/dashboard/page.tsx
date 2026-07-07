@@ -16,10 +16,7 @@ import {
   Zap,
   Wallet,
 } from "lucide-react";
-import {
-  Card,
-  CardContent,
-} from "@/modules/shared/ui/Card";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
@@ -77,7 +74,7 @@ export default function DashboardPage() {
     };
     socket.on("booking:updated", handleUpdate);
     socket.on("subscription:updated", handleUpdate);
-    
+
     return () => {
       socket.off("booking:updated", handleUpdate);
       socket.off("subscription:updated", handleUpdate);
@@ -182,7 +179,10 @@ export default function DashboardPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl bg-slate-100" />
+            <div
+              key={i}
+              className="h-28 animate-pulse rounded-2xl bg-slate-100"
+            />
           ))}
         </div>
         <div className="h-48 animate-pulse rounded-2xl bg-slate-100" />
@@ -198,7 +198,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PlayerPageHeader
-        badge={user?.userType === "Parent" ? "Parent Dashboard" : "Player Dashboard"}
+        badge={
+          user?.userType === "Parent" ? "Parent Dashboard" : "Player Dashboard"
+        }
         title="Dashboard"
         subtitle="Welcome back! Here's what's happening with your activities."
       />
@@ -317,7 +319,11 @@ export default function DashboardPage() {
               description="Plans you purchased from coaches and their expiry dates."
               action={
                 <Link href="/dashboard/subscriptions">
-                  <Button variant="outline" size="sm" icon={<ChevronRight size={14} />}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={<ChevronRight size={14} />}
+                  >
                     Manage all
                   </Button>
                 </Link>
@@ -327,15 +333,9 @@ export default function DashboardPage() {
               {liveSubscriptions.slice(0, 3).map((subscription) => {
                 const subscriptionId = subscription.id || subscription._id;
                 const packageData = subscription.packageId as
-                  | { name?: string; price?: number }
-                  | string
-                  | null
-                  | undefined;
+                  { name?: string; price?: number } | string | null | undefined;
                 const packageReference = subscription.packageId as
-                  | { _id?: string; id?: string }
-                  | string
-                  | null
-                  | undefined;
+                  { _id?: string; id?: string } | string | null | undefined;
                 const packageName =
                   typeof packageData === "string"
                     ? "Subscription package"
@@ -350,10 +350,7 @@ export default function DashboardPage() {
                   | null
                   | undefined;
                 const coachReference = subscription.coachId as
-                  | { _id?: string; id?: string }
-                  | string
-                  | null
-                  | undefined;
+                  { _id?: string; id?: string } | string | null | undefined;
                 const coachId =
                   typeof coachReference === "string"
                     ? coachReference
@@ -484,7 +481,9 @@ export default function DashboardPage() {
                     whileHover={{ y: -3, scale: 1.01 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
                   >
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl ${color}`}
+                    >
                       <Icon className="h-5 w-5" />
                     </div>
                     <span className="text-sm font-semibold text-slate-800">

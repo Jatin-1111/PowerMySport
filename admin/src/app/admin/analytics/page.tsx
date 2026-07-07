@@ -34,12 +34,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type AnalyticsTab =
-  | "OVERVIEW"
-  | "FUNNEL"
-  | "GUESTS"
-  | "FINANCE"
-  | "OBSERVABILITY"
-  | "SERVER";
+  "OVERVIEW" | "FUNNEL" | "GUESTS" | "FINANCE" | "OBSERVABILITY" | "SERVER";
 const funnelDayOptions = [7, 14, 30, 90] as const;
 
 // How often each tab silently re-fetches its data (real-time auto-refresh).
@@ -212,37 +207,43 @@ export default function AdminAnalyticsPage() {
     }
   }, []);
 
-  const loadFunnel = useCallback(async (silent = false) => {
-    if (!silent) setLoadingFunnel(true);
-    try {
-      const [summaryResponse, trendResponse] = await Promise.all([
-        statsApi.getFunnelSummary(funnelDays),
-        statsApi.getFunnelTrends(funnelDays),
-      ]);
+  const loadFunnel = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoadingFunnel(true);
+      try {
+        const [summaryResponse, trendResponse] = await Promise.all([
+          statsApi.getFunnelSummary(funnelDays),
+          statsApi.getFunnelTrends(funnelDays),
+        ]);
 
-      if (summaryResponse.success && summaryResponse.data) {
-        setFunnelRows(summaryResponse.data.events ?? []);
-      }
+        if (summaryResponse.success && summaryResponse.data) {
+          setFunnelRows(summaryResponse.data.events ?? []);
+        }
 
-      if (trendResponse.success && trendResponse.data) {
-        setFunnelTrends(trendResponse.data);
+        if (trendResponse.success && trendResponse.data) {
+          setFunnelTrends(trendResponse.data);
+        }
+      } finally {
+        if (!silent) setLoadingFunnel(false);
       }
-    } finally {
-      if (!silent) setLoadingFunnel(false);
-    }
-  }, [funnelDays]);
+    },
+    [funnelDays],
+  );
 
-  const loadGuests = useCallback(async (silent = false) => {
-    if (!silent) setLoadingGuests(true);
-    try {
-      const response = await statsApi.getGuestActivity(guestDays);
-      if (response.success && response.data) {
-        setGuestActivity(response.data);
+  const loadGuests = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoadingGuests(true);
+      try {
+        const response = await statsApi.getGuestActivity(guestDays);
+        if (response.success && response.data) {
+          setGuestActivity(response.data);
+        }
+      } finally {
+        if (!silent) setLoadingGuests(false);
       }
-    } finally {
-      if (!silent) setLoadingGuests(false);
-    }
-  }, [guestDays]);
+    },
+    [guestDays],
+  );
 
   const handleClearAnalytics = useCallback(async () => {
     setClearing(true);
@@ -264,7 +265,9 @@ export default function AdminAnalyticsPage() {
       }
     } catch (error) {
       setClearResult(
-        error instanceof Error ? error.message : "Failed to clear analytics data.",
+        error instanceof Error
+          ? error.message
+          : "Failed to clear analytics data.",
       );
     } finally {
       setClearing(false);

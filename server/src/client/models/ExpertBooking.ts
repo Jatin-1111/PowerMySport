@@ -9,11 +9,7 @@ import mongoose, { Document, Schema } from "mongoose";
  * (File is named ExpertBooking.ts; the Mongoose model name is "ExpertSession".)
  */
 export type ExpertSessionStatus =
-  | "PENDING_PAYMENT"
-  | "PAID"
-  | "SCHEDULED"
-  | "COMPLETED"
-  | "CANCELLED";
+  "PENDING_PAYMENT" | "PAID" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
 export type ExpertSessionCanceller = "CLIENT" | "EXPERT" | "ADMIN" | "SYSTEM";
 export type ExpertRefundStatus = "NONE" | "REQUIRED" | "MANUAL_DONE";
@@ -78,8 +74,18 @@ export interface ExpertSessionDocument extends Document {
 
 const expertSessionSchema = new Schema<ExpertSessionDocument>(
   {
-    expertId: { type: Schema.Types.ObjectId, ref: "Expert", required: true, index: true },
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    expertId: {
+      type: Schema.Types.ObjectId,
+      ref: "Expert",
+      required: true,
+      index: true,
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     amount: { type: Number, required: true, min: 0 },
     status: {
       type: String,
@@ -93,7 +99,12 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
       default: "PENDING",
       index: true,
     },
-    merchantOrderId: { type: String, required: true, unique: true, index: true },
+    merchantOrderId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
     phonepeOrderId: { type: String },
     scheduledAt: { type: Date, index: true },
     durationMinutes: { type: Number, default: 60, min: 15, max: 480 },
@@ -103,7 +114,10 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
     clientNote: { type: String, trim: true, maxlength: 1000 },
     callbackPayload: { type: Schema.Types.Mixed },
     cancelledAt: { type: Date },
-    cancelledBy: { type: String, enum: ["CLIENT", "EXPERT", "ADMIN", "SYSTEM"] },
+    cancelledBy: {
+      type: String,
+      enum: ["CLIENT", "EXPERT", "ADMIN", "SYSTEM"],
+    },
     cancelReason: { type: String, trim: true, maxlength: 1000 },
     refundStatus: {
       type: String,

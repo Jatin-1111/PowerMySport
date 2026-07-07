@@ -100,7 +100,9 @@ export const startOutboxWorker = () => {
 
               // Also try expert session reconciliation — the webhook may be
               // for an expert session (merchantOrderId prefix "EXP_").
-              await reconcileExpertSessionPaymentFromWebhookPayload(event.payload);
+              await reconcileExpertSessionPaymentFromWebhookPayload(
+                event.payload,
+              );
 
               event.status = "DONE";
               event.processedAt = new Date();

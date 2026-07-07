@@ -23,10 +23,10 @@ const shopWaitlistSchema = new Schema<ShopWaitlistDocument>(
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const ShopWaitlist = mongoose.model<ShopWaitlistDocument>(
   "ShopWaitlist",
-  shopWaitlistSchema
+  shopWaitlistSchema,
 );

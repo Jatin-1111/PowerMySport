@@ -42,8 +42,8 @@ export function PaymentMethodSelector({
               isSelected
                 ? "border-power-orange bg-power-orange/5 shadow-sm"
                 : option.disabled
-                ? "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
-                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                  ? "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
             )}
           >
             <div className="flex items-center gap-3">

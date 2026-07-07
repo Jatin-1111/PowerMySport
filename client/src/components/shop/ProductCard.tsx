@@ -47,23 +47,23 @@ export function ProductCard({ product }: { product: Product }) {
       className="group flex flex-col overflow-hidden rounded-[1.5rem] border border-slate-200/60 bg-white shadow-sm transition-all duration-300 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-200/50"
     >
       <div className="relative">
-        <Link 
-          href={`/shop/products/${product.id}`} 
+        <Link
+          href={`/shop/products/${product.id}`}
           className="block relative [perspective:1000px]"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <motion.div 
+          <motion.div
             className="relative aspect-[4/3] w-full [transform-style:preserve-3d] will-change-transform"
-            animate={{ 
+            animate={{
               rotateY: isHovered ? 180 : 0,
-              scale: isHovered ? 1.02 : 1
+              scale: isHovered ? 1.02 : 1,
             }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 90, 
+            transition={{
+              type: "spring",
+              stiffness: 90,
               damping: 15,
-              mass: 0.8
+              mass: 0.8,
             }}
           >
             {image ? (
@@ -118,7 +118,8 @@ export function ProductCard({ product }: { product: Product }) {
           {product.name}
         </Link>
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-          {product.category} {product.sellerName ? `• Sold by: ${product.sellerName}` : ""}
+          {product.category}{" "}
+          {product.sellerName ? `• Sold by: ${product.sellerName}` : ""}
         </p>
 
         <div className="mt-auto pt-5 flex flex-col gap-4">
@@ -133,14 +134,18 @@ export function ProductCard({ product }: { product: Product }) {
                 </div>
               ) : null}
             </div>
-            <span className={cn(
-              "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
-              stockLevel === "Sold out" ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
-            )}>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
+                stockLevel === "Sold out"
+                  ? "bg-red-50 text-red-600"
+                  : "bg-emerald-50 text-emerald-600",
+              )}
+            >
               {stockLevel}
             </span>
           </div>
-          
+
           <div className="w-full">
             <AddToCartButton
               item={{

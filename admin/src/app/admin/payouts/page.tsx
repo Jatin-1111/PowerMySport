@@ -36,7 +36,8 @@ const VENDOR_ICON_CLASSES: Record<PayoutSummary["vendorRole"], string> = {
   Expert: "bg-amber-100 text-amber-600",
 };
 
-const payoutKey = (payout: PayoutSummary) => `${payout.vendorId}-${payout.vendorRole}`;
+const payoutKey = (payout: PayoutSummary) =>
+  `${payout.vendorId}-${payout.vendorRole}`;
 
 export default function AdminPayoutsPage() {
   const [payouts, setPayouts] = useState<PayoutSummary[]>([]);
@@ -87,7 +88,9 @@ export default function AdminPayoutsPage() {
       toast.success("Payout marked as paid!");
       await loadPayouts();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to process payout");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process payout",
+      );
       console.error(error);
     } finally {
       setProcessingId(null);
@@ -250,7 +253,9 @@ export default function AdminPayoutsPage() {
                 </Button>
                 <Button
                   onClick={handleBulkPay}
-                  disabled={bulkProcessing || payableSelectedPayouts.length === 0}
+                  disabled={
+                    bulkProcessing || payableSelectedPayouts.length === 0
+                  }
                   variant="success"
                   size="sm"
                 >

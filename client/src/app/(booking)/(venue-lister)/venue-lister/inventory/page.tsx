@@ -362,7 +362,10 @@ function VenueCard({
         {/* Price + Rating */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <div className="flex items-baseline gap-0.5">
-            <IndianRupee className="w-4 h-4 text-power-orange shrink-0" strokeWidth={2.5} />
+            <IndianRupee
+              className="w-4 h-4 text-power-orange shrink-0"
+              strokeWidth={2.5}
+            />
             <span className="text-xl font-bold text-slate-900">
               {venue.pricePerHour.toLocaleString("en-IN")}
             </span>
@@ -381,7 +384,9 @@ function VenueCard({
               )}
             </div>
           ) : (
-            <span className="text-xs text-slate-300 italic">No reviews yet</span>
+            <span className="text-xs text-slate-300 italic">
+              No reviews yet
+            </span>
           )}
         </div>
 
@@ -878,14 +883,14 @@ export default function VenueInventoryPage() {
       setEditingVenue(null);
       loadVenues();
       toast.success(
-        editingVenue ? "Venue updated successfully!" : "Venue created successfully!",
+        editingVenue
+          ? "Venue updated successfully!"
+          : "Venue created successfully!",
       );
     } catch (error: unknown) {
       console.error("Failed to save venue:", error);
       const apiError = error as { response?: { data?: { message?: string } } };
-      toast.error(
-        apiError.response?.data?.message || "Failed to save venue",
-      );
+      toast.error(apiError.response?.data?.message || "Failed to save venue");
     } finally {
       setIsUploadingImages(false);
       setIsSubmitting(false);
@@ -1041,7 +1046,9 @@ export default function VenueInventoryPage() {
   // ── Stats derived from venues ──────────────────────────────────────────────
 
   const totalSports = new Set(venues.flatMap((v) => v.sports)).size;
-  const venuesWithPhotos = venues.filter((v) => Boolean(getCoverPhoto(v))).length;
+  const venuesWithPhotos = venues.filter((v) =>
+    Boolean(getCoverPhoto(v)),
+  ).length;
   const avgRating =
     venues.filter((v) => v.rating && v.rating > 0).length > 0
       ? venues
@@ -1087,7 +1094,6 @@ export default function VenueInventoryPage() {
 
   return (
     <div className="space-y-6 pb-10">
-
       {/* ── Page header ── */}
       <SlideUp delay={0}>
         <PlayerPageHeader
@@ -1181,7 +1187,9 @@ export default function VenueInventoryPage() {
                   <p className="text-lg font-bold text-slate-900 leading-tight">
                     {stat.value}
                   </p>
-                  <p className="text-xs text-slate-500 truncate">{stat.label}</p>
+                  <p className="text-xs text-slate-500 truncate">
+                    {stat.label}
+                  </p>
                 </div>
               </div>
             ))}
@@ -1235,7 +1243,9 @@ export default function VenueInventoryPage() {
                         }
                       }}
                       placeholder="Your full name"
-                      className={getInputClassName(Boolean(fieldErrors.ownerName))}
+                      className={getInputClassName(
+                        Boolean(fieldErrors.ownerName),
+                      )}
                       required
                     />
                     {fieldErrors.ownerName && (
@@ -1268,7 +1278,9 @@ export default function VenueInventoryPage() {
                         }
                       }}
                       placeholder="your.email@example.com"
-                      className={getInputClassName(Boolean(fieldErrors.ownerEmail))}
+                      className={getInputClassName(
+                        Boolean(fieldErrors.ownerEmail),
+                      )}
                       required
                     />
                     {fieldErrors.ownerEmail && (
@@ -1302,7 +1314,9 @@ export default function VenueInventoryPage() {
                         }
                       }}
                       placeholder="Your phone number"
-                      className={getInputClassName(Boolean(fieldErrors.ownerPhone))}
+                      className={getInputClassName(
+                        Boolean(fieldErrors.ownerPhone),
+                      )}
                       required
                     />
                     {fieldErrors.ownerPhone && (
@@ -1355,7 +1369,9 @@ export default function VenueInventoryPage() {
                       value={addressQuery}
                       onChange={handleAddressChange}
                       placeholder="Search your venue location"
-                      className={getInputClassName(Boolean(fieldErrors.address))}
+                      className={getInputClassName(
+                        Boolean(fieldErrors.address),
+                      )}
                       required
                     />
                     {isSearching && (
@@ -1449,9 +1465,7 @@ export default function VenueInventoryPage() {
                         type="number"
                         value={basePricePerHour}
                         onChange={(e) =>
-                          handleBasePriceChange(
-                            parseFloat(e.target.value) || 0,
-                          )
+                          handleBasePriceChange(parseFloat(e.target.value) || 0)
                         }
                         placeholder="e.g., 1500"
                         className={getInputClassName(
@@ -1604,8 +1618,7 @@ export default function VenueInventoryPage() {
                 subtitle="Upload high-quality photos to showcase your venue"
               >
                 <div className="space-y-6">
-                  {(selectedImages.length > 0 ||
-                    existingImages.length > 0) && (
+                  {(selectedImages.length > 0 || existingImages.length > 0) && (
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm text-slate-600">
                         <span>
@@ -1638,8 +1651,8 @@ export default function VenueInventoryPage() {
                       {existingGeneralImages.length > 0 && (
                         <div className="mb-6">
                           <h4 className="text-sm font-semibold text-slate-900 mb-3">
-                            General Venue Images (
-                            {existingGeneralImages.length})
+                            General Venue Images ({existingGeneralImages.length}
+                            )
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {existingGeneralImages.map((url, index) => (

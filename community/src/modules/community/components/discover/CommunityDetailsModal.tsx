@@ -2,7 +2,15 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { CommunityGroupSummary } from "@/modules/community/types";
-import { X, Users, MapPin, Target, Shield, LogIn, MessageSquare } from "lucide-react";
+import {
+  X,
+  Users,
+  MapPin,
+  Target,
+  Shield,
+  LogIn,
+  MessageSquare,
+} from "lucide-react";
 
 interface CommunityDetailsModalProps {
   community: CommunityGroupSummary | null;
@@ -67,7 +75,11 @@ export default function CommunityDetailsModal({
                     <div className="mt-1 flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-md bg-turf-green/10 px-2 py-0.5 text-xs font-semibold text-turf-green">
                         <Shield size={12} />
-                        {community.audience === "PLAYERS_ONLY" ? "Players Only" : community.audience === "COACHES_ONLY" ? "Coaches Only" : "Public"}
+                        {community.audience === "PLAYERS_ONLY"
+                          ? "Players Only"
+                          : community.audience === "COACHES_ONLY"
+                            ? "Coaches Only"
+                            : "Public"}
                       </span>
                       {community.isMember && (
                         <span className="inline-flex shrink-0 items-center rounded-md bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white uppercase tracking-wide">
@@ -155,7 +167,8 @@ export default function CommunityDetailsModal({
                     disabled={isJoining}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-3 text-sm font-bold text-white shadow-lg shadow-power-orange/20 transition hover:bg-[#d96610] disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <LogIn size={16} /> {isJoining ? "Joining..." : "Join Community"}
+                    <LogIn size={16} />{" "}
+                    {isJoining ? "Joining..." : "Join Community"}
                   </button>
                 )}
               </div>

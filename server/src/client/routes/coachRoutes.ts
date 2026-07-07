@@ -72,8 +72,16 @@ router.delete(
 
 // CRM — client/athlete management
 router.get("/my-clients", authMiddleware, getCoachClientsHandler);
-router.get("/my-clients/:clientUserId", authMiddleware, getClientDetailsHandler);
-router.post("/my-clients/:clientUserId/notes", authMiddleware, addClientNoteHandler);
+router.get(
+  "/my-clients/:clientUserId",
+  authMiddleware,
+  getClientDetailsHandler,
+);
+router.post(
+  "/my-clients/:clientUserId/notes",
+  authMiddleware,
+  addClientNoteHandler,
+);
 router.delete(
   "/my-clients/:clientUserId/notes/:noteId",
   authMiddleware,

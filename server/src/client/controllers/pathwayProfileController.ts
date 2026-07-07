@@ -1,15 +1,20 @@
 import { Request, Response } from "express";
 import { UserPathwayProfile } from "../../shared/models/UserPathwayProfile";
 
-export const getPathwayProfile = async (req: Request, res: Response): Promise<void> => {
+export const getPathwayProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
-    let profile = await UserPathwayProfile.findOne({ userId: req.user.id }).lean();
-    
+    let profile = await UserPathwayProfile.findOne({
+      userId: req.user.id,
+    }).lean();
+
     if (!profile) {
       profile = await UserPathwayProfile.create({ userId: req.user.id });
     }
@@ -19,11 +24,16 @@ export const getPathwayProfile = async (req: Request, res: Response): Promise<vo
       data: profile,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch pathway profile" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch pathway profile" });
   }
 };
 
-export const updatePathwayProfile = async (req: Request, res: Response): Promise<void> => {
+export const updatePathwayProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -41,7 +51,7 @@ export const updatePathwayProfile = async (req: Request, res: Response): Promise
     const profile = await UserPathwayProfile.findOneAndUpdate(
       { userId: req.user.id },
       { $set: updateData },
-      { new: true, upsert: true }
+      { new: true, upsert: true },
     ).lean();
 
     res.status(200).json({
@@ -49,6 +59,8 @@ export const updatePathwayProfile = async (req: Request, res: Response): Promise
       data: profile,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to update pathway profile" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update pathway profile" });
   }
 };

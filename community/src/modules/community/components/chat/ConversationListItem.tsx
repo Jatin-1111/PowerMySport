@@ -21,7 +21,7 @@ export const ConversationListItem = memo(function ConversationListItem({
   const conversationPhotoUrl =
     conversation.conversationType === "GROUP"
       ? null
-      : conversation.otherParticipant.photoUrl ?? null;
+      : (conversation.otherParticipant.photoUrl ?? null);
   const conversationAvatarChar = getAvatarCharacter(conversationName);
 
   return (
@@ -57,17 +57,21 @@ export const ConversationListItem = memo(function ConversationListItem({
             ) : (
               conversationAvatarChar
             )}
-            
+
             {/* Online/Activity Indicator could go here in future */}
           </div>
-          
+
           {/* Content */}
           <div className="min-w-0 flex-1 py-0.5">
             <div className="flex items-center justify-between gap-2 mb-0.5">
               <div className="flex items-center gap-2 min-w-0">
-                <p className={`truncate text-[15px] sm:text-[16px] tracking-tight ${
-                  conversation.unreadCount > 0 ? "font-600 text-slate-900" : "font-500 text-slate-800"
-                }`}>
+                <p
+                  className={`truncate text-[15px] sm:text-[16px] tracking-tight ${
+                    conversation.unreadCount > 0
+                      ? "font-600 text-slate-900"
+                      : "font-500 text-slate-800"
+                  }`}
+                >
                   {conversationName}
                 </p>
                 {conversation.status === "PENDING" && (
@@ -76,28 +80,38 @@ export const ConversationListItem = memo(function ConversationListItem({
                   </span>
                 )}
               </div>
-              
+
               {/* Timestamp */}
               <div className="shrink-0 flex items-center justify-end">
                 {conversation.latestMessage?.createdAt && (
-                  <span className={`text-[12px] font-medium leading-none tabular-nums ${
-                    conversation.unreadCount > 0 ? "text-power-orange" : "text-slate-400"
-                  }`}>
+                  <span
+                    className={`text-[12px] font-medium leading-none tabular-nums ${
+                      conversation.unreadCount > 0
+                        ? "text-power-orange"
+                        : "text-slate-400"
+                    }`}
+                  >
                     {getRelativeTime(conversation.latestMessage.createdAt)}
                   </span>
                 )}
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between gap-3">
-              <p className={`line-clamp-1 text-[13px] sm:text-[14px] ${
-                conversation.unreadCount > 0 ? "font-medium text-slate-800" : "text-slate-500"
-              }`}>
+              <p
+                className={`line-clamp-1 text-[13px] sm:text-[14px] ${
+                  conversation.unreadCount > 0
+                    ? "font-medium text-slate-800"
+                    : "text-slate-500"
+                }`}
+              >
                 {conversation.status === "PENDING"
                   ? "Sent you a message request"
-                  : conversation.latestMessage?.content || <span className="italic opacity-70">No messages yet</span>}
+                  : conversation.latestMessage?.content || (
+                      <span className="italic opacity-70">No messages yet</span>
+                    )}
               </p>
-              
+
               {/* Unread Badge */}
               <div className="flex shrink-0 items-center justify-end w-6">
                 {conversation.unreadCount > 0 && (
@@ -106,7 +120,9 @@ export const ConversationListItem = memo(function ConversationListItem({
                     animate={{ scale: 1, opacity: 1 }}
                     className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-gradient-to-b from-power-orange to-orange-600 px-1.5 py-0.5 text-[11px] font-bold text-white shadow-md shadow-orange-500/20"
                   >
-                    {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                    {conversation.unreadCount > 99
+                      ? "99+"
+                      : conversation.unreadCount}
                   </motion.span>
                 )}
               </div>
@@ -114,7 +130,7 @@ export const ConversationListItem = memo(function ConversationListItem({
           </div>
         </div>
       </div>
-      
+
       {/* Subtle separator line (hidden on last item, handled by parent typically or just rely on bg differences) */}
       {!isSelected && (
         <div className="absolute bottom-0 left-[76px] right-0 h-px bg-gradient-to-r from-slate-100 to-transparent" />

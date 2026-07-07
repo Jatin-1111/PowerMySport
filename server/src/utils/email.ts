@@ -220,7 +220,9 @@ export const sendBookingLifecycleEmail = async (
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
-  const bookingDate = options.date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
+  const bookingDate = options.date.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
     month: "short",
     year: "numeric",
   });
@@ -1520,7 +1522,9 @@ export const sendBookingConfirmationEmail = async (
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
-  const bookingDate = options.date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
+  const bookingDate = options.date.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
     month: "short",
     year: "numeric",
   });
@@ -1644,7 +1648,9 @@ export const sendBookingReminderEmail = async (
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
-  const bookingDate = options.date.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit",
+  const bookingDate = options.date.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
     month: "short",
     year: "numeric",
   });
@@ -1894,10 +1900,12 @@ interface OrderConfirmationEmailOptions {
 }
 
 export const sendOrderConfirmationEmail = async (
-  options: OrderConfirmationEmailOptions
+  options: OrderConfirmationEmailOptions,
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-  const itemsHtml = options.items.map(item => `
+  const itemsHtml = options.items
+    .map(
+      (item) => `
     <tr>
       <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
         <div style="font-weight: bold; color: #0f172a;">${item.productName}</div>
@@ -1910,7 +1918,9 @@ export const sendOrderConfirmationEmail = async (
         ₹${(item.lineTotal / 100).toFixed(2)}
       </td>
     </tr>
-  `).join("");
+  `,
+    )
+    .join("");
 
   const html = `
 <!DOCTYPE html>
@@ -1998,8 +2008,6 @@ export const sendOrderConfirmationEmail = async (
   });
 };
 
-
-
 // ════════════════════════════════════════════════════════════════════════════
 // Additional transactional templates
 // (support tickets, payouts, disputes, waitlist, coach subscriptions,
@@ -2064,7 +2072,9 @@ export const sendSupportTicketReceivedEmail = async (
     bodyHtml: detailTable([
       ["Ticket", `#${options.ticketId.slice(-8)}`],
       ["Subject", options.subject],
-      ...(options.category ? ([["Category", options.category]] as [string, string][]) : []),
+      ...(options.category
+        ? ([["Category", options.category]] as [string, string][])
+        : []),
     ]),
     ctaLabel: "View my tickets",
     ctaUrl: `${emailFrontendUrl()}/dashboard`,
@@ -2088,16 +2098,23 @@ interface SupportTicketStatusOptions {
 export const sendSupportTicketStatusEmail = async (
   options: SupportTicketStatusOptions,
 ): Promise<void> => {
-  const resolved = ["RESOLVED", "CLOSED"].includes(options.status.toUpperCase());
+  const resolved = ["RESOLVED", "CLOSED"].includes(
+    options.status.toUpperCase(),
+  );
   const html = renderEmailShell({
-    heading: resolved ? "Your support ticket was updated" : "Update on your support ticket",
+    heading: resolved
+      ? "Your support ticket was updated"
+      : "Update on your support ticket",
     intro: `Hi ${options.name || "there"}, there's an update on your support ticket.`,
     bodyHtml:
       detailTable([
         ["Ticket", `#${options.ticketId.slice(-8)}`],
         ["Subject", options.subject],
         ["New status", options.status.replace(/_/g, " ")],
-      ]) + (options.note ? `<p style="margin-top:8px;"><strong>Note from our team:</strong><br/>${options.note}</p>` : ""),
+      ]) +
+      (options.note
+        ? `<p style="margin-top:8px;"><strong>Note from our team:</strong><br/>${options.note}</p>`
+        : ""),
     ctaLabel: "View ticket",
     ctaUrl: `${emailFrontendUrl()}/dashboard`,
     accent: resolved ? "#16a34a" : "#ff6b35",
@@ -2154,7 +2171,9 @@ export const sendDisputeStatusEmail = async (
 ): Promise<void> => {
   const isResolved = options.status !== "OPEN";
   const html = renderEmailShell({
-    heading: isResolved ? "Your dispute has been resolved" : "We've received your dispute",
+    heading: isResolved
+      ? "Your dispute has been resolved"
+      : "We've received your dispute",
     intro: isResolved
       ? `Hi ${options.name || "there"}, your dispute has been reviewed and resolved.`
       : `Hi ${options.name || "there"}, your dispute has been logged and our team will review it.`,
@@ -2162,8 +2181,15 @@ export const sendDisputeStatusEmail = async (
       ["Booking", `#${options.bookingId.slice(-8)}`],
       ["Type", options.disputeType.replace(/_/g, " ")],
       ["Status", options.status],
-      ...(options.resolution ? ([["Resolution", options.resolution.replace(/_/g, " ")]] as [string, string][]) : []),
-      ...(options.refundAmount ? ([["Refund", formatInr(options.refundAmount)]] as [string, string][]) : []),
+      ...(options.resolution
+        ? ([["Resolution", options.resolution.replace(/_/g, " ")]] as [
+            string,
+            string,
+          ][])
+        : []),
+      ...(options.refundAmount
+        ? ([["Refund", formatInr(options.refundAmount)]] as [string, string][])
+        : []),
     ]),
     ctaLabel: "View booking",
     ctaUrl: `${emailFrontendUrl()}/dashboard/my-bookings`,
@@ -2191,7 +2217,9 @@ interface WaitlistSlotAvailableOptions {
 export const sendWaitlistSlotAvailableEmail = async (
   options: WaitlistSlotAvailableOptions,
 ): Promise<void> => {
-  const dateStr = new Date(options.date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "short",
+  const dateStr = new Date(options.date).toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -2229,7 +2257,9 @@ export const sendCoachSubscriptionPurchasedEmail = async (
 ): Promise<void> => {
   const forPlayer = options.recipientRole === "Player";
   const html = renderEmailShell({
-    heading: forPlayer ? "Your coaching plan is active 🏆" : "You have a new subscriber 🎉",
+    heading: forPlayer
+      ? "Your coaching plan is active 🏆"
+      : "You have a new subscriber 🎉",
     intro: forPlayer
       ? `Hi ${options.name || "there"}, your subscription to ${options.counterpartName}'s coaching plan is now active.`
       : `Hi ${options.name || "there"}, ${options.counterpartName} just subscribed to your coaching plan.`,
@@ -2295,15 +2325,17 @@ interface ReviewReceivedOptions {
 export const sendReviewReceivedEmail = async (
   options: ReviewReceivedOptions,
 ): Promise<void> => {
-  const stars = "★".repeat(Math.max(0, Math.min(5, Math.round(options.rating)))) +
+  const stars =
+    "★".repeat(Math.max(0, Math.min(5, Math.round(options.rating)))) +
     "☆".repeat(5 - Math.max(0, Math.min(5, Math.round(options.rating))));
   const html = renderEmailShell({
     heading: "You received a new review",
     intro: `Hi ${options.name || "there"}, ${options.reviewerName || "a player"} left a review for your ${options.targetType === "Coach" ? "coaching" : "venue"}.`,
     bodyHtml:
-      detailTable([
-        ["Rating", `${stars} (${options.rating}/5)`],
-      ]) + (options.review ? `<p style="margin-top:8px;"><strong>Their comment:</strong><br/>"${options.review}"</p>` : ""),
+      detailTable([["Rating", `${stars} (${options.rating}/5)`]]) +
+      (options.review
+        ? `<p style="margin-top:8px;"><strong>Their comment:</strong><br/>"${options.review}"</p>`
+        : ""),
     ctaLabel: "View reviews",
     ctaUrl: `${emailFrontendUrl()}/${options.targetType === "Coach" ? "coach/reviews" : "venue-lister/reviews"}`,
   });

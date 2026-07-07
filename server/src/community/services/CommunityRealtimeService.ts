@@ -63,10 +63,13 @@ export const emitCommunityGroupEvent = (
     return;
   }
 
-  socketInstance.of("/community").to(`group:${groupId}`).emit(eventName, {
-    ...payload,
-    timestamp: new Date().toISOString(),
-  });
+  socketInstance
+    .of("/community")
+    .to(`group:${groupId}`)
+    .emit(eventName, {
+      ...payload,
+      timestamp: new Date().toISOString(),
+    });
 };
 
 export const emitCommunityUserEvent = (
@@ -78,8 +81,11 @@ export const emitCommunityUserEvent = (
     return;
   }
 
-  socketInstance.of("/community").to(`user:${userId}`).emit(eventName, {
-    ...payload,
-    timestamp: new Date().toISOString(),
-  });
+  socketInstance
+    .of("/community")
+    .to(`user:${userId}`)
+    .emit(eventName, {
+      ...payload,
+      timestamp: new Date().toISOString(),
+    });
 };

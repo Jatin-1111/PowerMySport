@@ -75,9 +75,8 @@ export default function AcademyReviewsPage() {
           const { reviews, summary: sum } = res.data;
           setAllReviews((prev) => (append ? [...prev, ...reviews] : reviews));
           setSummary(sum);
-          const pagination = (
-            res as { pagination?: { totalPages?: number } }
-          ).pagination;
+          const pagination = (res as { pagination?: { totalPages?: number } })
+            .pagination;
           setTotalPages(pagination?.totalPages ?? 1);
         } else {
           toast.error("Could not load reviews for this venue.");
@@ -170,9 +169,7 @@ export default function AcademyReviewsPage() {
   }
 
   // ── Full page ─────────────────────────────────────────────────────────────
-  const selectedVenue = venues.find(
-    (v) => (v.id ?? v._id) === selectedVenueId,
-  );
+  const selectedVenue = venues.find((v) => (v.id ?? v._id) === selectedVenueId);
 
   return (
     <div className="min-h-screen bg-slate-50">

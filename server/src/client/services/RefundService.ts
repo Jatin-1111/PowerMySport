@@ -51,7 +51,12 @@ export interface RefundStatusResponse {
 export async function initiateRefund(
   payload: InitiateRefundPayload,
 ): Promise<RefundStatusResponse> {
-  const { bookingPaymentTransactionId, amount, reason, refundMethod = "ORIGINAL_CARD" } = payload;
+  const {
+    bookingPaymentTransactionId,
+    amount,
+    reason,
+    refundMethod = "ORIGINAL_CARD",
+  } = payload;
 
   // Get the payment transaction
   const transaction = await BookingPaymentTransaction.findById(
@@ -87,7 +92,11 @@ export async function initiateRefund(
         if (!payload.bankDetails) {
           throw new Error("Bank details required for bank transfer refunds");
         }
-        return await initiateBankTransferRefund(transaction, amount, payload.bankDetails);
+        return await initiateBankTransferRefund(
+          transaction,
+          amount,
+          payload.bankDetails,
+        );
 
       case "STORE_CREDIT":
         return await initiateStoreCreditRefund(transaction, amount);
@@ -226,7 +235,9 @@ async function initiateBankTransferRefund(
         </html>
       `,
     });
-    console.log(`✅ Finance team notified for bank transfer refund ${bankTransferId}`);
+    console.log(
+      `✅ Finance team notified for bank transfer refund ${bankTransferId}`,
+    );
   } catch (emailError) {
     console.error("❌ Failed to send finance team notification:", emailError);
     // Don't throw — refund record was already created
@@ -275,7 +286,7 @@ async function initiateStoreCreditRefund(
       transaction.userId.toString(),
       amountInRupees,
       "Booking Refund",
-      transaction._id.toString()
+      transaction._id.toString(),
     );
     const storeCreditId = walletTx.id;
 

@@ -53,7 +53,9 @@ function ImageUploadingPlaceholder({ isOwn }: { isOwn: boolean }) {
           size={28}
           className={isOwn ? "text-orange-100/70" : "text-slate-400"}
         />
-        <span className={`text-xs font-medium ${isOwn ? "text-orange-100/80" : "text-slate-500"}`}>
+        <span
+          className={`text-xs font-medium ${isOwn ? "text-orange-100/80" : "text-slate-500"}`}
+        >
           Uploading…
         </span>
         <div className="h-1 w-20 overflow-hidden rounded-full bg-white/20">
@@ -139,13 +141,13 @@ export const MessageBubble = memo(function MessageBubble({
 
   const hasBeenSeenByOther = Boolean(
     isOwnMessage &&
-      otherParticipantId &&
-      message.readBy?.includes(otherParticipantId),
+    otherParticipantId &&
+    message.readBy?.includes(otherParticipantId),
   );
   const hasBeenDeliveredToOther = Boolean(
     isOwnMessage &&
-      otherParticipantId &&
-      message.deliveredTo?.includes(otherParticipantId),
+    otherParticipantId &&
+    message.deliveredTo?.includes(otherParticipantId),
   );
   const canMutateMessage =
     !isImageMessage &&
@@ -163,7 +165,9 @@ export const MessageBubble = memo(function MessageBubble({
     (isOwnMessage && isFailed) || !message.isDeleted || canMutateMessage;
 
   const senderAvatarChar = getAvatarCharacter(message.senderDisplayName);
-  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const clearLongPressTimeout = useCallback(() => {
     if (longPressTimeoutRef.current) {
@@ -188,7 +192,12 @@ export const MessageBubble = memo(function MessageBubble({
       openMobileActions();
       clearLongPressTimeout();
     }, 380);
-  }, [canOpenMobileActions, clearLongPressTimeout, onOpenMobileActions, openMobileActions]);
+  }, [
+    canOpenMobileActions,
+    clearLongPressTimeout,
+    onOpenMobileActions,
+    openMobileActions,
+  ]);
 
   useEffect(() => {
     return () => clearLongPressTimeout();
@@ -219,9 +228,7 @@ export const MessageBubble = memo(function MessageBubble({
         className={`${
           isImageMessage ? "p-1.5" : "px-4 py-2.5 sm:px-5 sm:py-3"
         } max-w-[85%] ${bubbleShapeClass} text-[14px] sm:text-[15px] shadow-sm sm:max-w-[78%] md:max-w-[70%] lg:max-w-[65%] transition-all ${
-          isFailed
-            ? "ring-2 ring-red-400/60"
-            : ""
+          isFailed ? "ring-2 ring-red-400/60" : ""
         } ${
           isOwnMessage
             ? "bg-gradient-to-br from-power-orange to-orange-500 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_2px_5px_rgba(233,115,22,0.15)]"
@@ -235,7 +242,8 @@ export const MessageBubble = memo(function MessageBubble({
         onMouseLeave={clearLongPressTimeout}
         onContextMenu={(event) => {
           if (typeof window !== "undefined") {
-            const isMobileViewport = window.matchMedia("(max-width: 639px)").matches;
+            const isMobileViewport =
+              window.matchMedia("(max-width: 639px)").matches;
             if (isMobileViewport && canOpenMobileActions) {
               event.preventDefault();
               openMobileActions();
@@ -245,7 +253,9 @@ export const MessageBubble = memo(function MessageBubble({
       >
         {/* Sender name in group chats */}
         {isGroupConversation && !isOwnMessage && (
-          <div className={`mb-1 text-[11px] font-semibold text-power-orange ${isImageMessage ? "px-0.5" : ""}`}>
+          <div
+            className={`mb-1 text-[11px] font-semibold text-power-orange ${isImageMessage ? "px-0.5" : ""}`}
+          >
             {message.senderDisplayName}
           </div>
         )}
@@ -287,7 +297,9 @@ export const MessageBubble = memo(function MessageBubble({
         {/* ── Meta row: timestamp + receipts ── */}
         <div
           className={`mt-1 flex flex-wrap items-center gap-1 text-[11px] ${
-            isOwnMessage ? "justify-end text-orange-100/80" : "justify-start text-slate-400"
+            isOwnMessage
+              ? "justify-end text-orange-100/80"
+              : "justify-start text-slate-400"
           } ${isImageMessage ? "px-0.5" : ""}`}
         >
           {message.isEdited && !message.isDeleted && (
@@ -298,9 +310,12 @@ export const MessageBubble = memo(function MessageBubble({
           </span>
 
           {/* Delivery status */}
-          {isOwnMessage && (
-            isFailed ? (
-              <span title="Failed to send. Tap to retry." className="text-red-200">
+          {isOwnMessage &&
+            (isFailed ? (
+              <span
+                title="Failed to send. Tap to retry."
+                className="text-red-200"
+              >
                 <AlertCircle size={13} strokeWidth={2.2} />
               </span>
             ) : message.messageStatus === "SENDING" ? (
@@ -319,8 +334,7 @@ export const MessageBubble = memo(function MessageBubble({
               <span className="opacity-80">
                 <Check size={13} strokeWidth={2.2} />
               </span>
-            )
-          )}
+            ))}
         </div>
 
         {/* ── Desktop action buttons ── */}
@@ -333,7 +347,9 @@ export const MessageBubble = memo(function MessageBubble({
             <button
               onClick={() => onRetry(message)}
               className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition active:scale-95 ${
-                isOwnMessage ? "text-orange-100 hover:bg-white/10" : "text-slate-600 hover:bg-slate-100"
+                isOwnMessage
+                  ? "text-orange-100 hover:bg-white/10"
+                  : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <RotateCcw size={11} />
@@ -344,7 +360,9 @@ export const MessageBubble = memo(function MessageBubble({
             <button
               onClick={() => onCopy(message)}
               className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition active:scale-95 ${
-                isOwnMessage ? "text-orange-100 hover:bg-white/10" : "text-slate-600 hover:bg-slate-100"
+                isOwnMessage
+                  ? "text-orange-100 hover:bg-white/10"
+                  : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               {isCopied ? (
@@ -366,7 +384,9 @@ export const MessageBubble = memo(function MessageBubble({
                 onClick={() => onEdit(message)}
                 disabled={isMutating}
                 className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isOwnMessage ? "text-orange-100 hover:bg-white/10" : "text-slate-600 hover:bg-slate-100"
+                  isOwnMessage
+                    ? "text-orange-100 hover:bg-white/10"
+                    : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
                 <Pencil size={11} />
@@ -376,7 +396,9 @@ export const MessageBubble = memo(function MessageBubble({
                 onClick={() => onDelete(message)}
                 disabled={isMutating}
                 className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isOwnMessage ? "text-orange-100 hover:bg-white/10" : "text-red-500 hover:bg-red-50"
+                  isOwnMessage
+                    ? "text-orange-100 hover:bg-white/10"
+                    : "text-red-500 hover:bg-red-50"
                 }`}
               >
                 <Trash2 size={11} />

@@ -1,16 +1,42 @@
 // Product & Catalog Types
 export type ProductCategory =
-  | "APPAREL"
-  | "FOOTWEAR"
-  | "ACCESSORIES"
-  | "EQUIPMENT";
+  "APPAREL" | "FOOTWEAR" | "ACCESSORIES" | "EQUIPMENT";
 
 export type AgeGroup = "KIDS" | "YOUTH" | "ADULT" | "ALL";
 export type SkillLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "ALL";
 export type Gender = "UNISEX" | "BOYS" | "GIRLS" | "MEN" | "WOMEN";
 
-export type ProductBrand = "SG" | "SS" | "KOOKABURRA" | "MRF" | "CEAT" | "NIKE" | "ADIDAS" | "PUMA" | "UNDER_ARMOUR" | "ASICS" | "WILSON" | "YONEX" | "BABOLAT" | "HEAD" | "GENERIC" | "OTHER";
-export type ProductMaterial = "ENGLISH_WILLOW" | "KASHMIR_WILLOW" | "CARBON_FIBER" | "FIBERGLASS" | "ALUMINUM" | "LEATHER" | "SYNTHETIC_LEATHER" | "RUBBER" | "COTTON" | "POLYESTER" | "NYLON" | "BLENDED" | "OTHER";
+export type ProductBrand =
+  | "SG"
+  | "SS"
+  | "KOOKABURRA"
+  | "MRF"
+  | "CEAT"
+  | "NIKE"
+  | "ADIDAS"
+  | "PUMA"
+  | "UNDER_ARMOUR"
+  | "ASICS"
+  | "WILSON"
+  | "YONEX"
+  | "BABOLAT"
+  | "HEAD"
+  | "GENERIC"
+  | "OTHER";
+export type ProductMaterial =
+  | "ENGLISH_WILLOW"
+  | "KASHMIR_WILLOW"
+  | "CARBON_FIBER"
+  | "FIBERGLASS"
+  | "ALUMINUM"
+  | "LEATHER"
+  | "SYNTHETIC_LEATHER"
+  | "RUBBER"
+  | "COTTON"
+  | "POLYESTER"
+  | "NYLON"
+  | "BLENDED"
+  | "OTHER";
 
 export interface IProductVariant {
   id: string;
@@ -55,7 +81,8 @@ export interface IProduct {
   isActive: boolean;
   seller?: string;
   sellerName?: string;
-  sellerType?: "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
+  sellerType?:
+    "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
   condition?: "NEW" | "USED";
   createdAt: Date;
   updatedAt: Date;

@@ -41,7 +41,7 @@ export function MobileMessageActions({
       >
         {/* Drag handle */}
         <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-slate-300/80 shadow-inner" />
-        
+
         <p className="text-[13px] font-bold uppercase tracking-widest text-slate-400 mb-1">
           Message Options
         </p>

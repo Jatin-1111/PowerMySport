@@ -307,11 +307,7 @@ export interface SupportTicketRecord {
   requesterEmail?: string;
   requesterPhone?: string;
   requesterType?:
-    | "player"
-    | "venue_owner"
-    | "coach"
-    | "academy_owner"
-    | "other";
+    "player" | "venue_owner" | "coach" | "academy_owner" | "other";
   assignedAdminId?: {
     _id: string;
     name: string;
@@ -629,7 +625,16 @@ export const adminApi = {
   getPendingRefundBookings: async (params?: {
     page?: number;
     limit?: number;
-  }): Promise<ApiResponse<unknown[]> & { stats?: { pendingCount: number; completedCount: number; failedCount: number; totalAmount: number } }> => {
+  }): Promise<
+    ApiResponse<unknown[]> & {
+      stats?: {
+        pendingCount: number;
+        completedCount: number;
+        failedCount: number;
+        totalAmount: number;
+      };
+    }
+  > => {
     const query = new URLSearchParams();
     query.append("refundStatus", "PENDING");
     if (params?.page) query.append("page", String(params.page));
@@ -907,11 +912,7 @@ export const adminApi = {
     profilePhotoUrl?: string;
     profilePhotoKey?: string;
     verificationStatus?:
-      | "UNVERIFIED"
-      | "PENDING"
-      | "REVIEW"
-      | "VERIFIED"
-      | "REJECTED";
+      "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
     convertExistingUser?: boolean;
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/coaches/create", data);
@@ -1072,12 +1073,19 @@ export const adminApi = {
   },
 
   retryWebhookError: async (key: string): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.post(`/admin/webhook-errors/${key}/retry`);
+    const response = await axiosInstance.post(
+      `/admin/webhook-errors/${key}/retry`,
+    );
     return response.data;
   },
 
-  reconcileOrder: async (type: string, orderId: string): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.post(`/admin/reconcile/${type}/${orderId}`);
+  reconcileOrder: async (
+    type: string,
+    orderId: string,
+  ): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.post(
+      `/admin/reconcile/${type}/${orderId}`,
+    );
     return response.data;
   },
 
@@ -1100,7 +1108,9 @@ export const adminApi = {
     return response.data;
   },
 
-  getPathwayById: async (id: string): Promise<ApiResponse<AdminSportPathway>> => {
+  getPathwayById: async (
+    id: string,
+  ): Promise<ApiResponse<AdminSportPathway>> => {
     const response = await axiosInstance.get(`/admin/sport-pathways/${id}`);
     return response.data;
   },
@@ -1108,10 +1118,16 @@ export const adminApi = {
   updatePathway: async (
     id: string,
     data: Partial<
-      Pick<AdminSportPathway, "overview" | "category" | "levels" | "equipment" | "careers">
+      Pick<
+        AdminSportPathway,
+        "overview" | "category" | "levels" | "equipment" | "careers"
+      >
     >,
   ): Promise<ApiResponse<AdminSportPathway>> => {
-    const response = await axiosInstance.patch(`/admin/sport-pathways/${id}`, data);
+    const response = await axiosInstance.patch(
+      `/admin/sport-pathways/${id}`,
+      data,
+    );
     return response.data;
   },
 
@@ -1119,9 +1135,12 @@ export const adminApi = {
     id: string,
     verified: boolean,
   ): Promise<ApiResponse<AdminSportPathway>> => {
-    const response = await axiosInstance.post(`/admin/sport-pathways/${id}/verify`, {
-      verified,
-    });
+    const response = await axiosInstance.post(
+      `/admin/sport-pathways/${id}/verify`,
+      {
+        verified,
+      },
+    );
     return response.data;
   },
 };

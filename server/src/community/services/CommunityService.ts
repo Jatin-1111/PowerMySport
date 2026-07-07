@@ -314,9 +314,7 @@ export const CommunityService = {
     const safeLimit = Math.min(50, Math.max(1, limit));
     const skip = (safePage - 1) * safeLimit;
     const sort = (filters?.sort || "NEW").toUpperCase() as
-      | "NEW"
-      | "TOP"
-      | "UNANSWERED";
+      "NEW" | "TOP" | "UNANSWERED";
 
     const query: Record<string, unknown> = {
       isDeleted: false,
@@ -446,7 +444,9 @@ export const CommunityService = {
                   : profile?.isIdentityPublic
                     ? authorUser?.name || "Player"
                     : profile?.anonymousAlias || "Anonymous Player",
-              isIdentityPublic: isPostAnon ? false : (profile?.isIdentityPublic ?? true),
+              isIdentityPublic: isPostAnon
+                ? false
+                : (profile?.isIdentityPublic ?? true),
               photoUrl: isPostAnon
                 ? null
                 : profile?.isIdentityPublic && authorUser
@@ -572,7 +572,9 @@ export const CommunityService = {
               : postAuthorProfile?.isIdentityPublic
                 ? postAuthor?.name || "Player"
                 : postAuthorProfile?.anonymousAlias || "Anonymous Player",
-          isIdentityPublic: isPostAnon ? false : (postAuthorProfile?.isIdentityPublic ?? true),
+          isIdentityPublic: isPostAnon
+            ? false
+            : (postAuthorProfile?.isIdentityPublic ?? true),
           photoUrl: isPostAnon
             ? null
             : postAuthorProfile?.isIdentityPublic && postAuthor
@@ -611,7 +613,9 @@ export const CommunityService = {
                   : answerProfile?.isIdentityPublic
                     ? answerUser?.name || "Player"
                     : answerProfile?.anonymousAlias || "Anonymous Player",
-              isIdentityPublic: isAnswerAnon ? false : (answerProfile?.isIdentityPublic ?? true),
+              isIdentityPublic: isAnswerAnon
+                ? false
+                : (answerProfile?.isIdentityPublic ?? true),
               photoUrl: isAnswerAnon
                 ? null
                 : answerProfile?.isIdentityPublic && answerUser
@@ -778,7 +782,12 @@ export const CommunityService = {
     return { id: String(post._id), deleted: true };
   },
 
-  async createAnswer(userId: string, postId: string, content: string, isAnonymous = false) {
+  async createAnswer(
+    userId: string,
+    postId: string,
+    content: string,
+    isAnonymous = false,
+  ) {
     await ensureProfile(userId);
     const userRole = await getCommunityRole(userId);
     ensureQnaAllowedForRole(userRole);
@@ -1071,7 +1080,13 @@ export const CommunityService = {
     };
   },
 
-  async searchPlayers(userId: string, query: string, limit = 10, userTypeFilter?: string, roleFilter?: string) {
+  async searchPlayers(
+    userId: string,
+    query: string,
+    limit = 10,
+    userTypeFilter?: string,
+    roleFilter?: string,
+  ) {
     const normalizedQuery = query.trim();
     if (!normalizedQuery && !userTypeFilter && !roleFilter) {
       return [];
@@ -1079,7 +1094,7 @@ export const CommunityService = {
 
     const safeLimit = Math.min(20, Math.max(1, limit));
     const profile = await ensureProfile(userId);
-    
+
     const userMatchCriteria: any = {
       _id: { $ne: userId },
       role: roleFilter ? roleFilter : { $in: COMMUNITY_ALLOWED_ROLES },
@@ -1093,7 +1108,10 @@ export const CommunityService = {
 
     const profileMatchCriteria: any = { userId: { $ne: userId } };
     if (normalizedQuery) {
-      profileMatchCriteria.anonymousAlias = new RegExp(escapeRegex(normalizedQuery), "i");
+      profileMatchCriteria.anonymousAlias = new RegExp(
+        escapeRegex(normalizedQuery),
+        "i",
+      );
     }
 
     const [nameMatches, aliasMatches] = await Promise.all([
@@ -1101,10 +1119,12 @@ export const CommunityService = {
         .select("_id name photoUrl photoS3Key")
         .limit(safeLimit * 3)
         .lean(),
-      normalizedQuery ? CommunityProfile.find(profileMatchCriteria)
-        .select("userId")
-        .limit(safeLimit * 3)
-        .lean() : Promise.resolve([]),
+      normalizedQuery
+        ? CommunityProfile.find(profileMatchCriteria)
+            .select("userId")
+            .limit(safeLimit * 3)
+            .lean()
+        : Promise.resolve([]),
     ]);
 
     const candidateIds = new Set<string>();
@@ -1122,9 +1142,7 @@ export const CommunityService = {
 
     const [users, profiles] = await Promise.all([
       User.find({ _id: { $in: ids }, role: { $in: COMMUNITY_ALLOWED_ROLES } })
-        .select(
-          "_id name photoUrl photoS3Key role userType city dob",
-        )
+        .select("_id name photoUrl photoS3Key role userType city dob")
         .lean(),
       CommunityProfile.find({ userId: { $in: ids } })
         .select("userId anonymousAlias isIdentityPublic blockedUsers")
@@ -1211,8 +1229,7 @@ export const CommunityService = {
     ]);
 
     const targetRole = targetUser?.role as
-      | (typeof COMMUNITY_ALLOWED_ROLES)[number]
-      | undefined;
+      (typeof COMMUNITY_ALLOWED_ROLES)[number] | undefined;
 
     if (
       !targetUser ||
@@ -3102,9 +3119,9 @@ export const CommunityService = {
   async getCommunityPulseStats() {
     const [postsCount, groupsCount] = await Promise.all([
       CommunityPost.countDocuments(),
-      CommunityGroup.countDocuments()
+      CommunityGroup.countDocuments(),
     ]);
-    const totalActivity = postsCount + (groupsCount * 12);
+    const totalActivity = postsCount + groupsCount * 12;
     return totalActivity > 0 ? totalActivity : 1280;
   },
 };

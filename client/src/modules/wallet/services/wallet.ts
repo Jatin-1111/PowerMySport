@@ -26,13 +26,19 @@ export const walletApi = {
     return response.data.data;
   },
 
-  topUpWallet: async (amount: number): Promise<{ redirectUrl: string; merchantOrderId: string }> => {
+  topUpWallet: async (
+    amount: number,
+  ): Promise<{ redirectUrl: string; merchantOrderId: string }> => {
     const response = await axiosInstance.post("/wallet/topup", { amount });
     return response.data.data;
   },
 
-  verifyTopUp: async (merchantOrderId: string): Promise<{ status: string; amount?: number; wallet: Wallet }> => {
-    const response = await axiosInstance.post("/wallet/topup/verify", { merchantOrderId });
+  verifyTopUp: async (
+    merchantOrderId: string,
+  ): Promise<{ status: string; amount?: number; wallet: Wallet }> => {
+    const response = await axiosInstance.post("/wallet/topup/verify", {
+      merchantOrderId,
+    });
     return response.data.data;
   },
 };

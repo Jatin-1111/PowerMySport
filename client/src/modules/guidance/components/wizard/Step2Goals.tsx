@@ -42,7 +42,9 @@ export function Step2Goals({
             accent
           >
             <div className="flex items-start gap-3">
-              <div className="text-slate-700 mt-1"><obj.icon className="h-5 w-5" /></div>
+              <div className="text-slate-700 mt-1">
+                <obj.icon className="h-5 w-5" />
+              </div>
               <div>
                 <p className="font-bold text-slate-900">{obj.label}</p>
                 <p className="text-xs text-slate-500 mt-0.5">{obj.desc}</p>
@@ -67,7 +69,9 @@ export function Step2Goals({
               onClick={() => update("current_fitness_level", lvl.value)}
             >
               <div className="flex items-center gap-3">
-                <div className="text-slate-700"><lvl.icon className="h-5 w-5" /></div>
+                <div className="text-slate-700">
+                  <lvl.icon className="h-5 w-5" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-semibold text-slate-800 text-sm">

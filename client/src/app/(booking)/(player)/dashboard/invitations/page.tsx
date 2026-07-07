@@ -186,9 +186,13 @@ export default function InvitationsPage() {
                       <div className="grid gap-2 text-sm">
                         <div className="flex items-center gap-2 text-slate-600">
                           <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span className="font-medium">{invitation.venueId.name}</span>
+                          <span className="font-medium">
+                            {invitation.venueId.name}
+                          </span>
                           {invitation.venueId.address && (
-                            <span className="text-slate-400">— {invitation.venueId.address}</span>
+                            <span className="text-slate-400">
+                              — {invitation.venueId.address}
+                            </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-slate-600">
@@ -223,7 +227,12 @@ export default function InvitationsPage() {
                         <Button
                           variant="primary"
                           className="flex-1 sm:flex-none"
-                          onClick={() => handleRespond(invitation.id || invitation._id || "", true)}
+                          onClick={() =>
+                            handleRespond(
+                              invitation.id || invitation._id || "",
+                              true,
+                            )
+                          }
                           icon={<CheckCircle size={16} />}
                         >
                           Accept
@@ -231,7 +240,12 @@ export default function InvitationsPage() {
                         <Button
                           variant="secondary"
                           className="flex-1 sm:flex-none"
-                          onClick={() => handleRespond(invitation.id || invitation._id || "", false)}
+                          onClick={() =>
+                            handleRespond(
+                              invitation.id || invitation._id || "",
+                              false,
+                            )
+                          }
                           icon={<XCircle size={16} />}
                         >
                           Decline
@@ -272,7 +286,9 @@ export default function InvitationsPage() {
                         </p>
                         <p className="text-sm text-slate-500">
                           From {invitation.inviterId.name} •{" "}
-                          {new Date(invitation.date).toLocaleDateString("en-US")}{" "}
+                          {new Date(invitation.date).toLocaleDateString(
+                            "en-US",
+                          )}{" "}
                           · {invitation.startTime} – {invitation.endTime}
                         </p>
                       </div>

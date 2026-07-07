@@ -31,8 +31,7 @@ const buildDiscoveryContext = (req: Request): DiscoveryContext => {
   const lat = (req.query.lat || req.query.latitude) as string | undefined;
   const lng = (req.query.lng || req.query.longitude) as string | undefined;
   const radius = (req.query.radius || req.query.maxDistance) as
-    | string
-    | undefined;
+    string | undefined;
   const { sport } = req.query;
 
   const sportFilter = sport as string | undefined;

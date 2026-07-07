@@ -9,9 +9,9 @@ import { formatInr } from "@/lib/shop/format";
 
 export function OrdersClient() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "signed-out" | "error">(
-    "loading",
-  );
+  const [status, setStatus] = useState<
+    "loading" | "ready" | "signed-out" | "error"
+  >("loading");
   const [message, setMessage] = useState("");
 
   async function loadOrders() {

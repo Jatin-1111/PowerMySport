@@ -1,13 +1,7 @@
 import { cn } from "@/utils/cn";
 
 export type StatusTone =
-  | "green"
-  | "red"
-  | "amber"
-  | "blue"
-  | "slate"
-  | "purple"
-  | "orange";
+  "green" | "red" | "amber" | "blue" | "slate" | "purple" | "orange";
 
 const toneClasses: Record<StatusTone, string> = {
   green: "bg-emerald-50 text-emerald-700 ring-emerald-200",

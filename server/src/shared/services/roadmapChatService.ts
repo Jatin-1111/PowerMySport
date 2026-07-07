@@ -21,9 +21,12 @@ export interface UpcomingTournamentContext {
 }
 
 function formatDate(d: Date): string {
-  return new Date(d).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric",
+  return new Date(d).toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
     month: "long",
-    year: "numeric" });
+    year: "numeric",
+  });
 }
 
 function buildUpcomingTournamentsBlock(
@@ -47,7 +50,9 @@ We do not currently have any upcoming ${sportName} tournament dates in our calen
       const parts = [
         `- ${t.name}: starts ${formatDate(t.startDate)}`,
         t.endDate ? `ends ${formatDate(t.endDate)}` : "",
-        t.city || t.venue ? `at ${[t.venue, t.city].filter(Boolean).join(", ")}` : "",
+        t.city || t.venue
+          ? `at ${[t.venue, t.city].filter(Boolean).join(", ")}`
+          : "",
         t.ageGroups?.length ? `age groups: ${t.ageGroups.join("/")}` : "",
         t.registrationDeadlineDate
           ? `registration closes ${formatDate(t.registrationDeadlineDate)}`

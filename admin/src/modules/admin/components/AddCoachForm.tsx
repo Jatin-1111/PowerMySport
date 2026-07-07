@@ -37,11 +37,7 @@ interface CoachFormData {
   travelBufferTime: number | "";
   venueId: string;
   verificationStatus:
-    | "UNVERIFIED"
-    | "PENDING"
-    | "REVIEW"
-    | "VERIFIED"
-    | "REJECTED";
+    "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
   profilePhotoUrl: string;
   profilePhotoKey: string;
 }

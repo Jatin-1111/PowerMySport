@@ -390,25 +390,27 @@ function SubscriptionCheckoutContent() {
             </div>
           </div>
 
-          {user?.userType === "Parent" && user?.dependents && user.dependents.length > 0 && (
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-              <label className="mb-2 block text-sm font-semibold text-slate-900">
-                Who is this subscription for?
-              </label>
-              <select
-                value={selectedDependentId}
-                onChange={(e) => setSelectedDependentId(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
-              >
-                <option value="">Myself ({user.name})</option>
-                {user.dependents.map((d: any) => (
-                  <option key={d._id} value={d._id || ""}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          {user?.userType === "Parent" &&
+            user?.dependents &&
+            user.dependents.length > 0 && (
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                <label className="mb-2 block text-sm font-semibold text-slate-900">
+                  Who is this subscription for?
+                </label>
+                <select
+                  value={selectedDependentId}
+                  onChange={(e) => setSelectedDependentId(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
+                >
+                  <option value="">Myself ({user.name})</option>
+                  {user.dependents.map((d: any) => (
+                    <option key={d._id} value={d._id || ""}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
           <Button
             className="mt-6 w-full bg-turf-green hover:bg-emerald-700"

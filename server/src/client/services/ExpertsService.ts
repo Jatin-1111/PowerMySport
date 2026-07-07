@@ -25,7 +25,11 @@ const HOLD_MINUTES = 15;
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export const generateTemporaryPassword = (): string =>
-  crypto.randomBytes(9).toString("base64").replace(/[^a-zA-Z0-9]/g, "").slice(0, 10) + "A1";
+  crypto
+    .randomBytes(9)
+    .toString("base64")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 10) + "A1";
 
 // ── Serialization ────────────────────────────────────────────────────────────
 
@@ -136,7 +140,9 @@ const notify = (
   ).catch((err) => console.error("[experts] notification failed:", err));
 };
 
-const expertUserIdOf = async (expertId: mongoose.Types.ObjectId): Promise<string | null> => {
+const expertUserIdOf = async (
+  expertId: mongoose.Types.ObjectId,
+): Promise<string | null> => {
   const e = await Expert.findById(expertId).select("userId").lean();
   return e ? (e.userId as mongoose.Types.ObjectId).toString() : null;
 };
@@ -155,7 +161,8 @@ export interface CreateExpertPayload {
   sessionMode?: "ONLINE" | "IN_PERSON" | "BOTH" | undefined;
   sessionDurationMinutes?: number | undefined;
   timezone?: string | undefined;
-  weeklyAvailability?: { dayOfWeek: number; start: string; end: string }[] | undefined;
+  weeklyAvailability?:
+    { dayOfWeek: number; start: string; end: string }[] | undefined;
   blackoutDates?: string[] | undefined;
   city?: string | undefined;
   languages?: string[] | undefined;
@@ -191,10 +198,16 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
     achievements: payload.achievements?.trim(),
     sessionFee: payload.sessionFee,
     sessionMode: payload.sessionMode || "ONLINE",
-    ...(payload.sessionDurationMinutes ? { sessionDurationMinutes: payload.sessionDurationMinutes } : {}),
+    ...(payload.sessionDurationMinutes
+      ? { sessionDurationMinutes: payload.sessionDurationMinutes }
+      : {}),
     ...(payload.timezone ? { timezone: payload.timezone } : {}),
-    ...(Array.isArray(payload.weeklyAvailability) ? { weeklyAvailability: payload.weeklyAvailability } : {}),
-    ...(Array.isArray(payload.blackoutDates) ? { blackoutDates: payload.blackoutDates } : {}),
+    ...(Array.isArray(payload.weeklyAvailability)
+      ? { weeklyAvailability: payload.weeklyAvailability }
+      : {}),
+    ...(Array.isArray(payload.blackoutDates)
+      ? { blackoutDates: payload.blackoutDates }
+      : {}),
     city: payload.city?.trim(),
     languages: payload.languages || [],
     photoUrl: payload.photoUrl,
@@ -206,12 +219,19 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
   return { user, expert, temporaryPassword };
 };
 
-export const listExpertsForAdmin = async (params: { page?: number | undefined; limit?: number | undefined }) => {
+export const listExpertsForAdmin = async (params: {
+  page?: number | undefined;
+  limit?: number | undefined;
+}) => {
   const page = Math.max(1, params.page || 1);
   const limit = Math.min(100, Math.max(1, params.limit || 20));
   const [experts, total] = await Promise.all([
-    Expert.find({}).populate("userId", "name email").sort({ createdAt: -1 })
-      .skip((page - 1) * limit).limit(limit).lean(),
+    Expert.find({})
+      .populate("userId", "name email")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
     Expert.countDocuments({}),
   ]);
   return {
@@ -245,7 +265,10 @@ const sanitizeProfilePatch = (patch: Record<string, unknown>) => {
     if (patch[key] === undefined) continue;
     out[key] = patch[key];
   }
-  if (out.sessionFee != null && (Number(out.sessionFee) < 0 || isNaN(Number(out.sessionFee)))) {
+  if (
+    out.sessionFee != null &&
+    (Number(out.sessionFee) < 0 || isNaN(Number(out.sessionFee)))
+  ) {
     throw new Error("A valid session fee is required");
   }
   if (out.weeklyAvailability && Array.isArray(out.weeklyAvailability)) {
@@ -279,7 +302,11 @@ export const updateExpertByAdmin = async (
 };
 
 export const setExpertActive = async (expertId: string, isActive: boolean) => {
-  const expert = await Expert.findByIdAndUpdate(expertId, { isActive }, { new: true })
+  const expert = await Expert.findByIdAndUpdate(
+    expertId,
+    { isActive },
+    { new: true },
+  )
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert not found");
@@ -356,7 +383,9 @@ export const listActiveExperts = async (params: {
 };
 
 export const getExpertById = async (expertId: string) => {
-  const expert = await Expert.findById(expertId).populate("userId", "name email").lean();
+  const expert = await Expert.findById(expertId)
+    .populate("userId", "name email")
+    .lean();
   if (!expert || !expert.isActive) throw new Error("Expert not found");
   return serializeExpert(expert);
 };
@@ -445,7 +474,10 @@ export const initiateExpertSession = async (params: {
     ...(params.userPhone ? { userPhone: params.userPhone } : {}),
   });
 
-  return { sessionId: session._id.toString(), redirectUrl: payment.redirectUrl };
+  return {
+    sessionId: session._id.toString(),
+    redirectUrl: payment.redirectUrl,
+  };
 };
 
 /**
@@ -466,7 +498,11 @@ const applyExpertPaymentSuccess = async (
 
   if (!wasPaid) {
     const when = session.scheduledAt
-      ? new Date(session.scheduledAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" })
+      ? new Date(session.scheduledAt).toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          dateStyle: "medium",
+          timeStyle: "short",
+        })
       : "a time you choose";
     // Client receipt.
     notify(
@@ -638,7 +674,8 @@ export const respondToExpertSession = async (params: {
   if (!expert) throw new Error("Expert not found");
   if (
     !params.isAdmin &&
-    (expert.userId as mongoose.Types.ObjectId).toString() !== params.expertUserId
+    (expert.userId as mongoose.Types.ObjectId).toString() !==
+      params.expertUserId
   ) {
     throw new Error("Only the expert or an admin can respond to this session");
   }
@@ -652,8 +689,14 @@ export const respondToExpertSession = async (params: {
     session.expertRespondedAt = new Date();
     if (session.scheduledAt) session.status = "SCHEDULED";
     await session.save();
-    notify(session.userId, "BOOKING_CONFIRMED", "Session confirmed",
-      "Your expert confirmed your session time.", { sessionId: session._id.toString() }, true);
+    notify(
+      session.userId,
+      "BOOKING_CONFIRMED",
+      "Session confirmed",
+      "Your expert confirmed your session time.",
+      { sessionId: session._id.toString() },
+      true,
+    );
     return session;
   }
 
@@ -662,28 +705,36 @@ export const respondToExpertSession = async (params: {
     session.status = "CANCELLED";
     session.cancelledAt = declinedAt;
     session.cancelledBy = "EXPERT";
-    session.cancelReason = params.reason?.trim() || "The expert is unavailable at this time";
+    session.cancelReason =
+      params.reason?.trim() || "The expert is unavailable at this time";
     session.expertAcceptance = "DECLINED";
     session.expertRespondedAt = declinedAt;
     if (session.paymentStatus === "COMPLETED") {
       session.refundStatus = "REQUIRED";
       if (session.scheduledAt) {
         session.cancellationNoticeHours = Math.round(
-          (session.scheduledAt.getTime() - declinedAt.getTime()) / (60 * 60 * 1000),
+          (session.scheduledAt.getTime() - declinedAt.getTime()) /
+            (60 * 60 * 1000),
         );
       }
     }
     await session.save();
-    notify(session.userId, "BOOKING_CANCELLED", "Session declined",
+    notify(
+      session.userId,
+      "BOOKING_CANCELLED",
+      "Session declined",
       session.paymentStatus === "COMPLETED"
         ? "Your expert couldn't take this session. A refund will be processed manually by our team."
         : "Your expert couldn't take this session.",
-      { sessionId: session._id.toString() }, true);
+      { sessionId: session._id.toString() },
+      true,
+    );
     return session;
   }
 
   // RESCHEDULE
-  if (!params.scheduledAt) throw new Error("A new time is required to reschedule");
+  if (!params.scheduledAt)
+    throw new Error("A new time is required to reschedule");
   const when = new Date(params.scheduledAt);
   await assertSlotBookable(expert, when, session._id.toString());
   session.scheduledAt = when;
@@ -691,9 +742,14 @@ export const respondToExpertSession = async (params: {
   session.expertAcceptance = "ACCEPTED";
   session.expertRespondedAt = new Date();
   await session.save();
-  notify(session.userId, "BOOKING_STATUS_UPDATED", "Session rescheduled",
+  notify(
+    session.userId,
+    "BOOKING_STATUS_UPDATED",
+    "Session rescheduled",
     `Your expert moved your session to ${when.toLocaleString("en-IN", { timeZone: tz })}.`,
-    { sessionId: session._id.toString() }, true);
+    { sessionId: session._id.toString() },
+    true,
+  );
   return session;
 };
 
@@ -713,10 +769,15 @@ export const cancelExpertSession = async (params: {
   if (!isAdmin && !isExpert && !isClient) {
     throw new Error("You are not authorized to cancel this session");
   }
-  if (session.status === "COMPLETED") throw new Error("A completed session cannot be cancelled");
+  if (session.status === "COMPLETED")
+    throw new Error("A completed session cannot be cancelled");
   if (session.status === "CANCELLED") return session;
 
-  const by: ExpertSessionCanceller = isAdmin ? "ADMIN" : isExpert ? "EXPERT" : "CLIENT";
+  const by: ExpertSessionCanceller = isAdmin
+    ? "ADMIN"
+    : isExpert
+      ? "EXPERT"
+      : "CLIENT";
   const cancelledAt = new Date();
   session.status = "CANCELLED";
   session.cancelledAt = cancelledAt;
@@ -729,7 +790,8 @@ export const cancelExpertSession = async (params: {
     session.refundStatus = "REQUIRED";
     if (session.scheduledAt) {
       session.cancellationNoticeHours = Math.round(
-        (session.scheduledAt.getTime() - cancelledAt.getTime()) / (60 * 60 * 1000),
+        (session.scheduledAt.getTime() - cancelledAt.getTime()) /
+          (60 * 60 * 1000),
       );
     }
   }
@@ -738,22 +800,46 @@ export const cancelExpertSession = async (params: {
   const expertUserId = expert?.userId?.toString();
   // Notify the other party.
   if (isClient && expertUserId) {
-    notify(expertUserId, "BOOKING_CANCELLED", "Session cancelled",
-      "A client cancelled their session with you.", { sessionId: session._id.toString() }, true);
+    notify(
+      expertUserId,
+      "BOOKING_CANCELLED",
+      "Session cancelled",
+      "A client cancelled their session with you.",
+      { sessionId: session._id.toString() },
+      true,
+    );
   } else {
-    notify(session.userId, "BOOKING_CANCELLED", "Session cancelled",
+    notify(
+      session.userId,
+      "BOOKING_CANCELLED",
+      "Session cancelled",
       session.paymentStatus === "COMPLETED"
         ? "Your session was cancelled. A refund will be processed manually by our team."
         : "Your session was cancelled.",
-      { sessionId: session._id.toString() }, true);
+      { sessionId: session._id.toString() },
+      true,
+    );
   }
   return session;
 };
 
 const recomputeExpertRating = async (expertId: mongoose.Types.ObjectId) => {
   const agg = await ExpertSession.aggregate([
-    { $match: { expertId, reviewed: true, reviewHidden: { $ne: true }, rating: { $gte: 1 } } },
-    { $group: { _id: "$expertId", avg: { $avg: "$rating" }, count: { $sum: 1 } } },
+    {
+      $match: {
+        expertId,
+        reviewed: true,
+        reviewHidden: { $ne: true },
+        rating: { $gte: 1 },
+      },
+    },
+    {
+      $group: {
+        _id: "$expertId",
+        avg: { $avg: "$rating" },
+        count: { $sum: 1 },
+      },
+    },
   ]);
   const avg = agg[0]?.avg || 0;
   const count = agg[0]?.count || 0;
@@ -773,9 +859,12 @@ export const reviewExpertSession = async (params: {
   const session = await ExpertSession.findById(params.sessionId);
   if (!session) throw new Error("Session not found");
   assertSessionOwner(session, params.userId);
-  if (session.status !== "COMPLETED") throw new Error("You can only review a completed session");
-  if (session.reviewed) throw new Error("You have already reviewed this session");
-  if (params.rating < 1 || params.rating > 5) throw new Error("Rating must be between 1 and 5");
+  if (session.status !== "COMPLETED")
+    throw new Error("You can only review a completed session");
+  if (session.reviewed)
+    throw new Error("You have already reviewed this session");
+  if (params.rating < 1 || params.rating > 5)
+    throw new Error("Rating must be between 1 and 5");
 
   session.reviewed = true;
   session.rating = params.rating;
@@ -788,8 +877,13 @@ export const reviewExpertSession = async (params: {
 
   const expertUserId = await expertUserIdOf(session.expertId);
   if (expertUserId) {
-    notify(expertUserId, "REVIEW_POSTED", "New review",
-      `You received a ${params.rating}-star review.`, { sessionId: session._id.toString() });
+    notify(
+      expertUserId,
+      "REVIEW_POSTED",
+      "New review",
+      `You received a ${params.rating}-star review.`,
+      { sessionId: session._id.toString() },
+    );
   }
   return session;
 };
@@ -813,8 +907,14 @@ export const markSessionRefundDone = async (sessionId: string) => {
   }
   session.refundStatus = "MANUAL_DONE";
   await session.save();
-  notify(session.userId, "PAYMENT_REFUND", "Refund processed",
-    `Your refund of ₹${session.amount} has been processed.`, { sessionId: session._id.toString() }, true);
+  notify(
+    session.userId,
+    "PAYMENT_REFUND",
+    "Refund processed",
+    `Your refund of ₹${session.amount} has been processed.`,
+    { sessionId: session._id.toString() },
+    true,
+  );
   return session;
 };
 
@@ -833,9 +933,14 @@ export const markSessionPayoutDone = async (sessionId: string) => {
   await session.save();
   const expertUserId = await expertUserIdOf(session.expertId);
   if (expertUserId) {
-    notify(expertUserId, "PAYOUT_PROCESSED", "Payout released",
+    notify(
+      expertUserId,
+      "PAYOUT_PROCESSED",
+      "Payout released",
       `Your payout of ₹${session.amount} for a completed session has been released.`,
-      { sessionId: session._id.toString() }, true);
+      { sessionId: session._id.toString() },
+      true,
+    );
   }
   return session;
 };
@@ -850,9 +955,12 @@ export const getExpertSessionForUser = async (params: {
   const session = await ExpertSession.findById(params.sessionId).lean();
   if (!session) throw new Error("Session not found");
 
-  const expert = await Expert.findById(session.expertId).populate("userId", "name email").lean();
+  const expert = await Expert.findById(session.expertId)
+    .populate("userId", "name email")
+    .lean();
   const isClient = session.userId.toString() === params.userId;
-  const isExpert = expert && (expert.userId as any)?._id?.toString() === params.userId;
+  const isExpert =
+    expert && (expert.userId as any)?._id?.toString() === params.userId;
   if (!isClient && !isExpert && !params.isAdmin) {
     throw new Error("You are not authorized to view this session");
   }
@@ -863,9 +971,13 @@ export const getExpertSessionForUser = async (params: {
 };
 
 export const listUserExpertSessions = async (userId: string) => {
-  const sessions = await ExpertSession.find({ userId: toObjectId(userId) }).sort({ createdAt: -1 }).lean();
+  const sessions = await ExpertSession.find({ userId: toObjectId(userId) })
+    .sort({ createdAt: -1 })
+    .lean();
   const expertIds = [...new Set(sessions.map((s) => s.expertId.toString()))];
-  const experts = await Expert.find({ _id: { $in: expertIds } }).populate("userId", "name email").lean();
+  const experts = await Expert.find({ _id: { $in: expertIds } })
+    .populate("userId", "name email")
+    .lean();
   const byId = new Map(experts.map((e) => [e._id.toString(), e]));
   return sessions.map((s) => {
     const e = byId.get(s.expertId.toString());
@@ -877,7 +989,9 @@ export const listUserExpertSessions = async (userId: string) => {
 };
 
 export const listExpertOwnSessions = async (expertUserId: string) => {
-  const expert = await Expert.findOne({ userId: toObjectId(expertUserId) }).select("_id timezone");
+  const expert = await Expert.findOne({
+    userId: toObjectId(expertUserId),
+  }).select("_id timezone");
   if (!expert) return [];
   const tz = (expert as any).timezone || "Asia/Kolkata";
   const sessions = await ExpertSession.find({ expertId: expert._id })
@@ -886,7 +1000,10 @@ export const listExpertOwnSessions = async (expertUserId: string) => {
     .lean();
   return sessions.map((s) => {
     const u = s.userId as unknown as { name?: string } | null;
-    return serializeSession(s, { clientName: u?.name || "Client", expertTimezone: tz });
+    return serializeSession(s, {
+      clientName: u?.name || "Client",
+      expertTimezone: tz,
+    });
   });
 };
 
@@ -915,7 +1032,10 @@ export const getExpertSessionsForAdmin = async (expertId: string) => {
   return {
     sessions: sessions.map((s) => {
       const u = s.userId as unknown as { name?: string; email?: string } | null;
-      return serializeSession(s, { clientName: u?.name || "Client", expertTimezone: tz });
+      return serializeSession(s, {
+        clientName: u?.name || "Client",
+        expertTimezone: tz,
+      });
     }),
     summary: {
       total: sessions.length,
@@ -979,8 +1099,13 @@ export const reconcileExpertSessionPaymentFromWebhookPayload = async (
   if (["COMPLETED", "SUCCESS", "PAYMENT_SUCCESS"].includes(upper)) {
     await session.save();
     await applyExpertPaymentSuccess(session);
-    console.info(`[ExpertWebhook] payment confirmed for session ${session._id}`);
-  } else if (["FAILED", "PAYMENT_ERROR", "PAYMENT_DECLINED"].includes(upper) && session.paymentStatus !== "COMPLETED") {
+    console.info(
+      `[ExpertWebhook] payment confirmed for session ${session._id}`,
+    );
+  } else if (
+    ["FAILED", "PAYMENT_ERROR", "PAYMENT_DECLINED"].includes(upper) &&
+    session.paymentStatus !== "COMPLETED"
+  ) {
     session.paymentStatus = "FAILED";
     if (session.status === "PENDING_PAYMENT") {
       session.status = "CANCELLED";
@@ -1010,7 +1135,14 @@ export const expireUnpaidExpertHolds = async (): Promise<number> => {
   for (const s of stale) {
     const updated = await ExpertSession.findOneAndUpdate(
       { _id: s._id, status: "PENDING_PAYMENT" },
-      { $set: { status: "CANCELLED", cancelledBy: "SYSTEM", cancelledAt: now, cancelReason: "Payment not completed in time" } },
+      {
+        $set: {
+          status: "CANCELLED",
+          cancelledBy: "SYSTEM",
+          cancelledAt: now,
+          cancelReason: "Payment not completed in time",
+        },
+      },
     );
     if (updated) count += 1;
   }
@@ -1026,7 +1158,10 @@ export const autoCompleteExpertSessions = async (): Promise<number> => {
   }).select("_id scheduledAt durationMinutes userId");
   let count = 0;
   for (const s of candidates) {
-    const end = new Date(new Date(s.scheduledAt as Date).getTime() + (s.durationMinutes || 60) * 60_000);
+    const end = new Date(
+      new Date(s.scheduledAt as Date).getTime() +
+        (s.durationMinutes || 60) * 60_000,
+    );
     if (end > now) continue;
     const updated = await ExpertSession.findOneAndUpdate(
       { _id: s._id, status: "SCHEDULED" },
@@ -1034,9 +1169,14 @@ export const autoCompleteExpertSessions = async (): Promise<number> => {
     );
     if (updated) {
       count += 1;
-      notify(s.userId, "REVIEW_REMINDER", "How was your session?",
+      notify(
+        s.userId,
+        "REVIEW_REMINDER",
+        "How was your session?",
         "Your expert session is complete. Leave a rating and feedback to help others.",
-        { sessionId: s._id.toString() }, true);
+        { sessionId: s._id.toString() },
+        true,
+      );
     }
   }
   return count;
@@ -1103,7 +1243,11 @@ export const sendSessionStartReminders = async (): Promise<number> => {
     if (!updated) continue;
     count += 1;
 
-    const when = new Date(s.scheduledAt as Date).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" });
+    const when = new Date(s.scheduledAt as Date).toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
     let clientDetail = "";
     let expertDetail = "";
     if (s.mode === "ONLINE") {
@@ -1114,7 +1258,9 @@ export const sendSessionStartReminders = async (): Promise<number> => {
         ? ` Your meeting link: ${s.meetingLink}`
         : " Don't forget to add a meeting link.";
     } else if (s.mode === "IN_PERSON") {
-      const expertDoc = await Expert.findById(s.expertId).select("inPersonAddress").lean();
+      const expertDoc = await Expert.findById(s.expertId)
+        .select("inPersonAddress")
+        .lean();
       const address = (expertDoc as any)?.inPersonAddress;
       clientDetail = address
         ? ` Location: ${address}`
@@ -1169,9 +1315,14 @@ export const releaseExpertSessionPayouts = async (): Promise<number> => {
       count += 1;
       const expertUserId = await expertUserIdOf(s.expertId);
       if (expertUserId) {
-        notify(expertUserId, "PAYOUT_PROCESSED", "Payout released",
+        notify(
+          expertUserId,
+          "PAYOUT_PROCESSED",
+          "Payout released",
           `Your payout of ₹${s.amount} for a completed session has been released.`,
-          { sessionId: s._id.toString() }, true);
+          { sessionId: s._id.toString() },
+          true,
+        );
       }
     }
   }
@@ -1189,10 +1340,18 @@ export const sendExpertReviewReminders = async (): Promise<number> => {
   }).select("_id userId");
   let count = 0;
   for (const s of sessions) {
-    notify(s.userId, "REVIEW_REMINDER", "Rate your expert session",
+    notify(
+      s.userId,
+      "REVIEW_REMINDER",
+      "Rate your expert session",
       "You haven't reviewed your recent expert session yet — your feedback helps other players.",
-      { sessionId: s._id.toString() }, true);
-    await ExpertSession.updateOne({ _id: s._id }, { $set: { reviewReminderSentAt: new Date() } });
+      { sessionId: s._id.toString() },
+      true,
+    );
+    await ExpertSession.updateOne(
+      { _id: s._id },
+      { $set: { reviewReminderSentAt: new Date() } },
+    );
     count += 1;
   }
   return count;

@@ -22,8 +22,12 @@ interface GroupedPathway {
  * that sportSlug. Enforced here (not just client-side) so an expert can't
  * verify sports outside their claimed expertise via a direct API call.
  */
-export const listPathwaysForExpertVerification = async (expertUserId: string) => {
-  const expert = await Expert.findOne({ userId: expertUserId }).select("sports").lean();
+export const listPathwaysForExpertVerification = async (
+  expertUserId: string,
+) => {
+  const expert = await Expert.findOne({ userId: expertUserId })
+    .select("sports")
+    .lean();
   if (!expert) throw new Error("Expert profile not found");
 
   const slugs = expertSportSlugs(expert.sports);
@@ -55,7 +59,8 @@ export const listPathwaysForExpertVerification = async (expertUserId: string) =>
   const mineBySlug = new Set<string>();
   for (const v of verifications) {
     countBySlug.set(v.sportSlug, (countBySlug.get(v.sportSlug) || 0) + 1);
-    if (v.expertId.toString() === expert._id.toString()) mineBySlug.add(v.sportSlug);
+    if (v.expertId.toString() === expert._id.toString())
+      mineBySlug.add(v.sportSlug);
   }
 
   return grouped
@@ -76,7 +81,9 @@ export const listPathwaysForExpertVerification = async (expertUserId: string) =>
 const assertExpertOwnsSport = (expertSports: string[], sportSlug: string) => {
   const slugs = expertSportSlugs(expertSports);
   if (!slugs.includes(sportSlug)) {
-    throw new Error("You can only verify pathways for sports listed on your profile");
+    throw new Error(
+      "You can only verify pathways for sports listed on your profile",
+    );
   }
 };
 
@@ -86,16 +93,22 @@ export const verifyPathwayAsExpert = async (
   expertUserId: string,
   note?: string,
 ) => {
-  const expert = await Expert.findOne({ userId: expertUserId }).populate("userId", "name");
+  const expert = await Expert.findOne({ userId: expertUserId }).populate(
+    "userId",
+    "name",
+  );
   if (!expert) throw new Error("Expert profile not found");
 
   assertExpertOwnsSport(expert.sports || [], sportSlug);
 
   // Any state variant will do — we only need the canonical display name.
-  const anyVariant = await SportPathway.findOne({ sportSlug }).select("sportName").lean();
+  const anyVariant = await SportPathway.findOne({ sportSlug })
+    .select("sportName")
+    .lean();
   if (!anyVariant) throw new Error("No pathway exists yet for this sport");
 
-  const expertName = (expert.userId as unknown as { name?: string })?.name || "Expert";
+  const expertName =
+    (expert.userId as unknown as { name?: string })?.name || "Expert";
   const noteValue = note?.trim();
 
   const setFields: Record<string, unknown> = {
@@ -126,5 +139,8 @@ export const removePathwayExpertVerification = async (
 ) => {
   const expert = await Expert.findOne({ userId: expertUserId }).select("_id");
   if (!expert) throw new Error("Expert profile not found");
-  await PathwayExpertVerification.deleteOne({ sportSlug, expertId: expert._id });
+  await PathwayExpertVerification.deleteOne({
+    sportSlug,
+    expertId: expert._id,
+  });
 };

@@ -15,10 +15,13 @@ export default async function WishlistPage() {
 
   if (token) {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/v1/shop/wishlist`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/v1/shop/wishlist`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
+      );
       const data = await res.json();
       if (data.ok) {
         wishlistProducts = data.data.map((item: any) => ({
@@ -31,5 +34,10 @@ export default async function WishlistPage() {
     }
   }
 
-  return <WishlistClient initialProducts={wishlistProducts} isAuthenticated={!!token} />;
+  return (
+    <WishlistClient
+      initialProducts={wishlistProducts}
+      isAuthenticated={!!token}
+    />
+  );
 }

@@ -22,23 +22,24 @@ const containerVariants: Variants = {
 /**
  * Must be used in conjunction with StaggerItem for children.
  */
-export const StaggerContainer = forwardRef<HTMLDivElement, StaggerContainerProps>(
-  ({ children, staggerChildren = 0.1, delayChildren = 0, ...props }, ref) => {
-    return (
-      <motion.div
-        ref={ref}
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-50px" }}
-        custom={{ staggerChildren, delayChildren }}
-        {...props}
-      >
-        {children}
-      </motion.div>
-    );
-  }
-);
+export const StaggerContainer = forwardRef<
+  HTMLDivElement,
+  StaggerContainerProps
+>(({ children, staggerChildren = 0.1, delayChildren = 0, ...props }, ref) => {
+  return (
+    <motion.div
+      ref={ref}
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-50px" }}
+      custom={{ staggerChildren, delayChildren }}
+      {...props}
+    >
+      {children}
+    </motion.div>
+  );
+});
 StaggerContainer.displayName = "StaggerContainer";
 
 const itemVariants: Variants = {
@@ -53,6 +54,6 @@ export const StaggerItem = forwardRef<HTMLDivElement, HTMLMotionProps<"div">>(
         {children}
       </motion.div>
     );
-  }
+  },
 );
 StaggerItem.displayName = "StaggerItem";

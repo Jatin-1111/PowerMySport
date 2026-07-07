@@ -46,7 +46,11 @@ export const normalizeAddressInput = <T extends NormalizableAddress>(
     out.state = normalizeStateName(out.state);
   if (out.postalCode !== undefined && typeof out.postalCode === "string")
     out.postalCode = out.postalCode.replace(/\D/g, "");
-  if (out.country !== undefined && typeof out.country === "string" && out.country)
+  if (
+    out.country !== undefined &&
+    typeof out.country === "string" &&
+    out.country
+  )
     out.country = out.country.trim().toUpperCase();
 
   return out as T;

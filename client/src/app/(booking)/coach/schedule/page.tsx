@@ -29,12 +29,25 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const HOUR_START = 6;
 const HOUR_END = 22;
-const HOURS = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i);
+const HOURS = Array.from(
+  { length: HOUR_END - HOUR_START },
+  (_, i) => HOUR_START + i,
+);
 const ROW_HEIGHT = 64; // px per hour
 
 type CalendarView = "month" | "week" | "day";
@@ -60,7 +73,12 @@ function formatTime(t: string): string {
 }
 
 function formatFullDate(d: Date): string {
-  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function getWeekStart(d: Date): Date {
@@ -70,7 +88,10 @@ function getWeekStart(d: Date): Date {
   return dt;
 }
 
-function getCalendarRange(view: CalendarView, current: Date): { start: Date; end: Date } {
+function getCalendarRange(
+  view: CalendarView,
+  current: Date,
+): { start: Date; end: Date } {
   if (view === "day") {
     const start = new Date(current);
     start.setHours(0, 0, 0, 0);
@@ -104,9 +125,11 @@ function isDateBlocked(d: Date, blocks: IBlockedDate[]): boolean {
 }
 
 function sameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() &&
+  return (
+    a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
+    a.getDate() === b.getDate()
+  );
 }
 
 function bookingsForDay(day: Date, bookings: Booking[]): Booking[] {
@@ -158,11 +181,23 @@ interface SessionModalProps {
   onClose: () => void;
   onApprove: (id: string) => Promise<void>;
   onReject: (id: string) => Promise<void>;
-  onReschedule: (id: string, date: string, start: string, end: string) => Promise<void>;
+  onReschedule: (
+    id: string,
+    date: string,
+    start: string,
+    end: string,
+  ) => Promise<void>;
   actionLoading: string | null;
 }
 
-function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, actionLoading }: SessionModalProps) {
+function SessionModal({
+  booking,
+  onClose,
+  onApprove,
+  onReject,
+  onReschedule,
+  actionLoading,
+}: SessionModalProps) {
   const [showReschedule, setShowReschedule] = useState(false);
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleStart, setRescheduleStart] = useState("");
@@ -181,7 +216,7 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
 
   const playerName =
     typeof booking.userId === "object" && booking.userId !== null
-      ? (booking.userId as { name?: string }).name ?? "Player"
+      ? ((booking.userId as { name?: string }).name ?? "Player")
       : "Player";
 
   const isPending = booking.status === "PENDING_CONFIRMATION";
@@ -198,7 +233,12 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
       toast.error("End time must be after start time.");
       return;
     }
-    await onReschedule(booking.id, rescheduleDate, rescheduleStart, rescheduleEnd);
+    await onReschedule(
+      booking.id,
+      rescheduleDate,
+      rescheduleStart,
+      rescheduleEnd,
+    );
     setShowReschedule(false);
   };
 
@@ -219,7 +259,12 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
             <p className="font-semibold text-slate-900">{playerName}</p>
             <p className="text-xs text-slate-500 capitalize">{booking.sport}</p>
           </div>
-          <span className={cn("ml-auto rounded-full px-3 py-1 text-xs font-medium", STATUS_BADGE[booking.status])}>
+          <span
+            className={cn(
+              "ml-auto rounded-full px-3 py-1 text-xs font-medium",
+              STATUS_BADGE[booking.status],
+            )}
+          >
             {STATUS_LABEL[booking.status] ?? booking.status}
           </span>
         </div>
@@ -231,7 +276,9 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
           <div className="rounded-xl bg-slate-50 px-4 py-3">
             <div className="flex items-center gap-2 text-slate-500 mb-1">
               <CalendarDays size={14} />
-              <span className="text-xs font-medium uppercase tracking-wide">Date</span>
+              <span className="text-xs font-medium uppercase tracking-wide">
+                Date
+              </span>
             </div>
             <p className="text-sm font-semibold text-slate-800">
               {formatFullDate(new Date(booking.date))}
@@ -240,7 +287,9 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
           <div className="rounded-xl bg-slate-50 px-4 py-3">
             <div className="flex items-center gap-2 text-slate-500 mb-1">
               <Clock size={14} />
-              <span className="text-xs font-medium uppercase tracking-wide">Time</span>
+              <span className="text-xs font-medium uppercase tracking-wide">
+                Time
+              </span>
             </div>
             <p className="text-sm font-semibold text-slate-800">
               {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
@@ -249,15 +298,21 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
           <div className="rounded-xl bg-slate-50 px-4 py-3">
             <div className="flex items-center gap-2 text-slate-500 mb-1">
               <IndianRupee size={14} />
-              <span className="text-xs font-medium uppercase tracking-wide">Amount</span>
+              <span className="text-xs font-medium uppercase tracking-wide">
+                Amount
+              </span>
             </div>
-            <p className="text-sm font-semibold text-slate-800">₹{booking.totalAmount.toLocaleString("en-IN")}</p>
+            <p className="text-sm font-semibold text-slate-800">
+              ₹{booking.totalAmount.toLocaleString("en-IN")}
+            </p>
           </div>
           {(booking.venue || booking.coachId) && (
             <div className="rounded-xl bg-slate-50 px-4 py-3">
               <div className="flex items-center gap-2 text-slate-500 mb-1">
                 <MapPin size={14} />
-                <span className="text-xs font-medium uppercase tracking-wide">Location</span>
+                <span className="text-xs font-medium uppercase tracking-wide">
+                  Location
+                </span>
               </div>
               <p className="text-sm font-semibold text-slate-800 truncate">
                 {typeof booking.venue === "object" && booking.venue
@@ -279,10 +334,14 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
               className="overflow-hidden"
             >
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                <p className="text-sm font-semibold text-slate-700">Reschedule to</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  Reschedule to
+                </p>
                 <div className="grid grid-cols-1 gap-2">
                   <div>
-                    <label className="text-xs text-slate-500 mb-1 block">Date</label>
+                    <label className="text-xs text-slate-500 mb-1 block">
+                      Date
+                    </label>
                     <input
                       type="date"
                       min={today}
@@ -293,7 +352,9 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs text-slate-500 mb-1 block">Start time</label>
+                      <label className="text-xs text-slate-500 mb-1 block">
+                        Start time
+                      </label>
                       <input
                         type="time"
                         value={rescheduleStart}
@@ -302,7 +363,9 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-slate-500 mb-1 block">End time</label>
+                      <label className="text-xs text-slate-500 mb-1 block">
+                        End time
+                      </label>
                       <input
                         type="time"
                         value={rescheduleEnd}
@@ -321,7 +384,11 @@ function SessionModal({ booking, onClose, onApprove, onReject, onReschedule, act
                   >
                     Save
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setShowReschedule(false)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowReschedule(false)}
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -412,13 +479,19 @@ function MonthView({
       {/* Day headers */}
       <div className="grid grid-cols-7 border-b border-slate-100">
         {DAY_LABELS.map((l) => (
-          <div key={l} className="py-2 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide">
+          <div
+            key={l}
+            className="py-2 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide"
+          >
             {l}
           </div>
         ))}
       </div>
       {/* Grid */}
-      <div className="grid grid-cols-7" style={{ gridAutoRows: "minmax(100px, 1fr)" }}>
+      <div
+        className="grid grid-cols-7"
+        style={{ gridAutoRows: "minmax(100px, 1fr)" }}
+      >
         {days.map((day, i) => {
           const isCurrentMonth = day.getMonth() === current.getMonth();
           const isToday = sameDay(day, today);
@@ -438,35 +511,47 @@ function MonthView({
               )}
             >
               {blocked && (
-                <div className="absolute inset-0 pointer-events-none"
+                <div
+                  className="absolute inset-0 pointer-events-none"
                   style={{
-                    backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(244,63,94,0.06) 4px, rgba(244,63,94,0.06) 8px)",
+                    backgroundImage:
+                      "repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(244,63,94,0.06) 4px, rgba(244,63,94,0.06) 8px)",
                   }}
                 />
               )}
-              <span className={cn(
-                "relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
-                isToday && "bg-power-orange text-white",
-                !isToday && isCurrentMonth && "text-slate-800",
-                !isToday && !isCurrentMonth && "text-slate-400",
-              )}>
+              <span
+                className={cn(
+                  "relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
+                  isToday && "bg-power-orange text-white",
+                  !isToday && isCurrentMonth && "text-slate-800",
+                  !isToday && !isCurrentMonth && "text-slate-400",
+                )}
+              >
                 {day.getDate()}
               </span>
               <div className="relative z-10 mt-0.5 space-y-0.5">
                 {visible.map((b) => (
                   <button
                     key={b.id}
-                    onClick={(e) => { e.stopPropagation(); onBookingClick(b); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBookingClick(b);
+                    }}
                     className={cn(
                       "w-full text-left rounded px-1.5 py-0.5 text-xs font-medium leading-tight truncate",
                       BOOKING_BLOCK[b.status] ?? "bg-slate-100 text-slate-600",
                     )}
                   >
-                    {formatTime(b.startTime)} {typeof b.userId === "object" ? (b.userId as { name?: string }).name ?? "" : ""}
+                    {formatTime(b.startTime)}{" "}
+                    {typeof b.userId === "object"
+                      ? ((b.userId as { name?: string }).name ?? "")
+                      : ""}
                   </button>
                 ))}
                 {overflow > 0 && (
-                  <p className="text-xs text-slate-400 px-1">+{overflow} more</p>
+                  <p className="text-xs text-slate-400 px-1">
+                    +{overflow} more
+                  </p>
                 )}
               </div>
             </div>
@@ -495,18 +580,24 @@ function TimeGrid({
   return (
     <div className="flex-1 overflow-auto">
       {/* Day headers */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-100 grid"
-        style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
+      <div
+        className="sticky top-0 z-10 bg-white border-b border-slate-100 grid"
+        style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
+      >
         <div className="py-2" />
         {days.map((d, i) => {
           const isToday = sameDay(d, new Date());
           return (
             <div key={i} className="py-2 text-center">
-              <p className="text-xs font-medium text-slate-400 uppercase">{DAY_LABELS[d.getDay()]}</p>
-              <p className={cn(
-                "mx-auto mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
-                isToday ? "bg-power-orange text-white" : "text-slate-700",
-              )}>
+              <p className="text-xs font-medium text-slate-400 uppercase">
+                {DAY_LABELS[d.getDay()]}
+              </p>
+              <p
+                className={cn(
+                  "mx-auto mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
+                  isToday ? "bg-power-orange text-white" : "text-slate-700",
+                )}
+              >
                 {d.getDate()}
               </p>
             </div>
@@ -515,11 +606,18 @@ function TimeGrid({
       </div>
 
       {/* Time grid */}
-      <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
+      <div
+        className="relative grid"
+        style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
+      >
         {/* Time labels */}
         <div className="relative" style={{ height: totalHeight }}>
           {HOURS.map((h) => (
-            <div key={h} className="absolute w-full" style={{ top: (h - HOUR_START) * ROW_HEIGHT - 8 }}>
+            <div
+              key={h}
+              className="absolute w-full"
+              style={{ top: (h - HOUR_START) * ROW_HEIGHT - 8 }}
+            >
               <span className="pl-2 text-xs text-slate-400 font-medium">
                 {h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}
               </span>
@@ -533,18 +631,27 @@ function TimeGrid({
           const blocked = isDateBlocked(day, blockedDates);
 
           return (
-            <div key={ci} className="relative border-l border-slate-100" style={{ height: totalHeight }}>
+            <div
+              key={ci}
+              className="relative border-l border-slate-100"
+              style={{ height: totalHeight }}
+            >
               {/* Hour lines */}
               {HOURS.map((h) => (
-                <div key={h} className="absolute w-full border-t border-slate-100"
-                  style={{ top: (h - HOUR_START) * ROW_HEIGHT }} />
+                <div
+                  key={h}
+                  className="absolute w-full border-t border-slate-100"
+                  style={{ top: (h - HOUR_START) * ROW_HEIGHT }}
+                />
               ))}
 
               {/* Blocked overlay */}
               {blocked && (
-                <div className="absolute inset-0 pointer-events-none"
+                <div
+                  className="absolute inset-0 pointer-events-none"
                   style={{
-                    backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(244,63,94,0.08) 6px, rgba(244,63,94,0.08) 12px)",
+                    backgroundImage:
+                      "repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(244,63,94,0.08) 6px, rgba(244,63,94,0.08) 12px)",
                   }}
                 />
               )}
@@ -554,10 +661,13 @@ function TimeGrid({
                 const startMins = timeToMinutes(b.startTime) - HOUR_START * 60;
                 const endMins = timeToMinutes(b.endTime) - HOUR_START * 60;
                 const top = Math.max(0, (startMins / 60) * ROW_HEIGHT);
-                const height = Math.max(24, ((endMins - startMins) / 60) * ROW_HEIGHT - 2);
+                const height = Math.max(
+                  24,
+                  ((endMins - startMins) / 60) * ROW_HEIGHT - 2,
+                );
                 const playerName =
                   typeof b.userId === "object" && b.userId
-                    ? (b.userId as { name?: string }).name ?? ""
+                    ? ((b.userId as { name?: string }).name ?? "")
                     : "";
 
                 return (
@@ -567,13 +677,18 @@ function TimeGrid({
                     className={cn(
                       "absolute left-0.5 right-0.5 rounded-md border px-1.5 py-1 text-left overflow-hidden",
                       "transition-shadow hover:shadow-md hover:z-10",
-                      BOOKING_BLOCK[b.status] ?? "bg-slate-100 border-slate-200 text-slate-600",
+                      BOOKING_BLOCK[b.status] ??
+                        "bg-slate-100 border-slate-200 text-slate-600",
                     )}
                     style={{ top, height }}
                   >
-                    <p className="text-xs font-semibold leading-tight truncate">{playerName || b.sport}</p>
+                    <p className="text-xs font-semibold leading-tight truncate">
+                      {playerName || b.sport}
+                    </p>
                     {height > 36 && (
-                      <p className="text-xs opacity-70 leading-tight">{formatTime(b.startTime)}</p>
+                      <p className="text-xs opacity-70 leading-tight">
+                        {formatTime(b.startTime)}
+                      </p>
                     )}
                   </button>
                 );
@@ -595,7 +710,9 @@ export default function CoachSchedulePage() {
     d.setHours(0, 0, 0, 0);
     return d;
   });
-  const [calendarData, setCalendarData] = useState<CoachCalendarData | null>(null);
+  const [calendarData, setCalendarData] = useState<CoachCalendarData | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -647,7 +764,8 @@ export default function CoachSchedulePage() {
   };
 
   const headerLabel = useMemo(() => {
-    if (view === "month") return `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+    if (view === "month")
+      return `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
     if (view === "week") {
       const ws = getWeekStart(currentDate);
       const we = new Date(ws);
@@ -703,7 +821,12 @@ export default function CoachSchedulePage() {
     }
   };
 
-  const handleReschedule = async (id: string, date: string, start: string, end: string) => {
+  const handleReschedule = async (
+    id: string,
+    date: string,
+    start: string,
+    end: string,
+  ) => {
     setActionLoading(`reschedule-${id}`);
     try {
       const res = await bookingApi.rescheduleBooking(id, {
@@ -780,7 +903,9 @@ export default function CoachSchedulePage() {
   const blockedDates = calendarData?.blockedDates ?? [];
   const bufferTime = calendarData?.travelBufferTime ?? 0;
 
-  const pendingBookings = bookings.filter((b) => b.status === "PENDING_CONFIRMATION");
+  const pendingBookings = bookings.filter(
+    (b) => b.status === "PENDING_CONFIRMATION",
+  );
 
   const today = toISODate(new Date());
 
@@ -789,7 +914,6 @@ export default function CoachSchedulePage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-
         {/* Page header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -798,8 +922,12 @@ export default function CoachSchedulePage() {
           className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Schedule</h1>
-            <p className="mt-0.5 text-sm text-slate-500">Manage your bookings, availability, and blocked dates</p>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Schedule
+            </h1>
+            <p className="mt-0.5 text-sm text-slate-500">
+              Manage your bookings, availability, and blocked dates
+            </p>
           </div>
 
           {/* View switcher */}
@@ -847,10 +975,14 @@ export default function CoachSchedulePage() {
                 >
                   <ChevronRight size={18} />
                 </button>
-                <h2 className="ml-1 text-base font-semibold text-slate-800">{headerLabel}</h2>
+                <h2 className="ml-1 text-base font-semibold text-slate-800">
+                  {headerLabel}
+                </h2>
               </div>
               <div className="flex items-center gap-2">
-                {isLoading && <Loader2 size={16} className="animate-spin text-slate-400" />}
+                {isLoading && (
+                  <Loader2 size={16} className="animate-spin text-slate-400" />
+                )}
                 <button
                   onClick={goToday}
                   className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
@@ -872,7 +1004,10 @@ export default function CoachSchedulePage() {
               >
                 {isLoading && !calendarData ? (
                   <div className="flex flex-1 items-center justify-center">
-                    <Loader2 size={28} className="animate-spin text-slate-300" />
+                    <Loader2
+                      size={28}
+                      className="animate-spin text-slate-300"
+                    />
                   </div>
                 ) : view === "month" ? (
                   <MonthView
@@ -902,13 +1037,20 @@ export default function CoachSchedulePage() {
                 { label: "Completed", cls: "bg-slate-300" },
               ].map(({ label, cls }) => (
                 <div key={label} className="flex items-center gap-1.5">
-                  <span className={cn("inline-block h-2 w-2 rounded-full", cls)} />
+                  <span
+                    className={cn("inline-block h-2 w-2 rounded-full", cls)}
+                  />
                   <span className="text-xs text-slate-500">{label}</span>
                 </div>
               ))}
               <div className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-4 rounded-sm"
-                  style={{ backgroundImage: "repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(244,63,94,0.3) 2px, rgba(244,63,94,0.3) 4px)" }} />
+                <span
+                  className="inline-block h-2 w-4 rounded-sm"
+                  style={{
+                    backgroundImage:
+                      "repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(244,63,94,0.3) 2px, rgba(244,63,94,0.3) 4px)",
+                  }}
+                />
                 <span className="text-xs text-slate-500">Blocked</span>
               </div>
             </div>
@@ -924,7 +1066,9 @@ export default function CoachSchedulePage() {
               className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
             >
               <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-800">Pending Approvals</h3>
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Pending Approvals
+                </h3>
                 {pendingBookings.length > 0 && (
                   <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                     {pendingBookings.length}
@@ -941,18 +1085,26 @@ export default function CoachSchedulePage() {
                   pendingBookings.map((b) => {
                     const playerName =
                       typeof b.userId === "object" && b.userId
-                        ? (b.userId as { name?: string }).name ?? "Player"
+                        ? ((b.userId as { name?: string }).name ?? "Player")
                         : "Player";
                     return (
-                      <div key={b.id} className="flex items-start gap-3 px-4 py-3">
+                      <div
+                        key={b.id}
+                        className="flex items-start gap-3 px-4 py-3"
+                      >
                         <div className="mt-0.5 h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                           <User size={14} className="text-slate-500" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-slate-800 truncate">{playerName}</p>
-                          <p className="text-xs text-slate-500 capitalize">{b.sport}</p>
+                          <p className="text-xs font-semibold text-slate-800 truncate">
+                            {playerName}
+                          </p>
+                          <p className="text-xs text-slate-500 capitalize">
+                            {b.sport}
+                          </p>
                           <p className="text-xs text-slate-400">
-                            {formatFullDate(new Date(b.date))} · {formatTime(b.startTime)}
+                            {formatFullDate(new Date(b.date))} ·{" "}
+                            {formatTime(b.startTime)}
                           </p>
                         </div>
                         <button
@@ -980,7 +1132,9 @@ export default function CoachSchedulePage() {
                   <Clock size={15} className="text-indigo-500" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-700">Buffer time between sessions</p>
+                  <p className="text-xs font-semibold text-slate-700">
+                    Buffer time between sessions
+                  </p>
                   <p className="text-xs text-slate-500">{bufferTime} minutes</p>
                 </div>
               </motion.div>
@@ -994,14 +1148,20 @@ export default function CoachSchedulePage() {
               className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
             >
               <div className="px-4 py-3.5 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-800">Block Time Off</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Mark dates unavailable — holidays, personal time, etc.</p>
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Block Time Off
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Mark dates unavailable — holidays, personal time, etc.
+                </p>
               </div>
 
               <div className="px-4 py-4 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">From</label>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">
+                      From
+                    </label>
                     <input
                       type="date"
                       min={today}
@@ -1011,7 +1171,9 @@ export default function CoachSchedulePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">To</label>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">
+                      To
+                    </label>
                     <input
                       type="date"
                       min={blockStart || today}
@@ -1022,7 +1184,9 @@ export default function CoachSchedulePage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Reason (optional)</label>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">
+                    Reason (optional)
+                  </label>
                   <input
                     type="text"
                     placeholder="Holiday, personal, travel..."
@@ -1047,21 +1211,41 @@ export default function CoachSchedulePage() {
               {blockedDates.length > 0 && (
                 <div className="border-t border-slate-100">
                   <div className="px-4 py-2.5">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Blocked periods</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Blocked periods
+                    </p>
                   </div>
                   <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
                     {blockedDates.map((b) => {
-                      const bid = (b as { _id?: string; id?: string })._id ?? (b as { id?: string }).id ?? "";
-                      const start = new Date(b.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-                      const end = new Date(b.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-                      const isSameDay = toISODate(new Date(b.startDate)) === toISODate(new Date(b.endDate));
+                      const bid =
+                        (b as { _id?: string; id?: string })._id ??
+                        (b as { id?: string }).id ??
+                        "";
+                      const start = new Date(b.startDate).toLocaleDateString(
+                        "en-IN",
+                        { day: "numeric", month: "short" },
+                      );
+                      const end = new Date(b.endDate).toLocaleDateString(
+                        "en-IN",
+                        { day: "numeric", month: "short", year: "numeric" },
+                      );
+                      const isSameDay =
+                        toISODate(new Date(b.startDate)) ===
+                        toISODate(new Date(b.endDate));
                       return (
-                        <div key={bid} className="flex items-center gap-2 px-4 py-2.5">
+                        <div
+                          key={bid}
+                          className="flex items-center gap-2 px-4 py-2.5"
+                        >
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium text-slate-700">
                               {isSameDay ? start : `${start} – ${end}`}
                             </p>
-                            {b.reason && <p className="text-xs text-slate-400 truncate">{b.reason}</p>}
+                            {b.reason && (
+                              <p className="text-xs text-slate-400 truncate">
+                                {b.reason}
+                              </p>
+                            )}
                           </div>
                           <button
                             onClick={() => handleUnblock(bid)}

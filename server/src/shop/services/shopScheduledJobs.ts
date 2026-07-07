@@ -7,7 +7,9 @@ import { sendShopLaunchEmail } from "../../utils/email";
  */
 export const processWaitlistNotifications = async (): Promise<void> => {
   try {
-    const pendingEntries = await ShopWaitlist.find({ status: "PENDING" }).limit(50);
+    const pendingEntries = await ShopWaitlist.find({ status: "PENDING" }).limit(
+      50,
+    );
 
     if (pendingEntries.length === 0) {
       return;
@@ -25,7 +27,10 @@ export const processWaitlistNotifications = async (): Promise<void> => {
         await entry.save();
         notifiedCount++;
       } catch (emailError) {
-        console.error(`❌ Failed to send launch email to ${entry.email}:`, emailError);
+        console.error(
+          `❌ Failed to send launch email to ${entry.email}:`,
+          emailError,
+        );
       }
     }
 

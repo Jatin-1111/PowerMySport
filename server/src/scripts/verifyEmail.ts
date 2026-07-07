@@ -33,12 +33,19 @@ async function main(): Promise<void> {
   console.log("EMAIL_USER    :", process.env.EMAIL_USER || "— NOT SET");
   console.log(
     "EMAIL_PASSWORD:",
-    process.env.EMAIL_PASSWORD ? `set (${process.env.EMAIL_PASSWORD.length} chars)` : "— NOT SET",
+    process.env.EMAIL_PASSWORD
+      ? `set (${process.env.EMAIL_PASSWORD.length} chars)`
+      : "— NOT SET",
   );
-  console.log("EMAIL_FROM    :", process.env.EMAIL_FROM || process.env.EMAIL_USER || "— NOT SET");
+  console.log(
+    "EMAIL_FROM    :",
+    process.env.EMAIL_FROM || process.env.EMAIL_USER || "— NOT SET",
+  );
 
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    console.error("\n❌ EMAIL_USER / EMAIL_PASSWORD not configured — cannot verify.");
+    console.error(
+      "\n❌ EMAIL_USER / EMAIL_PASSWORD not configured — cannot verify.",
+    );
     process.exit(1);
   }
 
@@ -58,7 +65,9 @@ async function main(): Promise<void> {
     console.log(`✅ Connected and authenticated to ${host}:${port}`);
   } catch (error) {
     const e = error as { code?: string; message?: string };
-    console.error(`❌ SMTP verify failed — ${e.code || ""} ${e.message || error}`);
+    console.error(
+      `❌ SMTP verify failed — ${e.code || ""} ${e.message || error}`,
+    );
     process.exit(2);
   }
 
@@ -74,9 +83,13 @@ async function main(): Promise<void> {
         <p>Sent at ${new Date().toISOString()}.</p>
       </div>`,
     });
-    console.log("✅ Test email dispatched (check the inbox to confirm delivery).");
+    console.log(
+      "✅ Test email dispatched (check the inbox to confirm delivery).",
+    );
   } else {
-    console.log("\nTip: pass --to you@example.com to also send a real test email.");
+    console.log(
+      "\nTip: pass --to you@example.com to also send a real test email.",
+    );
   }
 
   console.log("\nDone.");

@@ -230,8 +230,7 @@ export default function AdminCommunityReportsPage() {
                         &ldquo;{report.targetPreview}&rdquo;
                       </p>
                       <p className="mt-1 text-xs text-slate-400">
-                        Reported by{" "}
-                        {report.reporterUserId.name}
+                        Reported by {report.reporterUserId.name}
                         {report.reporterUserId.email &&
                           ` (${report.reporterUserId.email})`}{" "}
                         • {new Date(report.createdAt).toLocaleDateString()}

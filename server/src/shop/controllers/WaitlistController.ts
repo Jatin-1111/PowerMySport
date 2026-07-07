@@ -3,7 +3,7 @@ import { ShopWaitlist } from "../models/ShopWaitlist";
 
 export const joinWaitlist = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { email } = req.body;
@@ -26,7 +26,9 @@ export const joinWaitlist = async (
       return;
     }
 
-    const existingEntry = await ShopWaitlist.findOne({ email: email.toLowerCase() });
+    const existingEntry = await ShopWaitlist.findOne({
+      email: email.toLowerCase(),
+    });
 
     if (existingEntry) {
       res.status(400).json({

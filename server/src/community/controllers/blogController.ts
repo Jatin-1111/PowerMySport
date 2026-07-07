@@ -69,7 +69,10 @@ export const getBlog = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const createBlog = async (req: Request, res: Response): Promise<void> => {
+export const createBlog = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = getUserId(req);
     const data = await BlogService.createBlog(userId, req.body);
@@ -83,7 +86,10 @@ export const createBlog = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const updateBlog = async (req: Request, res: Response): Promise<void> => {
+export const updateBlog = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = getUserId(req);
     const data = await BlogService.updateBlog(
@@ -98,7 +104,10 @@ export const updateBlog = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const deleteBlog = async (req: Request, res: Response): Promise<void> => {
+export const deleteBlog = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = getUserId(req);
     const data = await BlogService.deleteBlog(

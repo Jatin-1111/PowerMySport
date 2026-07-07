@@ -53,11 +53,15 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
             href="/blog/write"
             className="group inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-700"
           >
-            <PenLine size={17} className="transition-transform group-hover:-rotate-12" />
+            <PenLine
+              size={17}
+              className="transition-transform group-hover:-rotate-12"
+            />
             Write a story
           </Link>
           <p className="text-xs font-medium text-slate-400">
-            {totalBlogs} {totalBlogs === 1 ? "story" : "stories"} published so far
+            {totalBlogs} {totalBlogs === 1 ? "story" : "stories"} published so
+            far
           </p>
         </motion.div>
       </div>

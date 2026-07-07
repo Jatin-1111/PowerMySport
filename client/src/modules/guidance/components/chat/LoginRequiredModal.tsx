@@ -31,8 +31,8 @@ export function LoginRequiredModal({
   const subjectLabel = sport
     ? `${sport} guidance`
     : childName
-    ? `${childName}'s guidance`
-    : "your guidance";
+      ? `${childName}'s guidance`
+      : "your guidance";
 
   const copy =
     variant === "plan"
@@ -136,7 +136,8 @@ export function LoginRequiredModal({
                   Create Free Account
                 </a>
                 <p className="text-center text-[11px] text-slate-400">
-                  Your guidance and roadmap are always free — no account required.
+                  Your guidance and roadmap are always free — no account
+                  required.
                   <br />
                   {copy.footerNote}
                 </p>

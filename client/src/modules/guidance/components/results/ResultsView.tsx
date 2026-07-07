@@ -62,16 +62,20 @@ export function ResultsView({
       ? r.journeyPhases
       : buildFallbackJourney(r);
 
-  // recommendedPlatformActions is one flowing string of 3-4 steps — split it
-  // into a scannable checklist instead of a paragraph parents have to parse.
+  // recommendedPlatformActions might come as a single paragraph, newlines, or numbered lists.
+  // We split by sentence boundaries or newlines, then strip any leading bullets, numbers, or dashes.
   const nextSteps = r.recommendedPlatformActions
-    .split(/\.\s+/)
-    .map((s) => s.trim().replace(/\.$/, ""))
-    .filter(Boolean);
-
+    .split(/(?:\.\s+|\n+)/)
+    .map((s) =>
+      s
+        .trim()
+        .replace(/^[\d\-\*\•]+[\.\)]?\s*/, "")
+        .replace(/\.$/, ""),
+    )
+    .filter((s) => s.length > 3);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5 sm:gap-6">
       <AIDisclaimer variant="guidance" />
       {/* The verdict, up front — this is the one thing every parent came here for */}
       {r.goalAssessment && (
@@ -90,14 +94,19 @@ export function ResultsView({
       )}
 
       {/* Player analysis — supporting context, not the headline anymore */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-power-orange/10">
-            <Compass className="h-4 w-4 text-power-orange" />
+      <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+            <Compass className="h-5 w-5 text-power-orange" />
           </div>
-          <h3 className="font-title text-sm font-semibold text-slate-900">
-            About your child
-          </h3>
+          <div>
+            <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+              About your child
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Based on your inputs
+            </p>
+          </div>
         </div>
 
         <div className="mb-3 flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/70 px-3 py-2">
@@ -114,24 +123,44 @@ export function ResultsView({
           </div>
         </div>
 
-        <p className="text-sm leading-6 text-slate-700">
-          {r.profileAnalysis}
-        </p>
+        <p className="text-sm leading-6 text-slate-700">{r.profileAnalysis}</p>
 
         {/* At-a-glance facts — lets a parent double-check what they entered */}
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
-            { icon: Activity, label: "Sport", value: submission.query.sport?.trim() || "Flexible" },
-            { icon: Timer, label: "Per week", value: `${submission.query.weekly_time_commitment}h` },
-            { icon: Wallet, label: "Budget", value: submission.query.budget_tier },
-            { icon: MapPin, label: "Location", value: submission.query.location || "—" },
+            {
+              icon: Activity,
+              label: "Sport",
+              value: submission.query.sport?.trim() || "Flexible",
+            },
+            {
+              icon: Timer,
+              label: "Per week",
+              value: `${submission.query.weekly_time_commitment}h`,
+            },
+            {
+              icon: Wallet,
+              label: "Budget",
+              value: submission.query.budget_tier,
+            },
+            {
+              icon: MapPin,
+              label: "Location",
+              value: submission.query.location || "—",
+            },
           ].map(({ icon: Icon, label, value }) => (
-            <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5">
+            <div
+              key={label}
+              className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5"
+            >
               <Icon className="h-3.5 w-3.5 text-slate-400" />
               <p className="mt-1.5 text-[9px] font-bold uppercase tracking-wide text-slate-400">
                 {label}
               </p>
-              <p className="text-xs font-bold text-slate-800 truncate" title={value}>
+              <p
+                className="text-xs font-bold text-slate-800 truncate"
+                title={value}
+              >
                 {value}
               </p>
             </div>
@@ -150,9 +179,12 @@ export function ResultsView({
             <UserPlus className="h-4 w-4 text-power-orange" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-slate-800">Don't lose this plan</p>
+            <p className="text-xs font-bold text-slate-800">
+              Don't lose this plan
+            </p>
             <p className="text-[11px] text-slate-500">
-              Create a free account to save it and pick up right where you left off.
+              Create a free account to save it and pick up right where you left
+              off.
             </p>
           </div>
           <Link
@@ -173,33 +205,44 @@ export function ResultsView({
       )}
 
       {/* Your path forward */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Route className="h-4 w-4 text-power-orange" />
-          <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
-            Your Path Forward
-          </h3>
+      <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+            <Route className="h-5 w-5 text-power-orange" />
+          </div>
+          <div>
+            <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+              Your Path Forward
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Step-by-step from today to the goal
+            </p>
+          </div>
         </div>
-        <p className="text-xs text-slate-500 mb-3">
-          Here's the step-by-step plan, from today to the goal.
-        </p>
         <JourneyMap
           phases={journeyPhases}
-          goal={r.goalAssessment?.statedGoal || submission.query.primary_objective}
+          goal={
+            r.goalAssessment?.statedGoal || submission.query.primary_objective
+          }
           sport={submission.query.sport}
         />
       </div>
 
       {/* Next steps — platform actions only, as a checklist */}
       {nextSteps.length > 0 && (
-        <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50/50 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
-              <TrendingUp className="h-4 w-4 text-emerald-700" />
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80">
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
             </div>
-            <h3 className="font-title font-semibold text-emerald-900">
-              Do This Next
-            </h3>
+            <div>
+              <h3 className="font-title text-lg font-bold text-emerald-900 leading-tight">
+                Do This Next
+              </h3>
+              <p className="text-xs text-emerald-700/70 mt-0.5">
+                Immediate actions
+              </p>
+            </div>
           </div>
           <ul className="space-y-2.5">
             {nextSteps.map((step, i) => (
@@ -217,12 +260,19 @@ export function ResultsView({
       )}
 
       {/* Weekly blueprint */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <BarChart3 className="h-4 w-4 text-slate-600" />
-          <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
-            Weekly Blueprint
-          </h3>
+      <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50">
+            <BarChart3 className="h-5 w-5 text-indigo-500" />
+          </div>
+          <div>
+            <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+              Weekly Blueprint
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Recommended schedule structure
+            </p>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
@@ -256,7 +306,9 @@ export function ResultsView({
               whileHover={{ y: -3 }}
               className={`rounded-2xl border ${border} ${bg} p-4 transition-shadow hover:shadow-md`}
             >
-              <span className={`mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 ${color}`}>
+              <span
+                className={`mb-2 flex h-8 w-8 items-center justify-center rounded-xl bg-white/70 ${color}`}
+              >
                 <Timer className="h-4 w-4" />
               </span>
               <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
@@ -278,12 +330,19 @@ export function ResultsView({
 
       {/* Recommended Sports */}
       {hasSports && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Trophy className="h-4 w-4 text-power-orange" />
-            <h3 className="font-title font-semibold text-slate-900 text-sm uppercase tracking-wide">
-              Top Recommended Sports
-            </h3>
+        <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50">
+              <Trophy className="h-5 w-5 text-amber-500" />
+            </div>
+            <div>
+              <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+                Top Recommended Sports
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Based on your child's profile
+              </p>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {r.recommendedSports!.map((sport, idx) => (
@@ -304,12 +363,8 @@ export function ResultsView({
               </motion.div>
             ))}
           </div>
-
-
         </div>
       )}
-
-
     </div>
   );
 }

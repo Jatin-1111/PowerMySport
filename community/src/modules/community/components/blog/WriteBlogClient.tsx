@@ -21,7 +21,10 @@ interface WriteBlogClientProps {
   blogId?: string;
 }
 
-export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) {
+export default function WriteBlogClient({
+  mode,
+  blogId,
+}: WriteBlogClientProps) {
   const router = useRouter();
 
   const [title, setTitle] = useState("");
@@ -117,9 +120,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
       toast.success(mode === "edit" ? "Blog Updated!" : "Blog Published!");
       router.push(`/blog/${result.id}`);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to publish",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to publish");
       setIsPublishing(false);
     }
   };

@@ -6,23 +6,25 @@ export const up = async () => {
 
   const result = await User.updateMany(
     { userType: "Recreational" },
-    { $set: { userType: "Player" } }
+    { $set: { userType: "Player" } },
   );
 
   console.log(
-    `Migration completed successfully. Updated ${result.modifiedCount} users.`
+    `Migration completed successfully. Updated ${result.modifiedCount} users.`,
   );
 };
 
 export const down = async () => {
-  console.log("Rolling back migration: Remap userType Player to Recreational...");
+  console.log(
+    "Rolling back migration: Remap userType Player to Recreational...",
+  );
 
   const result = await User.updateMany(
     { userType: "Player" },
-    { $set: { userType: "Recreational" } }
+    { $set: { userType: "Recreational" } },
   );
 
   console.log(
-    `Rollback completed successfully. Reverted ${result.modifiedCount} users.`
+    `Rollback completed successfully. Reverted ${result.modifiedCount} users.`,
   );
 };

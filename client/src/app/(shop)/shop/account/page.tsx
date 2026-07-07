@@ -1,15 +1,30 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Package, Wallet, MapPin, UserSquare, ChevronRight, CreditCard, Edit2, Plus, Trash2, Check, RefreshCw, ShoppingBag, Truck, Heart } from "lucide-react";
+import {
+  Package,
+  Wallet,
+  MapPin,
+  UserSquare,
+  ChevronRight,
+  CreditCard,
+  Edit2,
+  Plus,
+  Trash2,
+  Check,
+  RefreshCw,
+  ShoppingBag,
+  Truck,
+  Heart,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/utils/cn";
-import { 
-  listSellerProducts, 
-  createSellerProduct, 
-  updateSellerProduct, 
-  deleteSellerProduct, 
-  listSellerOrders, 
+import {
+  listSellerProducts,
+  createSellerProduct,
+  updateSellerProduct,
+  deleteSellerProduct,
+  listSellerOrders,
   updateSellerOrderItemFulfillment,
   listOrders,
   type Product,
@@ -17,7 +32,10 @@ import {
 } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { walletApi, type Wallet as WalletType } from "@/modules/wallet/services/wallet";
+import {
+  walletApi,
+  type Wallet as WalletType,
+} from "@/modules/wallet/services/wallet";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useWishlistStore } from "@/lib/shop/wishlistStore";
@@ -58,8 +76,12 @@ export default function AccountPage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tight text-slate-900">My Account</h1>
-        <p className="mt-2 text-slate-500">Manage your orders, balance, and personal details.</p>
+        <h1 className="text-3xl font-black tracking-tight text-slate-900">
+          My Account
+        </h1>
+        <p className="mt-2 text-slate-500">
+          Manage your orders, balance, and personal details.
+        </p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -77,14 +99,26 @@ export default function AccountPage() {
                     "group relative flex w-full items-center justify-between rounded-2xl px-4 py-4 text-sm font-bold transition-all",
                     isActive
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={cn("h-5 w-5 transition-transform group-hover:scale-110", isActive ? "text-white" : "text-slate-400")} />
+                    <Icon
+                      className={cn(
+                        "h-5 w-5 transition-transform group-hover:scale-110",
+                        isActive ? "text-white" : "text-slate-400",
+                      )}
+                    />
                     {tab.name}
                   </div>
-                  <ChevronRight className={cn("h-4 w-4 transition-transform", isActive ? "text-white/80" : "text-slate-300 group-hover:translate-x-1")} />
+                  <ChevronRight
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      isActive
+                        ? "text-white/80"
+                        : "text-slate-300 group-hover:translate-x-1",
+                    )}
+                  />
                 </button>
               );
             })}
@@ -157,35 +191,53 @@ function OrdersView() {
       {orders.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center bg-slate-50/50">
           <Package className="mx-auto h-12 w-12 text-slate-300" />
-          <h3 className="mt-4 text-base font-bold text-slate-900">No orders found</h3>
-          <p className="mt-1 text-sm text-slate-500">You haven't placed any orders yet.</p>
+          <h3 className="mt-4 text-base font-bold text-slate-900">
+            No orders found
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            You haven't placed any orders yet.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
           {orders.map((o) => (
-            <div key={o.id || o._id} className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-slate-200 p-6 transition-all hover:border-[#ff5722]/30 hover:shadow-md">
+            <div
+              key={o.id || o._id}
+              className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-slate-200 p-6 transition-all hover:border-[#ff5722]/30 hover:shadow-md"
+            >
               <div className="flex items-center gap-6 w-full sm:w-auto">
                 <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-slate-50 border border-slate-100">
                   <Package className="h-6 w-6 text-slate-400" />
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900">Order #{o.orderNumber}</p>
-                  <p className="text-sm text-slate-500">Placed on {new Date(o.createdAt).toLocaleDateString()}</p>
-                  <span className={cn(
-                    "mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ring-inset capitalize",
-                    o.status === "DELIVERED"
-                      ? "bg-emerald-50 text-emerald-700 ring-green-600/20"
-                      : o.status === "CANCELLED"
-                      ? "bg-red-50 text-red-700 ring-red-600/20"
-                      : "bg-indigo-50 text-indigo-700 ring-blue-600/20"
-                  )}>
+                  <p className="font-bold text-slate-900">
+                    Order #{o.orderNumber}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Placed on {new Date(o.createdAt).toLocaleDateString()}
+                  </p>
+                  <span
+                    className={cn(
+                      "mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ring-inset capitalize",
+                      o.status === "DELIVERED"
+                        ? "bg-emerald-50 text-emerald-700 ring-green-600/20"
+                        : o.status === "CANCELLED"
+                          ? "bg-red-50 text-red-700 ring-red-600/20"
+                          : "bg-indigo-50 text-indigo-700 ring-blue-600/20",
+                    )}
+                  >
                     {o.status.toLowerCase().replace(/_/g, " ")}
                   </span>
                 </div>
               </div>
               <div className="mt-2 sm:mt-0 flex w-full sm:w-auto flex-row sm:flex-col items-center sm:items-end justify-between gap-2">
-                <p className="font-black text-lg text-slate-900">{formatInr(o.totalAmount)}</p>
-                <Link href={`/shop/orders/${o.id || o._id}`} className="text-sm font-bold text-[#ff5722] hover:underline">
+                <p className="font-black text-lg text-slate-900">
+                  {formatInr(o.totalAmount)}
+                </p>
+                <Link
+                  href={`/shop/orders/${o.id || o._id}`}
+                  className="text-sm font-bold text-[#ff5722] hover:underline"
+                >
                   View Details
                 </Link>
               </div>
@@ -243,16 +295,22 @@ function BalanceView() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-black text-slate-900">PowerMySport Wallet</h2>
-      
+      <h2 className="text-2xl font-black text-slate-900">
+        PowerMySport Wallet
+      </h2>
+
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-8 shadow-xl">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#ff5722] opacity-20 blur-3xl" />
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <p className="text-sm font-bold uppercase tracking-wider text-slate-400">Available Balance</p>
-            <p className="mt-2 text-5xl font-black text-white">{formatInr(balance)}</p>
+            <p className="text-sm font-bold uppercase tracking-wider text-slate-400">
+              Available Balance
+            </p>
+            <p className="mt-2 text-5xl font-black text-white">
+              {formatInr(balance)}
+            </p>
           </div>
-          <button 
+          <button
             onClick={handleAddFunds}
             className="flex items-center gap-2 rounded-xl bg-[#ff5722] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#ff5722]/30 transition-all hover:bg-[#e64a19] active:scale-95"
           >
@@ -263,26 +321,47 @@ function BalanceView() {
       </div>
 
       <div className="mt-10">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Transactions</h3>
+        <h3 className="text-lg font-bold text-slate-900 mb-4">
+          Recent Transactions
+        </h3>
         {transactions.length === 0 ? (
-          <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded-xl border border-slate-100">No transactions recorded yet.</p>
+          <p className="text-sm text-slate-500 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            No transactions recorded yet.
+          </p>
         ) : (
           <div className="space-y-4">
             {transactions.slice(0, 10).map((t) => (
-              <div key={t.id} className="flex items-center justify-between rounded-xl p-4 bg-slate-50 border border-slate-100">
+              <div
+                key={t.id}
+                className="flex items-center justify-between rounded-xl p-4 bg-slate-50 border border-slate-100"
+              >
                 <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "h-10 w-10 rounded-full flex items-center justify-center font-bold",
-                    t.type === "CREDIT" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
-                  )}>
+                  <div
+                    className={cn(
+                      "h-10 w-10 rounded-full flex items-center justify-center font-bold",
+                      t.type === "CREDIT"
+                        ? "bg-emerald-100 text-emerald-600"
+                        : "bg-red-100 text-red-600",
+                    )}
+                  >
                     {t.type === "CREDIT" ? "+" : "-"}
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">{t.reason || (t.type === "CREDIT" ? "Wallet Topup" : "Purchase")}</p>
-                    <p className="text-xs text-slate-500">{new Date(t.createdAt).toLocaleDateString()}</p>
+                    <p className="font-bold text-slate-900">
+                      {t.reason ||
+                        (t.type === "CREDIT" ? "Wallet Topup" : "Purchase")}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(t.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
-                <p className={cn("font-bold", t.type === "CREDIT" ? "text-emerald-600" : "text-red-600")}>
+                <p
+                  className={cn(
+                    "font-bold",
+                    t.type === "CREDIT" ? "text-emerald-600" : "text-red-600",
+                  )}
+                >
                   {t.type === "CREDIT" ? "+" : "-"} {formatInr(t.amount)}
                 </p>
               </div>
@@ -325,7 +404,9 @@ function SavedItemsView() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black text-slate-900">Saved Items</h2>
-          <p className="text-sm text-slate-500">Your curated collection of gear on Powermysport</p>
+          <p className="text-sm text-slate-500">
+            Your curated collection of gear on Powermysport
+          </p>
         </div>
         <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
           {wishlistProducts.length} Items
@@ -335,9 +416,16 @@ function SavedItemsView() {
       {wishlistProducts.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center bg-slate-50/50">
           <Heart className="mx-auto h-12 w-12 text-slate-300 animate-pulse" />
-          <h3 className="mt-4 text-base font-bold text-slate-900">No saved items</h3>
-          <p className="mt-1 text-sm text-slate-500">Add sports gear to your wishlist while browsing the marketplace.</p>
-          <Link href="/shop" className="mt-6 inline-flex h-11 items-center justify-center rounded-lg bg-[#ff5722] hover:bg-[#e64a19] text-white px-5 text-sm font-bold transition-all active:scale-95 shadow-md shadow-[#ff5722]/15">
+          <h3 className="mt-4 text-base font-bold text-slate-900">
+            No saved items
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Add sports gear to your wishlist while browsing the marketplace.
+          </p>
+          <Link
+            href="/shop"
+            className="mt-6 inline-flex h-11 items-center justify-center rounded-lg bg-[#ff5722] hover:bg-[#e64a19] text-white px-5 text-sm font-bold transition-all active:scale-95 shadow-md shadow-[#ff5722]/15"
+          >
             Explore Marketplace
           </Link>
         </div>
@@ -360,7 +448,10 @@ function ContactView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-black text-slate-900">Contact Details</h2>
-        <Link href="/dashboard/my-profile" className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 hover:text-slate-900">
+        <Link
+          href="/dashboard/my-profile"
+          className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 hover:text-slate-900"
+        >
           <Edit2 className="h-4 w-4" /> Edit Profile
         </Link>
       </div>
@@ -369,7 +460,11 @@ function ContactView() {
         <div className="flex items-center gap-6 pb-8 border-b border-slate-100">
           <div className="h-24 w-24 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border-4 border-white shadow-lg">
             {user.photoUrl ? (
-              <img src={user.photoUrl} alt={user.name} className="h-full w-full object-cover" />
+              <img
+                src={user.photoUrl}
+                alt={user.name}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <UserSquare className="h-10 w-10 text-slate-400" />
             )}
@@ -382,20 +477,32 @@ function ContactView() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Full Name</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Full Name
+            </p>
             <p className="mt-1 font-semibold text-slate-900">{user.name}</p>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Email Address</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Email Address
+            </p>
             <p className="mt-1 font-semibold text-slate-900">{user.email}</p>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Phone Number</p>
-            <p className="mt-1 font-semibold text-slate-900">{user.phone || "Not provided"}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Phone Number
+            </p>
+            <p className="mt-1 font-semibold text-slate-900">
+              {user.phone || "Not provided"}
+            </p>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Preferred Sport</p>
-            <p className="mt-1 font-semibold text-slate-900">{user.playerProfile?.sportsFocus?.join(", ") || "None specified"}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Preferred Sport
+            </p>
+            <p className="mt-1 font-semibold text-slate-900">
+              {user.playerProfile?.sportsFocus?.join(", ") || "None specified"}
+            </p>
           </div>
         </div>
       </div>
@@ -404,7 +511,9 @@ function ContactView() {
 }
 
 function SellerDashboardView() {
-  const [sellingTab, setSellingTab] = useState<"listings" | "sell" | "orders">("listings");
+  const [sellingTab, setSellingTab] = useState<"listings" | "sell" | "orders">(
+    "listings",
+  );
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
@@ -426,8 +535,12 @@ function SellerDashboardView() {
   const [imageUrl, setImageUrl] = useState("");
 
   // Item Fulfillment State
-  const [fulfillmentUpdating, setFulfillmentUpdating] = useState<string | null>(null);
-  const [itemStatuses, setItemStatuses] = useState<Record<string, { status: string; tracking: string }>>({});
+  const [fulfillmentUpdating, setFulfillmentUpdating] = useState<string | null>(
+    null,
+  );
+  const [itemStatuses, setItemStatuses] = useState<
+    Record<string, { status: string; tracking: string }>
+  >({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -439,8 +552,8 @@ function SellerDashboardView() {
 
       // Initialize status inputs for orders
       const statuses: Record<string, { status: string; tracking: string }> = {};
-      fetchedOrders.forEach(o => {
-        o.items.forEach(item => {
+      fetchedOrders.forEach((o) => {
+        o.items.forEach((item) => {
           const key = `${o.id}_${item.productVariantId}`;
           statuses[key] = {
             status: item.fulfillmentStatus || "PENDING",
@@ -491,7 +604,9 @@ function SellerDashboardView() {
       setSellingTab("listings");
       await fetchData();
     } catch (err: any) {
-      toast.error(err.message || "Failed to list product. Please verify fields.");
+      toast.error(
+        err.message || "Failed to list product. Please verify fields.",
+      );
     } finally {
       setLoading(false);
     }
@@ -530,7 +645,10 @@ function SellerDashboardView() {
     }
   };
 
-  const handleUpdateFulfillment = async (orderId: string, variantId: string) => {
+  const handleUpdateFulfillment = async (
+    orderId: string,
+    variantId: string,
+  ) => {
     const key = `${orderId}_${variantId}`;
     const statusData = itemStatuses[key];
     if (!statusData) return;
@@ -542,7 +660,7 @@ function SellerDashboardView() {
         orderId,
         variantId,
         statusData.status,
-        statusData.tracking
+        statusData.tracking,
       );
       toast.success("Order fulfillment details updated successfully!");
       await fetchData();
@@ -557,12 +675,16 @@ function SellerDashboardView() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900">Seller Dashboard</h2>
-          <p className="text-sm text-slate-500">Sell your pre-owned or brand new sports gear to other players.</p>
+          <h2 className="text-2xl font-black text-slate-900">
+            Seller Dashboard
+          </h2>
+          <p className="text-sm text-slate-500">
+            Sell your pre-owned or brand new sports gear to other players.
+          </p>
         </div>
         <div className="flex gap-2">
-          <button 
-            onClick={fetchData} 
+          <button
+            onClick={fetchData}
             className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition"
             title="Refresh"
             disabled={loading}
@@ -585,7 +707,9 @@ function SellerDashboardView() {
           onClick={() => setSellingTab("listings")}
           className={cn(
             "px-4 py-2.5 text-sm font-bold border-b-2 transition-all",
-            sellingTab === "listings" ? "border-[#ff5722] text-[#ff5722]" : "border-transparent text-slate-500 hover:text-slate-950"
+            sellingTab === "listings"
+              ? "border-[#ff5722] text-[#ff5722]"
+              : "border-transparent text-slate-500 hover:text-slate-950",
           )}
         >
           My Listings ({products.length})
@@ -594,7 +718,9 @@ function SellerDashboardView() {
           onClick={() => setSellingTab("orders")}
           className={cn(
             "px-4 py-2.5 text-sm font-bold border-b-2 transition-all",
-            sellingTab === "orders" ? "border-[#ff5722] text-[#ff5722]" : "border-transparent text-slate-500 hover:text-slate-950"
+            sellingTab === "orders"
+              ? "border-[#ff5722] text-[#ff5722]"
+              : "border-transparent text-slate-500 hover:text-slate-950",
           )}
         >
           Received Orders ({orders.length})
@@ -606,8 +732,12 @@ function SellerDashboardView() {
           {products.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center bg-slate-50/50">
               <ShoppingBag className="mx-auto h-12 w-12 text-slate-300" />
-              <h3 className="mt-4 text-base font-bold text-slate-900">No active listings</h3>
-              <p className="mt-1 text-sm text-slate-500">Put your unused sports items for sale right now.</p>
+              <h3 className="mt-4 text-base font-bold text-slate-900">
+                No active listings
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Put your unused sports items for sale right now.
+              </p>
               <button
                 onClick={() => setSellingTab("sell")}
                 className="mt-4 text-sm font-bold text-[#ff5722] hover:underline"
@@ -637,24 +767,38 @@ function SellerDashboardView() {
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               {p.images?.[0] ? (
-                                <img src={p.images[0]} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
+                                <img
+                                  src={p.images[0]}
+                                  alt={p.name}
+                                  className="h-10 w-10 rounded-lg object-cover"
+                                />
                               ) : (
                                 <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-400">
                                   No Img
                                 </div>
                               )}
                               <div>
-                                <p className="font-bold text-slate-900">{p.name}</p>
-                                <p className="text-xs text-slate-400">SKU: {p.sku}</p>
+                                <p className="font-bold text-slate-900">
+                                  {p.name}
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                  SKU: {p.sku}
+                                </p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-xs font-bold text-slate-600">{p.category}</td>
+                          <td className="px-6 py-4 text-xs font-bold text-slate-600">
+                            {p.category}
+                          </td>
                           <td className="px-6 py-4">
-                            <span className={cn(
-                              "inline-flex rounded-full px-2 py-0.5 text-xs font-bold",
-                              p.condition === "USED" ? "bg-slate-900 text-white" : "bg-emerald-50 text-emerald-700"
-                            )}>
+                            <span
+                              className={cn(
+                                "inline-flex rounded-full px-2 py-0.5 text-xs font-bold",
+                                p.condition === "USED"
+                                  ? "bg-slate-900 text-white"
+                                  : "bg-emerald-50 text-emerald-700",
+                              )}
+                            >
                               {p.condition}
                             </span>
                           </td>
@@ -717,7 +861,9 @@ function SellerDashboardView() {
                                   {deleteConfirmId === p.id ? (
                                     <div className="flex items-center gap-1.5">
                                       <button
-                                        onClick={() => handleDeleteProduct(p.id)}
+                                        onClick={() =>
+                                          handleDeleteProduct(p.id)
+                                        }
                                         className="text-[10px] font-black uppercase tracking-wider text-red-600 hover:bg-red-50 border border-red-200 px-2 py-1 rounded-lg"
                                       >
                                         Confirm
@@ -754,11 +900,18 @@ function SellerDashboardView() {
       )}
 
       {sellingTab === "sell" && (
-        <form onSubmit={handleCreateProduct} className="space-y-6 max-w-2xl bg-slate-50/50 p-6 sm:p-8 rounded-3xl border border-slate-200/60">
-          <h3 className="text-lg font-black text-slate-900">Gear Listing Form</h3>
+        <form
+          onSubmit={handleCreateProduct}
+          className="space-y-6 max-w-2xl bg-slate-50/50 p-6 sm:p-8 rounded-3xl border border-slate-200/60"
+        >
+          <h3 className="text-lg font-black text-slate-900">
+            Gear Listing Form
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Product Name</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Product Name
+              </label>
               <input
                 required
                 type="text"
@@ -770,7 +923,9 @@ function SellerDashboardView() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Description</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Description
+              </label>
               <textarea
                 required
                 rows={3}
@@ -782,7 +937,9 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Category</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Category
+              </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -796,7 +953,9 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Brand</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Brand
+              </label>
               <select
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
@@ -822,7 +981,9 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Condition</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Condition
+              </label>
               <select
                 value={condition}
                 onChange={(e) => setCondition(e.target.value as "NEW" | "USED")}
@@ -834,7 +995,9 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Price (INR)</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Price (INR)
+              </label>
               <input
                 required
                 type="number"
@@ -847,7 +1010,9 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Stock quantity</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Stock quantity
+              </label>
               <input
                 required
                 type="number"
@@ -860,7 +1025,9 @@ function SellerDashboardView() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Gear Image URL</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                Gear Image URL
+              </label>
               <input
                 type="url"
                 placeholder="https://example.com/gear.jpg"
@@ -895,21 +1062,36 @@ function SellerDashboardView() {
           {orders.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center bg-slate-50/50">
               <Truck className="mx-auto h-12 w-12 text-slate-300" />
-              <h3 className="mt-4 text-base font-bold text-slate-900">No marketplace orders</h3>
-              <p className="mt-1 text-sm text-slate-500">Orders for your items will appear here after users checkout.</p>
+              <h3 className="mt-4 text-base font-bold text-slate-900">
+                No marketplace orders
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Orders for your items will appear here after users checkout.
+              </p>
             </div>
           ) : (
             orders.map((o) => (
-              <div key={o.id} className="rounded-3xl border border-slate-200 p-6 bg-white space-y-4 shadow-sm hover:shadow-md transition">
+              <div
+                key={o.id}
+                className="rounded-3xl border border-slate-200 p-6 bg-white space-y-4 shadow-sm hover:shadow-md transition"
+              >
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-4">
                   <div>
-                    <h4 className="font-black text-slate-900 text-lg">Order #{o.orderNumber}</h4>
-                    <p className="text-xs text-slate-400">Placed on {new Date(o.createdAt).toLocaleDateString()}</p>
+                    <h4 className="font-black text-slate-900 text-lg">
+                      Order #{o.orderNumber}
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Placed on {new Date(o.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
-                  <span className={cn(
-                    "inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold capitalize",
-                    o.status === "DELIVERED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                  )}>
+                  <span
+                    className={cn(
+                      "inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold capitalize",
+                      o.status === "DELIVERED"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-indigo-50 text-indigo-700 border border-indigo-200",
+                    )}
+                  >
                     {o.status.toLowerCase().replace(/_/g, " ")}
                   </span>
                 </div>
@@ -917,44 +1099,74 @@ function SellerDashboardView() {
                 {/* Buyer Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Buyer Details</p>
-                    <p className="font-bold text-slate-800 mt-1">{o.shippingAddress.fullName}</p>
-                    <p className="text-slate-600">{o.shippingAddress.phone} | {o.shippingAddress.email}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Buyer Details
+                    </p>
+                    <p className="font-bold text-slate-800 mt-1">
+                      {o.shippingAddress.fullName}
+                    </p>
+                    <p className="text-slate-600">
+                      {o.shippingAddress.phone} | {o.shippingAddress.email}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Shipping Address</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Shipping Address
+                    </p>
                     <p className="text-slate-600 mt-1 leading-relaxed">
-                      {o.shippingAddress.addressLine1}, {o.shippingAddress.addressLine2 || ""}<br />
-                      {o.shippingAddress.city}, {o.shippingAddress.state} - {o.shippingAddress.postalCode}
+                      {o.shippingAddress.addressLine1},{" "}
+                      {o.shippingAddress.addressLine2 || ""}
+                      <br />
+                      {o.shippingAddress.city}, {o.shippingAddress.state} -{" "}
+                      {o.shippingAddress.postalCode}
                     </p>
                   </div>
                 </div>
 
                 {/* Seller's Items */}
                 <div className="space-y-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Items Ordered</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Items Ordered
+                  </p>
                   {o.items.map((item) => {
                     const key = `${o.id}_${item.productVariantId}`;
-                    const currentStatus = itemStatuses[key]?.status || "PENDING";
+                    const currentStatus =
+                      itemStatuses[key]?.status || "PENDING";
                     const currentTracking = itemStatuses[key]?.tracking || "";
                     const isFulfillmentUpdating = fulfillmentUpdating === key;
 
                     return (
-                      <div key={item.productVariantId} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 border border-slate-100 rounded-2xl">
+                      <div
+                        key={item.productVariantId}
+                        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 border border-slate-100 rounded-2xl"
+                      >
                         <div className="flex-1">
-                          <p className="font-bold text-slate-900">{item.productName}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">Qty: {item.quantity} | Condition: {item.condition || "USED"} | Price: {formatInr(item.unitPrice)}</p>
-                          <p className="text-xs font-black text-[#ff5722] mt-1">Total: {formatInr(item.lineTotal)}</p>
+                          <p className="font-bold text-slate-900">
+                            {item.productName}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Qty: {item.quantity} | Condition:{" "}
+                            {item.condition || "USED"} | Price:{" "}
+                            {formatInr(item.unitPrice)}
+                          </p>
+                          <p className="text-xs font-black text-[#ff5722] mt-1">
+                            Total: {formatInr(item.lineTotal)}
+                          </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                           <div>
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Status</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                              Status
+                            </label>
                             <select
                               value={currentStatus}
                               onChange={(e) => {
                                 setItemStatuses({
                                   ...itemStatuses,
-                                  [key]: { ...itemStatuses[key], status: e.target.value }
+                                  [key]: {
+                                    ...itemStatuses[key],
+                                    status: e.target.value,
+                                  },
                                 });
                               }}
                               className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:border-[#ff5722]"
@@ -967,7 +1179,9 @@ function SellerDashboardView() {
                             </select>
                           </div>
                           <div className="flex-1 md:flex-none">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Tracking #</label>
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                              Tracking #
+                            </label>
                             <input
                               type="text"
                               placeholder="Optional"
@@ -975,14 +1189,22 @@ function SellerDashboardView() {
                               onChange={(e) => {
                                 setItemStatuses({
                                   ...itemStatuses,
-                                  [key]: { ...itemStatuses[key], tracking: e.target.value }
+                                  [key]: {
+                                    ...itemStatuses[key],
+                                    tracking: e.target.value,
+                                  },
                                 });
                               }}
                               className="w-full md:w-32 rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-800 outline-none focus:border-[#ff5722]"
                             />
                           </div>
                           <button
-                            onClick={() => handleUpdateFulfillment(o.id, item.productVariantId)}
+                            onClick={() =>
+                              handleUpdateFulfillment(
+                                o.id,
+                                item.productVariantId,
+                              )
+                            }
                             disabled={isFulfillmentUpdating}
                             className="mt-4 md:mt-0 flex h-8 items-center justify-center rounded-lg bg-slate-900 hover:bg-slate-800 text-white px-3 text-xs font-bold transition disabled:opacity-50"
                           >

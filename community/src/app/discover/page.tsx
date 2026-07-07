@@ -11,7 +11,13 @@ export const metadata = buildMetadata({
 
 export default function DiscoverPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading discover...</div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-slate-500">
+          Loading discover...
+        </div>
+      }
+    >
       <DiscoverPageClient />
     </Suspense>
   );

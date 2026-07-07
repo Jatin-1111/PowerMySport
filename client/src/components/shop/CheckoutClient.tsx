@@ -285,7 +285,11 @@ export function CheckoutClient() {
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_390px] lg:px-8">
-      <form id="shop-checkout-form" onSubmit={handleSubmit} className="space-y-5">
+      <form
+        id="shop-checkout-form"
+        onSubmit={handleSubmit}
+        className="space-y-5"
+      >
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
             Secure Checkout
@@ -467,7 +471,9 @@ export function CheckoutClient() {
                   <input
                     type="checkbox"
                     checked={saveNewAddress}
-                    onChange={(event) => setSaveNewAddress(event.target.checked)}
+                    onChange={(event) =>
+                      setSaveNewAddress(event.target.checked)
+                    }
                     className="h-4 w-4 accent-orange-500"
                   />
                   Save this address to my address book
@@ -513,7 +519,9 @@ export function CheckoutClient() {
           <LockKeyhole className="h-4 w-4" />
           Encrypted checkout
         </div>
-        <h2 className="mt-4 text-xl font-black text-slate-950">Order Summary</h2>
+        <h2 className="mt-4 text-xl font-black text-slate-950">
+          Order Summary
+        </h2>
         <div className="mt-5 space-y-3 text-sm text-slate-600">
           {items.map((item) => (
             <div
@@ -540,7 +548,9 @@ export function CheckoutClient() {
           <div className="flex items-center justify-between">
             <span>Shipping</span>
             <span>
-              {totals.shippingAmount ? formatInr(totals.shippingAmount) : "Free"}
+              {totals.shippingAmount
+                ? formatInr(totals.shippingAmount)
+                : "Free"}
             </span>
           </div>
           <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-lg font-black text-slate-950">

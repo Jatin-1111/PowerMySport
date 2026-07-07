@@ -246,7 +246,10 @@ export const getInfraOverview = async (
         }),
       ),
       getEb().send(
-        new DescribeEventsCommand({ EnvironmentName: ENV_NAME, MaxRecords: 15 }),
+        new DescribeEventsCommand({
+          EnvironmentName: ENV_NAME,
+          MaxRecords: 15,
+        }),
       ),
     ],
   );
@@ -526,7 +529,9 @@ export const getInfraMetrics = async (
     result.available = true;
   } catch (error) {
     result.error =
-      error instanceof Error ? error.message : "Failed to fetch CloudWatch data";
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch CloudWatch data";
     return result;
   }
 

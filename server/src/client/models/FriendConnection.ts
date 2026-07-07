@@ -1,10 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type FriendConnectionStatus =
-  | "PENDING"
-  | "ACCEPTED"
-  | "DECLINED"
-  | "BLOCKED";
+  "PENDING" | "ACCEPTED" | "DECLINED" | "BLOCKED";
 
 export interface IFriendConnection extends Document {
   requesterId: mongoose.Types.ObjectId;

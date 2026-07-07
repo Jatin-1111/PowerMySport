@@ -36,7 +36,7 @@ export default function ShopWaitlist() {
       <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-power-orange/20 blur-[120px] mix-blend-multiply pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-amber-400/20 blur-[120px] mix-blend-multiply pointer-events-none" />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
@@ -57,12 +57,17 @@ export default function ShopWaitlist() {
             Coming Soon.
           </span>
         </h1>
-        
+
         <p className="mb-10 max-w-xl text-lg text-slate-600 sm:text-xl">
-          The official PowerMySport Shop is almost here. Get ready to elevate your game with premium sports gear, customized equipment, and exclusive coaching bundles.
+          The official PowerMySport Shop is almost here. Get ready to elevate
+          your game with premium sports gear, customized equipment, and
+          exclusive coaching bundles.
         </p>
 
-        <form onSubmit={handleSubmit} className="w-full max-w-md relative mb-12">
+        <form
+          onSubmit={handleSubmit}
+          className="w-full max-w-md relative mb-12"
+        >
           <div className="relative flex items-center">
             <BellRing className="absolute left-4 text-slate-400" size={20} />
             <input
@@ -83,18 +88,21 @@ export default function ShopWaitlist() {
           </div>
         </form>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
           className="flex gap-4"
         >
-          <Link 
+          <Link
             href="/"
             className="group flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm border border-slate-200 transition-all hover:border-power-orange/30 hover:shadow-md"
           >
             Back to Dashboard
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+            <ArrowRight
+              size={16}
+              className="transition-transform group-hover:translate-x-1"
+            />
           </Link>
         </motion.div>
       </motion.div>

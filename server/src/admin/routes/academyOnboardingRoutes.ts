@@ -24,7 +24,10 @@ import {
   adminMiddleware,
   requirePermission,
 } from "../../middleware/auth";
-import { getAcademyEarningsHandler, getAcademyAnalyticsHandler } from "../../client/controllers/academyAnalyticsController";
+import {
+  getAcademyEarningsHandler,
+  getAcademyAnalyticsHandler,
+} from "../../client/controllers/academyAnalyticsController";
 import { validateRequest } from "../../middleware/validation";
 import {
   academyOnboardingStep1Schema,

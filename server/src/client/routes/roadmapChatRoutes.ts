@@ -1,6 +1,9 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { getRoadmapChat, sendRoadmapChatMessage } from "../controllers/roadmapChatController";
+import {
+  getRoadmapChat,
+  sendRoadmapChatMessage,
+} from "../controllers/roadmapChatController";
 import { authMiddleware } from "../../middleware/auth";
 import { createRedisRateLimitStore } from "../../middleware/rateLimit";
 
@@ -23,6 +26,11 @@ const chatBurstLimiter = rateLimit({
 });
 
 roadmapChatRouter.get("/:sportSlug", authMiddleware, getRoadmapChat);
-roadmapChatRouter.post("/:sportSlug", authMiddleware, chatBurstLimiter, sendRoadmapChatMessage);
+roadmapChatRouter.post(
+  "/:sportSlug",
+  authMiddleware,
+  chatBurstLimiter,
+  sendRoadmapChatMessage,
+);
 
 export default roadmapChatRouter;

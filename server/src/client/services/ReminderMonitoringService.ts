@@ -184,8 +184,12 @@ export class ReminderMonitoringService {
 
       return {
         _id: reminder._id.toString(),
-        userId: isPopulated ? String((user as { _id: unknown })._id) : String(user),
-        userName: isPopulated ? (user as { name?: string }).name || "Unknown user" : "Unknown user",
+        userId: isPopulated
+          ? String((user as { _id: unknown })._id)
+          : String(user),
+        userName: isPopulated
+          ? (user as { name?: string }).name || "Unknown user"
+          : "Unknown user",
         userEmail: isPopulated ? (user as { email?: string }).email || "" : "",
         bookingId: reminder.bookingId?.toString() || "unknown",
         interval: reminder.interval,

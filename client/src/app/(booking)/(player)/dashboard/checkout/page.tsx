@@ -492,15 +492,16 @@ function CheckoutPageContent() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [detailsResponse, profileResponse, walletResponse] = await Promise.all([
-          type === "coach" && coachId
-            ? coachApi.getCoachById(coachId)
-            : type === "venue" && venueId
-              ? venueApi.getVenue(venueId)
-              : Promise.resolve(null),
-          authApi.getProfile().catch(() => null),
-          walletApi.getWallet().catch(() => null),
-        ]);
+        const [detailsResponse, profileResponse, walletResponse] =
+          await Promise.all([
+            type === "coach" && coachId
+              ? coachApi.getCoachById(coachId)
+              : type === "venue" && venueId
+                ? venueApi.getVenue(venueId)
+                : Promise.resolve(null),
+            authApi.getProfile().catch(() => null),
+            walletApi.getWallet().catch(() => null),
+          ]);
 
         if (type === "coach" && detailsResponse?.success)
           setCoach(detailsResponse.data as Coach);
@@ -509,7 +510,10 @@ function CheckoutPageContent() {
 
         if (profileResponse?.success && profileResponse.data) {
           setUser(profileResponse.data);
-          if (profileResponse.data.role !== "Player" && profileResponse.data.role !== "Parent") {
+          if (
+            profileResponse.data.role !== "Player" &&
+            profileResponse.data.role !== "Parent"
+          ) {
             toast.error("Only player accounts can create bookings.");
             router.replace(getDashboardPathByRole(profileResponse.data.role));
             return;
@@ -574,10 +578,11 @@ function CheckoutPageContent() {
       ? Math.round(serviceFee * (Number.isFinite(taxRate) ? taxRate : 0))
       : 0;
   const total = Math.max(0, subtotal + serviceFee + taxes - discount);
-  
-  const finalPayableAmount = isGroupBooking && paymentType === "SPLIT"
-    ? Math.round(total / (selectedFriendIds.length + 1))
-    : total;
+
+  const finalPayableAmount =
+    isGroupBooking && paymentType === "SPLIT"
+      ? Math.round(total / (selectedFriendIds.length + 1))
+      : total;
 
   const isZeroCommission = serviceFeeRate === 0;
 
@@ -814,7 +819,7 @@ function CheckoutPageContent() {
 
       if (paymentMethod === "wallet") {
         await bookingApi.payWithWallet(bookingId);
-        
+
         statsApi
           .trackFunnelEvent({
             eventName: "checkout_payment_completed",
@@ -823,7 +828,7 @@ function CheckoutPageContent() {
             metadata: { total, paymentMethod, isGroupBooking, paymentType },
           })
           .catch(() => {});
-          
+
         router.replace(`/dashboard/bookings/${bookingId}?success=true`);
         return;
       }
@@ -929,10 +934,7 @@ function CheckoutPageContent() {
         variant="primary"
         className="w-[180px] lg:w-full gap-2"
         disabled={
-          !hasRequiredDetails ||
-          !hasValidDuration ||
-          isSubmitting ||
-          total <= 0
+          !hasRequiredDetails || !hasValidDuration || isSubmitting || total <= 0
         }
         loading={currentStep === 3 ? isSubmitting : false}
         onClick={currentStep === 3 ? handleCheckout : handleNextStep}
@@ -951,7 +953,8 @@ function CheckoutPageContent() {
         )}
         {currentStep === 3 && (
           <>
-            Pay <span className="hidden lg:inline">{formatCurrency(total)}</span>
+            Pay{" "}
+            <span className="hidden lg:inline">{formatCurrency(total)}</span>
             <ArrowRight size={15} />
           </>
         )}
@@ -1222,7 +1225,6 @@ function CheckoutPageContent() {
                       />
                     </div>
                   </SectionCard>
-
                 </>
               )}
 
@@ -1314,8 +1316,9 @@ function CheckoutPageContent() {
                         <p className="text-xs text-slate-400">Paying with</p>
                         <p className="text-sm font-semibold text-slate-800">
                           {
-                            dynamicPaymentOptions.find((o) => o.id === paymentMethod)
-                              ?.label
+                            dynamicPaymentOptions.find(
+                              (o) => o.id === paymentMethod,
+                            )?.label
                           }
                         </p>
                       </div>
@@ -1583,14 +1586,11 @@ function CheckoutPageContent() {
                       : "Confirmed after location verification."}
                   </p>
                 </div>
-
               </div>
             </SectionCard>
 
             {/* Desktop CTA (hidden on mobile) */}
-            <div className="hidden lg:block mt-6">
-              {ctaButtons}
-            </div>
+            <div className="hidden lg:block mt-6">{ctaButtons}</div>
 
             {/* Security trust badge */}
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-sm">

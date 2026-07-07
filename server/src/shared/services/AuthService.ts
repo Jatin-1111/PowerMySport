@@ -513,7 +513,9 @@ export const addDependent = async (
   }
 
   if (user.role === "Player" && user.userType !== "Parent") {
-    throw new Error("Only Parent profiles can add dependents. Please upgrade your profile first.");
+    throw new Error(
+      "Only Parent profiles can add dependents. Please upgrade your profile first.",
+    );
   }
 
   let age = payload.age;
@@ -629,7 +631,8 @@ export interface UpdateProfilePayload {
   email?: string;
   phone?: string;
   dob?: string | Date;
-  userType?: "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin";
+  userType?:
+    "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin";
   playerProfile?: {
     sports?: string[];
     yearsPlaying?: number;
@@ -750,12 +753,11 @@ export const updateProfile = async (
   }
 
   await user.save();
-  
+
   if (userTypeToUpdate) {
-    await mongoose.connection.collection("users").updateOne(
-      { _id: user._id },
-      { $set: { userType: userTypeToUpdate } }
-    );
+    await mongoose.connection
+      .collection("users")
+      .updateOne({ _id: user._id }, { $set: { userType: userTypeToUpdate } });
     const updatedUser = await User.findById(userId);
     if (!updatedUser) throw new Error("Failed to refetch updated user");
     return updatedUser;
@@ -850,7 +852,9 @@ export const addAddress = async (
     email: data.email,
     phone: data.phone,
     addressLine1: data.addressLine1,
-    ...(data.addressLine2 !== undefined ? { addressLine2: data.addressLine2 } : {}),
+    ...(data.addressLine2 !== undefined
+      ? { addressLine2: data.addressLine2 }
+      : {}),
     city: data.city,
     state: data.state,
     postalCode: data.postalCode,
@@ -907,8 +911,7 @@ export const updateAddress = async (
   if (data.email) address.email = data.email;
   if (data.phone) address.phone = data.phone;
   if (data.addressLine1) address.addressLine1 = data.addressLine1;
-  if (data.addressLine2 !== undefined)
-    address.addressLine2 = data.addressLine2;
+  if (data.addressLine2 !== undefined) address.addressLine2 = data.addressLine2;
   if (data.city) address.city = data.city;
   if (data.state) address.state = data.state;
   if (data.postalCode) address.postalCode = data.postalCode;
@@ -944,7 +947,8 @@ export const deleteAddress = async (
   // If deleted address was default, set new default
   if (
     user.defaultAddressId?.toString() === addressId &&
-    user.addresses && user.addresses.length > 0
+    user.addresses &&
+    user.addresses.length > 0
   ) {
     user.defaultAddressId = user.addresses[0]!._id as any;
     user.addresses[0]!.isDefault = true;

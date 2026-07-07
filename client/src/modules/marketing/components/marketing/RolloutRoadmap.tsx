@@ -311,7 +311,12 @@ export function RolloutRoadmap({
   className,
 }: RolloutRoadmapProps) {
   return (
-    <section className={cn("relative overflow-hidden py-16 sm:py-20 lg:py-24", className)}>
+    <section
+      className={cn(
+        "relative overflow-hidden py-16 sm:py-20 lg:py-24",
+        className,
+      )}
+    >
       {/* Ambient blobs */}
       <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-orange-100/25 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-indigo-100/25 blur-3xl" />
@@ -325,7 +330,10 @@ export function RolloutRoadmap({
           viewport={{ once: true, margin: "-100px" }}
           className="mb-12 text-center sm:mb-14"
         >
-          <motion.div variants={headerVariants} className="mb-4 flex justify-center">
+          <motion.div
+            variants={headerVariants}
+            className="mb-4 flex justify-center"
+          >
             <SectionLabel label={subtitle} color="orange" />
           </motion.div>
           <motion.h2

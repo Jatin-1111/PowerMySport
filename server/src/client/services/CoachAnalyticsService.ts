@@ -27,34 +27,44 @@ export interface EarningsData {
   recentBookings: any[];
 }
 
-export const getCoachEarnings = async (coachUserId: string): Promise<EarningsData> => {
+export const getCoachEarnings = async (
+  coachUserId: string,
+): Promise<EarningsData> => {
   const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
   if (!coach) throw new Error("Coach profile not found");
 
   const now = new Date();
   const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+  const endOfLastMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    0,
+    23,
+    59,
+    59,
+  );
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [completedBookings, pendingBookings, recentBookings] = await Promise.all([
-    Booking.find({
-      coachId: coach._id,
-      status: "COMPLETED",
-    }).lean(),
-    Booking.find({
-      coachId: coach._id,
-      status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
-    }).lean(),
-    Booking.find({
-      coachId: coach._id,
-      status: "COMPLETED",
-    })
-      .sort({ date: -1 })
-      .limit(10)
-      .populate("userId", "name photoUrl")
-      .lean(),
-  ]);
+  const [completedBookings, pendingBookings, recentBookings] =
+    await Promise.all([
+      Booking.find({
+        coachId: coach._id,
+        status: "COMPLETED",
+      }).lean(),
+      Booking.find({
+        coachId: coach._id,
+        status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+      }).lean(),
+      Booking.find({
+        coachId: coach._id,
+        status: "COMPLETED",
+      })
+        .sort({ date: -1 })
+        .limit(10)
+        .populate("userId", "name photoUrl")
+        .lean(),
+    ]);
 
   // Calculate coach share from payments or use totalAmount as fallback
   const getCoachAmount = (b: any): number => {
@@ -68,30 +78,40 @@ export const getCoachEarnings = async (coachUserId: string): Promise<EarningsDat
   };
 
   const allTime = {
-    total: completedBookings.reduce((s: number, b: any) => s + getCoachAmount(b), 0),
+    total: completedBookings.reduce(
+      (s: number, b: any) => s + getCoachAmount(b),
+      0,
+    ),
     sessions: completedBookings.length,
   };
 
   const thisMonthBookings = completedBookings.filter(
     (b: any) => new Date(b.date) >= startOfThisMonth,
   );
-  const lastMonthBookings = completedBookings.filter(
-    (b: any) => {
-      const d = new Date(b.date);
-      return d >= startOfLastMonth && d <= endOfLastMonth;
-    },
-  );
+  const lastMonthBookings = completedBookings.filter((b: any) => {
+    const d = new Date(b.date);
+    return d >= startOfLastMonth && d <= endOfLastMonth;
+  });
 
   const thisMonth = {
-    total: thisMonthBookings.reduce((s: number, b: any) => s + getCoachAmount(b), 0),
+    total: thisMonthBookings.reduce(
+      (s: number, b: any) => s + getCoachAmount(b),
+      0,
+    ),
     sessions: thisMonthBookings.length,
   };
   const lastMonth = {
-    total: lastMonthBookings.reduce((s: number, b: any) => s + getCoachAmount(b), 0),
+    total: lastMonthBookings.reduce(
+      (s: number, b: any) => s + getCoachAmount(b),
+      0,
+    ),
     sessions: lastMonthBookings.length,
   };
   const pending = {
-    total: pendingBookings.reduce((s: number, b: any) => s + getCoachAmount(b), 0),
+    total: pendingBookings.reduce(
+      (s: number, b: any) => s + getCoachAmount(b),
+      0,
+    ),
     sessions: pendingBookings.length,
   };
 
@@ -99,23 +119,33 @@ export const getCoachEarnings = async (coachUserId: string): Promise<EarningsDat
   const monthMap = new Map<string, { total: number; sessions: number }>();
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", year: "numeric" });
+    const key = d.toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      month: "short",
+      year: "numeric",
+    });
     monthMap.set(key, { total: 0, sessions: 0 });
   }
   completedBookings
     .filter((b: any) => new Date(b.date) >= sixMonthsAgo)
     .forEach((b: any) => {
-      const key = new Date(b.date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", month: "short", year: "numeric" });
+      const key = new Date(b.date).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        month: "short",
+        year: "numeric",
+      });
       const entry = monthMap.get(key);
       if (entry) {
         entry.total += getCoachAmount(b);
         entry.sessions += 1;
       }
     });
-  const byMonth: MonthlyEarning[] = Array.from(monthMap.entries()).map(([label, v]) => ({
-    label,
-    ...v,
-  }));
+  const byMonth: MonthlyEarning[] = Array.from(monthMap.entries()).map(
+    ([label, v]) => ({
+      label,
+      ...v,
+    }),
+  );
 
   // By sport
   const sportMap = new Map<string, { total: number; sessions: number }>();
@@ -130,7 +160,15 @@ export const getCoachEarnings = async (coachUserId: string): Promise<EarningsDat
     .map(([sport, v]) => ({ sport, ...v }))
     .sort((a, b) => b.total - a.total);
 
-  return { allTime, thisMonth, lastMonth, pending, byMonth, bySport, recentBookings };
+  return {
+    allTime,
+    thisMonth,
+    lastMonth,
+    pending,
+    byMonth,
+    bySport,
+    recentBookings,
+  };
 };
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
@@ -165,7 +203,9 @@ export interface AnalyticsData {
   clientRetention: { newClients: number; returningClients: number };
 }
 
-export const getCoachAnalytics = async (coachUserId: string): Promise<AnalyticsData> => {
+export const getCoachAnalytics = async (
+  coachUserId: string,
+): Promise<AnalyticsData> => {
   const coach = await Coach.findOne({ userId: coachUserId }).select(
     "_id rating reviewCount",
   );
@@ -194,23 +234,29 @@ export const getCoachAnalytics = async (coachUserId: string): Promise<AnalyticsD
   const terminal = allBookings.filter((b: any) =>
     ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status),
   );
-  const completionRate = terminal.length > 0
-    ? Math.round((completed.length / terminal.length) * 100)
-    : 0;
+  const completionRate =
+    terminal.length > 0
+      ? Math.round((completed.length / terminal.length) * 100)
+      : 0;
 
   // Unique clients
-  const allClientIds = [...new Set(allBookings.map((b: any) => b.userId.toString()))];
+  const allClientIds = [
+    ...new Set(allBookings.map((b: any) => b.userId.toString())),
+  ];
   const returningClientIds = new Set<string>();
   const countMap = new Map<string, number>();
   allBookings.forEach((b: any) => {
     const id = b.userId.toString();
     countMap.set(id, (countMap.get(id) ?? 0) + 1);
   });
-  countMap.forEach((count, id) => { if (count > 1) returningClientIds.add(id); });
+  countMap.forEach((count, id) => {
+    if (count > 1) returningClientIds.add(id);
+  });
 
-  const retentionRate = allClientIds.length > 0
-    ? Math.round((returningClientIds.size / allClientIds.length) * 100)
-    : 0;
+  const retentionRate =
+    allClientIds.length > 0
+      ? Math.round((returningClientIds.size / allClientIds.length) * 100)
+      : 0;
 
   // Sessions trend — last 30 days, grouped by day
   const trendMap = new Map<string, number>();
@@ -221,11 +267,16 @@ export const getCoachAnalytics = async (coachUserId: string): Promise<AnalyticsD
   }
   recentBookings.forEach((b: any) => {
     const key = new Date(b.date).toISOString().split("T")[0] ?? "";
-    if (key && trendMap.has(key)) trendMap.set(key, (trendMap.get(key) ?? 0) + 1);
+    if (key && trendMap.has(key))
+      trendMap.set(key, (trendMap.get(key) ?? 0) + 1);
   });
   const sessionsTrend: TrendPoint[] = Array.from(trendMap.entries()).map(
     ([date, count]) => ({
-      label: new Date(date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short" }),
+      label: new Date(date).toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "numeric",
+        month: "short",
+      }),
       count,
     }),
   );
@@ -241,7 +292,10 @@ export const getCoachAnalytics = async (coachUserId: string): Promise<AnalyticsD
     .map(([sport, count]) => ({
       sport,
       count,
-      percentage: totalSportBookings > 0 ? Math.round((count / totalSportBookings) * 100) : 0,
+      percentage:
+        totalSportBookings > 0
+          ? Math.round((count / totalSportBookings) * 100)
+          : 0,
     }))
     .sort((a, b) => b.count - a.count);
 

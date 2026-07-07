@@ -136,7 +136,10 @@ export default function MyExpertSessionsPage() {
                         {s.status === "SCHEDULED" && s.scheduledAt ? (
                           <>
                             <CalendarClock className="h-3.5 w-3.5" />
-                            {formatSessionTimeWithZone(s.scheduledAt, s.expertTimezone)}
+                            {formatSessionTimeWithZone(
+                              s.scheduledAt,
+                              s.expertTimezone,
+                            )}
                           </>
                         ) : (
                           <>

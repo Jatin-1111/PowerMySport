@@ -24,6 +24,10 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function GuidanceLayout({ children }: { children: React.ReactNode }) {
+export default function GuidanceLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return <>{children}</>;
 }

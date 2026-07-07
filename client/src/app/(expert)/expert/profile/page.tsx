@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  expertApi,
-  type Expert,
-} from "@/modules/expert/services/expert";
+import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { ExpertProfileEditor } from "@/modules/expert/components/ExpertProfileEditor";
 import { useCallback, useEffect, useState } from "react";
 
@@ -50,7 +47,9 @@ export default function ExpertProfilePage() {
           <div className="py-16 text-center text-slate-500">Loading...</div>
         ) : error || !profile ? (
           <div className="py-12 text-center">
-            <p className="font-semibold text-red-600">{error || "Expert profile not found."}</p>
+            <p className="font-semibold text-red-600">
+              {error || "Expert profile not found."}
+            </p>
             <button
               onClick={load}
               className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"

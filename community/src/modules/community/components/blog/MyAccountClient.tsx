@@ -55,10 +55,15 @@ export default function MyAccountClient() {
           const proceed = async () => {
             try {
               await blogService.deleteBlog(blog.id);
-              setBlogs((current) => current.filter((item) => item.id !== blog.id));
+              setBlogs((current) =>
+                current.filter((item) => item.id !== blog.id),
+              );
               setProfile((current) =>
                 current
-                  ? { ...current, blogCount: Math.max(0, current.blogCount - 1) }
+                  ? {
+                      ...current,
+                      blogCount: Math.max(0, current.blogCount - 1),
+                    }
                   : current,
               );
               toast.success("Blog deleted");

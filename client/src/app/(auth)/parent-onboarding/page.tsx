@@ -11,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
-import { DEFAULT_DEPENDENT_RELATION, DEPENDENT_RELATIONS } from "@/modules/player/constants/dependentRelations";
+import {
+  DEFAULT_DEPENDENT_RELATION,
+  DEPENDENT_RELATIONS,
+} from "@/modules/player/constants/dependentRelations";
 import { INDIAN_STATES } from "@/modules/guidance/constants";
 import { Calendar, UserRound } from "lucide-react";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
@@ -102,7 +105,8 @@ export default function ParentOnboardingPage() {
       toast.success("Child profile added successfully!");
       router.push("/dashboard/my-bookings");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to save dependent";
+      const message =
+        err instanceof Error ? err.message : "Failed to save dependent";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -120,7 +124,8 @@ export default function ParentOnboardingPage() {
               Add Your Athlete
             </h1>
             <p className="text-center text-slate-600 dark:text-slate-300 mt-2">
-              Let&apos;s create a profile for your child so you can book venues, coaches, and connect with other parents.
+              Let&apos;s create a profile for your child so you can book venues,
+              coaches, and connect with other parents.
             </p>
           </CardHeader>
 
@@ -205,7 +210,10 @@ export default function ParentOnboardingPage() {
                 </TabsContent>
 
                 <TabsContent value="sports" className="space-y-5">
-                  <ProfileEditField label="Sports Interests (Optional)" hint="Helps personalize recommendations">
+                  <ProfileEditField
+                    label="Sports Interests (Optional)"
+                    hint="Helps personalize recommendations"
+                  >
                     <SportsMultiSelect
                       value={formData.sports}
                       onChange={(sports) => handleChange("sports", sports)}
@@ -227,7 +235,9 @@ export default function ParentOnboardingPage() {
                       onChange={(e) =>
                         handleChange(
                           "yearsPlaying",
-                          e.target.value === "" ? undefined : parseInt(e.target.value, 10),
+                          e.target.value === ""
+                            ? undefined
+                            : parseInt(e.target.value, 10),
                         )
                       }
                       className="bg-white/50 backdrop-blur-sm"
@@ -237,11 +247,16 @@ export default function ParentOnboardingPage() {
 
                 <TabsContent value="preferences" className="space-y-5">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <ProfileEditField label="Objective" htmlFor="primary-objective">
+                    <ProfileEditField
+                      label="Objective"
+                      htmlFor="primary-objective"
+                    >
                       <ProfileFormSelect
                         id="primary-objective"
                         value={formData.primaryObjective}
-                        onChange={(value) => handleChange("primaryObjective", value)}
+                        onChange={(value) =>
+                          handleChange("primaryObjective", value)
+                        }
                         options={[
                           { value: "Recreational", label: "Recreational" },
                           { value: "Fitness", label: "Fitness" },
@@ -264,7 +279,11 @@ export default function ParentOnboardingPage() {
                     </ProfileEditField>
                   </div>
 
-                  <ProfileEditField label="State / Union Territory" htmlFor="dependent-location" hint="Used for local scheme & resource recommendations">
+                  <ProfileEditField
+                    label="State / Union Territory"
+                    htmlFor="dependent-location"
+                    hint="Used for local scheme & resource recommendations"
+                  >
                     <ProfileFormSelect
                       id="dependent-location"
                       value={formData.location}
@@ -276,14 +295,22 @@ export default function ParentOnboardingPage() {
                     />
                   </ProfileEditField>
 
-                  <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
+                  <ProfileEditField
+                    label="Weekly Time Commitment (Hours)"
+                    htmlFor="weekly-time"
+                  >
                     <Input
                       id="weekly-time"
                       type="number"
                       min="1"
                       max="40"
                       value={formData.weeklyTimeCommitment}
-                      onChange={(e) => handleChange("weeklyTimeCommitment", parseInt(e.target.value) || 3)}
+                      onChange={(e) =>
+                        handleChange(
+                          "weeklyTimeCommitment",
+                          parseInt(e.target.value) || 3,
+                        )
+                      }
                       className="bg-white/50 backdrop-blur-sm"
                     />
                   </ProfileEditField>
@@ -291,7 +318,8 @@ export default function ParentOnboardingPage() {
                   <ProfileEditField label="Personality Tags">
                     <div className="flex flex-wrap gap-2">
                       {PERSONALITY_OPTIONS.map((tag) => {
-                        const isSelected = formData.personalityTags.includes(tag);
+                        const isSelected =
+                          formData.personalityTags.includes(tag);
                         return (
                           <button
                             key={tag}

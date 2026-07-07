@@ -8,4 +8,3 @@ export default async function OrderPage({
   const { id } = await params;
   return <OrderDetailClient orderId={id} />;
 }
-

@@ -18,7 +18,11 @@ export interface PathwayLevel {
   };
   benchmarks?: {
     description: string;
-    metrics: Array<{ metric: string; target: string; checkpointMonth?: number }>;
+    metrics: Array<{
+      metric: string;
+      target: string;
+      checkpointMonth?: number;
+    }>;
   };
   trialInfo?: {
     typicalMonths: string;
@@ -124,7 +128,7 @@ export interface SportPathwayDocument extends Document {
   tournamentsVerifiedEmpty?: boolean;
   scholarshipsVerifiedEmpty?: boolean;
   universitiesVerifiedEmpty?: boolean;
-  /** 
+  /**
    * Baseline quality gate. false = AI-generated, pending admin review. true = an admin has reviewed/edited this.
    * Note: expertVerifications are an independent trust layer on top of this. An expert verification
    * should only count if isVerified is true (see trustTier logic).
@@ -166,7 +170,14 @@ const pathwayLevelSchema = new Schema<PathwayLevel>(
     },
     benchmarks: {
       description: { type: String },
-      metrics: [{ metric: { type: String }, target: { type: String }, checkpointMonth: { type: Number }, _id: false }],
+      metrics: [
+        {
+          metric: { type: String },
+          target: { type: String },
+          checkpointMonth: { type: Number },
+          _id: false,
+        },
+      ],
     },
     trialInfo: {
       typicalMonths: { type: String },

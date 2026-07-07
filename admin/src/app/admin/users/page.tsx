@@ -339,9 +339,7 @@ function AdminUsersPageContent() {
     const phoneCol: AdminDataTableColumn<UsersRow> = {
       key: "phone",
       header: "Phone",
-      render: (u) => (
-        <span className="text-slate-600">{u.phone || "—"}</span>
-      ),
+      render: (u) => <span className="text-slate-600">{u.phone || "—"}</span>,
     };
     const joinedCol: AdminDataTableColumn<UsersRow> = {
       key: "joined",
@@ -483,7 +481,8 @@ function AdminUsersPageContent() {
         },
         {
           header: "Service Mode",
-          value: (u: UsersRow) => (u.role === "Coach" ? u.serviceMode || "" : ""),
+          value: (u: UsersRow) =>
+            u.role === "Coach" ? u.serviceMode || "" : "",
         },
         {
           header: "Rating",

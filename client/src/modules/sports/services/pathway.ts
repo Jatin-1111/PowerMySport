@@ -204,7 +204,6 @@ export const pathwayApi = {
     }
   },
 
-
   /**
    * Fetch only tournaments/scholarships/universities for a sport.
    * The server waits for the scraper if they aren't cached yet.
@@ -213,15 +212,21 @@ export const pathwayApi = {
   getEntities: async (
     sportName: string,
     childCity?: string,
-  ): Promise<{ tournaments: Tournament[]; scholarships: Scholarship[]; universities: University[] } | null> => {
+  ): Promise<{
+    tournaments: Tournament[];
+    scholarships: Scholarship[];
+    universities: University[];
+  } | null> => {
     try {
       const params = new URLSearchParams({ sport: sportName });
       if (childCity) params.append("city", childCity.trim());
-      const resp = await axiosInstance.get<ApiResponse<{
-        tournaments: Tournament[];
-        scholarships: Scholarship[];
-        universities: University[];
-      }>>(`/pathways/entities?${params.toString()}`);
+      const resp = await axiosInstance.get<
+        ApiResponse<{
+          tournaments: Tournament[];
+          scholarships: Scholarship[];
+          universities: University[];
+        }>
+      >(`/pathways/entities?${params.toString()}`);
       return resp.data.data ?? null;
     } catch {
       return null;
@@ -263,9 +268,10 @@ export const pathwayApi = {
    */
   refreshStale: async (): Promise<{ refreshed: number }> => {
     try {
-      const resp = await axiosInstance.post<{ success: boolean; refreshed: number }>(
-        `/pathways/refresh-stale`,
-      );
+      const resp = await axiosInstance.post<{
+        success: boolean;
+        refreshed: number;
+      }>(`/pathways/refresh-stale`);
       return { refreshed: resp.data.refreshed ?? 0 };
     } catch {
       return { refreshed: 0 };
@@ -277,9 +283,9 @@ export const pathwayApi = {
    * profile — the queue they can verify.
    */
   getForExpertVerification: async (): Promise<ExpertVerifiablePathway[]> => {
-    const resp = await axiosInstance.get<ApiResponse<ExpertVerifiablePathway[]>>(
-      `/pathways/expert/mine`,
-    );
+    const resp = await axiosInstance.get<
+      ApiResponse<ExpertVerifiablePathway[]>
+    >(`/pathways/expert/mine`);
     return resp.data.data ?? [];
   },
 
@@ -291,10 +297,9 @@ export const pathwayApi = {
     sportSlug: string,
     note?: string,
   ): Promise<ApiResponse<PathwayExpertVerification>> => {
-    const resp = await axiosInstance.post<ApiResponse<PathwayExpertVerification>>(
-      `/pathways/expert/${sportSlug}/verify`,
-      { note },
-    );
+    const resp = await axiosInstance.post<
+      ApiResponse<PathwayExpertVerification>
+    >(`/pathways/expert/${sportSlug}/verify`, { note });
     return resp.data;
   },
 

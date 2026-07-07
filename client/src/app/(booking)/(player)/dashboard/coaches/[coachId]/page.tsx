@@ -57,7 +57,11 @@ export default function BookCoachPage() {
     setSelectedSlot("");
     setBookingData((prev) => ({ ...prev, startTime: "", endTime: "" }));
     try {
-      const response = await bookingApi.getCoachAvailability(coachId, date, sport);
+      const response = await bookingApi.getCoachAvailability(
+        coachId,
+        date,
+        sport,
+      );
       if (response.success && response.data) {
         setAvailableSlots(response.data.availableSlots || []);
       } else {
@@ -96,7 +100,10 @@ export default function BookCoachPage() {
       const userResponse = await authApi.getProfile();
       if (userResponse.success && userResponse.data) {
         setUser(userResponse.data);
-        if (userResponse.data.role !== "Player" && userResponse.data.role !== "Parent") {
+        if (
+          userResponse.data.role !== "Player" &&
+          userResponse.data.role !== "Parent"
+        ) {
           toast.error("Only player accounts can create bookings.");
           router.replace(getDashboardPathByRole(userResponse.data.role));
           return;
@@ -142,7 +149,11 @@ export default function BookCoachPage() {
 
   const getSportPrice = (sport: string) => {
     if (!venue) return 0;
-    if (sport && venue.sportPricing && venue.sportPricing[sport] !== undefined) {
+    if (
+      sport &&
+      venue.sportPricing &&
+      venue.sportPricing[sport] !== undefined
+    ) {
       return venue.sportPricing[sport];
     }
     return venue.pricePerHour;
@@ -171,7 +182,12 @@ export default function BookCoachPage() {
       return;
     }
 
-    if (!bookingData.date || !bookingData.startTime || !bookingData.endTime || !bookingData.sport) {
+    if (
+      !bookingData.date ||
+      !bookingData.startTime ||
+      !bookingData.endTime ||
+      !bookingData.sport
+    ) {
       toast.error("Please select a date, sport, and time slot");
       return;
     }
@@ -403,7 +419,9 @@ export default function BookCoachPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Rate / hr</span>
                   <span className="font-semibold text-slate-900">
-                    ₹{coach.hourlyRate + (venue ? getSportPrice(bookingData.sport) : 0)}
+                    ₹
+                    {coach.hourlyRate +
+                      (venue ? getSportPrice(bookingData.sport) : 0)}
                   </span>
                 </div>
                 <div className="border-t border-slate-200/60 pt-2 mt-2">

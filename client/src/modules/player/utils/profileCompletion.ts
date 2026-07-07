@@ -31,13 +31,48 @@ export const PROFILE_COMPLETION_FIELDS: Array<{
   weight: number;
   isFilled: (p: CompletionProfile) => boolean;
 }> = [
-  { field: "sports", label: "Sports", weight: 25, isFilled: (p) => (p.sports?.length ?? 0) > 0 },
-  { field: "primaryObjective", label: "Objective", weight: 20, isFilled: (p) => !!p.primaryObjective },
-  { field: "location", label: "State / Location", weight: 15, isFilled: (p) => !!p.location },
-  { field: "yearsPlaying", label: "Experience", weight: 10, isFilled: (p) => p.yearsPlaying !== undefined && p.yearsPlaying !== null },
-  { field: "weeklyTimeCommitment", label: "Weekly Time Commitment", weight: 10, isFilled: (p) => !!p.weeklyTimeCommitment },
-  { field: "budgetTier", label: "Budget Tier", weight: 10, isFilled: (p) => !!p.budgetTier },
-  { field: "personalityTags", label: "Personality Tags", weight: 10, isFilled: (p) => (p.personalityTags?.length ?? 0) > 0 },
+  {
+    field: "sports",
+    label: "Sports",
+    weight: 25,
+    isFilled: (p) => (p.sports?.length ?? 0) > 0,
+  },
+  {
+    field: "primaryObjective",
+    label: "Objective",
+    weight: 20,
+    isFilled: (p) => !!p.primaryObjective,
+  },
+  {
+    field: "location",
+    label: "State / Location",
+    weight: 15,
+    isFilled: (p) => !!p.location,
+  },
+  {
+    field: "yearsPlaying",
+    label: "Experience",
+    weight: 10,
+    isFilled: (p) => p.yearsPlaying !== undefined && p.yearsPlaying !== null,
+  },
+  {
+    field: "weeklyTimeCommitment",
+    label: "Weekly Time Commitment",
+    weight: 10,
+    isFilled: (p) => !!p.weeklyTimeCommitment,
+  },
+  {
+    field: "budgetTier",
+    label: "Budget Tier",
+    weight: 10,
+    isFilled: (p) => !!p.budgetTier,
+  },
+  {
+    field: "personalityTags",
+    label: "Personality Tags",
+    weight: 10,
+    isFilled: (p) => (p.personalityTags?.length ?? 0) > 0,
+  },
 ];
 
 export interface ProfileCompletionResult {
@@ -49,7 +84,10 @@ export function calculateProfileCompletion(
   profile: CompletionProfile | null | undefined,
 ): ProfileCompletionResult {
   const safeProfile = profile ?? {};
-  const totalWeight = PROFILE_COMPLETION_FIELDS.reduce((sum, f) => sum + f.weight, 0);
+  const totalWeight = PROFILE_COMPLETION_FIELDS.reduce(
+    (sum, f) => sum + f.weight,
+    0,
+  );
 
   let filledWeight = 0;
   const missing: ProfileCompletionResult["missing"] = [];
@@ -63,7 +101,8 @@ export function calculateProfileCompletion(
   }
 
   return {
-    percent: totalWeight > 0 ? Math.round((filledWeight / totalWeight) * 100) : 100,
+    percent:
+      totalWeight > 0 ? Math.round((filledWeight / totalWeight) * 100) : 100,
     missing,
   };
 }

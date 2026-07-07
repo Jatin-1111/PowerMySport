@@ -28,7 +28,8 @@ import { toast } from "sonner";
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const field =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20";
-const fieldLabel = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500";
+const fieldLabel =
+  "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500";
 
 function SectionHeader({
   icon: Icon,
@@ -43,7 +44,9 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconClassName}`}>
+      <div
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
+      >
         <Icon className="h-5 w-5" />
       </div>
       <div>
@@ -57,7 +60,9 @@ function SectionHeader({
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
       <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
     </div>
   );
@@ -76,9 +81,15 @@ export function ExpertProfileEditor({
   const [expertise, setExpertise] = useState<string[]>(profile.expertise || []);
   const [languages, setLanguages] = useState<string[]>(profile.languages || []);
   const [city, setCity] = useState(profile.city || "");
-  const [inPersonAddress, setInPersonAddress] = useState(profile.inPersonAddress || "");
-  const [sessionMode, setSessionMode] = useState(profile.sessionMode || "ONLINE");
-  const [sessionFee, setSessionFee] = useState(String(profile.sessionFee ?? ""));
+  const [inPersonAddress, setInPersonAddress] = useState(
+    profile.inPersonAddress || "",
+  );
+  const [sessionMode, setSessionMode] = useState(
+    profile.sessionMode || "ONLINE",
+  );
+  const [sessionFee, setSessionFee] = useState(
+    String(profile.sessionFee ?? ""),
+  );
   const [duration, setDuration] = useState(
     String(profile.sessionDurationMinutes ?? 60),
   );
@@ -87,15 +98,22 @@ export function ExpertProfileEditor({
   const [windows, setWindows] = useState<ExpertAvailabilityWindow[]>(
     profile.weeklyAvailability || [],
   );
-  const [blackout, setBlackout] = useState<string[]>(profile.blackoutDates || []);
+  const [blackout, setBlackout] = useState<string[]>(
+    profile.blackoutDates || [],
+  );
   const [newBlackout, setNewBlackout] = useState("");
   const [saving, setSaving] = useState(false);
 
   const addWindow = (dayOfWeek: number) =>
     setWindows((w) => [...w, { dayOfWeek, start: "09:00", end: "10:00" }]);
 
-  const updateWindow = (idx: number, patch: Partial<ExpertAvailabilityWindow>) =>
-    setWindows((w) => w.map((win, i) => (i === idx ? { ...win, ...patch } : win)));
+  const updateWindow = (
+    idx: number,
+    patch: Partial<ExpertAvailabilityWindow>,
+  ) =>
+    setWindows((w) =>
+      w.map((win, i) => (i === idx ? { ...win, ...patch } : win)),
+    );
 
   const removeWindow = (idx: number) =>
     setWindows((w) => w.filter((_, i) => i !== idx));
@@ -108,7 +126,9 @@ export function ExpertProfileEditor({
     }
     for (const w of windows) {
       if (w.start >= w.end) {
-        toast.error(`Availability on ${DAYS[w.dayOfWeek]} has an invalid time range.`);
+        toast.error(
+          `Availability on ${DAYS[w.dayOfWeek]} has an invalid time range.`,
+        );
         return;
       }
     }
@@ -148,7 +168,11 @@ export function ExpertProfileEditor({
 
   const totalSlots = windows.length;
   const modeLabel =
-    sessionMode === "BOTH" ? "Online + In-person" : sessionMode === "ONLINE" ? "Online" : "In-person";
+    sessionMode === "BOTH"
+      ? "Online + In-person"
+      : sessionMode === "ONLINE"
+        ? "Online"
+        : "In-person";
 
   return (
     <div className="space-y-6 pb-24 sm:space-y-8">
@@ -172,7 +196,9 @@ export function ExpertProfileEditor({
                   {profile.name || "Expert"}
                 </h2>
                 {profile.email && (
-                  <p className="mt-0.5 text-sm text-slate-500">{profile.email}</p>
+                  <p className="mt-0.5 text-sm text-slate-500">
+                    {profile.email}
+                  </p>
                 )}
               </div>
             </div>
@@ -205,7 +231,10 @@ export function ExpertProfileEditor({
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatChip label="Sports" value={String(sports.length)} />
-            <StatChip label="Session fee" value={`₹${Number(sessionFee || 0).toLocaleString("en-IN")}`} />
+            <StatChip
+              label="Session fee"
+              value={`₹${Number(sessionFee || 0).toLocaleString("en-IN")}`}
+            />
             <StatChip label="Mode" value={modeLabel} />
             <StatChip label="Weekly slots" value={String(totalSlots)} />
           </div>
@@ -225,15 +254,29 @@ export function ExpertProfileEditor({
             <div className="space-y-4">
               <div>
                 <label className={fieldLabel}>Bio</label>
-                <textarea rows={4} className={field} value={bio} onChange={(e) => setBio(e.target.value)} />
+                <textarea
+                  rows={4}
+                  className={field}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                />
               </div>
               <div>
                 <label className={fieldLabel}>Achievements</label>
-                <textarea rows={2} className={field} value={achievements} onChange={(e) => setAchievements(e.target.value)} />
+                <textarea
+                  rows={2}
+                  className={field}
+                  value={achievements}
+                  onChange={(e) => setAchievements(e.target.value)}
+                />
               </div>
               <div>
                 <label className={fieldLabel}>City</label>
-                <input className={field} value={city} onChange={(e) => setCity(e.target.value)} />
+                <input
+                  className={field}
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
               </div>
             </div>
           </Card>
@@ -252,11 +295,17 @@ export function ExpertProfileEditor({
               </div>
               <div>
                 <label className={fieldLabel}>Expertise</label>
-                <ExpertiseMultiSelect value={expertise} onChange={setExpertise} />
+                <ExpertiseMultiSelect
+                  value={expertise}
+                  onChange={setExpertise}
+                />
               </div>
               <div>
                 <label className={fieldLabel}>Languages</label>
-                <LanguagesMultiSelect value={languages} onChange={setLanguages} />
+                <LanguagesMultiSelect
+                  value={languages}
+                  onChange={setLanguages}
+                />
               </div>
             </div>
           </Card>
@@ -271,18 +320,33 @@ export function ExpertProfileEditor({
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={fieldLabel}>Session fee (₹)</label>
-                <input type="number" min="0" className={field} value={sessionFee} onChange={(e) => setSessionFee(e.target.value)} />
+                <input
+                  type="number"
+                  min="0"
+                  className={field}
+                  value={sessionFee}
+                  onChange={(e) => setSessionFee(e.target.value)}
+                />
               </div>
               <div>
                 <label className={fieldLabel}>Session length (minutes)</label>
-                <input type="number" min="15" step="15" className={field} value={duration} onChange={(e) => setDuration(e.target.value)} />
+                <input
+                  type="number"
+                  min="15"
+                  step="15"
+                  className={field}
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className={fieldLabel}>Session mode</label>
                 <select
                   className={field}
                   value={sessionMode}
-                  onChange={(e) => setSessionMode(e.target.value as Expert["sessionMode"])}
+                  onChange={(e) =>
+                    setSessionMode(e.target.value as Expert["sessionMode"])
+                  }
                 >
                   <option value="ONLINE">Online</option>
                   <option value="IN_PERSON">In-person</option>
@@ -292,7 +356,8 @@ export function ExpertProfileEditor({
               {(sessionMode === "IN_PERSON" || sessionMode === "BOTH") && (
                 <div className="sm:col-span-2">
                   <label className={fieldLabel}>
-                    <MapPin className="mr-1 inline h-3.5 w-3.5" /> In-person location
+                    <MapPin className="mr-1 inline h-3.5 w-3.5" /> In-person
+                    location
                   </label>
                   <input
                     className={field}
@@ -301,7 +366,8 @@ export function ExpertProfileEditor({
                     onChange={(e) => setInPersonAddress(e.target.value)}
                   />
                   <p className="mt-1.5 text-xs text-slate-500">
-                    Shown to a client only after they&apos;ve booked a session with you.
+                    Shown to a client only after they&apos;ve booked a session
+                    with you.
                   </p>
                 </div>
               )}
@@ -324,9 +390,14 @@ export function ExpertProfileEditor({
                   .map((w, i) => ({ w, i }))
                   .filter(({ w }) => w.dayOfWeek === dayIdx);
                 return (
-                  <div key={day} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                  <div
+                    key={day}
+                    className="rounded-xl border border-slate-100 bg-slate-50/60 p-3"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-700">{day}</span>
+                      <span className="text-sm font-semibold text-slate-700">
+                        {day}
+                      </span>
                       <button
                         onClick={() => addWindow(dayIdx)}
                         className="inline-flex items-center gap-1 text-xs font-semibold text-power-orange hover:underline"
@@ -335,7 +406,9 @@ export function ExpertProfileEditor({
                       </button>
                     </div>
                     {dayWindows.length === 0 ? (
-                      <p className="mt-1.5 text-xs text-slate-400">Unavailable</p>
+                      <p className="mt-1.5 text-xs text-slate-400">
+                        Unavailable
+                      </p>
                     ) : (
                       <div className="mt-2 space-y-2">
                         {dayWindows.map(({ w, i }) => (
@@ -343,14 +416,18 @@ export function ExpertProfileEditor({
                             <input
                               type="time"
                               value={w.start}
-                              onChange={(e) => updateWindow(i, { start: e.target.value })}
+                              onChange={(e) =>
+                                updateWindow(i, { start: e.target.value })
+                              }
                               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
                             />
                             <span className="text-slate-400">–</span>
                             <input
                               type="time"
                               value={w.end}
-                              onChange={(e) => updateWindow(i, { end: e.target.value })}
+                              onChange={(e) =>
+                                updateWindow(i, { end: e.target.value })
+                              }
                               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
                             />
                             <button
@@ -371,15 +448,25 @@ export function ExpertProfileEditor({
 
             {/* Blackout dates */}
             <div className="mt-5 border-t border-slate-100 pt-4">
-              <h4 className="text-sm font-bold text-slate-900">Blackout dates</h4>
+              <h4 className="text-sm font-bold text-slate-900">
+                Blackout dates
+              </h4>
               <p className="mt-1 text-xs text-slate-500">
                 Days you&apos;re unavailable even if within your weekly hours.
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {blackout.map((d) => (
-                  <span key={d} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                  <span
+                    key={d}
+                    className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                  >
                     {d}
-                    <button onClick={() => setBlackout((b) => b.filter((x) => x !== d))} aria-label="Remove date">
+                    <button
+                      onClick={() =>
+                        setBlackout((b) => b.filter((x) => x !== d))
+                      }
+                      aria-label="Remove date"
+                    >
                       <Trash2 size={12} />
                     </button>
                   </span>

@@ -729,7 +729,8 @@ export const rejectVenue = async (
 
   // Send rejection email to venue owner
   try {
-    const ownerEmail = venue.ownerEmail ||
+    const ownerEmail =
+      venue.ownerEmail ||
       (venue.ownerId ? (await User.findById(venue.ownerId))?.email : undefined);
 
     if (ownerEmail) {
@@ -765,7 +766,7 @@ export const rejectVenue = async (
               <p>You are welcome to address the concerns mentioned above and re-submit your venue application. Our team is here to help you get listed successfully.</p>
             </div>
             <p style="text-align: center;">
-              <a href="${process.env.FRONTEND_URL || 'https://powermysport.com'}/list-your-venue" class="cta-button">Re-apply Now →</a>
+              <a href="${process.env.FRONTEND_URL || "https://powermysport.com"}/list-your-venue" class="cta-button">Re-apply Now →</a>
             </p>
             <div class="info-box">
               <strong>📞 Need Help?</strong>
@@ -789,7 +790,7 @@ export const rejectVenue = async (
       console.log(`✅ Rejection email sent to ${ownerEmail}`);
     }
   } catch (emailError) {
-    console.error('❌ Failed to send venue rejection email:', emailError);
+    console.error("❌ Failed to send venue rejection email:", emailError);
     // Don't throw — rejection status was already saved
   }
 
@@ -837,7 +838,8 @@ export const markVenueForReview = async (
 
   // Send review notification email to venue owner
   try {
-    const ownerEmail = venue.ownerEmail ||
+    const ownerEmail =
+      venue.ownerEmail ||
       (venue.ownerId ? (await User.findById(venue.ownerId))?.email : undefined);
 
     if (ownerEmail) {
@@ -863,11 +865,15 @@ export const markVenueForReview = async (
           <div class="content">
             <p>Hi ${venue.ownerName},</p>
             <p>Your venue <strong>"${venue.name}"</strong> is currently under active review by our team. We'll get back to you shortly with a decision.</p>
-            ${notes ? `
+            ${
+              notes
+                ? `
             <div class="notes-box">
               <strong>📋 Reviewer Notes:</strong>
               <p>${notes}</p>
-            </div>` : ''}
+            </div>`
+                : ""
+            }
             <div class="info-box">
               <strong>⏱️ What happens next?</strong>
               <p>Our review team will carefully evaluate all submitted documents and images. This process typically takes 2-3 business days. You will receive an email once a decision has been made.</p>
@@ -894,7 +900,10 @@ export const markVenueForReview = async (
       console.log(`✅ Review notification email sent to ${ownerEmail}`);
     }
   } catch (emailError) {
-    console.error('❌ Failed to send venue review notification email:', emailError);
+    console.error(
+      "❌ Failed to send venue review notification email:",
+      emailError,
+    );
     // Don't throw — review status was already saved
   }
 

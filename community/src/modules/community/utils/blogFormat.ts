@@ -29,6 +29,7 @@ export const toRelativeTime = (value?: string | null): string => {
 /** Compact like/comment counts: 1.2k, 3.4M. */
 export const formatCount = (value: number): string => {
   if (value < 1000) return String(value);
-  if (value < 1_000_000) return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
+  if (value < 1_000_000)
+    return `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
   return `${(value / 1_000_000).toFixed(1)}M`;
 };

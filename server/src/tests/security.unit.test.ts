@@ -24,7 +24,10 @@ describe("H5 — search input is escaped before regex use", () => {
   it("trims and length-caps the raw term before escaping", () => {
     const long = "a".repeat(200);
     // 'a' needs no escaping, so the result reflects the raw cap exactly.
-    assert.equal(buildSafeSearchRegexSource(long).length, MAX_SEARCH_TERM_LENGTH);
+    assert.equal(
+      buildSafeSearchRegexSource(long).length,
+      MAX_SEARCH_TERM_LENGTH,
+    );
     assert.equal(buildSafeSearchRegexSource("  Foo.*Bar  "), "Foo\\.\\*Bar");
   });
 
@@ -70,7 +73,10 @@ describe("C1 — Google login refuses unverifiable / client-supplied identity", 
       verifyGoogleCredential(undefined),
       /Missing Google credential/,
     );
-    await assert.rejects(verifyGoogleCredential(""), /Missing Google credential/);
+    await assert.rejects(
+      verifyGoogleCredential(""),
+      /Missing Google credential/,
+    );
     await assert.rejects(
       verifyGoogleCredential(12345),
       /Missing Google credential/,

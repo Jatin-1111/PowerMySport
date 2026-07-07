@@ -30,7 +30,7 @@ interface BookingStore {
   setBookings: (bookings: Booking[]) => void;
   setSelectedBooking: (booking: Booking | null) => void;
   setLoading: (loading: boolean) => void;
-  
+
   setGroupBookingDraft: (draft: GroupBookingDraft | null) => void;
   setPaymentSplitState: (splits: PaymentSplitState[]) => void;
   setWaitlistStatus: (status: WaitlistStatus | null) => void;
@@ -47,9 +47,8 @@ export const useBookingStore = create<BookingStore>((set) => ({
   setBookings: (bookings) => set({ bookings }),
   setSelectedBooking: (booking) => set({ selectedBooking: booking }),
   setLoading: (loading) => set({ isLoading: loading }),
-  
+
   setGroupBookingDraft: (draft) => set({ groupBookingDraft: draft }),
   setPaymentSplitState: (splits) => set({ paymentSplitState: splits }),
   setWaitlistStatus: (status) => set({ waitlistStatus: status }),
 }));
-

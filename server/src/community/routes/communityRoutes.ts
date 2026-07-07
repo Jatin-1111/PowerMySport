@@ -169,7 +169,8 @@ const chatUploadRateLimit = rateLimit({
   handler: (_req: Request, res: Response, _next: NextFunction) => {
     res.status(429).json({
       success: false,
-      message: "Too many upload requests. Please wait a moment before uploading another image.",
+      message:
+        "Too many upload requests. Please wait a moment before uploading another image.",
     });
   },
   standardHeaders: true,

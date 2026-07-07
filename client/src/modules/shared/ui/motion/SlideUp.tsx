@@ -23,7 +23,7 @@ export const SlideUp = forwardRef<HTMLDivElement, SlideUpProps>(
         {children}
       </motion.div>
     );
-  }
+  },
 );
 
 SlideUp.displayName = "SlideUp";

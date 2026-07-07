@@ -549,10 +549,7 @@ export default function CoachBillingPage() {
                   | null
                   | undefined;
                 const userData = subscription.userId as
-                  | { name?: string; email?: string }
-                  | string
-                  | null
-                  | undefined;
+                  { name?: string; email?: string } | string | null | undefined;
 
                 return (
                   <div
@@ -969,7 +966,9 @@ export default function CoachBillingPage() {
                   <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
                     {form.frequency}
                   </span>
-                  {Number.isInteger(parseOptionalWholeNumber(form.maxStudents)) ? (
+                  {Number.isInteger(
+                    parseOptionalWholeNumber(form.maxStudents),
+                  ) ? (
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
                       Up to {parseOptionalWholeNumber(form.maxStudents)}{" "}
                       students
@@ -979,7 +978,9 @@ export default function CoachBillingPage() {
                       Flexible student count
                     </span>
                   )}
-                  {Number.isInteger(parseOptionalWholeNumber(form.maxSessions)) ? (
+                  {Number.isInteger(
+                    parseOptionalWholeNumber(form.maxSessions),
+                  ) ? (
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
                       {parseOptionalWholeNumber(form.maxSessions)} sessions
                     </span>

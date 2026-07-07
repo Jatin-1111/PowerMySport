@@ -1,11 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export type CalendarEventType =
-  | "IMPORTANT"
-  | "COMPETITION"
-  | "TRAINING"
-  | "REMINDER"
-  | "OTHER";
+  "IMPORTANT" | "COMPETITION" | "TRAINING" | "REMINDER" | "OTHER";
 
 export interface UserCalendarEventDocument extends Document {
   userId: mongoose.Types.ObjectId;

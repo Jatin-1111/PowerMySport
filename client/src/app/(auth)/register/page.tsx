@@ -348,9 +348,15 @@ function RegisterContent() {
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all"
                 >
-                  <option value="Parent">I am a Parent (Managing my child&apos;s sports journey)</option>
-                  <option value="Player">I am an Athlete (Booking venues & playing)</option>
-                  <option value="Coach">I am a Coach (Offering training services)</option>
+                  <option value="Parent">
+                    I am a Parent (Managing my child&apos;s sports journey)
+                  </option>
+                  <option value="Player">
+                    I am an Athlete (Booking venues & playing)
+                  </option>
+                  <option value="Coach">
+                    I am a Coach (Offering training services)
+                  </option>
                 </select>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
                   Want to list your venue or start academy onboarding?{" "}

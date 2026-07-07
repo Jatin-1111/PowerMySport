@@ -36,8 +36,7 @@ export function CommandPalette({
   const results = useMemo(() => {
     if (!query.trim()) return items;
     return items.filter(
-      (item) =>
-        fuzzyMatch(query, item.label) || fuzzyMatch(query, item.group),
+      (item) => fuzzyMatch(query, item.label) || fuzzyMatch(query, item.group),
     );
   }, [items, query]);
 

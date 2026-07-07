@@ -379,8 +379,7 @@ export const setupCommunitySocket = (io: Server): void => {
         const messageType: "TEXT" | "IMAGE" =
           rawType === "IMAGE" ? "IMAGE" : "TEXT";
         const metadata:
-          | { width?: number; height?: number; caption?: string }
-          | undefined =
+          { width?: number; height?: number; caption?: string } | undefined =
           messageType === "IMAGE" && payload?.metadata
             ? {
                 width:

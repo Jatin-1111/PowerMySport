@@ -16,7 +16,9 @@ const getPrimaryPayoutMethod = (
     return null;
   }
 
-  return payoutMethods.find((method) => method.isDefault) ?? payoutMethods[0] ?? null;
+  return (
+    payoutMethods.find((method) => method.isDefault) ?? payoutMethods[0] ?? null
+  );
 };
 
 /**
@@ -73,7 +75,9 @@ export const listPendingPayouts = async (
       .lean();
 
     if (expertSessions.length > 0) {
-      const expertIds = [...new Set(expertSessions.map((s) => s.expertId.toString()))];
+      const expertIds = [
+        ...new Set(expertSessions.map((s) => s.expertId.toString())),
+      ];
       const experts = await Expert.find({ _id: { $in: expertIds } })
         .select("userId")
         .lean();
@@ -82,7 +86,9 @@ export const listPendingPayouts = async (
       );
 
       for (const session of expertSessions) {
-        const expertUserId = expertUserIdByExpertId.get(session.expertId.toString());
+        const expertUserId = expertUserIdByExpertId.get(
+          session.expertId.toString(),
+        );
         if (!expertUserId) continue;
         const key = `${expertUserId}_Expert`;
         if (!payoutMap.has(key)) {
@@ -104,7 +110,9 @@ export const listPendingPayouts = async (
     // Populate vendor details and payout methods
     const populatedPayouts = await Promise.all(
       pendingPayouts.map(async (payout) => {
-        const user = await User.findById(payout.vendorId).select("name email phone").lean();
+        const user = await User.findById(payout.vendorId)
+          .select("name email phone")
+          .lean();
 
         let payoutMethod: IPayoutMethod | null = null;
         if (payout.vendorRole === "Coach") {
@@ -137,7 +145,7 @@ export const listPendingPayouts = async (
           vendorPhone: user?.phone || "Unknown",
           payoutMethod,
         };
-      })
+      }),
     );
 
     res.status(200).json({
@@ -149,7 +157,8 @@ export const listPendingPayouts = async (
     console.error("listPendingPayouts error:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to load payouts",
+      message:
+        error instanceof Error ? error.message : "Failed to load payouts",
     });
   }
 };
@@ -165,10 +174,16 @@ export const markPayoutsAsPaid = async (
   try {
     const { vendorId, vendorRole, bookingIds } = req.body;
 
-    if (!vendorId || !vendorRole || !Array.isArray(bookingIds) || bookingIds.length === 0) {
+    if (
+      !vendorId ||
+      !vendorRole ||
+      !Array.isArray(bookingIds) ||
+      bookingIds.length === 0
+    ) {
       res.status(400).json({
         success: false,
-        message: "vendorId, vendorRole, and an array of bookingIds are required",
+        message:
+          "vendorId, vendorRole, and an array of bookingIds are required",
       });
       return;
     }
@@ -210,20 +225,24 @@ export const markPayoutsAsPaid = async (
             status: "COMPLETED",
             "payments.userId": vendorId,
             "payments.userType": vendorRole,
-            "payments.status": "PENDING"
+            "payments.status": "PENDING",
           },
           {
             $set: {
               "payments.$[elem].status": "PAID",
-              "payments.$[elem].paidAt": now
-            }
+              "payments.$[elem].paidAt": now,
+            },
           },
           {
             arrayFilters: [
-              { "elem.userId": vendorId, "elem.userType": vendorRole, "elem.status": "PENDING" }
+              {
+                "elem.userId": vendorId,
+                "elem.userType": vendorRole,
+                "elem.status": "PENDING",
+              },
             ],
-            session
-          }
+            session,
+          },
         );
 
         if (result.modifiedCount > 0) {
@@ -284,7 +303,8 @@ export const markPayoutsAsPaid = async (
     console.error("markPayoutsAsPaid error:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to process payout",
+      message:
+        error instanceof Error ? error.message : "Failed to process payout",
     });
   }
 };

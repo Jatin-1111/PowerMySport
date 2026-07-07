@@ -124,7 +124,6 @@ export default function CoachEarningsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">
-
         {/* ── Page header ── */}
         <SlideUp delay={0}>
           <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -137,7 +136,11 @@ export default function CoachEarningsPage() {
               </p>
             </div>
             <Link href="/coach/profile">
-              <Button variant="outline" size="sm" icon={<IndianRupee className="w-4 h-4" />}>
+              <Button
+                variant="outline"
+                size="sm"
+                icon={<IndianRupee className="w-4 h-4" />}
+              >
                 Manage Pricing
               </Button>
             </Link>
@@ -207,7 +210,6 @@ export default function CoachEarningsPage() {
         {/* ── Two-column section ── */}
         <SlideUp delay={0.15}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-
             {/* By sport */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col gap-5">
               <div>
@@ -235,7 +237,8 @@ export default function CoachEarningsPage() {
                   Recent Transactions
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Last {Math.min(10, data.recentBookings.length)} completed sessions
+                  Last {Math.min(10, data.recentBookings.length)} completed
+                  sessions
                 </p>
               </div>
               <RecentTransactionsList
@@ -249,7 +252,6 @@ export default function CoachEarningsPage() {
                 emptyMessage="No completed transactions yet."
               />
             </div>
-
           </div>
         </SlideUp>
 
@@ -270,8 +272,9 @@ export default function CoachEarningsPage() {
                 Update your session rates
               </h3>
               <p className="text-slate-400 text-sm max-w-md">
-                Keep your pricing competitive. Adjust hourly rates, sport-specific
-                pricing, and session packages to maximize your earnings.
+                Keep your pricing competitive. Adjust hourly rates,
+                sport-specific pricing, and session packages to maximize your
+                earnings.
               </p>
             </div>
             <Link href="/coach/profile" className="shrink-0">
@@ -286,7 +289,6 @@ export default function CoachEarningsPage() {
             </Link>
           </motion.div>
         </SlideUp>
-
       </div>
     </div>
   );

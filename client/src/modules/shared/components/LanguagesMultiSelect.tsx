@@ -100,15 +100,22 @@ export default function LanguagesMultiSelect({
           disabled={disabled}
           className={cn(
             "flex w-full items-center justify-between rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:outline-none",
-            isOpen ? "border-power-orange ring-2 ring-power-orange/20 bg-white" : "border-slate-200 hover:bg-slate-100",
+            isOpen
+              ? "border-power-orange ring-2 ring-power-orange/20 bg-white"
+              : "border-slate-200 hover:bg-slate-100",
             disabled && "opacity-50 cursor-not-allowed",
           )}
         >
           <span className="text-slate-500">
-            {value.length === 0 ? "Select languages..." : `Add more languages...`}
+            {value.length === 0
+              ? "Select languages..."
+              : `Add more languages...`}
           </span>
           <ChevronDown
-            className={cn("h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")}
+            className={cn(
+              "h-4 w-4 text-slate-400 transition-transform",
+              isOpen && "rotate-180",
+            )}
           />
         </button>
 
@@ -129,7 +136,9 @@ export default function LanguagesMultiSelect({
                   )}
                 >
                   {lang}
-                  {isSelected && <div className="h-2 w-2 rounded-full bg-power-orange" />}
+                  {isSelected && (
+                    <div className="h-2 w-2 rounded-full bg-power-orange" />
+                  )}
                 </button>
               );
             })}

@@ -227,8 +227,7 @@ export default function AdminPromoCodesPage() {
                     setForm((f) => ({
                       ...f,
                       discountType: e.target.value as
-                        | "PERCENTAGE"
-                        | "FIXED_AMOUNT",
+                        "PERCENTAGE" | "FIXED_AMOUNT",
                     }))
                   }
                 >
@@ -264,9 +263,7 @@ export default function AdminPromoCodesPage() {
                     setForm((f) => ({
                       ...f,
                       applicableTo: e.target.value as
-                        | "ALL"
-                        | "VENUE_ONLY"
-                        | "COACH_ONLY",
+                        "ALL" | "VENUE_ONLY" | "COACH_ONLY",
                     }))
                   }
                 >
@@ -444,151 +441,153 @@ export default function AdminPromoCodesPage() {
               />
             </div>
             <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  {[
-                    "Code",
-                    "Description",
-                    "Discount",
-                    "Applies To",
-                    "Valid",
-                    "Usage",
-                    "Status",
-                    "Actions",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {codes.map((pc) => (
-                  <Fragment key={pc._id}>
-                    <tr>
-                      <td className="px-4 py-3 text-sm font-mono font-semibold text-slate-900">
-                        {pc.code}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-700 max-w-48">
-                        {pc.description}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">
-                        {pc.discountType === "PERCENTAGE"
-                          ? `${pc.discountValue}%`
-                          : `₹${pc.discountValue}`}
-                        {pc.maxDiscountAmount
-                          ? ` (cap ₹${pc.maxDiscountAmount})`
-                          : ""}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-700">
-                        {pc.applicableTo}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
-                        {new Date(pc.validFrom).toLocaleDateString()} –{" "}
-                        {new Date(pc.validUntil).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-700">
-                        {pc.currentUsageCount}
-                        {pc.maxUsageTotal ? ` / ${pc.maxUsageTotal}` : ""}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded px-2 py-0.5 text-xs font-semibold ${
-                            pc.isActive
-                              ? "bg-green-100 text-green-700"
-                              : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {pc.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleViewStats(pc._id)}
-                            disabled={loadingStats === pc._id}
-                            className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700 hover:bg-slate-200"
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    {[
+                      "Code",
+                      "Description",
+                      "Discount",
+                      "Applies To",
+                      "Valid",
+                      "Usage",
+                      "Status",
+                      "Actions",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {codes.map((pc) => (
+                    <Fragment key={pc._id}>
+                      <tr>
+                        <td className="px-4 py-3 text-sm font-mono font-semibold text-slate-900">
+                          {pc.code}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-700 max-w-48">
+                          {pc.description}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">
+                          {pc.discountType === "PERCENTAGE"
+                            ? `${pc.discountValue}%`
+                            : `₹${pc.discountValue}`}
+                          {pc.maxDiscountAmount
+                            ? ` (cap ₹${pc.maxDiscountAmount})`
+                            : ""}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-700">
+                          {pc.applicableTo}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+                          {new Date(pc.validFrom).toLocaleDateString()} –{" "}
+                          {new Date(pc.validUntil).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-700">
+                          {pc.currentUsageCount}
+                          {pc.maxUsageTotal ? ` / ${pc.maxUsageTotal}` : ""}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`rounded px-2 py-0.5 text-xs font-semibold ${
+                              pc.isActive
+                                ? "bg-green-100 text-green-700"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
                           >
-                            {loadingStats === pc._id
-                              ? "..."
-                              : selectedStats?.id === pc._id
-                                ? "Hide Stats"
-                                : "Stats"}
-                          </button>
-                          {pc.isActive && (
+                            {pc.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
                             <button
-                              onClick={() => handleDeactivate(pc._id)}
-                              disabled={busyId === pc._id}
-                              className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
+                              onClick={() => handleViewStats(pc._id)}
+                              disabled={loadingStats === pc._id}
+                              className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700 hover:bg-slate-200"
                             >
-                              Deactivate
+                              {loadingStats === pc._id
+                                ? "..."
+                                : selectedStats?.id === pc._id
+                                  ? "Hide Stats"
+                                  : "Stats"}
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                    {selectedStats?.id === pc._id && (
-                      <tr key={`${pc._id}-stats`}>
-                        <td
-                          colSpan={8}
-                          className="bg-slate-50 px-4 py-3 text-sm"
-                        >
-                          <div className="flex flex-wrap gap-6">
-                            <div>
-                              <span className="text-xs text-slate-500 uppercase tracking-wide">
-                                Total Uses
-                              </span>
-                              <p className="text-lg font-bold text-slate-900">
-                                {selectedStats.stats.totalUsage}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-xs text-slate-500 uppercase tracking-wide">
-                                Total Discount Given
-                              </span>
-                              <p className="text-lg font-bold text-slate-900">
-                                ₹{selectedStats.stats.totalDiscountGiven}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-xs text-slate-500 uppercase tracking-wide">
-                                Unique Users
-                              </span>
-                              <p className="text-lg font-bold text-slate-900">
-                                {selectedStats.stats.uniqueUsers}
-                              </p>
-                            </div>
+                            {pc.isActive && (
+                              <button
+                                onClick={() => handleDeactivate(pc._id)}
+                                disabled={busyId === pc._id}
+                                className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
+                              >
+                                Deactivate
+                              </button>
+                            )}
                           </div>
-                          {selectedStats.stats.recentUsages.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">
-                                Recent Usages
-                              </p>
-                              <ul className="space-y-0.5 text-xs text-slate-600">
-                                {selectedStats.stats.recentUsages.map(
-                                  (u, i) => (
-                                    <li key={i}>
-                                      {u.userName}
-                                      {u.userEmail && ` (${u.userEmail})`} — ₹
-                                      {u.discountApplied} on{" "}
-                                      {new Date(u.usedAt).toLocaleDateString()}
-                                    </li>
-                                  ),
-                                )}
-                              </ul>
-                            </div>
-                          )}
                         </td>
                       </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
+                      {selectedStats?.id === pc._id && (
+                        <tr key={`${pc._id}-stats`}>
+                          <td
+                            colSpan={8}
+                            className="bg-slate-50 px-4 py-3 text-sm"
+                          >
+                            <div className="flex flex-wrap gap-6">
+                              <div>
+                                <span className="text-xs text-slate-500 uppercase tracking-wide">
+                                  Total Uses
+                                </span>
+                                <p className="text-lg font-bold text-slate-900">
+                                  {selectedStats.stats.totalUsage}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-xs text-slate-500 uppercase tracking-wide">
+                                  Total Discount Given
+                                </span>
+                                <p className="text-lg font-bold text-slate-900">
+                                  ₹{selectedStats.stats.totalDiscountGiven}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-xs text-slate-500 uppercase tracking-wide">
+                                  Unique Users
+                                </span>
+                                <p className="text-lg font-bold text-slate-900">
+                                  {selectedStats.stats.uniqueUsers}
+                                </p>
+                              </div>
+                            </div>
+                            {selectedStats.stats.recentUsages.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">
+                                  Recent Usages
+                                </p>
+                                <ul className="space-y-0.5 text-xs text-slate-600">
+                                  {selectedStats.stats.recentUsages.map(
+                                    (u, i) => (
+                                      <li key={i}>
+                                        {u.userName}
+                                        {u.userEmail && ` (${u.userEmail})`} — ₹
+                                        {u.discountApplied} on{" "}
+                                        {new Date(
+                                          u.usedAt,
+                                        ).toLocaleDateString()}
+                                      </li>
+                                    ),
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

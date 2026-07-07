@@ -87,7 +87,7 @@ export default function AcademyAnalyticsPage() {
         setLoading(true);
         setError(null);
         const res = await axiosInstance.get<{ data: AcademyAnalyticsData }>(
-          "/academies/my/analytics"
+          "/academies/my/analytics",
         );
         setData(res.data.data);
       } catch {
@@ -121,7 +121,9 @@ export default function AcademyAnalyticsPage() {
           <p className="text-slate-900 font-semibold mb-1">
             Unable to load analytics
           </p>
-          <p className="text-slate-500 text-sm">{error ?? "No data available."}</p>
+          <p className="text-slate-500 text-sm">
+            {error ?? "No data available."}
+          </p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-5 py-2 bg-power-orange hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
@@ -133,12 +135,17 @@ export default function AcademyAnalyticsPage() {
     );
   }
 
-  const { overview, sessionsTrend, sportBreakdown, popularHours, studentRetention } = data;
+  const {
+    overview,
+    sessionsTrend,
+    sportBreakdown,
+    popularHours,
+    studentRetention,
+  } = data;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
-
         {/* ── Header ───────────────────────────────────────────────────── */}
         <SlideUp>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -196,7 +203,9 @@ export default function AcademyAnalyticsPage() {
                 <BarChart2 size={16} className="text-power-orange" />
                 Sessions Trend
               </h2>
-              <span className="text-slate-400 text-xs">Daily • last 30 days</span>
+              <span className="text-slate-400 text-xs">
+                Daily • last 30 days
+              </span>
             </div>
             {sessionsTrend.length === 0 ? (
               <div className="flex items-center justify-center h-28 text-slate-400 text-sm">
@@ -341,7 +350,6 @@ export default function AcademyAnalyticsPage() {
             </div>
           </SlideUp>
         </div>
-
       </div>
     </div>
   );

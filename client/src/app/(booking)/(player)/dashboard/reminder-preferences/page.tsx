@@ -176,9 +176,7 @@ export default function ReminderPreferencesPage() {
               >
                 <span
                   className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    bookingReminders.enabled
-                      ? "translate-x-5"
-                      : "translate-x-0"
+                    bookingReminders.enabled ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </div>
@@ -214,9 +212,7 @@ export default function ReminderPreferencesPage() {
                         <div
                           className={cn(
                             "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg",
-                            isChecked
-                              ? "bg-power-orange/10"
-                              : "bg-slate-100",
+                            isChecked ? "bg-power-orange/10" : "bg-slate-100",
                           )}
                         >
                           {icon}
@@ -242,7 +238,9 @@ export default function ReminderPreferencesPage() {
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={(e) => toggleInterval(key, e.target.checked)}
+                          onChange={(e) =>
+                            toggleInterval(key, e.target.checked)
+                          }
                           className="h-4 w-4 cursor-pointer accent-power-orange"
                         />
                       </div>

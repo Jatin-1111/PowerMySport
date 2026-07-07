@@ -126,7 +126,10 @@ export default function BlogLandingClient() {
           ? {
               ...item,
               likedByMe: optimisticLiked,
-              likeCount: Math.max(0, item.likeCount + (optimisticLiked ? 1 : -1)),
+              likeCount: Math.max(
+                0,
+                item.likeCount + (optimisticLiked ? 1 : -1),
+              ),
             }
           : item,
       ),

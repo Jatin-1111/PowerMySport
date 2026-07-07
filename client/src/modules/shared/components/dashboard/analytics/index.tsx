@@ -30,7 +30,9 @@ export function KpiCard({
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm text-slate-500">{label}</p>
-          <p className={`mt-0.5 text-2xl font-semibold text-slate-900 ${valueClass ?? ""}`}>
+          <p
+            className={`mt-0.5 text-2xl font-semibold text-slate-900 ${valueClass ?? ""}`}
+          >
             {value}
           </p>
         </div>
@@ -60,10 +62,7 @@ export function SparklineBarChart({
   const barW = barCount > 0 ? (chartW - gap * (barCount - 1)) / barCount : 0;
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="w-full h-auto"
-    >
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
       {/* Y-axis labels */}
       <text
         x={PAD.left - 4}
@@ -171,10 +170,15 @@ export function SportBreakdownPanel({
       {top5.map((item, i) => (
         <div key={item.sport} className="flex items-center gap-3">
           <div className="w-28 shrink-0">
-            <p className="truncate text-sm font-medium text-slate-700">{item.sport}</p>
+            <p className="truncate text-sm font-medium text-slate-700">
+              {item.sport}
+            </p>
             <p className="text-xs text-slate-500">{item.count} sessions</p>
           </div>
-          <div className="relative flex-1 overflow-hidden rounded-full bg-slate-100" style={{ height: 8 }}>
+          <div
+            className="relative flex-1 overflow-hidden rounded-full bg-slate-100"
+            style={{ height: 8 }}
+          >
             <motion.div
               className="absolute inset-y-0 left-0 rounded-full"
               style={{
@@ -238,9 +242,7 @@ export function BusyHoursHeatmap({
             >
               {count > 0 ? count : ""}
             </div>
-            <span className="text-[10px] text-slate-400">
-              {hour}
-            </span>
+            <span className="text-[10px] text-slate-400">{hour}</span>
           </div>
         );
       })}
@@ -363,7 +365,9 @@ export function RetentionCard({
       {/* Retention rate label */}
       <p className="text-center text-sm text-slate-500">
         Retention rate:{" "}
-        <span className="font-semibold text-slate-700">{clampedRate.toFixed(0)}%</span>
+        <span className="font-semibold text-slate-700">
+          {clampedRate.toFixed(0)}%
+        </span>
       </p>
     </div>
   );

@@ -86,7 +86,11 @@ export default function BlogCommentsSidebar({
 
   const handleReply = async (parentId: string, content: string) => {
     try {
-      const created = await blogService.createComment(blogId, content, parentId);
+      const created = await blogService.createComment(
+        blogId,
+        content,
+        parentId,
+      );
       const topLevelId = created.parentId || parentId;
       setComments((current) =>
         patchComment(current, topLevelId, (comment) => ({
@@ -140,7 +144,9 @@ export default function BlogCommentsSidebar({
         const withoutTop = current.filter((item) => item.id !== comment.id);
         return withoutTop.map((item) => ({
           ...item,
-          replies: (item.replies || []).filter((reply) => reply.id !== comment.id),
+          replies: (item.replies || []).filter(
+            (reply) => reply.id !== comment.id,
+          ),
         }));
       });
       onCountChange(-1);

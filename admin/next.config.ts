@@ -10,10 +10,10 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'powermysport-images.s3.ap-south-1.amazonaws.com',
-        port: '',
-        pathname: '/**',
+        protocol: "https",
+        hostname: "powermysport-images.s3.ap-south-1.amazonaws.com",
+        port: "",
+        pathname: "/**",
       },
     ],
   },

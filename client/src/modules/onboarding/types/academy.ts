@@ -10,10 +10,7 @@ export interface AcademyDocument {
 }
 
 export type AcademyBusinessType =
-  | "sole_proprietorship"
-  | "partnership"
-  | "pvt_ltd"
-  | "ngo_trust";
+  "sole_proprietorship" | "partnership" | "pvt_ltd" | "ngo_trust";
 
 export type AcademyBatchTiming = "morning" | "evening" | "both";
 
@@ -80,10 +77,7 @@ export interface OnboardingAcademy {
 
   // Legal & Compliance
   businessType?:
-    | "sole_proprietorship"
-    | "partnership"
-    | "pvt_ltd"
-    | "ngo_trust";
+    "sole_proprietorship" | "partnership" | "pvt_ltd" | "ngo_trust";
   panNumber?: string;
   panDocumentUrl?: string;
   panDocumentKey?: string;

@@ -120,7 +120,9 @@ function buildCalendarGrid(month: Date): Date[] {
   // Trailing days to fill 6-row grid (42 cells)
   while (cells.length < 42) {
     const last = cells[cells.length - 1]!;
-    cells.push(new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1));
+    cells.push(
+      new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1),
+    );
   }
   return cells;
 }
@@ -137,7 +139,8 @@ function formatShortDate(d: Date): string {
 function formatTime(t: string): string {
   const [h, m] = t.split(":").map(Number);
   const suffix = (h ?? 0) >= 12 ? "PM" : "AM";
-  const display = (h ?? 0) > 12 ? (h ?? 0) - 12 : (h ?? 0) === 0 ? 12 : h ?? 0;
+  const display =
+    (h ?? 0) > 12 ? (h ?? 0) - 12 : (h ?? 0) === 0 ? 12 : (h ?? 0);
   return `${display}:${String(m ?? 0).padStart(2, "0")} ${suffix}`;
 }
 
@@ -197,7 +200,9 @@ function CalendarCell({
       <span
         className={cn(
           "flex h-6 w-6 items-center justify-center rounded-full text-xs",
-          isToday && !isSelected && "bg-power-orange/10 text-power-orange font-bold",
+          isToday &&
+            !isSelected &&
+            "bg-power-orange/10 text-power-orange font-bold",
         )}
       >
         {date.getDate()}
@@ -235,7 +240,8 @@ function CalendarCell({
 function BookingCard({ booking }: { booking: CalendarBooking }) {
   const label = getBookingLabel(booking);
   const statusClass =
-    BOOKING_STATUS_COLORS[booking.status] ?? "bg-slate-50 text-slate-600 border-slate-200";
+    BOOKING_STATUS_COLORS[booking.status] ??
+    "bg-slate-50 text-slate-600 border-slate-200";
 
   return (
     <motion.div
@@ -249,12 +255,11 @@ function BookingCard({ booking }: { booking: CalendarBooking }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-slate-900">{label}</p>
         <p className="text-xs text-slate-500">
-          {booking.sport} · {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
+          {booking.sport} · {formatTime(booking.startTime)} –{" "}
+          {formatTime(booking.endTime)}
         </p>
       </div>
-      <Badge
-        className={cn("shrink-0 border text-xs", statusClass)}
-      >
+      <Badge className={cn("shrink-0 border text-xs", statusClass)}>
         {formatStatus(booking.status)}
       </Badge>
     </motion.div>
@@ -286,11 +291,20 @@ function EventCard({
         <Icon className="h-4 w-4" style={{ color: event.color }} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900">{event.title}</p>
+        <p className="truncate text-sm font-semibold text-slate-900">
+          {event.title}
+        </p>
         {event.notes && (
-          <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{event.notes}</p>
+          <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+            {event.notes}
+          </p>
         )}
-        <Badge className={cn("mt-1 border-0 px-1.5 py-0.5 text-[10px] font-semibold", bgClass)}>
+        <Badge
+          className={cn(
+            "mt-1 border-0 px-1.5 py-0.5 text-[10px] font-semibold",
+            bgClass,
+          )}
+        >
           {EVENT_TYPE_LABELS[event.type]}
         </Badge>
       </div>
@@ -462,7 +476,9 @@ export function DashboardCalendar() {
   const [eventsByDate, setEventsByDate] = useState<
     Record<string, CalendarEvent[]>
   >({});
-  const [upcomingBookings, setUpcomingBookings] = useState<CalendarBooking[]>([]);
+  const [upcomingBookings, setUpcomingBookings] = useState<CalendarBooking[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
@@ -474,40 +490,37 @@ export function DashboardCalendar() {
     [currentMonth],
   );
 
-  const loadMonthData = useCallback(
-    async (month: Date) => {
-      setLoading(true);
-      setShowAddForm(false);
-      try {
-        const { startDate, endDate } = formatMonthRange(month);
-        const [bookings, events] = await Promise.all([
-          calendarApi.getBookings(startDate, endDate),
-          calendarApi.getEvents(startDate, endDate),
-        ]);
+  const loadMonthData = useCallback(async (month: Date) => {
+    setLoading(true);
+    setShowAddForm(false);
+    try {
+      const { startDate, endDate } = formatMonthRange(month);
+      const [bookings, events] = await Promise.all([
+        calendarApi.getBookings(startDate, endDate),
+        calendarApi.getEvents(startDate, endDate),
+      ]);
 
-        // Index by date key for O(1) lookups in the grid
-        const byDateB: Record<string, CalendarBooking[]> = {};
-        for (const b of bookings) {
-          const key = toDateKey(parseLocalDate(b.date));
-          (byDateB[key] ??= []).push(b);
-        }
-
-        const byDateE: Record<string, CalendarEvent[]> = {};
-        for (const e of events) {
-          const key = toDateKey(parseLocalDate(e.date));
-          (byDateE[key] ??= []).push(e);
-        }
-
-        setBookingsByDate(byDateB);
-        setEventsByDate(byDateE);
-      } catch {
-        toast.error("Failed to load calendar data");
-      } finally {
-        setLoading(false);
+      // Index by date key for O(1) lookups in the grid
+      const byDateB: Record<string, CalendarBooking[]> = {};
+      for (const b of bookings) {
+        const key = toDateKey(parseLocalDate(b.date));
+        (byDateB[key] ??= []).push(b);
       }
-    },
-    [],
-  );
+
+      const byDateE: Record<string, CalendarEvent[]> = {};
+      for (const e of events) {
+        const key = toDateKey(parseLocalDate(e.date));
+        (byDateE[key] ??= []).push(e);
+      }
+
+      setBookingsByDate(byDateB);
+      setEventsByDate(byDateE);
+    } catch {
+      toast.error("Failed to load calendar data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Load 3-month window for upcoming list (today → +90 days)
   const loadUpcomingBookings = useCallback(async () => {
@@ -519,8 +532,7 @@ export function DashboardCalendar() {
       const bookings = await calendarApi.getBookings(start, end);
       setUpcomingBookings(
         bookings.sort(
-          (a, b) =>
-            new Date(a.date).getTime() - new Date(b.date).getTime(),
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
         ),
       );
     } catch {
@@ -540,10 +552,13 @@ export function DashboardCalendar() {
   const getDotsForDate = useCallback(
     (key: string): DayDot[] => {
       const bookingCount = bookingsByDate[key]?.length ?? 0;
-      const bookingDots: DayDot[] = Array.from({ length: bookingCount }, () => ({
-        color: "#f97316",
-        kind: "booking" as const,
-      }));
+      const bookingDots: DayDot[] = Array.from(
+        { length: bookingCount },
+        () => ({
+          color: "#f97316",
+          kind: "booking" as const,
+        }),
+      );
       const eventDots: DayDot[] = (eventsByDate[key] ?? []).map((e) => ({
         color: e.color,
         kind: "event" as const,
@@ -617,7 +632,9 @@ export function DashboardCalendar() {
   }, [bookingsByDate]);
 
   const upcomingEntries = allBookingEntries.filter((e) => e.key >= todayKey);
-  const pastEntries = allBookingEntries.filter((e) => e.key < todayKey).reverse();
+  const pastEntries = allBookingEntries
+    .filter((e) => e.key < todayKey)
+    .reverse();
 
   return (
     <Card className="shop-surface premium-shadow overflow-hidden p-0">
@@ -641,7 +658,6 @@ export function DashboardCalendar() {
 
       <CardContent className="px-5 py-5 lg:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-
           {/* ── Left: Calendar Grid ────────────────────────── */}
           <div className="shrink-0 lg:w-72">
             {/* Month navigator */}
@@ -692,8 +708,7 @@ export function DashboardCalendar() {
               <div className="grid grid-cols-7 gap-0.5">
                 {calendarCells.map((date, i) => {
                   const key = toDateKey(date);
-                  const isCurrent =
-                    date.getMonth() === currentMonth.getMonth();
+                  const isCurrent = date.getMonth() === currentMonth.getMonth();
                   const isToday =
                     date.getFullYear() === today.getFullYear() &&
                     date.getMonth() === today.getMonth() &&
@@ -926,7 +941,11 @@ export function DashboardCalendar() {
                               <div className="space-y-1.5">
                                 {bookings.map((b, idx) => (
                                   <motion.div
-                                    key={b.id ?? (b as any)._id ?? `upc-booking-${idx}`}
+                                    key={
+                                      b.id ??
+                                      (b as any)._id ??
+                                      `upc-booking-${idx}`
+                                    }
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/60 px-3 py-2.5 hover:bg-white transition-colors"
@@ -948,8 +967,7 @@ export function DashboardCalendar() {
                                         {getBookingLabel(b)}
                                       </p>
                                       <p className="text-xs text-slate-500">
-                                        {b.sport} ·{" "}
-                                        {formatTime(b.startTime)}
+                                        {b.sport} · {formatTime(b.startTime)}
                                       </p>
                                     </div>
                                     <Badge

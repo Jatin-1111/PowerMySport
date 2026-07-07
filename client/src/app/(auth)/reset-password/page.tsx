@@ -86,8 +86,8 @@ function ResetPasswordContent() {
               {!token && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
                   <p className="text-red-800 text-center font-semibold">
-                    Invalid or missing reset token. Please request a new password
-                    reset.
+                    Invalid or missing reset token. Please request a new
+                    password reset.
                   </p>
                 </div>
               )}
@@ -133,7 +133,9 @@ function ResetPasswordContent() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                       title="Toggle password visibility"
                       aria-label="Toggle password visibility"

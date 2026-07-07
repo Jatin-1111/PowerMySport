@@ -29,8 +29,10 @@ const CATEGORIES = [
   "Other",
 ];
 
-const inputCls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
-const labelCls = "mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500";
+const inputCls =
+  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
+const labelCls =
+  "mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500";
 
 function Section({
   title,
@@ -106,7 +108,8 @@ function LevelEditor({
   });
 
   // Helpers for updating nested objects without clobbering sibling keys
-  const patch = (partial: Partial<AdminPathwayLevel>) => onChange({ ...level, ...partial });
+  const patch = (partial: Partial<AdminPathwayLevel>) =>
+    onChange({ ...level, ...partial });
   const benchmarks = level.benchmarks || {};
   const trialInfo = level.trialInfo || {};
   const injuryRisks = level.injuryRisks || {};
@@ -121,25 +124,37 @@ function LevelEditor({
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
             Label (short badge text)
           </label>
-          <input {...field("label")} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+          <input
+            {...field("label")}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          />
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
             Age Range
           </label>
-          <input {...field("ageRange")} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+          <input
+            {...field("ageRange")}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          />
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
             Key Focus
           </label>
-          <input {...field("keyFocus")} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+          <input
+            {...field("keyFocus")}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          />
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
             Governing Body
           </label>
-          <input {...field("governingBody")} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+          <input
+            {...field("governingBody")}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          />
         </div>
       </div>
 
@@ -147,21 +162,32 @@ function LevelEditor({
         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Title
         </label>
-        <input {...field("title")} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+        <input
+          {...field("title")}
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+        />
       </div>
 
       <div>
         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Description
         </label>
-        <textarea rows={3} {...field("description")} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+        <textarea
+          rows={3}
+          {...field("description")}
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+        />
       </div>
 
       <div>
         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
           Competitions
         </label>
-        <textarea rows={2} {...field("competitions")} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+        <textarea
+          rows={2}
+          {...field("competitions")}
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+        />
       </div>
 
       <div>
@@ -181,7 +207,11 @@ function LevelEditor({
           <textarea
             rows={2}
             value={benchmarks.description ?? ""}
-            onChange={(e) => patch({ benchmarks: { ...benchmarks, description: e.target.value } })}
+            onChange={(e) =>
+              patch({
+                benchmarks: { ...benchmarks, description: e.target.value },
+              })
+            }
             className={inputCls}
           />
         </div>
@@ -216,7 +246,9 @@ function LevelEditor({
                     patch({
                       benchmarks: {
                         ...benchmarks,
-                        metrics: (benchmarks.metrics || []).filter((_, i) => i !== idx),
+                        metrics: (benchmarks.metrics || []).filter(
+                          (_, i) => i !== idx,
+                        ),
                       },
                     })
                   }
@@ -232,7 +264,10 @@ function LevelEditor({
                 patch({
                   benchmarks: {
                     ...benchmarks,
-                    metrics: [...(benchmarks.metrics || []), { metric: "", target: "" }],
+                    metrics: [
+                      ...(benchmarks.metrics || []),
+                      { metric: "", target: "" },
+                    ],
                   },
                 })
               }
@@ -250,7 +285,11 @@ function LevelEditor({
             <label className={labelCls}>Typical Months</label>
             <input
               value={trialInfo.typicalMonths ?? ""}
-              onChange={(e) => patch({ trialInfo: { ...trialInfo, typicalMonths: e.target.value } })}
+              onChange={(e) =>
+                patch({
+                  trialInfo: { ...trialInfo, typicalMonths: e.target.value },
+                })
+              }
               className={inputCls}
             />
           </div>
@@ -258,7 +297,11 @@ function LevelEditor({
             <label className={labelCls}>Eligibility Age</label>
             <input
               value={trialInfo.eligibilityAge ?? ""}
-              onChange={(e) => patch({ trialInfo: { ...trialInfo, eligibilityAge: e.target.value } })}
+              onChange={(e) =>
+                patch({
+                  trialInfo: { ...trialInfo, eligibilityAge: e.target.value },
+                })
+              }
               className={inputCls}
             />
           </div>
@@ -268,7 +311,14 @@ function LevelEditor({
           <textarea
             rows={2}
             value={trialInfo.registrationProcess ?? ""}
-            onChange={(e) => patch({ trialInfo: { ...trialInfo, registrationProcess: e.target.value } })}
+            onChange={(e) =>
+              patch({
+                trialInfo: {
+                  ...trialInfo,
+                  registrationProcess: e.target.value,
+                },
+              })
+            }
             className={inputCls}
           />
         </div>
@@ -276,7 +326,9 @@ function LevelEditor({
           <label className={labelCls}>Selection Criteria</label>
           <StringListEditor
             items={trialInfo.selectionCriteria || []}
-            onChange={(selectionCriteria) => patch({ trialInfo: { ...trialInfo, selectionCriteria } })}
+            onChange={(selectionCriteria) =>
+              patch({ trialInfo: { ...trialInfo, selectionCriteria } })
+            }
             placeholder="What gets tested at trials"
           />
         </div>
@@ -295,7 +347,9 @@ function LevelEditor({
           <label className={labelCls}>Common Injuries</label>
           <StringListEditor
             items={injuryRisks.commonInjuries || []}
-            onChange={(commonInjuries) => patch({ injuryRisks: { ...injuryRisks, commonInjuries } })}
+            onChange={(commonInjuries) =>
+              patch({ injuryRisks: { ...injuryRisks, commonInjuries } })
+            }
             placeholder="Common injury at this level"
           />
         </div>
@@ -303,7 +357,9 @@ function LevelEditor({
           <label className={labelCls}>Prevention Tips</label>
           <StringListEditor
             items={injuryRisks.preventionTips || []}
-            onChange={(preventionTips) => patch({ injuryRisks: { ...injuryRisks, preventionTips } })}
+            onChange={(preventionTips) =>
+              patch({ injuryRisks: { ...injuryRisks, preventionTips } })
+            }
             placeholder="Actionable prevention advice"
           />
         </div>
@@ -311,7 +367,9 @@ function LevelEditor({
           <label className={labelCls}>Warning Signs To Watch</label>
           <StringListEditor
             items={injuryRisks.warningSignsToWatch || []}
-            onChange={(warningSignsToWatch) => patch({ injuryRisks: { ...injuryRisks, warningSignsToWatch } })}
+            onChange={(warningSignsToWatch) =>
+              patch({ injuryRisks: { ...injuryRisks, warningSignsToWatch } })
+            }
             placeholder="Symptom a parent must not ignore"
           />
         </div>
@@ -322,7 +380,9 @@ function LevelEditor({
           <label className={labelCls}>Physical Markers</label>
           <StringListEditor
             items={talentSignals.physicalMarkers || []}
-            onChange={(physicalMarkers) => patch({ talentSignals: { ...talentSignals, physicalMarkers } })}
+            onChange={(physicalMarkers) =>
+              patch({ talentSignals: { ...talentSignals, physicalMarkers } })
+            }
             placeholder="Observable physical trait"
           />
         </div>
@@ -330,7 +390,9 @@ function LevelEditor({
           <label className={labelCls}>Cognitive Markers</label>
           <StringListEditor
             items={talentSignals.cognitiveMarkers || []}
-            onChange={(cognitiveMarkers) => patch({ talentSignals: { ...talentSignals, cognitiveMarkers } })}
+            onChange={(cognitiveMarkers) =>
+              patch({ talentSignals: { ...talentSignals, cognitiveMarkers } })
+            }
             placeholder="Mental/tactical aptitude sign"
           />
         </div>
@@ -338,7 +400,9 @@ function LevelEditor({
           <label className={labelCls}>Behavioral Markers</label>
           <StringListEditor
             items={talentSignals.behavioralMarkers || []}
-            onChange={(behavioralMarkers) => patch({ talentSignals: { ...talentSignals, behavioralMarkers } })}
+            onChange={(behavioralMarkers) =>
+              patch({ talentSignals: { ...talentSignals, behavioralMarkers } })
+            }
             placeholder="Character trait predicting success"
           />
         </div>
@@ -357,7 +421,9 @@ function LevelEditor({
           <label className={labelCls}>Must Have</label>
           <StringListEditor
             items={coachGuide.mustHave || []}
-            onChange={(mustHave) => patch({ coachSelectionGuide: { ...coachGuide, mustHave } })}
+            onChange={(mustHave) =>
+              patch({ coachSelectionGuide: { ...coachGuide, mustHave } })
+            }
             placeholder="Non-negotiable coach qualification"
           />
         </div>
@@ -365,7 +431,9 @@ function LevelEditor({
           <label className={labelCls}>Nice To Have</label>
           <StringListEditor
             items={coachGuide.niceToHave || []}
-            onChange={(niceToHave) => patch({ coachSelectionGuide: { ...coachGuide, niceToHave } })}
+            onChange={(niceToHave) =>
+              patch({ coachSelectionGuide: { ...coachGuide, niceToHave } })
+            }
             placeholder="Desirable but not essential trait"
           />
         </div>
@@ -373,7 +441,9 @@ function LevelEditor({
           <label className={labelCls}>Red Flags</label>
           <StringListEditor
             items={coachGuide.redFlags || []}
-            onChange={(redFlags) => patch({ coachSelectionGuide: { ...coachGuide, redFlags } })}
+            onChange={(redFlags) =>
+              patch({ coachSelectionGuide: { ...coachGuide, redFlags } })
+            }
             placeholder="Warning sign of a bad coach"
           />
         </div>
@@ -381,7 +451,9 @@ function LevelEditor({
           <label className={labelCls}>Questions To Ask</label>
           <StringListEditor
             items={coachGuide.questionsToAsk || []}
-            onChange={(questionsToAsk) => patch({ coachSelectionGuide: { ...coachGuide, questionsToAsk } })}
+            onChange={(questionsToAsk) =>
+              patch({ coachSelectionGuide: { ...coachGuide, questionsToAsk } })
+            }
             placeholder="Interview question before hiring"
           />
         </div>
@@ -390,13 +462,18 @@ function LevelEditor({
       <Section title="Government Schemes">
         <div className="space-y-3">
           {(level.governmentSchemes || []).map((scheme, idx) => {
-            const updateScheme = (partial: Partial<AdminPathwayGovernmentScheme>) => {
+            const updateScheme = (
+              partial: Partial<AdminPathwayGovernmentScheme>,
+            ) => {
               const next = [...(level.governmentSchemes || [])];
               next[idx] = { ...scheme, ...partial };
               patch({ governmentSchemes: next });
             };
             return (
-              <div key={idx} className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+              <div
+                key={idx}
+                className="space-y-2 rounded-lg border border-slate-200 bg-white p-3"
+              >
                 <div className="flex items-center gap-2">
                   <input
                     value={scheme.name}
@@ -408,7 +485,9 @@ function LevelEditor({
                     type="button"
                     onClick={() =>
                       patch({
-                        governmentSchemes: (level.governmentSchemes || []).filter((_, i) => i !== idx),
+                        governmentSchemes: (
+                          level.governmentSchemes || []
+                        ).filter((_, i) => i !== idx),
                       })
                     }
                     className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 hover:border-red-300 hover:text-red-600 transition-colors"
@@ -425,7 +504,9 @@ function LevelEditor({
                   />
                   <input
                     value={scheme.eligibility}
-                    onChange={(e) => updateScheme({ eligibility: e.target.value })}
+                    onChange={(e) =>
+                      updateScheme({ eligibility: e.target.value })
+                    }
                     placeholder="Eligibility"
                     className={inputCls}
                   />
@@ -437,7 +518,9 @@ function LevelEditor({
                   />
                   <input
                     value={scheme.howToApply}
-                    onChange={(e) => updateScheme({ howToApply: e.target.value })}
+                    onChange={(e) =>
+                      updateScheme({ howToApply: e.target.value })
+                    }
                     placeholder="How to apply"
                     className={inputCls}
                   />
@@ -451,7 +534,13 @@ function LevelEditor({
               patch({
                 governmentSchemes: [
                   ...(level.governmentSchemes || []),
-                  { name: "", body: "", eligibility: "", benefit: "", howToApply: "" },
+                  {
+                    name: "",
+                    body: "",
+                    eligibility: "",
+                    benefit: "",
+                    howToApply: "",
+                  },
                 ],
               })
             }
@@ -467,7 +556,9 @@ function LevelEditor({
           <label className={labelCls}>Academies</label>
           <StringListEditor
             items={localResources.academies || []}
-            onChange={(academies) => patch({ localResources: { ...localResources, academies } })}
+            onChange={(academies) =>
+              patch({ localResources: { ...localResources, academies } })
+            }
             placeholder="Local academy name"
           />
         </div>
@@ -475,7 +566,9 @@ function LevelEditor({
           <label className={labelCls}>Facilities</label>
           <StringListEditor
             items={localResources.facilities || []}
-            onChange={(facilities) => patch({ localResources: { ...localResources, facilities } })}
+            onChange={(facilities) =>
+              patch({ localResources: { ...localResources, facilities } })
+            }
             placeholder="Training facility name"
           />
         </div>
@@ -483,7 +576,9 @@ function LevelEditor({
           <label className={labelCls}>Governing Bodies</label>
           <StringListEditor
             items={localResources.governingBodies || []}
-            onChange={(governingBodies) => patch({ localResources: { ...localResources, governingBodies } })}
+            onChange={(governingBodies) =>
+              patch({ localResources: { ...localResources, governingBodies } })
+            }
             placeholder="Local federation branch"
           />
         </div>
@@ -522,7 +617,10 @@ function EquipmentEditor({
   return (
     <div className="space-y-3">
       {items.map((item, idx) => (
-        <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_2fr_1fr_auto]">
+        <div
+          key={idx}
+          className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_2fr_1fr_auto]"
+        >
           <input
             value={item.level}
             onChange={(e) => {
@@ -537,7 +635,13 @@ function EquipmentEditor({
             value={item.items.join(", ")}
             onChange={(e) => {
               const next = [...items];
-              next[idx] = { ...item, items: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) };
+              next[idx] = {
+                ...item,
+                items: e.target.value
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+              };
               onChange(next);
             }}
             placeholder="Items, comma-separated"
@@ -564,7 +668,9 @@ function EquipmentEditor({
       ))}
       <button
         type="button"
-        onClick={() => onChange([...items, { level: "", items: [], estimatedCost: "" }])}
+        onClick={() =>
+          onChange([...items, { level: "", items: [], estimatedCost: "" }])
+        }
         className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-slate-400 hover:text-slate-700 transition-colors"
       >
         <Plus size={14} /> Add equipment tier
@@ -583,7 +689,10 @@ function CareersEditor({
   return (
     <div className="space-y-3">
       {items.map((item, idx) => (
-        <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_2fr_1fr_auto]">
+        <div
+          key={idx}
+          className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_2fr_1fr_auto]"
+        >
           <input
             value={item.role}
             onChange={(e) => {
@@ -625,7 +734,9 @@ function CareersEditor({
       ))}
       <button
         type="button"
-        onClick={() => onChange([...items, { role: "", description: "", demand: "" }])}
+        onClick={() =>
+          onChange([...items, { role: "", description: "", demand: "" }])
+        }
         className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-slate-400 hover:text-slate-700 transition-colors"
       >
         <Plus size={14} /> Add career path
@@ -710,10 +821,17 @@ export default function AdminSportPathwayEditPage() {
     setVerifyLoading(true);
     try {
       const nextVerified = !pathway.isVerified;
-      const response = await adminApi.setPathwayVerified(pathway._id, nextVerified);
+      const response = await adminApi.setPathwayVerified(
+        pathway._id,
+        nextVerified,
+      );
       if (response.success && response.data) {
         setPathway(response.data);
-        toast.success(nextVerified ? "Pathway marked as verified." : "Verification removed.");
+        toast.success(
+          nextVerified
+            ? "Pathway marked as verified."
+            : "Verification removed.",
+        );
       }
     } catch (err) {
       console.error("Failed to update verification status:", err);
@@ -732,8 +850,13 @@ export default function AdminSportPathwayEditPage() {
     return (
       <Card className="bg-white">
         <div className="py-10 text-center space-y-3">
-          <p className="text-red-600 font-semibold">{error || "Pathway not found."}</p>
-          <Link href="/admin/sport-pathways" className="text-power-orange font-semibold">
+          <p className="text-red-600 font-semibold">
+            {error || "Pathway not found."}
+          </p>
+          <Link
+            href="/admin/sport-pathways"
+            className="text-power-orange font-semibold"
+          >
             Back to Sport Pathways
           </Link>
         </div>
@@ -742,7 +865,9 @@ export default function AdminSportPathwayEditPage() {
   }
 
   const verifierName =
-    typeof pathway.verifiedBy === "object" ? pathway.verifiedBy?.name || pathway.verifiedBy?.email : null;
+    typeof pathway.verifiedBy === "object"
+      ? pathway.verifiedBy?.name || pathway.verifiedBy?.email
+      : null;
 
   return (
     <div className="space-y-6">
@@ -766,7 +891,8 @@ export default function AdminSportPathwayEditPage() {
             {pathway.isVerified ? (
               <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
                 <BadgeCheck size={14} /> Verified
-                {pathway.verifiedAt && ` on ${new Date(pathway.verifiedAt).toLocaleDateString()}`}
+                {pathway.verifiedAt &&
+                  ` on ${new Date(pathway.verifiedAt).toLocaleDateString()}`}
                 {verifierName ? ` by ${verifierName}` : ""}
               </span>
             ) : (
@@ -798,16 +924,22 @@ export default function AdminSportPathwayEditPage() {
       </Card>
 
       <Card className="bg-white space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Overview</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+          Overview
+        </h2>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Category</label>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Category
+          </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm sm:w-auto"
           >
             {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {c}
+              </option>
             ))}
           </select>
         </div>
@@ -825,7 +957,9 @@ export default function AdminSportPathwayEditPage() {
       </Card>
 
       <Card className="bg-white space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Levels</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+          Levels
+        </h2>
         <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
           {levels.map((lv, idx) => (
             <button
@@ -854,12 +988,16 @@ export default function AdminSportPathwayEditPage() {
       </Card>
 
       <Card className="bg-white space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Equipment</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+          Equipment
+        </h2>
         <EquipmentEditor items={equipment} onChange={setEquipment} />
       </Card>
 
       <Card className="bg-white space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Career Paths</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+          Career Paths
+        </h2>
         <CareersEditor items={careers} onChange={setCareers} />
       </Card>
 
@@ -875,7 +1013,11 @@ export default function AdminSportPathwayEditPage() {
 
       <ConfirmModal
         open={confirmVerify}
-        title={pathway.isVerified ? "Remove verification?" : "Mark pathway as verified?"}
+        title={
+          pathway.isVerified
+            ? "Remove verification?"
+            : "Mark pathway as verified?"
+        }
         description={
           pathway.isVerified
             ? `${pathway.sportName} will show as unverified and become eligible for automatic AI refresh again.`

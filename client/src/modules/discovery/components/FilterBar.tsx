@@ -46,7 +46,10 @@ export function FilterBar({
             <div className="flex items-center gap-3">
               {/* Search input - takes most space */}
               <div className="relative min-w-0 flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                <Search
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  size={16}
+                />
                 <input
                   type="text"
                   value={searchValue}
@@ -82,15 +85,21 @@ export function FilterBar({
             {/* Active Filter Badges */}
             {hasFilters && (
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">Active:</span>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">
+                  Active:
+                </span>
 
                 {activeFilters.map((filter) => (
                   <span
                     key={filter.id}
-                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${filter.badgeClassName || 'bg-orange-50 border-orange-100 text-power-orange'}`}
+                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${filter.badgeClassName || "bg-orange-50 border-orange-100 text-power-orange"}`}
                   >
                     {filter.label}
-                    <button type="button" onClick={filter.onRemove} className={`ml-1 ${filter.iconClassName || 'hover:text-orange-700'}`}>
+                    <button
+                      type="button"
+                      onClick={filter.onRemove}
+                      className={`ml-1 ${filter.iconClassName || "hover:text-orange-700"}`}
+                    >
                       <X size={12} />
                     </button>
                   </span>
@@ -110,11 +119,14 @@ export function FilterBar({
       </div>
 
       {/* ── Filter Modal ────────────────────────────────────────── */}
-      <Modal isOpen={isModalOpen} onClose={() => onModalOpenChange(false)} title="Filters" size="md">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => onModalOpenChange(false)}
+        title="Filters"
+        size="md"
+      >
         <div className="p-1">
-          <div className="space-y-6">
-            {children}
-          </div>
+          <div className="space-y-6">{children}</div>
 
           <div className="mt-8 flex items-center gap-3 pt-5 border-t border-slate-100">
             <button

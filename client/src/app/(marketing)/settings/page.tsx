@@ -8,7 +8,10 @@ import { authApi } from "@/modules/auth/services/auth";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Modal } from "@/modules/shared/ui/Modal";
-import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
+import {
+  StaggerContainer,
+  StaggerItem,
+} from "@/modules/shared/ui/motion/StaggerContainer";
 import { toast } from "@/lib/toast";
 import { UserRole } from "@/types";
 import {
@@ -224,7 +227,10 @@ export default function SettingsPage() {
       toast.error("Enter your password to confirm");
       return;
     }
-    if (!canSetPassword && deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD) {
+    if (
+      !canSetPassword &&
+      deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD
+    ) {
       toast.error(`Type ${DELETE_CONFIRM_WORD} to confirm`);
       return;
     }
@@ -346,7 +352,11 @@ export default function SettingsPage() {
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                           aria-label="Toggle password visibility"
                         >
-                          {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showCurrent ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
                         </button>
                       </div>
                     </div>
@@ -432,10 +442,14 @@ export default function SettingsPage() {
                       Notification Preferences
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      Control how you receive notifications via email, push, and in-app.
+                      Control how you receive notifications via email, push, and
+                      in-app.
                     </p>
                   </div>
-                  <ChevronRight className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" size={18} />
+                  <ChevronRight
+                    className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5"
+                    size={18}
+                  />
                 </div>
               </Card>
             </Link>
@@ -464,7 +478,10 @@ export default function SettingsPage() {
                           {item.description}
                         </p>
                       </div>
-                      <ChevronRight className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" size={18} />
+                      <ChevronRight
+                        className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5"
+                        size={18}
+                      />
                     </div>
                   </Card>
                 </Link>
@@ -490,8 +507,8 @@ export default function SettingsPage() {
                       Delete Account
                     </h3>
                     <p className="mt-1 max-w-md text-sm text-slate-600">
-                      Permanently deactivate your account and remove your personal
-                      information. This cannot be undone.
+                      Permanently deactivate your account and remove your
+                      personal information. This cannot be undone.
                     </p>
                   </div>
                 </div>
@@ -554,8 +571,8 @@ export default function SettingsPage() {
         ) : (
           <div className="mt-5">
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              You signed in with Google, so there's no password to check —
-              type <span className="font-bold">{DELETE_CONFIRM_WORD}</span> to
+              You signed in with Google, so there's no password to check — type{" "}
+              <span className="font-bold">{DELETE_CONFIRM_WORD}</span> to
               confirm
             </label>
             <input
@@ -588,7 +605,8 @@ export default function SettingsPage() {
               deletingAccount ||
               (canSetPassword
                 ? !deletePassword
-                : deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD)
+                : deleteConfirmText.trim().toUpperCase() !==
+                  DELETE_CONFIRM_WORD)
             }
           >
             {deletingAccount ? (

@@ -16,7 +16,11 @@ const getPayoutMethodId = (method: PayoutMethodRecord): string | undefined => {
     return method._id;
   }
 
-  if (method._id && typeof method._id === "object" && "toString" in method._id) {
+  if (
+    method._id &&
+    typeof method._id === "object" &&
+    "toString" in method._id
+  ) {
     return method._id.toString();
   }
 
@@ -30,7 +34,9 @@ const getPrimaryPayoutMethod = (
     return null;
   }
 
-  return payoutMethods.find((method) => method.isDefault) ?? payoutMethods[0] ?? null;
+  return (
+    payoutMethods.find((method) => method.isDefault) ?? payoutMethods[0] ?? null
+  );
 };
 
 // ============================================
@@ -65,7 +71,11 @@ export const getCoachPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method retrieved",
-      data: { payoutMethod: getPrimaryPayoutMethod(coach.payoutMethods as IPayoutMethod[] | undefined) },
+      data: {
+        payoutMethod: getPrimaryPayoutMethod(
+          coach.payoutMethods as IPayoutMethod[] | undefined,
+        ),
+      },
     });
   } catch (error) {
     console.error("getCoachPayoutMethod error:", error);
@@ -128,16 +138,23 @@ export const upsertCoachPayoutMethod = async (
       return;
     }
 
-    const { id, type, accountHolderName, accountNumber, ifscCode, bankName, upiId } =
-      req.body as {
-        id?: string;
-        type: "BANK_TRANSFER" | "UPI";
-        accountHolderName?: string;
-        accountNumber?: string;
-        ifscCode?: string;
-        bankName?: string;
-        upiId?: string;
-      };
+    const {
+      id,
+      type,
+      accountHolderName,
+      accountNumber,
+      ifscCode,
+      bankName,
+      upiId,
+    } = req.body as {
+      id?: string;
+      type: "BANK_TRANSFER" | "UPI";
+      accountHolderName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      bankName?: string;
+      upiId?: string;
+    };
 
     // Basic validation
     if (!type || !["BANK_TRANSFER", "UPI"].includes(type)) {
@@ -149,10 +166,16 @@ export const upsertCoachPayoutMethod = async (
     }
 
     if (type === "BANK_TRANSFER") {
-      if (!accountHolderName?.trim() || !accountNumber?.trim() || !ifscCode?.trim() || !bankName?.trim()) {
+      if (
+        !accountHolderName?.trim() ||
+        !accountNumber?.trim() ||
+        !ifscCode?.trim() ||
+        !bankName?.trim()
+      ) {
         res.status(400).json({
           success: false,
-          message: "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
+          message:
+            "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
         });
         return;
       }
@@ -278,7 +301,8 @@ export const deleteCoachPayoutMethod = async (
       // Delete specific method
       const initialLength = payoutMethods.length;
       coach.payoutMethods = payoutMethods.filter(
-        (method) => getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
+        (method) =>
+          getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
       );
 
       if ((coach.payoutMethods ?? []).length === initialLength) {
@@ -289,7 +313,10 @@ export const deleteCoachPayoutMethod = async (
       }
 
       // If the deleted method was default and there are remaining methods, set first as default
-      if (!coach.payoutMethods.some((method) => method.isDefault) && coach.payoutMethods.length > 0) {
+      if (
+        !coach.payoutMethods.some((method) => method.isDefault) &&
+        coach.payoutMethods.length > 0
+      ) {
         coach.payoutMethods[0]!.isDefault = true;
       }
     } else {
@@ -403,7 +430,12 @@ export const getVenuePayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method retrieved",
-      data: { payoutMethod: getPrimaryPayoutMethod(venue.payoutMethods as IPayoutMethod[] | undefined), venueName: venue.name },
+      data: {
+        payoutMethod: getPrimaryPayoutMethod(
+          venue.payoutMethods as IPayoutMethod[] | undefined,
+        ),
+        venueName: venue.name,
+      },
     });
   } catch (error) {
     console.error("getVenuePayoutMethod error:", error);
@@ -428,16 +460,23 @@ export const upsertVenuePayoutMethod = async (
       return;
     }
 
-    const { id, type, accountHolderName, accountNumber, ifscCode, bankName, upiId } =
-      req.body as {
-        id?: string;
-        type: "BANK_TRANSFER" | "UPI";
-        accountHolderName?: string;
-        accountNumber?: string;
-        ifscCode?: string;
-        bankName?: string;
-        upiId?: string;
-      };
+    const {
+      id,
+      type,
+      accountHolderName,
+      accountNumber,
+      ifscCode,
+      bankName,
+      upiId,
+    } = req.body as {
+      id?: string;
+      type: "BANK_TRANSFER" | "UPI";
+      accountHolderName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      bankName?: string;
+      upiId?: string;
+    };
 
     // Basic validation
     if (!type || !["BANK_TRANSFER", "UPI"].includes(type)) {
@@ -449,10 +488,16 @@ export const upsertVenuePayoutMethod = async (
     }
 
     if (type === "BANK_TRANSFER") {
-      if (!accountHolderName?.trim() || !accountNumber?.trim() || !ifscCode?.trim() || !bankName?.trim()) {
+      if (
+        !accountHolderName?.trim() ||
+        !accountNumber?.trim() ||
+        !ifscCode?.trim() ||
+        !bankName?.trim()
+      ) {
         res.status(400).json({
           success: false,
-          message: "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
+          message:
+            "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
         });
         return;
       }
@@ -499,7 +544,9 @@ export const upsertVenuePayoutMethod = async (
       type,
       addedAt: now,
       updatedAt: now,
-      isDefault: !existingVenue.payoutMethods || existingVenue.payoutMethods.length === 0, // First method is default
+      isDefault:
+        !existingVenue.payoutMethods ||
+        existingVenue.payoutMethods.length === 0, // First method is default
     };
 
     if (type === "BANK_TRANSFER") {
@@ -534,7 +581,7 @@ export const upsertVenuePayoutMethod = async (
       // Add new method - append to all venues
       await Venue.updateMany(
         { ownerId: userId },
-        { $push: { payoutMethods: payoutMethodData } }
+        { $push: { payoutMethods: payoutMethodData } },
       );
     }
 
@@ -579,11 +626,15 @@ export const deleteVenuePayoutMethod = async (
         const venueMethods = venue.payoutMethods ?? [];
         const initialLength = venueMethods.length;
         venue.payoutMethods = venueMethods.filter(
-          (method) => getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
+          (method) =>
+            getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
         );
 
         // If the deleted method was default and there are remaining methods, set first as default
-        if (!venue.payoutMethods.some((method) => method.isDefault) && venue.payoutMethods.length > 0) {
+        if (
+          !venue.payoutMethods.some((method) => method.isDefault) &&
+          venue.payoutMethods.length > 0
+        ) {
           venue.payoutMethods[0]!.isDefault = true;
         }
 
@@ -655,7 +706,8 @@ export const setVenueDefaultPayoutMethod = async (
     let updated = false;
     for (const venue of venues) {
       const methodIndex = (venue.payoutMethods || []).findIndex(
-        (method) => getPayoutMethodId(method as PayoutMethodRecord) === methodId,
+        (method) =>
+          getPayoutMethodId(method as PayoutMethodRecord) === methodId,
       );
 
       if (methodIndex !== -1) {
@@ -724,7 +776,11 @@ export const getExpertPayoutMethod = async (
     res.json({
       success: true,
       message: "Payout method retrieved",
-      data: { payoutMethod: getPrimaryPayoutMethod(expert.payoutMethods as IPayoutMethod[] | undefined) },
+      data: {
+        payoutMethod: getPrimaryPayoutMethod(
+          expert.payoutMethods as IPayoutMethod[] | undefined,
+        ),
+      },
     });
   } catch (error) {
     console.error("getExpertPayoutMethod error:", error);
@@ -787,16 +843,23 @@ export const upsertExpertPayoutMethod = async (
       return;
     }
 
-    const { id, type, accountHolderName, accountNumber, ifscCode, bankName, upiId } =
-      req.body as {
-        id?: string;
-        type: "BANK_TRANSFER" | "UPI";
-        accountHolderName?: string;
-        accountNumber?: string;
-        ifscCode?: string;
-        bankName?: string;
-        upiId?: string;
-      };
+    const {
+      id,
+      type,
+      accountHolderName,
+      accountNumber,
+      ifscCode,
+      bankName,
+      upiId,
+    } = req.body as {
+      id?: string;
+      type: "BANK_TRANSFER" | "UPI";
+      accountHolderName?: string;
+      accountNumber?: string;
+      ifscCode?: string;
+      bankName?: string;
+      upiId?: string;
+    };
 
     // Basic validation
     if (!type || !["BANK_TRANSFER", "UPI"].includes(type)) {
@@ -808,10 +871,16 @@ export const upsertExpertPayoutMethod = async (
     }
 
     if (type === "BANK_TRANSFER") {
-      if (!accountHolderName?.trim() || !accountNumber?.trim() || !ifscCode?.trim() || !bankName?.trim()) {
+      if (
+        !accountHolderName?.trim() ||
+        !accountNumber?.trim() ||
+        !ifscCode?.trim() ||
+        !bankName?.trim()
+      ) {
         res.status(400).json({
           success: false,
-          message: "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
+          message:
+            "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
         });
         return;
       }
@@ -873,7 +942,8 @@ export const upsertExpertPayoutMethod = async (
     if (id) {
       // Update existing method
       const methodIndex = payoutMethods.findIndex(
-        (method: IPayoutMethod) => getPayoutMethodId(method as PayoutMethodRecord) === id,
+        (method: IPayoutMethod) =>
+          getPayoutMethodId(method as PayoutMethodRecord) === id,
       );
       if (methodIndex === -1) {
         res
@@ -937,7 +1007,8 @@ export const deleteExpertPayoutMethod = async (
       // Delete specific method
       const initialLength = payoutMethods.length;
       expert.payoutMethods = payoutMethods.filter(
-        (method: IPayoutMethod) => getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
+        (method: IPayoutMethod) =>
+          getPayoutMethodId(method as PayoutMethodRecord) !== methodId,
       );
 
       if ((expert.payoutMethods ?? []).length === initialLength) {
@@ -948,7 +1019,12 @@ export const deleteExpertPayoutMethod = async (
       }
 
       // If the deleted method was default and there are remaining methods, set first as default
-      if (!expert.payoutMethods.some((method: IPayoutMethod) => method.isDefault) && expert.payoutMethods.length > 0) {
+      if (
+        !expert.payoutMethods.some(
+          (method: IPayoutMethod) => method.isDefault,
+        ) &&
+        expert.payoutMethods.length > 0
+      ) {
         expert.payoutMethods[0]!.isDefault = true;
       }
     } else {
@@ -998,7 +1074,8 @@ export const setExpertDefaultPayoutMethod = async (
 
     const methods = expert.payoutMethods || [];
     const methodIndex = methods.findIndex(
-      (method: IPayoutMethod) => getPayoutMethodId(method as PayoutMethodRecord) === methodId,
+      (method: IPayoutMethod) =>
+        getPayoutMethodId(method as PayoutMethodRecord) === methodId,
     );
 
     if (methodIndex === -1) {

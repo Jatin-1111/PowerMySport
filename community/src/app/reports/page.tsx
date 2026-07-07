@@ -79,8 +79,6 @@ export default function ReportsPage() {
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap-narrow space-y-4">
-
-
         <section className="community-card">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">

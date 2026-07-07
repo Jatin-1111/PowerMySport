@@ -41,12 +41,14 @@ export const createRedisPubSub = () => {
     retryStrategy: noRetry,
   });
 
-  pub.on("error", (err) => console.warn("[redis:pub] connection error:", err.message));
-  sub.on("error", (err) => console.warn("[redis:sub] connection error:", err.message));
+  pub.on("error", (err) =>
+    console.warn("[redis:pub] connection error:", err.message),
+  );
+  sub.on("error", (err) =>
+    console.warn("[redis:sub] connection error:", err.message),
+  );
 
   return { pub, sub };
 };
 
-
 export default redis;
-

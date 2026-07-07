@@ -44,11 +44,7 @@ export interface OpenSlot {
 }
 
 export type ExpertSessionStatus =
-  | "PENDING_PAYMENT"
-  | "PAID"
-  | "SCHEDULED"
-  | "COMPLETED"
-  | "CANCELLED";
+  "PENDING_PAYMENT" | "PAID" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
 export type ExpertRefundStatus = "NONE" | "REQUIRED" | "MANUAL_DONE";
 
@@ -144,7 +140,11 @@ export const expertApi = {
   // Initiates PhonePe payment for a chosen slot; returns a hosted-checkout URL.
   initiateSession: async (
     expertId: string,
-    payload: { scheduledAt: string; clientNote?: string; mode?: ExpertSessionMode },
+    payload: {
+      scheduledAt: string;
+      clientNote?: string;
+      mode?: ExpertSessionMode;
+    },
   ): Promise<ApiResponse<{ sessionId: string; redirectUrl: string }>> => {
     const res = await axiosInstance.post(
       `/experts/${expertId}/sessions`,
@@ -162,7 +162,9 @@ export const expertApi = {
     return res.data;
   },
 
-  getSession: async (sessionId: string): Promise<ApiResponse<ExpertSession>> => {
+  getSession: async (
+    sessionId: string,
+  ): Promise<ApiResponse<ExpertSession>> => {
     const res = await axiosInstance.get(`/experts/sessions/${sessionId}`);
     return res.data;
   },

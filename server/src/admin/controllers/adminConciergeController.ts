@@ -85,12 +85,15 @@ export const getConciergeDocumentDownloadUrl = async (
 
     const docExists = request.documents.some((doc) => doc.s3Key === key);
     if (!docExists) {
-      res.status(404).json({ success: false, error: "Document not found in request" });
+      res
+        .status(404)
+        .json({ success: false, error: "Document not found in request" });
       return;
     }
 
     const s3Service = new S3Service();
-    const downloadUrl = await s3Service.generateConciergeDocumentDownloadUrl(key);
+    const downloadUrl =
+      await s3Service.generateConciergeDocumentDownloadUrl(key);
 
     res.status(200).json({ success: true, url: downloadUrl });
   } catch (error) {

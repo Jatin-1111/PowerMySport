@@ -2,10 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 import { notifyUserDataUpdated } from "../sockets/friendSocket";
 
 export type CoachSubscriptionStatus =
-  | "ACTIVE"
-  | "PAST_DUE"
-  | "CANCELLED"
-  | "EXPIRED";
+  "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
 
 export interface CoachSubscriptionDocument extends Document {
   id?: string;

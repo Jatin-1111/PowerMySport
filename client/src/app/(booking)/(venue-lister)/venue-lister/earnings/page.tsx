@@ -21,7 +21,12 @@ import { Button } from "@/modules/shared/ui/Button";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { toast } from "@/lib/toast";
 import axiosInstance from "@/lib/api/axios";
-import type { EarningsData, MonthlyEarning, SportEarning, Booking } from "@/types";
+import type {
+  EarningsData,
+  MonthlyEarning,
+  SportEarning,
+  Booking,
+} from "@/types";
 import Link from "next/link";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -47,9 +52,11 @@ export default function VenueListerEarningsPage() {
       try {
         setLoading(true);
         setError(null);
-        const res = await axiosInstance.get<{ success: boolean; data: EarningsData; message?: string }>(
-          "/venues/earnings"
-        );
+        const res = await axiosInstance.get<{
+          success: boolean;
+          data: EarningsData;
+          message?: string;
+        }>("/venues/earnings");
         if (res.data.success && res.data.data) {
           setData(res.data.data);
         } else {
@@ -77,7 +84,7 @@ export default function VenueListerEarningsPage() {
               ((data.thisMonth.total - data.lastMonth.total) /
                 data.lastMonth.total) *
               100
-            ).toFixed(1)
+            ).toFixed(1),
           ),
           positive: data.thisMonth.total >= data.lastMonth.total,
         }
@@ -153,7 +160,6 @@ export default function VenueListerEarningsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">
-
         {/* ── Page header ── */}
         <SlideUp delay={0}>
           <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -212,7 +218,7 @@ export default function VenueListerEarningsPage() {
               amount={data.thisMonth.total}
               subtitle={`${data.thisMonth.sessions} session${data.thisMonth.sessions !== 1 ? "s" : ""}`}
               icon={
-                monthlyTrend?.positive ?? true ? (
+                (monthlyTrend?.positive ?? true) ? (
                   <TrendingUp className="w-5 h-5" />
                 ) : (
                   <TrendingDown className="w-5 h-5" />
@@ -244,7 +250,8 @@ export default function VenueListerEarningsPage() {
                   Monthly Trend
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Last {last6Months.length} month{last6Months.length !== 1 ? "s" : ""}
+                  Last {last6Months.length} month
+                  {last6Months.length !== 1 ? "s" : ""}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -266,7 +273,6 @@ export default function VenueListerEarningsPage() {
         {/* ── Two-column section ── */}
         <SlideUp delay={0.15}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-
             {/* By sport / category */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col gap-5">
               <div>
@@ -290,7 +296,8 @@ export default function VenueListerEarningsPage() {
                   Recent Transactions
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Last {Math.min(10, data.recentBookings.length)} completed booking{data.recentBookings.length !== 1 ? "s" : ""}
+                  Last {Math.min(10, data.recentBookings.length)} completed
+                  booking{data.recentBookings.length !== 1 ? "s" : ""}
                 </p>
               </div>
               <RecentTransactionsList
@@ -298,7 +305,6 @@ export default function VenueListerEarningsPage() {
                 emptyMessage="No completed bookings yet."
               />
             </div>
-
           </div>
         </SlideUp>
 
@@ -333,7 +339,6 @@ export default function VenueListerEarningsPage() {
             </Link>
           </motion.div>
         </SlideUp>
-
       </div>
     </div>
   );

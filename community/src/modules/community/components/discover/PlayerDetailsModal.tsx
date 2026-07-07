@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CommunityMemberProfile } from "@/modules/community/types";
 import { communityService } from "@/modules/community/services/community";
-import { X, User, MapPin, Calendar, MessageSquare, Loader2, ShieldCheck } from "lucide-react";
+import {
+  X,
+  User,
+  MapPin,
+  Calendar,
+  MessageSquare,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import { getAvatarCharacter } from "@/modules/community/utils/chatUtils";
 
 interface PlayerDetailsModalProps {
@@ -81,16 +89,24 @@ export default function PlayerDetailsModal({
               <div className="relative px-6 pb-6 pt-0 sm:px-8">
                 <div className="absolute -top-14 left-1/2 -translate-x-1/2 sm:-translate-x-0 sm:left-8 flex h-28 w-28 items-center justify-center overflow-hidden rounded-[2rem] border-4 border-white bg-slate-100 font-title text-4xl font-bold text-slate-400 shadow-sm">
                   {profile?.photoUrl ? (
-                    <img src={profile.photoUrl} alt="avatar" className="h-full w-full object-cover" />
+                    <img
+                      src={profile.photoUrl}
+                      alt="avatar"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : profile?.displayName ? (
+                    getAvatarCharacter(profile.displayName)
                   ) : (
-                    profile?.displayName ? getAvatarCharacter(profile.displayName) : <User size={40} className="text-slate-300" />
+                    <User size={40} className="text-slate-300" />
                   )}
                 </div>
 
                 {loading ? (
                   <div className="mt-20 flex flex-col items-center justify-center py-8">
                     <Loader2 size={32} className="animate-spin text-sky-500" />
-                    <p className="mt-2 text-sm text-slate-500">Loading profile...</p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Loading profile...
+                    </p>
                   </div>
                 ) : error ? (
                   <div className="mt-20 py-8 text-center text-sm text-red-500">
@@ -104,7 +120,11 @@ export default function PlayerDetailsModal({
                       </h2>
                       <div className="mt-1.5 flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded-md bg-sky-500/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-sky-600">
-                          {profile.userType === "Parent" ? "PARENT" : profile.role === "Coach" ? "Coach" : "Player"}
+                          {profile.userType === "Parent"
+                            ? "PARENT"
+                            : profile.role === "Coach"
+                              ? "Coach"
+                              : "Player"}
                         </span>
                         {!profile.isIdentityPublic && (
                           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -161,7 +181,8 @@ export default function PlayerDetailsModal({
                     <MessageSquare size={16} /> Send Message
                   </button>
                   <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    <ShieldCheck size={14} className="text-emerald-500" /> Secure Parent-to-Parent Messaging
+                    <ShieldCheck size={14} className="text-emerald-500" />{" "}
+                    Secure Parent-to-Parent Messaging
                   </div>
                 </div>
               )}

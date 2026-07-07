@@ -64,7 +64,9 @@ export default function ExpertSessionPage() {
     }
     setSaving(true);
     try {
-      const res = await expertApi.scheduleSession(sessionId, { scheduledAt: newSlot });
+      const res = await expertApi.scheduleSession(sessionId, {
+        scheduledAt: newSlot,
+      });
       if (res.success && res.data) {
         setSession(res.data);
         setRescheduleOpen(false);
@@ -235,7 +237,8 @@ export default function ExpertSessionPage() {
           {["PAID", "SCHEDULED"].includes(session.status) &&
             (session.expertAcceptance === "ACCEPTED" ? (
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Confirmed by your expert
+                <CheckCircle2 className="h-3.5 w-3.5" /> Confirmed by your
+                expert
               </p>
             ) : (
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
@@ -251,7 +254,10 @@ export default function ExpertSessionPage() {
                 {session.status === "COMPLETED" ? "Session time" : "Scheduled"}
               </p>
               <p className="mt-1 text-sm text-slate-700">
-                {formatSessionTimeWithZone(session.scheduledAt, session.expertTimezone)}
+                {formatSessionTimeWithZone(
+                  session.scheduledAt,
+                  session.expertTimezone,
+                )}
                 {session.mode
                   ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}`
                   : ""}
@@ -276,12 +282,14 @@ export default function ExpertSessionPage() {
               ) : session.mode === "IN_PERSON" ? (
                 session.inPersonAddress ? (
                   <p className="mt-2 text-sm text-slate-700">
-                    <span className="font-semibold">Location:</span> {session.inPersonAddress}
+                    <span className="font-semibold">Location:</span>{" "}
+                    {session.inPersonAddress}
                   </p>
                 ) : (
                   session.status === "SCHEDULED" && (
                     <p className="mt-2 text-xs text-slate-500">
-                      Your expert hasn&apos;t shared a location yet — check back closer to your session.
+                      Your expert hasn&apos;t shared a location yet — check back
+                      closer to your session.
                     </p>
                   )
                 )
@@ -311,8 +319,8 @@ export default function ExpertSessionPage() {
               ) : (
                 <div>
                   <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                    <CalendarClock className="h-4 w-4 text-power-orange" /> Pick a
-                    new time
+                    <CalendarClock className="h-4 w-4 text-power-orange" /> Pick
+                    a new time
                   </h2>
                   <SlotPicker
                     expertId={session.expertId}

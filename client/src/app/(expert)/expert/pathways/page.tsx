@@ -33,8 +33,13 @@ export default function ExpertPathwaysPage() {
     load();
   }, [load]);
 
-  const updateOne = (sportSlug: string, patch: Partial<ExpertVerifiablePathway>) =>
-    setPathways((list) => list.map((p) => (p.sportSlug === sportSlug ? { ...p, ...patch } : p)));
+  const updateOne = (
+    sportSlug: string,
+    patch: Partial<ExpertVerifiablePathway>,
+  ) =>
+    setPathways((list) =>
+      list.map((p) => (p.sportSlug === sportSlug ? { ...p, ...patch } : p)),
+    );
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -72,8 +77,8 @@ export default function ExpertPathwaysPage() {
             </p>
             <p className="mt-1 text-sm text-slate-500">
               Pathways are created the first time a parent looks up your sport
-              on the roadmap page — check back later, or add more sports to
-              your profile.
+              on the roadmap page — check back later, or add more sports to your
+              profile.
             </p>
           </div>
         ) : (
@@ -93,7 +98,10 @@ function PathwayRow({
   onChange,
 }: {
   pathway: ExpertVerifiablePathway;
-  onChange: (sportSlug: string, patch: Partial<ExpertVerifiablePathway>) => void;
+  onChange: (
+    sportSlug: string,
+    patch: Partial<ExpertVerifiablePathway>,
+  ) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [note, setNote] = useState("");
@@ -102,11 +110,15 @@ function PathwayRow({
   const verify = async () => {
     setBusy(true);
     try {
-      const res = await pathwayApi.verifyAsExpert(pathway.sportSlug, note.trim() || undefined);
+      const res = await pathwayApi.verifyAsExpert(
+        pathway.sportSlug,
+        note.trim() || undefined,
+      );
       if (res.success) {
         onChange(pathway.sportSlug, {
           verifiedByMe: true,
-          expertVerificationCount: pathway.expertVerificationCount + (pathway.verifiedByMe ? 0 : 1),
+          expertVerificationCount:
+            pathway.expertVerificationCount + (pathway.verifiedByMe ? 0 : 1),
         });
         setExpanded(false);
         toast.success("You're now credited as a verifier on this pathway.");
@@ -130,7 +142,10 @@ function PathwayRow({
       if (res.success) {
         onChange(pathway.sportSlug, {
           verifiedByMe: false,
-          expertVerificationCount: Math.max(0, pathway.expertVerificationCount - 1),
+          expertVerificationCount: Math.max(
+            0,
+            pathway.expertVerificationCount - 1,
+          ),
         });
         toast.success("Your verification was removed.");
       } else {
@@ -161,11 +176,14 @@ function PathwayRow({
             )}
           </div>
           {pathway.overview && (
-            <p className="mt-1.5 line-clamp-2 text-sm text-slate-500">{pathway.overview}</p>
+            <p className="mt-1.5 line-clamp-2 text-sm text-slate-500">
+              {pathway.overview}
+            </p>
           )}
           <p className="mt-1.5 text-xs text-slate-400">
             {pathway.expertVerificationCount} expert
-            {pathway.expertVerificationCount === 1 ? "" : "s"} verified · {pathway.lookupCount} lookups
+            {pathway.expertVerificationCount === 1 ? "" : "s"} verified ·{" "}
+            {pathway.lookupCount} lookups
             {pathway.stateVariants > 1 &&
               ` · covers ${pathway.stateVariants} state variants`}
           </p>

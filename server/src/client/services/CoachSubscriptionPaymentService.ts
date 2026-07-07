@@ -91,7 +91,9 @@ const applySubscriptionActivation = async (
 
   const subscription = await subscribeToCoachPackage({
     userId: transaction.userId.toString(),
-    ...(transaction.dependentId ? { dependentId: transaction.dependentId.toString() } : {}),
+    ...(transaction.dependentId
+      ? { dependentId: transaction.dependentId.toString() }
+      : {}),
     coachId: transaction.coachId.toString(),
     packageId: transaction.packageId.toString(),
   });

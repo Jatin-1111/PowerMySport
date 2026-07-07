@@ -37,7 +37,11 @@ export const getPathway = async (
       return;
     }
 
-    if (!state || typeof state !== "string" || !INDIAN_STATES_AND_UTS.includes(state as any)) {
+    if (
+      !state ||
+      typeof state !== "string" ||
+      !INDIAN_STATES_AND_UTS.includes(state as any)
+    ) {
       res.status(400).json({
         success: false,
         message: "Please provide a valid Indian state or UT.",
@@ -76,16 +80,19 @@ export const getPathway = async (
             .lean();
           return {
             ...v,
-            expertCredential: (profile as any)?.achievements
-              || (profile as any)?.bio?.slice(0, 80)
-              || null,
+            expertCredential:
+              (profile as any)?.achievements ||
+              (profile as any)?.bio?.slice(0, 80) ||
+              null,
             expertSports: (profile as any)?.sports || [],
           };
-        })
+        }),
       );
-      let trustTier: "unverified" | "admin_verified" | "expert_verified" = "unverified";
+      let trustTier: "unverified" | "admin_verified" | "expert_verified" =
+        "unverified";
       if (result.pathway.isVerified) {
-        trustTier = expertVerifications.length > 0 ? "expert_verified" : "admin_verified";
+        trustTier =
+          expertVerifications.length > 0 ? "expert_verified" : "admin_verified";
       }
 
       data = {
@@ -114,8 +121,6 @@ export const getPathway = async (
   }
 };
 
-
-
 /**
  * GET /api/pathways/entities?sport=cricket&city=Mumbai
  * Returns just tournaments/scholarships/universities for a sport.
@@ -129,27 +134,45 @@ export const getPathwayEntities = async (
   try {
     const { sport, state } = req.query;
     if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
-      res.status(400).json({ success: false, message: "Provide a sport name." });
+      res
+        .status(400)
+        .json({ success: false, message: "Provide a sport name." });
       return;
     }
-    if (!state || typeof state !== "string" || !INDIAN_STATES_AND_UTS.includes(state as any)) {
-      res.status(400).json({ success: false, message: "Provide a valid Indian state or UT." });
+    if (
+      !state ||
+      typeof state !== "string" ||
+      !INDIAN_STATES_AND_UTS.includes(state as any)
+    ) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "Provide a valid Indian state or UT.",
+        });
       return;
     }
     const entities = await pathwayService.getEntities(sport.trim(), state);
     res.json({ success: true, data: entities });
   } catch (error) {
     console.error("Error fetching pathway entities:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch entities." });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch entities." });
   }
 };
 
-export const getPathwayStories = async (req: Request, res: Response): Promise<void> => {
+export const getPathwayStories = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const { sport, level, state } = req.query;
 
     if (!sport || typeof sport !== "string") {
-      res.status(400).json({ success: false, message: "Provide a sport parameter" });
+      res
+        .status(400)
+        .json({ success: false, message: "Provide a sport parameter" });
       return;
     }
 
@@ -177,7 +200,9 @@ export const getPathwayStories = async (req: Request, res: Response): Promise<vo
     // Use the Sport collection to get the display name for the scraper prompt.
     if (stories.length === 0) {
       const { Sport } = await import("../models/Sport");
-      const knownSport = await Sport.findOne({ slug: sportSlug }).select("name").lean();
+      const knownSport = await Sport.findOne({ slug: sportSlug })
+        .select("name")
+        .lean();
       const sportName = (knownSport as any)?.name || sport;
 
       realDataScraperService
@@ -187,13 +212,18 @@ export const getPathwayStories = async (req: Request, res: Response): Promise<vo
           ...(state && typeof state === "string" ? { city: state.trim() } : {}),
         })
         .catch((err) =>
-          console.error("[pathwayController] Background story scrape failed:", err)
+          console.error(
+            "[pathwayController] Background story scrape failed:",
+            err,
+          ),
         );
     }
 
     res.json({ success: true, data: stories });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch stories" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch stories" });
   }
 };
 
@@ -371,7 +401,11 @@ export const postPathwayExpertVerify = async (
       req.user.id,
       typeof req.body?.note === "string" ? req.body.note : undefined,
     );
-    res.json({ success: true, message: "Pathway verified", data: verification });
+    res.json({
+      success: true,
+      message: "Pathway verified",
+      data: verification,
+    });
   } catch (error) {
     fail(res, error);
   }

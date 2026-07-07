@@ -80,7 +80,8 @@ export const MACRO_LEVEL_CONFIGS: MacroLevelConfig[] = [
         id: "national",
         rawLevel: 4,
         label: "National",
-        blurb: "State pride, national rankings, and SAI recognition — a strong domestic career path.",
+        blurb:
+          "State pride, national rankings, and SAI recognition — a strong domestic career path.",
         accentText: "text-orange-600",
         accentBadge: "bg-orange-100 text-orange-700 border-orange-200",
       },
@@ -88,7 +89,8 @@ export const MACRO_LEVEL_CONFIGS: MacroLevelConfig[] = [
         id: "international",
         rawLevel: 5,
         label: "International",
-        blurb: "Compete for India on the world stage, with access to funding via schemes like TOPS.",
+        blurb:
+          "Compete for India on the world stage, with access to funding via schemes like TOPS.",
         accentText: "text-rose-600",
         accentBadge: "bg-rose-100 text-rose-700 border-rose-200",
       },
@@ -125,19 +127,21 @@ export function groupLevelsIntoMacro(levels: PathwayLevel[]): MacroLevel[] {
     return {
       ...config,
       rawLevels,
-      representativeRawLevel: representative?.level ?? config.rawLevelNumbers[0],
+      representativeRawLevel:
+        representative?.level ?? config.rawLevelNumbers[0],
       representativeLabel: representative?.label ?? config.label,
     };
   }).filter((macro) => macro.rawLevels.length > 0);
 }
 
-const FEE_TIERS: Record<number, { label: string; low: number; high: number }> = {
-  1: { label: "₹1,000–₹3,000/mo", low: 1000, high: 3000 },
-  2: { label: "₹3,000–₹10,000/mo", low: 3000, high: 10000 },
-  3: { label: "₹10,000–₹30,000/mo", low: 10000, high: 30000 },
-  4: { label: "₹30,000–₹80,000/mo", low: 30000, high: 80000 },
-  5: { label: "Sponsorship / ₹80,000+", low: 80000, high: 150000 },
-};
+const FEE_TIERS: Record<number, { label: string; low: number; high: number }> =
+  {
+    1: { label: "₹1,000–₹3,000/mo", low: 1000, high: 3000 },
+    2: { label: "₹3,000–₹10,000/mo", low: 3000, high: 10000 },
+    3: { label: "₹10,000–₹30,000/mo", low: 10000, high: 30000 },
+    4: { label: "₹30,000–₹80,000/mo", low: 30000, high: 80000 },
+    5: { label: "Sponsorship / ₹80,000+", low: 80000, high: 150000 },
+  };
 
 /** Combined fee-range label spanning a set of raw levels (used for Intermediate's 2-level span). */
 export function getCombinedFeeRange(rawLevelNumbers: number[]): string {
@@ -154,11 +158,15 @@ export function getCombinedFeeRange(rawLevelNumbers: number[]): string {
  * "9 – 14 years" span, instead of naively concatenating both full strings
  * (which reads as "9 – 12 years – 11 – 14 years").
  */
-export function mergeAgeRanges(ranges: (string | undefined)[]): string | undefined {
+export function mergeAgeRanges(
+  ranges: (string | undefined)[],
+): string | undefined {
   const present = ranges.filter((r): r is string => !!r);
   if (present.length === 0) return undefined;
   if (present.length === 1) return present[0];
-  const allNumbers = present.flatMap((r) => (r.match(/\d+/g) || []).map(Number));
+  const allNumbers = present.flatMap((r) =>
+    (r.match(/\d+/g) || []).map(Number),
+  );
   if (allNumbers.length === 0) return present.join(" – ");
   const suffix = present[present.length - 1].replace(/[\d\s–-]+/g, "").trim();
   return `${Math.min(...allNumbers)} – ${Math.max(...allNumbers)} ${suffix}`.trim();

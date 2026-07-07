@@ -49,13 +49,12 @@ const tzOffsetMinutes = (tz: string, at: Date): number => {
       minute: "2-digit",
       second: "2-digit",
     });
-    const parts = dtf.formatToParts(at).reduce<Record<string, string>>(
-      (acc, p) => {
+    const parts = dtf
+      .formatToParts(at)
+      .reduce<Record<string, string>>((acc, p) => {
         if (p.type !== "literal") acc[p.type] = p.value;
         return acc;
-      },
-      {},
-    );
+      }, {});
     const asUtc = Date.UTC(
       Number(parts.year),
       Number(parts.month) - 1,
@@ -71,7 +70,11 @@ const tzOffsetMinutes = (tz: string, at: Date): number => {
 };
 
 /** Convert a local "YYYY-MM-DD" + minutes-from-midnight in `tz` to a UTC Date. */
-const zonedToUtc = (dateKey: string, minutesFromMidnight: number, tz: string): Date => {
+const zonedToUtc = (
+  dateKey: string,
+  minutesFromMidnight: number,
+  tz: string,
+): Date => {
   const [y, m, d] = parseDateKey(dateKey);
   const hh = Math.floor(minutesFromMidnight / 60);
   const mm = minutesFromMidnight % 60;
@@ -106,7 +109,10 @@ const getBusyIntervals = async (
   const now = new Date();
   const query: Record<string, unknown> = {
     expertId,
-    scheduledAt: { $gte: new Date(from.getTime() - 12 * 60 * MS_PER_MIN), $lte: to },
+    scheduledAt: {
+      $gte: new Date(from.getTime() - 12 * 60 * MS_PER_MIN),
+      $lte: to,
+    },
     $or: [
       { status: { $in: ["PAID", "SCHEDULED", "COMPLETED"] } },
       // Unexpired holds still block the slot.
@@ -151,8 +157,12 @@ export const computeOpenSlots = async (
 
   const now = new Date();
   const from = fromISO ? new Date(fromISO) : now;
-  let to = toISO ? new Date(toISO) : new Date(now.getTime() + 14 * 24 * 60 * MS_PER_MIN);
-  const maxTo = new Date(from.getTime() + MAX_RANGE_DAYS * 24 * 60 * MS_PER_MIN);
+  let to = toISO
+    ? new Date(toISO)
+    : new Date(now.getTime() + 14 * 24 * 60 * MS_PER_MIN);
+  const maxTo = new Date(
+    from.getTime() + MAX_RANGE_DAYS * 24 * 60 * MS_PER_MIN,
+  );
   if (to > maxTo) to = maxTo;
 
   const busy = await getBusyIntervals(
@@ -176,13 +186,20 @@ export const computeOpenSlots = async (
       for (const w of dayWindows) {
         const startMin = parseHHmm(w.start);
         const endMin = parseHHmm(w.end);
-        for (let cursor = startMin; cursor + duration <= endMin; cursor += duration) {
+        for (
+          let cursor = startMin;
+          cursor + duration <= endMin;
+          cursor += duration
+        ) {
           const slotStart = zonedToUtc(dateKey, cursor, tz);
           const slotEnd = new Date(slotStart.getTime() + duration * MS_PER_MIN);
           if (slotStart < from || slotStart <= now) continue;
           if (slotStart > to) continue;
           if (overlaps(slotStart.getTime(), slotEnd.getTime(), busy)) continue;
-          slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString() });
+          slots.push({
+            start: slotStart.toISOString(),
+            end: slotEnd.toISOString(),
+          });
         }
       }
     }
@@ -242,7 +259,11 @@ export const assertSlotBookable = async (
   const aligned = dayWindows.some((w) => {
     const startMin = parseHHmm(w.start);
     const endMin = parseHHmm(w.end);
-    for (let cursor = startMin; cursor + duration <= endMin; cursor += duration) {
+    for (
+      let cursor = startMin;
+      cursor + duration <= endMin;
+      cursor += duration
+    ) {
       const slotStart = zonedToUtc(dateKey, cursor, tz);
       if (Math.abs(slotStart.getTime() - scheduledAt.getTime()) < MS_PER_MIN) {
         return true;

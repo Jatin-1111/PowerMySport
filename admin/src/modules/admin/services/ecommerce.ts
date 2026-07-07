@@ -27,7 +27,8 @@ export interface ProductEditableFields {
 export interface AdminOrderRecord {
   id: string;
   orderNumber: string;
-  userId?: string | { _id?: string; id?: string; name?: string; email?: string };
+  userId?:
+    string | { _id?: string; id?: string; name?: string; email?: string };
   status: string;
   paymentStatus: string;
   fulfillmentStatus: string;
@@ -147,7 +148,12 @@ export const adminEcommerceApi = {
 
   async generateProductImageUploadUrl(fileName: string, contentType: string) {
     const response = await axiosInstance.post<
-      ApiResponse<{ uploadUrl: string; downloadUrl: string; fileName: string; key: string }>
+      ApiResponse<{
+        uploadUrl: string;
+        downloadUrl: string;
+        fileName: string;
+        key: string;
+      }>
     >("/v1/admin/products/upload-url", { fileName, contentType });
 
     return response.data;

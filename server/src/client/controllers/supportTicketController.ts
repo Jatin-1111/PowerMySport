@@ -78,11 +78,7 @@ const createTicketFromRequest = async (
     requesterEmail?: string;
     requesterPhone?: string;
     requesterType?:
-      | "player"
-      | "venue_owner"
-      | "coach"
-      | "academy_owner"
-      | "other";
+      "player" | "venue_owner" | "coach" | "academy_owner" | "other";
   } = req.body;
 
   if (!subject?.trim() || !description?.trim()) {

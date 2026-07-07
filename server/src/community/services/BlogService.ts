@@ -90,7 +90,11 @@ const resolveUserPhotoUrl = async (user?: {
     return user.photoUrl || null;
   }
   try {
-    return await s3Service.generateDownloadUrl(user.photoS3Key, "images", 604800);
+    return await s3Service.generateDownloadUrl(
+      user.photoS3Key,
+      "images",
+      604800,
+    );
   } catch (error) {
     console.error("Failed to refresh blog author photo URL:", error);
     return user.photoUrl || null;
@@ -145,7 +149,9 @@ const generateUniqueUsername = async (name?: string): Promise<string> => {
   // Try the bare slug first, then append incrementing suffixes.
   for (let attempt = 0; attempt < 50; attempt += 1) {
     const candidate =
-      attempt === 0 ? base : `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+      attempt === 0
+        ? base
+        : `${base}${Math.floor(1000 + Math.random() * 9000)}`;
     const exists = await CommunityProfile.exists({ username: candidate });
     if (!exists) {
       return candidate.slice(0, 30);
@@ -194,7 +200,9 @@ const ensureBlogProfile = async (userId: string) => {
       if (!isDuplicateKeyError(error)) {
         throw error;
       }
-      profile.username = await generateUniqueUsername(`${user.name}${Date.now()}`);
+      profile.username = await generateUniqueUsername(
+        `${user.name}${Date.now()}`,
+      );
       await profile.save();
     }
   }
@@ -296,7 +304,9 @@ const legacyBlocksToHtml = (blocks: LegacyBlogBlock[]): string =>
 
 /** Normalize a post's persisted `content` to HTML, upgrading legacy block arrays. */
 const toContentHtml = (content: unknown): string =>
-  Array.isArray(content) ? legacyBlocksToHtml(content as LegacyBlogBlock[]) : (content as string) || "";
+  Array.isArray(content)
+    ? legacyBlocksToHtml(content as LegacyBlogBlock[])
+    : (content as string) || "";
 
 const CONTENT_IMG_RE = /<img\b[^>]*>/gi;
 const DATA_KEY_ATTR_RE = /data-key="([^"]*)"/i;
@@ -323,7 +333,9 @@ const resolveContentImageUrls = async (html: string): Promise<string> => {
   const tags = [...new Set(html.match(CONTENT_IMG_RE) || [])];
   const entries = tags
     .map((tag) => ({ tag, key: DATA_KEY_ATTR_RE.exec(tag)?.[1] }))
-    .filter((entry): entry is { tag: string; key: string } => Boolean(entry.key));
+    .filter((entry): entry is { tag: string; key: string } =>
+      Boolean(entry.key),
+    );
 
   const replacements = await Promise.all(
     entries.map(async ({ tag, key }) => {
@@ -440,16 +452,15 @@ export const BlogService = {
     if (search) {
       const safe = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const rx = new RegExp(safe, "i");
-      query.$or = [
-        { title: rx },
-        { excerpt: rx },
-        { tags: rx },
-        { topic: rx },
-      ];
+      query.$or = [{ title: rx }, { excerpt: rx }, { tags: rx }, { topic: rx }];
     }
 
     const [posts, total] = await Promise.all([
-      BlogPost.find(query).sort({ createdAt: -1 }).skip(skip).limit(safeLimit).lean(),
+      BlogPost.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
       BlogPost.countDocuments(query),
     ]);
 
@@ -522,7 +533,9 @@ export const BlogService = {
     BlogPost.updateOne({ _id: id }, { $inc: { viewCount: 1 } }).catch(() => {});
 
     const { buildAuthor } = await buildAuthorMaps([post.authorId]);
-    const likedSet = await this.buildLikedSet(userId, "BLOG", [String(post._id)]);
+    const likedSet = await this.buildLikedSet(userId, "BLOG", [
+      String(post._id),
+    ]);
 
     const coverImageUrl = await resolveBlogImageUrl(post.coverImageKey);
     const content = await resolveContentImageUrls(toContentHtml(post.content));
@@ -651,14 +664,20 @@ export const BlogService = {
     const Model = (
       targetType === "BLOG" ? BlogPost : BlogComment
     ) as mongoose.Model<{ likeCount: number }>;
-    const target = await Model.findOne({ _id: id, isDeleted: false }).select("_id");
+    const target = await Model.findOne({ _id: id, isDeleted: false }).select(
+      "_id",
+    );
     if (!target) {
       throw new Error(
         targetType === "BLOG" ? "Blog not found" : "Comment not found",
       );
     }
 
-    const existing = await BlogLike.findOne({ userId, targetType, targetId: id });
+    const existing = await BlogLike.findOne({
+      userId,
+      targetType,
+      targetId: id,
+    });
 
     let liked: boolean;
     if (existing) {
@@ -702,7 +721,11 @@ export const BlogService = {
         .skip(skip)
         .limit(safeLimit)
         .lean(),
-      BlogComment.countDocuments({ blogId: id, parentId: null, isDeleted: false }),
+      BlogComment.countDocuments({
+        blogId: id,
+        parentId: null,
+        isDeleted: false,
+      }),
     ]);
 
     const topIds = topLevel.map((comment) => comment._id);
@@ -771,7 +794,9 @@ export const BlogService = {
     await ensureBlogProfile(userId);
     const id = toObjectId(blogId, "blog id");
 
-    const blog = await BlogPost.findOne({ _id: id, isDeleted: false }).select("_id");
+    const blog = await BlogPost.findOne({ _id: id, isDeleted: false }).select(
+      "_id",
+    );
     if (!blog) {
       throw new Error("Blog not found");
     }

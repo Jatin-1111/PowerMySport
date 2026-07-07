@@ -151,7 +151,8 @@ export default function CoachProfilePage() {
       case "VERIFIED":
         return {
           label: "Verified",
-          className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+          className:
+            "bg-emerald-100 text-emerald-700 border border-emerald-200",
           icon: CheckCircle,
         };
       case "PENDING":
@@ -1398,16 +1399,17 @@ export default function CoachProfilePage() {
                     )}
 
                   {coachProfile.hourlyRate &&
-                    Object.keys(coachProfile.sportPricing ?? {}).length === 0 && (
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                        Hourly Rate
-                      </p>
-                      <p className="text-2xl font-bold text-power-orange">
-                        ₹{coachProfile.hourlyRate}/hr
-                      </p>
-                    </div>
-                  )}
+                    Object.keys(coachProfile.sportPricing ?? {}).length ===
+                      0 && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                          Hourly Rate
+                        </p>
+                        <p className="text-2xl font-bold text-power-orange">
+                          ₹{coachProfile.hourlyRate}/hr
+                        </p>
+                      </div>
+                    )}
 
                   <div>
                     <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">

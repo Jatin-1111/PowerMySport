@@ -11,8 +11,18 @@ import { Venue } from "@/types";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { Card } from "@/modules/shared/ui/Card";
 import {
-  ArrowLeft, MapPin, Star, Clock, Info, CheckCircle2,
-  Activity, XCircle, FileText, Image as ImageIcon, Pencil, X
+  ArrowLeft,
+  MapPin,
+  Star,
+  Clock,
+  Info,
+  CheckCircle2,
+  Activity,
+  XCircle,
+  FileText,
+  Image as ImageIcon,
+  Pencil,
+  X,
 } from "lucide-react";
 
 interface VenueEditForm {
@@ -125,11 +135,18 @@ export default function AdminVenueDetailPage() {
       <div className="space-y-6">
         <div className="flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-4 transition-colors">
           <ArrowLeft size={20} />
-          <button onClick={() => router.push("/admin/venues")} className="font-semibold">Back to Venues</button>
+          <button
+            onClick={() => router.push("/admin/venues")}
+            className="font-semibold"
+          >
+            Back to Venues
+          </button>
         </div>
         <Card className="bg-white">
           <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error || "Venue not found"}</p>
+            <p className="text-red-600 font-semibold">
+              {error || "Venue not found"}
+            </p>
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
@@ -142,12 +159,15 @@ export default function AdminVenueDetailPage() {
     );
   }
 
-  const imageUrl = venue.coverPhotoUrl || (venue.images && venue.images[0]) || null;
-  const joinedDate = venue.createdAt ? new Date(venue.createdAt).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  }) : "Unknown";
+  const imageUrl =
+    venue.coverPhotoUrl || (venue.images && venue.images[0]) || null;
+  const joinedDate = venue.createdAt
+    ? new Date(venue.createdAt).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "Unknown";
 
   return (
     <div className="space-y-6 pb-12">
@@ -207,7 +227,9 @@ export default function AdminVenueDetailPage() {
           </div>
           <div className="shrink-0">
             <div className="inline-flex items-center gap-2 rounded-xl bg-white/20 backdrop-blur-md px-4 py-2 text-white shadow-lg border border-white/30">
-              <span className="text-sm font-semibold uppercase tracking-wider">Base Price</span>
+              <span className="text-sm font-semibold uppercase tracking-wider">
+                Base Price
+              </span>
               <span className="text-2xl font-bold">₹{venue.pricePerHour}</span>
               <span className="text-xs font-medium opacity-80">/hr</span>
             </div>
@@ -221,7 +243,9 @@ export default function AdminVenueDetailPage() {
           <Card className="bg-white border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
               <FileText className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">About this Venue</h2>
+              <h2 className="text-xl font-bold text-slate-900">
+                About this Venue
+              </h2>
             </div>
             <p className="text-slate-600 leading-relaxed whitespace-pre-line">
               {venue.description || "No description provided."}
@@ -231,12 +255,17 @@ export default function AdminVenueDetailPage() {
           <Card className="bg-white border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
               <Activity className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">Sports Available</h2>
+              <h2 className="text-xl font-bold text-slate-900">
+                Sports Available
+              </h2>
             </div>
             {venue.sports && venue.sports.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {venue.sports.map((sport) => (
-                  <div key={sport} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
+                  <div
+                    key={sport}
+                    className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700"
+                  >
                     {sport}
                   </div>
                 ))}
@@ -254,13 +283,18 @@ export default function AdminVenueDetailPage() {
             {venue.amenities && venue.amenities.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {venue.amenities.map((amenity) => (
-                  <div key={amenity} className="px-3 py-1.5 bg-power-orange/10 text-power-orange rounded-full text-xs font-semibold">
+                  <div
+                    key={amenity}
+                    className="px-3 py-1.5 bg-power-orange/10 text-power-orange rounded-full text-xs font-semibold"
+                  >
                     {amenity}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 italic text-sm">No amenities listed.</p>
+              <p className="text-slate-500 italic text-sm">
+                No amenities listed.
+              </p>
             )}
           </Card>
         </div>
@@ -274,27 +308,43 @@ export default function AdminVenueDetailPage() {
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">Rating</span>
+                <span className="text-sm text-slate-500 font-medium">
+                  Rating
+                </span>
                 <div className="flex items-center gap-1 font-bold text-amber-600">
                   <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
                   {venue.rating ? venue.rating.toFixed(1) : "New"}
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">Reviews</span>
-                <span className="font-semibold text-slate-900">{venue.reviewCount || 0}</span>
+                <span className="text-sm text-slate-500 font-medium">
+                  Reviews
+                </span>
+                <span className="font-semibold text-slate-900">
+                  {venue.reviewCount || 0}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">Listed On</span>
-                <span className="font-semibold text-slate-900 text-sm">{joinedDate}</span>
+                <span className="text-sm text-slate-500 font-medium">
+                  Listed On
+                </span>
+                <span className="font-semibold text-slate-900 text-sm">
+                  {joinedDate}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">External Coaches</span>
+                <span className="text-sm text-slate-500 font-medium">
+                  External Coaches
+                </span>
                 <span className="font-semibold text-slate-900 text-sm">
                   {venue.allowExternalCoaches ? (
-                    <span className="text-emerald-600 flex items-center gap-1"><CheckCircle2 size={14} /> Allowed</span>
+                    <span className="text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 size={14} /> Allowed
+                    </span>
                   ) : (
-                    <span className="text-red-500 flex items-center gap-1"><XCircle size={14} /> Not Allowed</span>
+                    <span className="text-red-500 flex items-center gap-1">
+                      <XCircle size={14} /> Not Allowed
+                    </span>
                   )}
                 </span>
               </div>
@@ -304,17 +354,25 @@ export default function AdminVenueDetailPage() {
           <Card className="bg-white border-slate-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
               <Clock className="text-slate-700" size={20} />
-              <h2 className="text-lg font-bold text-slate-900">Location Data</h2>
+              <h2 className="text-lg font-bold text-slate-900">
+                Location Data
+              </h2>
             </div>
             <div className="space-y-3">
               <div>
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">Coordinates</span>
+                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">
+                  Coordinates
+                </span>
                 <p className="text-sm font-mono bg-slate-50 p-2 rounded border border-slate-100 text-slate-700">
-                  {venue.location?.coordinates ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}` : "N/A"}
+                  {venue.location?.coordinates
+                    ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
+                    : "N/A"}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">Venue ID</span>
+                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">
+                  Venue ID
+                </span>
                 <p className="text-xs font-mono text-slate-500 break-all">
                   {venue.id || venue._id}
                 </p>
@@ -377,7 +435,9 @@ export default function AdminVenueDetailPage() {
                 <input
                   value={editForm.name}
                   onChange={(e) =>
-                    setEditForm((prev) => prev && { ...prev, name: e.target.value })
+                    setEditForm(
+                      (prev) => prev && { ...prev, name: e.target.value },
+                    )
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
@@ -392,7 +452,8 @@ export default function AdminVenueDetailPage() {
                   value={editForm.description}
                   onChange={(e) =>
                     setEditForm(
-                      (prev) => prev && { ...prev, description: e.target.value },
+                      (prev) =>
+                        prev && { ...prev, description: e.target.value },
                     )
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -406,7 +467,9 @@ export default function AdminVenueDetailPage() {
                 <input
                   value={editForm.sports}
                   onChange={(e) =>
-                    setEditForm((prev) => prev && { ...prev, sports: e.target.value })
+                    setEditForm(
+                      (prev) => prev && { ...prev, sports: e.target.value },
+                    )
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
@@ -438,7 +501,10 @@ export default function AdminVenueDetailPage() {
                     onChange={(e) =>
                       setEditForm(
                         (prev) =>
-                          prev && { ...prev, pricePerHour: Number(e.target.value) },
+                          prev && {
+                            ...prev,
+                            pricePerHour: Number(e.target.value),
+                          },
                       )
                     }
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -455,7 +521,8 @@ export default function AdminVenueDetailPage() {
                         (prev) =>
                           prev && {
                             ...prev,
-                            approvalStatus: e.target.value as VenueEditForm["approvalStatus"],
+                            approvalStatus: e.target
+                              .value as VenueEditForm["approvalStatus"],
                           },
                       )
                     }

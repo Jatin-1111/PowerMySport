@@ -1,7 +1,14 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { motion, useInView, useMotionValue, useTransform, animate, Variants } from "framer-motion";
+import {
+  motion,
+  useInView,
+  useMotionValue,
+  useTransform,
+  animate,
+  Variants,
+} from "framer-motion";
 import React, { useEffect, useRef } from "react";
 
 export interface Stat {

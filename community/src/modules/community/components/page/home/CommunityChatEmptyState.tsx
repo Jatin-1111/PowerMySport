@@ -29,25 +29,29 @@ export default function CommunityChatEmptyState({ onBack }: Props) {
       >
         <div className="mb-10 relative flex items-center justify-center">
           {/* Breathing glow/shadow under the icon */}
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               scale: [1, 1.1, 1],
-              opacity: [0.4, 0.6, 0.4]
+              opacity: [0.4, 0.6, 0.4],
             }}
             transition={{
               duration: 4,
               repeat: Infinity,
-              ease: "easeInOut"
+              ease: "easeInOut",
             }}
-            className="absolute h-40 w-40 rounded-full bg-power-orange/10 blur-3xl" 
+            className="absolute h-40 w-40 rounded-full bg-power-orange/10 blur-3xl"
           />
-          <motion.div 
+          <motion.div
             animate={{ y: [-4, 4, -4] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
             className="relative flex h-32 w-32 items-center justify-center rounded-[2.5rem] bg-white shadow-[0_8px_40px_rgba(233,115,22,0.12)] ring-1 ring-white/60 border border-slate-100"
           >
             <div className="absolute inset-0 rounded-[2.5rem] bg-gradient-to-tr from-power-orange/5 to-transparent opacity-50" />
-            <MessageSquare size={52} strokeWidth={1.2} className="text-power-orange opacity-90" />
+            <MessageSquare
+              size={52}
+              strokeWidth={1.2}
+              className="text-power-orange opacity-90"
+            />
           </motion.div>
         </div>
 
@@ -55,7 +59,8 @@ export default function CommunityChatEmptyState({ onBack }: Props) {
           PowerMySport
         </h2>
         <p className="text-[15px] leading-relaxed text-slate-500 max-w-[280px]">
-          Select a conversation from the directory or start a new chat to connect with your community.
+          Select a conversation from the directory or start a new chat to
+          connect with your community.
         </p>
       </motion.div>
 

@@ -1,11 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type BookingInvitationStatus =
-  | "PENDING"
-  | "ACCEPTED"
-  | "DECLINED"
-  | "EXPIRED"
-  | "CANCELLED";
+  "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED" | "CANCELLED";
 
 export interface IBookingInvitation extends Document {
   bookingId: mongoose.Types.ObjectId;

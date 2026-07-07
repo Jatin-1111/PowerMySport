@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { History, ChevronDown, Calendar, Trophy, Loader2, Trash2 } from "lucide-react";
+import {
+  History,
+  ChevronDown,
+  Calendar,
+  Trophy,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GuidanceSubmission } from "../../types";
 

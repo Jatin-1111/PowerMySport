@@ -549,7 +549,7 @@ venueSchema.methods.refreshImageUrls = async function () {
   // Refresh sportImages
   if (this.sportImageKeys || this.sportImages) {
     const newSportImages = new Map<string, string[]>();
-    
+
     // First, collect all sports from either sportImageKeys or sportImages
     const sportsSet = new Set<string>();
     if (this.sportImageKeys && this.sportImageKeys instanceof Map) {
@@ -561,7 +561,7 @@ venueSchema.methods.refreshImageUrls = async function () {
         sportsSet.add(key);
       }
     }
-    
+
     if (this.sportImages && this.sportImages instanceof Map) {
       for (const key of Array.from(this.sportImages.keys())) {
         sportsSet.add(key);
@@ -574,14 +574,16 @@ venueSchema.methods.refreshImageUrls = async function () {
 
     for (const sport of Array.from(sportsSet)) {
       let keysToUse: string[] = [];
-      
-      const sportKeys = this.sportImageKeys instanceof Map 
-        ? this.sportImageKeys.get(sport) 
-        : (this.sportImageKeys as any)?.[sport];
-        
-      const sportUrls = this.sportImages instanceof Map 
-        ? this.sportImages.get(sport) 
-        : (this.sportImages as any)?.[sport];
+
+      const sportKeys =
+        this.sportImageKeys instanceof Map
+          ? this.sportImageKeys.get(sport)
+          : (this.sportImageKeys as any)?.[sport];
+
+      const sportUrls =
+        this.sportImages instanceof Map
+          ? this.sportImages.get(sport)
+          : (this.sportImages as any)?.[sport];
 
       if (Array.isArray(sportKeys) && sportKeys.length > 0) {
         keysToUse = sportKeys;
@@ -598,7 +600,7 @@ venueSchema.methods.refreshImageUrls = async function () {
         }
       }
     }
-    
+
     if (newSportImages.size > 0) {
       this.sportImages = newSportImages as any;
     }

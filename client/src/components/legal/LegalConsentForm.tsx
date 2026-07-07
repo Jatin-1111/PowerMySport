@@ -50,7 +50,9 @@ export const LegalConsentForm: React.FC<LegalConsentProps> = ({
 
   return (
     <div className="space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-      <h3 className="font-semibold text-slate-900">Legal & Policy Agreements</h3>
+      <h3 className="font-semibold text-slate-900">
+        Legal & Policy Agreements
+      </h3>
 
       {error && (
         <div className="p-3 bg-red-100 text-red-700 rounded text-sm">

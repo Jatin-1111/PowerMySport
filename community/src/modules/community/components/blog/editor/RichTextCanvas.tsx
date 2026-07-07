@@ -43,8 +43,7 @@ export default function RichTextCanvas({
     ],
     editorProps: {
       attributes: {
-        class:
-          "tiptap blog-prose min-h-[320px] px-4 py-4 outline-none sm:px-6",
+        class: "tiptap blog-prose min-h-[320px] px-4 py-4 outline-none sm:px-6",
       },
     },
     onUpdate: ({ editor: instance }) => onChange(instance.getHTML()),

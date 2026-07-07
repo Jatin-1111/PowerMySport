@@ -108,7 +108,9 @@ function buildLevelRangePrompt(
     ? `The family is based in the Indian state/UT of ${state.trim()}.`
     : "";
 
-  const levelObjects = levelNumbers.map(levelNumber => `{
+  const levelObjects = levelNumbers
+    .map(
+      (levelNumber) => `{
   "level": ${levelNumber},
   "label": "Short, sport-specific plain-English name (or 'Beginner' if level 1)",
   "title": "Short, plain-English, sport-specific title for this tier",
@@ -165,7 +167,9 @@ function buildLevelRangePrompt(
   ],
   "academicIntegration": "Practical advice for parents on balancing school academics with sport at this specific level",
   "proactiveDocuments": ["Document to start collecting NOW that will be required at a higher level"]
-}`).join(",\n");
+}`,
+    )
+    .join(",\n");
 
   return `You are an expert Indian sports development consultant advising an average Indian parent. Generate detailed, highly actionable information for LEVELS ${levelNumbers.join(", ")} of a 5-level sports development pathway for their child in "${sportName}" within India.
 ${stateContext ? `\n${stateContext}` : ""}
@@ -823,10 +827,11 @@ export class PathwayService {
   }
 
   private isPathwayStale(doc: SportPathwayDocument): boolean {
-    const staleCutoff = new Date(
-      Date.now() - 180 * 24 * 60 * 60 * 1000,
-    );
-    const referenceDate = (doc as any).contentRefreshedAt ?? (doc as any).lastRefreshedAt ?? doc.createdAt;
+    const staleCutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+    const referenceDate =
+      (doc as any).contentRefreshedAt ??
+      (doc as any).lastRefreshedAt ??
+      doc.createdAt;
     return referenceDate < staleCutoff;
   }
 
@@ -848,7 +853,7 @@ export class PathwayService {
             thinkingConfig: { thinkingBudget: 0 },
           } as any,
         });
-        
+
         if (result.usageMetadata) {
           log.info(
             `[PathwayService] Validation usage. Model: gemini-2.5-flash-lite, Prompt: ${result.usageMetadata.promptTokenCount}, Candidates: ${result.usageMetadata.candidatesTokenCount}, Total: ${result.usageMetadata.totalTokenCount}`,
@@ -857,7 +862,7 @@ export class PathwayService {
 
         const answer = (result.text ?? "").trim().toLowerCase();
         const isValid = answer.startsWith("yes");
-        
+
         if (this.sportValidationCache.size >= 500) {
           const firstKey = this.sportValidationCache.keys().next().value;
           this.sportValidationCache.delete(firstKey!);
@@ -925,12 +930,11 @@ export class PathwayService {
         attempts++;
         const startTime = Date.now();
         const controller = new AbortController();
-        const timeoutMs = isMeta
-          ? 10000
-          : levelNums!.length === 3
-            ? 45000
-            : 30000;
-        const abortTimeoutId = setTimeout(() => controller.abort(), timeoutMs + 1000);
+        const timeoutMs = isMeta ? 10000 : 25000;
+        const abortTimeoutId = setTimeout(
+          () => controller.abort(),
+          timeoutMs + 1000,
+        );
 
         let text = "";
         try {
@@ -943,7 +947,7 @@ export class PathwayService {
             ]);
 
           log.info(
-            `[PathwayService] ▶ Attempt ${attempts}/${modelCandidates.length} [${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`}] → Model: ${modelName}, Timeout: ${timeoutMs}ms`
+            `[PathwayService] ▶ Attempt ${attempts}/${modelCandidates.length} [${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`}] → Model: ${modelName}, Timeout: ${timeoutMs}ms`,
           );
 
           const result = await withTimeout(
@@ -959,11 +963,7 @@ export class PathwayService {
                 thinkingConfig: { thinkingBudget: 0 },
                 // Cap scales with batch size because each level's schema is large enough that a flat cap risks truncation.
                 // TODO: revisit these values once a few days of candidatesTokenCount logs are available and tighten/loosen based on observation.
-                maxOutputTokens: isMeta
-                  ? 2048
-                  : levelNums!.length === 3
-                    ? 8192
-                    : 5500,
+                maxOutputTokens: isMeta ? 2048 : 3072,
               } as any,
             }),
             timeoutMs,
@@ -972,18 +972,18 @@ export class PathwayService {
 
           const latencyMs = Date.now() - startTime;
           text = (result.text ?? "").trim();
-          
+
           if (result.usageMetadata) {
             const label = isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`;
             log.info(
               `[PathwayService] Usage [${label}]. Model: ${modelName}, ` +
-              `Prompt: ${result.usageMetadata.promptTokenCount}, ` +
-              `Thinking: ${(result.usageMetadata as any).thoughtsTokenCount ?? 0}, ` +
-              `Candidates: ${result.usageMetadata.candidatesTokenCount}, ` +
-              `Total: ${result.usageMetadata.totalTokenCount}`
+                `Prompt: ${result.usageMetadata.promptTokenCount}, ` +
+                `Thinking: ${(result.usageMetadata as any).thoughtsTokenCount ?? 0}, ` +
+                `Candidates: ${result.usageMetadata.candidatesTokenCount}, ` +
+                `Total: ${result.usageMetadata.totalTokenCount}`,
             );
           }
-          
+
           const jsonText = text
             .replace(/^```[a-z]*\n?/i, "")
             .replace(/```$/i, "")
@@ -1025,11 +1025,14 @@ export class PathwayService {
             `[PathwayService] ${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`} generation failed. Model: ${modelName}, Attempt: ${attempts}, Latency: ${latencyMs}ms, Reason: ${reason}`,
           );
 
-          const isParseError = !["client_timeout", "Timeout", "AbortError"]
-            .some((t) => reason.includes(t));
+          const isParseError = ![
+            "client_timeout",
+            "Timeout",
+            "AbortError",
+          ].some((t) => reason.includes(t));
           if (isParseError && text.length > 0) {
             log.warn(
-              `[PathwayService] ✂ Parse error on raw response [${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`}]. Model: ${modelName}, First 300 chars: ${text.slice(0, 300)}`
+              `[PathwayService] ✂ Parse error on raw response [${isMeta ? "Meta" : `Levels ${levelNums?.join(",")}`}]. Model: ${modelName}, First 300 chars: ${text.slice(0, 300)}`,
             );
           }
         }
@@ -1040,7 +1043,7 @@ export class PathwayService {
         return null;
       } else {
         log.warn(
-          `[PathwayService] ⚠️ PLACEHOLDER content for Levels ${levelNums?.join(",")} — all ${modelCandidates.length} models exhausted. Users will see "Information currently unavailable".`
+          `[PathwayService] ⚠️ PLACEHOLDER content for Levels ${levelNums?.join(",")} — all ${modelCandidates.length} models exhausted. Users will see "Information currently unavailable".`,
         );
         return levelNums!.map((levelNum) => ({
           level: levelNum,
@@ -1091,10 +1094,33 @@ export class PathwayService {
       }
     };
 
-    const [metaResult, levelsAResult, levelsBResult] = await Promise.all([
+    const [metaResult, l1, l2, l3, l4, l5] = await Promise.all([
       callModelWithFallback(buildPathwayMetaPrompt(sportName, state), true),
-      callModelWithFallback(buildLevelRangePrompt(sportName, state, [1, 2, 3]), false, [1, 2, 3]),
-      callModelWithFallback(buildLevelRangePrompt(sportName, state, [4, 5]), false, [4, 5]),
+      callModelWithFallback(
+        buildLevelRangePrompt(sportName, state, [1]),
+        false,
+        [1],
+      ),
+      callModelWithFallback(
+        buildLevelRangePrompt(sportName, state, [2]),
+        false,
+        [2],
+      ),
+      callModelWithFallback(
+        buildLevelRangePrompt(sportName, state, [3]),
+        false,
+        [3],
+      ),
+      callModelWithFallback(
+        buildLevelRangePrompt(sportName, state, [4]),
+        false,
+        [4],
+      ),
+      callModelWithFallback(
+        buildLevelRangePrompt(sportName, state, [5]),
+        false,
+        [5],
+      ),
     ]);
 
     if (!metaResult) {
@@ -1102,18 +1128,17 @@ export class PathwayService {
         "[PathwayService] Meta pathway generation failed all attempts.",
       );
       log.warn(
-        `[PathwayService] ✗ generatePathway failed after ${Date.now() - genStart}ms for "${sportName}"`
+        `[PathwayService] ✗ generatePathway failed after ${Date.now() - genStart}ms for "${sportName}"`,
       );
       return null;
     }
 
     let flatLevels: any[] = [];
-    if (levelsAResult) {
-      flatLevels = flatLevels.concat(Array.isArray(levelsAResult) ? levelsAResult : [levelsAResult]);
-    }
-    if (levelsBResult) {
-      flatLevels = flatLevels.concat(Array.isArray(levelsBResult) ? levelsBResult : [levelsBResult]);
-    }
+    [l1, l2, l3, l4, l5].forEach((res) => {
+      if (res) {
+        flatLevels = flatLevels.concat(Array.isArray(res) ? res : [res]);
+      }
+    });
     // ensure order by level
     flatLevels.sort((a, b) => a.level - b.level);
 
@@ -1128,7 +1153,7 @@ export class PathwayService {
     });
 
     log.info(
-      `[PathwayService] ✅ generatePathway complete in ${Date.now() - genStart}ms for "${sportName}"${state ? ` (${state})` : ""}`
+      `[PathwayService] ✅ generatePathway complete in ${Date.now() - genStart}ms for "${sportName}"${state ? ` (${state})` : ""}`,
     );
 
     return {

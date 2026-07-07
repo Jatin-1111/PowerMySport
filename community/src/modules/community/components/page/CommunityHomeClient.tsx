@@ -8,7 +8,9 @@ import CommunityOverviewPanel from "@/modules/community/components/page/home/Com
 import CommunityConversationsWorkspace from "@/modules/community/components/page/home/CommunityConversationsWorkspace";
 import CommunityPageModals from "@/modules/community/components/page/home/CommunityPageModals";
 
-export default function CommunityHomeClient({ forceView }: { forceView?: "community-overview" | "conversations" } = {}) {
+export default function CommunityHomeClient({
+  forceView,
+}: { forceView?: "community-overview" | "conversations" } = {}) {
   const page = useCommunityPage(forceView ? { forceView } : undefined);
 
   if (page.isLoading) {

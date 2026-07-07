@@ -1,10 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import {
-  motion,
-  Variants,
-} from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import {
   BarChart3,
   Calendar,
@@ -82,13 +79,7 @@ const iconBgColors = [
 
 // ─── Feature Card ─────────────────────────────────────────────────────────────
 
-function FeatureCard({
-  feature,
-  index,
-}: {
-  feature: Feature;
-  index: number;
-}) {
+function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
   const colorClass = iconBgColors[index % iconBgColors.length];
 
   return (
@@ -121,8 +112,12 @@ function FeatureCard({
           {feature.label}
         </p>
       )}
-      <h3 className="mb-2.5 text-lg font-bold text-slate-900">{feature.title}</h3>
-      <p className="text-sm leading-relaxed text-slate-600">{feature.description}</p>
+      <h3 className="mb-2.5 text-lg font-bold text-slate-900">
+        {feature.title}
+      </h3>
+      <p className="text-sm leading-relaxed text-slate-600">
+        {feature.description}
+      </p>
 
       {/* Bottom hover accent line */}
       <motion.div
@@ -183,7 +178,11 @@ function BentoFeatureCard({
           alt=""
           aria-hidden="true"
           fill
-          sizes={isHero ? "(min-width: 768px) 66vw, 100vw" : "(min-width: 768px) 33vw, 100vw"}
+          sizes={
+            isHero
+              ? "(min-width: 768px) 66vw, 100vw"
+              : "(min-width: 768px) 33vw, 100vw"
+          }
           className="scale-105 object-cover transition-transform duration-700 will-change-transform group-hover:scale-115"
         />
       )}
@@ -276,7 +275,13 @@ export const Features: React.FC<FeaturesProps> = ({
             )}
           >
             {subtitle && (
-              <motion.div variants={headerItemVariants} className={cn("mb-4", variant === "centered" ? "flex justify-center" : "")}>
+              <motion.div
+                variants={headerItemVariants}
+                className={cn(
+                  "mb-4",
+                  variant === "centered" ? "flex justify-center" : "",
+                )}
+              >
                 <SectionLabel label={subtitle} color="orange" />
               </motion.div>
             )}
@@ -307,7 +312,9 @@ export const Features: React.FC<FeaturesProps> = ({
           viewport={{ once: true, margin: "-100px" }}
           className={cn(
             "grid grid-cols-1 gap-6 sm:gap-7",
-            variant === "bento" ? "md:grid-cols-3 md:auto-rows-[16rem]" : gridCols[columns],
+            variant === "bento"
+              ? "md:grid-cols-3 md:auto-rows-[16rem]"
+              : gridCols[columns],
           )}
         >
           {features.map((feature, index) =>

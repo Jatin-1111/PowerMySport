@@ -35,7 +35,10 @@ export default function BlogCard({
       className="group flex h-full flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm transition hover:border-power-orange/30 hover:shadow-xl hover:shadow-slate-900/5"
     >
       {/* Cover */}
-      <Link href={`/blog/${blog.id}`} className="relative block aspect-[16/10] overflow-hidden">
+      <Link
+        href={`/blog/${blog.id}`}
+        className="relative block aspect-[16/10] overflow-hidden"
+      >
         {coverUrl ? (
           <img
             src={coverUrl}

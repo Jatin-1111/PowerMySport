@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { getPathwayProfile, updatePathwayProfile } from "../controllers/pathwayProfileController";
+import {
+  getPathwayProfile,
+  updatePathwayProfile,
+} from "../controllers/pathwayProfileController";
 import { authMiddleware } from "../../middleware/auth";
 
 const router = Router();

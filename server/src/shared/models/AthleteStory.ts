@@ -30,10 +30,10 @@ const athleteStorySchema = new Schema<AthleteStoryDocument>(
     sourceUrls: { type: [String], default: [] },
     lastScrapedAt: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const AthleteStory = mongoose.model<AthleteStoryDocument>(
   "AthleteStory",
-  athleteStorySchema
+  athleteStorySchema,
 );

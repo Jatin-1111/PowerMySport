@@ -7,7 +7,12 @@ import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { uploadChatImage } from "@/modules/community/hooks/useChatImageUpload";
-import { getCachedMessages, setCachedMessages, upsertCachedMessage, deleteCachedMessage } from "@/lib/db/chatDB";
+import {
+  getCachedMessages,
+  setCachedMessages,
+  upsertCachedMessage,
+  deleteCachedMessage,
+} from "@/lib/db/chatDB";
 import {
   CommunityUserSearchResult,
   CommunityGroupSummary,
@@ -18,7 +23,10 @@ import {
   ConversationMessage,
 } from "@/modules/community/types";
 import { GroupMember } from "@/modules/community/components/GroupMembersList";
-import { getAvatarCharacter, isWithinMessageEditWindow } from "@/modules/community/utils/chatUtils";
+import {
+  getAvatarCharacter,
+  isWithinMessageEditWindow,
+} from "@/modules/community/utils/chatUtils";
 import {
   COMMUNITY_ACTIVE_TAB_KEY,
   COMMUNITY_WORKSPACE_VIEW_KEY,
@@ -38,7 +46,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-export function useCommunityPage(options?: { forceView?: "community-overview" | "conversations" }) {
+export function useCommunityPage(options?: {
+  forceView?: "community-overview" | "conversations";
+}) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const pathname = usePathname();
@@ -96,7 +106,9 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const [hasMoreConversations, setHasMoreConversations] = useState(false);
   const [isLoadingMoreConversations, setIsLoadingMoreConversations] =
     useState(false);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null);
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [messagePage, setMessagePage] = useState(1);
@@ -136,7 +148,9 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     string | null
   >(null);
   const [isLeavingGroupId, setIsLeavingGroupId] = useState<string | null>(null);
-  const [isDeletingGroupId, setIsDeletingGroupId] = useState<string | null>(null);
+  const [isDeletingGroupId, setIsDeletingGroupId] = useState<string | null>(
+    null,
+  );
 
   const [reportModal, setReportModal] = useState<{
     targetType: "MESSAGE" | "GROUP";
@@ -174,7 +188,9 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const [typingUsers, setTypingUsers] = useState<Record<string, string[]>>({});
 
   const selectedConversationIdRef = useRef<string | null>(null);
-  const typingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const typingTimeoutsRef = useRef<
+    Record<string, ReturnType<typeof setTimeout>>
+  >({});
   const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -297,7 +313,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const selectedConversationDisplayName = selectedConversation
     ? selectedConversation.conversationType === "GROUP"
       ? selectedConversation.group?.name ||
-      selectedConversation.otherParticipant.displayName
+        selectedConversation.otherParticipant.displayName
       : selectedConversation.otherParticipant.displayName
     : "No conversation selected";
   const selectedConversationPhotoUrl =
@@ -348,8 +364,8 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
         ? visibleConversations.filter((c) => c.unreadCount > 0)
         : conversationMode === "REQUESTS"
           ? visibleConversations.filter(
-            (c) => c.status === "PENDING" && c.conversationType !== "GROUP",
-          )
+              (c) => c.status === "PENDING" && c.conversationType !== "GROUP",
+            )
           : visibleConversations;
 
     return [...byMode].sort((a, b) => {
@@ -374,11 +390,11 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     value: "ALL" | "UNREAD" | "REQUESTS";
     label: string;
   }> = isGroupsDirectory
-      ? [
+    ? [
         { value: "ALL", label: "All" },
         { value: "UNREAD", label: "Unread" },
       ]
-      : [
+    : [
         { value: "ALL", label: "All" },
         { value: "UNREAD", label: "Unread" },
         { value: "REQUESTS", label: "Requests" },
@@ -546,14 +562,16 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   const markNotificationsForConversationAsRead = useCallback(
     async (conversationId: string) => {
       try {
-        const allNotifications = await communityService.listCommunityNotifications(
-          1,
-          100,
-          false, // unread only
-        );
+        const allNotifications =
+          await communityService.listCommunityNotifications(
+            1,
+            100,
+            false, // unread only
+          );
 
         const relatedNotifications = allNotifications.items.filter(
-          (item) => item.data?.conversationId === conversationId && !item.isRead,
+          (item) =>
+            item.data?.conversationId === conversationId && !item.isRead,
         );
 
         await Promise.all(
@@ -581,13 +599,17 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
         }
 
         const response = await communityService.getMessages(conversationId, 1);
-        const serverMessages = Array.isArray(response.messages) ? response.messages : [];
+        const serverMessages = Array.isArray(response.messages)
+          ? response.messages
+          : [];
         setMessages(serverMessages);
         void setCachedMessages(conversationId, serverMessages);
-        
+
         setMessagePage(1);
         if (response.pagination) {
-          setHasMoreMessages(response.pagination.page < response.pagination.totalPages);
+          setHasMoreMessages(
+            response.pagination.page < response.pagination.totalPages,
+          );
         } else {
           setHasMoreMessages(false);
         }
@@ -599,9 +621,9 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
         setConversations((current) =>
           Array.isArray(current)
             ? current.map((c) =>
-                c.id === conversationId ? { ...c, unreadCount: 0 } : c
+                c.id === conversationId ? { ...c, unreadCount: 0 } : c,
               )
-            : current
+            : current,
         );
 
         const socket = getCommunitySocket();
@@ -622,34 +644,49 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
   );
 
   const loadMoreMessages = useCallback(async () => {
-    if (!selectedConversationId || isLoadingMoreMessages || !hasMoreMessages) return;
+    if (!selectedConversationId || isLoadingMoreMessages || !hasMoreMessages)
+      return;
     setIsLoadingMoreMessages(true);
     try {
       const nextPage = messagePage + 1;
-      const response = await communityService.getMessages(selectedConversationId, nextPage);
-      
-      const newMessages = Array.isArray(response.messages) ? response.messages : [];
+      const response = await communityService.getMessages(
+        selectedConversationId,
+        nextPage,
+      );
+
+      const newMessages = Array.isArray(response.messages)
+        ? response.messages
+        : [];
       setMessages((current) => {
         // Prepend new messages, filtering out any duplicates
-        const currentIds = new Set(current.map(m => m.id));
-        const filteredNew = newMessages.filter(m => !currentIds.has(m.id));
+        const currentIds = new Set(current.map((m) => m.id));
+        const filteredNew = newMessages.filter((m) => !currentIds.has(m.id));
         const updated = [...filteredNew, ...current];
         void setCachedMessages(selectedConversationId, updated);
         return updated;
       });
-      
+
       setMessagePage(nextPage);
       if (response.pagination) {
-        setHasMoreMessages(response.pagination.page < response.pagination.totalPages);
+        setHasMoreMessages(
+          response.pagination.page < response.pagination.totalPages,
+        );
       } else {
         setHasMoreMessages(false);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load older messages");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to load older messages",
+      );
     } finally {
       setIsLoadingMoreMessages(false);
     }
-  }, [selectedConversationId, messagePage, hasMoreMessages, isLoadingMoreMessages]);
+  }, [
+    selectedConversationId,
+    messagePage,
+    hasMoreMessages,
+    isLoadingMoreMessages,
+  ]);
 
   useEffect(() => {
     void loadBootstrap();
@@ -1007,13 +1044,17 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
         redirectToMainLogin();
     };
 
-    const handleUserTyping = (payload: { conversationId: string; userId: string; isTyping: boolean }) => {
+    const handleUserTyping = (payload: {
+      conversationId: string;
+      userId: string;
+      isTyping: boolean;
+    }) => {
       const { conversationId, userId, isTyping } = payload;
       if (userId === profile?.userId) return;
 
       setTypingUsers((current) => {
         const users = current[conversationId] || [];
-        const newUsers = isTyping 
+        const newUsers = isTyping
           ? Array.from(new Set([...users, userId]))
           : users.filter((id) => id !== userId);
         return { ...current, [conversationId]: newUsers };
@@ -1144,7 +1185,10 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     // On initial load of a conversation, always jump to the bottom instantly
     if (isInitialMessageLoadRef.current) {
       isInitialMessageLoadRef.current = false;
-      messagesEndRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "instant",
+        block: "end",
+      });
       return;
     }
 
@@ -1153,7 +1197,10 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
       const distanceFromBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight;
       if (distanceFromBottom < 120) {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        messagesEndRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
       }
     }
   }, [messages, selectedConversationId]);
@@ -1444,11 +1491,11 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
         setProfile((current) =>
           current
             ? {
-              ...current,
-              blockedUsers: (current.blockedUsers || []).filter(
-                (id) => id !== targetUserId,
-              ),
-            }
+                ...current,
+                blockedUsers: (current.blockedUsers || []).filter(
+                  (id) => id !== targetUserId,
+                ),
+              }
             : current,
         );
         toast.success("User unblocked");
@@ -1457,9 +1504,9 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
         setProfile((current) =>
           current
             ? {
-              ...current,
-              blockedUsers: [...(current.blockedUsers || []), targetUserId],
-            }
+                ...current,
+                blockedUsers: [...(current.blockedUsers || []), targetUserId],
+              }
             : current,
         );
         toast.success("User blocked");
@@ -1838,7 +1885,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     if (!selectedConversation || isUploadingImage) return;
 
     setNewMessage("");
-    
+
     const optimisticId = `temp-img-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     // Create a local preview URL so the user sees the image immediately
     const localPreviewUrl = URL.createObjectURL(file);
@@ -1875,7 +1922,10 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
       let confirmedMessage;
       if (socket.connected) {
         const ack = await new Promise<
-          | { success: true; data: import("@/modules/community/types").ConversationMessage }
+          | {
+              success: true;
+              data: import("@/modules/community/types").ConversationMessage;
+            }
           | { success: false; message?: string }
         >((resolve) => {
           const timeoutId = setTimeout(
@@ -1901,7 +1951,8 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
             },
           );
         });
-        if (!ack.success) throw new Error(ack.message || "Failed to send image");
+        if (!ack.success)
+          throw new Error(ack.message || "Failed to send image");
         confirmedMessage = { ...ack.data, messageStatus: "SENT" as const };
       } else {
         const sent = await communityService.sendImageMessage(
@@ -1925,9 +1976,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
         ...msg,
         messageStatus: "FAILED" as const,
       }));
-      toast.error(
-        e instanceof Error ? e.message : "Failed to send image",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to send image");
     } finally {
       setIsUploadingImage(false);
     }

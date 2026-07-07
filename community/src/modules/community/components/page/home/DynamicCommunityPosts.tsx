@@ -67,7 +67,8 @@ export default function DynamicCommunityPosts() {
             <div className="mt-4 flex items-center justify-between gap-4 border-t border-slate-100 pt-4 text-xs text-slate-500">
               <span>{post.author?.displayName || "Anonymous"}</span>
               <span>
-                {post.answerCount} {post.answerCount === 1 ? "answer" : "answers"}
+                {post.answerCount}{" "}
+                {post.answerCount === 1 ? "answer" : "answers"}
               </span>
             </div>
           </article>

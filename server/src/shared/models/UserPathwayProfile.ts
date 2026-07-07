@@ -12,16 +12,24 @@ export interface UserPathwayProfileDocument extends Document {
 
 const userPathwayProfileSchema = new Schema<UserPathwayProfileDocument>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true },
-    progress: { type: Schema.Types.Mixed, default: { currentLevel: 0, completedSteps: {} } },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+    },
+    progress: {
+      type: Schema.Types.Mixed,
+      default: { currentLevel: 0, completedSteps: {} },
+    },
     savedItems: { type: Schema.Types.Mixed, default: [] },
     applications: { type: Schema.Types.Mixed, default: [] },
     reminders: { type: Schema.Types.Mixed, default: [] },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const UserPathwayProfile = mongoose.model<UserPathwayProfileDocument>(
   "UserPathwayProfile",
-  userPathwayProfileSchema
+  userPathwayProfileSchema,
 );

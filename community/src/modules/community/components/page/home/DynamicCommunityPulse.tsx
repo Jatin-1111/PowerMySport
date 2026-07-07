@@ -16,12 +16,12 @@ export default function DynamicCommunityPulse() {
       if (!startTimestamp) startTimestamp = timestamp;
       const duration = 2000; // 2 seconds animation
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      
+
       // easeOutExpo for smooth deceleration
       const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      
+
       setDisplayCount(Math.floor(1 + easeProgress * (target - 1)));
-      
+
       if (progress < 1) {
         animationFrameId = window.requestAnimationFrame(animate);
       }
@@ -31,7 +31,8 @@ export default function DynamicCommunityPulse() {
       try {
         const posts = await communityService.listPosts(1, 1);
         const groups = await communityService.listGroups();
-        const totalActivity = (posts.pagination?.total || 0) + (groups.length * 12);
+        const totalActivity =
+          (posts.pagination?.total || 0) + groups.length * 12;
         target = totalActivity > 0 ? totalActivity : 1280;
       } catch (err) {
         target = 1280;
@@ -39,7 +40,7 @@ export default function DynamicCommunityPulse() {
         animationFrameId = window.requestAnimationFrame(animate);
       }
     }
-    
+
     loadPulse();
 
     return () => {
@@ -65,7 +66,8 @@ export default function DynamicCommunityPulse() {
         </div>
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-600">
-        Parents and coaches discussing development, confidence, and safe training options near you.
+        Parents and coaches discussing development, confidence, and safe
+        training options near you.
       </p>
     </div>
   );

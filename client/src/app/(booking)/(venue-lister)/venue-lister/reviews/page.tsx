@@ -84,7 +84,11 @@ export default function VenueListerReviewsPage() {
         setReviewsLoading(true);
       }
       try {
-        const res = await reviewApi.getVenueReviews(venueId, pageNum, PAGE_LIMIT);
+        const res = await reviewApi.getVenueReviews(
+          venueId,
+          pageNum,
+          PAGE_LIMIT,
+        );
         if (res.success && res.data) {
           const { reviews: fetched, summary: fetchedSummary } = res.data;
           if (append) {
@@ -94,7 +98,8 @@ export default function VenueListerReviewsPage() {
             setSummary(fetchedSummary);
           }
           // Determine if there are more pages
-          const total = res.pagination?.total ?? fetchedSummary.reviewCount ?? 0;
+          const total =
+            res.pagination?.total ?? fetchedSummary.reviewCount ?? 0;
           const loaded = append
             ? allReviews.length + fetched.length
             : fetched.length;
@@ -109,7 +114,7 @@ export default function VenueListerReviewsPage() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allReviews.length]
+    [allReviews.length],
   );
 
   // Reset and fetch when selected venue changes
@@ -138,9 +143,7 @@ export default function VenueListerReviewsPage() {
   // ── Filtered reviews (client-side) ────────────────────────────────────────
   const filteredReviews = useMemo(() => {
     if (activeFilter === null) return allReviews;
-    return allReviews.filter(
-      (r) => Math.round(r.rating) === activeFilter
-    );
+    return allReviews.filter((r) => Math.round(r.rating) === activeFilter);
   }, [allReviews, activeFilter]);
 
   // ── Derived selected venue name ───────────────────────────────────────────
@@ -184,7 +187,9 @@ export default function VenueListerReviewsPage() {
               <Building2 className="w-8 h-8 text-orange-400" />
             </div>
             <div>
-              <p className="font-semibold text-slate-700 text-lg">No venues yet</p>
+              <p className="font-semibold text-slate-700 text-lg">
+                No venues yet
+              </p>
               <p className="text-sm text-slate-500 mt-1">
                 Create a venue to start receiving reviews from players.
               </p>
@@ -285,9 +290,12 @@ export default function VenueListerReviewsPage() {
                       <Star className="w-7 h-7 text-slate-300" />
                     </div>
                     <div>
-                      <p className="font-semibold text-slate-600">No reviews yet</p>
+                      <p className="font-semibold text-slate-600">
+                        No reviews yet
+                      </p>
                       <p className="text-sm text-slate-400 mt-1">
-                        Reviews will appear here once players complete bookings at this venue.
+                        Reviews will appear here once players complete bookings
+                        at this venue.
                       </p>
                     </div>
                   </motion.div>

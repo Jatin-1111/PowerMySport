@@ -5,12 +5,7 @@ import React from "react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?:
-    | "primary"
-    | "secondary"
-    | "outline"
-    | "ghost"
-    | "success"
-    | "danger";
+    "primary" | "secondary" | "outline" | "ghost" | "success" | "danger";
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   loading?: boolean;

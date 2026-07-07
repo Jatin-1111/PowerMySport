@@ -30,7 +30,10 @@ export function GuidanceChatDrawer({
   onClose,
   submission,
 }: GuidanceChatDrawerProps) {
-  const { submissionId, query } = { submissionId: submission.id, query: submission.query };
+  const { submissionId, query } = {
+    submissionId: submission.id,
+    query: submission.query,
+  };
   const {
     messages,
     isInitializing,

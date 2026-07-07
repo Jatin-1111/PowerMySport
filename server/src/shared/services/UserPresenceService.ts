@@ -3,7 +3,7 @@ import { User } from "../../client/models/User";
 import { getNotificationSocket } from "../../client/sockets/notificationSocket";
 
 const WRITE_THROTTLE_MS = 60 * 1_000;
-const PRESENCE_TTL_S    = 300; // 5-minute safety-net TTL per user key
+const PRESENCE_TTL_S = 300; // 5-minute safety-net TTL per user key
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const presenceKey = (userId: string) => `community:presence:${userId}`;
@@ -111,4 +111,3 @@ export const isUserOnline = async (userId: string): Promise<boolean> => {
     return false;
   }
 };
-

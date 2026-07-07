@@ -98,7 +98,9 @@ export const subscribeToCoachPackage = async (params: {
   }
 
   // Check for existing active subscription from this user to this coach
-  const existingActive = await CoachSubscription.findOne(query).sort({ createdAt: -1 });
+  const existingActive = await CoachSubscription.findOne(query).sort({
+    createdAt: -1,
+  });
 
   if (
     existingActive &&
@@ -142,7 +144,9 @@ export const subscribeToCoachPackage = async (params: {
   const newSubscription = await CoachSubscription.create({
     coachId: toObjectId(params.coachId),
     userId: toObjectId(params.userId),
-    ...(params.dependentId ? { dependentId: toObjectId(params.dependentId) } : {}),
+    ...(params.dependentId
+      ? { dependentId: toObjectId(params.dependentId) }
+      : {}),
     packageId: packageDoc._id,
     status: "ACTIVE",
     currentPeriodStart: now,
@@ -151,9 +155,9 @@ export const subscribeToCoachPackage = async (params: {
     autoRenew: true,
   });
 
-  const populated = await CoachSubscription.findById(newSubscription._id).populate(
-    "packageId",
-  );
+  const populated = await CoachSubscription.findById(
+    newSubscription._id,
+  ).populate("packageId");
 
   if (!populated) {
     throw new Error("Failed to create subscription");
@@ -292,7 +296,9 @@ export const cancelCoachSubscriptionByUser = async (params: {
       const coach = await Coach.findById(subscription.coachId)
         .populate("userId", "name")
         .lean();
-      const pkg = await CoachSubscriptionPackage.findById(subscription.packageId)
+      const pkg = await CoachSubscriptionPackage.findById(
+        subscription.packageId,
+      )
         .select("name")
         .lean();
       const coachUser = coach?.userId as unknown as { name?: string } | null;

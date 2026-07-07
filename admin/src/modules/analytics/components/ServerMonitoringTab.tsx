@@ -159,15 +159,18 @@ export function ServerMonitoringTab() {
     }
   }, []);
 
-  const loadMetrics = useCallback(async (silent = false) => {
-    if (!silent) setLoadingMetrics(true);
-    try {
-      const response = await statsApi.getInfraMetrics(hours);
-      if (response.success && response.data) setMetrics(response.data);
-    } finally {
-      if (!silent) setLoadingMetrics(false);
-    }
-  }, [hours]);
+  const loadMetrics = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoadingMetrics(true);
+      try {
+        const response = await statsApi.getInfraMetrics(hours);
+        if (response.success && response.data) setMetrics(response.data);
+      } finally {
+        if (!silent) setLoadingMetrics(false);
+      }
+    },
+    [hours],
+  );
 
   useEffect(() => {
     hoursRef.current = hours;
@@ -232,8 +235,7 @@ export function ServerMonitoringTab() {
   useEffect(() => {
     if (live) return;
     const visible = () =>
-      typeof document === "undefined" ||
-      document.visibilityState === "visible";
+      typeof document === "undefined" || document.visibilityState === "visible";
 
     const overviewTimer = window.setInterval(() => {
       if (visible()) void loadOverview(true);
@@ -368,16 +370,12 @@ export function ServerMonitoringTab() {
             />
             <MetricCard
               label="5xx (recent)"
-              value={formatNumber(
-                overview.application?.statusCodes.p5xx ?? 0,
-              )}
+              value={formatNumber(overview.application?.statusCodes.p5xx ?? 0)}
               detail={`4xx ${overview.application?.statusCodes.p4xx ?? 0}`}
             />
             <MetricCard
               label="2xx (recent)"
-              value={formatNumber(
-                overview.application?.statusCodes.p2xx ?? 0,
-              )}
+              value={formatNumber(overview.application?.statusCodes.p2xx ?? 0)}
               detail={`3xx ${overview.application?.statusCodes.p3xx ?? 0}`}
             />
           </div>

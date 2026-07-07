@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
-import { Wallet as WalletIcon, CreditCard, ArrowDownRight, ArrowUpRight, History } from "lucide-react";
+import {
+  Wallet as WalletIcon,
+  CreditCard,
+  ArrowDownRight,
+  ArrowUpRight,
+  History,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -14,7 +20,11 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { walletApi, Wallet, WalletTransaction } from "@/modules/wallet/services/wallet";
+import {
+  walletApi,
+  Wallet,
+  WalletTransaction,
+} from "@/modules/wallet/services/wallet";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 
@@ -48,7 +58,7 @@ export default function WalletPage() {
       toast.error("Please enter a valid amount");
       return;
     }
-    
+
     setIsToppingUp(true);
     try {
       const response = await walletApi.topUpWallet(amount);
@@ -83,8 +93,8 @@ export default function WalletPage() {
         title="My Wallet"
         subtitle="Manage your funds, add money, and view transaction history."
         action={
-          <Button 
-            onClick={() => setIsTopUpOpen(!isTopUpOpen)} 
+          <Button
+            onClick={() => setIsTopUpOpen(!isTopUpOpen)}
             icon={<WalletIcon size={16} />}
           >
             Add Funds
@@ -99,7 +109,7 @@ export default function WalletPage() {
               {/* Premium Glow Effects */}
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-power-orange/20 blur-[80px] pointer-events-none" />
               <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-blue-500/20 blur-[80px] pointer-events-none" />
-              
+
               <CardHeader className="pb-2 relative z-10">
                 <CardTitle className="text-sm font-medium text-white/80 uppercase tracking-wider">
                   Available Balance
@@ -114,7 +124,7 @@ export default function WalletPage() {
                     <WalletIcon className="h-6 w-6 text-white" />
                   </div>
                 </div>
-                
+
                 {isTopUpOpen && (
                   <FadeIn className="mt-8 space-y-4 rounded-xl bg-white/10 backdrop-blur-md p-5 border border-white/20 shadow-xl">
                     <div>
@@ -131,10 +141,10 @@ export default function WalletPage() {
                       />
                     </div>
                     <div className="flex gap-2">
-                      {[500, 1000, 2000].map(amt => (
-                        <Button 
-                          key={amt} 
-                          variant="outline" 
+                      {[500, 1000, 2000].map((amt) => (
+                        <Button
+                          key={amt}
+                          variant="outline"
                           size="sm"
                           className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white transition-all font-medium backdrop-blur-sm"
                           onClick={() => setTopUpAmount(amt.toString())}
@@ -143,8 +153,8 @@ export default function WalletPage() {
                         </Button>
                       ))}
                     </div>
-                    <Button 
-                      className="w-full bg-white text-slate-900 hover:bg-slate-100 font-bold shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all hover:scale-[1.02]" 
+                    <Button
+                      className="w-full bg-white text-slate-900 hover:bg-slate-100 font-bold shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all hover:scale-[1.02]"
                       onClick={handleTopUp}
                       disabled={isToppingUp || !topUpAmount}
                     >
@@ -172,29 +182,50 @@ export default function WalletPage() {
                 ) : (
                   <div className="divide-y divide-slate-100">
                     {transactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors">
+                      <div
+                        key={tx.id}
+                        className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors"
+                      >
                         <div className="flex items-center gap-4">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                            tx.type === "CREDIT" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"
-                          }`}>
-                            {tx.type === "CREDIT" ? <ArrowDownRight size={20} /> : <ArrowUpRight size={20} />}
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                              tx.type === "CREDIT"
+                                ? "bg-emerald-100 text-emerald-600"
+                                : "bg-rose-100 text-rose-600"
+                            }`}
+                          >
+                            {tx.type === "CREDIT" ? (
+                              <ArrowDownRight size={20} />
+                            ) : (
+                              <ArrowUpRight size={20} />
+                            )}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900">{tx.reason}</p>
+                            <p className="font-semibold text-slate-900">
+                              {tx.reason}
+                            </p>
                             <p className="text-xs text-slate-500">
-                              {new Date(tx.createdAt).toLocaleDateString()} at {new Date(tx.createdAt).toLocaleTimeString()}
+                              {new Date(tx.createdAt).toLocaleDateString()} at{" "}
+                              {new Date(tx.createdAt).toLocaleTimeString()}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className={`font-semibold ${tx.type === "CREDIT" ? "text-emerald-600" : "text-slate-900"}`}>
-                            {tx.type === "CREDIT" ? "+" : "-"}₹{tx.amount.toFixed(2)}
+                          <p
+                            className={`font-semibold ${tx.type === "CREDIT" ? "text-emerald-600" : "text-slate-900"}`}
+                          >
+                            {tx.type === "CREDIT" ? "+" : "-"}₹
+                            {tx.amount.toFixed(2)}
                           </p>
-                          <Badge className={`mt-1 text-[10px] ${
-                            tx.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : 
-                            tx.status === "PENDING" ? "bg-amber-50 text-amber-700 border-amber-200" : 
-                            "bg-rose-50 text-rose-700 border-rose-200"
-                          }`}>
+                          <Badge
+                            className={`mt-1 text-[10px] ${
+                              tx.status === "COMPLETED"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : tx.status === "PENDING"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-rose-50 text-rose-700 border-rose-200"
+                            }`}
+                          >
                             {tx.status}
                           </Badge>
                         </div>
