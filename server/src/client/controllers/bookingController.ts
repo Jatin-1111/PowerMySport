@@ -25,6 +25,7 @@ import {
   validatePromoCodeForUser,
   rejectBookingByProvider,
   rescheduleBookingByCoach,
+  processBookingRefund,
 } from "../services/BookingService";
 import {
   getPhonePeOrderStatus,
@@ -1029,6 +1030,68 @@ export const cancelBookingById = async (
       success: false,
       message:
         error instanceof Error ? error.message : "Failed to cancel booking",
+    });
+  }
+};
+
+/**
+ * Retry a failed refund — player-initiated
+ * POST /api/bookings/:bookingId/retry-refund
+ */
+export const retryBookingRefund = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const bookingId = (req.params as Record<string, unknown>)
+      .bookingId as string;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+
+    const booking = await Booking.findOne({ _id: bookingId, userId }).lean();
+    if (!booking) {
+      res.status(404).json({ success: false, message: "Booking not found" });
+      return;
+    }
+
+    if (booking.refundStatus !== "REJECTED") {
+      res.status(400).json({
+        success: false,
+        message: "No failed refund to retry for this booking",
+      });
+      return;
+    }
+
+    // Compute refund percentage from the stored refundAmount; fall back to 100%.
+    const totalAmount = (booking as any).totalAmount || 0;
+    const storedRefund = (booking as any).refundAmount || 0;
+    const refundPercentage =
+      storedRefund > 0 && totalAmount > 0
+        ? Math.min(100, Math.round((storedRefund / totalAmount) * 100))
+        : 100;
+
+    const result = await processBookingRefund(
+      bookingId,
+      refundPercentage,
+      "Player-initiated refund retry",
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Refund retry initiated successfully.",
+      data: {
+        refundStatus: result.refundStatus,
+        refundAmount: result.refundAmount,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to retry refund",
     });
   }
 };

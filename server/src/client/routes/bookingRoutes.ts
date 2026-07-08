@@ -22,6 +22,7 @@ import {
   validateBookingPromoCode,
   payBookingWithWallet,
   rescheduleBookingHandler,
+  retryBookingRefund,
 } from "../controllers/bookingController";
 import {
   authMiddleware,
@@ -193,6 +194,14 @@ router.post(
 
 // Reschedule booking — coach only
 router.post("/:bookingId/reschedule", authMiddleware, rescheduleBookingHandler);
+
+// Retry a failed refund (player-initiated)
+router.post(
+  "/:bookingId/retry-refund",
+  authMiddleware,
+  playerOnlyMiddleware,
+  retryBookingRefund,
+);
 
 // Cancel booking
 router.delete(

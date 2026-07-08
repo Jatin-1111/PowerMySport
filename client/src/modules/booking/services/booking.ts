@@ -100,6 +100,15 @@ export const bookingApi = {
     return response.data;
   },
 
+  retryRefund: async (
+    bookingId: string,
+  ): Promise<ApiResponse<{ refundStatus: string; refundAmount: number }>> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/retry-refund`,
+    );
+    return response.data;
+  },
+
   confirmBookingByProvider: async (
     bookingId: string,
   ): Promise<ApiResponse<Booking>> => {

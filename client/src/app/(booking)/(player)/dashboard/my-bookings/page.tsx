@@ -94,6 +94,7 @@ export default function BookingsPage() {
   const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
   const [cancelRefundPreview, setCancelRefundPreview] = useState<{ percentage: number; amount: number } | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [retryingRefundId, setRetryingRefundId] = useState<string | null>(null);
   const [isCoveringPaymentId, setIsCoveringPaymentId] = useState<string | null>(
     null,
   );
@@ -187,6 +188,35 @@ export default function BookingsPage() {
       toast.error("Failed to cancel booking. Please try again.");
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleRetryRefund = async (bookingId: string) => {
+    try {
+      setRetryingRefundId(bookingId);
+      const result = await bookingApi.retryRefund(bookingId);
+      if (result.success && result.data) {
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === bookingId
+              ? {
+                  ...b,
+                  refundStatus: result.data!.refundStatus as Booking["refundStatus"],
+                  refundAmount: result.data!.refundAmount > 0 ? result.data!.refundAmount : b.refundAmount,
+                }
+              : b,
+          ),
+        );
+        toast.success("Refund retry initiated — you'll be notified once processed.");
+      } else {
+        toast.error(result.message || "Failed to retry refund.");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Failed to retry refund. Please try again.",
+      );
+    } finally {
+      setRetryingRefundId(null);
     }
   };
 
@@ -542,13 +572,25 @@ export default function BookingsPage() {
                                 {booking.refundStatus === "PROCESSED"
                                   ? `Refund of ₹${(booking.refundAmount ?? 0).toLocaleString("en-IN")} processed`
                                   : booking.refundStatus === "REJECTED"
-                                    ? "Refund failed — contact support"
+                                    ? "Refund failed"
                                     : `Refund of ₹${(booking.refundAmount ?? 0).toLocaleString("en-IN")} pending`}
                               </span>
                               {booking.refundStatus === "PENDING" && (
                                 <span className="ml-auto text-xs opacity-70">
                                   3–5 business days
                                 </span>
+                              )}
+                              {booking.refundStatus === "REJECTED" && (
+                                <button
+                                  onClick={() => handleRetryRefund(booking.id)}
+                                  disabled={retryingRefundId === booking.id}
+                                  className="ml-auto flex items-center gap-1 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50 transition-colors"
+                                >
+                                  <RefreshCw
+                                    className={`h-3 w-3 ${retryingRefundId === booking.id ? "animate-spin" : ""}`}
+                                  />
+                                  {retryingRefundId === booking.id ? "Retrying…" : "Retry"}
+                                </button>
                               )}
                             </div>
                           )}

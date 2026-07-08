@@ -6,6 +6,7 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
 import { AnimatePresence, motion, Variants } from "framer-motion";
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import {
     Facebook,
     Instagram,
@@ -646,6 +647,21 @@ export default function ContactPage() {
                 </a>
                 <p className="mt-0.5 text-xs text-slate-400">
                   Mon–Sat: 9 AM – 8 PM IST
+                </p>
+              </InfoCard>
+
+              {/* WhatsApp */}
+              <InfoCard icon={WhatsAppIcon} title="WhatsApp">
+                <a
+                  href={`https://wa.me/918968582443?text=${encodeURIComponent("Hi! I have a question about PowerMySport.")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-600 transition-colors hover:text-power-orange"
+                >
+                  Chat with us on WhatsApp →
+                </a>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Usually replies within minutes
                 </p>
               </InfoCard>
 
