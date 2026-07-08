@@ -102,47 +102,44 @@ export function GroupMembersList({
               key={member.id}
               onClick={() => onMemberClick?.(member)}
               whileHover={
-                prefersReducedMotion ? undefined : { y: -2, scale: 1.01 }
+                prefersReducedMotion ? undefined : { backgroundColor: "rgba(248, 250, 252, 0.8)" }
               }
-              whileTap={prefersReducedMotion ? undefined : { scale: 0.99 }}
-              className="w-full rounded-2xl border border-white/60 bg-white/70 backdrop-blur-md p-3 text-left shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:-translate-y-0.5 hover:border-power-orange/30 hover:bg-white/90 hover:shadow-[0_8px_20px_rgba(233,115,22,0.06)] focus:outline-none focus:ring-2 focus:ring-power-orange sm:p-3.5"
+              whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors hover:bg-slate-50"
               aria-label={`View ${member.displayName} profile`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 {member.photoUrl && member.isIdentityPublic ? (
                   <img
                     src={member.photoUrl}
                     alt={member.name}
-                    className="h-10 w-10 rounded-full object-cover"
+                    className="h-9 w-9 shrink-0 rounded-full object-cover shadow-sm ring-1 ring-slate-100"
                   />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-                    <UserCircle2 size={20} className="text-slate-400" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 ring-1 ring-slate-200">
+                    <UserCircle2 size={18} />
                   </div>
                 )}
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-slate-900 sm:text-base">
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="truncate text-[13px] font-semibold text-slate-900">
                     {member.displayName}
                   </div>
                   {!member.isIdentityPublic && member.alias && (
-                    <div className="text-xs text-slate-500">{member.alias}</div>
+                    <div className="truncate text-[11px] text-slate-500">{member.alias}</div>
                   )}
-                  <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                    Tap to view profile
-                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      member.isIdentityPublic
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {member.isIdentityPublic ? "Public" : "Private"}
-                  </span>
-                  <ChevronRight size={14} className="text-slate-300" />
-                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span
+                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                    member.isIdentityPublic
+                      ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                      : "bg-slate-50 text-slate-500 border border-slate-200"
+                  }`}
+                >
+                  {member.isIdentityPublic ? "Public" : "Private"}
+                </span>
+                <ChevronRight size={14} className="text-slate-300" />
               </div>
             </motion.button>
           ))

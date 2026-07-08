@@ -4,6 +4,8 @@ export const COMMUNITY_DIRECTORY_VIEW_KEY = "community:directoryView";
 export const COMMUNITY_SELECTED_CONVERSATION_KEY =
   "community:selectedConversationId";
 export const COMMUNITY_SIDEBAR_MODE_KEY = "community:sidebarMode";
+export const COMMUNITY_PINNED_KEY = "community:pinnedConversationIds";
+export const COMMUNITY_MUTED_KEY = "community:mutedConversationIds";
 export const CONVERSATION_PAGE_SIZE = 25;
 export const DISCONNECTED_POLL_BASE_MS = 2500;
 export const DISCONNECTED_POLL_MAX_MS = 30000;

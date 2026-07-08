@@ -444,15 +444,8 @@ export const CommunityService = {
                   : profile?.isIdentityPublic
                     ? authorUser?.name || "Player"
                     : profile?.anonymousAlias || "Anonymous Player",
-<<<<<<< HEAD
               isIdentityPublic: post.isAnonymous ? false : (profile?.isIdentityPublic ?? true),
               photoUrl: post.isAnonymous
-=======
-              isIdentityPublic: isPostAnon
-                ? false
-                : (profile?.isIdentityPublic ?? true),
-              photoUrl: isPostAnon
->>>>>>> 4a9c5681645e045e292a2685b6a04a64d1b30b9a
                 ? null
                 : profile?.isIdentityPublic && authorUser
                   ? await resolveUserPhotoUrl(authorUser)
@@ -577,15 +570,8 @@ export const CommunityService = {
               : postAuthorProfile?.isIdentityPublic
                 ? postAuthor?.name || "Player"
                 : postAuthorProfile?.anonymousAlias || "Anonymous Player",
-<<<<<<< HEAD
           isIdentityPublic: post.isAnonymous ? false : (postAuthorProfile?.isIdentityPublic ?? true),
           photoUrl: post.isAnonymous
-=======
-          isIdentityPublic: isPostAnon
-            ? false
-            : (postAuthorProfile?.isIdentityPublic ?? true),
-          photoUrl: isPostAnon
->>>>>>> 4a9c5681645e045e292a2685b6a04a64d1b30b9a
             ? null
             : postAuthorProfile?.isIdentityPublic && postAuthor
               ? await resolveUserPhotoUrl(postAuthor)
@@ -623,15 +609,8 @@ export const CommunityService = {
                   : answerProfile?.isIdentityPublic
                     ? answerUser?.name || "Player"
                     : answerProfile?.anonymousAlias || "Anonymous Player",
-<<<<<<< HEAD
               isIdentityPublic: answer.isAnonymous ? false : (answerProfile?.isIdentityPublic ?? true),
               photoUrl: answer.isAnonymous
-=======
-              isIdentityPublic: isAnswerAnon
-                ? false
-                : (answerProfile?.isIdentityPublic ?? true),
-              photoUrl: isAnswerAnon
->>>>>>> 4a9c5681645e045e292a2685b6a04a64d1b30b9a
                 ? null
                 : answerProfile?.isIdentityPublic && answerUser
                   ? await resolveUserPhotoUrl(answerUser)
@@ -2407,8 +2386,6 @@ export const CommunityService = {
     if (!isParticipant) {
       throw new Error("Access denied");
     }
-
-    await this.markConversationRead(userId, conversationId);
 
     const [messages, total] = await Promise.all([
       CommunityMessage.find({ conversationId })

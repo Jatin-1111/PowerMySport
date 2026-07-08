@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Copy, RotateCcw, Pencil, Trash2 } from "lucide-react";
+import { Copy, RotateCcw, Pencil, Trash2, Smile, Pin, BookmarkCheck } from "lucide-react";
 import type { ConversationMessage } from "@/modules/community/types";
 import { isWithinMessageEditWindow } from "../../utils/chatUtils";
 
@@ -11,6 +11,7 @@ type MobileMessageActionsProps = {
   onRetry: (message: ConversationMessage) => void;
   onEdit: (message: ConversationMessage) => void;
   onDelete: (message: ConversationMessage) => void;
+  onMarkUnread?: (message: ConversationMessage) => void;
 };
 
 export function MobileMessageActions({
@@ -21,6 +22,7 @@ export function MobileMessageActions({
   onRetry,
   onEdit,
   onDelete,
+  onMarkUnread,
 }: MobileMessageActionsProps) {
   return (
     <motion.div
@@ -47,6 +49,20 @@ export function MobileMessageActions({
         </p>
 
         <div className="mt-4 space-y-3">
+          {/* React */}
+          {!message.isDeleted && (
+            <button
+              onClick={onClose}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+                <Smile size={18} strokeWidth={2.5} />
+              </div>
+              React
+            </button>
+          )}
+
+          {/* Copy */}
           {!message.isDeleted && (
             <button
               onClick={() => {
@@ -62,6 +78,36 @@ export function MobileMessageActions({
             </button>
           )}
 
+          {/* Pin */}
+          {!message.isDeleted && (
+            <button
+              onClick={onClose}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                <Pin size={18} strokeWidth={2.5} />
+              </div>
+              Pin message
+            </button>
+          )}
+
+          {/* Mark as unread */}
+          {message.senderId !== profileUserId && !message.isDeleted && (
+            <button
+              onClick={() => {
+                onMarkUnread?.(message);
+                onClose();
+              }}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-600">
+                <BookmarkCheck size={18} strokeWidth={2.5} />
+              </div>
+              Mark as unread
+            </button>
+          )}
+
+          {/* Retry */}
           {message.senderId === profileUserId &&
             message.messageStatus === "FAILED" && (
               <button
@@ -78,10 +124,10 @@ export function MobileMessageActions({
               </button>
             )}
 
+          {/* Edit & Delete */}
           {message.senderId === profileUserId &&
             !message.isDeleted &&
             message.messageStatus !== "FAILED" && (
-              <>
                 <button
                   onClick={() => {
                     onEdit(message);
@@ -95,21 +141,23 @@ export function MobileMessageActions({
                   </div>
                   Edit message
                 </button>
-                <button
-                  onClick={() => {
-                    onDelete(message);
-                    onClose();
-                  }}
-                  disabled={!isWithinMessageEditWindow(message.createdAt)}
-                  className="flex w-full items-center gap-3.5 rounded-2xl bg-red-50/80 px-5 py-3.5 text-[15px] font-600 text-red-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100/80 text-red-600">
-                    <Trash2 size={18} strokeWidth={2.5} />
-                  </div>
-                  Delete message
-                </button>
-              </>
             )}
+
+          {/* Delete */}
+          {!message.isDeleted && (
+            <button
+              onClick={() => {
+                onDelete(message);
+                onClose();
+              }}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-red-50/80 px-5 py-3.5 text-[15px] font-600 text-red-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100/80 text-red-600">
+                <Trash2 size={18} strokeWidth={2.5} />
+              </div>
+              Delete message
+            </button>
+          )}
         </div>
 
         <button

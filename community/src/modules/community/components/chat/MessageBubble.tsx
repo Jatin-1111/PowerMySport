@@ -1,5 +1,5 @@
-import { memo, useRef, useCallback, useEffect } from "react";
-import { motion } from "framer-motion";
+import { memo, useRef, useCallback, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
   CheckCheck,
@@ -9,6 +9,10 @@ import {
   RotateCcw,
   Trash2,
   AlertCircle,
+  Smile,
+  Pin,
+  BookmarkCheck,
+  Forward,
 } from "lucide-react";
 import type { ConversationMessage } from "@/modules/community/types";
 import {
@@ -16,6 +20,7 @@ import {
   getMessageTimestamp,
   isWithinMessageEditWindow,
 } from "../../utils/chatUtils";
+import EmojiPicker from "./EmojiPicker";
 
 type MessageBubbleProps = {
   message: ConversationMessage;
@@ -30,6 +35,15 @@ type MessageBubbleProps = {
   isCopied: boolean;
   isEditing: boolean;
   isMutating: boolean;
+  onReact?: (message: ConversationMessage, emoji: string) => void;
+  onForward?: (message: ConversationMessage) => void;
+  onPin?: (message: ConversationMessage) => void;
+  onMarkUnread?: (message: ConversationMessage) => void;
+  isPinned?: boolean;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (messageId: string) => void;
+  onClickName?: (message: ConversationMessage) => void;
 };
 
 /** Build the public S3/CDN URL for a chat image given its object key. */
@@ -79,7 +93,6 @@ function ImageMessageContent({
 }) {
   const aspectRatio =
     width && height && width > 0 && height > 0 ? width / height : 4 / 3;
-  // Clamp to a sensible max for the bubble width constraint
   const maxDisplayWidth = 260;
   const displayWidth = Math.min(width ?? maxDisplayWidth, maxDisplayWidth);
   const displayHeight = Math.round(displayWidth / aspectRatio);
@@ -123,6 +136,15 @@ export const MessageBubble = memo(function MessageBubble({
   isCopied,
   isEditing,
   isMutating,
+  onReact,
+  onForward,
+  onPin,
+  onMarkUnread,
+  isPinned,
+  isSelectMode,
+  isSelected,
+  onToggleSelect,
+  onClickName,
 }: MessageBubbleProps) {
   const participantIds = Array.isArray(message.participantIds)
     ? message.participantIds
@@ -156,10 +178,9 @@ export const MessageBubble = memo(function MessageBubble({
     message.messageStatus !== "FAILED" &&
     isWithinMessageEditWindow(message.createdAt);
 
-  // Shape the tail of the bubble
   const bubbleShapeClass = isOwnMessage
-    ? "rounded-[24px] rounded-br-[6px]"
-    : "rounded-[24px] rounded-bl-[6px]";
+    ? "rounded-[20px] rounded-br-[6px]"
+    : "rounded-[20px] rounded-bl-[6px]";
 
   const canOpenMobileActions =
     (isOwnMessage && isFailed) || !message.isDeleted || canMutateMessage;
@@ -168,6 +189,14 @@ export const MessageBubble = memo(function MessageBubble({
   const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [localReaction, setLocalReaction] = useState<string | null>(null);
+
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    setLocalReaction(emoji);
+    onReact?.(message, emoji);
+    setShowReactionPicker(false);
+  }, [message, onReact]);
 
   const clearLongPressTimeout = useCallback(() => {
     if (longPressTimeoutRef.current) {
@@ -212,200 +241,288 @@ export const MessageBubble = memo(function MessageBubble({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      initial={{ opacity: 0, y: 8, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className={`group flex gap-2 sm:gap-2.5 ${isOwnMessage ? "justify-end" : "justify-start"} ${isFailed ? "opacity-80" : ""}`}
+      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className={`group/msg flex w-full gap-2 ${isFailed ? "opacity-80" : ""} ${isSelectMode ? "cursor-pointer" : ""}`}
+      onClick={(e) => {
+        if (isSelectMode) {
+          e.stopPropagation();
+          onToggleSelect?.(message.id);
+        }
+      }}
     >
-      {/* Group avatar (other's messages) */}
-      {!isOwnMessage && isGroupConversation && (
-        <div className="mt-auto mb-1 inline-flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[11px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white">
-          {senderAvatarChar}
+      {/* Checkbox for Select Messages Mode */}
+      {isSelectMode && (
+        <div className={`mt-auto mb-1 flex items-center justify-center shrink-0`}>
+          <button
+            onClick={() => onToggleSelect?.(message.id)}
+            className={`flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${isSelected
+                ? "bg-power-orange border-power-orange text-white"
+                : "border-slate-300 bg-white"
+              }`}
+          >
+            {isSelected && <Check size={12} strokeWidth={3} />}
+          </button>
         </div>
       )}
 
-      <div
-        className={`${
-          isImageMessage ? "p-1.5" : "px-4 py-2.5 sm:px-5 sm:py-3"
-        } max-w-[85%] ${bubbleShapeClass} text-[14px] sm:text-[15px] shadow-sm sm:max-w-[78%] md:max-w-[70%] lg:max-w-[65%] transition-all ${
-          isFailed ? "ring-2 ring-red-400/60" : ""
-        } ${
-          isOwnMessage
-            ? "bg-gradient-to-br from-power-orange to-orange-500 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_2px_5px_rgba(233,115,22,0.15)]"
-            : "border border-slate-200/60 bg-white text-slate-800 shadow-[0_2px_5px_rgba(0,0,0,0.02)]"
-        }`}
-        onTouchStart={startLongPress}
-        onTouchEnd={clearLongPressTimeout}
-        onTouchCancel={clearLongPressTimeout}
-        onMouseDown={startLongPress}
-        onMouseUp={clearLongPressTimeout}
-        onMouseLeave={clearLongPressTimeout}
-        onContextMenu={(event) => {
-          if (typeof window !== "undefined") {
-            const isMobileViewport =
-              window.matchMedia("(max-width: 639px)").matches;
-            if (isMobileViewport && canOpenMobileActions) {
-              event.preventDefault();
-              openMobileActions();
-            }
-          }
-        }}
-      >
-        {/* Sender name in group chats */}
-        {isGroupConversation && !isOwnMessage && (
-          <div
-            className={`mb-1 text-[11px] font-semibold text-power-orange ${isImageMessage ? "px-0.5" : ""}`}
+      {/* Bubble Wrapper */}
+      <div className={`flex flex-1 gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}>
+        {/* Group avatar (other's messages) */}
+        {!isOwnMessage && isGroupConversation && (
+          <div 
+            onClick={onClickName ? () => onClickName(message) : undefined}
+            className={`mt-auto mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white ${onClickName ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
           >
-            {message.senderDisplayName}
+            {senderAvatarChar}
           </div>
         )}
 
-        {/* ── Image message ── */}
-        {isImageMessage ? (
-          isUploading ? (
-            <ImageUploadingPlaceholder isOwn={isOwnMessage} />
-          ) : message.isDeleted ? (
-            <div className="px-2 py-1 italic opacity-60 text-[13px] leading-5">
-              Image deleted
-            </div>
-          ) : (
-            <>
-              <ImageMessageContent
-                src={imageSrc}
-                width={message.metadata?.width}
-                height={message.metadata?.height}
-                isOwn={isOwnMessage}
-              />
-              {message.metadata?.caption && !message.isDeleted && (
-                <div className="mt-1.5 px-0.5 pb-0.5 text-[13px] whitespace-pre-wrap leading-5">
-                  {message.metadata.caption}
-                </div>
-              )}
-            </>
-          )
-        ) : (
-          /* ── Text message ── */
-          <div
-            className={`whitespace-pre-wrap leading-relaxed ${
-              message.isDeleted ? "italic opacity-60" : ""
-            }`}
-          >
-            {message.isDeleted ? "This message was deleted" : message.content}
+        {/* Avatar for DM other's messages */}
+        {!isOwnMessage && !isGroupConversation && (
+          <div className="mt-auto mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white">
+            {senderAvatarChar}
           </div>
         )}
 
-        {/* ── Meta row: timestamp + receipts ── */}
-        <div
-          className={`mt-1 flex flex-wrap items-center gap-1 text-[11px] ${
-            isOwnMessage
-              ? "justify-end text-orange-100/80"
-              : "justify-start text-slate-400"
-          } ${isImageMessage ? "px-0.5" : ""}`}
-        >
-          {message.isEdited && !message.isDeleted && (
-            <span className="opacity-70">(edited)</span>
-          )}
-          <span className="tabular-nums opacity-90">
-            {getMessageTimestamp(message.createdAt)}
-          </span>
-
-          {/* Delivery status */}
-          {isOwnMessage &&
-            (isFailed ? (
-              <span
-                title="Failed to send. Tap to retry."
-                className="text-red-200"
+        <div className="relative max-w-[82%] sm:max-w-[75%] md:max-w-[68%] lg:max-w-[62%]">
+          <div
+            className={`relative ${isImageMessage ? "p-1.5" : "px-3.5 py-2 sm:px-4 sm:py-2.5"
+              } ${bubbleShapeClass} text-[14px] shadow-sm transition-all ${isFailed ? "ring-2 ring-red-400/60" : ""
+              } ${isOwnMessage
+                ? "bg-orange-50 border border-orange-100 text-slate-800 shadow-[0_1px_3px_rgba(234,88,12,0.05)]"
+                : "border border-slate-200/50 bg-white text-slate-800 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
+              }`}
+            onTouchStart={startLongPress}
+            onTouchEnd={clearLongPressTimeout}
+            onTouchCancel={clearLongPressTimeout}
+            onMouseDown={startLongPress}
+            onMouseUp={clearLongPressTimeout}
+            onMouseLeave={clearLongPressTimeout}
+            onContextMenu={(event) => {
+              if (typeof window !== "undefined") {
+                const isMobileViewport =
+                  window.matchMedia("(max-width: 639px)").matches;
+                if (isMobileViewport && canOpenMobileActions) {
+                  event.preventDefault();
+                  openMobileActions();
+                }
+              }
+            }}
+          >
+            {/* Sender name */}
+            {!isOwnMessage && (
+              <div
+                onClick={(e) => {
+                  if (message.senderDisplayName !== "Anonymous" && onClickName) {
+                    e.stopPropagation();
+                    onClickName(message);
+                  }
+                }}
+                className={`mb-0.5 text-[11px] font-semibold text-power-orange ${isImageMessage ? "px-0.5" : ""} ${message.senderDisplayName !== "Anonymous" && onClickName ? "hover:underline cursor-pointer" : ""}`}
               >
-                <AlertCircle size={13} strokeWidth={2.2} />
-              </span>
-            ) : message.messageStatus === "SENDING" ? (
-              <span className="opacity-70">
-                <RotateCcw size={11} className="animate-spin" />
-              </span>
-            ) : hasBeenSeenByOther ? (
-              <span className="text-sky-300">
-                <CheckCheck size={14} strokeWidth={2.2} />
-              </span>
-            ) : hasBeenDeliveredToOther ? (
-              <span className="opacity-80">
-                <CheckCheck size={14} strokeWidth={2.2} />
-              </span>
-            ) : (
-              <span className="opacity-80">
-                <Check size={13} strokeWidth={2.2} />
-              </span>
-            ))}
-        </div>
+                {message.senderDisplayName}
+              </div>
+            )}
 
-        {/* ── Desktop action buttons ── */}
-        <div
-          className={`mt-1.5 hidden flex-wrap items-center gap-1 sm:flex ${
-            isOwnMessage ? "justify-end" : "justify-start"
-          } ${isImageMessage ? "px-0.5" : ""}`}
-        >
-          {isOwnMessage && isFailed && (
-            <button
-              onClick={() => onRetry(message)}
-              className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition active:scale-95 ${
-                isOwnMessage
-                  ? "text-orange-100 hover:bg-white/10"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <RotateCcw size={11} />
-              <span>Retry</span>
-            </button>
-          )}
-          {!message.isDeleted && !isImageMessage && (
-            <button
-              onClick={() => onCopy(message)}
-              className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition active:scale-95 ${
-                isOwnMessage
-                  ? "text-orange-100 hover:bg-white/10"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {isCopied ? (
-                <>
-                  <Check size={11} />
-                  <span>Copied!</span>
-                </>
+            {/* ── Image message ── */}
+            {isImageMessage ? (
+              isUploading ? (
+                <ImageUploadingPlaceholder isOwn={isOwnMessage} />
+              ) : message.isDeleted ? (
+                <div className="px-2 py-1 italic opacity-60 text-[13px] leading-5">
+                  Image deleted
+                </div>
               ) : (
                 <>
-                  <Copy size={11} />
-                  <span>Copy</span>
+                  <ImageMessageContent
+                    src={imageSrc}
+                    width={message.metadata?.width}
+                    height={message.metadata?.height}
+                    isOwn={isOwnMessage}
+                  />
+                  {message.metadata?.caption && !message.isDeleted && (
+                    <div className="mt-1.5 px-0.5 pb-0.5 text-[13px] whitespace-pre-wrap leading-5">
+                      {message.metadata.caption}
+                    </div>
+                  )}
                 </>
+              )
+            ) : (
+              /* ── Text message ── */
+              <div
+                className={`whitespace-pre-wrap leading-relaxed ${message.isDeleted ? "italic opacity-60" : ""
+                  }`}
+              >
+                {message.isDeleted ? "This message was deleted" : message.content}
+              </div>
+            )}
+
+            {/* ── Meta row: timestamp + receipts ── */}
+            <div
+              className={`mt-0.5 flex flex-wrap items-center gap-1 text-[10px] ${isOwnMessage
+                  ? "justify-end text-orange-400/80"
+                  : "justify-start text-slate-400"
+                } ${isImageMessage ? "px-0.5" : ""}`}
+            >
+              {message.isEdited && !message.isDeleted && (
+                <span className="opacity-70">(edited)</span>
               )}
-            </button>
-          )}
-          {canMutateMessage && (
-            <>
-              <button
-                onClick={() => onEdit(message)}
-                disabled={isMutating}
-                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isOwnMessage
-                    ? "text-orange-100 hover:bg-white/10"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                <Pencil size={11} />
-                <span>{isEditing ? "Editing…" : "Edit"}</span>
-              </button>
-              <button
-                onClick={() => onDelete(message)}
-                disabled={isMutating}
-                className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isOwnMessage
-                    ? "text-orange-100 hover:bg-white/10"
-                    : "text-red-500 hover:bg-red-50"
-                }`}
-              >
-                <Trash2 size={11} />
-                <span>Delete</span>
-              </button>
-            </>
-          )}
+            </div>
+
+            {/* Reaction display */}
+            <AnimatePresence>
+              {localReaction && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className={`absolute -bottom-3 ${isOwnMessage ? "-left-3" : "-right-3"} z-10 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm text-xs`}
+                >
+                  {localReaction}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Timestamp below bubble */}
+          <div className={`mt-1.5 flex items-center gap-1.5 text-[10px] text-slate-400 ${isOwnMessage ? "justify-end pr-1" : "justify-start pl-1"}`}>
+            {isPinned && <Pin size={10} className="text-power-orange fill-power-orange" />}
+            <span className="tabular-nums">
+              {getMessageTimestamp(message.createdAt)}
+            </span>
+
+            {/* Delivery status moved next to time */}
+            {isOwnMessage &&
+              (isFailed ? (
+                <span
+                  title="Failed to send. Tap to retry."
+                  className="text-red-400"
+                >
+                  <AlertCircle size={12} strokeWidth={2.2} />
+                </span>
+              ) : message.messageStatus === "SENDING" ? (
+                <span className="opacity-70">
+                  <RotateCcw size={10} className="animate-spin" />
+                </span>
+              ) : hasBeenSeenByOther ? (
+                <span className="text-power-orange">
+                  <CheckCheck size={13} strokeWidth={2.2} />
+                </span>
+              ) : hasBeenDeliveredToOther ? (
+                <span className="opacity-80">
+                  <CheckCheck size={13} strokeWidth={2.2} />
+                </span>
+              ) : (
+                <span className="opacity-80">
+                  <Check size={12} strokeWidth={2.2} />
+                </span>
+              ))}
+          </div>
+
+          <div
+            className={`absolute hidden sm:flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 ${isOwnMessage
+                ? "left-0 -translate-x-full pr-1 top-1/2 -translate-y-1/2"
+                : "right-0 translate-x-full pl-1 top-1/2 -translate-y-1/2"
+              }`}
+          >
+            <div className={`flex items-center gap-0.5 rounded-xl border border-slate-200/60 bg-white/95 backdrop-blur-sm shadow-md px-1 py-0.5 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}>
+              {/* React */}
+              {!message.isDeleted && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowReactionPicker(!showReactionPicker)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                    title="React"
+                  >
+                    <Smile size={14} />
+                  </button>
+                  <AnimatePresence>
+                    {showReactionPicker && (
+                      <div className={`absolute bottom-full mb-2 z-50 ${isOwnMessage ? "right-0" : "left-0"}`}>
+                        <EmojiPicker
+                          onSelect={handleEmojiSelect}
+                          onClose={() => setShowReactionPicker(false)}
+                          alignRight={isOwnMessage}
+                        />
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* Copy */}
+              {!message.isDeleted && !isImageMessage && (
+                <button
+                  onClick={() => onCopy(message)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                  title={isCopied ? "Copied!" : "Copy"}
+                >
+                  {isCopied ? <Check size={14} className="text-turf-green" /> : <Copy size={14} />}
+                </button>
+              )}
+
+              {/* Forward */}
+              {!message.isDeleted && (
+                <button
+                  onClick={() => onForward?.(message)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                  title="Forward"
+                >
+                  <Forward size={14} />
+                </button>
+              )}
+
+              {/* Pin */}
+              {!message.isDeleted && (
+                <button
+                  onClick={() => onPin?.(message)}
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${isPinned ? "text-power-orange bg-orange-50 hover:bg-orange-100" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                    }`}
+                  title={isPinned ? "Unpin" : "Pin"}
+                >
+                  <Pin size={14} className={isPinned ? "fill-power-orange" : ""} />
+                </button>
+              )}
+
+              {/* Retry */}
+              {isOwnMessage && isFailed && (
+                <button
+                  onClick={() => onRetry(message)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-power-orange hover:bg-orange-50 transition"
+                  title="Retry"
+                >
+                  <RotateCcw size={14} />
+                </button>
+              )}
+
+              {/* Edit */}
+              {canMutateMessage && (
+                <button
+                  onClick={() => onEdit(message)}
+                  disabled={isMutating}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition disabled:opacity-50"
+                  title={isEditing ? "Editing…" : "Edit"}
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
+
+
+
+              {/* Delete */}
+              {!message.isDeleted && (
+                <button
+                  onClick={() => onDelete(message)}
+                  disabled={isMutating}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 transition disabled:opacity-50"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>

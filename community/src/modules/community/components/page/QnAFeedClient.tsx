@@ -1079,14 +1079,7 @@ export default function QnAFeedClient() {
                       {/* Footer */}
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/50 pt-4">
                         <div className="flex items-center gap-2 text-xs text-slate-600">
-<<<<<<< HEAD
                           <AuthorAvatar author={featuredPost.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : featuredPost.author} size={32} />
-=======
-                          <AuthorAvatar
-                            author={featuredPost.author}
-                            size={32}
-                          />
->>>>>>> 4a9c5681645e045e292a2685b6a04a64d1b30b9a
                           <span className="font-semibold text-slate-900">
                             {featuredPost.isAnonymous ? "Anonymous" : featuredPost.author.displayName}
                           </span>
