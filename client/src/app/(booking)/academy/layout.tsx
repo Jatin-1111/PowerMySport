@@ -1,24 +1,24 @@
 "use client";
 
+import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-  DashboardShell,
-  type DashboardNavItem,
+    DashboardShell,
+    type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
-import { toast } from "@/lib/toast";
-import { usePathname, useRouter } from "next/navigation";
 import {
-  BarChart2,
-  Building2,
-  Calendar,
-  CreditCard,
-  LayoutDashboard,
-  Settings,
-  Star,
-  TrendingUp,
-  Users,
+    BarChart2,
+    Building2,
+    Calendar,
+    CreditCard,
+    LayoutDashboard,
+    Settings,
+    Star,
+    TrendingUp,
+    Users,
 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
 export default function AcademyLayout({

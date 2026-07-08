@@ -1,21 +1,21 @@
 "use client";
 
 import { authApi } from "@/modules/auth/services/auth";
+import { expertApi } from "@/modules/expert/services/expert";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-  DashboardShell,
-  type DashboardNavItem,
+    DashboardShell,
+    type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import {
-  LayoutDashboard,
-  Settings,
-  CalendarCheck,
-  BadgeIndianRupee,
-  ShieldCheck,
-  UserCog,
+    BadgeIndianRupee,
+    LayoutDashboard,
+    Settings,
+    ShieldCheck,
+    UserCog,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import React from "react";
+import { useRouter, usePathname } from "next/navigation";
+import React, { useEffect } from "react";
 
 export default function ExpertLayout({
   children,
@@ -23,7 +23,21 @@ export default function ExpertLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuthStore();
+
+  useEffect(() => {
+    // Redirect UNVERIFIED experts to onboarding unless they're already there.
+    if (!user || user.role !== "EXPERT") return;
+    if (pathname === "/expert/onboarding") return;
+    expertApi.getMyProfile().then((res) => {
+      if (res.success && res.data) {
+        if (res.data.verificationStatus === "UNVERIFIED") {
+          router.replace("/expert/onboarding");
+        }
+      }
+    }).catch(() => {});
+  }, [user, pathname, router]);
 
   const handleLogout = async () => {
     try {

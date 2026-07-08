@@ -1,19 +1,19 @@
 import axiosInstance from "@/lib/api/axios";
 import {
-  AcademyListResponse,
-  AcademyStep1Payload,
-  AcademyStep2Payload,
-  AcademyStep3Payload,
-  AcademyStep4Payload,
-  AcademyStep5Payload,
-  AcademyStep6Payload,
-  ApiResponse,
-  ConfirmDocumentsPayload,
-  ConfirmImagesPayload,
-  OnboardingAcademy,
-  OnboardingProgress,
-  PresignedUrl,
-  AcademyStepPayload,
+    AcademyListResponse,
+    AcademyStep1Payload,
+    AcademyStep2Payload,
+    AcademyStep3Payload,
+    AcademyStep4Payload,
+    AcademyStep5Payload,
+    AcademyStep6Payload,
+    AcademyStepPayload,
+    ApiResponse,
+    ConfirmDocumentsPayload,
+    ConfirmImagesPayload,
+    OnboardingAcademy,
+    OnboardingProgress,
+    PresignedUrl,
 } from "@/modules/onboarding/types/academy";
 
 const API_BASE = "/academies/onboarding";

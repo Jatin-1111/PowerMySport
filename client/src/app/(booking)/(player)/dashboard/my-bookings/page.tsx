@@ -1,32 +1,35 @@
 "use client";
 
-import { bookingApi } from "@/modules/booking/services/booking";
-import { useAuthStore } from "@/modules/auth/store/authStore";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { EmptyState } from "@/modules/shared/ui/EmptyState";
-import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
-import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { toast } from "@/lib/toast";
+import { useAuthStore } from "@/modules/auth/store/authStore";
+import { bookingApi } from "@/modules/booking/services/booking";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card } from "@/modules/shared/ui/Card";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import { EmptyState } from "@/modules/shared/ui/EmptyState";
+import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { Booking } from "@/types";
 import { formatDate, formatTime, formatTimestampTime } from "@/utils/format";
 import {
-  Calendar,
-  Clock,
-  IndianRupee,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  Award,
-  CalendarX,
-  CreditCard,
-  FileText,
+    Award,
+    Calendar,
+    CalendarX,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    CreditCard,
+    FileText,
+    IndianRupee,
+    MapPin,
+    RefreshCw,
+    XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { toast } from "@/lib/toast";
 
 interface PaginationInfo {
   total: number;
@@ -61,6 +64,20 @@ function formatBookingStatus(status: string) {
     .concat(status.slice(1).toLowerCase().replace(/_/g, " "));
 }
 
+// Compute expected refund percentage client-side based on the same policy the
+// server applies. Used only for the cancel-dialog preview — the server is the
+// source of truth for the real calculation.
+function getRefundPreview(booking: Booking): { percentage: number; amount: number } {
+  const dateStr = booking.date.split("T")[0]; // "YYYY-MM-DD"
+  const [h, m] = booking.startTime.split(":").map(Number);
+  const bookingStart = new Date(`${dateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`);
+  const hoursUntil = (bookingStart.getTime() - Date.now()) / (1000 * 60 * 60);
+
+  if (hoursUntil > 48) return { percentage: 100, amount: booking.totalAmount };
+  if (hoursUntil > 24) return { percentage: 50, amount: Math.round(booking.totalAmount * 0.5) };
+  return { percentage: 0, amount: 0 };
+}
+
 export default function BookingsPage() {
   const { user } = useAuthStore();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -75,7 +92,9 @@ export default function BookingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("venues");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
+  const [cancelRefundPreview, setCancelRefundPreview] = useState<{ percentage: number; amount: number } | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [retryingRefundId, setRetryingRefundId] = useState<string | null>(null);
   const [isCoveringPaymentId, setIsCoveringPaymentId] = useState<string | null>(
     null,
   );
@@ -104,8 +123,32 @@ export default function BookingsPage() {
     fetchBookings();
   }, [currentPage, itemsPerPage]);
 
-  const handleCancelClick = (bookingId: string) => {
-    setBookingToCancel(bookingId);
+  // Poll every 30 s while any booking has a PENDING refund so the user sees the
+  // status flip to PROCESSED without needing to reload.
+  useEffect(() => {
+    const hasPendingRefund = bookings.some((b) => b.refundStatus === "PENDING");
+    if (!hasPendingRefund) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await bookingApi.getMyBookings({
+          page: currentPage,
+          limit: itemsPerPage,
+        });
+        if (response.success && response.data) {
+          setBookings(response.data);
+        }
+      } catch {
+        // silent — don't interrupt the user
+      }
+    }, 30_000);
+
+    return () => clearInterval(interval);
+  }, [bookings, currentPage, itemsPerPage]);
+
+  const handleCancelClick = (booking: Booking) => {
+    setBookingToCancel(booking.id);
+    setCancelRefundPreview(getRefundPreview(booking));
     setConfirmDialogOpen(true);
   };
 
@@ -114,16 +157,66 @@ export default function BookingsPage() {
 
     try {
       setIsCancelling(true);
-      await bookingApi.cancelBooking(bookingToCancel);
-      setBookings(bookings.filter((b) => b.id !== bookingToCancel));
-      toast.success("Booking cancelled successfully");
+      const result = await bookingApi.cancelBooking(bookingToCancel);
+      const refundAmount = result.data?.refundAmount ?? 0;
+      // Update the booking in-place so refund status shows immediately
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === bookingToCancel
+            ? {
+                ...b,
+                status: "CANCELLED" as const,
+                refundStatus: refundAmount > 0 ? ("PENDING" as const) : undefined,
+                refundAmount: refundAmount > 0 ? refundAmount : undefined,
+              }
+            : b,
+        ),
+      );
+      if (refundAmount > 0) {
+        toast.success(
+          `Booking cancelled — ₹${refundAmount.toLocaleString("en-IN")} refund initiated`,
+          { duration: 6000 },
+        );
+      } else {
+        toast.success("Booking cancelled");
+      }
       setConfirmDialogOpen(false);
       setBookingToCancel(null);
+      setCancelRefundPreview(null);
     } catch (error) {
       console.error("Failed to cancel booking:", error);
       toast.error("Failed to cancel booking. Please try again.");
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleRetryRefund = async (bookingId: string) => {
+    try {
+      setRetryingRefundId(bookingId);
+      const result = await bookingApi.retryRefund(bookingId);
+      if (result.success && result.data) {
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === bookingId
+              ? {
+                  ...b,
+                  refundStatus: result.data!.refundStatus as Booking["refundStatus"],
+                  refundAmount: result.data!.refundAmount > 0 ? result.data!.refundAmount : b.refundAmount,
+                }
+              : b,
+          ),
+        );
+        toast.success("Refund retry initiated — you'll be notified once processed.");
+      } else {
+        toast.error(result.message || "Failed to retry refund.");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message || "Failed to retry refund. Please try again.",
+      );
+    } finally {
+      setRetryingRefundId(null);
     }
   };
 
@@ -456,6 +549,52 @@ export default function BookingsPage() {
                           </Badge>
                         </div>
 
+                        {/* Refund status strip — only for cancelled / expired bookings */}
+                        {(booking.status === "CANCELLED" || booking.status === "EXPIRED") &&
+                          booking.refundStatus && (
+                            <div
+                              className={`mt-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                                booking.refundStatus === "PROCESSED"
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : booking.refundStatus === "REJECTED"
+                                    ? "border-red-200 bg-red-50 text-red-700"
+                                    : "border-amber-200 bg-amber-50 text-amber-700"
+                              }`}
+                            >
+                              {booking.refundStatus === "PROCESSED" ? (
+                                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                              ) : booking.refundStatus === "REJECTED" ? (
+                                <XCircle className="h-4 w-4 shrink-0" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
+                              )}
+                              <span className="font-medium">
+                                {booking.refundStatus === "PROCESSED"
+                                  ? `Refund of ₹${(booking.refundAmount ?? 0).toLocaleString("en-IN")} processed`
+                                  : booking.refundStatus === "REJECTED"
+                                    ? "Refund failed"
+                                    : `Refund of ₹${(booking.refundAmount ?? 0).toLocaleString("en-IN")} pending`}
+                              </span>
+                              {booking.refundStatus === "PENDING" && (
+                                <span className="ml-auto text-xs opacity-70">
+                                  3–5 business days
+                                </span>
+                              )}
+                              {booking.refundStatus === "REJECTED" && (
+                                <button
+                                  onClick={() => handleRetryRefund(booking.id)}
+                                  disabled={retryingRefundId === booking.id}
+                                  className="ml-auto flex items-center gap-1 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50 transition-colors"
+                                >
+                                  <RefreshCw
+                                    className={`h-3 w-3 ${retryingRefundId === booking.id ? "animate-spin" : ""}`}
+                                  />
+                                  {retryingRefundId === booking.id ? "Retrying…" : "Retry"}
+                                </button>
+                              )}
+                            </div>
+                          )}
+
                         {booking.createdAt && (
                           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-xs text-slate-400">
                             <Clock className="h-3 w-3" />
@@ -498,7 +637,7 @@ export default function BookingsPage() {
                           booking.status === "PENDING_CONFIRMATION" ||
                           booking.status === "PENDING_INVITES") && (
                           <Button
-                            onClick={() => handleCancelClick(booking.id)}
+                            onClick={() => handleCancelClick(booking)}
                             variant="danger"
                             size="sm"
                           >
@@ -556,10 +695,17 @@ export default function BookingsPage() {
       {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={confirmDialogOpen}
-        onClose={() => setConfirmDialogOpen(false)}
+        onClose={() => {
+          setConfirmDialogOpen(false);
+          setCancelRefundPreview(null);
+        }}
         onConfirm={handleCancelConfirm}
         title="Cancel Booking"
-        message="Are you sure you want to cancel this booking? This action cannot be undone."
+        message={
+          cancelRefundPreview && cancelRefundPreview.percentage > 0
+            ? `You'll receive a ${cancelRefundPreview.percentage}% refund of ₹${cancelRefundPreview.amount.toLocaleString("en-IN")} to your original payment method. This action cannot be undone.`
+            : "No refund applies at this stage. Are you sure you want to cancel? This action cannot be undone."
+        }
         confirmLabel="Yes, Cancel Booking"
         cancelLabel="Keep Booking"
         variant="danger"

@@ -2,9 +2,9 @@
 
 import { toast } from "@/lib/toast";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import type { AcademyStep2Payload } from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
 import { useEffect, useRef, useState } from "react";
-import type { AcademyStep2Payload } from "@/modules/onboarding/types/academy";
 
 interface Step2LocationProps {
   academyId: string;

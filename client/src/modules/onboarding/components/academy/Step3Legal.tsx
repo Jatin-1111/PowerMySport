@@ -3,13 +3,13 @@
 import { toast } from "@/lib/toast";
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
+import type {
+    AcademyBusinessType,
+    AcademyStep3Payload,
+} from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
 import { CheckCircle, Loader2, Upload } from "lucide-react";
 import { useState } from "react";
-import type {
-  AcademyBusinessType,
-  AcademyStep3Payload,
-} from "@/modules/onboarding/types/academy";
 
 interface Step3LegalProps {
   academyId: string;

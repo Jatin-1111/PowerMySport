@@ -1,28 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  TrendingUp,
-  Users,
-  CheckCircle,
-  Clock,
-  BarChart2,
-  Loader2,
-  Activity,
-  Building2,
-} from "lucide-react";
-import { motion } from "framer-motion";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
-import { toast } from "@/lib/toast";
 import axiosInstance from "@/lib/api/axios";
+import { toast } from "@/lib/toast";
 import {
-  KpiCard,
-  SparklineBarChart,
-  SportBreakdownPanel,
-  BusyHoursHeatmap,
-  DonutChart,
-  RetentionCard,
+    BusyHoursHeatmap,
+    DonutChart,
+    KpiCard,
+    RetentionCard,
+    SparklineBarChart,
+    SportBreakdownPanel,
 } from "@/modules/shared/components/dashboard/analytics";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import {
+    Activity,
+    BarChart2,
+    Building2,
+    CheckCircle,
+    Clock,
+    Loader2,
+    TrendingUp,
+    Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 

@@ -1,36 +1,35 @@
 "use client";
 
+import { getCommunityAppUrl } from "@/lib/community/url";
+import {
+    ActiveFilter,
+    FilterBar,
+} from "@/modules/discovery/components/FilterBar";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
-import { Button } from "@/modules/shared/ui/Button";
 import { clientFollowStore } from "@/modules/shared/lib/followStore";
+import { Button } from "@/modules/shared/ui/Button";
 import { sportsApi } from "@/modules/sports/services/sports";
 import { Venue } from "@/types";
-import { getVenueImageUrls } from "@/utils/venueImages";
 import { cn } from "@/utils/cn";
+import { getVenueImageUrls } from "@/utils/venueImages";
 import {
-  ArrowRight,
-  Bookmark,
-  Building2,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  MessageCircle,
-  Star,
-  X,
-  Car,
-  Bath,
-  Droplets,
-  HeartPulse,
-  Coffee,
-  Dumbbell,
+    ArrowRight,
+    Bath,
+    Bookmark,
+    Building2,
+    Car,
+    ChevronLeft,
+    ChevronRight,
+    Coffee,
+    Droplets,
+    Dumbbell,
+    HeartPulse,
+    MapPin,
+    MessageCircle,
+    Star,
 } from "lucide-react";
-import {
-  FilterBar,
-  ActiveFilter,
-} from "@/modules/discovery/components/FilterBar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCommunityAppUrl } from "@/lib/community/url";
 
 export default function VenuesTab() {
   const [loading, setLoading] = useState(true);
@@ -413,10 +412,6 @@ export default function VenuesTab() {
                 const venueId = String(venue.id || venue._id || "");
                 const isFollowed = followedVenueIds.includes(venueId);
                 const venueImages = getVenueImageUrls(venue);
-                const knownInCommunity =
-                  Number(venue.reviewCount || 0) >= 10 ||
-                  (Number(venue.rating || 0) >= 4.3 &&
-                    Number(venue.reviewCount || 0) >= 5);
 
                 const onToggleFollow = (e: React.MouseEvent) => {
                   e.stopPropagation();

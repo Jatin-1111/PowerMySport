@@ -1,31 +1,31 @@
 "use client";
 
+import { BottomNavItem } from "@/components/layout/BottomNav";
+import { useNotifications } from "@/hooks/useNotifications";
+import { getCommunityAppUrl } from "@/lib/community/url";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-  DashboardNavItem,
-  DashboardShell,
+    DashboardNavItem,
+    DashboardShell,
 } from "@/modules/shared/components/dashboard/DashboardShell";
-import { BottomNavItem } from "@/components/layout/BottomNav";
-import { getCommunityAppUrl } from "@/lib/community/url";
-import { useRouter } from "next/navigation";
 import {
-  Bell,
-  Calendar,
-  CreditCard,
-  Home,
-  LayoutDashboard,
-  LifeBuoy,
-  Mail,
-  MapPin,
-  Settings,
-  User,
-  UserPlus,
-  Users,
-  Wallet,
+    Bell,
+    Calendar,
+    CreditCard,
+    Home,
+    LayoutDashboard,
+    LifeBuoy,
+    Mail,
+    MapPin,
+    Settings,
+    User,
+    UserPlus,
+    Users,
+    Wallet,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React from "react";
-import { useNotifications } from "@/hooks/useNotifications";
 
 export default function DashboardLayout({
   children,

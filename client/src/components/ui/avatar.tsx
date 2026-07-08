@@ -1,5 +1,5 @@
-import * as React from "react";
 import { cn } from "@/utils/cn";
+import * as React from "react";
 
 const Avatar = React.forwardRef<
   HTMLDivElement,
@@ -43,4 +43,4 @@ const AvatarFallback = React.forwardRef<
 ));
 AvatarFallback.displayName = "AvatarFallback";
 
-export { Avatar, AvatarImage, AvatarFallback };
+export { Avatar, AvatarFallback, AvatarImage };

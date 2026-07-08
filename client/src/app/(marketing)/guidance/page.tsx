@@ -1,47 +1,47 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  BrainCircuit,
-  Star,
-  Trophy,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  Info,
-  MessageCircle,
-  Sparkles,
-  Download,
-  Users,
-  Headphones,
+    BrainCircuit,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    Headphones,
+    Info,
+    Loader2,
+    MessageCircle,
+    Sparkles,
+    Star,
+    Trophy,
+    Users,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
-import { useGuidanceForm } from "@/modules/guidance/hooks/useGuidanceForm";
-import { useGuidanceHistory } from "@/modules/guidance/hooks/useGuidanceHistory";
-import {
-  STEPS,
-  isFormValid,
-  getMissingFields,
-} from "@/modules/guidance/constants";
-import { AutofillBadge } from "@/modules/guidance/components/shared/AutofillBadge";
+import { toast } from "@/lib/toast";
+import { useAuthStore } from "@/modules/auth/store/authStore";
+import { GuidanceChatDrawer } from "@/modules/guidance/components/chat/GuidanceChatDrawer";
+import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
+import { ResultsView } from "@/modules/guidance/components/results/ResultsView";
 import { AchievementToast } from "@/modules/guidance/components/shared/AchievementToast";
-import { PastRoadmapsDropdown } from "@/modules/guidance/components/shared/PastRoadmapsDropdown";
-import { StepIndicator } from "@/modules/guidance/components/shared/StepIndicator";
-import { ResultSkeleton } from "@/modules/guidance/components/shared/Skeletons";
+import { AutofillBadge } from "@/modules/guidance/components/shared/AutofillBadge";
 import { InputsSummaryBar } from "@/modules/guidance/components/shared/InputsSummaryBar";
+import { PastRoadmapsDropdown } from "@/modules/guidance/components/shared/PastRoadmapsDropdown";
+import { ResultSkeleton } from "@/modules/guidance/components/shared/Skeletons";
+import { StepIndicator } from "@/modules/guidance/components/shared/StepIndicator";
 import { Step1Profile } from "@/modules/guidance/components/wizard/Step1Profile";
 import { Step2Goals } from "@/modules/guidance/components/wizard/Step2Goals";
 import { Step3Lifestyle } from "@/modules/guidance/components/wizard/Step3Lifestyle";
 import { Step4Details } from "@/modules/guidance/components/wizard/Step4Details";
-import { ResultsView } from "@/modules/guidance/components/results/ResultsView";
-import { GuidanceChatDrawer } from "@/modules/guidance/components/chat/GuidanceChatDrawer";
-import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
-import { useAuthStore } from "@/modules/auth/store/authStore";
+import {
+    STEPS,
+    getMissingFields,
+    isFormValid,
+} from "@/modules/guidance/constants";
+import { useGuidanceForm } from "@/modules/guidance/hooks/useGuidanceForm";
+import { useGuidanceHistory } from "@/modules/guidance/hooks/useGuidanceHistory";
 import { downloadGuidanceReportPdf } from "@/modules/guidance/services/guidance";
-import { toast } from "@/lib/toast";
 
 // ─── Inner component (needs useSearchParams) ──────────────────────────────────
 

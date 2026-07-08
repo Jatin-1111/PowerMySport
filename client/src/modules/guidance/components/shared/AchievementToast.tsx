@@ -1,7 +1,7 @@
 "use client";
 
-import { Award } from "lucide-react";
 import { motion } from "framer-motion";
+import { Award } from "lucide-react";
 
 export function AchievementToast({ label }: { label: string }) {
   return (

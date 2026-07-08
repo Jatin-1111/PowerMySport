@@ -1,21 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Sparkles,
-  Trophy,
-  Target,
-  ChevronRight,
-  ChevronDown,
-  Star,
-  Award,
-  ArrowRight,
-  Zap,
-  MapPin,
-  Users,
-  CalendarPlus,
+    ArrowRight,
+    Award,
+    CalendarPlus,
+    ChevronDown,
+    ChevronRight,
+    MapPin,
+    Sparkles,
+    Star,
+    Target,
+    Trophy,
+    Users,
+    Zap,
 } from "lucide-react";
+import { useState } from "react";
 
 interface TournamentRecommendationPanelProps {
   tournaments: any[];
@@ -306,7 +306,7 @@ export function TournamentRecommendationPanel({
                   <div className="space-y-2.5">
                     <AnimatePresence>
                       {displayed.map(
-                        ({ tournament: t, priority, tLevel }, i) => {
+                        ({ tournament: t, priority }, i) => {
                           const meta = PRIORITY_META[priority];
                           const reason = getReasonText(
                             t,

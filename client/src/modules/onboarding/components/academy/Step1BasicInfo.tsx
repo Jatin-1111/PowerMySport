@@ -3,11 +3,11 @@
 import { toast } from "@/lib/toast";
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
+import type { AcademyStep1Payload } from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Lightbulb, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { AcademyStep1Payload } from "@/modules/onboarding/types/academy";
 
 interface Step1BasicInfoProps {
   onSubmit: (data: AcademyStep1Payload) => Promise<{ academyId: string }>;

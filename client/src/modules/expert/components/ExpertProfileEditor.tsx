@@ -1,29 +1,29 @@
 "use client";
 
 import {
-  expertApi,
-  type Expert,
-  type ExpertAvailabilityWindow,
+    expertApi,
+    type Expert,
+    type ExpertAvailabilityWindow,
 } from "@/modules/expert/services/expert";
-import { ExpertPhotoUpload } from "./ExpertPhotoUpload";
-import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import ExpertiseMultiSelect from "@/modules/shared/components/ExpertiseMultiSelect";
 import LanguagesMultiSelect from "@/modules/shared/components/LanguagesMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import {
-  Award,
-  BadgeIndianRupee,
-  CalendarClock,
-  MapPin,
-  Plus,
-  Star,
-  Trash2,
-  User,
+    Award,
+    BadgeIndianRupee,
+    CalendarClock,
+    MapPin,
+    Plus,
+    Star,
+    Trash2,
+    User,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ExpertPhotoUpload } from "./ExpertPhotoUpload";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const field =

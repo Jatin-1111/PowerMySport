@@ -1,15 +1,16 @@
 "use client";
 
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import { cn } from "@/utils/cn";
 import { motion, Variants } from "framer-motion";
 import {
-  ArrowRight,
-  CalendarCheck,
-  Check,
-  Compass,
-  LucideIcon,
-  ShoppingBag,
-  Users,
+    ArrowRight,
+    CalendarCheck,
+    Check,
+    Compass,
+    LucideIcon,
+    ShoppingBag,
+    Users,
 } from "lucide-react";
 import Link from "next/link";
 import { SectionLabel } from "./SectionLabel";
@@ -52,7 +53,7 @@ export const ROLLOUT_PHASES: Phase[] = [
     accent: "orange",
     cta: [
       { label: "Build a Sports Plan", href: "/roadmap" },
-      { label: "Get Free Guidance", href: "/guidance" },
+      { label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." },
     ],
   },
   {
@@ -272,21 +273,28 @@ function PhaseRow({ phase, isLast }: { phase: Phase; isLast: boolean }) {
 
           {phase.cta && phase.cta.length > 0 && (
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              {phase.cta.map((c, i) => (
-                <Link
-                  key={c.href}
-                  href={c.href}
-                  className={cn(
-                    "group/btn inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all",
-                    i === 0
-                      ? "bg-power-orange text-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.55)] hover:bg-orange-600"
-                      : "border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50",
-                  )}
-                >
-                  {c.label}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
-                </Link>
-              ))}
+              {phase.cta.map((c, i) => {
+                const isWA = c.href.includes("wa.me");
+                return (
+                  <Link
+                    key={c.href}
+                    href={c.href}
+                    {...(isWA ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className={cn(
+                      "group/btn inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all",
+                      i === 0
+                        ? "bg-power-orange text-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.55)] hover:bg-orange-600"
+                        : isWA
+                          ? "bg-[#25D366] text-white shadow-[0_8px_24px_-8px_rgba(37,211,102,0.45)] hover:bg-[#1da851]"
+                          : "border border-slate-200 bg-white text-slate-800 hover:border-slate-300 hover:bg-slate-50",
+                    )}
+                  >
+                    {isWA && <WhatsAppIcon className="h-4 w-4 shrink-0" />}
+                    {c.label}
+                    {!isWA && <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

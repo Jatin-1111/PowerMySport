@@ -13,6 +13,7 @@ import {
   UserGrowthPoint,
   UsersRoleSummary,
   VenueListersAnalytics,
+  UnsupportedSportsStats,
   statsApi,
 } from "@/modules/analytics/services/stats";
 import { ServerMonitoringTab } from "@/modules/analytics/components/ServerMonitoringTab";
@@ -137,6 +138,8 @@ export default function AdminAnalyticsPage() {
   const [userGrowth, setUserGrowth] = useState<UserGrowthPoint[]>([]);
   const [funnelRows, setFunnelRows] = useState<FunnelSummaryRow[]>([]);
   const [funnelTrends, setFunnelTrends] = useState<FunnelTrends | null>(null);
+  const [unsupportedSports, setUnsupportedSports] =
+    useState<UnsupportedSportsStats | null>(null);
   const [finance, setFinance] = useState<FinanceReconciliation | null>(null);
   const [observability, setObservability] =
     useState<ObservabilitySnapshot | null>(null);
@@ -211,10 +214,12 @@ export default function AdminAnalyticsPage() {
     async (silent = false) => {
       if (!silent) setLoadingFunnel(true);
       try {
-        const [summaryResponse, trendResponse] = await Promise.all([
-          statsApi.getFunnelSummary(funnelDays),
-          statsApi.getFunnelTrends(funnelDays),
-        ]);
+        const [summaryResponse, trendResponse, unsupportedResponse] =
+          await Promise.all([
+            statsApi.getFunnelSummary(funnelDays),
+            statsApi.getFunnelTrends(funnelDays),
+            statsApi.getUnsupportedSportsStats(funnelDays),
+          ]);
 
         if (summaryResponse.success && summaryResponse.data) {
           setFunnelRows(summaryResponse.data.events ?? []);
@@ -222,6 +227,10 @@ export default function AdminAnalyticsPage() {
 
         if (trendResponse.success && trendResponse.data) {
           setFunnelTrends(trendResponse.data);
+        }
+
+        if (unsupportedResponse.success && unsupportedResponse.data) {
+          setUnsupportedSports(unsupportedResponse.data);
         }
       } finally {
         if (!silent) setLoadingFunnel(false);
@@ -863,6 +872,92 @@ export default function AdminAnalyticsPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+
+            {/* ── Sports Gap Intelligence ─────────────────────────────── */}
+            {!loadingFunnel && (
+              <Card className="bg-white">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900">
+                        Sports Gap Intelligence
+                      </h3>
+                      <p className="text-sm text-slate-500">
+                        Sports users searched for that are not yet supported —
+                        ranked by demand. Use this to prioritise your next
+                        pathway build.
+                      </p>
+                    </div>
+                    {unsupportedSports && unsupportedSports.totalSearches > 0 && (
+                      <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                        {unsupportedSports.totalSearches.toLocaleString()} total
+                        searches
+                      </span>
+                    )}
+                  </div>
+
+                  {!unsupportedSports || unsupportedSports.rows.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-slate-400">
+                      No unsupported sport searches in this window.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                      <table className="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              #
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Sport
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Searches
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Source
+                            </th>
+                            <th className="px-4 py-3 text-left font-semibold text-slate-700">
+                              Last searched
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white">
+                          {unsupportedSports.rows.map((row, i) => (
+                            <tr key={row.sport}>
+                              <td className="px-4 py-3 text-slate-400">
+                                {i + 1}
+                              </td>
+                              <td className="px-4 py-3 font-medium capitalize text-slate-900">
+                                {row.sport}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-semibold text-orange-700">
+                                  {row.count.toLocaleString()}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-slate-500">
+                                {row.sources.join(", ")}
+                              </td>
+                              <td className="px-4 py-3 text-slate-500">
+                                {new Date(row.lastSearched).toLocaleDateString(
+                                  "en-IN",
+                                  {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  },
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </Card>
             )}
           </div>
         )}

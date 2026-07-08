@@ -3,17 +3,17 @@
 import AcademiesTab from "@/modules/discovery/components/AcademiesTab";
 import CoachesTab from "@/modules/discovery/components/CoachesTab";
 import VenuesTab from "@/modules/discovery/components/VenuesTab";
+import { cn } from "@/utils/cn";
 import {
-  Building2,
-  CircleCheck,
-  GraduationCap,
-  MapPin,
-  ShieldCheck,
-  Zap,
+    Building2,
+    CircleCheck,
+    GraduationCap,
+    MapPin,
+    ShieldCheck,
+    Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { cn } from "@/utils/cn";
 
 type Tab = "venues" | "coaches" | "academies";
 

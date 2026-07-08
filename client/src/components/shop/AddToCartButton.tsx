@@ -1,11 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Check, ShoppingCart } from "lucide-react";
-import { useState } from "react";
 import { addShopCartItem, type ShopCartItem } from "@/lib/shop/cart";
 import { addBackendCartItem } from "@/lib/shop/ecommerce-api";
 import { cn } from "@/utils/cn";
+import { motion } from "framer-motion";
+import { Check, ShoppingCart } from "lucide-react";
+import { useState } from "react";
 
 export function AddToCartButton({
   item,

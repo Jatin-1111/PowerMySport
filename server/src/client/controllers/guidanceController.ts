@@ -10,6 +10,8 @@ import {
 import { GuidanceSubmission } from "../models/GuidanceSubmission";
 import { SportPathway } from "../../shared/models/SportPathway";
 import { Sport } from "../../shared/models/Sport";
+import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
+import { isSupportedSport, SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
 
 // ─── Rule-based burnout risk — zero AI cost ───────────────────────────────────
 
@@ -76,6 +78,25 @@ export const submitGuidance = async (
         success: false,
         message: "Invalid guidance payload",
         issues: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const requestedSport = parsed.data.sport?.trim();
+    if (requestedSport && !isSupportedSport(requestedSport)) {
+      AnalyticsEvent.create({
+        eventName: "unsupported_sport_search",
+        metadata: { sport: requestedSport, source: "guidance" },
+        source: "WEB",
+        ...(req.user ? { userId: req.user.id } : {}),
+      }).catch(() => {});
+
+      res.status(200).json({
+        success: false,
+        status: "not_supported",
+        sport: requestedSport,
+        supportedSports: SUPPORTED_SPORTS,
+        message: `We're building the ${requestedSport} pathway — our team is working on it! In the meantime, explore one of our 10 supported sports.`,
       });
       return;
     }

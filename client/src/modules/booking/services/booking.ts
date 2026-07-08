@@ -1,10 +1,10 @@
 import axiosInstance from "@/lib/api/axios";
 import { clearRequestCache, withRequestCache } from "@/lib/api/requestCache";
 import {
-  ApiResponse,
-  Availability,
-  Booking,
-  InitiateBookingResponse,
+    ApiResponse,
+    Availability,
+    Booking,
+    InitiateBookingResponse,
 } from "@/types";
 
 const INVITATIONS_TTL_MS = 5000;
@@ -93,10 +93,19 @@ export const bookingApi = {
   cancelBooking: async (
     bookingId: string,
     cancellationReason?: string,
-  ): Promise<ApiResponse<null>> => {
+  ): Promise<ApiResponse<{ refundAmount: number; refundPercentage: number }>> => {
     const response = await axiosInstance.delete(`/bookings/${bookingId}`, {
       data: cancellationReason ? { cancellationReason } : undefined,
     });
+    return response.data;
+  },
+
+  retryRefund: async (
+    bookingId: string,
+  ): Promise<ApiResponse<{ refundStatus: string; refundAmount: number }>> => {
+    const response = await axiosInstance.post(
+      `/bookings/${bookingId}/retry-refund`,
+    );
     return response.data;
   },
 

@@ -12,6 +12,7 @@ import {
   type AdminExpertAvailabilityWindow,
   type AdminExpertSessionsResult,
 } from "@/modules/expert/services/expert";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -39,6 +40,8 @@ export function ExpertAdminPanel({
 }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [sessions, setSessions] = useState<AdminExpertSessionsResult | null>(
     null,
   );
@@ -94,6 +97,42 @@ export function ExpertAdminPanel({
     setForm((p) => ({ ...p, [k]: v }));
 
   const id = expert.id || expert._id || "";
+
+  const handleApprove = async () => {
+    setBusy(true);
+    try {
+      const res = await expertAdminApi.approve(id);
+      if (res.success && res.data) {
+        onUpdated(res.data);
+        toast.success("Expert approved and is now live!");
+      } else toast.error(res.message || "Failed to approve.");
+    } catch {
+      toast.error("Failed to approve expert.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectionReason.trim() || rejectionReason.trim().length < 5) {
+      toast.error("Please enter a rejection reason (min 5 characters).");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await expertAdminApi.reject(id, rejectionReason.trim());
+      if (res.success && res.data) {
+        onUpdated(res.data);
+        setRejecting(false);
+        setRejectionReason("");
+        toast.success("Expert profile rejected. They'll be notified by email.");
+      } else toast.error(res.message || "Failed to reject.");
+    } catch {
+      toast.error("Failed to reject expert.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const toggleActive = async () => {
     setBusy(true);
@@ -332,6 +371,75 @@ export function ExpertAdminPanel({
 
   return (
     <>
+      {/* Approve / Reject panel for PENDING self-registered experts */}
+      {expert.verificationStatus === "PENDING" && (
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="mb-1 text-sm font-bold text-amber-900">Awaiting Review</p>
+          <p className="mb-3 text-xs text-amber-700">
+            This expert self-registered and submitted their profile for review. Review their profile details below, then approve or reject.
+          </p>
+          {!rejecting ? (
+            <div className="flex gap-2">
+              <button
+                onClick={handleApprove}
+                disabled={busy}
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                <CheckCircle2 className="h-4 w-4" /> Approve
+              </button>
+              <button
+                onClick={() => setRejecting(true)}
+                disabled={busy}
+                className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+              >
+                <AlertCircle className="h-4 w-4" /> Reject
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <textarea
+                rows={2}
+                className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                placeholder="Rejection reason — the expert will see this in their email..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleReject}
+                  disabled={busy}
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                >
+                  {busy ? "Rejecting…" : "Send Rejection"}
+                </button>
+                <button
+                  onClick={() => { setRejecting(false); setRejectionReason(""); }}
+                  className="rounded-lg px-3 py-1.5 text-sm text-slate-500 hover:text-slate-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {expert.verificationStatus === "REJECTED" && (
+        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="mb-1 text-sm font-bold text-red-900">Profile Rejected</p>
+          {expert.rejectionReason && (
+            <p className="mb-3 text-xs text-red-700">{expert.rejectionReason}</p>
+          )}
+          <button
+            onClick={handleApprove}
+            disabled={busy}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+          >
+            <CheckCircle2 className="h-4 w-4" /> Approve anyway
+          </button>
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap gap-2">
         <button
           onClick={() => setEditing(true)}

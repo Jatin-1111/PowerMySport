@@ -1,54 +1,53 @@
 "use client";
 
 import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-  Variants,
+    AnimatePresence,
+    motion,
+    useReducedMotion,
+    Variants,
 } from "framer-motion";
 import {
-  ArrowRight,
-  Calendar,
-  Check,
-  CheckCircle2,
-  ChevronLeft,
-  Clock,
-  CreditCard,
-  MapPin,
-  ShieldCheck,
-  Star,
-  TicketPercent,
-  User as UserIcon,
-  Users,
-  Wallet,
-  Zap,
+    ArrowRight,
+    Calendar,
+    Check,
+    CheckCircle2,
+    ChevronLeft,
+    Clock,
+    CreditCard,
+    MapPin,
+    ShieldCheck,
+    Star,
+    TicketPercent,
+    User as UserIcon,
+    Users,
+    Wallet,
+    Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
-import { toast } from "@/lib/toast";
-import { getCommunityAppUrl } from "@/lib/community/url";
-import { authApi } from "@/modules/auth/services/auth";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { CheckoutDetailItem } from "@/modules/booking/components/checkout/CheckoutDetailList";
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { toast } from "@/lib/toast";
+import { statsApi } from "@/modules/analytics/services/stats";
+import { authApi } from "@/modules/auth/services/auth";
 import {
-  PaymentMethodOption,
-  PaymentMethodSelector,
+    PaymentMethodOption,
+    PaymentMethodSelector,
 } from "@/modules/booking/components/checkout/PaymentMethodSelector";
 import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBookingInviteSection";
 import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
 import { bookingApi } from "@/modules/booking/services/booking";
-import { walletApi } from "@/modules/wallet/services/wallet";
-import { statsApi } from "@/modules/analytics/services/stats";
-import { Button } from "@/modules/shared/ui/Button";
 import { coachApi } from "@/modules/coach/services/coach";
 import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
+import { Button } from "@/modules/shared/ui/Button";
 import { venueApi } from "@/modules/venue/services/venue";
+import { walletApi } from "@/modules/wallet/services/wallet";
 import { Coach, User, Venue } from "@/types";
-import { getOwnVenueLocationDisplay } from "@/utils/location";
-import { formatCurrency, formatDate, formatTime } from "@/utils/format";
-import { getDashboardPathByRole } from "@/utils/roleDashboard";
 import { cn } from "@/utils/cn";
+import { formatCurrency, formatDate, formatTime } from "@/utils/format";
+import { getOwnVenueLocationDisplay } from "@/utils/location";
+import { getDashboardPathByRole } from "@/utils/roleDashboard";
 
 // ─── Animation variants ──────────────────────────────────────────────────────
 
@@ -590,35 +589,6 @@ function CheckoutPageContent() {
   const hasValidDuration = durationMinutes > 0;
   const isDetailsReady = type === "coach" ? Boolean(coach) : Boolean(venue);
 
-  const bookingDetails: CheckoutDetailItem[] = [
-    { label: "Date", value: date ? formatDate(date) : "Not selected" },
-    {
-      label: "Time",
-      value:
-        startTime && endTime
-          ? `${formatTime(startTime)} – ${formatTime(endTime)}`
-          : "Not selected",
-    },
-    { label: "Sport", value: sport || "Not selected" },
-    {
-      label: "Participant",
-      value: selectedDependent ? selectedDependent.name : user?.name || "Me",
-      hint: selectedDependent ? "Booking for dependent" : "Booking for self",
-    },
-    {
-      label: "Duration",
-      value: durationHours ? `${durationHours} hour(s)` : "–",
-      hint: durationHours ? `${durationHours} × hourly rate` : undefined,
-    },
-    ...(type === "coach"
-      ? [
-          {
-            label: "Coach",
-            value: coach ? getCoachDisplayName(coach) : "Loading...",
-          },
-        ]
-      : [{ label: "Venue", value: venue?.name || "Loading..." }]),
-  ];
 
   const steps = [
     { id: 1, label: "Review" },

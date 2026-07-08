@@ -8,8 +8,8 @@ import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
 import { reviewApi } from "@/modules/review/services/review";
 import {
-  StaggerContainer,
-  StaggerItem,
+    StaggerContainer,
+    StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
 import { Coach, ReviewItem, ReviewListData, ReviewSummary } from "@/types";
 

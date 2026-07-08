@@ -3,27 +3,26 @@
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-  DashboardShell,
-  type DashboardNavItem,
+    DashboardShell,
+    type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
-import { useRouter } from "next/navigation";
-import {
-  BadgeIndianRupee,
-  BarChart2,
-  BookOpen,
-  Calendar,
-  Grid3x3,
-  LayoutDashboard,
-  Settings,
-  Star,
-  TrendingUp,
-  User,
-} from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { payoutApi } from "@/modules/shared/services/payout";
 import { PayoutBanner } from "@/modules/shared/components/payout/PayoutBanner";
+import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
+import {
+    BadgeIndianRupee,
+    BarChart2,
+    BookOpen,
+    Calendar,
+    Grid3x3,
+    LayoutDashboard,
+    Settings,
+    Star,
+    TrendingUp,
+    User,
+} from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useState } from "react";
 
 export default function VendorLayout({
   children,

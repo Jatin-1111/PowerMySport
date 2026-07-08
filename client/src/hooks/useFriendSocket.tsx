@@ -1,8 +1,8 @@
 "use client";
 
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { createContext, useContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 import { toast } from "sonner";
 
 type FriendSocketContextType = {
@@ -315,10 +315,10 @@ export function FriendSocketProvider({
           toast.success(notification.message, {
             duration: 8000,
             action: {
-              label: "View Details",
+              label: "View Bookings",
               onClick: () => {
                 if (typeof window !== "undefined") {
-                  window.location.href = "/player/bookings";
+                  window.location.href = "/dashboard/my-bookings";
                 }
               },
             },

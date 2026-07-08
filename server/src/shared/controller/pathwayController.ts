@@ -10,6 +10,9 @@ import {
   verifyPathwayAsExpert,
   removePathwayExpertVerification,
 } from "../services/PathwayExpertVerificationService";
+import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
+import { isSupportedSport, SUPPORTED_SPORTS } from "../constants/supportedSports";
+import { Tournament } from "../models/Tournament";
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({
@@ -45,6 +48,25 @@ export const getPathway = async (
       res.status(400).json({
         success: false,
         message: "Please provide a valid Indian state or UT.",
+      });
+      return;
+    }
+
+    if (!isSupportedSport(sport.trim())) {
+      // Fire-and-forget — don't await so the response is immediate.
+      AnalyticsEvent.create({
+        eventName: "unsupported_sport_search",
+        metadata: { sport: sport.trim(), source: "roadmap" },
+        source: "WEB",
+        ...(req.user ? { userId: req.user.id } : {}),
+      }).catch(() => {});
+
+      res.status(200).json({
+        success: true,
+        status: "not_supported",
+        sport: sport.trim(),
+        supportedSports: SUPPORTED_SPORTS,
+        message: `We're building the ${sport.trim()} pathway — our team is working on it! In the meantime, explore one of our 10 supported sports.`,
       });
       return;
     }
@@ -431,5 +453,65 @@ export const deletePathwayExpertVerify = async (
     res.json({ success: true, message: "Verification removed" });
   } catch (error) {
     fail(res, error);
+  }
+};
+
+/**
+ * GET /api/pathways/tournaments/:slug
+ * Returns a single curated tournament by its URL slug.
+ * Used by the /tournaments/[slug] detail page.
+ */
+export const getCuratedTournamentBySlug = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { slug } = req.params;
+    if (!slug) {
+      res.status(400).json({ success: false, message: "Missing slug" });
+      return;
+    }
+
+    const slugStr = (Array.isArray(slug) ? slug[0] : slug) ?? "";
+    const tournament = await Tournament.findOne({
+      slug: slugStr.toLowerCase().trim(),
+      isCurated: true,
+    }).lean();
+
+    if (!tournament) {
+      res
+        .status(404)
+        .json({ success: false, message: "Tournament not found" });
+      return;
+    }
+
+    res.json({ success: true, data: tournament });
+  } catch (error) {
+    fail(res, error, 500);
+  }
+};
+
+/**
+ * GET /api/pathways/tournaments?sport=cricket
+ * Returns all curated tournaments for a sport (for listing).
+ */
+export const getCuratedTournaments = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { sport } = req.query;
+    const query: Record<string, unknown> = { isCurated: true };
+    if (sport && typeof sport === "string") {
+      query.sportSlug = sport.trim().toLowerCase().replace(/\s+/g, "-");
+    }
+
+    const tournaments = await Tournament.find(query)
+      .sort({ sportSlug: 1, prestige: 1 })
+      .lean();
+
+    res.json({ success: true, data: tournaments });
+  } catch (error) {
+    fail(res, error, 500);
   }
 };

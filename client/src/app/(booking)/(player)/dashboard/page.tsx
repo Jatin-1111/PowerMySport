@@ -1,38 +1,38 @@
 "use client";
 
-import { toast } from "@/lib/toast";
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/modules/auth/store/authStore";
-import {
-  Calendar,
-  UserPlus,
-  Mail,
-  MapPin,
-  Users,
-  TrendingUp,
-  ChevronRight,
-  Zap,
-  Wallet,
-} from "lucide-react";
-import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { Button } from "@/modules/shared/ui/Button";
 import { Badge } from "@/components/ui/badge";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { DashboardCalendar } from "@/modules/player/components/DashboardCalendar";
+import { useFriendSocket } from "@/hooks/useFriendSocket";
+import { toast } from "@/lib/toast";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
+import { DashboardCalendar } from "@/modules/player/components/DashboardCalendar";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { friendService } from "@/modules/shared/services/friend";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import {
-  StaggerContainer,
-  StaggerItem,
+    StaggerContainer,
+    StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
-import { motion } from "framer-motion";
 import type { Booking, CoachSubscription } from "@/types";
-import { useFriendSocket } from "@/hooks/useFriendSocket";
+import { motion } from "framer-motion";
+import {
+    Calendar,
+    ChevronRight,
+    Mail,
+    MapPin,
+    TrendingUp,
+    UserPlus,
+    Users,
+    Wallet,
+    Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface UpcomingBooking {
   id: string;

@@ -4,18 +4,18 @@ import { toast } from "@/lib/toast";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
 import {
-  BadgeCheck,
-  Briefcase,
-  Building2,
-  CheckCircle,
-  ClipboardCheck,
-  ClipboardList,
-  FileText,
-  Mail,
-  Shield,
-  Upload,
-  X,
-  Zap,
+    BadgeCheck,
+    Briefcase,
+    Building2,
+    CheckCircle,
+    ClipboardCheck,
+    ClipboardList,
+    FileText,
+    Mail,
+    Shield,
+    Upload,
+    X,
+    Zap,
 } from "lucide-react";
 import { useState } from "react";
 import OnboardingSectionCard from "./OnboardingSectionCard";
@@ -74,7 +74,6 @@ const isDev =
   typeof window !== "undefined" && process.env.NODE_ENV === "development";
 
 export default function Step3DocumentUpload({
-  venueId,
   presignedUrls,
   onDocumentsFinalized,
   loading,

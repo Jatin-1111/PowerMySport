@@ -1,26 +1,26 @@
 "use client";
 
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { toast } from "@/lib/toast";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { coachApi } from "@/modules/coach/services/coach";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Coach, CoachSubscriptionPackage } from "@/types";
 import { formatCurrency } from "@/utils/format";
 import {
-  ArrowLeft,
-  CheckCircle2,
-  CalendarRange,
-  ShieldCheck,
-  Sparkles,
-  Users,
-  Zap,
+    ArrowLeft,
+    CalendarRange,
+    CheckCircle2,
+    ShieldCheck,
+    Sparkles,
+    Users,
+    Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 
 const getFrequencyLabel = (frequency: string) => {
   switch (frequency) {

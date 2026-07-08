@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { pushNotificationService } from "@/lib/api/push";
+import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { pushNotificationService } from "@/lib/api/push";
 import {
-  Bell,
-  BellOff,
-  Smartphone,
-  AlertCircle,
-  CheckCircle,
-  Lightbulb,
+    AlertCircle,
+    Bell,
+    BellOff,
+    CheckCircle,
+    Lightbulb,
+    Smartphone,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
+import { useEffect, useState } from "react";
 
 export function PushNotificationPermission() {
   const [isSupported, setIsSupported] = useState(false);

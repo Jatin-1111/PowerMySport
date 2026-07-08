@@ -1,15 +1,17 @@
 "use client";
 
-import {
-  expertApi,
-  type ExpertSession,
-} from "@/modules/expert/services/expert";
-import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
+import {
+    expertApi,
+    type Expert,
+    type ExpertSession,
+} from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
-import { toast } from "sonner";
-import { CalendarClock, Check, Star, Users, Wallet } from "lucide-react";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import { AlertCircle, CalendarClock, Check, Clock, Star, Users, Wallet } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
@@ -23,6 +25,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function ExpertDashboardPage() {
   const [sessions, setSessions] = useState<ExpertSession[]>([]);
+  const [profile, setProfile] = useState<Expert | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,9 +33,13 @@ export default function ExpertDashboardPage() {
     try {
       setLoading(true);
       setError(null);
-      const s = await expertApi.expertSessions();
-      if (s.success && s.data) setSessions(s.data);
-      else setError(s.message || "Failed to load your sessions.");
+      const [sessionsRes, profileRes] = await Promise.all([
+        expertApi.expertSessions(),
+        expertApi.getMyProfile(),
+      ]);
+      if (sessionsRes.success && sessionsRes.data) setSessions(sessionsRes.data);
+      else setError(sessionsRes.message || "Failed to load your sessions.");
+      if (profileRes.success && profileRes.data) setProfile(profileRes.data);
     } catch {
       setError("Failed to load your dashboard.");
     } finally {
@@ -71,6 +78,38 @@ export default function ExpertDashboardPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
+      {/* Verification status banners */}
+      {profile?.verificationStatus === "PENDING" && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
+          <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+          <div>
+            <p className="font-semibold text-amber-900 dark:text-amber-300">Profile under review</p>
+            <p className="mt-0.5 text-sm text-amber-800 dark:text-amber-400">
+              Our team is reviewing your profile. You&apos;ll receive an email once it&apos;s approved (typically 1–2 business days). In the meantime, you can update your profile and set your availability.
+            </p>
+          </div>
+        </div>
+      )}
+      {profile?.verificationStatus === "REJECTED" && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/20">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+          <div className="flex-1">
+            <p className="font-semibold text-red-900 dark:text-red-300">Profile needs updates</p>
+            {profile.rejectionReason && (
+              <p className="mt-0.5 text-sm text-red-800 dark:text-red-400">
+                {profile.rejectionReason}
+              </p>
+            )}
+            <Link
+              href="/expert/onboarding"
+              className="mt-2 inline-block text-sm font-semibold text-red-700 underline hover:text-red-600 dark:text-red-400"
+            >
+              Update &amp; resubmit profile →
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
         <div className="pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full bg-power-orange/20 blur-3xl" />
         <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">

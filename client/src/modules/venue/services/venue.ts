@@ -1,5 +1,5 @@
-﻿import { ApiResponse, Venue } from "@/types";
-import axiosInstance from "@/lib/api/axios";
+﻿import axiosInstance from "@/lib/api/axios";
+import { ApiResponse, Venue } from "@/types";
 
 export const venueApi = {
   createVenue: async (data: {

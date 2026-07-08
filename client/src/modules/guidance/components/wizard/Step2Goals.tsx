@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
-import { slideIn, OBJECTIVES, FITNESS_LEVELS } from "../../constants";
-import { SelectCard } from "../shared/SelectCard";
+import { FITNESS_LEVELS, OBJECTIVES, slideIn } from "../../constants";
 import type { GuidanceFormState } from "../../types";
+import { SelectCard } from "../shared/SelectCard";
 
 export function Step2Goals({
   form,

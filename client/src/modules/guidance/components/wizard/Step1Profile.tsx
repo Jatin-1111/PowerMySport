@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Flag, TrendingUp } from "lucide-react";
+import { useState } from "react";
 import { slideIn } from "../../constants";
 import type { GuidanceFormState, PlayerProfile } from "../../types";
 import { SportMatchModal } from "./SportMatchModal";
-import { useState } from "react";
 
 interface LevelContext {
   sport: string;

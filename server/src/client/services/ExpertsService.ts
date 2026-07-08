@@ -10,6 +10,7 @@ import {
 import {
   initiatePhonePePayment,
   getPhonePeOrderStatus,
+  initiatePhonePeRefund,
 } from "../../shared/services/PhonePeService";
 import { NotificationService } from "./NotificationService";
 import {
@@ -59,6 +60,7 @@ const serializeExpert = (expert: any) => {
     languages: expert.languages || [],
     photoUrl: expert.photoUrl,
     isActive: expert.isActive,
+    verificationStatus: expert.verificationStatus || "UNVERIFIED",
     rating: expert.rating || 0,
     reviewCount: expert.reviewCount || 0,
     createdAt: expert.createdAt,
@@ -72,6 +74,7 @@ const serializeExpertFull = (expert: any) => ({
   weeklyAvailability: expert.weeklyAvailability || [],
   blackoutDates: expert.blackoutDates || [],
   inPersonAddress: expert.inPersonAddress,
+  rejectionReason: expert.rejectionReason,
 });
 
 const serializeSession = (
@@ -213,6 +216,7 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
     photoUrl: payload.photoUrl,
     photoKey: payload.photoKey,
     isActive: true,
+    verificationStatus: "APPROVED",
     ...(payload.createdBy ? { createdBy: toObjectId(payload.createdBy) } : {}),
   });
 
@@ -222,21 +226,27 @@ export const createExpertByAdmin = async (payload: CreateExpertPayload) => {
 export const listExpertsForAdmin = async (params: {
   page?: number | undefined;
   limit?: number | undefined;
+  verificationStatus?: string | undefined;
 }) => {
   const page = Math.max(1, params.page || 1);
   const limit = Math.min(100, Math.max(1, params.limit || 20));
+  const filter: Record<string, unknown> = {};
+  if (params.verificationStatus) filter.verificationStatus = params.verificationStatus;
   const [experts, total] = await Promise.all([
-    Expert.find({})
+    Expert.find(filter)
       .populate("userId", "name email")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean(),
-    Expert.countDocuments({}),
+    Expert.countDocuments(filter),
   ]);
+  // Always include pending count for the badge
+  const pendingCount = await Expert.countDocuments({ verificationStatus: "PENDING" });
   return {
     data: experts.map(serializeExpertFull),
     pagination: { total, page, totalPages: Math.ceil(total / limit) },
+    pendingCount,
   };
 };
 
@@ -305,6 +315,42 @@ export const setExpertActive = async (expertId: string, isActive: boolean) => {
   const expert = await Expert.findByIdAndUpdate(
     expertId,
     { isActive },
+    { new: true },
+  )
+    .populate("userId", "name email")
+    .lean();
+  if (!expert) throw new Error("Expert not found");
+  return serializeExpertFull(expert);
+};
+
+export const submitExpertForReview = async (userId: string) => {
+  const expert = await Expert.findOneAndUpdate(
+    { userId: toObjectId(userId), verificationStatus: { $in: ["UNVERIFIED", "REJECTED"] } },
+    { verificationStatus: "PENDING" },
+    { new: true },
+  )
+    .populate("userId", "name email")
+    .lean();
+  if (!expert) throw new Error("Expert profile not found or not eligible for review submission");
+  return serializeExpertFull(expert);
+};
+
+export const approveExpert = async (expertId: string) => {
+  const expert = await Expert.findByIdAndUpdate(
+    expertId,
+    { verificationStatus: "APPROVED", isActive: true, $unset: { rejectionReason: 1 } },
+    { new: true },
+  )
+    .populate("userId", "name email")
+    .lean();
+  if (!expert) throw new Error("Expert not found");
+  return serializeExpertFull(expert);
+};
+
+export const rejectExpert = async (expertId: string, reason: string) => {
+  const expert = await Expert.findByIdAndUpdate(
+    expertId,
+    { verificationStatus: "REJECTED", isActive: false, rejectionReason: reason.trim() },
     { new: true },
   )
     .populate("userId", "name email")
@@ -898,20 +944,43 @@ export const setReviewHidden = async (sessionId: string, hidden: boolean) => {
   return session;
 };
 
-/** Admin/finance: mark a required manual refund as done. */
+/** Admin/finance: mark a required manual refund as done, triggering a PhonePe reversal where possible. */
 export const markSessionRefundDone = async (sessionId: string) => {
   const session = await ExpertSession.findById(sessionId);
   if (!session) throw new Error("Session not found");
   if (session.refundStatus !== "REQUIRED") {
     throw new Error("This session has no pending refund");
   }
+
+  if (session.merchantOrderId) {
+    try {
+      const refundMerchantId = `EXPERT-REFUND-${Date.now()}-${session._id.toString().slice(-6)}`;
+      await initiatePhonePeRefund({
+        merchantRefundId: refundMerchantId,
+        originalMerchantOrderId: session.merchantOrderId,
+        amount: session.amount, // ExpertSession.amount is in rupees
+      });
+    } catch (refundError) {
+      console.error(
+        `PhonePe refund failed for expert session ${sessionId} — manual transfer required:`,
+        refundError,
+      );
+      // Do not block the status update; the admin has acknowledged this refund
+      // is required and will process it via bank transfer if PhonePe fails.
+    }
+  } else {
+    console.warn(
+      `Expert session ${sessionId} has no merchantOrderId — cannot auto-refund via PhonePe. Manual bank transfer required.`,
+    );
+  }
+
   session.refundStatus = "MANUAL_DONE";
   await session.save();
   notify(
     session.userId,
     "PAYMENT_REFUND",
     "Refund processed",
-    `Your refund of ₹${session.amount} has been processed.`,
+    `Your refund of ₹${session.amount.toLocaleString("en-IN")} has been processed.`,
     { sessionId: session._id.toString() },
     true,
   );

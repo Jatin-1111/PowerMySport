@@ -1,6 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { SportPathway } from "../models/SportPathway";
+import { SportBasePath } from "../models/SportBasePath";
+import { SportStatePath } from "../models/SportStatePath";
 
 export const guidanceRequestSchema = z.object({
   child_age: z.number().int().min(3).max(21),
@@ -188,30 +190,64 @@ export const generateYouthSportsGuidance = async (
       .trim()
       .toLowerCase()
       .replace(/\s+/g, "-");
-    const cacheKey = `${slug}_${stateSlug}`;
+    const levelIndex =
+      Math.max(1, Math.min(5, payload.current_pathway_level || 1)) - 1;
 
     try {
-      const pathway = await SportPathway.findOne({ cacheKey }).lean();
-      if (
-        pathway &&
-        (pathway as any).levels &&
-        (pathway as any).levels.length > 0
-      ) {
-        const levelIndex =
-          Math.max(1, Math.min(5, payload.current_pathway_level || 1)) - 1;
-        const levelObj = (pathway as any).levels[levelIndex];
+      // Prefer the new split models (SportBasePath + SportStatePath) — they give
+      // richer, more accurate grounding and avoid redundant per-state regeneration.
+      const [basePath, statePath] = await Promise.all([
+        SportBasePath.findOne({ sportSlug: slug }).lean(),
+        SportStatePath.findOne({ sportSlug: slug, stateSlug }).lean(),
+      ]);
+
+      if (basePath && (basePath as any).levels?.length > 0) {
+        const levelObj = (basePath as any).levels[levelIndex];
         if (levelObj) {
-          groundingContext = JSON.stringify(
-            {
-              level: levelObj.level,
-              title: levelObj.title,
-              benchmarks: levelObj.benchmarks,
-              trialInfo: levelObj.trialInfo,
-              talentSignals: levelObj.talentSignals,
-            },
-            null,
-            2,
-          );
+          const groundingObj: Record<string, unknown> = {
+            level: levelObj.level,
+            title: levelObj.title,
+            benchmarks: levelObj.benchmarks,
+            trialInfo: levelObj.trialInfo,
+            talentSignals: levelObj.talentSignals,
+            mentalSkillsFocus: levelObj.mentalSkillsFocus,
+            coachSelectionGuide: levelObj.coachSelectionGuide,
+          };
+          if (statePath) {
+            groundingObj.stateContext = {
+              stateAssociation: (statePath as any).stateAssociation,
+              topAcademies: (statePath as any).topAcademies,
+              feeRange: (statePath as any).feeRange,
+              governmentSchemes: (statePath as any).governmentSchemes,
+              regionalCalendar: (statePath as any).regionalCalendar,
+            };
+          }
+          groundingContext = JSON.stringify(groundingObj, null, 2);
+        }
+      } else {
+        // Fall back to the monolithic SportPathway for sports/states not yet
+        // migrated to the new split model.
+        const cacheKey = `${slug}_${stateSlug}`;
+        const pathway = await SportPathway.findOne({ cacheKey }).lean();
+        if (
+          pathway &&
+          (pathway as any).levels &&
+          (pathway as any).levels.length > 0
+        ) {
+          const levelObj = (pathway as any).levels[levelIndex];
+          if (levelObj) {
+            groundingContext = JSON.stringify(
+              {
+                level: levelObj.level,
+                title: levelObj.title,
+                benchmarks: levelObj.benchmarks,
+                trialInfo: levelObj.trialInfo,
+                talentSignals: levelObj.talentSignals,
+              },
+              null,
+              2,
+            );
+          }
         }
       }
     } catch (e) {

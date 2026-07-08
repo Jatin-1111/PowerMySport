@@ -1,7 +1,7 @@
 "use client";
 
-import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { ExpertProfileEditor } from "@/modules/expert/components/ExpertProfileEditor";
+import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { useCallback, useEffect, useState } from "react";
 
 export default function ExpertProfilePage() {

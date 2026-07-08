@@ -6,14 +6,13 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
 import { AnimatePresence, motion, Variants } from "framer-motion";
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import {
-  Facebook,
-  Instagram,
-  Linkedin,
-  Mail,
-  MapPin,
-  Phone,
-  Twitter,
+    Instagram,
+    Linkedin,
+    Mail,
+    MapPin,
+    Phone,
 } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
@@ -28,12 +27,6 @@ const SUBJECT_OPTIONS = [
 ];
 
 // Unsplash image sources — sports/fitness/stadium themed
-const HERO_IMG =
-  "https://images.unsplash.com/photo-1556817411-31ae72fa3ea0?auto=format&fit=crop&w=1200&q=80";
-const SPORT_IMG_1 =
-  "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=800&q=80";
-const SPORT_IMG_2 =
-  "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&w=600&q=80";
 const SPORT_IMG_3 =
   "https://images.unsplash.com/photo-1544216717-3bbf52512659?auto=format&fit=crop&w=600&q=80";
 
@@ -185,20 +178,6 @@ function ClippedFrame({
 
 // ─── Geometric Overlay Backdrop ───────────────────────────────────────────────
 
-function GeometricBackdrop({ className = "" }: { className?: string }) {
-  return (
-    <div className={`pointer-events-none ${className}`} aria-hidden="true">
-      {/* Outer ring */}
-      <div className="absolute inset-0 rounded-[2.5rem] border border-orange-300/30" />
-      {/* Inner glow */}
-      <div className="absolute inset-4 rounded-[2rem] bg-gradient-to-br from-orange-400/10 via-amber-300/5 to-transparent backdrop-blur-sm" />
-      {/* Corner accent — top-right */}
-      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-orange-400/20 blur-2xl" />
-      {/* Corner accent — bottom-left */}
-      <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-blue-400/15 blur-2xl" />
-    </div>
-  );
-}
 
 // ─── Info Card Component ───────────────────────────────────────────────────────
 
@@ -240,9 +219,7 @@ function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
 // ─── Social Row ────────────────────────────────────────────────────────────────
 
 const SOCIALS = [
-  { Icon: Facebook, label: "Facebook", href: "#" },
-  { Icon: Instagram, label: "Instagram", href: "#" },
-  { Icon: Twitter, label: "Twitter / X", href: "#" },
+  { Icon: Instagram, label: "Instagram", href: "https://www.instagram.com/powermysport" },
   { Icon: Linkedin, label: "LinkedIn", href: "#" },
 ] as const;
 
@@ -274,12 +251,6 @@ function Field({ label, id, required, ...props }: FieldProps) {
 
 // ─── Stats Strip ──────────────────────────────────────────────────────────────
 
-const STATS = [
-  { value: "24h", label: "Response time" },
-  { value: "10k+", label: "Happy players" },
-  { value: "500+", label: "Partner venues" },
-  { value: "4.9★", label: "Support rating" },
-];
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -672,6 +643,21 @@ export default function ContactPage() {
                 </a>
                 <p className="mt-0.5 text-xs text-slate-400">
                   Mon–Sat: 9 AM – 8 PM IST
+                </p>
+              </InfoCard>
+
+              {/* WhatsApp */}
+              <InfoCard icon={WhatsAppIcon} title="WhatsApp">
+                <a
+                  href={`https://wa.me/918968582443?text=${encodeURIComponent("Hi! I have a question about PowerMySport.")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-slate-600 transition-colors hover:text-power-orange"
+                >
+                  Chat with us on WhatsApp →
+                </a>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Usually replies within minutes
                 </p>
               </InfoCard>
 

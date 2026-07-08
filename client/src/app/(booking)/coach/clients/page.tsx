@@ -1,26 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Users,
-  Search,
-  User,
-  Clock,
-  Calendar,
-  ChevronRight,
-  Activity,
-  Dumbbell,
-} from "lucide-react";
-import Link from "next/link";
+import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
 import {
-  StaggerContainer,
-  StaggerItem,
+    StaggerContainer,
+    StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
-import { toast } from "@/lib/toast";
 import { ClientSummary } from "@/types";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    Activity,
+    Calendar,
+    ChevronRight,
+    Clock,
+    Dumbbell,
+    Search,
+    User,
+    Users,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 

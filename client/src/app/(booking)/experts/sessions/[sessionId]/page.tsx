@@ -1,24 +1,24 @@
 "use client";
 
-import {
-  expertApi,
-  type ExpertSession,
-} from "@/modules/expert/services/expert";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
-import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
-import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
-import { toast } from "sonner";
 import {
-  ArrowLeft,
-  CalendarClock,
-  CheckCircle2,
-  Clock,
-  Star,
-  XCircle,
+    expertApi,
+    type ExpertSession,
+} from "@/modules/expert/services/expert";
+import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import {
+    ArrowLeft,
+    CalendarClock,
+    CheckCircle2,
+    Clock,
+    Star,
+    XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
@@ -419,7 +419,7 @@ export default function ExpertSessionPage() {
         onClose={() => setShowCancel(false)}
         onConfirm={handleCancel}
         title="Cancel session?"
-        message="If you've paid, our team will process a refund manually. This can't be undone."
+        message="If you've paid, a refund will be initiated to your original payment method. This can't be undone."
         confirmLabel="Cancel session"
         cancelLabel="Keep session"
         variant="danger"

@@ -1,7 +1,7 @@
-import React from "react";
-import { Modal } from "./Modal";
-import { Button } from "./Button";
 import { AlertTriangle } from "lucide-react";
+import React from "react";
+import { Button } from "./Button";
+import { Modal } from "./Modal";
 
 interface ConfirmDialogProps {
   isOpen: boolean;

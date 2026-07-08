@@ -1,15 +1,15 @@
 "use client";
 
+import {
+    clearShopCart,
+    getShopCartTotals,
+    updateShopCartQuantity,
+    useShopCart,
+} from "@/lib/shop/cart";
+import { formatInr } from "@/lib/shop/format";
 import { AnimatePresence, motion } from "framer-motion";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
-import {
-  clearShopCart,
-  getShopCartTotals,
-  updateShopCartQuantity,
-  useShopCart,
-} from "@/lib/shop/cart";
-import { formatInr } from "@/lib/shop/format";
 
 export function CartClient() {
   const items = useShopCart();

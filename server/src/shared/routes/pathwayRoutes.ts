@@ -11,6 +11,8 @@ import {
   getPathwaysForExpertVerification,
   postPathwayExpertVerify,
   deletePathwayExpertVerify,
+  getCuratedTournamentBySlug,
+  getCuratedTournaments,
 } from "../controller/pathwayController";
 import { authMiddleware } from "../../middleware/auth";
 
@@ -34,6 +36,11 @@ router.get("/search", pathwayRateLimiter, searchPathways);
 
 // GET /api/pathways/stories?sport=cricket&level=2
 router.get("/stories", pathwayRateLimiter, getPathwayStories);
+
+// GET /api/pathways/tournaments          — list all curated tournaments (optionally filtered by ?sport=)
+// GET /api/pathways/tournaments/:slug    — single curated tournament detail page data
+router.get("/tournaments", pathwayRateLimiter, getCuratedTournaments);
+router.get("/tournaments/:slug", pathwayRateLimiter, getCuratedTournamentBySlug);
 
 // GET /api/pathways?sport=cricket&age=12&city=Mumbai
 router.get("/", pathwayRateLimiter, getPathway);

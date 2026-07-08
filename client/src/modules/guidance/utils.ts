@@ -1,6 +1,6 @@
 // ─── Guidance Module Utilities ────────────────────────────────────────────────
 
-import type { JourneyPhase, GuidanceResponse } from "./types";
+import type { GuidanceResponse, JourneyPhase } from "./types";
 
 export function buildFallbackJourney(r: GuidanceResponse): JourneyPhase[] {
   const splitActions = (s?: string) =>

@@ -1,5 +1,5 @@
-import { create } from "zustand";
 import { Booking, BookingParticipant, PaymentType, SplitMethod } from "@/types";
+import { create } from "zustand";
 
 export interface WaitlistStatus {
   position: number;

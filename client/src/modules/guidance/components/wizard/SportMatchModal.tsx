@@ -1,29 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Sparkles,
-  ChevronRight,
-  Target,
-  Wallet,
-  Activity,
-  MapPin,
-} from "lucide-react";
+import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import axiosInstance from "@/lib/api/axios";
+import { authApi } from "@/modules/auth/services/auth";
+import { DEPENDENT_RELATIONS } from "@/modules/player/constants/dependentRelations";
 import { Button } from "@/modules/shared/ui/Button";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  PERSONALITY_OPTIONS,
-  OBJECTIVES,
-  BUDGET_OPTIONS,
-  INDIAN_STATES,
+    Activity,
+    ChevronRight,
+    Sparkles,
+    Wallet,
+    X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+    BUDGET_OPTIONS,
+    INDIAN_STATES,
+    OBJECTIVES,
+    PERSONALITY_OPTIONS,
 } from "../../constants";
 import type { PlayerProfile } from "../../types";
-import { authApi } from "@/modules/auth/services/auth";
-import axiosInstance from "@/lib/api/axios";
-import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
-import { DEPENDENT_RELATIONS } from "@/modules/player/constants/dependentRelations";
-import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
 
 type SportRecommendation = {
   sportSlug: string;

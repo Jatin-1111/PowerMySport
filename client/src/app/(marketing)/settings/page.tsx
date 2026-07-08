@@ -1,31 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useAuthStore } from "@/modules/auth/store/authStore";
+import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Modal } from "@/modules/shared/ui/Modal";
 import {
-  StaggerContainer,
-  StaggerItem,
+    StaggerContainer,
+    StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
-import { toast } from "@/lib/toast";
 import { UserRole } from "@/types";
 import {
-  AlertTriangle,
-  Bell,
-  ChevronRight,
-  Eye,
-  EyeOff,
-  KeyRound,
-  Loader2,
-  Settings,
-  Shield,
-  Trash2,
+    AlertTriangle,
+    Bell,
+    ChevronRight,
+    Eye,
+    EyeOff,
+    KeyRound,
+    Loader2,
+    Settings,
+    Shield,
+    Trash2,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const DELETE_CONFIRM_WORD = "DELETE";
 

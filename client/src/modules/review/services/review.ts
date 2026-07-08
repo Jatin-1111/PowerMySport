@@ -1,5 +1,5 @@
 import axiosInstance from "@/lib/api/axios";
-import { ApiResponse, ReviewListData, ReviewItem } from "@/types";
+import { ApiResponse, ReviewItem, ReviewListData } from "@/types";
 
 export const reviewApi = {
   getReviewEligibility: async (params: {

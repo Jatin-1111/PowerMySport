@@ -1,17 +1,17 @@
 "use client";
 
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import axiosInstance from "@/lib/api/axios";
-import { motion } from "framer-motion";
-import { Bell, Clock, CheckCircle } from "lucide-react";
-import { useEffect, useState } from "react";
 import { cn } from "@/utils/cn";
+import { motion } from "framer-motion";
+import { Bell, CheckCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ReminderPreferences {
   bookingReminders: {

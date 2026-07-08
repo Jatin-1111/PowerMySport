@@ -1,37 +1,37 @@
 "use client";
 
-import {
-  expertApi,
-  type Expert,
-  type ExpertReview,
-  type ExpertSessionMode,
-} from "@/modules/expert/services/expert";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { toast } from "sonner";
-import {
-  Award,
-  CalendarCheck,
-  CalendarClock,
-  MapPin,
-  Star,
-  Globe,
-  Languages,
-  ShieldCheck,
-  ArrowLeft,
-  MessageSquareText,
-  Timer,
-  Quote,
-} from "lucide-react";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
+import {
+    expertApi,
+    type Expert,
+    type ExpertReview,
+    type ExpertSessionMode,
+} from "@/modules/expert/services/expert";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import {
+    ArrowLeft,
+    Award,
+    CalendarCheck,
+    CalendarClock,
+    Globe,
+    Languages,
+    MapPin,
+    MessageSquareText,
+    Quote,
+    ShieldCheck,
+    Star,
+    Timer,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 

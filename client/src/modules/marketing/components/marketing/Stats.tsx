@@ -2,12 +2,11 @@
 
 import { cn } from "@/utils/cn";
 import {
-  motion,
-  useInView,
-  useMotionValue,
-  useTransform,
-  animate,
-  Variants,
+    animate,
+    motion,
+    useInView,
+    useMotionValue,
+    Variants,
 } from "framer-motion";
 import React, { useEffect, useRef } from "react";
 

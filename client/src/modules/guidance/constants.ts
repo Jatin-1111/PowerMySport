@@ -1,26 +1,26 @@
 // ─── Guidance Module Constants & Utilities ───────────────────────────────────
 
-import {
-  Shield,
-  Zap,
-  Trophy,
-  Users,
-  Crosshair,
-  Compass,
-  Timer,
-  Network,
-  Smile,
-  Activity,
-  Target,
-  Sprout,
-  Flame,
-  Wallet,
-  CreditCard,
-  Diamond,
-  UserCircle2,
-  Sparkles,
-} from "lucide-react";
 import type { Variants } from "framer-motion";
+import {
+    Activity,
+    Compass,
+    CreditCard,
+    Crosshair,
+    Diamond,
+    Flame,
+    Network,
+    Shield,
+    Smile,
+    Sparkles,
+    Sprout,
+    Target,
+    Timer,
+    Trophy,
+    UserCircle2,
+    Users,
+    Wallet,
+    Zap,
+} from "lucide-react";
 import type { GuidanceFormState } from "./types";
 
 export const PERSONALITY_OPTIONS = [

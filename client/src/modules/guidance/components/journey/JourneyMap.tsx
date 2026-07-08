@@ -1,15 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { ChevronDown, Wallet, Clock, MapPin, Target } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, Clock, Target, Wallet } from "lucide-react";
+import { useState } from "react";
 import type { JourneyPhase } from "../../types";
 
 export function JourneyMap({
   phases,
   goal,
-  sport,
 }: {
   phases: JourneyPhase[];
   goal: string;

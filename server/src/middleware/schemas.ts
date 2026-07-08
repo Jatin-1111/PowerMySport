@@ -12,12 +12,13 @@ export const registerSchema = z.object({
     .boolean()
     .refine((value) => value === true, "Privacy Policy must be accepted"),
   role: z
-    .enum(["Parent", "Player", "VenueLister", "Coach"])
+    .enum(["Parent", "Player", "VenueLister", "Coach", "EXPERT"])
     .optional()
     .default("Player"),
   // NOTE: "Admin" is intentionally NOT accepted at self-registration. Privileged
   // roles/types must be provisioned through the admin/verification flows, never
-  // self-selected by the registrant.
+  // self-selected by the registrant. EXPERT is self-selectable but goes through
+  // an async admin review before becoming active.
   userType: z
     .enum(["Parent", "Player", "Coach", "Academy", "VenueLister"])
     .optional()

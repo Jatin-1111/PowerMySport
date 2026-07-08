@@ -1,37 +1,38 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Trophy,
-  Users,
-  MapPin,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  CalendarPlus,
-  ArrowRight,
-  Shield,
-  ExternalLink,
-  Loader2,
-  Heart,
-  ChevronRight,
-  Globe,
-  Target,
-  Award,
-  Info,
-  CheckCheck,
-  ChevronLeft,
-  UploadCloud,
-  ShieldAlert,
-  CalendarDays,
-  Clock,
-} from "lucide-react";
-import { useState, useEffect } from "react";
-import { calendarApi } from "@/modules/booking/services/calendarApi";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 import axiosInstance from "@/lib/api/axios";
+import { useAuthStore } from "@/modules/auth/store/authStore";
+import { calendarApi } from "@/modules/booking/services/calendarApi";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    AlertCircle,
+    ArrowRight,
+    Award,
+    CalendarDays,
+    CalendarPlus,
+    CheckCheck,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    ExternalLink,
+    FileText,
+    Globe,
+    Heart,
+    Info,
+    Loader2,
+    MapPin,
+    Shield,
+    ShieldAlert,
+    Sparkles,
+    Target,
+    Trophy,
+    UploadCloud,
+    Users,
+    X,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -504,7 +505,7 @@ export function TournamentModal({
                   {tournament.federation && (
                     <span className="flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-white/90">
                       <Shield className="h-3 w-3" />
-                      {tournament.federation}
+                      {typeof tournament.federation === "object" ? tournament.federation.name : tournament.federation}
                     </span>
                   )}
                   {sportName && (
@@ -1242,6 +1243,16 @@ export function TournamentModal({
                   Register with PowerMySport
                   <ArrowRight className="h-4 w-4" />
                 </button>
+                {tournament.slug && (
+                  <Link
+                    href={`/tournaments/${tournament.slug}`}
+                    onClick={onClose}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <ExternalLink className="h-4 w-4 text-slate-400" />
+                    View full details
+                  </Link>
+                )}
                 <p className="text-center text-xs text-slate-400">
                   or{" "}
                   <button

@@ -1,0 +1,2358 @@
+"use client";
+
+import { toast } from "@/lib/toast";
+import { authApi } from "@/modules/auth/services/auth";
+import { useAuthStore } from "@/modules/auth/store/authStore";
+import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
+import { SportMatchModal } from "@/modules/guidance/components/wizard/SportMatchModal";
+import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
+import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
+import { RoadmapChatDrawer } from "@/modules/sports/components/RoadmapChatDrawer";
+import { TournamentModal } from "@/modules/sports/components/TournamentDetailModal";
+import { TournamentRecommendationPanel } from "@/modules/sports/components/TournamentRecommendationPanel";
+import {
+    groupLevelsIntoMacro,
+} from "@/modules/sports/config/macroLevels";
+import {
+    pathwayApi,
+    PathwayLevel,
+    SportPathway,
+} from "@/modules/sports/services/pathway";
+import {
+    AthleteStory,
+    pathwayProfileApi,
+} from "@/modules/sports/services/pathwayProfileApi";
+import { Sport, sportsApi } from "@/modules/sports/services/sports";
+import { AnimatePresence, motion } from "framer-motion";
+import Fuse from "fuse.js";
+import {
+    ArrowRight,
+    BadgeCheck,
+    Briefcase,
+    Calculator,
+    CheckCircle,
+    CheckCircle2,
+    ChevronDown,
+    ChevronRight,
+    ClipboardList,
+    Flag,
+    GitCompare,
+    // P5-P9 icons
+    Heart,
+    Info,
+    Landmark,
+    Loader2,
+    MapPin,
+    MessageSquareQuote,
+    Search,
+    ShoppingBag,
+    Sparkles,
+    Target,
+    TrendingUp,
+    Trophy,
+    Users,
+    Wallet,
+    X,
+} from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+
+import {
+    fadeUp,
+    INDIAN_STATES,
+    orchestrator,
+    pathwayLevels,
+    SPRING_STIFF
+} from '../config/constants';
+import { DEFAULT_PROGRESS, ProgressState } from '../types';
+import {
+    ApplicationRecord,
+    highlightMatch,
+    loadApplications,
+    loadProgress,
+    loadSaved,
+    loadState,
+    saveApplications,
+    SavedItem,
+    saveProgress,
+    saveSaved,
+    saveState
+} from '../utils';
+import { ApplicationsTab } from './ApplicationsTab';
+import { BudgetCalculator } from './BudgetCalculator';
+import { ComparePanel } from './ComparePanel';
+import { PathwayLevelCard } from './PathwayLevelCard';
+import { PathwayLevelDetail } from './PathwayLevelDetail';
+import { ProgressTracker } from './ProgressTracker';
+import { SaveButton } from './SaveButton';
+import { SavedTab } from './SavedTab';
+import { StoriesTab } from './StoriesTab';
+import { AmbientBlob } from './SubComponents';
+
+// ─── Sport search section ──────────────────────────────────────────────────────
+
+export function PathwayExplorerSection() {
+  const [query, setQuery] = useState("");
+  const [allSports, setAllSports] = useState<Sport[]>([]);
+  const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
+  const [suggestions, setSuggestions] = useState<Sport[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error" | "not_supported"
+  >("idle");
+  const [notSupportedSport, setNotSupportedSport] = useState<string>("");
+  const [result, setResult] = useState<{
+    pathway: SportPathway;
+    source: "db" | "generated";
+  } | null>(null);
+  const [entitiesStatus, setEntitiesStatus] = useState<
+    "idle" | "loading" | "ready"
+  >("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeTab, setActiveTab] = useState<
+    "journey" | "opportunities" | "plan" | "inspire" | "saved" | "applications"
+  >("journey");
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const toggleCard = (key: string) =>
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const [ownedEquipment, setOwnedEquipment] = useState<Set<string>>(new Set());
+  const toggleOwned = (key: string) =>
+    setOwnedEquipment((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const [modalData, setModalData] = useState<{
+    item: any;
+    type: "tournament" | "scholarship" | "university";
+  } | null>(null);
+  const [detailTournament, setDetailTournament] = useState<any | null>(null);
+
+  // P1: progress tracker state
+  const [progress, setProgress] = useState<ProgressState>(DEFAULT_PROGRESS);
+
+  // P2: state/city selector
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [stateOpen, setStateOpen] = useState(false);
+
+  // P5-P8 states
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
+  const [applications, setApplications] = useState<ApplicationRecord[]>([]);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const { user } = useAuthStore();
+  const [dbStories, setDbStories] = useState<AthleteStory[]>([]);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatLoginModalOpen, setChatLoginModalOpen] = useState(false);
+  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
+  const [isMatchModalCollapsed, setIsMatchModalCollapsed] = useState(false);
+  const [previewSport, setPreviewSport] = useState<string | null>(null);
+  const [previewSportDependentId, setPreviewSportDependentId] = useState<
+    string | null
+  >(null);
+  const [isSavingSport, setIsSavingSport] = useState(false);
+  const [showReengagePrompt, setShowReengagePrompt] = useState(false);
+  const [hasRunMatchThisSession, setHasRunMatchThisSession] = useState(false);
+  const hasShownReengageRef = useRef(false);
+
+  const searchParams = useSearchParams();
+  const [contextBanner, setContextBanner] = useState<{
+    age: string;
+    budget: string;
+    state: string;
+  } | null>(null);
+
+  // Load from DB or fallback to localStorage
+  useEffect(() => {
+    const initProfile = async () => {
+      setSelectedState(loadState());
+      if (user) {
+        const dbProfile = await pathwayProfileApi.getProfile();
+        if (dbProfile) {
+          setProgress(dbProfile.progress || DEFAULT_PROGRESS);
+          setSavedItems(dbProfile.savedItems || []);
+          setApplications(dbProfile.applications || []);
+          return;
+        }
+      }
+      setProgress(loadProgress());
+      setSavedItems(loadSaved());
+      setApplications(loadApplications());
+    };
+    initProfile();
+  }, [user]);
+
+  useEffect(() => {
+    const fetchStories = async () => {
+      if (result) {
+        const fetchedStories = await pathwayProfileApi.getStories(
+          result.pathway.sportSlug,
+          undefined,
+          selectedState || undefined,
+        );
+        setDbStories(fetchedStories);
+      }
+    };
+    fetchStories();
+  }, [result, selectedState]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (
+      isMatchModalCollapsed &&
+      activeIdx >= 1 &&
+      !hasShownReengageRef.current
+    ) {
+      timer = setTimeout(() => {
+        setShowReengagePrompt(true);
+        hasShownReengageRef.current = true;
+      }, 4000);
+    }
+    return () => clearTimeout(timer);
+  }, [isMatchModalCollapsed, activeIdx]);
+
+  const handleSavedChange = (items: SavedItem[]) => {
+    setSavedItems(items);
+    saveSaved(items);
+    if (user) pathwayProfileApi.updateProfile({ savedItems: items });
+  };
+
+  const handleApplicationsChange = (items: ApplicationRecord[]) => {
+    setApplications(items);
+    saveApplications(items);
+    if (user) pathwayProfileApi.updateProfile({ applications: items });
+  };
+
+  const handleUpdateApplicationStatus = (
+    id: string,
+    status: ApplicationRecord["status"],
+  ) => {
+    const updated = applications.map((app) =>
+      app.id === id ? { ...app, status } : app,
+    );
+    handleApplicationsChange(updated);
+  };
+
+  const handleProgressChange = (p: ProgressState) => {
+    setProgress(p);
+    saveProgress(p);
+    if (user) pathwayProfileApi.updateProfile({ progress: p });
+  };
+
+  const handleStateChange = (s: string) => {
+    setSelectedState(s);
+    saveState(s);
+    setStateOpen(false);
+  };
+
+  // Fetch all sports on mount
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const sports = await sportsApi.getAllSports();
+        setAllSports(sports);
+        setFuse(new Fuse(sports, { keys: ["name"], threshold: 0.3 }));
+      } catch (error) {
+        console.error("Failed to fetch sports:", error);
+      }
+    };
+    fetchSports();
+  }, []);
+
+  // Filter suggestions instantly
+  useEffect(() => {
+    setActiveSuggestionIndex(-1);
+    if (!fuse || query.trim().length < 1) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setActiveTab("journey");
+      return;
+    }
+    const results = fuse.search(query).map((r) => r.item);
+    setSuggestions(results.slice(0, 5));
+    // Keep the dropdown open even with zero matches so we can show a helpful
+    // "no sport found" hint instead of the panel silently vanishing.
+    setShowSuggestions(true);
+  }, [query, fuse]);
+
+  // `stateOverride` lets a caller pass a just-resolved state value directly
+  // instead of reading the `selectedState` React state variable — needed by
+  // the mount-time URL effect below, which otherwise races the "load saved
+  // state from localStorage" effect and reads a stale (empty) `selectedState`
+  // closure on the very first render.
+  const handleSearch = async (sportName: string, stateOverride?: string) => {
+    const name = sportName.trim();
+    if (!name || name.length < 2) return;
+
+    const effectiveState = stateOverride || selectedState;
+    if (!effectiveState) {
+      setErrorMsg("Please select your state first.");
+      setStatus("error");
+      return;
+    }
+
+    setShowSuggestions(false);
+    setQuery(name);
+    setStatus("loading");
+    setResult(null);
+    setErrorMsg("");
+    setEntitiesStatus("idle");
+    setActiveIdx(0);
+    setActiveTab("journey");
+    setExpandedCards(new Set());
+    setOwnedEquipment(new Set());
+
+    const state = effectiveState;
+
+    try {
+      const res = await pathwayApi.getPathway(name, undefined, state);
+      if (!res) throw new Error("Not found");
+
+      if ("notSupported" in res) {
+        setNotSupportedSport(res.sport);
+        setStatus("not_supported");
+        return;
+      }
+
+      // TypeScript narrowed: res is the normal pathway result from here.
+      const pr = res as { pathway: SportPathway; source: "db" | "generated"; isStale?: boolean; entitiesReady?: boolean };
+
+      if ((pr.pathway as any).status === "pending_review") {
+        setErrorMsg(
+          (pr.pathway as any).message ||
+            "This pathway is being reviewed by experts and is not yet available for your state.",
+        );
+        setStatus("error");
+        return;
+      }
+
+      setResult(pr as any);
+      setQuery(pr.pathway.sportName);
+      setStatus("success");
+
+      // If entities (tournaments/scholarships/universities) weren't ready yet,
+      // fetch them in the background and merge when done.
+      if (!pr.entitiesReady) {
+        setEntitiesStatus("loading");
+        pathwayApi
+          .getEntities(pr.pathway.sportName, state)
+          .then((entities) => {
+            if (!entities) {
+              setEntitiesStatus("ready");
+              return;
+            }
+            setResult((prev: any) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                pathway: {
+                  ...prev.pathway,
+                  tournaments: entities.tournaments,
+                  scholarships: entities.scholarships,
+                  universities: entities.universities,
+                },
+              };
+            });
+            setEntitiesStatus("ready");
+          })
+          .catch(() => setEntitiesStatus("ready"));
+      } else {
+        setEntitiesStatus("ready");
+      }
+    } catch (err: any) {
+      const msg = err.message || "";
+      setErrorMsg(
+        msg && !msg.toLowerCase().includes("not found")
+          ? msg
+          : "Something went wrong. Please try again in a moment.",
+      );
+      setStatus("error");
+    }
+  };
+
+  const clearSearch = () => {
+    setQuery("");
+    setResult(null);
+    setStatus("idle");
+    setErrorMsg("");
+    setNotSupportedSport("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    inputRef.current?.focus();
+    if (savedItems.length > 0) setActiveTab("saved");
+    else if (applications.length > 0) setActiveTab("applications");
+    else setActiveTab("journey");
+  };
+
+  // Read URL params on mount and pre-fill sport/level/state/context banner
+  useEffect(() => {
+    const sport = searchParams.get("sport");
+    const level = searchParams.get("level");
+    const state = searchParams.get("state");
+    const age = searchParams.get("age");
+    const budget = searchParams.get("budget");
+
+    if (state) handleStateChange(state);
+    if (sport) {
+      // Resolve the state synchronously (URL param, else whatever's already
+      // saved in localStorage) instead of trusting `selectedState`, which
+      // won't reflect the "load saved state" effect's update until after
+      // this mount-time effect has already run.
+      const effectiveState = state || loadState();
+      handleSearch(sport, effectiveState).then(() => {
+        if (level) setActiveIdx(Math.max(0, parseInt(level, 10) - 1));
+      });
+    }
+    if (age && budget) {
+      setContextBanner({ age, budget, state: state || "" });
+    }
+  }, []);
+
+  // Auto-open the chat drawer after a login redirect (?openChat=1) once the
+  // pathway has loaded and the user session is available.
+  const openChatParam = searchParams.get("openChat") === "1";
+  useEffect(() => {
+    if (openChatParam && result && user) {
+      setChatOpen(true);
+    }
+  }, [openChatParam, result, user]);
+
+  const handleChatCtaClick = () => {
+    if (!user) {
+      setChatLoginModalOpen(true);
+    } else {
+      setChatOpen(true);
+    }
+  };
+
+  const currentLevels = result ? result.pathway.levels : pathwayLevels;
+  const macroLevels = groupLevelsIntoMacro(currentLevels as PathwayLevel[]);
+  const selectedMacroLevel = macroLevels[activeIdx] || macroLevels[0];
+  const totalOpportunities = result
+    ? (result.pathway.tournaments?.length || 0) +
+      (result.pathway.scholarships?.length || 0) +
+      (result.pathway.universities?.length || 0)
+    : 0;
+
+  return (
+    <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
+      <AmbientBlob className="h-96 w-96 bg-orange-100/40 -left-40 top-10" />
+      <AmbientBlob className="h-80 w-80 bg-indigo-100/30 -right-40 top-20" />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <motion.div
+          variants={orchestrator}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-60px" }}
+          className="mb-10 text-center"
+        >
+          <motion.div variants={fadeUp} className="mb-4 flex justify-center">
+            <SectionLabel label="For Parents" color="orange" />
+          </motion.div>
+          <motion.h2
+            variants={fadeUp}
+            className="font-title mx-auto max-w-2xl text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl lg:text-5xl"
+          >
+            Know the Journey
+            <span className="relative ml-2 inline-block">
+              Before It Begins.
+              <span
+                aria-hidden
+                className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-orange-400 to-orange-200"
+              />
+            </span>
+          </motion.h2>
+          <motion.p
+            variants={fadeUp}
+            className="mx-auto mt-4 max-w-xl text-base text-slate-600 sm:text-lg"
+          >
+            Search any sport to see the full development path — from first
+            practice to national stage. Timeline, budget, competitions, and what
+            your child needs at every level.
+          </motion.p>
+        </motion.div>
+
+        {/* Search bar + P2 State selector */}
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="mx-auto max-w-3xl relative"
+        >
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* P2: State selector */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setStateOpen((o) => !o)}
+                className="flex h-full min-h-[52px] items-center gap-2 rounded-2xl border border-white/70 bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 shadow-xl backdrop-blur-sm whitespace-nowrap transition hover:bg-white sm:min-w-[140px]"
+              >
+                <MapPin className="h-4 w-4 text-power-orange shrink-0" />
+                <span className="truncate max-w-[100px]">
+                  {selectedState || "Select your state"}
+                </span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 text-slate-400 transition-transform shrink-0 ${stateOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              <AnimatePresence>
+                {stateOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.13 }}
+                    className="absolute left-0 top-full z-30 mt-1.5 w-52 rounded-2xl border border-slate-100 bg-white shadow-2xl overflow-hidden"
+                  >
+                    <div className="max-h-60 overflow-y-auto py-1">
+                      {INDIAN_STATES.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => handleStateChange(s)}
+                          className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition hover:bg-orange-50 ${selectedState === s ? "font-bold text-power-orange" : "font-medium text-slate-700"}`}
+                        >
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Search input */}
+            <div className="relative flex flex-1 items-center gap-1.5 rounded-2xl border border-white/70 bg-white/90 p-1.5 sm:gap-3 sm:p-2 sm:pr-3 shadow-xl backdrop-blur-sm">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white sm:flex sm:h-12 sm:w-12">
+                {status === "loading" ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Search className="h-5 w-5" />
+                )}
+              </div>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setStatus("idle");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    if (!showSuggestions && suggestions.length > 0)
+                      setShowSuggestions(true);
+                    setActiveSuggestionIndex((i) =>
+                      suggestions.length === 0
+                        ? -1
+                        : (i + 1) % suggestions.length,
+                    );
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setActiveSuggestionIndex((i) =>
+                      suggestions.length === 0
+                        ? -1
+                        : (i - 1 + suggestions.length) % suggestions.length,
+                    );
+                  } else if (e.key === "Enter") {
+                    const picked =
+                      showSuggestions && activeSuggestionIndex >= 0
+                        ? suggestions[activeSuggestionIndex]
+                        : null;
+                    handleSearch(picked ? picked.name : query);
+                  } else if (e.key === "Escape") {
+                    setShowSuggestions(false);
+                    setActiveSuggestionIndex(-1);
+                  }
+                }}
+                onFocus={() =>
+                  query.trim().length > 0 && setShowSuggestions(true)
+                }
+                placeholder="e.g. Cricket, Badminton..."
+                className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm font-medium text-slate-900 placeholder-slate-400 outline-none sm:px-0 sm:text-base"
+                aria-label="Search sport pathway"
+                role="combobox"
+                aria-expanded={showSuggestions}
+                aria-controls="sport-suggestions-listbox"
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  activeSuggestionIndex >= 0
+                    ? `sport-suggestion-${activeSuggestionIndex}`
+                    : undefined
+                }
+              />
+              {query && (
+                <button
+                  onClick={clearSearch}
+                  className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+                >
+                  <X className="h-4 w-4 text-slate-400" />
+                </button>
+              )}
+              <button
+                onClick={() => handleSearch(query)}
+                disabled={status === "loading" || !query.trim()}
+                className="shrink-0 rounded-xl bg-power-orange px-3 py-2.5 text-xs font-bold text-white shadow transition-all hover:bg-orange-600 disabled:opacity-50 sm:px-5 sm:text-sm"
+              >
+                Search
+              </button>
+            </div>
+          </div>
+
+          {/* State filter indicator */}
+          {selectedState && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 flex items-center gap-2"
+            >
+              <span className="flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-power-orange">
+                <MapPin className="h-3 w-3" />
+                Localised for {selectedState}
+                <button
+                  onClick={() => handleStateChange("")}
+                  className="ml-1 hover:text-orange-800 transition"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+              <span className="text-xs text-slate-400">
+                Results will include {selectedState}-specific data
+              </span>
+            </motion.div>
+          )}
+
+          {/* Context banner from URL params */}
+          {contextBanner && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2"
+            >
+              <span className="text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                Personalised view · Age {contextBanner.age} ·{" "}
+                {contextBanner.budget} tier
+                {contextBanner.state ? ` · ${contextBanner.state}` : ""}
+              </span>
+              <button
+                onClick={() => setContextBanner(null)}
+                className="text-indigo-400 hover:text-indigo-700 transition"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          )}
+
+          {/* Autocomplete dropdown */}
+          <AnimatePresence>
+            {showSuggestions && status === "idle" && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+                className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl"
+                style={{ top: "100%", marginTop: "8px" }}
+              >
+                <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
+                {suggestions.length > 0 ? (
+                  <>
+                    <ul
+                      id="sport-suggestions-listbox"
+                      role="listbox"
+                      className="py-1.5"
+                    >
+                      {suggestions.map((s, idx) => {
+                        const active = idx === activeSuggestionIndex;
+                        return (
+                          <li key={s.slug || s.name} role="presentation">
+                            <button
+                              id={`sport-suggestion-${idx}`}
+                              role="option"
+                              aria-selected={active}
+                              onClick={() => handleSearch(s.name)}
+                              onMouseEnter={() => setActiveSuggestionIndex(idx)}
+                              className={`group relative flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                                active ? "bg-orange-50" : "hover:bg-orange-50"
+                              }`}
+                            >
+                              {active && (
+                                <span className="absolute inset-y-1 left-0 w-1 rounded-r-full bg-power-orange" />
+                              )}
+                              <Search
+                                className={`h-3.5 w-3.5 shrink-0 ${active ? "text-power-orange" : "text-slate-300"}`}
+                              />
+                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
+                                {highlightMatch(s.name, query)}
+                              </span>
+                              {s.category && (
+                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                                  {s.category}
+                                </span>
+                              )}
+                              <ChevronRight
+                                className={`h-3.5 w-3.5 shrink-0 text-slate-300 transition-transform ${active ? "translate-x-0.5 text-power-orange" : ""}`}
+                              />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <div className="hidden items-center gap-3 border-t border-slate-100 px-4 py-1.5 sm:flex">
+                      <span className="text-[10px] text-slate-400">
+                        <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 font-sans">
+                          ↑↓
+                        </kbd>{" "}
+                        Navigate
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 font-sans">
+                          ↵
+                        </kbd>{" "}
+                        Select
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        <kbd className="rounded border border-slate-200 bg-slate-50 px-1 py-0.5 font-sans">
+                          Esc
+                        </kbd>{" "}
+                        Close
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5 px-4 py-6 text-center">
+                    <Search className="h-5 w-5 text-slate-200" />
+                    <p className="text-sm font-semibold text-slate-600">
+                      No sport matches &ldquo;{query}&rdquo;
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Press Enter to search anyway — we&apos;ll check if
+                      it&apos;s a valid sport.
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Popular quick-picks */}
+        {status === "idle" && !result && (
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            className="mt-6 flex flex-col items-center gap-3 px-2"
+          >
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Popular in India
+            </p>
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMatchModalOpen(true)}
+                className="text-xs font-bold text-power-orange hover:text-orange-600 transition underline underline-offset-2 mb-2 cursor-pointer"
+              >
+                Still confused? Get a recommendation &rarr;
+              </button>
+              <div className="flex flex-wrap justify-center gap-2">
+                {[
+                  "Cricket",
+                  "Football",
+                  "Badminton",
+                  "Tennis",
+                  "Basketball",
+                  "Hockey",
+                  "Swimming",
+                  "Chess",
+                  "Table Tennis",
+                  "Volleyball",
+                ].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleSearch(s)}
+                    className="rounded-full border border-slate-200 bg-white/90 px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:border-power-orange hover:bg-orange-50 hover:text-power-orange hover:shadow-md"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                {
+                  icon: <Flag className="h-5 w-5" />,
+                  tab: "The Journey",
+                  desc: "3-stage map from local club to the international stage — with your role at each step.",
+                  iconBg: "bg-orange-100",
+                  iconColor: "text-power-orange",
+                  border: "border-orange-100",
+                  bg: "bg-orange-50/60",
+                },
+                {
+                  icon: <Target className="h-5 w-5" />,
+                  tab: "Opportunities",
+                  desc: "Live tournaments, scholarships, and universities specific to this sport.",
+                  iconBg: "bg-emerald-100",
+                  iconColor: "text-emerald-600",
+                  border: "border-emerald-100",
+                  bg: "bg-emerald-50/60",
+                },
+                {
+                  icon: <Calculator className="h-5 w-5" />,
+                  tab: "The Plan",
+                  desc: "Full budget estimate and gear checklist so you know what to prepare for.",
+                  iconBg: "bg-amber-100",
+                  iconColor: "text-amber-600",
+                  border: "border-amber-100",
+                  bg: "bg-amber-50/60",
+                },
+                {
+                  icon: <Sparkles className="h-5 w-5" />,
+                  tab: "Inspire",
+                  desc: "Real career paths and family stories from parents who walked this road.",
+                  iconBg: "bg-indigo-100",
+                  iconColor: "text-indigo-600",
+                  border: "border-indigo-100",
+                  bg: "bg-indigo-50/60",
+                },
+              ].map((item) => (
+                <div
+                  key={item.tab}
+                  className={`flex flex-col rounded-2xl border ${item.border} ${item.bg} p-4`}
+                >
+                  <div
+                    className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${item.iconBg} ${item.iconColor} shrink-0`}
+                  >
+                    {item.icon}
+                  </div>
+                  <p className="font-title text-sm font-bold text-slate-800 mb-1">
+                    {item.tab}
+                  </p>
+                  <p className="text-[12px] text-slate-500 leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Loading state ── */}
+        <AnimatePresence>
+          {status === "loading" && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mx-auto mt-12 max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-100"
+            >
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 ring-8 ring-orange-50/50">
+                <Loader2 className="h-7 w-7 text-power-orange animate-spin" />
+              </div>
+              <p className="font-title text-xl font-bold text-slate-900">
+                Building your pathway
+              </p>
+              <p className="mt-2 text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">
+                Mapping the{" "}
+                <span className="font-semibold text-slate-800">{query}</span>{" "}
+                journey
+                {selectedState ? ` in ${selectedState}` : " across India"} —
+                levels, competitions, costs, and what it all means for your
+                family.
+              </p>
+              <div className="mt-6 flex items-center justify-center gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="h-2 w-2 rounded-full bg-power-orange"
+                    style={{ animation: `bounce 1.2s ${i * 0.2}s infinite` }}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Error state ── */}
+        <AnimatePresence>
+          {status === "error" && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mx-auto mt-12 max-w-lg rounded-3xl border border-red-100 bg-red-50 p-6 sm:p-8 text-center shadow"
+            >
+              <p className="text-lg font-bold text-red-700">Not Found</p>
+              <p className="mt-2 text-sm text-red-600 break-words">
+                {errorMsg}
+              </p>
+              <button
+                onClick={clearSearch}
+                className="mt-5 rounded-xl bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                Try Another Sport
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Sport not yet supported ── */}
+        <AnimatePresence>
+          {status === "not_supported" && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mx-auto mt-12 max-w-xl rounded-3xl border border-amber-100 bg-amber-50 p-6 sm:p-8 text-center shadow"
+            >
+              <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-700">
+                Coming Soon
+              </span>
+              <p className="mt-3 text-lg font-bold text-slate-900 capitalize">
+                {notSupportedSport} Pathway
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Our team is actively building the{" "}
+                <span className="font-semibold capitalize">
+                  {notSupportedSport}
+                </span>{" "}
+                pathway. We&apos;ll have it ready soon — meanwhile, explore one
+                of our 10 fully mapped sports below.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                {[
+                  "Cricket", "Tennis", "Chess", "Football", "Basketball",
+                  "Hockey", "Table Tennis", "Swimming", "Badminton", "Volleyball",
+                ].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleSearch(s)}
+                    className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-power-orange hover:bg-orange-50 hover:text-power-orange"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={clearSearch}
+                className="mt-5 rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                Back to Search
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Explorer View (Default or Result) ── */}
+        <AnimatePresence mode="wait">
+          {(status === "success" ||
+            savedItems.length > 0 ||
+            applications.length > 0) && (
+            <motion.div
+              key={result ? "result" : "default"}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={SPRING_STIFF}
+              className="mt-12 sm:mt-16"
+            >
+              {/* Header logic */}
+              {result ? (
+                <>
+                  {previewSport === result.pathway.sportName &&
+                    previewSportDependentId && (
+                      <div className="mb-4 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-100 p-4 shadow-sm">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                          <Target className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">
+                            Is {previewSport} the one?
+                          </p>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Save to profile to track progress.
+                          </p>
+                        </div>
+                        <button
+                          disabled={isSavingSport}
+                          onClick={async () => {
+                            const targetDep = user?.dependents?.find(
+                              (d) => d._id === previewSportDependentId,
+                            );
+                            if (!targetDep || !targetDep._id) return;
+                            setIsSavingSport(true);
+                            try {
+                              const current = targetDep.sportsFocus || [];
+                              if (!current.includes(previewSport!)) {
+                                await authApi.updateDependent(targetDep._id, {
+                                  sportsFocus: [...current, previewSport!],
+                                });
+                                toast.success(
+                                  `Saved to ${targetDep.name}'s profile`,
+                                );
+                                setPreviewSport(null);
+                                setPreviewSportDependentId(null);
+                              } else {
+                                toast.success(
+                                  `Already in ${targetDep.name}'s profile`,
+                                );
+                                setPreviewSport(null);
+                                setPreviewSportDependentId(null);
+                              }
+                            } catch (e) {
+                              toast.error("Failed to save sport");
+                            } finally {
+                              setIsSavingSport(false);
+                            }
+                          }}
+                          className="ml-auto rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white hover:bg-emerald-700 transition shadow-sm"
+                        >
+                          {isSavingSport ? "Saving..." : "Yes, save it"}
+                        </button>
+                      </div>
+                    )}
+                  <div className="mb-8 rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-sm sm:p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      {/* Left: name + meta + overview */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          {result.pathway.trustTier === "expert_verified" &&
+                          result.pathway.expertVerifications &&
+                          result.pathway.expertVerifications.length > 0 ? (
+                            <span className="inline-flex flex-col gap-0.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs">
+                              <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                                <BadgeCheck className="h-3 w-3" />
+                                Verified by{" "}
+                                {
+                                  result.pathway.expertVerifications[0]
+                                    .expertName
+                                }
+                                {result.pathway.expertVerifications.length >
+                                  1 &&
+                                  ` +${result.pathway.expertVerifications.length - 1} more`}
+                              </span>
+                              {result.pathway.expertVerifications[0]
+                                .expertCredential && (
+                                <span className="text-[10px] text-emerald-600 font-medium pl-4">
+                                  {
+                                    result.pathway.expertVerifications[0]
+                                      .expertCredential
+                                  }
+                                </span>
+                              )}
+                            </span>
+                          ) : result.pathway.trustTier === "admin_verified" ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                              <BadgeCheck className="h-3 w-3" /> Verified by
+                              Expert
+                            </span>
+                          ) : (
+                            result.source === "generated" && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-power-orange border border-orange-200">
+                                <Sparkles className="h-3 w-3" /> AI Generated
+                              </span>
+                            )
+                          )}
+                          {selectedState && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 border border-indigo-100">
+                              <MapPin className="h-3 w-3" /> {selectedState}
+                            </span>
+                          )}
+                          {result.pathway.category && (
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 border border-slate-200">
+                              {result.pathway.category}
+                            </span>
+                          )}
+                        </div>
+                        <h2 className="font-title text-2xl font-bold text-slate-900 break-words sm:text-3xl">
+                          {result.pathway.sportName}
+                          <span className="ml-2 text-slate-400 font-normal text-xl sm:text-2xl">
+                            Pathway
+                          </span>
+                        </h2>
+                        {result.pathway.overview && (
+                          <p className="mt-2 max-w-2xl text-sm text-slate-600 leading-relaxed sm:text-base">
+                            {result.pathway.overview}
+                          </p>
+                        )}
+                        {result.pathway.expertVerifications?.[0]?.note && (
+                          <p className="mt-2 max-w-2xl text-sm italic text-emerald-700">
+                            &ldquo;{result.pathway.expertVerifications[0].note}
+                            &rdquo;
+                            <span className="not-italic font-semibold">
+                              {" "}
+                              —{" "}
+                              {result.pathway.expertVerifications[0].expertName}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Right: stat chips */}
+                      {entitiesStatus === "loading" ? (
+                        <div className="flex items-center gap-2 shrink-0 self-start rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                          <div className="h-3.5 w-3.5 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
+                          <span className="text-xs font-medium text-slate-400">
+                            Loading opportunities…
+                          </span>
+                        </div>
+                      ) : totalOpportunities > 0 ? (
+                        <div className="flex flex-wrap gap-2 shrink-0 self-start">
+                          {(result.pathway.tournaments?.length ?? 0) > 0 && (
+                            <button
+                              onClick={() => setActiveTab("opportunities")}
+                              className="flex flex-col items-center rounded-xl border border-orange-100 bg-orange-50 px-4 py-2.5 min-w-[68px] hover:bg-orange-100 transition group"
+                            >
+                              <span className="text-xl font-extrabold text-power-orange group-hover:scale-110 transition-transform">
+                                {result.pathway.tournaments!.length}
+                              </span>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400 mt-0.5 whitespace-nowrap">
+                                Tournaments
+                              </span>
+                              <span className="text-[8px] text-orange-300 mt-0.5">
+                                official sources
+                              </span>
+                            </button>
+                          )}
+                          {(result.pathway.scholarships?.length ?? 0) > 0 && (
+                            <button
+                              onClick={() => setActiveTab("opportunities")}
+                              className="flex flex-col items-center rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-2.5 min-w-[68px] hover:bg-emerald-100 transition group"
+                            >
+                              <span className="text-xl font-extrabold text-emerald-600 group-hover:scale-110 transition-transform">
+                                {result.pathway.scholarships!.length}
+                              </span>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mt-0.5 whitespace-nowrap">
+                                Scholarships
+                              </span>
+                              <span className="text-[8px] text-emerald-300 mt-0.5">
+                                official sources
+                              </span>
+                            </button>
+                          )}
+                          {(result.pathway.universities?.length ?? 0) > 0 && (
+                            <button
+                              onClick={() => setActiveTab("opportunities")}
+                              className="flex flex-col items-center rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2.5 min-w-[68px] hover:bg-indigo-100 transition group"
+                            >
+                              <span className="text-xl font-extrabold text-indigo-600 group-hover:scale-110 transition-transform">
+                                {result.pathway.universities!.length}
+                              </span>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mt-0.5 whitespace-nowrap">
+                                Universities
+                              </span>
+                              <span className="text-[8px] text-indigo-300 mt-0.5">
+                                official sources
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                    {result.pathway.trustTier === "unverified" && (
+                      <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-3">
+                        <div className="flex items-start gap-2">
+                          <Info className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            Pathway data sourced from{" "}
+                            {result.pathway.levels?.[0]?.governingBody ? (
+                              <span className="font-semibold text-slate-600">
+                                {result.pathway.levels[0].governingBody}
+                              </span>
+                            ) : (
+                              "India's sports development records"
+                            )}
+                            {
+                              ", Khelo India, and verified tournament & scholarship data. "
+                            }
+                            <span className="text-slate-400">
+                              Expert review pending — details may vary by
+                              region.
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
+
+              {/* Tabs */}
+              {(result || savedItems.length > 0 || applications.length > 0) && (
+                <div className="mb-8 w-full overflow-x-auto hide-scrollbar">
+                  <div className="inline-flex min-w-max gap-1.5 rounded-2xl bg-slate-100/70 p-1.5 backdrop-blur-md border border-slate-200/60 shadow-inner">
+                    {[
+                      {
+                        id: "journey",
+                        label: "The Journey",
+                        icon: <Flag className="h-4 w-4" />,
+                        show: !!result,
+                      },
+                      {
+                        id: "opportunities",
+                        label: "Opportunities",
+                        icon: <Target className="h-4 w-4" />,
+                        badge:
+                          entitiesStatus === "ready" && totalOpportunities > 0
+                            ? totalOpportunities
+                            : undefined,
+                        show: !!result,
+                      },
+                      {
+                        id: "plan",
+                        label: "The Plan",
+                        icon: <Calculator className="h-4 w-4" />,
+                        show: !!result,
+                      },
+                      {
+                        id: "inspire",
+                        label: "Inspire",
+                        icon: <Sparkles className="h-4 w-4" />,
+                        show: !!result && dbStories.length > 0,
+                      },
+                      {
+                        id: "saved",
+                        label: "Saved",
+                        badge: savedItems.length,
+                        icon: <Heart className="h-4 w-4" />,
+                        show: savedItems.length > 0,
+                      },
+                      {
+                        id: "applications",
+                        label: "Applications",
+                        badge: applications.length,
+                        icon: <ClipboardList className="h-4 w-4" />,
+                        show: applications.length > 0,
+                      },
+                    ]
+                      .filter((t) => t.show)
+                      .map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id as any)}
+                          className={`relative flex shrink-0 items-center justify-center rounded-xl px-4 py-2 text-[13px] font-semibold transition-colors duration-200 z-10 ${
+                            activeTab === tab.id
+                              ? "text-slate-900"
+                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/50"
+                          }`}
+                        >
+                          {activeTab === tab.id && (
+                            <motion.div
+                              layoutId="activeTabPill"
+                              className="absolute inset-0 -z-10 rounded-xl bg-white shadow-sm ring-1 ring-slate-200/50"
+                              transition={{
+                                type: "spring",
+                                bounce: 0.15,
+                                duration: 0.5,
+                              }}
+                            />
+                          )}
+                          <span className="flex items-center gap-2">
+                            <span
+                              className={`transition-colors ${activeTab === tab.id ? "text-power-orange" : ""}`}
+                            >
+                              {tab.icon}
+                            </span>
+                            <span className="whitespace-nowrap">
+                              {tab.label}
+                            </span>
+                            {(tab as any).badge !== undefined &&
+                              (tab as any).badge > 0 && (
+                                <span
+                                  className={`ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold transition-colors ${
+                                    activeTab === tab.id
+                                      ? "bg-power-orange text-white shadow-sm"
+                                      : "bg-slate-200 text-slate-500"
+                                  }`}
+                                >
+                                  {(tab as any).badge}
+                                </span>
+                              )}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Content */}
+              <AnimatePresence mode="wait">
+                {activeTab === "journey" && (
+                  <motion.div
+                    key="journey"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {result &&
+                      entitiesStatus !== "loading" &&
+                      totalOpportunities > 0 && (
+                        <div className="mb-6 rounded-2xl border border-slate-200/70 bg-white/60 p-4 backdrop-blur-sm">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 w-full sm:w-auto">
+                              Opportunities found
+                            </p>
+                            <div className="flex flex-wrap gap-2 flex-1">
+                              {(result.pathway.tournaments?.length ?? 0) >
+                                0 && (
+                                <div className="flex items-center gap-1.5 rounded-lg border border-orange-100 bg-orange-50 px-3 py-1.5">
+                                  <Trophy className="h-3.5 w-3.5 text-power-orange shrink-0" />
+                                  <span className="text-sm font-bold text-power-orange">
+                                    {result.pathway.tournaments!.length}
+                                  </span>
+                                  <span className="text-xs text-orange-400 font-medium">
+                                    Tournaments
+                                  </span>
+                                </div>
+                              )}
+                              {(result.pathway.scholarships?.length ?? 0) >
+                                0 && (
+                                <div className="flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-1.5">
+                                  <Wallet className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                                  <span className="text-sm font-bold text-emerald-600">
+                                    {result.pathway.scholarships!.length}
+                                  </span>
+                                  <span className="text-xs text-emerald-400 font-medium">
+                                    Scholarships
+                                  </span>
+                                </div>
+                              )}
+                              {(result.pathway.universities?.length ?? 0) >
+                                0 && (
+                                <div className="flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1.5">
+                                  <Landmark className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                                  <span className="text-sm font-bold text-indigo-600">
+                                    {result.pathway.universities!.length}
+                                  </span>
+                                  <span className="text-xs text-indigo-400 font-medium">
+                                    Universities
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => setActiveTab("opportunities")}
+                              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-700"
+                            >
+                              View All <ArrowRight className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    <div className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[340px_1fr] xl:grid-cols-[380px_1fr]">
+                      {/* Left: level pills */}
+                      <div className="space-y-3">
+                        {/* P1: Progress Tracker */}
+                        <ProgressTracker
+                          progress={progress}
+                          onChange={handleProgressChange}
+                          levels={currentLevels}
+                        />
+
+                        <div className="mb-6 hidden lg:block">
+                          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            Level progression
+                          </p>
+                          <div className="relative">
+                            <div className="absolute left-4 right-4 top-4 h-0.5 bg-slate-200" />
+                            <div className="relative flex justify-between">
+                              {macroLevels.map((macro, i) => {
+                                const c = macro;
+                                const rawLevelNums = macro.rawLevels.map(
+                                  (l) => l.level,
+                                );
+                                const isActive = i === activeIdx;
+                                const isCurrent = rawLevelNums.includes(
+                                  progress.currentLevel,
+                                );
+                                const isCompleted =
+                                  progress.currentLevel > 0 &&
+                                  rawLevelNums.every(
+                                    (n) => n < progress.currentLevel,
+                                  );
+                                return (
+                                  <button
+                                    key={macro.id}
+                                    onClick={() => setActiveIdx(i)}
+                                    title={macro.label}
+                                    className="flex min-w-0 max-w-[120px] flex-1 flex-col items-center gap-1.5 group"
+                                  >
+                                    <div
+                                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 ${
+                                        isActive
+                                          ? `bg-gradient-to-br ${c.gradient} border-transparent text-white shadow-lg scale-110`
+                                          : isCurrent
+                                            ? `bg-white ${c.border} ${c.text} shadow-sm`
+                                            : isCompleted
+                                              ? `bg-gradient-to-br ${c.gradient} border-transparent text-white opacity-70`
+                                              : "bg-white border-slate-200 text-slate-400 group-hover:border-slate-300"
+                                      }`}
+                                    >
+                                      {isCompleted && !isActive ? (
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                      ) : (
+                                        i + 1
+                                      )}
+                                      {isCurrent && (
+                                        <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-amber-400 ring-2 ring-white">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span
+                                      className={`line-clamp-2 text-center text-[10px] font-semibold leading-tight transition-colors ${
+                                        isActive
+                                          ? c.text
+                                          : "text-slate-400 group-hover:text-slate-600"
+                                      }`}
+                                    >
+                                      {macro.label}
+                                    </span>
+                                    <span className="text-center text-[9px] text-slate-400 leading-tight">
+                                      {macro.scopeTag}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {macroLevels.map((macro, i) => (
+                          <div key={macro.id} className="flex flex-col gap-3">
+                            <PathwayLevelCard
+                              macroLevel={macro}
+                              isActive={i === activeIdx}
+                              isCurrentLevel={macro.rawLevels.some(
+                                (l) => l.level === progress.currentLevel,
+                              )}
+                              completedSteps={macro.rawLevels.reduce(
+                                (sum, l) =>
+                                  sum +
+                                  (
+                                    progress.completedSteps?.[l.level] || []
+                                  ).filter(Boolean).length,
+                                0,
+                              )}
+                              totalSteps={macro.rawLevels.reduce(
+                                (sum, l) => sum + l.steps.length,
+                                0,
+                              )}
+                              onClick={() => {
+                                if (
+                                  typeof window !== "undefined" &&
+                                  window.innerWidth < 1024
+                                ) {
+                                  setActiveIdx(activeIdx === i ? -1 : i);
+                                } else {
+                                  setActiveIdx(i);
+                                }
+                              }}
+                            />
+                            <AnimatePresence initial={false}>
+                              {i === activeIdx && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{
+                                    height: {
+                                      type: "spring",
+                                      stiffness: 300,
+                                      damping: 30,
+                                    },
+                                    opacity: { duration: 0.2 },
+                                  }}
+                                  className="lg:hidden overflow-hidden origin-top"
+                                >
+                                  <div className="pt-1 pb-2">
+                                    <PathwayLevelDetail
+                                      macroLevel={macro}
+                                      sportName={
+                                        result
+                                          ? result.pathway.sportName
+                                          : "General"
+                                      }
+                                    />
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Right: detail (Desktop Only) */}
+                      <div className="hidden lg:flex lg:flex-col lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:[scrollbar-gutter:stable]">
+                        <AnimatePresence mode="wait">
+                          {selectedMacroLevel && (
+                            <PathwayLevelDetail
+                              key={selectedMacroLevel.id}
+                              macroLevel={selectedMacroLevel}
+                              sportName={
+                                result ? result.pathway.sportName : "General"
+                              }
+                            />
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* ── Opportunities ── */}
+                {result && activeTab === "opportunities" && (
+                  <motion.div
+                    key="opportunities"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-10"
+                  >
+                    {entitiesStatus === "loading" && (
+                      <div className="flex items-center gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+                        <div className="h-4 w-4 rounded-full border-2 border-violet-400 border-t-transparent animate-spin shrink-0" />
+                        <p className="text-sm font-medium text-indigo-700">
+                          Fetching live data — this takes a moment for a new
+                          sport.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Tournaments */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-power-orange">
+                          <Trophy className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">
+                          Tournaments
+                        </h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.tournaments?.length > 0 && (
+                          <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-power-orange">
+                            {result.pathway.tournaments.length} found
+                          </span>
+                        )}
+                      </div>
+                      {result.pathway.tournaments?.length > 0 ? (
+                        <>
+                          <TournamentRecommendationPanel
+                            tournaments={result.pathway.tournaments}
+                            currentLevel={progress.currentLevel}
+                            sportName={result.pathway.sportName}
+                            onViewTournament={(t) => setDetailTournament(t)}
+                          />
+                          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {result.pathway.tournaments.map(
+                              (t: any, i: number) => {
+                                const sid = `tournament:${t.name}:${result.pathway.sportName}`;
+                                const isSaved = savedItems.some(
+                                  (s) => s.id === sid,
+                                );
+                                return (
+                                  <div
+                                    key={i}
+                                    onClick={() => setDetailTournament(t)}
+                                    className="group relative cursor-pointer rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200 hover:-translate-y-0.5"
+                                  >
+                                    {/* Thin orange top bar */}
+                                    <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                                    <div
+                                      className="flex flex-col p-4"
+                                      style={{ minHeight: "130px" }}
+                                    >
+                                      {/* Level + save */}
+                                      <div className="mb-3 flex items-start justify-between gap-2">
+                                        <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange">
+                                          {t.level}
+                                        </span>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSavedChange(
+                                              isSaved
+                                                ? savedItems.filter(
+                                                    (s) => s.id !== sid,
+                                                  )
+                                                : [
+                                                    ...savedItems,
+                                                    {
+                                                      id: sid,
+                                                      type: "tournament" as const,
+                                                      name: t.name,
+                                                      sport:
+                                                        result.pathway
+                                                          .sportName,
+                                                      data: t,
+                                                      savedAt:
+                                                        new Date().toISOString(),
+                                                    },
+                                                  ],
+                                            );
+                                          }}
+                                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 transition"
+                                        >
+                                          <Heart
+                                            className={`h-3.5 w-3.5 transition-colors ${isSaved ? "fill-power-orange text-power-orange" : "text-slate-300"}`}
+                                          />
+                                        </button>
+                                      </div>
+                                      {/* Name */}
+                                      <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
+                                        {t.name}
+                                      </p>
+                                      {/* Footer */}
+                                      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
+                                          <Users className="h-3 w-3 shrink-0" />
+                                          <span className="truncate">
+                                            {t.ageGroup}
+                                          </span>
+                                        </div>
+                                        <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange group-hover:translate-x-0.5 transition-all shrink-0" />
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              },
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No tournaments found for this sport.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Scholarships */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                          <Wallet className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">
+                          Scholarships
+                        </h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.scholarships?.length > 0 && (
+                          <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-power-orange">
+                            {result.pathway.scholarships.length} found
+                          </span>
+                        )}
+                      </div>
+                      {result.pathway.scholarships?.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {result.pathway.scholarships.map(
+                            (s: any, i: number) => {
+                              const key = `sch-${i}`;
+                              const isOpen = expandedCards.has(key);
+                              return (
+                                <div
+                                  key={i}
+                                  className={`rounded-2xl overflow-hidden bg-white border shadow-sm transition-all duration-200 ${isOpen ? "border-slate-300 shadow-md sm:col-span-2 lg:col-span-3" : "border-slate-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200"}`}
+                                >
+                                  <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                                  {/* Card face — click to expand */}
+                                  <button
+                                    onClick={() => toggleCard(key)}
+                                    className="w-full flex flex-col p-4 text-left"
+                                    style={{ minHeight: "130px" }}
+                                  >
+                                    <div className="mb-3 flex items-start justify-between gap-2">
+                                      <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange shrink-0">
+                                        Scholarship
+                                      </span>
+                                      <ChevronDown
+                                        className={`h-4 w-4 shrink-0 text-slate-300 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                                      />
+                                    </div>
+                                    <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1 pr-2 break-words">
+                                      {s.name}
+                                    </p>
+                                    <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400 min-w-0">
+                                      <Wallet className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">
+                                        {s.provider}
+                                      </span>
+                                    </div>
+                                  </button>
+                                  {/* Expanded detail */}
+                                  <div
+                                    className="overflow-hidden transition-all duration-300 ease-in-out"
+                                    style={{
+                                      maxHeight: isOpen ? "400px" : "0px",
+                                      opacity: isOpen ? 1 : 0,
+                                    }}
+                                  >
+                                    <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+                                      <p className="text-sm text-slate-600 leading-relaxed">
+                                        {s.description}
+                                      </p>
+                                      {s.eligibility && (
+                                        <div className="flex items-start gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+                                          <CheckCircle className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                                          <p className="text-xs text-slate-600 leading-relaxed">
+                                            {s.eligibility}
+                                          </p>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2 pt-1">
+                                        <SaveButton
+                                          item={s}
+                                          type="scholarship"
+                                          sport={result.pathway.sportName}
+                                          savedItems={savedItems}
+                                          onToggle={handleSavedChange}
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            toggleCard(key);
+                                            setModalData({
+                                              item: s,
+                                              type: "scholarship",
+                                            });
+                                          }}
+                                          className="ml-auto flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700 transition"
+                                        >
+                                          Apply{" "}
+                                          <ArrowRight className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            },
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No scholarships found for this sport.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Universities */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                          <Landmark className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">
+                          Universities
+                        </h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.universities?.length > 0 && (
+                          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-600">
+                            {result.pathway.universities.length} found
+                          </span>
+                        )}
+                      </div>
+                      {result.pathway.universities?.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {result.pathway.universities.map(
+                            (u: any, i: number) => {
+                              const key = `uni-${i}`;
+                              const isOpen = expandedCards.has(key);
+                              return (
+                                <div
+                                  key={i}
+                                  className={`rounded-2xl overflow-hidden bg-white border shadow-sm transition-all duration-200 ${isOpen ? "border-slate-300 shadow-md sm:col-span-2 lg:col-span-3" : "border-slate-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200"}`}
+                                >
+                                  <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                                  {/* Card face — click to expand */}
+                                  <button
+                                    onClick={() => toggleCard(key)}
+                                    className="w-full flex flex-col p-4 text-left"
+                                    style={{ minHeight: "130px" }}
+                                  >
+                                    <div className="mb-3 flex items-start justify-between gap-2">
+                                      <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange shrink-0">
+                                        University
+                                      </span>
+                                      <ChevronDown
+                                        className={`h-4 w-4 shrink-0 text-slate-300 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                                      />
+                                    </div>
+                                    <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1 pr-2 break-words">
+                                      {u.name}
+                                    </p>
+                                    <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400 min-w-0">
+                                      <MapPin className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">
+                                        {u.location}
+                                      </span>
+                                    </div>
+                                  </button>
+                                  {/* Expanded detail */}
+                                  <div
+                                    className="overflow-hidden transition-all duration-300 ease-in-out"
+                                    style={{
+                                      maxHeight: isOpen ? "500px" : "0px",
+                                      opacity: isOpen ? 1 : 0,
+                                    }}
+                                  >
+                                    <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+                                      {u.admissionCriteria && (
+                                        <div>
+                                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                            Admission Criteria
+                                          </p>
+                                          <p className="text-xs text-slate-600 leading-relaxed">
+                                            {u.admissionCriteria}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {u.sportsQuotaDetails && (
+                                        <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+                                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                            Sports Quota
+                                          </p>
+                                          <p className="text-xs text-slate-600 leading-relaxed">
+                                            {u.sportsQuotaDetails}
+                                          </p>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-2 pt-1">
+                                        <SaveButton
+                                          item={u}
+                                          type="university"
+                                          sport={result.pathway.sportName}
+                                          savedItems={savedItems}
+                                          onToggle={handleSavedChange}
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            toggleCard(key);
+                                            setModalData({
+                                              item: u,
+                                              type: "university",
+                                            });
+                                          }}
+                                          className="ml-auto flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-700 transition"
+                                        >
+                                          Learn More{" "}
+                                          <ArrowRight className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            },
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No universities found for this sport.
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* ── The Plan ── */}
+                {result && activeTab === "plan" && (
+                  <motion.div
+                    key="plan"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-10"
+                  >
+                    {/* Budget */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                          <Calculator className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">
+                          Budget Estimate
+                        </h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                      </div>
+                      <BudgetCalculator pathway={result.pathway} />
+                    </div>
+
+                    {/* Equipment */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                          <ShoppingBag className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">
+                          Equipment
+                        </h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.equipment?.length > 0 && (
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-bold text-slate-500">
+                            {result.pathway.equipment.length} levels
+                          </span>
+                        )}
+                      </div>
+                      {result.pathway.equipment?.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {result.pathway.equipment.map((e: any, i: number) => (
+                            <div
+                              key={i}
+                              className="flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm"
+                            >
+                              {/* Orange top accent (consistent with other cards) */}
+                              <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                              <div className="flex flex-col p-4 flex-1">
+                                {/* Header: level name + cost */}
+                                <div className="mb-3 flex items-center justify-between gap-2">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                    {e.level}
+                                  </p>
+                                  <span className="text-[10px] font-bold text-slate-500">
+                                    {e.estimatedCost}
+                                  </span>
+                                </div>
+                                <ul className="space-y-1.5 flex-1">
+                                  {e.items.map((item: string, j: number) => {
+                                    const eKey = `equip-${i}-${j}`;
+                                    const isOwned = ownedEquipment.has(eKey);
+                                    return (
+                                      <li key={j}>
+                                        <button
+                                          onClick={() => toggleOwned(eKey)}
+                                          className={`w-full flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors ${
+                                            isOwned
+                                              ? "bg-orange-50/50"
+                                              : "hover:bg-slate-50"
+                                          }`}
+                                        >
+                                          <div
+                                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                                              isOwned
+                                                ? "border-power-orange bg-power-orange"
+                                                : "border-slate-300 bg-white"
+                                            }`}
+                                          >
+                                            {isOwned && (
+                                              <svg
+                                                viewBox="0 0 10 8"
+                                                className="h-2.5 w-2.5 fill-white"
+                                              >
+                                                <path
+                                                  d="M1 4l3 3 5-6"
+                                                  stroke="white"
+                                                  strokeWidth="1.5"
+                                                  fill="none"
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                />
+                                              </svg>
+                                            )}
+                                          </div>
+                                          <span
+                                            className={`text-sm leading-relaxed transition-colors ${
+                                              isOwned
+                                                ? "text-slate-400 line-through"
+                                                : "text-slate-700"
+                                            }`}
+                                          >
+                                            {item}
+                                          </span>
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                                {/* Owned progress */}
+                                {e.items.length > 0 &&
+                                  (() => {
+                                    const owned = e.items.filter(
+                                      (_: string, j: number) =>
+                                        ownedEquipment.has(`equip-${i}-${j}`),
+                                    ).length;
+                                    return owned > 0 ? (
+                                      <div className="mt-4 border-t border-slate-100 pt-3">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            Ready
+                                          </span>
+                                          <span className="text-[10px] font-bold text-power-orange">
+                                            {owned}/{e.items.length}
+                                          </span>
+                                        </div>
+                                        <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                          <div
+                                            className="h-full bg-power-orange rounded-full transition-all duration-500"
+                                            style={{
+                                              width: `${(owned / e.items.length) * 100}%`,
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    ) : null;
+                                  })()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No equipment data found for this sport.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Compare Sports */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                          <GitCompare className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">
+                          Compare Sports
+                        </h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                      </div>
+                      <ComparePanel
+                        primaryPathway={result.pathway}
+                        allSports={allSports}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* ── Inspire ── */}
+                {result && activeTab === "inspire" && (
+                  <motion.div
+                    key="inspire"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-10"
+                  >
+                    {/* Career Paths */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                          <Briefcase className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">
+                          Career Paths
+                        </h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        {result.pathway.careers?.length > 0 && (
+                          <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-power-orange">
+                            {result.pathway.careers.length} paths
+                          </span>
+                        )}
+                      </div>
+                      {result.pathway.careers?.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {result.pathway.careers.map((c: any, i: number) => {
+                            const key = `career-${i}`;
+                            const isOpen = expandedCards.has(key);
+                            return (
+                              <div
+                                key={i}
+                                className={`group rounded-2xl overflow-hidden bg-white border shadow-sm transition-all duration-200 ${isOpen ? "border-slate-300 shadow-md sm:col-span-2 lg:col-span-3" : "border-slate-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200"}`}
+                              >
+                                <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                                <button
+                                  onClick={() => toggleCard(key)}
+                                  className="w-full flex flex-col p-4 text-left"
+                                  style={{ minHeight: "130px" }}
+                                >
+                                  <div className="mb-3 flex items-start justify-between gap-2">
+                                    <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange">
+                                      {c.demand || "Career"}
+                                    </span>
+                                    <ChevronDown
+                                      className={`h-4 w-4 shrink-0 text-slate-300 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                                    />
+                                  </div>
+                                  <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
+                                    {c.role}
+                                  </p>
+                                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                                    <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
+                                      <TrendingUp className="h-3 w-3 shrink-0" />
+                                      <span className="truncate">
+                                        {c.description?.split(".")[0] ||
+                                          "Sports career"}
+                                      </span>
+                                    </div>
+                                    <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange group-hover:translate-x-0.5 transition-all shrink-0" />
+                                  </div>
+                                </button>
+                                <div
+                                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                                  style={{
+                                    maxHeight: isOpen ? "400px" : "0px",
+                                    opacity: isOpen ? 1 : 0,
+                                  }}
+                                >
+                                  <div className="border-t border-slate-100 px-4 pb-4 pt-3 space-y-3">
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                      {c.description}
+                                    </p>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                      <SaveButton
+                                        item={c}
+                                        type="career"
+                                        sport={result.pathway.sportName}
+                                        savedItems={savedItems}
+                                        onToggle={handleSavedChange}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                          No career paths found for this sport.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Athlete Stories */}
+                    <div>
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-500">
+                          <MessageSquareQuote className="h-4 w-4" />
+                        </div>
+                        <h3 className="font-title text-lg font-bold text-slate-900">
+                          Athlete Stories
+                        </h3>
+                        <div className="flex-1 h-px bg-slate-100" />
+                      </div>
+                      <StoriesTab
+                        sportName={result.pathway.sportName}
+                        levels={currentLevels}
+                        stories={dbStories}
+                      />
+                    </div>
+
+                    <div className="mt-8 flex items-center justify-between gap-4 border-t border-slate-100 pt-4 pb-24 lg:pb-8">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        <Sparkles className="h-3 w-3 shrink-0" />
+                        <p>
+                          Pathway built from India's sports development data.{" "}
+                          <span className="text-slate-400">
+                            Verify specific milestones with a local academy.
+                          </span>
+                        </p>
+                      </div>
+                      <a
+                        href="/guidance"
+                        className="shrink-0 text-xs font-semibold text-power-orange hover:underline"
+                      >
+                        Personalise for your child →
+                      </a>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Saved */}
+                {activeTab === "saved" && (
+                  <SavedTab
+                    savedItems={savedItems}
+                    onUnsave={(id) =>
+                      handleSavedChange(savedItems.filter((s) => s.id !== id))
+                    }
+                    onOpenModal={(item, type) => setModalData({ item, type })}
+                  />
+                )}
+
+                {/* Applications */}
+                {activeTab === "applications" && (
+                  <ApplicationsTab
+                    applications={applications}
+                    onUpdateStatus={handleUpdateApplicationStatus}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tournament modal — detail view + concierge flow in one panel */}
+        {detailTournament && (
+          <TournamentModal
+            isOpen={!!detailTournament}
+            tournament={detailTournament}
+            onClose={() => setDetailTournament(null)}
+            currentLevel={progress.currentLevel}
+            sportName={result?.pathway.sportName || ""}
+            type="tournament"
+            isSaved={savedItems.some(
+              (s) =>
+                s.id ===
+                `tournament:${detailTournament?.name || ""}:${result?.pathway.sportName || ""}`,
+            )}
+            onToggleSave={() => {
+              if (!detailTournament || !result) return;
+              const id = `tournament:${detailTournament.name}:${result.pathway.sportName}`;
+              const isSaved = savedItems.some((s) => s.id === id);
+              const updated = isSaved
+                ? savedItems.filter((s) => s.id !== id)
+                : [
+                    ...savedItems,
+                    {
+                      id,
+                      type: "tournament" as const,
+                      name: detailTournament.name,
+                      sport: result.pathway.sportName,
+                      data: detailTournament,
+                      savedAt: new Date().toISOString(),
+                    },
+                  ];
+              handleSavedChange(updated);
+            }}
+            onSubmitSuccess={(record) => {
+              handleApplicationsChange([...applications, record]);
+            }}
+          />
+        )}
+
+        <SportMatchModal
+          isOpen={isMatchModalOpen}
+          onClose={() => {
+            setIsMatchModalOpen(false);
+            if (hasRunMatchThisSession) {
+              setIsMatchModalCollapsed(true);
+            }
+          }}
+          onRecommendationsReady={() => setHasRunMatchThisSession(true)}
+          dependents={(user?.dependents as any) || undefined}
+          onExplore={(sportName, dependentId) => {
+            setIsMatchModalOpen(false);
+            setPreviewSport(sportName);
+            if (dependentId) setPreviewSportDependentId(dependentId);
+            handleSearch(sportName);
+            // Part 4: collapse to draggable icon
+            setIsMatchModalCollapsed(true);
+            hasShownReengageRef.current = false;
+          }}
+        />
+
+        {/* Concierge modal — scholarships & universities only */}
+        {modalData && (
+          <PathwayConciergeModal
+            isOpen={!!modalData}
+            onClose={() => setModalData(null)}
+            item={modalData.item}
+            type={modalData.type}
+            onSubmitSuccess={(record) => {
+              handleApplicationsChange([...applications, record]);
+            }}
+          />
+        )}
+
+        {/* Floating "Ask AI Coach" CTA — always visible, no scrolling needed */}
+        {result && !chatOpen && (
+          <motion.button
+            type="button"
+            onClick={handleChatCtaClick}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="fixed bottom-5 right-5 z-30 flex items-center gap-2 rounded-full bg-power-orange px-4 py-3 text-sm font-bold text-white shadow-[0_10px_30px_-8px_rgba(233,115,22,0.6)] transition hover:bg-orange-600 sm:bottom-6 sm:right-6"
+          >
+            <MessageSquareQuote className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">
+              Got a quick question? Ask our AI Coach
+            </span>
+            <span className="sm:hidden">Ask AI Coach</span>
+          </motion.button>
+        )}
+
+        {/* Part 4 & 5: Draggable floating icon and re-engage prompt */}
+        <AnimatePresence>
+          {isMatchModalCollapsed && (
+            <motion.div
+              drag
+              dragConstraints={{
+                left: -100,
+                right: 100,
+                top: -500,
+                bottom: 500,
+              }}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="fixed bottom-24 right-5 z-40 sm:bottom-24 sm:right-6 flex flex-col items-end gap-3"
+            >
+              <AnimatePresence>
+                {showReengagePrompt && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 shadow-md border border-slate-100"
+                  >
+                    2 more sports to compare
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <button
+                onClick={() => {
+                  setShowReengagePrompt(false);
+                  setIsMatchModalCollapsed(false);
+                  setIsMatchModalOpen(true);
+                }}
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-power-orange text-white shadow-xl hover:bg-orange-600 transition premium-shadow"
+              >
+                <Sparkles className="h-6 w-6" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Roadmap chat drawer — opens inline, no navigation away from this page */}
+        {result && (
+          <RoadmapChatDrawer
+            isOpen={chatOpen}
+            onClose={() => setChatOpen(false)}
+            sportSlug={result.pathway.sportSlug}
+            sportName={result.pathway.sportName}
+            level={selectedMacroLevel?.representativeRawLevel}
+            levelLabel={selectedMacroLevel?.representativeLabel}
+          />
+        )}
+
+        {/* Login required before chatting (guests) */}
+        {result && (
+          <LoginRequiredModal
+            isOpen={chatLoginModalOpen}
+            onClose={() => setChatLoginModalOpen(false)}
+            sport={result.pathway.sportName}
+            redirectPath={`/roadmap?sport=${encodeURIComponent(result.pathway.sportName)}&openChat=1`}
+          />
+        )}
+      </div>
+    </section>
+  );
+}
+

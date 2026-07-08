@@ -1,12 +1,12 @@
 "use client";
 
-import { Button } from "@/modules/shared/ui/Button";
-import { useState } from "react";
 import { toast } from "@/lib/toast";
 import type {
-  AcademyBatchTiming,
-  AcademyStep5Payload,
+    AcademyBatchTiming,
+    AcademyStep5Payload,
 } from "@/modules/onboarding/types/academy";
+import { Button } from "@/modules/shared/ui/Button";
+import { useState } from "react";
 
 interface Step5PricingProps {
   academyId: string;

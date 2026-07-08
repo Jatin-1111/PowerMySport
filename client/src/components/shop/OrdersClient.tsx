@@ -1,11 +1,11 @@
 "use client";
 
+import { listOrders, type Order } from "@/lib/shop/ecommerce-api";
+import { formatInr } from "@/lib/shop/format";
 import { motion } from "framer-motion";
 import { PackageCheck, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { listOrders, type Order } from "@/lib/shop/ecommerce-api";
-import { formatInr } from "@/lib/shop/format";
 
 export function OrdersClient() {
   const [orders, setOrders] = useState<Order[]>([]);

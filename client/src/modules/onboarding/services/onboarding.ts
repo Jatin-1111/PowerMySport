@@ -1,12 +1,12 @@
 ﻿import axiosInstance from "@/lib/api/axios";
 import {
-  ConfirmImagesPayload,
-  OnboardingStep1Payload,
-  OnboardingStep2Payload,
-  OnboardingStep3Payload,
-  OnboardingStep5Payload,
-  OnboardingVenue,
-  PresignedUrl,
+    ConfirmImagesPayload,
+    OnboardingStep1Payload,
+    OnboardingStep2Payload,
+    OnboardingStep3Payload,
+    OnboardingStep5Payload,
+    OnboardingVenue,
+    PresignedUrl,
 } from "@/modules/onboarding/types/onboarding";
 import axios from "axios";
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { toast } from "sonner";
 import { authApi } from "@/modules/auth/services/auth";
 import { Camera, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface ExpertPhotoUploadProps {
   currentPhotoUrl?: string;

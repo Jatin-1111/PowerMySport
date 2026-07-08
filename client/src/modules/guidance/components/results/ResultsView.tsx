@@ -1,32 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import {
-  Compass,
-  Activity,
-  Timer,
-  Wallet,
-  MapPin,
-  Trophy,
-  BarChart3,
-  Sparkles,
-  TrendingUp,
-  Route,
-  X,
-  UserPlus,
-  Users,
-  ArrowRight,
-} from "lucide-react";
 import { AIDisclaimer } from "@/components/shared/AIDisclaimer";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { motion } from "framer-motion";
+import {
+    Activity,
+    BarChart3,
+    Compass,
+    MapPin,
+    Route,
+    Timer,
+    TrendingUp,
+    Trophy,
+    UserPlus,
+    Wallet,
+    X,
+} from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 import type { GuidanceSubmission } from "../../types";
 import { buildFallbackJourney } from "../../utils";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 import { JourneyMap } from "../journey/JourneyMap";
-import { VerdictHero } from "./VerdictHero";
-import { CostBreakdownCard } from "../shared/CostBreakdownCard";
 import { BurnoutRiskCard } from "../shared/BurnoutRiskCard";
+import { CostBreakdownCard } from "../shared/CostBreakdownCard";
+import { VerdictHero } from "./VerdictHero";
 
 interface LevelContext {
   sport: string;

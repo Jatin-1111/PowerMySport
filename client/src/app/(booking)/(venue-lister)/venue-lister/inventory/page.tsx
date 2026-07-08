@@ -3,34 +3,33 @@
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
-import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import OnboardingSectionCard from "@/modules/onboarding/components/onboarding/OnboardingSectionCard";
 import OpeningHoursInput from "@/modules/onboarding/components/onboarding/OpeningHoursInput";
+import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Venue } from "@/types";
+import { motion } from "framer-motion";
 import {
-  Camera,
-  X,
-  Building2,
-  MapPin,
-  Star,
-  IndianRupee,
-  Edit3,
-  Trash2,
-  ExternalLink,
-  AlertCircle,
-  CheckCircle,
-  ImageOff,
-  Plus,
-  TrendingUp,
-  Layout,
+    AlertCircle,
+    Building2,
+    Camera,
+    CheckCircle,
+    Edit3,
+    ExternalLink,
+    ImageOff,
+    IndianRupee,
+    Layout,
+    MapPin,
+    Plus,
+    Star,
+    Trash2,
+    X,
 } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

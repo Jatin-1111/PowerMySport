@@ -24,8 +24,17 @@ import {
   getExpertSessionsForAdmin,
   markSessionRefundDone,
   setReviewHidden,
+  submitExpertForReview,
+  approveExpert,
+  rejectExpert,
 } from "../services/ExpertsService";
-import { sendExpertAdminCredentialsEmail } from "../../utils/email";
+import {
+  sendExpertAdminCredentialsEmail,
+  sendExpertApprovedEmail,
+  sendExpertRejectedEmail,
+} from "../../utils/email";
+import { Expert } from "../models/ExpertProfile";
+import { User } from "../models/User";
 
 const fail = (res: Response, error: unknown, code = 400) =>
   res.status(code).json({
@@ -153,12 +162,16 @@ export const listExpertsAdmin = async (
     const result = await listExpertsForAdmin({
       page: num(req.query.page),
       limit: num(req.query.limit),
+      verificationStatus: typeof req.query.verificationStatus === "string"
+        ? req.query.verificationStatus
+        : undefined,
     });
     res.json({
       success: true,
       message: "Experts retrieved",
       data: result.data,
       pagination: result.pagination,
+      pendingCount: result.pendingCount,
     });
   } catch (e) {
     fail(res, e, 500);
@@ -522,6 +535,78 @@ export const hideReviewAdmin = async (
       message: "Review visibility updated",
       data: session,
     });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+// ── Expert self-serve review submission ──────────────────────────────────────
+
+export const submitForReview = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const data = await submitExpertForReview(userId);
+    res.json({ success: true, message: "Profile submitted for review", data });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+// ── Admin approve / reject ────────────────────────────────────────────────────
+
+export const approveExpertAdmin = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const data = await approveExpert(req.params.expertId as string);
+
+    // Send approval email (best-effort)
+    if (data.email) {
+      sendExpertApprovedEmail({
+        name: data.name || "Expert",
+        email: data.email,
+        dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/expert/dashboard`,
+      }).catch((err: unknown) =>
+        console.error("Failed to send expert approval email:", err),
+      );
+    }
+
+    res.json({ success: true, message: "Expert approved and is now live", data });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+export const rejectExpertAdmin = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const reason = req.body?.reason;
+    if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+      res.status(400).json({ success: false, message: "A rejection reason (min 5 characters) is required" });
+      return;
+    }
+    const data = await rejectExpert(req.params.expertId as string, reason);
+
+    // Send rejection email (best-effort)
+    if (data.email) {
+      sendExpertRejectedEmail({
+        name: data.name || "Expert",
+        email: data.email,
+        reason: reason.trim(),
+        dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/expert/onboarding`,
+      }).catch((err: unknown) =>
+        console.error("Failed to send expert rejection email:", err),
+      );
+    }
+
+    res.json({ success: true, message: "Expert profile rejected", data });
   } catch (e) {
     fail(res, e);
   }

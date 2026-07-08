@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { CancelSubscriptionModal } from "@/components/ui/CancelSubscriptionModal";
+import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import { CalendarRange, Wallet, TrendingUp, RotateCcw } from "lucide-react";
 import type { CoachSubscription } from "@/types";
-import { useFriendSocket } from "@/hooks/useFriendSocket";
-import { CancelSubscriptionModal } from "@/components/ui/CancelSubscriptionModal";
-import { motion, AnimatePresence, Variants } from "framer-motion";
+import { AnimatePresence, motion, Variants } from "framer-motion";
+import { CalendarRange, RotateCcw, TrendingUp, Wallet } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type SubscriptionFilter = "ALL" | "LIVE" | "ENDED";
 

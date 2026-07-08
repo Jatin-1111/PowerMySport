@@ -1,10 +1,10 @@
 "use client";
 
-import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
+import { Navigation } from "@/components/layout/Navigation";
 import {
-  clientFollowStore,
-  FollowItem,
+    clientFollowStore,
+    FollowItem,
 } from "@/modules/shared/lib/followStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";

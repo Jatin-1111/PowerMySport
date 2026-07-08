@@ -1,34 +1,33 @@
 "use client";
 
+import { getCommunityAppUrl } from "@/lib/community/url";
+import {
+    ActiveFilter,
+    FilterBar,
+} from "@/modules/discovery/components/FilterBar";
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import { OnboardingAcademy } from "@/modules/onboarding/types/academy";
 import { clientFollowStore } from "@/modules/shared/lib/followStore";
 import { Button } from "@/modules/shared/ui/Button";
-import { getCommunityAppUrl } from "@/lib/community/url";
 import { cn } from "@/utils/cn";
 import {
-  ArrowRight,
-  BadgeCheck,
-  Bookmark,
-  Building2,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  MessageCircle,
-  Star,
-  Users,
-  X,
-  Car,
-  Bath,
-  Droplets,
-  HeartPulse,
-  Coffee,
-  Dumbbell,
+    ArrowRight,
+    BadgeCheck,
+    Bath,
+    Bookmark,
+    Building2,
+    Car,
+    ChevronLeft,
+    ChevronRight,
+    Coffee,
+    Droplets,
+    Dumbbell,
+    HeartPulse,
+    MapPin,
+    MessageCircle,
+    Star,
+    Users,
 } from "lucide-react";
-import {
-  FilterBar,
-  ActiveFilter,
-} from "@/modules/discovery/components/FilterBar";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -216,13 +215,6 @@ export default function AcademiesTab() {
     selectedAmenities,
   ]);
 
-  const hasFilters =
-    cityFilter.length > 0 ||
-    sportFilter.length > 0 ||
-    ageGroupFilter.length > 0 ||
-    minPrice.length > 0 ||
-    maxPrice.length > 0 ||
-    !verifiedOnly;
 
   const handleApplySearch = (e: React.FormEvent) => {
     e.preventDefault();

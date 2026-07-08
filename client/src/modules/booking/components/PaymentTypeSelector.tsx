@@ -1,8 +1,8 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { CreditCard, Users2 } from "lucide-react";
 import { formatCurrency } from "@/utils/format";
+import { CreditCard, Users2 } from "lucide-react";
 
 export type PaymentType = "SINGLE" | "SPLIT";
 

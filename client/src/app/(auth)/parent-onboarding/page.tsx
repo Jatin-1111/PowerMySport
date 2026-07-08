@@ -1,23 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
-import { authApi } from "@/modules/auth/services/auth";
-import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/lib/toast";
+import { authApi } from "@/modules/auth/services/auth";
+import { INDIAN_STATES } from "@/modules/guidance/constants";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import {
-  DEFAULT_DEPENDENT_RELATION,
-  DEPENDENT_RELATIONS,
+    DEFAULT_DEPENDENT_RELATION,
+    DEPENDENT_RELATIONS,
 } from "@/modules/player/constants/dependentRelations";
-import { INDIAN_STATES } from "@/modules/guidance/constants";
-import { Calendar, UserRound } from "lucide-react";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
+import { Calendar, UserRound } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const PERSONALITY_OPTIONS = [
   "Shy",

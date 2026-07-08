@@ -1,6 +1,6 @@
-import React from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Modal } from "@/modules/shared/ui/Modal";
+import { Search, SlidersHorizontal, X } from "lucide-react";
+import React from "react";
 
 export interface ActiveFilter {
   id: string;

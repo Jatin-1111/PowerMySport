@@ -1,44 +1,44 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import {
-  friendService,
-  Friend,
-  FriendRequest,
-  SearchUserResult,
-} from "@/modules/shared/services/friend";
-import { useFriendSocket } from "@/hooks/useFriendSocket";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import { EmptyState } from "@/modules/shared/ui/EmptyState";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { toast } from "sonner";
 import {
-  Users,
-  UserPlus,
-  Clock,
-  Search,
-  MoreVertical,
-  UserX,
-  Ban,
-  CheckCircle,
-  XCircle,
-  Send,
+    Friend,
+    FriendRequest,
+    friendService,
+    SearchUserResult,
+} from "@/modules/shared/services/friend";
+import { Button } from "@/modules/shared/ui/Button";
+import { Card, CardContent } from "@/modules/shared/ui/Card";
+import { EmptyState } from "@/modules/shared/ui/EmptyState";
+import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
+import { motion } from "framer-motion";
+import {
+    Ban,
+    CheckCircle,
+    Clock,
+    MoreVertical,
+    Search,
+    Send,
+    UserPlus,
+    Users,
+    UserX,
+    XCircle,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 const MIN_SEARCH_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 350;

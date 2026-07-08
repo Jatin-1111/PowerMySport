@@ -1,25 +1,25 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@/lib/toast";
+import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
+import type {
+    AcademyStep1Payload,
+    AcademyStep2Payload,
+    AcademyStep3Payload,
+    AcademyStep4Payload,
+    AcademyStep5Payload,
+    AcademyStep6Payload,
+    AcademyStepPayload,
+    OnboardingAcademy,
+} from "@/modules/onboarding/types/academy";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import Step1BasicInfo from "./Step1BasicInfo";
 import Step2Location from "./Step2Location";
 import Step3Legal from "./Step3Legal";
 import Step4VenuesCoaches from "./Step4VenuesCoaches";
 import Step5Pricing from "./Step5Pricing";
 import Step6Payouts from "./Step6Payouts";
-import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
-import type {
-  AcademyStep1Payload,
-  AcademyStep2Payload,
-  AcademyStep3Payload,
-  AcademyStep4Payload,
-  AcademyStep5Payload,
-  AcademyStep6Payload,
-  AcademyStepPayload,
-  OnboardingAcademy,
-} from "@/modules/onboarding/types/academy";
 
 const STORAGE_KEY = "academy_onboarding_progress";
 

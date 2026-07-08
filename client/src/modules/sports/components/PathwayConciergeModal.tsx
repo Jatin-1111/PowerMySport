@@ -1,16 +1,16 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Sparkles,
-  ShieldAlert,
-  CheckCircle2,
-  Loader2,
-  UploadCloud,
-} from "lucide-react";
-import { useState, useRef, useEffect } from "react";
 import axiosInstance from "@/lib/api/axios";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    CheckCircle2,
+    Loader2,
+    ShieldAlert,
+    Sparkles,
+    UploadCloud,
+    X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface PathwayConciergeModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ interface PathwayConciergeModalProps {
   item: any;
   type: "tournament" | "scholarship" | "university";
   satisfiedPrerequisites?: string[];
+  hideProgress?: boolean;
   onSubmitSuccess?: (record: {
     id: string;
     itemName: string;
@@ -35,6 +36,7 @@ export function PathwayConciergeModal({
   item,
   type,
   satisfiedPrerequisites = [],
+  hideProgress = false,
   onSubmitSuccess,
 }: PathwayConciergeModalProps) {
   const [step, setStep] = useState<
@@ -682,7 +684,7 @@ export function PathwayConciergeModal({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {documentChecklist.map((docName: string, index: number) => {
           const file = uploadedFiles[docName];
           return (
@@ -852,7 +854,7 @@ export function PathwayConciergeModal({
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
+          className="relative w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-power-orange to-amber-500 p-5 text-white flex items-center justify-between">
@@ -861,8 +863,7 @@ export function PathwayConciergeModal({
               <h3 className="font-bold font-title">Sports Pathway Guide</h3>
             </div>
             <div className="flex items-center gap-3">
-              {/* FIX 4: progress dots */}
-              {progressDots && (
+              {!hideProgress && progressDots && (
                 <div className="flex items-center gap-1.5">
                   {Array.from({ length: progressDots.total }).map((_, i) => (
                     <div
@@ -883,7 +884,7 @@ export function PathwayConciergeModal({
             </div>
           </div>
 
-          <div className="p-6 sm:p-8">
+          <div className="p-6 sm:p-8 overflow-y-auto flex-1">
             <AnimatePresence mode="wait">
               {step === "question" && (
                 <motion.div

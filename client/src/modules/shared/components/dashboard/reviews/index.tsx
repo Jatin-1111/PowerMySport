@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
-import { Star, ThumbsUp, User } from "lucide-react";
 import type { ReviewItem, ReviewSummary } from "@/types";
+import { Star, ThumbsUp, User } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Helpers

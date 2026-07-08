@@ -1,32 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "@/lib/toast";
-import {
-  Wallet as WalletIcon,
-  CreditCard,
-  ArrowDownRight,
-  ArrowUpRight,
-  History,
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/modules/shared/ui/Card";
-import { Button } from "@/modules/shared/ui/Button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/lib/toast";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Button } from "@/modules/shared/ui/Button";
 import {
-  walletApi,
-  Wallet,
-  WalletTransaction,
-} from "@/modules/wallet/services/wallet";
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/modules/shared/ui/Card";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import {
+    Wallet,
+    walletApi,
+} from "@/modules/wallet/services/wallet";
+import {
+    ArrowDownRight,
+    ArrowUpRight,
+    History,
+    Wallet as WalletIcon,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function WalletPage() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -201,9 +198,18 @@ export default function WalletPage() {
                             )}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900">
-                              {tx.reason}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-slate-900">
+                                {tx.reason}
+                              </p>
+                              {tx.type === "CREDIT" &&
+                                typeof tx.reason === "string" &&
+                                tx.reason.toLowerCase().includes("refund") && (
+                                  <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                                    Refund
+                                  </span>
+                                )}
+                            </div>
                             <p className="text-xs text-slate-500">
                               {new Date(tx.createdAt).toLocaleDateString()} at{" "}
                               {new Date(tx.createdAt).toLocaleTimeString()}

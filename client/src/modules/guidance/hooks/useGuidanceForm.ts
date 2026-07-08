@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import api from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
-import { initialForm, buildLevelPlanQuestion } from "../constants";
+import { useEffect, useRef, useState } from "react";
+import { buildLevelPlanQuestion, initialForm } from "../constants";
 import type {
-  GuidanceFormState,
-  GuidanceSubmission,
-  PlayerProfile,
+    GuidanceFormState,
+    GuidanceSubmission,
+    PlayerProfile,
 } from "../types";
 
 export function useGuidanceForm({
@@ -230,8 +230,20 @@ export function useGuidanceForm({
       const response = await api.post<{
         success: boolean;
         message: string;
+        status?: string;
+        sport?: string;
         data: GuidanceSubmission;
       }>("/guidance", payload);
+
+      if (response.data.status === "not_supported") {
+        const sport = response.data.sport ?? form.sport ?? "that sport";
+        toast.error(
+          `We're building the ${sport} pathway — our team is working on it! Try Cricket, Tennis, Football, or any of our 10 supported sports.`,
+          { duration: 6000 } as any,
+        );
+        return;
+      }
+
       setSubmission(response.data.data);
       setShowResults(true);
       setAchievement("🏆 Roadmap unlocked!");

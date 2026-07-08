@@ -9,7 +9,6 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
-const siteTitle = "PowerMySport";
 const siteDescription =
   "PowerMySport helps parents plan their child's sports career. Get AI-powered sport pathways, personalised guidance, and 1:1 sessions with verified experts — free to explore, state-specific for India.";
 

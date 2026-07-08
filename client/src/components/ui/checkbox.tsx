@@ -1,5 +1,5 @@
-import * as React from "react";
 import { cn } from "@/utils/cn";
+import * as React from "react";
 
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   checked?: boolean;

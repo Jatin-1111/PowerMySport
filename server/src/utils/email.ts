@@ -2406,3 +2406,109 @@ export const sendPasswordChangedEmail = async (
     html,
   });
 };
+
+// ─── Expert self-serve review emails ──────────────────────────────────────────
+
+export const sendExpertApprovedEmail = async (options: {
+  name: string;
+  email: string;
+  dashboardUrl: string;
+}): Promise<void> => {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;">Your expert profile is live on PowerMySport. Clients can now find and book sessions with you.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dbe3ee;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#059669 0%,#10b981 100%);padding:30px 28px 24px;text-align:center;">
+              <div style="display:inline-block;background:#065f46;border:1px solid #6ee7b7;color:#d1fae5;padding:6px 12px;border-radius:9999px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Expert — Approved</div>
+              <h1 style="margin:14px 0 0;font-size:28px;line-height:34px;color:#ffffff;font-weight:800;">You&rsquo;re Live!</h1>
+              <p style="margin:10px 0 0;font-size:15px;line-height:22px;color:#d1fae5;">Your expert profile has been approved and is now visible to clients.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px;background-color:#ffffff;">
+              <p style="margin:0 0 16px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Congratulations, ${options.name}!</p>
+              <p style="margin:0 0 20px;font-size:15px;line-height:24px;color:#475569;">Your profile is now live on the PowerMySport platform. Clients can discover your profile, browse your availability, and book 1:1 sessions with you.</p>
+              <p style="margin:0 0 20px;font-size:15px;line-height:24px;color:#475569;">Make sure your availability windows are set so clients can start booking right away.</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${options.dashboardUrl}" target="_blank" style="display:inline-block;padding:14px 32px;background-color:#059669;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;">Go to Dashboard</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f8fafc;padding:18px 28px;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:12px;line-height:18px;color:#94a3b8;">&copy; ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  await sendEmail({ to: options.email, subject: "Your PowerMySport Expert Profile Is Live!", html });
+};
+
+export const sendExpertRejectedEmail = async (options: {
+  name: string;
+  email: string;
+  reason: string;
+  dashboardUrl: string;
+}): Promise<void> => {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;">Your expert profile application requires some changes before it can go live.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;background-color:#ffffff;border:1px solid #dbe3ee;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#dc2626 0%,#f87171 100%);padding:30px 28px 24px;text-align:center;">
+              <div style="display:inline-block;background:#7f1d1d;border:1px solid #fca5a5;color:#fee2e2;padding:6px 12px;border-radius:9999px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;">Action Required</div>
+              <h1 style="margin:14px 0 0;font-size:28px;line-height:34px;color:#ffffff;font-weight:800;">Profile Needs Updates</h1>
+              <p style="margin:10px 0 0;font-size:15px;line-height:22px;color:#fee2e2;">Please review the feedback below and resubmit your profile.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px;background-color:#ffffff;">
+              <p style="margin:0 0 16px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Thank you for applying to join PowerMySport as an expert. After reviewing your profile, our team has some feedback for you:</p>
+              <div style="background-color:#fef2f2;border-left:4px solid #dc2626;border-radius:4px;padding:14px 16px;margin:0 0 20px;">
+                <p style="margin:0;font-size:15px;line-height:24px;color:#7f1d1d;">${options.reason}</p>
+              </div>
+              <p style="margin:0 0 20px;font-size:15px;line-height:24px;color:#475569;">Please update your profile and resubmit for review. Our team will review it again promptly.</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${options.dashboardUrl}" target="_blank" style="display:inline-block;padding:14px 32px;background-color:#dc2626;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;">Update My Profile</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f8fafc;padding:18px 28px;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:12px;line-height:18px;color:#94a3b8;">&copy; ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  await sendEmail({ to: options.email, subject: "Your PowerMySport Expert Profile Needs Updates", html });
+};

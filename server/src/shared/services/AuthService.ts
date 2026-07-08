@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { Booking } from "../../client/models/Booking";
 import { Player } from "../../client/models/Player";
 import { User, UserDocument } from "../../client/models/User";
+import { Expert } from "../../client/models/ExpertProfile";
 import {
   sendPasswordResetEmail,
   sendWelcomeEmail,
@@ -74,7 +75,7 @@ export interface RegisterPayload {
   email: string;
   phone: string;
   password: string;
-  role: "Player" | "VenueLister" | "Coach";
+  role: "Player" | "VenueLister" | "Coach" | "EXPERT";
   userType?: "Parent" | "Player" | "Coach" | "Academy" | "Admin";
   acceptedTerms: boolean;
   acceptedPrivacy: boolean;
@@ -113,6 +114,20 @@ export const registerUser = async (
     },
   };
   await user.save();
+
+  // For self-registered experts create a blank profile pending admin review.
+  if (payload.role === "EXPERT") {
+    await Expert.create({
+      userId: user._id,
+      bio: "",
+      sports: [],
+      expertise: [],
+      sessionFee: 0,
+      sessionMode: "ONLINE",
+      isActive: false,
+      verificationStatus: "UNVERIFIED",
+    });
+  }
 
   // Send welcome email asynchronously (don't wait for it)
   sendWelcomeEmail({

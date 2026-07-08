@@ -9,35 +9,35 @@ import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { INDIAN_STATES } from "@/modules/guidance/constants";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
-import { formatDependentRelation } from "@/modules/player/constants/dependentRelations";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { ProfileCompletionRing } from "@/modules/player/components/ProfileCompletionRing";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
 import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { ProfileCompletionRing } from "@/modules/player/components/ProfileCompletionRing";
+import { formatDependentRelation } from "@/modules/player/constants/dependentRelations";
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
-import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent, CardFooter } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Modal } from "@/modules/shared/ui/Modal";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { User } from "@/types";
 import { cn } from "@/utils/cn";
 import {
-  Calendar,
-  Edit2,
-  GraduationCap,
-  Info,
-  Mail,
-  Phone,
-  Plus,
-  Trash2,
-  Trophy,
-  UserRound,
-  Users,
+    Calendar,
+    Edit2,
+    GraduationCap,
+    Info,
+    Mail,
+    Phone,
+    Plus,
+    Trash2,
+    Trophy,
+    UserRound,
+    Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 

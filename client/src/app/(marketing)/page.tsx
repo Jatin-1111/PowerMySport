@@ -2,7 +2,7 @@
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import { Features } from "@/modules/marketing/components/marketing/Features";
+import { FeaturesShowcase } from "@/modules/marketing/components/marketing/FeaturesShowcase";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { TrustMarquee } from "@/modules/marketing/components/marketing/TrustMarquee";
@@ -116,8 +116,7 @@ export default function HomePage() {
       description:
         "Tell us your child's age, interests, and free time. We build a personalised sports roadmap just for them—no two plans are the same.",
       icon: <Sparkles className="h-6 w-6" />,
-      image:
-        "https://images.unsplash.com/photo-1505250469679-203ad9ced0cb?auto=format&fit=crop&w=1200&q=80",
+      stat: "Built in 2 minutes",
     },
     {
       label: "Where do we start?",
@@ -125,8 +124,7 @@ export default function HomePage() {
       description:
         "See exactly what to focus on now and what comes next, from the very first session to competing—so you're never guessing the next move.",
       icon: <Map className="h-6 w-6" />,
-      image:
-        "https://images.unsplash.com/photo-1584415942461-0b87dda9cc2b?auto=format&fit=crop&w=800&q=80",
+      stat: "",
     },
     {
       label: "Too much conflicting advice",
@@ -134,8 +132,7 @@ export default function HomePage() {
       description:
         "Stuck on a decision? Get answers from sports experts and our AI guide, built around your child's goals—not generic internet tips.",
       icon: <BrainCircuit className="h-6 w-6" />,
-      image:
-        "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=800&q=80",
+      stat: "",
     },
     {
       label: "What does 'good' even look like?",
@@ -143,8 +140,7 @@ export default function HomePage() {
       description:
         "Understand the levels, milestones, and tournaments that matter for your child's sport, so progress finally feels clear.",
       icon: <Target className="h-6 w-6" />,
-      image:
-        "https://images.unsplash.com/photo-1507626614093-a8b16cfbfd00?auto=format&fit=crop&w=800&q=80",
+      stat: "",
     },
     {
       label: "Everything is scattered",
@@ -152,8 +148,7 @@ export default function HomePage() {
       description:
         "Your child's plan, guidance, and next steps live in one simple dashboard—no more juggling WhatsApp groups, notes, and phone calls.",
       icon: <Users2 className="h-6 w-6" />,
-      image:
-        "https://images.unsplash.com/photo-1531347118459-c3ea7a5ac61e?auto=format&fit=crop&w=800&q=80",
+      stat: "One dashboard, all tools",
     },
     {
       label: "Costs add up fast",
@@ -161,8 +156,7 @@ export default function HomePage() {
       description:
         "Get a clear picture of the time and money a sport really takes—so you commit with confidence, not on a hunch.",
       icon: <ShieldCheck className="h-6 w-6" />,
-      image:
-        "https://images.unsplash.com/photo-1503486579284-2418f27ccaf7?auto=format&fit=crop&w=800&q=80",
+      stat: "Save weeks of research",
     },
   ];
 
@@ -182,9 +176,9 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <Hero
         variant="home"
-        title="Your child's gateway to a dream sports journey"
+        title="The Trusted Guide for Every Sports Parent."
         subtitle="Built for sports parents"
-        description="PowerMySport is a sports guidance platform for parents that helps you understand, plan, and execute your child's sports journey. All this with the help of experts on call."
+        description="AI-powered pathways, expert guidance, trusted community and personalised support — everything you need to confidently navigate your child's sporting journey."
         primaryCTA={
           user?.role === "VenueLister"
             ? { label: "Manage Venues", href: "/venue-lister/inventory" }
@@ -271,12 +265,11 @@ export default function HomePage() {
       </section>
 
       {/* ── How We Solve It (MVP value) ── */}
-      <Features
+      <FeaturesShowcase
         title="From Guesswork to a Clear Plan"
         subtitle="Why Parents Choose Us"
         description="We built PowerMySport to take the stress out of your child's sports journey. Here's how we make the hardest decisions simple."
         features={features}
-        variant="bento"
       />
 
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
@@ -325,7 +318,7 @@ export default function HomePage() {
                     title: "Expert Guidance",
                     desc: "Answers to your toughest questions from sports experts and our AI guide—on call, whenever you need.",
                     color: "bg-indigo-100 text-indigo-600",
-                    cta: { label: "Get Free Guidance", href: "/guidance" },
+                    cta: { label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." },
                   },
                 ].map((item) => (
                   <motion.div
@@ -371,7 +364,7 @@ export default function HomePage() {
                 damping: 26,
                 delay: 0.15,
               }}
-              className="relative hidden h-[520px] lg:block"
+              className="relative hidden w-full max-w-[612px] aspect-[3/2] mx-auto lg:block"
             >
               <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-orange-400/15 via-transparent to-indigo-400/10 blur-2xl" />
               <svg
@@ -395,7 +388,7 @@ export default function HomePage() {
                 }}
               >
                 <Image
-                  src="https://images.unsplash.com/photo-1484863137850-59afcfe05386?auto=format&fit=crop&w=900&q=80"
+                  src="https://media.istockphoto.com/id/1496936307/photo/young-boy-watching-british-indian-mother-working-at-home.jpg?s=612x612&w=0&k=20&c=KOg86wvMpgJe42K-2i3UKdcuOD7egEWcxHO1n3WHtl8="
                   alt="Parent planning their child's sports journey"
                   fill
                   sizes="(max-width: 1280px) 50vw, 600px"
@@ -750,7 +743,7 @@ export default function HomePage() {
           label: user ? "Go to Roadmap" : "Build a Sports Plan",
           href: "/roadmap",
         }}
-        secondaryCTA={{ label: "Get Free Guidance", href: "/guidance" }}
+        secondaryCTA={{ label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." }}
       />
     </main>
   );

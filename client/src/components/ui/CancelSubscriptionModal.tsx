@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Modal } from "@/modules/shared/ui/Modal";
-import { Button } from "@/modules/shared/ui/Button";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/modules/shared/ui/Button";
+import { Modal } from "@/modules/shared/ui/Modal";
 import { AlertTriangle } from "lucide-react";
+import { useState } from "react";
 
 interface CancelModalProps {
   isOpen: boolean;

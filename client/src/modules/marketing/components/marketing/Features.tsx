@@ -3,15 +3,14 @@
 import { cn } from "@/utils/cn";
 import { motion, Variants } from "framer-motion";
 import {
-  BarChart3,
-  Calendar,
-  CreditCard,
-  MapPin,
-  ShieldCheck,
-  Star,
-  Users,
-  Zap,
-  LucideIcon,
+    BarChart3,
+    Calendar,
+    CreditCard,
+    MapPin,
+    ShieldCheck,
+    Star,
+    Users,
+    Zap,
 } from "lucide-react";
 import Image from "next/image";
 import React from "react";
@@ -23,6 +22,7 @@ export interface Feature {
   icon?: React.ReactNode;
   label?: string;
   image?: string;
+  stat?: string;
 }
 
 export interface FeaturesProps {
@@ -142,12 +142,12 @@ const bentoSpans = ["md:col-span-2 md:row-span-2", "", "", "", "", ""];
 // cards — a distinct accent per card (icon chip + bottom edge) gives each
 // one its own identity while scrolling, instead of six lookalike tiles.
 const bentoAccents = [
-  { chip: "bg-power-orange/30 ring-power-orange/50", edge: "bg-power-orange" },
-  { chip: "bg-blue-500/30 ring-blue-400/50", edge: "bg-blue-400" },
-  { chip: "bg-purple-500/30 ring-purple-400/50", edge: "bg-purple-400" },
-  { chip: "bg-emerald-500/30 ring-emerald-400/50", edge: "bg-emerald-400" },
-  { chip: "bg-amber-500/30 ring-amber-400/50", edge: "bg-amber-400" },
-  { chip: "bg-rose-500/30 ring-rose-400/50", edge: "bg-rose-400" },
+  { chip: "bg-power-orange/25 ring-power-orange/40", edgeCls: "bg-gradient-to-r from-power-orange to-amber-400", glow: "249,115,22" },
+  { chip: "bg-blue-500/25 ring-blue-400/40", edgeCls: "bg-gradient-to-r from-blue-500 to-cyan-400", glow: "96,165,250" },
+  { chip: "bg-violet-500/25 ring-violet-400/40", edgeCls: "bg-gradient-to-r from-violet-500 to-purple-400", glow: "167,139,250" },
+  { chip: "bg-emerald-500/25 ring-emerald-400/40", edgeCls: "bg-gradient-to-r from-emerald-500 to-teal-400", glow: "52,211,153" },
+  { chip: "bg-amber-500/25 ring-amber-400/40", edgeCls: "bg-gradient-to-r from-amber-400 to-yellow-300", glow: "251,191,36" },
+  { chip: "bg-rose-500/25 ring-rose-400/40", edgeCls: "bg-gradient-to-r from-rose-500 to-pink-400", glow: "251,113,133" },
 ];
 
 function BentoFeatureCard({
@@ -165,9 +165,12 @@ function BentoFeatureCard({
     <motion.div
       variants={cardVariants}
       whileHover={{ y: -6 }}
-      transition={{ type: "spring", stiffness: 280, damping: 20 }}
+      transition={{ type: "spring", stiffness: 260, damping: 22 }}
       className={cn(
-        "group relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-2xl border border-white/10 shadow-sm will-change-transform premium-shadow md:min-h-0",
+        "group relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-3xl border border-white/10 will-change-transform md:min-h-0",
+        "shadow-[0_8px_40px_-8px_rgba(0,0,0,0.45)]",
+        "hover:shadow-[0_20px_60px_-8px_rgba(0,0,0,0.65)]",
+        "transition-shadow duration-500",
         span,
       )}
     >
@@ -183,53 +186,77 @@ function BentoFeatureCard({
               ? "(min-width: 768px) 66vw, 100vw"
               : "(min-width: 768px) 33vw, 100vw"
           }
-          className="scale-105 object-cover transition-transform duration-700 will-change-transform group-hover:scale-115"
+          className="scale-[1.04] object-cover transition-transform duration-700 ease-out will-change-transform group-hover:scale-[1.11]"
         />
       )}
 
-      {/* Dark overlay for text legibility. Strong even at the top — with
-          `justify-end` a longer label+title+description block can extend
-          well into the upper half of shorter cards, and some source photos
-          (e.g. light/bright backgrounds) don't have enough natural contrast
-          for white text once the gradient thins out. */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-black/45" />
-      <div className="pointer-events-none absolute inset-0 bg-black/10" />
+      {/* Base gradient */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/15" />
 
-      {/* Per-card accent edge — the main thing that stops all six cards
-          reading as one repeated dark tile when stacked on mobile. */}
-      <div className={cn("absolute inset-x-0 top-0 h-1", accent.edge)} />
+      {/* Per-card accent color glow on hover */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+        style={{
+          background: `radial-gradient(ellipse 70% 45% at 50% 110%, rgba(${accent.glow}, 0.2), transparent)`,
+        }}
+      />
 
-      <div className="relative p-7 sm:p-8">
+      {/* Film grain for depth */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.04] mix-blend-overlay"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          backgroundSize: "160px 160px",
+        }}
+      />
+
+      {/* Top gradient accent bar */}
+      <div className={cn("absolute inset-x-0 top-0 h-[3px] rounded-t-3xl", accent.edgeCls)} />
+
+      {/* Floating stat pill — top right */}
+      {feature.stat && (
+        <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 backdrop-blur-md">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+          <span className="text-[11px] font-semibold tracking-wide text-white/85">
+            {feature.stat}
+          </span>
+        </div>
+      )}
+
+      <div className="relative p-6 sm:p-7 md:p-8">
         {feature.icon && (
           <motion.div
             className={cn(
-              "mb-6 flex shrink-0 items-center justify-center rounded-xl text-white ring-1 backdrop-blur-md will-change-transform",
+              "mb-5 flex shrink-0 items-center justify-center rounded-2xl text-white backdrop-blur-sm ring-1 will-change-transform",
               accent.chip,
-              isHero ? "h-14 w-14" : "h-12 w-12",
+              isHero ? "h-14 w-14" : "h-11 w-11",
             )}
-            whileHover={{ rotate: 8, scale: 1.15 }}
+            whileHover={{ rotate: 8, scale: 1.12 }}
             transition={{ type: "spring", stiffness: 300, damping: 16 }}
           >
             {feature.icon}
           </motion.div>
         )}
+
         {feature.label && (
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">
             {feature.label}
           </p>
         )}
+
         <h3
           className={cn(
-            "mb-3 font-bold text-white",
-            isHero ? "text-2xl" : "text-xl",
+            "font-bold text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.4)]",
+            isHero ? "mb-3 text-2xl sm:text-3xl" : "mb-2 text-lg sm:text-xl",
           )}
         >
           {feature.title}
         </h3>
+
         <p
           className={cn(
-            "leading-relaxed text-white/85",
-            isHero ? "text-base" : "text-sm",
+            "leading-relaxed text-white/75",
+            isHero ? "text-base" : "text-sm line-clamp-3",
           )}
         >
           {feature.description}
@@ -311,10 +338,10 @@ export const Features: React.FC<FeaturesProps> = ({
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
           className={cn(
-            "grid grid-cols-1 gap-6 sm:gap-7",
+            "grid grid-cols-1",
             variant === "bento"
-              ? "md:grid-cols-3 md:auto-rows-[16rem]"
-              : gridCols[columns],
+              ? "gap-4 sm:gap-5 md:grid-cols-3 md:auto-rows-[18rem]"
+              : cn("gap-6 sm:gap-7", gridCols[columns]),
           )}
         >
           {features.map((feature, index) =>

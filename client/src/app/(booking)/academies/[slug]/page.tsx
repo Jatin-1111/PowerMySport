@@ -5,14 +5,14 @@ import { OnboardingAcademy } from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import {
-  BadgeCheck,
-  CalendarDays,
-  Clock3,
-  IndianRupee,
-  Mail,
-  MapPin,
-  Phone,
-  Users,
+    BadgeCheck,
+    CalendarDays,
+    Clock3,
+    IndianRupee,
+    Mail,
+    MapPin,
+    Phone,
+    Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";

@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@/modules/shared/ui/Button";
-import { useState } from "react";
 import { toast } from "@/lib/toast";
 import type { AcademyStep4Payload } from "@/modules/onboarding/types/academy";
+import { Button } from "@/modules/shared/ui/Button";
+import { useState } from "react";
 
 interface Step4VenuesCoachesProps {
   academyId: string;

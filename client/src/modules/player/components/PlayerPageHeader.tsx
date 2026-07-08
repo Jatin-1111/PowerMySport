@@ -10,7 +10,6 @@ type PlayerPageHeaderProps = {
 export function PlayerPageHeader({
   title,
   subtitle,
-  badge,
   action,
 }: PlayerPageHeaderProps) {
   return (

@@ -34,10 +34,23 @@ router.get(
   adminMiddleware,
   expert.expertSessionsAdmin,
 );
+router.post(
+  "/admin/:expertId/approve",
+  authMiddleware,
+  adminMiddleware,
+  expert.approveExpertAdmin,
+);
+router.post(
+  "/admin/:expertId/reject",
+  authMiddleware,
+  adminMiddleware,
+  expert.rejectExpertAdmin,
+);
 
 // ── Expert self-service (literal /me before /:expertId) ───────────────────────
 router.get("/me", authMiddleware, expert.getMyProfile);
 router.patch("/me", authMiddleware, expert.updateMyProfile);
+router.post("/me/review", authMiddleware, expert.submitForReview);
 
 // ── Session routes (literal /sessions before /:expertId) ─────────────────────
 router.get("/sessions/mine", authMiddleware, expert.mySessions);

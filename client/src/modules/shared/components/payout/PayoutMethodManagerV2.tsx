@@ -1,27 +1,25 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
+import { Button } from "@/modules/shared/ui/Button";
 import { IPayoutMethod, PayoutMethodType } from "@/types";
 import { cn } from "@/utils/cn";
-import { Button } from "@/modules/shared/ui/Button";
-import { Input } from "@/components/ui/input";
 import {
-  AlertTriangle,
-  BadgeCheck,
-  Banknote,
-  CreditCard,
-  Eye,
-  EyeOff,
-  Loader2,
-  PencilLine,
-  Shield,
-  Smartphone,
-  Star,
-  Trash2,
-  User,
-  Wallet,
+    BadgeCheck,
+    Banknote,
+    CreditCard,
+    Eye,
+    EyeOff,
+    Loader2,
+    PencilLine,
+    Shield,
+    Smartphone,
+    Star,
+    Trash2,
+    Wallet,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -250,7 +248,6 @@ function FormFieldGroup({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function PayoutMethodManager({
-  ownerType,
   onLoad,
   onAdd,
   onUpdate,
@@ -451,7 +448,6 @@ export function PayoutMethodManager({
     );
   }
 
-  const defaultMethod = methods.find((m) => m.isDefault);
 
   return (
     <div className="space-y-6">

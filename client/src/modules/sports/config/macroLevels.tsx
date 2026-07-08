@@ -1,6 +1,6 @@
-import { ReactNode } from "react";
-import { MapPin, Shield, Trophy, Globe } from "lucide-react";
 import { PathwayLevel } from "@/modules/sports/services/pathway";
+import { MapPin, Shield, Trophy } from "lucide-react";
+import { ReactNode } from "react";
 
 // ─── Macro pathway tiers ────────────────────────────────────────────────────
 //

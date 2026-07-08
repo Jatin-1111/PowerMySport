@@ -1,7 +1,8 @@
-import React from "react";
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
+import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import type { Metadata } from "next";
+import React from "react";
 
 export const metadata: Metadata = {
   title: "PowerMySport — Sports Career Planner for Parents",
@@ -30,6 +31,9 @@ export default function MarketingLayout({
 
       {/* Footer */}
       <Footer />
+
+      {/* WhatsApp lead channel — floats bottom-right on all marketing pages */}
+      <WhatsAppButton />
     </div>
   );
 }

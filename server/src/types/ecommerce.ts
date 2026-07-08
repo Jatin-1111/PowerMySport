@@ -143,7 +143,6 @@ export enum FulfillmentStatus {
 
 export enum PaymentGateway {
   PHONEPE = "PHONEPE",
-  STRIPE = "STRIPE",
 }
 
 // Order Types

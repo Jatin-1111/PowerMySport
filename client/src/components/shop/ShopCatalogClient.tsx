@@ -1,22 +1,20 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  Search,
-  SlidersHorizontal,
-  Sparkles,
-  ShoppingCart,
-  ArrowUpRight,
-  ChevronDown,
-} from "lucide-react";
-import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { useShopCart } from "@/lib/shop/cart";
 import type { Product } from "@/lib/shop/ecommerce-api";
-import { getShopCartTotals, useShopCart } from "@/lib/shop/cart";
 import { formatInr } from "@/lib/shop/format";
 import { cn } from "@/utils/cn";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    ArrowUpRight,
+    ChevronDown,
+    Search,
+    SlidersHorizontal,
+    Sparkles,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 const sortOptions = [
   { value: "featured", label: "Featured" },
@@ -82,7 +80,6 @@ export function ShopCatalogClient({
   }, [searchParams, facets.maxPrice]);
 
   const cartItems = useShopCart();
-  const totals = useMemo(() => getShopCartTotals(cartItems), [cartItems]);
 
   // Category list comes from the catalog-wide facet (not the filtered result
   // set) so the shopper can always switch categories. Fall back to whatever is
@@ -162,8 +159,6 @@ export function ShopCatalogClient({
     return filteredProducts;
   }, [filteredProducts, activeTab]);
 
-  const heroProduct =
-    products.find((product) => product.images?.[0]) || products[0];
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

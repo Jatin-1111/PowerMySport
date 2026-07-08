@@ -1,32 +1,32 @@
 "use client";
 
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { coachApi } from "@/modules/coach/services/coach";
 import { isCoachVerificationFlowComplete } from "@/modules/coach/utils/verification";
 import {
-  DashboardShell,
-  type DashboardNavItem,
+    DashboardShell,
+    type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
-import { toast } from "@/lib/toast";
-import { getCommunityAppUrl } from "@/lib/community/url";
+import { PayoutBanner } from "@/modules/shared/components/payout/PayoutBanner";
+import { payoutApi } from "@/modules/shared/services/payout";
+import { IPayoutMethod } from "@/types";
 import {
-  BarChart2,
-  Calendar,
-  CalendarDays,
-  CreditCard,
-  BadgeIndianRupee,
-  Settings,
-  ShieldCheck,
-  Star,
-  User,
-  Users,
+    BadgeIndianRupee,
+    BarChart2,
+    Calendar,
+    CalendarDays,
+    CreditCard,
+    Settings,
+    ShieldCheck,
+    Star,
+    User,
+    Users,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { payoutApi } from "@/modules/shared/services/payout";
-import { PayoutBanner } from "@/modules/shared/components/payout/PayoutBanner";
-import { IPayoutMethod } from "@/types";
 
 export default function CoachLayout({
   children,

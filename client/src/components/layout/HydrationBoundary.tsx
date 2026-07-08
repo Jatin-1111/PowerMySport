@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import { useEffect } from "react";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { useEffect } from "react";
 
 /**
  * HydrationBoundary

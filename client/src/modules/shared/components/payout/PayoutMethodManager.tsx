@@ -1,28 +1,25 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
 import { toast } from "@/lib/toast";
+import { Button } from "@/modules/shared/ui/Button";
 import { IPayoutMethod, PayoutMethodType } from "@/types";
 import { cn } from "@/utils/cn";
-import { Button } from "@/modules/shared/ui/Button";
-import { Input } from "@/components/ui/input";
 import {
-  AlertTriangle,
-  BadgeCheck,
-  Banknote,
-  Building2,
-  CreditCard,
-  Hash,
-  Loader2,
-  Lock,
-  PencilLine,
-  Smartphone,
-  Trash2,
-  User,
-  Wallet,
-  Eye,
-  EyeOff,
+    AlertTriangle,
+    BadgeCheck,
+    Banknote,
+    CreditCard,
+    Eye,
+    EyeOff,
+    Loader2,
+    Lock,
+    PencilLine,
+    Smartphone,
+    Trash2,
+    Wallet,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -286,7 +283,6 @@ export function PayoutMethodManager({
     );
   }
 
-  const ownerLabel = ownerType === "Coach" ? "coach" : "venue";
 
   return (
     <div className="space-y-6">

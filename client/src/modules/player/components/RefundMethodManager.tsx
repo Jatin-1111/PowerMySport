@@ -1,24 +1,21 @@
 "use client";
 
-import { toast } from "@/lib/toast";
-import { cn } from "@/utils/cn";
-import { Button } from "@/modules/shared/ui/Button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/lib/toast";
+import { Button } from "@/modules/shared/ui/Button";
+import { cn } from "@/utils/cn";
 import {
-  AlertTriangle,
-  BadgeCheck,
-  Eye,
-  EyeOff,
-  Landmark,
-  Loader2,
-  PencilLine,
-  Shield,
-  Trash2,
-  Wallet,
-  CreditCard,
-  Smartphone,
+    BadgeCheck,
+    Eye,
+    EyeOff,
+    Landmark,
+    Loader2,
+    PencilLine,
+    Shield,
+    Trash2,
+    Wallet,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type RefundMethodType = "ORIGINAL_CARD" | "BANK_ACCOUNT" | "STORE_CREDIT";
 

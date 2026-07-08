@@ -1,28 +1,28 @@
 "use client";
 
-import { motion } from "framer-motion";
-import {
-  CheckCircle2,
-  CreditCard,
-  LockKeyhole,
-  MapPin,
-  Plus,
-} from "lucide-react";
-import Link from "next/link";
-import { FormEvent, useMemo, useState, useEffect } from "react";
 import { clearShopCart, getShopCartTotals, useShopCart } from "@/lib/shop/cart";
 import {
-  addUserAddress,
-  createOrderFromCart,
-  getUserAddresses,
-  lookupPincode,
-  type ShippingAddress,
-  type UserAddress,
+    addUserAddress,
+    createOrderFromCart,
+    getUserAddresses,
+    lookupPincode,
+    type ShippingAddress,
+    type UserAddress,
 } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
 import { INDIAN_STATES } from "@/lib/shop/indianStates";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { cn } from "@/utils/cn";
+import { motion } from "framer-motion";
+import {
+    CheckCircle2,
+    CreditCard,
+    LockKeyhole,
+    MapPin,
+    Plus,
+} from "lucide-react";
+import Link from "next/link";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 const initialForm = {
   fullName: "",

@@ -1,5 +1,4 @@
 import { Info, Sparkles } from "lucide-react";
-import React from "react";
 
 export type AIDisclaimerVariant =
   "roadmap" | "guidance" | "chat" | "sportmatch" | "pdf";

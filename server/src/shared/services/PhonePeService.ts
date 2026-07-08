@@ -164,6 +164,25 @@ const toPhonePeGatewayError = (
   });
 };
 
+const isPhonePeAuthError = (error: unknown): boolean => {
+  const err = error as any;
+  const msg: string = (err?.message ?? "").toLowerCase();
+  return (
+    err?.httpStatusCode === 401 ||
+    msg.includes("authorization failed") ||
+    msg.includes("please check the authorization token")
+  );
+};
+
+const resetPhonePeSDKClient = (): void => {
+  // Wipe the SDK-level singleton so the next getInstance() creates a truly
+  // fresh StandardCheckoutClient with a new TokenService and a new OAuth fetch.
+  (StandardCheckoutClient as any)._client = undefined;
+  cachedClient = null;
+  cachedConfigKey = null;
+  clientCreatedAt = 0;
+};
+
 const executePhonePeRequest = async <T>(
   operation: string,
   executor: () => Promise<T>,
@@ -171,6 +190,15 @@ const executePhonePeRequest = async <T>(
   try {
     return await executor();
   } catch (error) {
+    if (isPhonePeAuthError(error)) {
+      // Stale OAuth token — reset the SDK singleton and retry once with a fresh client.
+      resetPhonePeSDKClient();
+      try {
+        return await executor();
+      } catch (retryError) {
+        throw toPhonePeGatewayError(operation, retryError);
+      }
+    }
     throw toPhonePeGatewayError(operation, error);
   }
 };
@@ -195,17 +223,35 @@ const getPhonePeConfig = () => {
 };
 
 let cachedClient: StandardCheckoutClient | null = null;
+let cachedConfigKey: string | null = null;
+let clientCreatedAt: number = 0;
+// Re-create the SDK client every 2 hours so its internal OAuth token never goes stale.
+const CLIENT_TTL_MS = 2 * 60 * 60 * 1000;
 
 const getPhonePeClient = (): StandardCheckoutClient => {
-  if (cachedClient) return cachedClient;
-
   const { clientId, clientSecret, clientVersion, env } = getPhonePeConfig();
-  cachedClient = StandardCheckoutClient.getInstance(
-    clientId,
-    clientSecret,
-    clientVersion,
-    env,
-  );
+  const configKey = `${clientId}:${clientVersion}:${env}`;
+  const now = Date.now();
+
+  if (
+    cachedClient &&
+    (cachedConfigKey !== configKey || now - clientCreatedAt > CLIENT_TTL_MS)
+  ) {
+    cachedClient = null;
+    cachedConfigKey = null;
+  }
+
+  if (!cachedClient) {
+    cachedClient = StandardCheckoutClient.getInstance(
+      clientId,
+      clientSecret,
+      clientVersion,
+      env,
+    );
+    cachedConfigKey = configKey;
+    clientCreatedAt = now;
+  }
+
   return cachedClient;
 };
 
@@ -260,11 +306,10 @@ export const initiatePhonePePayment = async (payload: {
   userPhone?: string;
   metaInfo?: Record<string, string>;
 }): Promise<PhonePeInitPaymentResult> => {
-  const client = getPhonePeClient();
   const request = buildPayRequest(payload);
 
   const response = await executePhonePeRequest("initiate payment", () =>
-    client.pay(request),
+    getPhonePeClient().pay(request),
   );
   const redirectUrl = response.redirectUrl;
 
@@ -283,9 +328,8 @@ export const initiatePhonePePayment = async (payload: {
 export const getPhonePeOrderStatus = async (
   merchantOrderId: string,
 ): Promise<PhonePeOrderStatusResult> => {
-  const client = getPhonePeClient();
   const response = await executePhonePeRequest("fetch order status", () =>
-    client.getOrderStatus(merchantOrderId),
+    getPhonePeClient().getOrderStatus(merchantOrderId),
   );
 
   return {
@@ -354,10 +398,9 @@ export const initiatePhonePeRefund = async (payload: {
   originalMerchantOrderId: string;
   amount: number;
 }): Promise<PhonePeRefundResult> => {
-  const client = getPhonePeClient();
   const request = buildRefundRequest(payload);
   const response = await executePhonePeRequest("initiate refund", () =>
-    client.refund(request),
+    getPhonePeClient().refund(request),
   );
 
   return {
@@ -371,9 +414,8 @@ export const initiatePhonePeRefund = async (payload: {
 export const getPhonePeRefundStatus = async (
   merchantRefundId: string,
 ): Promise<PhonePeRefundStatusResult> => {
-  const client = getPhonePeClient();
   const response = (await executePhonePeRequest("fetch refund status", () =>
-    (client as any).getRefundStatus(merchantRefundId),
+    (getPhonePeClient() as any).getRefundStatus(merchantRefundId),
   )) as {
     refundId?: string;
     merchantRefundId?: string;

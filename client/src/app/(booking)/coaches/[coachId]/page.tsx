@@ -1,7 +1,8 @@
 "use client";
 
-import { toast } from "@/lib/toast";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { getCommunityAppUrl } from "@/lib/community/url";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
@@ -11,20 +12,19 @@ import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { reviewApi } from "@/modules/review/services/review";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Availability, Coach, ReviewItem, ReviewSummary } from "@/types";
 import { getOwnVenueLocationDisplay } from "@/utils/location";
 import {
-  ArrowLeft,
-  Award,
-  Calendar,
-  Check,
-  ImageIcon,
-  IndianRupee,
-  Info,
-  MapPin,
-  Star,
-  User,
+    ArrowLeft,
+    Award,
+    Calendar,
+    Check,
+    ImageIcon,
+    IndianRupee,
+    Info,
+    MapPin,
+    Star,
+    User,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
