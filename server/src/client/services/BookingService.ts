@@ -1575,7 +1575,11 @@ const initiateBookingRefunds = async (
       continue;
     }
 
-    if (transaction.refundState) {
+    // Skip only successfully initiated or completed refunds — allow FAILED to be retried.
+    if (
+      transaction.refundState &&
+      transaction.refundState !== "FAILED"
+    ) {
       hasPending = true;
       continue;
     }
@@ -1586,7 +1590,7 @@ const initiateBookingRefunds = async (
       originalMerchantOrderId: transaction.merchantOrderId,
       amount: target.amountPaise / 100, // initiatePhonePeRefund expects rupees, but amountPaise is in paise
     });
-    const refundState = refundResponse.state || "PENDING";
+    const refundState = refundResponse.state || "INITIATED";
     const refundId = refundResponse.refundId ?? transaction.refundId;
 
     transaction.refundMerchantId = refundMerchantId;
@@ -1621,7 +1625,9 @@ const initiateBookingRefunds = async (
 
   const refundStatus: "PENDING" | "PROCESSED" | "REJECTED" = hasFailure
     ? "REJECTED"
-    : "PROCESSED"; // Platform considers it processed even if gateway is still pending
+    : hasPending
+      ? "PENDING"
+      : "PROCESSED";
 
   return {
     refundStatus,
@@ -1692,6 +1698,9 @@ export const getBookingPhonePeRefundStatus = async (
   const refundableTransactions = await BookingPaymentTransaction.find({
     bookingId,
     refundMerchantId: { $exists: true, $ne: null },
+    // Exclude BANK_TRANSFER refunds — their IDs are not PhonePe IDs and
+    // would cause the gateway call to fail or corrupt stored state.
+    "refundResponse.method": { $ne: "BANK_TRANSFER" },
   }).sort({ createdAt: -1 });
 
   if (refundableTransactions.length === 0) {
@@ -1852,7 +1861,9 @@ export const cancelBooking = async (
         cancelledAt: new Date(),
         cancellationReason: cancellationReason || "Cancelled by user",
         refundAmount,
-        refundStatus: refundAmount > 0 ? "PENDING" : undefined,
+        // Don't pre-set refundStatus here — PhonePe hasn't been called yet.
+        // initiateBookingRefunds sets the real status (PENDING/PROCESSED/REJECTED)
+        // after the gateway responds; the catch block sets REJECTED on failure.
       },
     },
     { new: true },
@@ -1910,28 +1921,6 @@ export const cancelBooking = async (
           },
         }).catch(() => {});
 
-        // Send refund notification if refund is available
-        if (refundAmount > 0) {
-          NotificationService.send({
-            userId: participantId,
-            type: "PAYMENT_REFUND",
-            title: "Refund Initiated",
-            message: `A ${refundPercentage}% refund of ₹${refundAmount} has been initiated for your cancelled booking at ${venue.name}.`,
-            data: {
-              bookingId: updatedBooking._id.toString(),
-              venueName: venue.name,
-              sport: updatedBooking.sport,
-              refundAmount,
-              refundPercentage,
-              cancellationReason: cancellationReason || "Cancelled by user",
-            },
-          }).catch((err: Error) =>
-            console.error(
-              `Failed to send refund notification to ${participantId}:`,
-              err,
-            ),
-          );
-        }
       }
     }
 
@@ -1955,11 +1944,32 @@ export const cancelBooking = async (
         updatedBooking.refundStatus = refundResult.refundStatus;
         updatedBooking.refundAmount = refundResult.refundAmount;
         await updatedBooking.save();
+        // Notify the organizer only after the refund has actually been initiated
+        NotificationService.send({
+          userId: updatedBooking.organizerId.toString(),
+          type: "PAYMENT_REFUND",
+          title: "Refund Initiated",
+          message: `A ${refundPercentage}% refund of ₹${refundAmount} has been initiated for your cancelled booking${venue ? ` at ${venue.name}` : ""}.`,
+          data: {
+            bookingId: updatedBooking._id.toString(),
+            ...(venue ? { venueName: venue.name } : {}),
+            sport: updatedBooking.sport,
+            refundAmount,
+            refundPercentage,
+            cancellationReason: cancellationReason || "Cancelled by user",
+          },
+        }).catch((err: Error) =>
+          console.error(`Failed to send refund notification:`, err),
+        );
       } catch (refundError) {
         console.error(
           `Failed to initiate refund for booking ${updatedBooking._id.toString()}:`,
           refundError,
         );
+        // Mark the booking as REJECTED so the player sees "Refund failed —
+        // contact support" instead of a pending spinner that never resolves.
+        updatedBooking.refundStatus = "REJECTED";
+        await updatedBooking.save().catch(() => {});
       }
     }
 

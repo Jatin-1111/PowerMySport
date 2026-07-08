@@ -198,9 +198,18 @@ export default function WalletPage() {
                             )}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900">
-                              {tx.reason}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-slate-900">
+                                {tx.reason}
+                              </p>
+                              {tx.type === "CREDIT" &&
+                                typeof tx.reason === "string" &&
+                                tx.reason.toLowerCase().includes("refund") && (
+                                  <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                                    Refund
+                                  </span>
+                                )}
+                            </div>
                             <p className="text-xs text-slate-500">
                               {new Date(tx.createdAt).toLocaleDateString()} at{" "}
                               {new Date(tx.createdAt).toLocaleTimeString()}

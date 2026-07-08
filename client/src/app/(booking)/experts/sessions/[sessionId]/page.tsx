@@ -419,7 +419,7 @@ export default function ExpertSessionPage() {
         onClose={() => setShowCancel(false)}
         onConfirm={handleCancel}
         title="Cancel session?"
-        message="If you've paid, our team will process a refund manually. This can't be undone."
+        message="If you've paid, a refund will be initiated to your original payment method. This can't be undone."
         confirmLabel="Cancel session"
         cancelLabel="Keep session"
         variant="danger"

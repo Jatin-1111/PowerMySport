@@ -10,6 +10,7 @@ import {
 import {
   initiatePhonePePayment,
   getPhonePeOrderStatus,
+  initiatePhonePeRefund,
 } from "../../shared/services/PhonePeService";
 import { NotificationService } from "./NotificationService";
 import {
@@ -943,20 +944,43 @@ export const setReviewHidden = async (sessionId: string, hidden: boolean) => {
   return session;
 };
 
-/** Admin/finance: mark a required manual refund as done. */
+/** Admin/finance: mark a required manual refund as done, triggering a PhonePe reversal where possible. */
 export const markSessionRefundDone = async (sessionId: string) => {
   const session = await ExpertSession.findById(sessionId);
   if (!session) throw new Error("Session not found");
   if (session.refundStatus !== "REQUIRED") {
     throw new Error("This session has no pending refund");
   }
+
+  if (session.merchantOrderId) {
+    try {
+      const refundMerchantId = `EXPERT-REFUND-${Date.now()}-${session._id.toString().slice(-6)}`;
+      await initiatePhonePeRefund({
+        merchantRefundId: refundMerchantId,
+        originalMerchantOrderId: session.merchantOrderId,
+        amount: session.amount, // ExpertSession.amount is in rupees
+      });
+    } catch (refundError) {
+      console.error(
+        `PhonePe refund failed for expert session ${sessionId} — manual transfer required:`,
+        refundError,
+      );
+      // Do not block the status update; the admin has acknowledged this refund
+      // is required and will process it via bank transfer if PhonePe fails.
+    }
+  } else {
+    console.warn(
+      `Expert session ${sessionId} has no merchantOrderId — cannot auto-refund via PhonePe. Manual bank transfer required.`,
+    );
+  }
+
   session.refundStatus = "MANUAL_DONE";
   await session.save();
   notify(
     session.userId,
     "PAYMENT_REFUND",
     "Refund processed",
-    `Your refund of ₹${session.amount} has been processed.`,
+    `Your refund of ₹${session.amount.toLocaleString("en-IN")} has been processed.`,
     { sessionId: session._id.toString() },
     true,
   );

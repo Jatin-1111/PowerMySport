@@ -67,6 +67,12 @@ function getNotificationLink(notification: Notification): string {
       return "/dashboard";
     case "PAYMENT_FAILED":
       return "/dashboard";
+    case "PAYMENT_REFUND": {
+      const bookingId = data.bookingId as string | undefined;
+      return bookingId
+        ? `/dashboard/my-bookings`
+        : "/dashboard/my-bookings";
+    }
     case "REVIEW_RECEIVED":
       return "/dashboard";
     default:

@@ -147,87 +147,13 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
   }
 }
 
-// ============ STRIPE PAYMENT GATEWAY (Stub) ============
-
-export class StripeGatewayService implements IPaymentGatewayService {
-  private secretKey: string;
-
-  constructor() {
-    this.secretKey = process.env.STRIPE_SECRET_KEY || "";
-  }
-
-  private validateCredentials() {
-    if (!this.secretKey) {
-      throw new Error(
-        "Stripe credentials not configured (STRIPE_SECRET_KEY required)",
-      );
-    }
-  }
-
-  async createOrder(
-    orderId: string,
-    amount: number,
-    currency: string = "inr",
-    description: string = "",
-    customer: { name: string; email: string; phone: string },
-  ): Promise<any> {
-    this.validateCredentials();
-    // Stub - implement Stripe Intent creation
-    const mockIntentId = `pi_${Date.now()}`;
-
-    return {
-      id: mockIntentId,
-      object: "payment_intent",
-      amount: amount,
-      currency: currency,
-      customer: customer,
-      description: description,
-      status: "requires_payment_method",
-      created: Math.floor(Date.now() / 1000),
-    };
-  }
-
-  async verifyPayment(
-    paymentId: string,
-    orderId: string,
-    signature: string,
-  ): Promise<boolean> {
-    this.validateCredentials();
-    // Stub - implement Stripe signature verification
-    return true;
-  }
-
-  async initiateRefund(
-    paymentId: string,
-    amount: number,
-    reason: string,
-  ): Promise<string> {
-    this.validateCredentials();
-    // Stub - implement Stripe refund
-    const mockRefundId = `re_${Date.now()}`;
-    return mockRefundId;
-  }
-
-  async getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
-    this.validateCredentials();
-    // Stub
-    return PaymentStatus.CAPTURED;
-  }
-}
-
 // ============ PAYMENT SERVICE ============
 
 export class PaymentService {
   private gatewayService: IPaymentGatewayService;
 
-  constructor(gateway: PaymentGateway = PaymentGateway.PHONEPE) {
-    if (gateway === PaymentGateway.PHONEPE) {
-      this.gatewayService = new PhonePeGatewayService();
-    } else if (gateway === PaymentGateway.STRIPE) {
-      this.gatewayService = new StripeGatewayService();
-    } else {
-      throw new Error(`Unsupported payment gateway: ${gateway}`);
-    }
+  constructor(_gateway: PaymentGateway = PaymentGateway.PHONEPE) {
+    this.gatewayService = new PhonePeGatewayService();
   }
 
   /**

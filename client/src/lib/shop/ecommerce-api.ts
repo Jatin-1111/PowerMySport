@@ -342,7 +342,7 @@ export async function addBackendCartItem(
 
 export async function createOrderFromCart(payload: {
   shippingAddress: ShippingAddress;
-  paymentMethod: "PHONEPE" | "RAZORPAY" | "COD";
+  paymentMethod: "PHONEPE" | "COD";
 }) {
   const response = await axios.post<
     ApiEnvelope<{

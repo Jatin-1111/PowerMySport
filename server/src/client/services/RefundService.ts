@@ -219,7 +219,7 @@ async function initiateBankTransferRefund(
             <p>A bank transfer refund has been initiated and requires manual processing by the finance team.</p>
             <table class="detail-table">
               <tr><td>Refund ID</td><td>${bankTransferId}</td></tr>
-              <tr><td>Amount</td><td>₹${amount}</td></tr>
+              <tr><td>Amount</td><td>₹${(amount / 100).toLocaleString("en-IN")}</td></tr>
               <tr><td>Transaction ID</td><td>${transaction._id.toString()}</td></tr>
               <tr><td>Account Holder</td><td>${bankDetails.accountHolderName}</td></tr>
               <tr><td>Account Number</td><td>${bankDetails.accountNumber}</td></tr>
@@ -250,7 +250,7 @@ async function initiateBankTransferRefund(
         userId: transaction.userId.toString(),
         type: "PAYMENT_REFUND",
         title: "Refund Initiated",
-        message: `Your refund of ₹${amount} has been initiated via bank transfer and will be processed within 2-3 business days.`,
+        message: `Your refund of ₹${(amount / 100).toLocaleString("en-IN")} has been initiated via bank transfer and will be processed within 2-3 business days.`,
         data: {
           refundId: bankTransferId,
           amount,
@@ -333,7 +333,9 @@ export async function checkRefundStatus(
     throw new Error("Payment transaction not found");
   }
 
-  if (!transaction.refundId) {
+  // A refund exists if either the gateway refund ID or the merchant-side
+  // tracking ID is set. Card refunds may not receive a refundId synchronously.
+  if (!transaction.refundId && !transaction.refundMerchantId) {
     throw new Error("No refund found for this transaction");
   }
 
@@ -398,8 +400,9 @@ export async function checkRefundStatus(
       method: "ORIGINAL_CARD",
     };
 
-    if (status.refundId || transaction.refundId) {
-      response.refundId = status.refundId || transaction.refundId;
+    const refundId = status.refundId || transaction.refundId;
+    if (refundId) {
+      response.refundId = refundId;
     }
 
     return response;
@@ -455,7 +458,7 @@ export async function updatePendingRefundStatuses(): Promise<{
               userId: user._id.toString(),
               type: "PAYMENT_REFUND",
               title: "Refund completed",
-              message: `Your refund of ₹${transaction.refundAmount || 0} has been completed.`,
+              message: `Your refund of ₹${((transaction.refundAmount || 0) / 100).toLocaleString("en-IN")} has been completed.`,
               data: {
                 amount: transaction.refundAmount || 0,
                 method: "ORIGINAL_CARD",
