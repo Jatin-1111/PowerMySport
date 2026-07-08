@@ -118,7 +118,7 @@ export default function VendorLayout({
       icon: User,
     },
     {
-      href: "/settings",
+      href: "/venue-lister/settings",
       label: "Settings",
       icon: Settings,
     },

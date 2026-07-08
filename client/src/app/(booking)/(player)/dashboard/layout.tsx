@@ -132,7 +132,7 @@ export default function DashboardLayout({
       section: "Account",
     },
     {
-      href: "/settings",
+      href: "/dashboard/settings",
       label: "Settings",
       icon: Settings,
       section: "Account",
@@ -153,8 +153,8 @@ export default function DashboardLayout({
       icon: Home,
     },
     {
-      href: "/venues",
-      label: "Venues",
+      href: "/booking",
+      label: "Booking",
       icon: MapPin,
     },
     {

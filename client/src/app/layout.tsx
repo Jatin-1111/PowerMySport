@@ -10,7 +10,7 @@ import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
 const siteDescription =
-  "PowerMySport helps parents plan their child's sports career. Get AI-powered sport pathways, personalised guidance, and 1:1 sessions with verified experts — free to explore, state-specific for India.";
+  "PowerMySport helps parents plan their child's sports Journey. Get AI-powered sport pathways, personalised guidance, and 1:1 sessions with verified experts — free to explore, state-specific for India.";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   manifest: "/site.webmanifest",
   title: {
-    default: "PowerMySport — Sports Career Planner for Parents",
+    default: "PowerMySport | Guiding Every Sporting Journey",
     template: "%s | PowerMySport",
   },
   description: siteDescription,
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   keywords: [
     // High-intent parent queries
     "sports pathway for kids India",
-    "child sports career planning",
+    "child sports journey planning",
     "which sport is right for my child",
     "youth sports guidance India",
     "sports roadmap for children",
@@ -72,20 +72,20 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: siteUrl,
     siteName: "PowerMySport",
-    title: "PowerMySport — Sports Career Planner for Parents",
+    title: "PowerMySport | Guiding Every Sporting Journey",
     description: siteDescription,
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "PowerMySport — Plan your child's sports career",
+        alt: "PowerMySport | Guiding Every Sporting Journey",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "PowerMySport — Sports Career Planner for Parents",
+    title: "PowerMySport — Guiding Every Sporting Journey",
     description: siteDescription,
     images: ["/twitter-image.png"],
   },

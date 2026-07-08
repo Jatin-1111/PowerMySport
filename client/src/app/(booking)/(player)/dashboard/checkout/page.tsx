@@ -1,27 +1,27 @@
 "use client";
 
 import {
-    AnimatePresence,
-    motion,
-    useReducedMotion,
-    Variants,
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  Variants,
 } from "framer-motion";
 import {
-    ArrowRight,
-    Calendar,
-    Check,
-    CheckCircle2,
-    ChevronLeft,
-    Clock,
-    CreditCard,
-    MapPin,
-    ShieldCheck,
-    Star,
-    TicketPercent,
-    User as UserIcon,
-    Users,
-    Wallet,
-    Zap,
+  ArrowRight,
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
+  CreditCard,
+  MapPin,
+  ShieldCheck,
+  Star,
+  TicketPercent,
+  User as UserIcon,
+  Users,
+  Wallet,
+  Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -32,8 +32,8 @@ import { toast } from "@/lib/toast";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { authApi } from "@/modules/auth/services/auth";
 import {
-    PaymentMethodOption,
-    PaymentMethodSelector,
+  PaymentMethodOption,
+  PaymentMethodSelector,
 } from "@/modules/booking/components/checkout/PaymentMethodSelector";
 import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBookingInviteSection";
 import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
@@ -589,7 +589,6 @@ function CheckoutPageContent() {
   const hasValidDuration = durationMinutes > 0;
   const isDetailsReady = type === "coach" ? Boolean(coach) : Boolean(venue);
 
-
   const steps = [
     { id: 1, label: "Review" },
     { id: 2, label: "Payment" },
@@ -875,10 +874,7 @@ function CheckoutPageContent() {
         <p className="text-sm text-slate-500">
           {type === "coach" ? "Coach" : "Venue"} not found.
         </p>
-        <Button
-          variant="outline"
-          onClick={() => router.push(type === "coach" ? "/coaches" : "/venues")}
-        >
+        <Button variant="outline" onClick={() => router.push("/booking")}>
           Browse {type === "coach" ? "coaches" : "venues"}
         </Button>
       </div>

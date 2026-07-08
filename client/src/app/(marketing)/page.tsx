@@ -66,7 +66,7 @@ export default function HomePage() {
     url: siteUrl,
     logo: `${siteUrl}/icon.svg`,
     description:
-      "PowerMySport helps parents plan their child's sports career with AI-powered pathways, personalised guidance, and verified expert sessions across India.",
+      "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India.",
     foundingDate: "2024",
     areaServed: "IN",
     audience: {

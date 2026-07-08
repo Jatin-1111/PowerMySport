@@ -21,6 +21,7 @@ import {
   getProfilePictureUploadUrlHandler,
   googleAuth,
   graduateDependentHandler,
+  linkGoogleHandler,
   login,
   logout,
   register,
@@ -181,6 +182,7 @@ router.put("/profile", authMiddleware, updateProfileHandler);
 router.post("/forgot-password", forgotPasswordRateLimiter, forgotPassword);
 router.post("/reset-password", resetPasswordRateLimiter, resetPasswordHandler);
 router.post("/google", googleAuth);
+router.post("/google/link", authMiddleware, linkGoogleHandler);
 router.post("/graduate", authMiddleware, graduateDependentHandler);
 router.put(
   "/change-password",

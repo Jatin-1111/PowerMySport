@@ -96,6 +96,7 @@ export interface User {
     "Parent" | "Player" | "Coach" | "VenueLister" | "Admin" | "Academy";
   photoUrl?: string;
   photoS3Key?: string; // S3 key for profile picture
+  googleId?: string;
   playerProfile?: IPlayerProfile;
   venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];

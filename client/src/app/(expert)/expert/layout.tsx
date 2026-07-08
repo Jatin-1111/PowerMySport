@@ -61,7 +61,7 @@ export default function ExpertLayout({
         { href: "/expert/payouts", label: "Payouts", icon: BadgeIndianRupee },
         // Future route that can be uncommented as it is built:
         // { href: "/expert/sessions", label: "My Sessions", icon: CalendarCheck },
-        { href: "/settings", label: "Settings", icon: Settings },
+        { href: "/expert/settings", label: "Settings", icon: Settings },
       ];
 
   return (
