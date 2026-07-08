@@ -1656,11 +1656,14 @@ export const processBookingRefund = async (
     throw new Error("Refund already processed for this booking");
   }
 
-  const refundResult = await initiateBookingRefunds(
-    booking,
-    refundPercentage,
-    reason,
-  );
+  let refundResult: { refundStatus: "PENDING" | "PROCESSED" | "REJECTED"; refundAmount: number };
+  try {
+    refundResult = await initiateBookingRefunds(booking, refundPercentage, reason);
+  } catch (error) {
+    booking.refundStatus = "REJECTED";
+    await booking.save();
+    throw error;
+  }
 
   if (refundResult.refundAmount > 0) {
     booking.refundAmount = refundResult.refundAmount;
