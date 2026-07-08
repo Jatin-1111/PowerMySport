@@ -728,8 +728,8 @@ export default function HowItWorksPage() {
           href: "/roadmap",
         }}
         secondaryCTA={{
-          label: "Get Free Guidance",
-          href: "/guidance",
+          label: "Chat on WhatsApp",
+          href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child.",
         }}
       />
     </main>

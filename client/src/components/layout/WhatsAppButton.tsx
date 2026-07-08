@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
 import { useState } from "react";
 
 const WA_NUMBER = "918968582443";
@@ -29,10 +28,7 @@ export function WhatsAppIcon({
 }
 
 export function WhatsAppButton() {
-  const [dismissed, setDismissed] = useState(false);
   const [hovered, setHovered] = useState(false);
-
-  if (dismissed) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 select-none">
@@ -65,21 +61,8 @@ export function WhatsAppButton() {
         )}
       </AnimatePresence>
 
-      {/* Button row */}
+      {/* Main bubble — enters after 2 s so page loads first */}
       <div className="flex items-center gap-2">
-        {/* Dismiss — appears after 4 s so it doesn't distract on first glance */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0.7 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 4, type: "spring", stiffness: 280, damping: 22 }}
-          onClick={() => setDismissed(true)}
-          aria-label="Dismiss WhatsApp chat button"
-          className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow backdrop-blur-sm transition-colors hover:bg-slate-100 hover:text-slate-600"
-        >
-          <X className="h-3.5 w-3.5" />
-        </motion.button>
-
-        {/* Main bubble — enters after 2 s so page loads first */}
         <motion.a
           href={WA_URL}
           target="_blank"

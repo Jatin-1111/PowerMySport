@@ -8,13 +8,11 @@ import { Button } from "@/modules/shared/ui/Button";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import {
-    Facebook,
     Instagram,
     Linkedin,
     Mail,
     MapPin,
     Phone,
-    Twitter,
 } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
@@ -221,9 +219,7 @@ function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
 // ─── Social Row ────────────────────────────────────────────────────────────────
 
 const SOCIALS = [
-  { Icon: Facebook, label: "Facebook", href: "#" },
-  { Icon: Instagram, label: "Instagram", href: "#" },
-  { Icon: Twitter, label: "Twitter / X", href: "#" },
+  { Icon: Instagram, label: "Instagram", href: "https://www.instagram.com/powermysport" },
   { Icon: Linkedin, label: "LinkedIn", href: "#" },
 ] as const;
 
