@@ -195,15 +195,20 @@ const getPhonePeConfig = () => {
 };
 
 let cachedClient: StandardCheckoutClient | null = null;
-// Track the config that produced the cached client so we can detect env changes.
 let cachedConfigKey: string | null = null;
+let clientCreatedAt: number = 0;
+// Re-create the SDK client every 2 hours so its internal OAuth token never goes stale.
+const CLIENT_TTL_MS = 2 * 60 * 60 * 1000;
 
 const getPhonePeClient = (): StandardCheckoutClient => {
   const { clientId, clientSecret, clientVersion, env } = getPhonePeConfig();
   const configKey = `${clientId}:${clientVersion}:${env}`;
+  const now = Date.now();
 
-  // Invalidate cache if credentials or environment changed (e.g. env var update).
-  if (cachedClient && cachedConfigKey !== configKey) {
+  if (
+    cachedClient &&
+    (cachedConfigKey !== configKey || now - clientCreatedAt > CLIENT_TTL_MS)
+  ) {
     cachedClient = null;
     cachedConfigKey = null;
   }
@@ -216,6 +221,7 @@ const getPhonePeClient = (): StandardCheckoutClient => {
       env,
     );
     cachedConfigKey = configKey;
+    clientCreatedAt = now;
   }
 
   return cachedClient;
