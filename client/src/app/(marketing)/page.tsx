@@ -66,7 +66,7 @@ export default function HomePage() {
     url: siteUrl,
     logo: `${siteUrl}/icon.svg`,
     description:
-      "PowerMySport helps parents plan their child's sports career with AI-powered pathways, personalised guidance, and verified expert sessions across India.",
+      "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India.",
     foundingDate: "2024",
     areaServed: "IN",
     audience: {
@@ -318,7 +318,7 @@ export default function HomePage() {
                     title: "Expert Guidance",
                     desc: "Answers to your toughest questions from sports experts and our AI guide—on call, whenever you need.",
                     color: "bg-indigo-100 text-indigo-600",
-                    cta: { label: "Get Free Guidance", href: "/guidance" },
+                    cta: { label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." },
                   },
                 ].map((item) => (
                   <motion.div
@@ -743,7 +743,7 @@ export default function HomePage() {
           label: user ? "Go to Roadmap" : "Build a Sports Plan",
           href: "/roadmap",
         }}
-        secondaryCTA={{ label: "Get Free Guidance", href: "/guidance" }}
+        secondaryCTA={{ label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." }}
       />
     </main>
   );

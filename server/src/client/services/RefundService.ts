@@ -450,6 +450,14 @@ export async function updatePendingRefundStatuses(): Promise<{
 
       if (status.state === "COMPLETED") {
         completed++;
+        // Flip the parent booking to PROCESSED so admin panel and player UI update.
+        if (transaction.bookingId) {
+          const { Booking } = await import("../../client/models/Booking");
+          await Booking.updateOne(
+            { _id: transaction.bookingId, refundStatus: { $ne: "PROCESSED" } },
+            { $set: { refundStatus: "PROCESSED" } },
+          ).catch(() => {});
+        }
         // Send completion notification
         const user = await User.findById(transaction.userId);
         if (user) {

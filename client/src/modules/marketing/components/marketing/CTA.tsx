@@ -1,5 +1,6 @@
 "use client";
 
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 import { Button } from "@/modules/shared/ui/Button";
 import { motion, Variants } from "framer-motion";
 import Image from "next/image";
@@ -62,8 +63,15 @@ function AnimatedCTAButton({
   variant: "primary" | "outline";
   className?: string;
 }) {
+  const isExternal = href.startsWith("http");
+  const isWhatsApp = href.includes("wa.me");
+
   return (
-    <Link href={href} className="w-full sm:w-auto">
+    <Link
+      href={href}
+      className="w-full sm:w-auto"
+      {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
       <motion.div
         whileHover={{ y: -3, scale: 1.03 }}
         whileTap={{ scale: 0.97 }}
@@ -71,10 +79,15 @@ function AnimatedCTAButton({
         className="will-change-transform"
       >
         <Button
-          variant={variant}
+          variant={isWhatsApp ? "primary" : variant}
           size="lg"
-          className={`w-full rounded-xl ${className ?? ""}`}
+          className={`w-full rounded-xl ${
+            isWhatsApp
+              ? "bg-[#25D366] border-[#25D366] hover:bg-[#1da851] focus:ring-[#25D366] shadow-lg shadow-green-500/20"
+              : (className ?? "")
+          }`}
         >
+          {isWhatsApp && <WhatsAppIcon className="h-5 w-5 shrink-0" />}
           {children}
         </Button>
       </motion.div>

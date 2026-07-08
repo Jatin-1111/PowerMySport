@@ -17,6 +17,7 @@ import {
   graduateDependent,
   loginUser,
   registerUser,
+  linkGoogleAccount,
   requestPasswordReset,
   resetPassword,
   setDefaultAddress,
@@ -1069,6 +1070,44 @@ export const setDefaultAddressHandler = async (
         error instanceof Error
           ? error.message
           : "Failed to set default address",
+    });
+  }
+};
+
+export const linkGoogleHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { credential } = req.body;
+    if (!credential) {
+      res.status(400).json({ success: false, message: "Credential is required" });
+      return;
+    }
+
+    const user = await linkGoogleAccount(req.user.id, credential);
+    
+    res.status(200).json({
+      success: true,
+      message: "Google account linked successfully",
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          userType: user.userType,
+          googleId: user.googleId,
+          photoUrl: user.photoUrl,
+        }
+      }
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to link Google account",
     });
   }
 };

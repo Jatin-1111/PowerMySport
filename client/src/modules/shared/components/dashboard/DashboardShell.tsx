@@ -149,6 +149,7 @@ export const DashboardShell = ({
 
   const isCheckout = pathname.includes("/checkout");
   const shouldShowBottomNav = bottomNavItems && !isCheckout;
+  const hasNav = navItems.length > 0;
 
   const displayName = useMemo(() => {
     if (!userName?.trim()) {
@@ -170,13 +171,15 @@ export const DashboardShell = ({
               {displayName}
             </p>
           </div>
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/60 bg-white/90 text-slate-700"
-            aria-label="Open dashboard menu"
-          >
-            <Menu size={18} />
-          </button>
+          {hasNav && (
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/60 bg-white/90 text-slate-700"
+              aria-label="Open dashboard menu"
+            >
+              <Menu size={18} />
+            </button>
+          )}
         </div>
       </header>
 

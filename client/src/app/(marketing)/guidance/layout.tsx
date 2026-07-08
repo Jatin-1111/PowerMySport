@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   keywords: [
     "personalised sports plan India",
     "AI sports guidance for kids",
-    "child sports career planner",
+    "child sports journey planner",
     "sports guidance for parents India",
     "which sport should my child play",
     "youth sports planning India",

@@ -646,6 +646,13 @@ export const adminApi = {
     return response.data;
   },
 
+  getFailedRefundBookings: async (): Promise<ApiResponse<unknown[]>> => {
+    const response = await axiosInstance.get(
+      `/admin/refunds?refundStatus=REJECTED&limit=100`,
+    );
+    return response.data;
+  },
+
   getReviewModerationQueue: async (pagination?: {
     page?: number;
     limit?: number;

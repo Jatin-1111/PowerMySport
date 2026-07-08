@@ -175,7 +175,7 @@ export default function CoachLayout({
       label: "My Bookings",
       icon: Calendar,
     },
-    { href: "/settings", label: "Settings", icon: Settings },
+    { href: "/coach/settings", label: "Settings", icon: Settings },
     {
       href: communityUrl,
       label: "Community",

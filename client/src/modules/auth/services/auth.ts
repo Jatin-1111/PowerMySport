@@ -227,4 +227,13 @@ export const authApi = {
       );
     }
   },
+
+  linkGoogleAccount: async (
+    credential: string,
+  ): Promise<ApiResponse<{ user: User }>> => {
+    const response = await axiosInstance.post("/auth/google/link", {
+      credential,
+    });
+    return response.data;
+  },
 };

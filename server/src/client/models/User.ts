@@ -8,7 +8,7 @@ export interface UserDocument extends Document {
   email: string;
   phone: string;
   role: UserRole;
-  userType: "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin";
+  userType: "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin" | "Expert";
   password?: string;
   googleId?: string;
   photoUrl?: string;
@@ -107,7 +107,7 @@ const userSchema = new Schema<UserDocument>(
     },
     userType: {
       type: String,
-      enum: ["Parent", "Player", "Coach", "Academy", "VenueLister", "Admin"],
+      enum: ["Parent", "Player", "Coach", "Academy", "VenueLister", "Admin", "Expert"],
       default: "Player",
     },
     password: {

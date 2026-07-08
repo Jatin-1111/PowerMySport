@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     "Khelo India pathway",
     "cricket pathway India",
     "badminton roadmap India",
-    "football career path India",
+    "football journey path India",
     "state sports academy India",
   ],
 };

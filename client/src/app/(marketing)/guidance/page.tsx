@@ -42,6 +42,25 @@ import {
 import { useGuidanceForm } from "@/modules/guidance/hooks/useGuidanceForm";
 import { useGuidanceHistory } from "@/modules/guidance/hooks/useGuidanceHistory";
 import { downloadGuidanceReportPdf } from "@/modules/guidance/services/guidance";
+import type { GuidanceFormState } from "@/modules/guidance/types";
+import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
+
+function buildGuidanceWaUrl(q: GuidanceFormState): string {
+  const lines: string[] = [
+    `Hi! I just used PowerMySport's guidance tool for my child. Here are their details:`,
+    `• Age: ${q.child_age} years (${q.child_gender})`,
+    `• Sport: ${q.sport}`,
+    `• Fitness level: ${q.current_fitness_level}`,
+    `• Goal: ${q.primary_objective}`,
+    `• Time available: ${q.weekly_time_commitment} hrs/week`,
+  ];
+  if (q.location) lines.push(`• State: ${q.location}`);
+  if (q.parent_specific_question?.trim()) {
+    lines.push(``, `My question: ${q.parent_specific_question.trim()}`);
+  }
+  lines.push(``, `I'd like to discuss the guidance results and get personalised support.`);
+  return `https://wa.me/918968582443?text=${encodeURIComponent(lines.join("\n"))}`;
+}
 
 // ─── Inner component (needs useSearchParams) ──────────────────────────────────
 
@@ -325,13 +344,15 @@ function GuidancePageInner() {
 
                       {/* Secondary Actions */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Link
-                          href="/contact"
-                          className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                        <a
+                          href={buildGuidanceWaUrl(submission.query)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-[#25D366] hover:bg-[#25D366]/5 hover:text-[#25D366]"
                         >
-                          <Headphones className="h-4 w-4 text-slate-400" />
+                          <WhatsAppIcon className="h-4 w-4 text-[#25D366]" />
                           <span>Talk to Our Team</span>
-                        </Link>
+                        </a>
                         <button
                           type="button"
                           onClick={handleDownloadPdf}

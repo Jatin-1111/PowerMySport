@@ -72,6 +72,92 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
 };
 
 /**
+ * Retry booking refunds that are PENDING but never got an INITIATED refund at PhonePe.
+ * Covers two cases:
+ *  - Payment was still settling when the user cancelled (race condition)
+ *  - PhonePe rejected the initial attempt transiently (FAILED state)
+ */
+export const retryPendingBookingRefunds = async (): Promise<void> => {
+  try {
+    const { Booking } = await import("../client/models/Booking");
+    const { BookingPaymentTransaction } = await import(
+      "../client/models/BookingPayment"
+    );
+    const { initiatePhonePeRefund } = await import(
+      "../shared/services/PhonePeService"
+    );
+    const { randomBytes } = await import("crypto");
+
+    // Find cancelled bookings with a pending refund that was never successfully initiated.
+    const pendingBookings = await Booking.find({
+      status: "CANCELLED",
+      refundStatus: "PENDING",
+      refundAmount: { $gt: 0 },
+    }).limit(50);
+
+    let retried = 0;
+    let succeeded = 0;
+
+    for (const booking of pendingBookings) {
+      // Only retry when the payment has settled — COMPLETED transaction required.
+      const transaction = await BookingPaymentTransaction.findOne({
+        bookingId: booking._id,
+        status: "COMPLETED",
+        $or: [
+          { refundState: { $exists: false } },
+          { refundState: null },
+          { refundState: "FAILED" },
+        ],
+      }).sort({ createdAt: -1 });
+
+      if (!transaction) continue; // payment not settled yet — try next run
+
+      const amountPaise = Math.round((booking.refundAmount ?? 0) * 100);
+      if (amountPaise < 100) continue;
+
+      const refundMerchantId = `rf_${Date.now()}_${randomBytes(4).toString("hex")}`;
+      try {
+        retried++;
+        const response = await initiatePhonePeRefund({
+          merchantRefundId: refundMerchantId,
+          originalMerchantOrderId: transaction.merchantOrderId,
+          amount: amountPaise / 100,
+        });
+
+        const refundState = response.state || "INITIATED";
+        transaction.refundMerchantId = refundMerchantId;
+        if (response.refundId) transaction.refundId = response.refundId;
+        transaction.refundState = refundState;
+        transaction.refundAmount = amountPaise;
+        transaction.refundResponse = response.raw;
+        await transaction.save();
+
+        if (refundState === "COMPLETED") {
+          booking.refundStatus = "PROCESSED";
+          await booking.save();
+          succeeded++;
+        }
+        // If INITIATED — pollPendingRefunds will confirm and flip to PROCESSED.
+      } catch (err) {
+        console.error(
+          `❌ Refund retry failed for booking ${booking._id}:`,
+          err,
+        );
+        // Leave refundStatus as PENDING — try again next run.
+      }
+    }
+
+    if (retried > 0) {
+      console.log(
+        `✅ Refund retry: ${retried} attempted, ${succeeded} immediately completed`,
+      );
+    }
+  } catch (error) {
+    console.error("❌ Error retrying pending booking refunds:", error);
+  }
+};
+
+/**
  * Poll pending refunds and update their status
  * REQUIREMENT 4: Track refund progress via PhonePe polling
  */
@@ -134,6 +220,7 @@ export const runScheduledCleanup = async (): Promise<void> => {
   console.log("🔄 Starting scheduled cleanup tasks...");
 
   try {
+    await retryPendingBookingRefunds();
     await pollPendingRefunds();
     await releaseCompletedBookingPayments();
 

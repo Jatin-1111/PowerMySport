@@ -4,7 +4,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
-import { getDashboardPathByRole } from "@/utils/roleDashboard";
+import { getDashboardPathByRole, getSettingsPathByRole } from "@/utils/roleDashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     BrainCircuit,
@@ -154,8 +154,9 @@ export const Navigation: React.FC<NavProps> = ({
           <div className="shrink-0 relative z-50 h-full">
             <Link href="/" className="inline-flex items-center h-full">
               <span className="font-title text-2xl font-extrabold tracking-tight leading-none">
-                <span className="text-power-orange">Power</span>
-                <span className="text-slate-900">MySport</span>
+                <span className="text-slate-900">Power</span>
+                <span className="text-power-orange">My</span>
+                <span className="text-slate-900">Sport</span>
               </span>
             </Link>
           </div>
@@ -500,7 +501,7 @@ export const Navigation: React.FC<NavProps> = ({
                           )}
 
                           <Link
-                            href="/settings"
+                            href={getSettingsPathByRole(user.role)}
                             onClick={() => setUserDropdownOpen(false)}
                             className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
                           >
@@ -805,7 +806,7 @@ export const Navigation: React.FC<NavProps> = ({
                       </Link>
                     )}
 
-                    <Link href="/settings">
+                    <Link href={getSettingsPathByRole(user.role)}>
                       <Button
                         variant="ghost"
                         size="sm"

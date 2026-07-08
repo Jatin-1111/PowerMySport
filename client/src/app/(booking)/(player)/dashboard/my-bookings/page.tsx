@@ -14,19 +14,19 @@ import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { Booking } from "@/types";
 import { formatDate, formatTime, formatTimestampTime } from "@/utils/format";
 import {
-    Award,
-    Calendar,
-    CalendarX,
-    CheckCircle2,
-    ChevronLeft,
-    ChevronRight,
-    Clock,
-    CreditCard,
-    FileText,
-    IndianRupee,
-    MapPin,
-    RefreshCw,
-    XCircle,
+  Award,
+  Calendar,
+  CalendarX,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CreditCard,
+  FileText,
+  IndianRupee,
+  MapPin,
+  RefreshCw,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -67,14 +67,20 @@ function formatBookingStatus(status: string) {
 // Compute expected refund percentage client-side based on the same policy the
 // server applies. Used only for the cancel-dialog preview — the server is the
 // source of truth for the real calculation.
-function getRefundPreview(booking: Booking): { percentage: number; amount: number } {
+function getRefundPreview(booking: Booking): {
+  percentage: number;
+  amount: number;
+} {
   const dateStr = booking.date.split("T")[0]; // "YYYY-MM-DD"
   const [h, m] = booking.startTime.split(":").map(Number);
-  const bookingStart = new Date(`${dateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`);
+  const bookingStart = new Date(
+    `${dateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`,
+  );
   const hoursUntil = (bookingStart.getTime() - Date.now()) / (1000 * 60 * 60);
 
   if (hoursUntil > 48) return { percentage: 100, amount: booking.totalAmount };
-  if (hoursUntil > 24) return { percentage: 50, amount: Math.round(booking.totalAmount * 0.5) };
+  if (hoursUntil > 24)
+    return { percentage: 50, amount: Math.round(booking.totalAmount * 0.5) };
   return { percentage: 0, amount: 0 };
 }
 
@@ -92,8 +98,12 @@ export default function BookingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("venues");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
-  const [cancelRefundPreview, setCancelRefundPreview] = useState<{ percentage: number; amount: number } | null>(null);
+  const [cancelRefundPreview, setCancelRefundPreview] = useState<{
+    percentage: number;
+    amount: number;
+  } | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [retryingRefundId, setRetryingRefundId] = useState<string | null>(null);
   const [isCoveringPaymentId, setIsCoveringPaymentId] = useState<string | null>(
     null,
   );
@@ -165,7 +175,8 @@ export default function BookingsPage() {
             ? {
                 ...b,
                 status: "CANCELLED" as const,
-                refundStatus: refundAmount > 0 ? ("PENDING" as const) : undefined,
+                refundStatus:
+                  refundAmount > 0 ? ("PENDING" as const) : undefined,
                 refundAmount: refundAmount > 0 ? refundAmount : undefined,
               }
             : b,
@@ -187,6 +198,42 @@ export default function BookingsPage() {
       toast.error("Failed to cancel booking. Please try again.");
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleRetryRefund = async (bookingId: string) => {
+    try {
+      setRetryingRefundId(bookingId);
+      const result = await bookingApi.retryRefund(bookingId);
+      if (result.success && result.data) {
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === bookingId
+              ? {
+                  ...b,
+                  refundStatus: result.data!
+                    .refundStatus as Booking["refundStatus"],
+                  refundAmount:
+                    result.data!.refundAmount > 0
+                      ? result.data!.refundAmount
+                      : b.refundAmount,
+                }
+              : b,
+          ),
+        );
+        toast.success(
+          "Refund retry initiated — you'll be notified once processed.",
+        );
+      } else {
+        toast.error(result.message || "Failed to retry refund.");
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to retry refund. Please try again.",
+      );
+    } finally {
+      setRetryingRefundId(null);
     }
   };
 
@@ -260,10 +307,10 @@ export default function BookingsPage() {
         subtitle="Keep track of your upcoming sessions, payments, and history in one place."
         action={
           <div className="flex flex-wrap gap-3">
-            <Link href="/venues">
-              <Button variant="secondary">Browse Venues</Button>
+            <Link href="/booking">
+              <Button variant="secondary">Book Venue</Button>
             </Link>
-            <Link href="/coaches">
+            <Link href="/booking">
               <Button variant="primary">Find a Coach</Button>
             </Link>
           </div>
@@ -304,8 +351,8 @@ export default function BookingsPage() {
             icon={CalendarX}
             title="No bookings yet"
             description="Explore venues or connect with a coach to schedule your first session."
-            actionLabel="Browse Venues"
-            onAction={() => (window.location.href = "/venues")}
+            actionLabel="Book Venue"
+            onAction={() => (window.location.href = "/booking")}
             secondaryActionLabel="Find a Coach"
             onSecondaryAction={() => (window.location.href = "/coaches")}
           />
@@ -520,7 +567,8 @@ export default function BookingsPage() {
                         </div>
 
                         {/* Refund status strip — only for cancelled / expired bookings */}
-                        {(booking.status === "CANCELLED" || booking.status === "EXPIRED") &&
+                        {(booking.status === "CANCELLED" ||
+                          booking.status === "EXPIRED") &&
                           booking.refundStatus && (
                             <div
                               className={`mt-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
@@ -542,13 +590,27 @@ export default function BookingsPage() {
                                 {booking.refundStatus === "PROCESSED"
                                   ? `Refund of ₹${(booking.refundAmount ?? 0).toLocaleString("en-IN")} processed`
                                   : booking.refundStatus === "REJECTED"
-                                    ? "Refund failed — contact support"
+                                    ? "Refund failed"
                                     : `Refund of ₹${(booking.refundAmount ?? 0).toLocaleString("en-IN")} pending`}
                               </span>
                               {booking.refundStatus === "PENDING" && (
                                 <span className="ml-auto text-xs opacity-70">
                                   3–5 business days
                                 </span>
+                              )}
+                              {booking.refundStatus === "REJECTED" && (
+                                <button
+                                  onClick={() => handleRetryRefund(booking.id)}
+                                  disabled={retryingRefundId === booking.id}
+                                  className="ml-auto flex items-center gap-1 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50 transition-colors"
+                                >
+                                  <RefreshCw
+                                    className={`h-3 w-3 ${retryingRefundId === booking.id ? "animate-spin" : ""}`}
+                                  />
+                                  {retryingRefundId === booking.id
+                                    ? "Retrying…"
+                                    : "Retry"}
+                                </button>
                               )}
                             </div>
                           )}

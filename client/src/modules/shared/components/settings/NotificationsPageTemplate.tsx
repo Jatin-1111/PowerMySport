@@ -111,7 +111,11 @@ const groupedNotifications = notificationTypes.reduce(
   {} as Record<string, NotificationType[]>,
 );
 
-export default function NotificationPreferencesPage() {
+export function NotificationsPageTemplate({
+  backUrl = "/settings",
+}: {
+  backUrl?: string;
+}) {
   const router = useRouter();
   const { user } = useAuthStore();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
@@ -219,7 +223,7 @@ export default function NotificationPreferencesPage() {
         </p>
         <div className="mt-4">
           <Link
-            href="/settings"
+            href={backUrl}
             className="text-sm text-power-orange hover:underline"
           >
             ← Back to Settings

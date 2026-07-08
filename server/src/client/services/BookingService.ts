@@ -1559,79 +1559,89 @@ const initiateBookingRefunds = async (
     throw new Error("No refundable payment amount found for this booking");
   }
 
-  let hasFailure = false;
   let hasPending = false;
   let totalRefundPaise = 0;
+  let skippedRefundPaise = 0;
 
   for (const target of targets) {
+    // Accept PENDING transactions too — payment may still be settling at PhonePe
+    // when the user cancels immediately after paying. The retry job picks these up.
     const transaction = await BookingPaymentTransaction.findOne({
       bookingId: booking._id,
       userId: target.userId,
-      status: "COMPLETED",
+      status: { $in: ["COMPLETED", "PENDING"] },
     }).sort({ createdAt: -1 });
 
     if (!transaction) {
-      hasFailure = true;
+      // No payment record at all — defer to retry job rather than hard-fail.
+      hasPending = true;
       continue;
     }
 
-    // Skip only successfully initiated or completed refunds — allow FAILED to be retried.
-    if (
-      transaction.refundState &&
-      transaction.refundState !== "FAILED"
-    ) {
+    // Payment still settling — defer, retry job will attempt once it's COMPLETED.
+    if (transaction.status !== "COMPLETED") {
       hasPending = true;
+      skippedRefundPaise += target.amountPaise;
+      continue;
+    }
+
+    // Skip already-initiated or completed refunds — allow FAILED to be retried.
+    if (transaction.refundState && transaction.refundState !== "FAILED") {
+      hasPending = transaction.refundState !== "COMPLETED";
+      skippedRefundPaise += transaction.refundAmount || target.amountPaise;
       continue;
     }
 
     const refundMerchantId = `rf_${Date.now()}_${randomBytes(4).toString("hex")}`;
-    const refundResponse = await initiatePhonePeRefund({
-      merchantRefundId: refundMerchantId,
-      originalMerchantOrderId: transaction.merchantOrderId,
-      amount: target.amountPaise / 100, // initiatePhonePeRefund expects rupees, but amountPaise is in paise
-    });
-    const refundState = refundResponse.state || "INITIATED";
-    const refundId = refundResponse.refundId ?? transaction.refundId;
+    try {
+      const refundResponse = await initiatePhonePeRefund({
+        merchantRefundId: refundMerchantId,
+        originalMerchantOrderId: transaction.merchantOrderId,
+        amount: target.amountPaise / 100, // initiatePhonePeRefund expects rupees
+      });
+      const refundState = refundResponse.state || "INITIATED";
+      const refundId = refundResponse.refundId ?? transaction.refundId;
 
-    transaction.refundMerchantId = refundMerchantId;
-    if (refundId) {
-      transaction.refundId = refundId;
-    }
-    transaction.refundState = refundState;
-    transaction.refundAmount = target.amountPaise;
-    transaction.refundResponse = refundResponse.raw;
-    await transaction.save();
+      transaction.refundMerchantId = refundMerchantId;
+      if (refundId) transaction.refundId = refundId;
+      transaction.refundState = refundState;
+      transaction.refundAmount = target.amountPaise;
+      transaction.refundResponse = refundResponse.raw;
+      await transaction.save();
 
-    totalRefundPaise += target.amountPaise;
+      totalRefundPaise += target.amountPaise;
 
-    if (refundState === "FAILED") {
-      hasFailure = true;
-    } else if (refundState !== "COMPLETED") {
+      // FAILED or INITIATED both stay PENDING — polling/retry job closes the loop.
+      if (refundState !== "COMPLETED") hasPending = true;
+    } catch (err) {
+      // PhonePe threw — record the attempt and defer. Never hard-reject here.
+      transaction.refundMerchantId = refundMerchantId;
+      transaction.refundState = "FAILED";
+      transaction.refundAmount = target.amountPaise;
+      await transaction.save();
       hasPending = true;
+      totalRefundPaise += target.amountPaise;
+      console.error(
+        `[initiateBookingRefunds] PhonePe call failed for booking ${booking._id}, will retry:`,
+        err,
+      );
     }
   }
 
+  // No transactions processed (all deferred) — stay PENDING for retry job.
   if (totalRefundPaise === 0) {
-    if (hasPending) {
-      // If we skipped transactions because they already have a refundState,
-      // but the booking status was somehow still PENDING.
-      return {
-        refundStatus: "PROCESSED",
-        refundAmount: 0, // The amount is already tracked in transactions
-      };
-    }
-    throw new Error("No eligible payment transactions found for refund");
+    return {
+      refundStatus: "PENDING",
+      refundAmount:
+        skippedRefundPaise > 0
+          ? skippedRefundPaise / 100
+          : booking.refundAmount ?? Math.round((booking.totalAmount * refundPercentage) / 100),
+    };
   }
-
-  const refundStatus: "PENDING" | "PROCESSED" | "REJECTED" = hasFailure
-    ? "REJECTED"
-    : hasPending
-      ? "PENDING"
-      : "PROCESSED";
 
   return {
-    refundStatus,
-    refundAmount: Math.round(totalRefundPaise) / 100,
+    refundStatus: hasPending ? "PENDING" : "PROCESSED",
+    refundAmount: Math.round(totalRefundPaise + skippedRefundPaise) / 100,
   };
 };
 
@@ -1655,13 +1665,32 @@ export const processBookingRefund = async (
     throw new Error("Refund already processed for this booking");
   }
 
-  const refundResult = await initiateBookingRefunds(
-    booking,
-    refundPercentage,
-    reason,
-  );
+  // Only block if there is actually an in-flight PhonePe refund (INITIATED on the
+  // transaction). A booking can be PENDING with no submitted refund — e.g. the
+  // initial attempt failed transiently — and in that case the admin should be
+  // able to re-trigger it or switch method (Store Credit / Bank Transfer).
+  if (booking.refundStatus === "PENDING") {
+    const inFlight = await BookingPaymentTransaction.exists({
+      bookingId: booking._id,
+      refundState: "INITIATED",
+    });
+    if (inFlight) {
+      throw new Error("Refund already submitted to PhonePe and is awaiting confirmation. No further action needed.");
+    }
+  }
 
-  booking.refundAmount = refundResult.refundAmount;
+  let refundResult: { refundStatus: "PENDING" | "PROCESSED" | "REJECTED"; refundAmount: number };
+  try {
+    refundResult = await initiateBookingRefunds(booking, refundPercentage, reason);
+  } catch (error) {
+    booking.refundStatus = "REJECTED";
+    await booking.save();
+    throw error;
+  }
+
+  if (refundResult.refundAmount > 0) {
+    booking.refundAmount = refundResult.refundAmount;
+  }
   booking.refundStatus = refundResult.refundStatus;
   await booking.save();
 
@@ -1966,9 +1995,8 @@ export const cancelBooking = async (
           `Failed to initiate refund for booking ${updatedBooking._id.toString()}:`,
           refundError,
         );
-        // Mark the booking as REJECTED so the player sees "Refund failed —
-        // contact support" instead of a pending spinner that never resolves.
-        updatedBooking.refundStatus = "REJECTED";
+        // Keep as PENDING so the retry job can attempt it — never auto-reject.
+        updatedBooking.refundStatus = "PENDING";
         await updatedBooking.save().catch(() => {});
       }
     }

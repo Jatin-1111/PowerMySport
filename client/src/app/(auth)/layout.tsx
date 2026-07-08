@@ -109,8 +109,10 @@ export default function AuthLayout({
           transition={{ duration: 0.55, ease: "easeOut" }}
         >
           <Link href="/" className="inline-flex flex-col gap-0.5 group">
-            <span className="font-title text-2xl font-black tracking-tight text-power-orange">
-              PowerMySport
+            <span className="font-title text-2xl font-black tracking-tight leading-none">
+              <span className="text-white">Power</span>
+              <span className="text-power-orange">My</span>
+              <span className="text-white">Sport</span>
             </span>
             <span className="text-[11px] font-medium uppercase tracking-[0.15em] text-slate-500">
               Guiding Every Sporting Journey.

@@ -1,16 +1,17 @@
 import { Footer } from "@/components/layout/Footer";
 import { Navigation } from "@/components/layout/Navigation";
+import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "PowerMySport — Sports Career Planner for Parents",
+  title: "PowerMySport | Guiding Every Sporting Journey",
   description:
-    "Plan your child's sports career with AI-powered pathways, personalised guidance, and verified experts. State-specific roadmaps for 70+ sports across India. Free to explore.",
+    "Plan your child's sports journey with AI-powered pathways, personalised guidance, and verified experts. State-specific roadmaps for 70+ sports across India. Free to explore.",
   openGraph: {
-    title: "PowerMySport — Sports Career Planner for Parents",
+    title: "PowerMySport | Guiding Every Sporting Journey",
     description:
-      "Plan your child's sports career with AI-powered pathways, personalised guidance, and verified experts across India.",
+      "Plan your child's sports journey with AI-powered pathways, personalised guidance, and verified experts across India.",
   },
 };
 
@@ -30,6 +31,9 @@ export default function MarketingLayout({
 
       {/* Footer */}
       <Footer />
+
+      {/* WhatsApp lead channel — floats bottom-right on all marketing pages */}
+      <WhatsAppButton />
     </div>
   );
 }

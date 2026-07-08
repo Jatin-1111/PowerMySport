@@ -1027,3 +1027,31 @@ export const getUserAddresses = async (
 
   return user.addresses || [];
 };
+
+/**
+ * Link a Google account to an existing user
+ */
+export const linkGoogleAccount = async (
+  userId: string,
+  credential: string,
+): Promise<UserDocument> => {
+  const identity = await verifyGoogleCredential(credential);
+
+  const existingGoogleUser = await User.findOne({ googleId: identity.googleId });
+  if (existingGoogleUser && existingGoogleUser._id.toString() !== userId) {
+    throw new Error("This Google account is already linked to another user.");
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  user.googleId = identity.googleId;
+  if (!user.photoUrl && identity.photoUrl) {
+    user.photoUrl = identity.photoUrl;
+  }
+
+  await user.save();
+  return user;
+};

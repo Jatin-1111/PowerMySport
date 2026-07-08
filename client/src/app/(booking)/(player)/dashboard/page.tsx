@@ -445,9 +445,9 @@ export default function DashboardPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  href: "/venues",
+                  href: "/booking",
                   icon: MapPin,
-                  label: "Book Venue",
+                  label: "Booking",
                   color: "bg-indigo-100 text-indigo-600",
                 },
                 {
