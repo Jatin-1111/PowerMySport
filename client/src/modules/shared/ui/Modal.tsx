@@ -43,7 +43,14 @@ export const Modal: React.FC<ModalProps> = ({
       previousFocusRef.current = document.activeElement as HTMLElement;
 
       setTimeout(() => {
-        modalRef.current?.focus();
+        // Only grab focus on the modal container if nothing inside it already
+        // has focus (e.g. an input with autoFocus). Otherwise we would steal
+        // focus away, forcing the user to click the input again to type.
+        const activeEl = document.activeElement;
+        const insideModal = modalRef.current?.contains(activeEl);
+        if (!insideModal) {
+          modalRef.current?.focus();
+        }
       }, 0);
     }
 

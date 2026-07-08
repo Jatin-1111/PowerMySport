@@ -223,21 +223,14 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (canSetPassword && !deletePassword) {
-      toast.error("Enter your password to confirm");
-      return;
-    }
-    if (
-      !canSetPassword &&
-      deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD
-    ) {
+    if (deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD) {
       toast.error(`Type ${DELETE_CONFIRM_WORD} to confirm`);
       return;
     }
 
     setDeletingAccount(true);
     try {
-      const response = await authApi.deleteAccount(deletePassword);
+      const response = await authApi.deleteAccount("");
       if (response.success) {
         toast.success("Your account has been deleted");
         logout();
@@ -533,7 +526,6 @@ export default function SettingsPage() {
         onClose={() => {
           if (!deletingAccount) {
             setDeleteModalOpen(false);
-            setDeletePassword("");
             setDeleteConfirmText("");
           }
         }}
@@ -554,37 +546,21 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        {canSetPassword ? (
-          <div className="mt-5">
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Enter your password to confirm
-            </label>
-            <input
-              type="password"
-              value={deletePassword}
-              onChange={(e) => setDeletePassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-              placeholder="••••••••"
-              autoFocus
-            />
-          </div>
-        ) : (
-          <div className="mt-5">
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              You signed in with Google, so there's no password to check — type{" "}
-              <span className="font-bold">{DELETE_CONFIRM_WORD}</span> to
-              confirm
-            </label>
-            <input
-              type="text"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm uppercase text-slate-900 outline-none transition-all focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
-              placeholder={DELETE_CONFIRM_WORD}
-              autoFocus
-            />
-          </div>
-        )}
+        <div className="mt-5">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            Type{" "}
+            <span className="font-bold text-rose-600">{DELETE_CONFIRM_WORD}</span>{" "}
+            to confirm
+          </label>
+          <input
+            type="text"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm uppercase text-slate-900 outline-none transition-all focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+            placeholder={DELETE_CONFIRM_WORD}
+            autoFocus
+          />
+        </div>
 
         <div className="mt-6 flex justify-end gap-3">
           <Button
@@ -592,7 +568,6 @@ export default function SettingsPage() {
             onClick={() => {
               setDeleteModalOpen(false);
               setDeleteConfirmText("");
-              setDeletePassword("");
             }}
             disabled={deletingAccount}
           >
@@ -603,10 +578,7 @@ export default function SettingsPage() {
             onClick={handleDeleteAccount}
             disabled={
               deletingAccount ||
-              (canSetPassword
-                ? !deletePassword
-                : deleteConfirmText.trim().toUpperCase() !==
-                  DELETE_CONFIRM_WORD)
+              deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD
             }
           >
             {deletingAccount ? (

@@ -1376,18 +1376,30 @@ export default function CoachVerificationPage() {
 
       <Card className="bg-white">
         <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
-          {[1, 2, 3].map((current) => (
-            <div
-              key={current}
-              className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${
-                step === current
-                  ? "border-power-orange bg-orange-50 text-power-orange"
-                  : "border-slate-200 bg-slate-50 text-slate-500"
-              }`}
-            >
-              Step {current}
-            </div>
-          ))}
+          {([1, 2, 3] as VerificationStep[]).map((current) => {
+            const isActive = step === current;
+            const isCompleted = current < step;
+            const isAccessible = current <= maxAccessibleStep;
+            return (
+              <button
+                key={current}
+                type="button"
+                onClick={() => navigateToStep(current)}
+                disabled={!isAccessible || isLockedByReview}
+                className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold transition-all ${
+                  isActive
+                    ? "border-power-orange bg-orange-50 text-power-orange shadow-sm"
+                    : isCompleted
+                      ? "border-emerald-400 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                      : isAccessible
+                        ? "border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 cursor-pointer"
+                        : "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
+                }`}
+              >
+                {isCompleted ? "✓ Step " : "Step "}{current}
+              </button>
+            );
+          })}
         </div>
 
         {step === 1 && (
