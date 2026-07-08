@@ -568,20 +568,30 @@ function TimeGrid({
   onBookingClick: (b: Booking) => void;
 }) {
   const totalHeight = HOURS.length * ROW_HEIGHT;
+  const now = new Date();
+  const todayStr = toISODate(now);
+
+  // Current-time indicator position (minutes from HOUR_START)
+  const nowMinutesFromStart =
+    now.getHours() * 60 + now.getMinutes() - HOUR_START * 60;
+  const nowTop =
+    nowMinutesFromStart >= 0 && nowMinutesFromStart <= HOURS.length * 60
+      ? (nowMinutesFromStart / 60) * ROW_HEIGHT
+      : null;
 
   return (
     <div className="flex-1 overflow-auto">
       {/* Day headers */}
       <div
         className="sticky top-0 z-10 bg-white border-b border-slate-100 grid"
-        style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
+        style={{ gridTemplateColumns: `64px repeat(${days.length}, 1fr)` }}
       >
         <div className="py-2" />
         {days.map((d, i) => {
-          const isToday = sameDay(d, new Date());
+          const isToday = sameDay(d, now);
           return (
             <div key={i} className="py-2 text-center">
-              <p className="text-xs font-medium text-slate-400 uppercase">
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
                 {DAY_LABELS[d.getDay()]}
               </p>
               <p
@@ -600,17 +610,17 @@ function TimeGrid({
       {/* Time grid */}
       <div
         className="relative grid"
-        style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}
+        style={{ gridTemplateColumns: `64px repeat(${days.length}, 1fr)` }}
       >
-        {/* Time labels */}
-        <div className="relative" style={{ height: totalHeight }}>
+        {/* Time labels column */}
+        <div className="relative select-none" style={{ height: totalHeight }}>
           {HOURS.map((h) => (
             <div
               key={h}
-              className="absolute w-full"
-              style={{ top: (h - HOUR_START) * ROW_HEIGHT - 8 }}
+              className="absolute w-full flex items-start justify-end pr-2"
+              style={{ top: (h - HOUR_START) * ROW_HEIGHT }}
             >
-              <span className="pl-2 text-xs text-slate-400 font-medium">
+              <span className="text-[11px] leading-none text-slate-400 font-medium -translate-y-1/2">
                 {h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}
               </span>
             </div>
@@ -621,6 +631,7 @@ function TimeGrid({
         {days.map((day, ci) => {
           const dayBookings = bookingsForDay(day, bookings);
           const blocked = isDateBlocked(day, blockedDates);
+          const isToday = toISODate(day) === todayStr;
 
           return (
             <div
@@ -632,20 +643,43 @@ function TimeGrid({
               {HOURS.map((h) => (
                 <div
                   key={h}
-                  className="absolute w-full border-t border-slate-100"
+                  className={cn(
+                    "absolute w-full border-t",
+                    h % 2 === 0 ? "border-slate-100" : "border-slate-50",
+                  )}
                   style={{ top: (h - HOUR_START) * ROW_HEIGHT }}
+                />
+              ))}
+
+              {/* Half-hour guide lines */}
+              {HOURS.map((h) => (
+                <div
+                  key={`half-${h}`}
+                  className="absolute w-full border-t border-dashed border-slate-50"
+                  style={{ top: (h - HOUR_START) * ROW_HEIGHT + ROW_HEIGHT / 2 }}
                 />
               ))}
 
               {/* Blocked overlay */}
               {blocked && (
                 <div
-                  className="absolute inset-0 pointer-events-none"
+                  className="absolute inset-0 pointer-events-none z-0"
                   style={{
                     backgroundImage:
                       "repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(244,63,94,0.08) 6px, rgba(244,63,94,0.08) 12px)",
                   }}
                 />
+              )}
+
+              {/* Current-time indicator */}
+              {isToday && nowTop !== null && (
+                <div
+                  className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
+                  style={{ top: nowTop }}
+                >
+                  <span className="h-2.5 w-2.5 rounded-full bg-power-orange shrink-0 -ml-1.5 shadow-sm" />
+                  <div className="flex-1 border-t-2 border-power-orange" />
+                </div>
               )}
 
               {/* Booking blocks */}
@@ -654,32 +688,42 @@ function TimeGrid({
                 const endMins = timeToMinutes(b.endTime) - HOUR_START * 60;
                 const top = Math.max(0, (startMins / 60) * ROW_HEIGHT);
                 const height = Math.max(
-                  24,
+                  28,
                   ((endMins - startMins) / 60) * ROW_HEIGHT - 2,
                 );
                 const playerName =
                   typeof b.userId === "object" && b.userId
                     ? ((b.userId as { name?: string }).name ?? "")
                     : "";
+                const durationMins = endMins - startMins;
 
                 return (
                   <button
                     key={b.id}
                     onClick={() => onBookingClick(b)}
                     className={cn(
-                      "absolute left-0.5 right-0.5 rounded-md border px-1.5 py-1 text-left overflow-hidden",
-                      "transition-shadow hover:shadow-md hover:z-10",
+                      "absolute left-0.5 right-0.5 rounded-lg border px-2 py-1 text-left overflow-hidden z-10",
+                      "transition-all hover:shadow-md hover:z-20 hover:scale-[1.01] active:scale-[0.99]",
                       BOOKING_BLOCK[b.status] ??
                         "bg-slate-100 border-slate-200 text-slate-600",
                     )}
                     style={{ top, height }}
+                    title={`${playerName || b.sport} — ${formatTime(b.startTime)} to ${formatTime(b.endTime)}`}
                   >
-                    <p className="text-xs font-semibold leading-tight truncate">
-                      {playerName || b.sport}
+                    {/* Sport tag */}
+                    <p className="text-[10px] font-bold uppercase tracking-wide opacity-60 leading-none truncate">
+                      {b.sport}
                     </p>
-                    {height > 36 && (
-                      <p className="text-xs opacity-70 leading-tight">
-                        {formatTime(b.startTime)}
+                    {/* Player name */}
+                    {height > 24 && (
+                      <p className="text-xs font-semibold leading-tight truncate mt-0.5">
+                        {playerName || "Session"}
+                      </p>
+                    )}
+                    {/* Time range — only if tall enough */}
+                    {height > 44 && durationMins >= 30 && (
+                      <p className="text-[10px] opacity-60 leading-tight mt-0.5 truncate">
+                        {formatTime(b.startTime)}–{formatTime(b.endTime)}
                       </p>
                     )}
                   </button>

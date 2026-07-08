@@ -19,6 +19,7 @@ import {
     Calendar,
     CalendarDays,
     CreditCard,
+    Home,
     Settings,
     ShieldCheck,
     Star,
@@ -135,6 +136,7 @@ export default function CoachLayout({
   };
 
   const navItems: DashboardNavItem[] = [
+    { href: "/", label: "Home", icon: Home },
     { href: "/coach/profile", label: "Profile", icon: User },
     { href: "/coach/verification", label: "Verification", icon: ShieldCheck },
     { href: "/coach/billing", label: "Billing & Plan", icon: CreditCard },
@@ -184,7 +186,10 @@ export default function CoachLayout({
 
   const visibleNavItems = isVerificationLocked
     ? navItems.filter(
-        (item) => item.href === "/coach/verification" || item.external,
+        (item) =>
+          item.href === "/" ||
+          item.href === "/coach/verification" ||
+          item.external,
       )
     : navItems.filter((item) => item.href !== "/coach/verification");
 
@@ -207,6 +212,24 @@ export default function CoachLayout({
       navItems={visibleNavItems}
       onLogout={handleLogout}
     >
+      {/* Incomplete profile banner */}
+      {isVerificationLocked && pathname === "/coach/verification" && (
+        <div className="mb-4 flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-amber-600" />
+            <p className="text-sm font-medium text-amber-800">
+              Your coach profile is incomplete. Complete verification to unlock all features.
+            </p>
+          </div>
+          <a
+            href="/"
+            className="shrink-0 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+          >
+            Go to Home
+          </a>
+        </div>
+      )}
+
       {/* Payout banner – only on pages other than /coach/payouts */}
       {!isVerificationLocked && pathname !== "/coach/payouts" && (
         <PayoutBanner

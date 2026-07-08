@@ -4,6 +4,8 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import {
   CoachUserRow,
   CoachesAnalytics,
+  ExpertUserRow,
+  ParentUserRow,
   PlayerUserRow,
   PlayersAnalytics,
   statsApi,
@@ -35,17 +37,33 @@ interface PaginationData {
   totalPages: number;
 }
 
-type UsersRow = PlayerUserRow | CoachUserRow | VenueListerUserRow;
+type UsersRow = PlayerUserRow | CoachUserRow | VenueListerUserRow | GenericUserRow;
 type SortColumn = "name" | "joined" | "lastActive" | "rating";
 type SortDirection = "asc" | "desc";
 
+// Generic row for roles without a dedicated API (Expert, Parent)
+interface GenericUserRow {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "EXPERT" | "Parent";
+  createdAt: string;
+  lastActiveAt: string;
+  isOnlineNow: boolean;
+}
+
 const TAB_LABELS: Record<UsersTabRole, string> = {
+  EXPERT: "Experts",
+  Parent: "Parents",
   Player: "Players",
   Coach: "Coaches",
   VenueLister: "Venue Owners",
 };
 
 const DEFAULT_SUMMARY: UsersRoleSummary = {
+  EXPERT: 0,
+  Parent: 0,
   Player: 0,
   Coach: 0,
   VenueLister: 0,
@@ -122,9 +140,13 @@ function AdminUsersPageContent() {
 
   const tabParam = searchParams.get("tab") as UsersTabRole;
   const activeTab: UsersTabRole =
-    tabParam === "Player" || tabParam === "Coach" || tabParam === "VenueLister"
+    tabParam === "EXPERT" ||
+    tabParam === "Parent" ||
+    tabParam === "Player" ||
+    tabParam === "Coach" ||
+    tabParam === "VenueLister"
       ? tabParam
-      : "Player";
+      : "EXPERT";
 
   const pageParam = Number(searchParams.get("page"));
   const currentPage = !isNaN(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -182,6 +204,28 @@ function AdminUsersPageContent() {
     try {
       setLoading(true);
       setError(null);
+
+      if (activeTab === "EXPERT") {
+        const usersResponse = await statsApi.getExpertUsers({ page: currentPage, limit: PAGE_SIZE });
+        if (!usersResponse.success || !usersResponse.data) {
+          setError(usersResponse.message || "Failed to load experts.");
+          return;
+        }
+        setUsers(usersResponse.data as UsersRow[]);
+        if (usersResponse.pagination) setPagination(usersResponse.pagination);
+        return;
+      }
+
+      if (activeTab === "Parent") {
+        const usersResponse = await statsApi.getParentUsers({ page: currentPage, limit: PAGE_SIZE });
+        if (!usersResponse.success || !usersResponse.data) {
+          setError(usersResponse.message || "Failed to load parents.");
+          return;
+        }
+        setUsers(usersResponse.data as UsersRow[]);
+        if (usersResponse.pagination) setPagination(usersResponse.pagination);
+        return;
+      }
 
       if (activeTab === "Player") {
         const [usersResponse, analyticsResponse] = await Promise.all([
@@ -357,6 +401,48 @@ function AdminUsersPageContent() {
         <OnlinePill online={u.isOnlineNow} lastActiveAt={u.lastActiveAt} />
       ),
     };
+
+    if (activeTab === "EXPERT") {
+      return [
+        userCol,
+        phoneCol,
+        {
+          key: "specialization",
+          header: "Specialization",
+          render: (u) =>
+            u.role === "EXPERT" ? (
+              <span className="text-slate-700">{(u as ExpertUserRow).specialization || "—"}</span>
+            ) : null,
+        },
+        {
+          key: "sessionCount",
+          header: "Sessions",
+          render: (u) =>
+            u.role === "EXPERT" ? (
+              <span className="text-slate-700">{(u as ExpertUserRow).sessionCount ?? "—"}</span>
+            ) : null,
+        },
+        joinedCol,
+        activityCol,
+      ];
+    }
+
+    if (activeTab === "Parent") {
+      return [
+        userCol,
+        phoneCol,
+        {
+          key: "dependents",
+          header: "Dependents",
+          render: (u) =>
+            u.role === "Parent" ? (
+              <span className="text-slate-700">{(u as ParentUserRow).dependentsCount}</span>
+            ) : null,
+        },
+        joinedCol,
+        activityCol,
+      ];
+    }
 
     if (activeTab === "Player") {
       return [
@@ -552,7 +638,7 @@ function AdminUsersPageContent() {
       />
 
       <div className="admin-tabs-scroll border-b border-slate-200">
-        {(["Player", "Coach", "VenueLister"] as UsersTabRole[]).map((tab) => (
+        {(["EXPERT", "Parent", "Player", "Coach", "VenueLister"] as UsersTabRole[]).map((tab) => (
           <button
             key={tab}
             onClick={() => switchTab(tab)}
@@ -702,6 +788,28 @@ function AdminUsersPageContent() {
                 value={formatDateTime(selectedUser.lastActiveAt)}
               />
             </DetailSection>
+
+            {selectedUser.role === "EXPERT" && (
+              <DetailSection title="Expert profile">
+                <DetailRow
+                  label="Specialization"
+                  value={(selectedUser as ExpertUserRow).specialization || "—"}
+                />
+                <DetailRow
+                  label="Sessions"
+                  value={(selectedUser as ExpertUserRow).sessionCount ?? "—"}
+                />
+              </DetailSection>
+            )}
+
+            {selectedUser.role === "Parent" && (
+              <DetailSection title="Parent profile">
+                <DetailRow
+                  label="Dependents"
+                  value={(selectedUser as ParentUserRow).dependentsCount}
+                />
+              </DetailSection>
+            )}
 
             {selectedUser.role === "Player" && (
               <DetailSection title="Player profile">
