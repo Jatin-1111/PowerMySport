@@ -370,6 +370,34 @@ export const statsApi = {
     return response.data;
   },
 
+  getExpertUsers: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<ExpertUserRow[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(
+      `/stats/users/experts?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  getParentUsers: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<ParentUserRow[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(
+      `/stats/users/parents?${params.toString()}`,
+    );
+    return response.data;
+  },
+
   getPlayersUsers: async (pagination?: {
     page?: number;
     limit?: number;

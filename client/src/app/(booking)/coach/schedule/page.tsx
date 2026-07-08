@@ -18,6 +18,7 @@ import {
     IndianRupee,
     Loader2,
     MapPin,
+    Pencil,
     RefreshCw,
     Trash2,
     User,
@@ -760,6 +761,13 @@ export default function CoachSchedulePage() {
   const [isBlocking, setIsBlocking] = useState(false);
   const [removingBlockId, setRemovingBlockId] = useState<string | null>(null);
 
+  // Edit blocked date state
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editBlockStart, setEditBlockStart] = useState("");
+  const [editBlockEnd, setEditBlockEnd] = useState("");
+  const [editBlockReason, setEditBlockReason] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const fetchCalendar = useCallback(async (v: CalendarView, d: Date) => {
@@ -925,6 +933,37 @@ export default function CoachSchedulePage() {
       toast.error("Failed to unblock date.");
     } finally {
       setRemovingBlockId(null);
+    }
+  };
+
+  const handleEditBlock = async (oldBlockId: string) => {
+    if (!editBlockStart || !editBlockEnd) {
+      toast.error("Please select start and end dates.");
+      return;
+    }
+    if (editBlockEnd < editBlockStart) {
+      toast.error("End date must be on or after start date.");
+      return;
+    }
+    setIsSavingEdit(true);
+    try {
+      // Remove old block then add new one
+      await coachApi.unblockDate(oldBlockId);
+      const res = await coachApi.blockDates({
+        startDate: editBlockStart,
+        endDate: editBlockEnd,
+        reason: editBlockReason || undefined,
+        allDay: true,
+      });
+      if (res.success) {
+        toast.success("Block updated.");
+        setEditingBlockId(null);
+        void fetchCalendar(view, currentDate);
+      }
+    } catch {
+      toast.error("Failed to update block.");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -1251,7 +1290,7 @@ export default function CoachSchedulePage() {
                       Blocked periods
                     </p>
                   </div>
-                  <div className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
+                  <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
                     {blockedDates.map((b) => {
                       const bid =
                         (b as { _id?: string; id?: string })._id ??
@@ -1268,33 +1307,101 @@ export default function CoachSchedulePage() {
                       const isSameDay =
                         toISODate(new Date(b.startDate)) ===
                         toISODate(new Date(b.endDate));
+                      const isEditing = editingBlockId === bid;
+
                       return (
-                        <div
-                          key={bid}
-                          className="flex items-center gap-2 px-4 py-2.5"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-slate-700">
-                              {isSameDay ? start : `${start} – ${end}`}
-                            </p>
-                            {b.reason && (
-                              <p className="text-xs text-slate-400 truncate">
-                                {b.reason}
-                              </p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleUnblock(bid)}
-                            disabled={removingBlockId === bid}
-                            className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
-                            aria-label="Remove block"
-                          >
-                            {removingBlockId === bid ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                              <Trash2 size={14} />
-                            )}
-                          </button>
+                        <div key={bid}>
+                          {isEditing ? (
+                            /* ── Inline edit form ── */
+                            <div className="px-4 py-3 space-y-2 bg-slate-50">
+                              <p className="text-xs font-semibold text-slate-700">Edit block</p>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-medium text-slate-500 mb-0.5 block">From</label>
+                                  <input
+                                    type="date"
+                                    value={editBlockStart}
+                                    onChange={(e) => setEditBlockStart(e.target.value)}
+                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-medium text-slate-500 mb-0.5 block">To</label>
+                                  <input
+                                    type="date"
+                                    min={editBlockStart}
+                                    value={editBlockEnd}
+                                    onChange={(e) => setEditBlockEnd(e.target.value)}
+                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                  />
+                                </div>
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="Reason (optional)"
+                                value={editBlockReason}
+                                onChange={(e) => setEditBlockReason(e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                              />
+                              <div className="flex gap-2 pt-1">
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  loading={isSavingEdit}
+                                  onClick={() => handleEditBlock(bid)}
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setEditingBlockId(null)}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            /* ── Read view ── */
+                            <div className="flex items-center gap-2 px-4 py-2.5">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-slate-700">
+                                  {isSameDay ? start : `${start} – ${end}`}
+                                </p>
+                                {b.reason && (
+                                  <p className="text-xs text-slate-400 truncate">
+                                    {b.reason}
+                                  </p>
+                                )}
+                              </div>
+                              {/* Edit button */}
+                              <button
+                                onClick={() => {
+                                  setEditingBlockId(bid);
+                                  setEditBlockStart(toISODate(new Date(b.startDate)));
+                                  setEditBlockEnd(toISODate(new Date(b.endDate)));
+                                  setEditBlockReason(b.reason ?? "");
+                                }}
+                                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:text-power-orange hover:bg-orange-50 transition-colors"
+                                aria-label="Edit block"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              {/* Delete button */}
+                              <button
+                                onClick={() => handleUnblock(bid)}
+                                disabled={removingBlockId === bid}
+                                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                                aria-label="Remove block"
+                              >
+                                {removingBlockId === bid ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={14} />
+                                )}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

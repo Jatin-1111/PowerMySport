@@ -18,7 +18,7 @@ import { isUserOnline } from "../../shared/services/UserPresenceService";
 import { getAllVenues as getAllVenuesService } from "../../client/services/VenueService";
 import { getPaginationParams } from "../../utils/pagination";
 
-type AdminUserRole = "Player" | "Coach" | "VenueLister";
+type AdminUserRole = "Player" | "Coach" | "VenueLister" | "EXPERT" | "Parent";
 
 type FunnelSource = "WEB" | "MOBILE" | "SERVER";
 
@@ -26,6 +26,8 @@ const USER_ROLE_SET: ReadonlySet<AdminUserRole> = new Set([
   "Player",
   "Coach",
   "VenueLister",
+  "EXPERT",
+  "Parent",
 ]);
 
 const FUNNEL_SOURCE_SET: ReadonlySet<FunnelSource> = new Set([
@@ -270,7 +272,7 @@ export const getUserRoleSummary = async (
     const roleCounts = await User.aggregate<{ _id: string; count: number }>([
       {
         $match: {
-          role: { $in: ["Player", "Coach", "VenueLister"] },
+          role: { $in: ["Player", "Coach", "VenueLister", "EXPERT", "Parent"] },
         },
       },
       {
@@ -282,6 +284,8 @@ export const getUserRoleSummary = async (
     ]);
 
     const summary = {
+      EXPERT: 0,
+      Parent: 0,
       Player: 0,
       Coach: 0,
       VenueLister: 0,
@@ -364,7 +368,10 @@ export const getUserGrowthAnalytics = async (
       const bucket = monthBuckets.get(row._id.month);
       if (!bucket) continue;
 
-      bucket[row._id.role] += row.count;
+      const role = row._id.role as keyof typeof bucket;
+      if (role in bucket && typeof bucket[role] === "number") {
+        (bucket[role] as number) += row.count;
+      }
       bucket.total += row.count;
     }
 

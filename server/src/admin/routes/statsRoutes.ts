@@ -149,6 +149,14 @@ router.get(
   requirePermission("users:view"),
   getVenueListersAnalytics,
 );
+router.get("/users/experts", requirePermission("users:view"), (req, res) => {
+  req.query.role = "EXPERT";
+  return getAllUsers(req, res);
+});
+router.get("/users/parents", requirePermission("users:view"), (req, res) => {
+  req.query.role = "Parent";
+  return getAllUsers(req, res);
+});
 router.get("/users", requirePermission("users:view"), getAllUsers);
 router.get("/venues", requirePermission("venues:view"), getAllVenues);
 router.get("/bookings", requirePermission("bookings:view"), getAllBookings);
