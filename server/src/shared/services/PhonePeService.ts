@@ -500,9 +500,28 @@ export const initiatePhonePeRefund = async (payload: {
   originalMerchantOrderId: string;
   amount: number;
 }): Promise<PhonePeRefundResult> => {
+  const env = (process.env.PHONEPE_ENV || "SANDBOX").toUpperCase();
+  const clientId = process.env.PHONEPE_CLIENT_ID || "(not set)";
+  console.info(
+    `[PhonePe] initiateRefund env=${env} clientId=${clientId} merchantRefundId=${payload.merchantRefundId} originalMerchantOrderId=${payload.originalMerchantOrderId} amountRupees=${payload.amount} amountPaise=${Math.round(payload.amount * 100)}`,
+  );
+
   const request = buildRefundRequest(payload);
-  const response = await executePhonePeRequest("initiate refund", () =>
-    getPhonePeClient().refund(request),
+  let response: any;
+  try {
+    response = await executePhonePeRequest("initiate refund", () =>
+      getPhonePeClient().refund(request),
+    );
+  } catch (err) {
+    console.error(
+      `[PhonePe] initiateRefund FAILED merchantRefundId=${payload.merchantRefundId}`,
+      err,
+    );
+    throw err;
+  }
+
+  console.info(
+    `[PhonePe] initiateRefund SUCCESS merchantRefundId=${payload.merchantRefundId} refundId=${response.refundId} state=${response.state} amount=${response.amount}`,
   );
 
   return {
