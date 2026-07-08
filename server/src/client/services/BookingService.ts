@@ -1562,6 +1562,7 @@ const initiateBookingRefunds = async (
   let hasFailure = false;
   let hasPending = false;
   let totalRefundPaise = 0;
+  let skippedRefundPaise = 0;
 
   for (const target of targets) {
     const transaction = await BookingPaymentTransaction.findOne({
@@ -1581,6 +1582,7 @@ const initiateBookingRefunds = async (
       transaction.refundState !== "FAILED"
     ) {
       hasPending = true;
+      skippedRefundPaise += transaction.refundAmount || target.amountPaise;
       continue;
     }
 
@@ -1613,11 +1615,10 @@ const initiateBookingRefunds = async (
 
   if (totalRefundPaise === 0) {
     if (hasPending) {
-      // If we skipped transactions because they already have a refundState,
-      // but the booking status was somehow still PENDING.
+      // All transactions already have an in-progress refund — return the real amount.
       return {
-        refundStatus: "PROCESSED",
-        refundAmount: 0, // The amount is already tracked in transactions
+        refundStatus: "PENDING",
+        refundAmount: skippedRefundPaise / 100,
       };
     }
     throw new Error("No eligible payment transactions found for refund");
@@ -1661,7 +1662,9 @@ export const processBookingRefund = async (
     reason,
   );
 
-  booking.refundAmount = refundResult.refundAmount;
+  if (refundResult.refundAmount > 0) {
+    booking.refundAmount = refundResult.refundAmount;
+  }
   booking.refundStatus = refundResult.refundStatus;
   await booking.save();
 

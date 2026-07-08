@@ -18,6 +18,7 @@ import {
   Smartphone,
   TrendingDown,
   User,
+  XCircle,
 } from "lucide-react";
 import { PaginationMetadata } from "@/types";
 
@@ -46,6 +47,7 @@ interface BankDetails {
 
 export default function AdminRefundsPage() {
   const [refunds, setRefunds] = useState<RefundRequest[]>([]);
+  const [failedRefunds, setFailedRefunds] = useState<RefundRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<RefundRequest | null>(
@@ -78,34 +80,33 @@ export default function AdminRefundsPage() {
   const loadRefunds = async () => {
     try {
       setLoading(true);
-      // Fetch bookings that have been refunded or have pending refunds
-      // via the PhonePe refund status endpoint for each recent booking
-      // The refunds page aggregates from the booking list filtered by refund state
-      const response = await adminApi.getPendingRefundBookings({
-        page: currentPage,
-        limit: PAGE_SIZE,
-      });
-      if (response.success && Array.isArray(response.data)) {
-        if (response.data.length === 0 && currentPage > 1) {
+      const [pendingResponse, failedResponse] = await Promise.all([
+        adminApi.getPendingRefundBookings({ page: currentPage, limit: PAGE_SIZE }),
+        adminApi.getFailedRefundBookings(),
+      ]);
+
+      if (pendingResponse.success && Array.isArray(pendingResponse.data)) {
+        if (pendingResponse.data.length === 0 && currentPage > 1) {
           setCurrentPage((prev) => prev - 1);
           return;
         }
-
-        setRefunds(response.data as RefundRequest[]);
-
-        if (response.stats) {
-          setStats(response.stats);
-        }
-
-        if (response.pagination) {
+        setRefunds(pendingResponse.data as RefundRequest[]);
+        if (pendingResponse.stats) setStats(pendingResponse.stats);
+        if (pendingResponse.pagination) {
           setPagination({
-            total: response.pagination.total || 0,
-            page: response.pagination.page || 1,
-            totalPages: response.pagination.totalPages || 1,
+            total: pendingResponse.pagination.total || 0,
+            page: pendingResponse.pagination.page || 1,
+            totalPages: pendingResponse.pagination.totalPages || 1,
           });
         }
       } else {
         setRefunds([]);
+      }
+
+      if (failedResponse.success && Array.isArray(failedResponse.data)) {
+        setFailedRefunds(failedResponse.data as RefundRequest[]);
+      } else {
+        setFailedRefunds([]);
       }
     } catch (error) {
       toast.error("Failed to load refund requests");
@@ -485,8 +486,8 @@ export default function AdminRefundsPage() {
         </div>
       )}
 
-      {/* Refunds List */}
-      {refunds.length === 0 ? (
+      {/* Pending Refunds List */}
+      {pendingRefunds.length === 0 && failedRefunds.length === 0 ? (
         <Card className="bg-white py-12 text-center">
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500 mb-4" />
           <h3 className="text-lg font-semibold text-slate-900">All set!</h3>
@@ -496,59 +497,114 @@ export default function AdminRefundsPage() {
           </p>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {pendingRefunds.map((refund) => (
-            <Card
-              key={refund.id}
-              className="bg-white overflow-hidden hover:shadow-md transition-all border border-slate-200"
-            >
-              <div className="flex flex-col md:flex-row md:items-center gap-4 p-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="p-2 rounded-lg bg-amber-100">
-                      <Clock size={18} className="text-amber-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900">
-                        {refund.playerName}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        Booking ID: {refund.bookingId}
+        <div className="space-y-8">
+          {pendingRefunds.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+                Pending ({pendingRefunds.length})
+              </h2>
+              {pendingRefunds.map((refund) => (
+                <Card
+                  key={refund.id}
+                  className="bg-white overflow-hidden hover:shadow-md transition-all border border-slate-200"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center gap-4 p-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-2 rounded-lg bg-amber-100">
+                          <Clock size={18} className="text-amber-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-slate-900">
+                            {refund.playerName}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Booking ID: {refund.bookingId}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-600 mt-2">
+                        {refund.playerEmail}
                       </p>
                     </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-emerald-600">
+                          ₹{refund.amount}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {new Date(refund.requestedAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                      <Button onClick={() => setSelectedRefund(refund)} variant="primary" size="md">
+                        Process
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-slate-600 mt-2">
-                    {refund.playerEmail}
-                  </p>
-                </div>
+                </Card>
+              ))}
+            </div>
+          )}
 
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-emerald-600">
-                      ₹{refund.amount}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {new Date(refund.requestedAt).toLocaleDateString(
-                        "en-IN",
-                        {
-                          month: "short",
-                          day: "numeric",
-                        },
-                      )}
-                    </p>
+          {failedRefunds.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-red-500">
+                Failed — Retry Required ({failedRefunds.length})
+              </h2>
+              {failedRefunds.map((refund) => (
+                <Card
+                  key={refund.id}
+                  className="bg-white overflow-hidden border border-red-200"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center gap-4 p-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-2 rounded-lg bg-red-100">
+                          <XCircle size={18} className="text-red-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-slate-900">
+                            {refund.playerName}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            Booking ID: {refund.bookingId}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-600 mt-2">
+                        {refund.playerEmail}
+                      </p>
+                      <p className="text-xs text-red-500 mt-1 font-medium">
+                        Previous refund attempt failed — choose a method below to retry.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-red-600">
+                          ₹{refund.amount}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {new Date(refund.requestedAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          setSelectedRefund(refund);
+                          setRefundMethod("ORIGINAL_CARD");
+                        }}
+                        variant="outline"
+                        size="md"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <RefreshCw size={14} className="mr-1.5" />
+                        Retry
+                      </Button>
+                    </div>
                   </div>
-
-                  <Button
-                    onClick={() => setSelectedRefund(refund)}
-                    variant="primary"
-                    size="md"
-                  >
-                    Process
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
