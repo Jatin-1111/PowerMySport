@@ -1479,10 +1479,12 @@ export const processRefund = async (
   try {
     const bookingId = (req.params as Record<string, unknown>)
       .bookingId as string;
-    const { refundType, reason } = req.body as {
-      refundType: "FULL" | "PARTIAL";
-      reason: string;
-    };
+    const { refundType, reason, refundPercentage: customPercentage } =
+      req.body as {
+        refundType: "FULL" | "PARTIAL";
+        reason: string;
+        refundPercentage?: number;
+      };
 
     if (!refundType || !reason?.trim()) {
       res.status(400).json({
@@ -1492,7 +1494,18 @@ export const processRefund = async (
       return;
     }
 
-    const refundPercentage = refundType === "FULL" ? 100 : 50;
+    let refundPercentage: number;
+    if (refundType === "FULL") {
+      refundPercentage = 100;
+    } else if (
+      typeof customPercentage === "number" &&
+      customPercentage > 0 &&
+      customPercentage < 100
+    ) {
+      refundPercentage = customPercentage;
+    } else {
+      refundPercentage = 50;
+    }
     const result = await processBookingRefund(
       bookingId,
       refundPercentage,

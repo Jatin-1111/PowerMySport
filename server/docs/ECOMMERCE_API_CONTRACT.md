@@ -112,10 +112,10 @@ interface Order {
   status: OrderStatus; // CART | PENDING_PAYMENT | PAYMENT_CONFIRMED | PROCESSING | SHIPPED | DELIVERED | CANCELLED | RETURNED
 
   // Payment
-  paymentMethod: string; // "RAZORPAY" | "STRIPE" | "UPI" | "WALLET" (future)
+  paymentMethod: string; // "PHONEPE" | "COD"
   paymentGateway: PaymentGateway;
-  paymentGatewayOrderId: string; // Razorpay order_id
-  paymentGatewayPaymentId?: string; // Razorpay payment_id
+  paymentGatewayOrderId: string; // PhonePe merchantOrderId
+  paymentGatewayPaymentId?: string; // PhonePe payment_id
   paymentStatus: PaymentStatus;
 
   // Promo
@@ -169,9 +169,9 @@ Records payment attempts and status from gateway.
 interface PaymentTransaction {
   id: string;
   orderId: string;
-  paymentGateway: PaymentGateway; // "RAZORPAY" | "STRIPE"
-  gatewayOrderId: string; // Razorpay order_id
-  gatewayPaymentId?: string; // Razorpay payment_id (after payment attempt)
+  paymentGateway: PaymentGateway; // "PHONEPE"
+  gatewayOrderId: string; // PhonePe merchantOrderId
+  gatewayPaymentId?: string; // PhonePe payment_id (after payment attempt)
   amount: number; // Paise
   currency: string; // "INR"
   status: PaymentStatus;
@@ -420,7 +420,7 @@ Request:
     "postalCode": "110001",
     "country": "IN"
   },
-  "paymentMethod": "RAZORPAY"
+  "paymentMethod": "PHONEPE"
 }
 ```
 
@@ -435,21 +435,16 @@ Response:
       "orderNumber": "ORD-20260408-001",
       "status": "PENDING_PAYMENT",
       "totalAmount": 188564,
-      "paymentGateway": "RAZORPAY",
-      "paymentGatewayOrderId": "order_Kxxt66cd9fxzta",
+      "paymentGateway": "PHONEPE",
+      "paymentGatewayOrderId": "OM_PHONEPE_20260408_001",
       "createdAt": "2026-04-08T12:35:00Z"
     },
     "paymentConfig": {
-      "razorpayOrderId": "order_Kxxt66cd9fxzta",
+      "phonePeOrderId": "OM_PHONEPE_20260408_001",
       "amount": 188564,
       "currency": "INR",
-      "key": "rzp_live_YOUR_KEY_ID",
-      "description": "Order ORD-20260408-001 - PowerMySport",
-      "prefill": {
-        "name": "Raj Kumar",
-        "email": "raj@example.com",
-        "contact": "9876543210"
-      }
+      "redirectUrl": "https://api.phonepe.com/apis/hermes/pg/v1/pay/...",
+      "description": "Order ORD-20260408-001 - PowerMySport"
     }
   }
 }
@@ -462,9 +457,9 @@ Request:
 
 ```json
 {
-  "razorpay_payment_id": "pay_Kxxt66cd9fxzta",
-  "razorpay_order_id": "order_Kxxt66cd9fxzta",
-  "razorpay_signature": "9ef4dffbfd84f1318f6739..."
+  "phonepe_payment_id": "PHONEPE_PAY_Kxxt66cd9fxzta",
+  "phonepe_order_id": "OM_PHONEPE_20260408_001",
+  "phonepe_signature": "9ef4dffbfd84f1318f6739..."
 }
 ```
 
@@ -921,7 +916,7 @@ type FulfillmentStatus =
 ### PaymentGateway
 
 ```typescript
-type PaymentGateway = "RAZORPAY" | "STRIPE";
+type PaymentGateway = "PHONEPE";
 ```
 
 ### ProductCategory
@@ -969,10 +964,9 @@ type ProductCategory = "APPAREL" | "FOOTWEAR" | "ACCESSORIES" | "EQUIPMENT";
    - Tax calculated server-side: `taxAmount = subtotal * taxRate`.
    - Must be consistent across order item creation and order summary.
 
-5. **Payment Gateway Abstraction**:
-   - Create `PaymentGatewayService` interface with methods: `createOrder()`, `verifyPayment()`, `initiateRefund()`.
-   - Implement `RazorpayGatewayService` and `StripeGatewayService` as concrete implementations.
-   - Switch via config/env variable.
+5. **Payment Gateway**:
+   - PhonePe is the sole payment gateway. `PaymentGatewayService` interface is implemented by `PhonePeGatewayService`.
+   - All payment operations (create order, verify, refund, status) go through the PhonePe SDK.
 
 6. **Notification Triggers**:
    - Order created: notification to user (email + socket)
