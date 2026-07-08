@@ -154,8 +154,9 @@ export const Navigation: React.FC<NavProps> = ({
           <div className="shrink-0 relative z-50 h-full">
             <Link href="/" className="inline-flex items-center h-full">
               <span className="font-title text-2xl font-extrabold tracking-tight leading-none">
-                <span className="text-power-orange">Power</span>
-                <span className="text-slate-900">MySport</span>
+                <span className="text-slate-900">Power</span>
+                <span className="text-power-orange">My</span>
+                <span className="text-slate-900">Sport</span>
               </span>
             </Link>
           </div>

@@ -85,8 +85,9 @@ export const Footer: React.FC = () => {
           <div className="sm:col-span-2 lg:col-span-2">
             <Link href="/" className="inline-flex items-center">
               <span className="font-title text-3xl font-extrabold leading-none tracking-tight">
-                <span className="text-power-orange">Power</span>
-                <span className="text-white">MySport</span>
+                <span className="text-white">Power</span>
+                <span className="text-power-orange">My</span>
+                <span className="text-white">Sport</span>
               </span>
             </Link>
 

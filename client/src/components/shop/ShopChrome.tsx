@@ -39,8 +39,9 @@ export function ShopChrome() {
           </Link>
           <Link href="/shop" className="flex items-center gap-2">
             <span className="font-title text-2xl font-extrabold tracking-tight leading-none flex items-baseline">
-              <span className="text-power-orange">Power</span>
-              <span className="text-slate-900">MySport</span>
+              <span className="text-slate-900">Power</span>
+              <span className="text-power-orange">My</span>
+              <span className="text-slate-900">Sport</span>
             </span>
           </Link>
 
