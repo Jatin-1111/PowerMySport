@@ -1656,6 +1656,10 @@ export const processBookingRefund = async (
     throw new Error("Refund already processed for this booking");
   }
 
+  if (booking.refundStatus === "PENDING") {
+    throw new Error("Refund already submitted to PhonePe and is awaiting confirmation. No further action needed.");
+  }
+
   let refundResult: { refundStatus: "PENDING" | "PROCESSED" | "REJECTED"; refundAmount: number };
   try {
     refundResult = await initiateBookingRefunds(booking, refundPercentage, reason);

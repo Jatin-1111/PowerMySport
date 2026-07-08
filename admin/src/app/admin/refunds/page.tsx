@@ -77,6 +77,9 @@ export default function AdminRefundsPage() {
     totalAmount: 0,
   });
 
+  // Track booking IDs submitted to PhonePe this session (to prevent double-processing)
+  const [submittedIds, setSubmittedIds] = useState<Set<string>>(new Set());
+
   const loadRefunds = async () => {
     try {
       setLoading(true);
@@ -130,14 +133,25 @@ export default function AdminRefundsPage() {
 
     setProcessing(selectedRefund.id);
     try {
-      await adminApi.processRefund(selectedRefund.bookingId, {
+      const response = await adminApi.processRefund(selectedRefund.bookingId, {
         refundType: "FULL",
         reason: `Admin-initiated refund via ${refundMethod.replace("_", " ").toLowerCase()}`,
       });
 
-      toast.success("Refund processed successfully!");
+      const refundStatus = (response?.data as any)?.refundStatus;
+
+      if (refundStatus === "PENDING") {
+        // PhonePe accepted the refund — remove from list so admin can't re-submit
+        const bookingId = selectedRefund.bookingId;
+        setRefunds((prev) => prev.filter((r) => r.bookingId !== bookingId));
+        setSubmittedIds((prev) => new Set([...prev, bookingId]));
+        toast.success("Refund submitted to PhonePe — will be confirmed within 5–7 business days.");
+      } else {
+        toast.success("Refund processed successfully!");
+        await loadRefunds();
+      }
+
       setSelectedRefund(null);
-      await loadRefunds();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to process refund",
@@ -536,9 +550,16 @@ export default function AdminRefundsPage() {
                           {new Date(refund.requestedAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
                         </p>
                       </div>
-                      <Button onClick={() => setSelectedRefund(refund)} variant="primary" size="md">
-                        Process
-                      </Button>
+                      {submittedIds.has(refund.bookingId) ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700">
+                          <Clock size={12} />
+                          Awaiting PhonePe
+                        </span>
+                      ) : (
+                        <Button onClick={() => setSelectedRefund(refund)} variant="primary" size="md">
+                          Process
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </Card>
