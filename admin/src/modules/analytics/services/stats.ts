@@ -440,35 +440,7 @@ export const statsApi = {
     return response.data;
   },
 
-  getExpertUsers: async (pagination?: {
-    page?: number;
-    limit?: number;
-  }): Promise<ApiResponse<ExpertUserRow[]>> => {
-    const params = new URLSearchParams();
-    params.append("role", "EXPERT");
-    if (pagination?.page) params.append("page", pagination.page.toString());
-    if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users?${params.toString()}`,
-    );
-    return response.data;
-  },
-
-  getParentUsers: async (pagination?: {
-    page?: number;
-    limit?: number;
-  }): Promise<ApiResponse<ParentUserRow[]>> => {
-    const params = new URLSearchParams();
-    params.append("role", "Parent");
-    if (pagination?.page) params.append("page", pagination.page.toString());
-    if (pagination?.limit) params.append("limit", pagination.limit.toString());
-
-    const response = await axiosInstance.get(
-      `/stats/users?${params.toString()}`,
-    );
-    return response.data;
-  },
 
   getPlayersAnalytics: async (): Promise<ApiResponse<PlayersAnalytics>> => {
     const response = await axiosInstance.get("/stats/users/analytics/players");

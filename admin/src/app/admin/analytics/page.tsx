@@ -67,6 +67,8 @@ const DEFAULT_PLATFORM_STATS: PlatformStats = {
 };
 
 const DEFAULT_ROLE_SUMMARY: UsersRoleSummary = {
+  EXPERT: 0,
+  Parent: 0,
   Player: 0,
   Coach: 0,
   VenueLister: 0,
