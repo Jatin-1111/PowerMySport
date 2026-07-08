@@ -195,17 +195,29 @@ const getPhonePeConfig = () => {
 };
 
 let cachedClient: StandardCheckoutClient | null = null;
+// Track the config that produced the cached client so we can detect env changes.
+let cachedConfigKey: string | null = null;
 
 const getPhonePeClient = (): StandardCheckoutClient => {
-  if (cachedClient) return cachedClient;
-
   const { clientId, clientSecret, clientVersion, env } = getPhonePeConfig();
-  cachedClient = StandardCheckoutClient.getInstance(
-    clientId,
-    clientSecret,
-    clientVersion,
-    env,
-  );
+  const configKey = `${clientId}:${clientVersion}:${env}`;
+
+  // Invalidate cache if credentials or environment changed (e.g. env var update).
+  if (cachedClient && cachedConfigKey !== configKey) {
+    cachedClient = null;
+    cachedConfigKey = null;
+  }
+
+  if (!cachedClient) {
+    cachedClient = StandardCheckoutClient.getInstance(
+      clientId,
+      clientSecret,
+      clientVersion,
+      env,
+    );
+    cachedConfigKey = configKey;
+  }
+
   return cachedClient;
 };
 

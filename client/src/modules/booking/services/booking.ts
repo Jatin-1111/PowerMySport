@@ -93,7 +93,7 @@ export const bookingApi = {
   cancelBooking: async (
     bookingId: string,
     cancellationReason?: string,
-  ): Promise<ApiResponse<null>> => {
+  ): Promise<ApiResponse<{ refundAmount: number; refundPercentage: number }>> => {
     const response = await axiosInstance.delete(`/bookings/${bookingId}`, {
       data: cancellationReason ? { cancellationReason } : undefined,
     });

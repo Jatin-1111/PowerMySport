@@ -344,6 +344,8 @@ export interface Booking {
   participants?: BookingParticipant[];
   paymentType: PaymentType; // Default: "SINGLE"
   splitMethod?: SplitMethod;
+  refundStatus?: "PENDING" | "PROCESSED" | "REJECTED";
+  refundAmount?: number;
   createdAt: string;
   updatedAt: string;
 }

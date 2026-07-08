@@ -315,10 +315,10 @@ export function FriendSocketProvider({
           toast.success(notification.message, {
             duration: 8000,
             action: {
-              label: "View Details",
+              label: "View Bookings",
               onClick: () => {
                 if (typeof window !== "undefined") {
-                  window.location.href = "/player/bookings";
+                  window.location.href = "/dashboard/my-bookings";
                 }
               },
             },

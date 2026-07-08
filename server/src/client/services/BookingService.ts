@@ -1861,7 +1861,9 @@ export const cancelBooking = async (
         cancelledAt: new Date(),
         cancellationReason: cancellationReason || "Cancelled by user",
         refundAmount,
-        refundStatus: refundAmount > 0 ? "PENDING" : undefined,
+        // Don't pre-set refundStatus here — PhonePe hasn't been called yet.
+        // initiateBookingRefunds sets the real status (PENDING/PROCESSED/REJECTED)
+        // after the gateway responds; the catch block sets REJECTED on failure.
       },
     },
     { new: true },
@@ -1964,6 +1966,10 @@ export const cancelBooking = async (
           `Failed to initiate refund for booking ${updatedBooking._id.toString()}:`,
           refundError,
         );
+        // Mark the booking as REJECTED so the player sees "Refund failed —
+        // contact support" instead of a pending spinner that never resolves.
+        updatedBooking.refundStatus = "REJECTED";
+        await updatedBooking.save().catch(() => {});
       }
     }
 
