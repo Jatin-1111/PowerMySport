@@ -338,7 +338,7 @@ function GuidancePageInner() {
                           className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-orange-900/10 transition-all hover:opacity-90 active:scale-[0.98]"
                         >
                           <MessageCircle className="h-4 w-4" />
-                          <span>Ask Questions</span>
+                          <span>Ask Powermysport AI</span>
                         </button>
                       </div>
 

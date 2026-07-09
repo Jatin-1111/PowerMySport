@@ -2,21 +2,17 @@
 
 import {
   ChevronLeft,
-  ImagePlus,
-  MessageSquare,
   PanelRightClose,
   PanelRightOpen,
   RotateCcw,
   X,
   Loader2,
-  Send,
   MoreVertical,
   Check,
   Pencil,
   Smile,
   Paperclip,
   CheckCheck,
-  Trash2,
   ArrowUp,
   Pin,
 } from "lucide-react";
@@ -24,8 +20,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageBubble } from "@/modules/community/components/chat/MessageBubble";
 import EmojiPicker from "@/modules/community/components/chat/EmojiPicker";
 import CommunityChatEmptyState from "@/modules/community/components/page/home/CommunityChatEmptyState";
+import ChatHeaderMenu from "@/modules/community/components/chat/ChatHeaderMenu";
+import ConversationSearchBar from "@/modules/community/components/chat/ConversationSearchBar";
+import ConfirmActionModal from "@/modules/community/components/chat/ConfirmActionModal";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
-import { useRef, useEffect, useLayoutEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useLayoutEffect, useCallback, useState, useMemo } from "react";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { getMessageTimestamp } from "@/modules/community/utils/chatUtils";
 
@@ -87,6 +86,16 @@ export default function CommunityChatPanel({ page }: Props) {
     pinMessageLocal,
     setForwardingMessages,
     setSelectChatsMode,
+    pinnedConversationIds,
+    handleTogglePinConversation,
+    mutedConversationIds,
+    handleToggleMuteConversation,
+    handleToggleConversationBlock,
+    isTogglingBlockUser,
+    selectedConversationIsBlocked,
+    handleOpenReportModal,
+    handleClearChat,
+    handleDeleteChat,
   } = page;
 
   const previousScrollHeightRef = useRef<number>(0);
@@ -103,15 +112,59 @@ export default function CommunityChatPanel({ page }: Props) {
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [firstUnreadMessageId, setFirstUnreadMessageId] = useState<string | null>(null);
 
+  // Search state
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchMatchIndex, setSearchMatchIndex] = useState(0);
+
+  // Confirm modal state
+  type ConfirmAction = "block" | "clear" | "delete" | null;
+  const [pendingConfirmAction, setPendingConfirmAction] = useState<ConfirmAction>(null);
+
   const currentConversationIdRef = useRef<string | null>(null);
   const lastMessageIdRef = useRef<string | null>(null);
   const hasCalculatedUnreadRef = useRef<string | null>(null);
 
-  // Reset first unread message ID when changing conversation
+  // Reset first unread + search when changing conversation
   useEffect(() => {
     setFirstUnreadMessageId(null);
     hasCalculatedUnreadRef.current = null;
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    setSearchMatchIndex(0);
   }, [selectedConversation?.id]);
+
+  // Search match IDs (TEXT messages only, not deleted)
+  const searchMatchIds = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return messages
+      .filter((m) => m.type === "TEXT" && !m.isDeleted && m.content.toLowerCase().includes(q))
+      .map((m) => m.id);
+  }, [messages, searchQuery]);
+
+  // Reset index when query changes
+  useEffect(() => {
+    setSearchMatchIndex(0);
+  }, [searchQuery]);
+
+  // Scroll to current search match
+  useEffect(() => {
+    if (searchMatchIds.length === 0) return;
+    const id = searchMatchIds[searchMatchIndex];
+    if (!id) return;
+    document.getElementById(`msg-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [searchMatchIndex, searchMatchIds]);
+
+  const handleSearchNext = useCallback(() => {
+    if (searchMatchIds.length === 0) return;
+    setSearchMatchIndex((prev) => (prev + 1) % searchMatchIds.length);
+  }, [searchMatchIds.length]);
+
+  const handleSearchPrev = useCallback(() => {
+    if (searchMatchIds.length === 0) return;
+    setSearchMatchIndex((prev) => (prev - 1 + searchMatchIds.length) % searchMatchIds.length);
+  }, [searchMatchIds.length]);
 
   // Find the first unread message ONLY ONCE per conversation
   useEffect(() => {
@@ -377,38 +430,34 @@ export default function CommunityChatPanel({ page }: Props) {
             {/* Header dropdown menu */}
             <AnimatePresence>
               {showHeaderMenu && (
-                <motion.div
-                  ref={headerMenuRef}
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                  transition={{ duration: 0.12 }}
-                  className="absolute right-0 top-full mt-1 z-50 w-48 rounded-xl border border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.1)] overflow-hidden"
-                >
-                  <button
-                    onClick={() => {
-                      handleMarkAllAsRead();
-                      setShowHeaderMenu(false);
-                    }}
-                    className="flex w-full items-center gap-2 px-3.5 py-2.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50 transition border-b border-slate-100"
-                  >
-                    <CheckCheck size={15} className="text-turf-green" />
-                    Mark all as Read
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowHeaderMenu(false);
-                      setIsMessageSelectionMode(!isMessageSelectionMode);
-                      if (isMessageSelectionMode) {
-                        setSelectedMessageIds([]);
-                      }
-                    }}
-                    className="flex w-full items-center gap-2 px-3.5 py-2.5 text-[13px] font-medium text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    <Check size={15} className="text-power-orange" />
-                    {isMessageSelectionMode ? "Cancel Selection" : "Select Messages"}
-                  </button>
-                </motion.div>
+                <ChatHeaderMenu
+                  menuRef={headerMenuRef}
+                  isGroup={isGroup}
+                  isMessageSelectionMode={isMessageSelectionMode}
+                  isMuted={mutedConversationIds.includes(selectedConversation.id)}
+                  isFavourited={pinnedConversationIds.includes(selectedConversation.id)}
+                  isBlocked={selectedConversationIsBlocked}
+                  isTogglingBlockUser={isTogglingBlockUser}
+                  onClose={() => setShowHeaderMenu(false)}
+                  onViewInfo={() => setShowChatDetailsSidebar(true)}
+                  onToggleSearch={() => setIsSearchOpen((prev) => !prev)}
+                  onMarkAllAsRead={handleMarkAllAsRead}
+                  onToggleSelectMessages={() => {
+                    setIsMessageSelectionMode((prev) => !prev);
+                    if (isMessageSelectionMode) setSelectedMessageIds([]);
+                  }}
+                  onToggleMute={() => handleToggleMuteConversation(selectedConversation.id)}
+                  onToggleFavourite={() => handleTogglePinConversation(selectedConversation.id)}
+                  onBlock={() => setPendingConfirmAction("block")}
+                  onReport={() =>
+                    handleOpenReportModal(
+                      isGroup ? "GROUP" : "MESSAGE",
+                      isGroup ? (selectedConversation.group?.id ?? selectedConversation.id) : selectedConversation.id,
+                    )
+                  }
+                  onClearChat={() => setPendingConfirmAction("clear")}
+                  onDeleteChat={() => setPendingConfirmAction("delete")}
+                />
               )}
             </AnimatePresence>
           </div>
@@ -456,6 +505,25 @@ export default function CommunityChatPanel({ page }: Props) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Search Bar */}
+      <AnimatePresence>
+        {isSearchOpen && (
+          <ConversationSearchBar
+            query={searchQuery}
+            matchCount={searchMatchIds.length}
+            currentMatchIndex={searchMatchIndex}
+            onChange={(q) => setSearchQuery(q)}
+            onClose={() => {
+              setIsSearchOpen(false);
+              setSearchQuery("");
+              setSearchMatchIndex(0);
+            }}
+            onNext={handleSearchNext}
+            onPrev={handleSearchPrev}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Pinned Message Banner */}
       <AnimatePresence>
@@ -518,8 +586,21 @@ export default function CommunityChatPanel({ page }: Props) {
             
           const isFirstUnread = message.id === firstUnreadMessageId;
 
+          const isSearchMatch = isSearchOpen && searchMatchIds.includes(message.id);
+          const isActiveSearchMatch = isSearchOpen && searchMatchIds[searchMatchIndex] === message.id;
+
           return (
-            <div key={message.id}>
+            <div
+              key={message.id}
+              id={`msg-${message.id}`}
+              className={
+                isActiveSearchMatch
+                  ? "rounded-2xl ring-2 ring-power-orange/50 ring-offset-1 transition-all"
+                  : isSearchMatch
+                  ? "rounded-2xl ring-1 ring-slate-300 ring-offset-1 transition-all"
+                  : undefined
+              }
+            >
               {showDateSeparator && (
                 <div className="flex items-center gap-3 py-3">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/40 to-slate-300/40" />
@@ -810,6 +891,53 @@ export default function CommunityChatPanel({ page }: Props) {
           </motion.button>
         </div>
       </div>
+
+      {/* Confirm: Block/Unblock */}
+      <ConfirmActionModal
+        isOpen={pendingConfirmAction === "block"}
+        title={selectedConversationIsBlocked ? "Unblock user?" : "Block user?"}
+        description={
+          selectedConversationIsBlocked
+            ? "They will be able to message you again."
+            : "They won't be able to send you messages. You can unblock them anytime."
+        }
+        confirmLabel={selectedConversationIsBlocked ? "Unblock" : "Block"}
+        variant="danger"
+        isLoading={isTogglingBlockUser}
+        onConfirm={() => {
+          void handleToggleConversationBlock();
+          setPendingConfirmAction(null);
+        }}
+        onCancel={() => setPendingConfirmAction(null)}
+      />
+
+      {/* Confirm: Clear Chat */}
+      <ConfirmActionModal
+        isOpen={pendingConfirmAction === "clear"}
+        title="Clear chat?"
+        description="This will remove all messages from this conversation on your device. The other person's messages won't be affected."
+        confirmLabel="Clear"
+        variant="danger"
+        onConfirm={() => {
+          void handleClearChat(selectedConversation.id);
+          setPendingConfirmAction(null);
+        }}
+        onCancel={() => setPendingConfirmAction(null)}
+      />
+
+      {/* Confirm: Delete Chat */}
+      <ConfirmActionModal
+        isOpen={pendingConfirmAction === "delete"}
+        title="Delete chat?"
+        description="This will remove this conversation from your inbox on your device. It will reappear if you receive a new message."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          void handleDeleteChat(selectedConversation.id);
+          setPendingConfirmAction(null);
+        }}
+        onCancel={() => setPendingConfirmAction(null)}
+      />
 
       {/* Message Selection Forward Bar */}
       <AnimatePresence>

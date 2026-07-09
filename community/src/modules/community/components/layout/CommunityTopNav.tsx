@@ -121,7 +121,7 @@ export default function CommunityTopNav() {
           {/* Left section: Back button & Logo */}
           <div className="flex items-center flex-shrink-0">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
-            <Link href="/" className="flex flex-col items-start justify-center">
+            <a href="/" className="flex flex-col items-start justify-center">
               <span className="font-title inline-block origin-left scale-x-[0.92] text-[1.1rem] font-extrabold leading-none tracking-tighter lg:text-[1.25rem]">
                 <span className="text-power-orange">Power</span>
                 <span className="text-slate-900">MySport</span>
@@ -129,11 +129,19 @@ export default function CommunityTopNav() {
               <span className="mt-0.5 pl-[1px] text-[9px] font-black uppercase tracking-[0.3em] text-slate-400/80 leading-none">
                 Community
               </span>
-            </Link>
+            </a>
           </div>
 
           {/* ── Desktop Center Nav ────────────────────────────────────────── */}
           <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5 mx-2">
+            <Link
+              href="/"
+              className={navLinkCls(pathname === "/")}
+            >
+              <House size={16} />
+              Home
+            </Link>
+
             <Link
               href="/discover"
               className={navLinkCls(pathname.startsWith("/discover"))}
@@ -240,14 +248,6 @@ export default function CommunityTopNav() {
               </AnimatePresence>
             </div>
 
-            {/* Main App */}
-            <a
-              href={mainAppUrl}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-power-orange to-[#d96610] px-4 py-2 text-[13px] font-bold text-white shadow-[0_8px_16px_-6px_rgba(233,115,22,0.4)] transition hover:opacity-90 hover:shadow-[0_8px_20px_-6px_rgba(233,115,22,0.6)]"
-            >
-              Main App
-              <ExternalLink size={14} />
-            </a>
           </div>
 
           {/* ── Mobile hamburger ──────────────────────────────────────────── */}
@@ -317,35 +317,25 @@ export default function CommunityTopNav() {
                     </button>
                   </div>
 
-                  {/* Home shortcut */}
+                  {/* Main App link */}
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <Link
+                    <a
                       href="/"
-                      onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-power-orange/10 text-power-orange">
-                        <House size={18} />
+                        <ExternalLink size={18} />
                       </span>
                       <div>
                         <p className="text-sm font-semibold text-slate-900">
-                          PowerMySport Home
+                          Main App
                         </p>
                         <p className="text-xs text-slate-500">
-                          Overview and chat
+                          Return to main site
                         </p>
                       </div>
-                    </Link>
+                    </a>
                   </div>
-
-                  {/* Main App link */}
-                  <a
-                    href={mainAppUrl}
-                    className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-power-orange/30 bg-power-orange/10 px-3 py-3 text-sm font-semibold text-power-orange shadow-sm transition hover:bg-power-orange/15"
-                  >
-                    Main App
-                    <ExternalLink size={15} />
-                  </a>
 
                   {/* Primary nav items */}
                   <p className="mt-5 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-1">
@@ -353,6 +343,7 @@ export default function CommunityTopNav() {
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
+                      { href: "/", icon: House, label: "Home" },
                       {
                         href: "/chats?sidebar=conversations",
                         icon: MessagesSquare,

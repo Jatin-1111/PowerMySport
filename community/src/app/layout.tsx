@@ -36,11 +36,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="bg-app text-slate-900 overflow-hidden">
+    <html lang="en" className="h-full">
+      <body
+        className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} antialiased bg-app text-slate-900 overflow-hidden`}
+      >
         <div className="flex h-dvh flex-col">
           <Suspense
             fallback={

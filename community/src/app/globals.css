@@ -130,7 +130,7 @@
 
 @layer utilities {
     .font-title {
-        font-family: var(--font-title), sans-serif;
+        font-family: var(--font-syne), sans-serif;
     }
 
     .bg-app {

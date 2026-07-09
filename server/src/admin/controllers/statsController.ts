@@ -264,6 +264,46 @@ export const getAllUsers = async (
   }
 };
 
+const makeRoleUsersHandler =
+  (role: AdminUserRole) =>
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { page, limit, skip } = getPaginationParams(
+        req.query.page,
+        req.query.limit,
+        15,
+        100,
+      );
+      const [total, users] = await Promise.all([
+        User.countDocuments({ role }),
+        User.find({ role })
+          .select("name email phone role createdAt lastActiveAt")
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+      ]);
+      const transformedUsers = users.map((user) => ({
+        ...user,
+        id: user._id.toString(),
+      }));
+      res.status(200).json({
+        success: true,
+        message: `${role} users retrieved successfully`,
+        data: transformedUsers,
+        pagination: { total, page, totalPages: Math.ceil(total / limit) },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to get users",
+      });
+    }
+  };
+
+export const getExpertUsers = makeRoleUsersHandler("EXPERT");
+export const getParentUsers = makeRoleUsersHandler("Parent");
+
 export const getUserRoleSummary = async (
   req: Request,
   res: Response,

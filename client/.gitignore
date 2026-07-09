@@ -37,8 +37,8 @@ yarn-error.log*
 .vercel
 
 # lighthouse audit output
-/lighthouse-reports/
-lighthouse-reports-run.log
+/lighthouse-reports*/
+lighthouse-reports-run*.log
 
 # typescript
 *.tsbuildinfo

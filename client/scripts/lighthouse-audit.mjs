@@ -104,7 +104,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 1500));
   }
 
-  await chrome.kill();
+  await chrome.kill().catch(() => {});
 
   fs.writeFileSync(
     path.join(OUT_DIR, "summary.json"),
