@@ -60,7 +60,11 @@ export default function PathwaysPage() {
       /> */}
 
       {/* ── AI Search Section ── */}
-      <Suspense fallback={null}>
+      {/* Reserve roughly the section's real height so it doesn't pop in at
+          full height once useSearchParams() finishes its client-only render
+          — an empty fallback collapses this to 0px and causes a large CLS
+          jump when the real content mounts. */}
+      <Suspense fallback={<div className="min-h-[720px] sm:min-h-[860px]" />}>
         <PathwayExplorerSection />
       </Suspense>
 

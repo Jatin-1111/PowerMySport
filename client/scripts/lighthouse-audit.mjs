@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import lighthouse from "lighthouse";
+import desktopConfig from "lighthouse/core/config/desktop-config.js";
 import * as chromeLauncher from "chrome-launcher";
 
 const BASE_URL = "https://powermysport.com";
@@ -57,20 +58,16 @@ function slugify(route) {
 
 async function auditRoute(chrome, route) {
   const url = `${BASE_URL}${route}`;
-  const result = await lighthouse(url, {
-    port: chrome.port,
-    output: ["html", "json"],
-    onlyCategories: ["performance", "accessibility", "best-practices", "seo"],
-    logLevel: "silent",
-    formFactor: "desktop",
-    screenEmulation: {
-      mobile: false,
-      width: 1350,
-      height: 940,
-      deviceScaleFactor: 1,
-      disabled: false,
+  const result = await lighthouse(
+    url,
+    {
+      port: chrome.port,
+      output: ["html", "json"],
+      onlyCategories: ["performance", "accessibility", "best-practices", "seo"],
+      logLevel: "silent",
     },
-  });
+    desktopConfig
+  );
 
   const slug = slugify(route);
   fs.writeFileSync(path.join(OUT_DIR, `${slug}.html`), result.report[0]);
