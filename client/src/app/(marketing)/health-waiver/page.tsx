@@ -17,8 +17,8 @@ export default function HealthWaiver() {
           </h1>
 
           <p className="text-gray-600 text-sm mb-8">
-            <strong>Last Updated:</strong> February 18, 2026 |{" "}
-            <strong>Effective Date:</strong> February 18, 2026
+            <strong>Last Updated:</strong> July 9, 2026 |{" "}
+            <strong>Effective Date:</strong> July 9, 2026
           </p>
 
           <section className="mb-8">
@@ -220,7 +220,21 @@ export default function HealthWaiver() {
               <li>Intentional harm or criminal acts</li>
               <li>Violations of applicable consumer protection laws</li>
               <li>Claims covered by mandatory insurance policies</li>
+              <li>
+                Any liability that cannot lawfully be excluded or limited under
+                the Indian Contract Act, 1872, the Consumer Protection Act,
+                2019, or any other applicable law
+              </li>
             </ul>
+            <p className="mt-3">
+              This waiver is intended to apply, and shall be enforced, only to
+              the maximum extent permitted by applicable Indian law. If any
+              part of this release is held void, unenforceable, or against
+              public policy by a court or forum of competent jurisdiction, the
+              remainder of this waiver remains in full force, and the
+              offending part will be read down to the narrowest scope the law
+              allows rather than invalidated entirely.
+            </p>
           </section>
 
           <section className="mb-8">
@@ -351,21 +365,30 @@ export default function HealthWaiver() {
             <p>If you are under 18 years old (a "Minor"):</p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
               <li>
-                Your parent or legal guardian must read and sign this waiver
+                Your parent or legal guardian must read and accept this waiver
+                on your behalf before you participate
               </li>
-              <li>Your parent/guardian accepts all liability on your behalf</li>
+              <li>Your parent/guardian accepts liability on your behalf, to the extent permitted by law</li>
               <li>
                 You are subject to all parental supervision and safety rules
               </li>
               <li>
-                Your parent/guardian takes full responsibility for your medical
-                care and emergency response
+                Your parent/guardian is responsible for arranging your medical
+                care and emergency response during the activity
               </li>
               <li>
-                Coaches or facility staff may contact your emergency contact in
-                case of injury
+                Coaches or facility staff may contact your parent/guardian
+                using the contact details on file in case of injury
               </li>
             </ul>
+            <p className="mt-3">
+              A parent or guardian&apos;s acceptance of this waiver is intended
+              to bind the parent/guardian to the fullest extent permitted by
+              law. Nothing in this Section is intended to, or shall be
+              construed to, waive any independent right of the minor that
+              cannot, as a matter of Indian law, be waived by a parent or
+              guardian on the minor&apos;s behalf.
+            </p>
           </section>
 
           <section className="mb-8">

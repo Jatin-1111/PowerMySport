@@ -17,8 +17,8 @@ export default function ParentalConsent() {
           </h1>
 
           <p className="text-gray-600 text-sm mb-8">
-            <strong>Last Updated:</strong> February 18, 2026 |{" "}
-            <strong>Effective Date:</strong> February 18, 2026
+            <strong>Last Updated:</strong> July 9, 2026 |{" "}
+            <strong>Effective Date:</strong> July 9, 2026
           </p>
 
           <section className="mb-8">
@@ -134,10 +134,9 @@ export default function ParentalConsent() {
             <p>Before booking any activity for a minor, you must:</p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
               <li>
-                Read and accept the Health, Safety & Liability Waiver (see
-                separate document)
+                Read and accept the Health, Safety &amp; Liability Waiver (see
+                separate document) on behalf of the minor
               </li>
-              <li>Digitally sign the waiver on behalf of the minor</li>
               <li>Confirm you have the legal authority to bind the child</li>
               <li>Accept all risks associated with the activity</li>
             </ul>
@@ -169,12 +168,15 @@ export default function ParentalConsent() {
             </ul>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
-              4.3 Renewal of Consent
+              4.3 Ongoing Effect of Consent
             </h3>
             <p>
-              Parental waivers are typically valid for 12 months (or as
-              specified by facility). You will be prompted to renew consent
-              before booking if the waiver has expired.
+              Your acceptance of the Health, Safety &amp; Liability Waiver on
+              behalf of your dependent applies to each booking you make for
+              that dependent while these Terms remain in effect. You may
+              withdraw your consent at any time by contacting us or removing
+              the dependent&apos;s profile; withdrawal takes effect for future
+              bookings only and does not affect activities already completed.
             </p>
           </section>
 
@@ -184,29 +186,18 @@ export default function ParentalConsent() {
             </h2>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
-              5.1 Health Declaration Requirement
+              5.1 PowerMySport Does Not Collect Medical Records
             </h3>
             <p>
-              For each minor, you must provide a complete health declaration
-              including:
+              The Platform does not currently collect or store structured
+              medical or health information about your dependent (such as
+              chronic conditions, medications, allergies, or immunization
+              records). You are solely responsible for directly informing the
+              coach or venue staff, in person or via your own communication
+              channel, of any health condition, allergy, medication, or
+              physical limitation relevant to your dependent&apos;s safe
+              participation, before each session.
             </p>
-            <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>Current health status and fitness level</li>
-              <li>
-                Any chronic medical conditions (asthma, diabetes, hypertension,
-                epilepsy, etc.)
-              </li>
-              <li>Current medications and dosages</li>
-              <li>
-                Allergies (especially relevant to activities and facilities)
-              </li>
-              <li>Recent injuries, surgeries, or hospital visits</li>
-              <li>Physical limitations or mobility restrictions</li>
-              <li>Mental health conditions that may affect participation</li>
-              <li>
-                Immunization status (especially relevant for group activities)
-              </li>
-            </ul>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
               5.2 Medical Professional Consultation
@@ -218,12 +209,12 @@ export default function ParentalConsent() {
                 with their pediatrician before booking activities
               </li>
               <li>
-                Coaches are not medical professionals and cannot provide medical
-                advice
+                Coaches are not medical professionals and cannot provide
+                medical advice
               </li>
               <li>
-                If uncertain about your child's fitness, you must seek physician
-                approval
+                If uncertain about your child&apos;s fitness, you must seek
+                physician approval
               </li>
               <li>
                 You are responsible for determining if your child is healthy
@@ -235,32 +226,30 @@ export default function ParentalConsent() {
               5.3 Disclosure Obligation
             </h3>
             <p>
-              You must fully disclose all health information to coaches and
-              facility staff. Failure to disclose material health information
-              may result in:
+              You must fully disclose relevant health information directly to
+              coaches and facility staff before each session. Failure to
+              disclose material health information may result in:
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
               <li>Account suspension</li>
-              <li>Loss of right to refund in case of injury</li>
+              <li>Loss of right to a refund in connection with any resulting injury</li>
               <li>
                 Liability for injuries or damages caused by non-disclosure
               </li>
             </ul>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
-              5.4 Emergency Medical Information
+              5.4 Emergency Contact
             </h3>
-            <p>You must provide:</p>
-            <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>Primary emergency contact (you) and backup contact</li>
-              <li>Phone numbers and email addresses</li>
-              <li>Name and contact of your child's primary physician</li>
-              <li>
-                Name and contact of your child's dentist (for dental injuries)
-              </li>
-              <li>Preferred hospital or emergency care facility</li>
-              <li>Health insurance details and policy number</li>
-            </ul>
+            <p>
+              You must ensure the phone number and email on your account are
+              current and reachable, as they are the only emergency contact
+              details PowerMySport or a venue/coach can use to reach you.
+              PowerMySport does not maintain a separate physician, dentist, or
+              insurance record for your dependent; keeping that information
+              accessible to yourself and sharing it directly with venue/coach
+              staff when relevant is your responsibility.
+            </p>
           </section>
 
           <section className="mb-8">
@@ -446,31 +435,37 @@ export default function ParentalConsent() {
               9.1 Limited Data Collection
             </h3>
             <p>
-              PowerMySport collects only the minimum personal information
-              necessary for minors:
+              PowerMySport collects only the following personal information
+              for a dependent profile:
             </p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
               <li>Name, date of birth, gender</li>
-              <li>Health and medical information (confidential)</li>
+              <li>Sport/activity interests</li>
               <li>Booking history</li>
-              <li>Parental contact information</li>
+              <li>Your (the parent/guardian&apos;s) contact information</li>
             </ul>
+            <p className="mt-3">
+              As noted in Section 5, we do not collect structured medical or
+              health data about your dependent.
+            </p>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
               9.2 Data Protection
             </h3>
             <p>We protect minor data by:</p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
-              <li>Encrypting personal information</li>
-              <li>Restricting access to authorized staff only</li>
+              <li>Restricting access to authorized personnel only</li>
               <li>
-                Not selling or sharing data with third parties (except as
-                required by law)
+                Not selling data to third parties, and sharing it only as
+                described in our Privacy Policy (e.g. with the venue/coach for
+                a confirmed booking, or as required by law)
               </li>
-              <li>Not using data for marketing or advertising</li>
+              <li>Not using a dependent&apos;s data for marketing, advertising, or behavioural tracking</li>
               <li>
-                Maintaining COPPA (Children's Online Privacy Protection Act)
-                compliance where applicable
+                Aligning our practices with the Digital Personal Data
+                Protection Act, 2023 (India) as it comes into force in phases,
+                and with the Information Technology Act, 2000 and rules made
+                thereunder
               </li>
             </ul>
 
@@ -480,13 +475,22 @@ export default function ParentalConsent() {
             <p>Parents have the right to:</p>
             <ul className="list-disc pl-6 space-y-2 mt-3">
               <li>
-                Request details of what personal data we hold about their child
+                Request details of what personal data we hold about their
+                child
               </li>
-              <li>Request deletion of a child's profile and data</li>
               <li>
-                Withdraw consent at any time (future bookings not allowed)
+                Request deletion of a child&apos;s profile and data (via the
+                &quot;Remove Profile&quot; action described in Section 11, or
+                by contacting us)
               </li>
-              <li>Request data export for records</li>
+              <li>
+                Withdraw consent at any time; this takes effect for future
+                bookings only
+              </li>
+              <li>
+                Request a copy of the personal data we hold about their child,
+                which we will provide within a reasonable time
+              </li>
             </ul>
           </section>
 
@@ -557,11 +561,16 @@ export default function ParentalConsent() {
             </ul>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
-              11.2 Automatic Removal
+              11.2 Turning 18
             </h3>
             <p>
-              A minor's profile will be automatically removed when they turn 18
-              years old, unless they choose to convert to an adult account.
+              A dependent&apos;s profile is not automatically removed or
+              converted when they turn 18. Once your dependent reaches 18,
+              either of you may request that their profile be converted to an
+              independent account (which they will then control themselves
+              using their own credentials); until that happens, the profile
+              remains linked to your account and you remain responsible for
+              it as set out in this policy.
             </p>
 
             <h3 className="text-xl font-semibold mt-6 mb-3">
