@@ -14,21 +14,21 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import {
-    StaggerContainer,
-    StaggerItem,
+  StaggerContainer,
+  StaggerItem,
 } from "@/modules/shared/ui/motion/StaggerContainer";
 import type { Booking, CoachSubscription } from "@/types";
 import { motion } from "framer-motion";
 import {
-    Calendar,
-    ChevronRight,
-    Mail,
-    MapPin,
-    TrendingUp,
-    UserPlus,
-    Users,
-    Wallet,
-    Zap,
+  Calendar,
+  ChevronRight,
+  Mail,
+  MapPin,
+  TrendingUp,
+  UserPlus,
+  Users,
+  Wallet,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -451,7 +451,7 @@ export default function DashboardPage() {
                   color: "bg-indigo-100 text-indigo-600",
                 },
                 {
-                  href: "/coaches",
+                  href: "/booking?tab=coaches",
                   icon: Users,
                   label: "Find Coach",
                   color: "bg-purple-100 text-purple-600",

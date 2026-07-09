@@ -10,13 +10,13 @@ import { Card } from "@/modules/shared/ui/Card";
 import { Coach, CoachSubscriptionPackage } from "@/types";
 import { formatCurrency } from "@/utils/format";
 import {
-    ArrowLeft,
-    CalendarRange,
-    CheckCircle2,
-    ShieldCheck,
-    Sparkles,
-    Users,
-    Zap,
+  ArrowLeft,
+  CalendarRange,
+  CheckCircle2,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -192,7 +192,7 @@ function SubscriptionCheckoutContent() {
           <Button
             className="mt-4"
             variant="outline"
-            onClick={() => router.push("/coaches")}
+            onClick={() => router.push("/booking?tab=coaches")}
           >
             Browse coaches
           </Button>
