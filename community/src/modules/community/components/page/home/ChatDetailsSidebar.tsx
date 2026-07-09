@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { GroupMembersList } from "@/modules/community/components/GroupMembersList";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
-import { getAvatarCharacter, getLastSeenTimestamp } from "@/modules/community/utils/chatUtils";
+import { getAvatarCharacter, formatLastSeen } from "@/modules/community/utils/chatUtils";
 
 type Props = { page: CommunityPageViewModel };
 
@@ -63,6 +63,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
   } = page;
 
   const [membersCount, setMembersCount] = useState(0);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
   const isViewingMember = !!selectedMemberProfile;
   const isGroup = selectedConversation?.conversationType === "GROUP" && !isViewingMember;
@@ -75,7 +76,8 @@ export default function ChatDetailsSidebar({ page }: Props) {
   const isBlocked = otherUserId ? blockedUserIds.includes(otherUserId) : false;
 
   return (
-    <AnimatePresence initial={false}>
+    <>
+      <AnimatePresence initial={false}>
       {showDetailsSidebar && selectedConversation && (
         <>
           {/* Backdrop for mobile */}
@@ -121,8 +123,19 @@ export default function ChatDetailsSidebar({ page }: Props) {
 
             {/* Profile Header */}
             <div className="flex flex-col items-center px-4 pt-3 pb-5 border-b border-slate-100 flex-none">
-              {/* Avatar */}
-              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden ring-4 ring-white shadow-lg text-2xl font-bold uppercase text-slate-600">
+              <button
+                onClick={() => {
+                  const imgToEnlarge = isViewingMember && selectedMemberProfile
+                    ? selectedMemberProfile.photoUrl
+                    : selectedConversationPhotoUrl;
+                  if (imgToEnlarge) setEnlargedImage(imgToEnlarge);
+                }}
+                className={`h-20 w-20 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center overflow-hidden ring-4 ring-white shadow-lg text-2xl font-bold uppercase text-slate-600 ${
+                  (isViewingMember && selectedMemberProfile?.photoUrl) || selectedConversationPhotoUrl
+                    ? "cursor-pointer hover:opacity-90 transition"
+                    : ""
+                }`}
+              >
                 {isViewingMember && selectedMemberProfile ? (
                   selectedMemberProfile.photoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -144,7 +157,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                 ) : (
                   selectedConversationAvatarChar
                 )}
-              </div>
+              </button>
 
               <h2 className="mt-3 text-lg font-bold text-slate-900 tracking-tight text-center">
                 {isViewingMember && selectedMemberProfile
@@ -190,11 +203,8 @@ export default function ChatDetailsSidebar({ page }: Props) {
               {!isGroup && !isViewingMember && selectedConversation.otherParticipant.lastSeenAt && (
                 <div className="flex items-center gap-1.5 mt-2">
                   <Clock3 size={12} className="text-slate-400" />
-                  <p className="text-sm text-slate-500">
-                    Last seen{" "}
-                    {getLastSeenTimestamp(
-                      selectedConversation.otherParticipant.lastSeenAt,
-                    )}
+                  <p className="text-sm text-slate-500 capitalize-first">
+                    {formatLastSeen(selectedConversation.otherParticipant.lastSeenAt)}
                   </p>
                 </div>
               )}
@@ -382,5 +392,42 @@ export default function ChatDetailsSidebar({ page }: Props) {
         </>
       )}
     </AnimatePresence>
+
+    {/* Enlarged Image Modal */}
+    <AnimatePresence>
+      {enlargedImage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative aspect-square w-full max-w-sm sm:max-w-md bg-white rounded-full overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition hover:bg-black/70"
+            >
+              <X size={20} />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={enlargedImage}
+              alt="Enlarged profile"
+              className="h-full w-full object-cover"
+            />
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }
