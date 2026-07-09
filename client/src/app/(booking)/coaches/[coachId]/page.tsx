@@ -1,6 +1,5 @@
 "use client";
 
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -15,16 +14,16 @@ import { Card } from "@/modules/shared/ui/Card";
 import { Availability, Coach, ReviewItem, ReviewSummary } from "@/types";
 import { getOwnVenueLocationDisplay } from "@/utils/location";
 import {
-    ArrowLeft,
-    Award,
-    Calendar,
-    Check,
-    ImageIcon,
-    IndianRupee,
-    Info,
-    MapPin,
-    Star,
-    User,
+  ArrowLeft,
+  Award,
+  Calendar,
+  Check,
+  ImageIcon,
+  IndianRupee,
+  Info,
+  MapPin,
+  Star,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -485,12 +484,6 @@ export default function CoachDetailsPage() {
       <div className="border-b border-white/60 bg-white/72 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="mb-3">
-            <Breadcrumbs
-              items={[
-                { label: "Browse Coaches", href: "/booking?tab=coaches" },
-                { label: coachDisplayName },
-              ]}
-            />
           </div>
 
           <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">

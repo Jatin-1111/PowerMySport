@@ -1,7 +1,6 @@
 "use client";
 
 import { BackButton } from "@/components/ui/back-button";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -14,14 +13,14 @@ import { Card } from "@/modules/shared/ui/Card";
 import { Availability, ReviewItem, ReviewSummary, Venue } from "@/types";
 import { getVenueImageUrls, getVenueSportImageUrls } from "@/utils/venueImages";
 import {
-    Calendar,
-    Check,
-    ChevronLeft,
-    ChevronRight,
-    IndianRupee,
-    MapPin,
-    Star,
-    X,
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  IndianRupee,
+  MapPin,
+  Star,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -402,14 +401,6 @@ export default function VenueDetailsPage() {
       {/* Header */}
       <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6">
-          <div className="mb-3 flex items-center gap-3">
-            <Breadcrumbs
-              items={[
-                { label: "Browse Venues", href: "/booking?tab=venues" },
-                { label: venue.name },
-              ]}
-            />
-          </div>
           <BackButton label="Back to Venues" />
           <div className="mt-4 relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
             <div className="relative z-10">

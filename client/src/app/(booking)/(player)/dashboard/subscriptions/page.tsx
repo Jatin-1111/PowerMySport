@@ -258,7 +258,7 @@ export default function SubscriptionsPage() {
                   title="No subscriptions yet"
                   description="Browse coaches and purchase a subscription plan to manage it here."
                   actionLabel="Browse Coaches"
-                  onAction={() => router.push("/coaches")}
+                  onAction={() => router.push("/booking?tab=coaches")}
                 />
               </div>
             </motion.div>

@@ -310,7 +310,7 @@ export default function BookingsPage() {
             <Link href="/booking">
               <Button variant="secondary">Book Venue</Button>
             </Link>
-            <Link href="/booking">
+            <Link href="/booking?tab=coaches">
               <Button variant="primary">Find a Coach</Button>
             </Link>
           </div>

@@ -606,7 +606,7 @@ function PaymentPageContent() {
               <Button
                 variant="outline"
                 onClick={() =>
-                  router.push(type === "coach" ? "/coaches" : "/venues")
+                  router.push(type === "coach" ? "/booking?tab=coaches" : "/booking?tab=venues")
                 }
               >
                 Browse {type === "coach" ? "coaches" : "venues"}
