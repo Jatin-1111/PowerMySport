@@ -8,6 +8,10 @@ import { communityService } from "@/modules/community/services/community";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { uploadChatImage } from "@/modules/community/hooks/useChatImageUpload";
 import {
+  COMMUNITY_PINNED_KEY,
+  COMMUNITY_MUTED_KEY,
+} from "@/modules/community/constants/communityPage";
+import {
   getCachedMessages,
   setCachedMessages,
   upsertCachedMessage,
@@ -187,6 +191,99 @@ export function useCommunityPage(options?: {
     useState<CommunityMemberProfile | null>(null);
   const [typingUsers, setTypingUsers] = useState<Record<string, string[]>>({});
 
+  // ── Chat Enhancement State (client-side, localStorage-backed) ──
+  const [pinnedConversationIds, setPinnedConversationIds] = useState<string[]>(
+    () => {
+      if (typeof window === "undefined") return [];
+      try {
+        return JSON.parse(localStorage.getItem(COMMUNITY_PINNED_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    },
+  );
+  const [mutedConversationIds, setMutedConversationIds] = useState<string[]>(
+    () => {
+      if (typeof window === "undefined") return [];
+      try {
+        return JSON.parse(localStorage.getItem(COMMUNITY_MUTED_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    },
+  );
+  const mutedConversationIdsRef = useRef<string[]>(mutedConversationIds);
+  useEffect(() => {
+    mutedConversationIdsRef.current = mutedConversationIds;
+  }, [mutedConversationIds]);
+
+  const [conversationSearchQuery, setConversationSearchQuery] = useState("");
+  const [showChatDetailsSidebar, setShowChatDetailsSidebar] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  // New features state
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem("COMMUNITY_BLOCKED_USERS") || "[]");
+    } catch {
+      return [];
+    }
+  });
+  const [pinnedMessages, setPinnedMessages] = useState<Record<string, string>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      return JSON.parse(localStorage.getItem("COMMUNITY_PINNED_MESSAGES") || "{}");
+    } catch {
+      return {};
+    }
+  });
+  const [selectChatsMode, setSelectChatsMode] = useState(false);
+  const [selectedChatIds, setSelectedChatIds] = useState<string[]>([]);
+  const [showBlockedUsersModal, setShowBlockedUsersModal] = useState(false);
+  const [showAddChatModal, setShowAddChatModal] = useState(false);
+  const [forwardingMessages, setForwardingMessages] = useState<ConversationMessage[]>([]);
+  const [messageToDelete, setMessageToDelete] = useState<ConversationMessage | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("COMMUNITY_BLOCKED_USERS", JSON.stringify(blockedUserIds));
+    }
+  }, [blockedUserIds]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("COMMUNITY_PINNED_MESSAGES", JSON.stringify(pinnedMessages));
+    }
+  }, [pinnedMessages]);
+
+  const toggleBlockUserLocal = useCallback((userId: string) => {
+    setBlockedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  }, []);
+
+  const pinMessageLocal = useCallback((conversationId: string, messageId: string) => {
+    setPinnedMessages((prev) => {
+      if (prev[conversationId] === messageId) {
+        const { [conversationId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [conversationId]: messageId };
+    });
+  }, []);
+
+  const toggleChatSelection = useCallback((chatId: string) => {
+    setSelectedChatIds((prev) =>
+      prev.includes(chatId) ? prev.filter((id) => id !== chatId) : [...prev, chatId]
+    );
+  }, []);
+
+  const clearChatSelection = useCallback(() => {
+    setSelectedChatIds([]);
+    setSelectChatsMode(false);
+  }, []);
+
   const selectedConversationIdRef = useRef<string | null>(null);
   const typingTimeoutsRef = useRef<
     Record<string, ReturnType<typeof setTimeout>>
@@ -205,6 +302,10 @@ export function useCommunityPage(options?: {
     () => (Array.isArray(conversations) ? conversations : []),
     [conversations],
   );
+  const safeConversationsRef = useRef(safeConversations);
+  useEffect(() => {
+    safeConversationsRef.current = safeConversations;
+  }, [safeConversations]);
   const safeGroupResults = useMemo(
     () => (Array.isArray(groupResults) ? groupResults : []),
     [groupResults],
@@ -233,6 +334,25 @@ export function useCommunityPage(options?: {
     if (!mobileActionMessageId) return null;
     return messages.find((m) => m.id === mobileActionMessageId) || null;
   }, [messages, mobileActionMessageId]);
+
+  const optimisticUpdateConversationLatestMessage = useCallback((chatId: string, content: string, type: string = "TEXT") => {
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id === chatId) {
+          return {
+            ...c,
+            latestMessage: {
+              content,
+              createdAt: new Date().toISOString(),
+              senderId: profile?.userId || "me",
+              type,
+            },
+          };
+        }
+        return c;
+      })
+    );
+  }, [profile?.userId]);
 
   const appendMessage = (incoming: ConversationMessage) => {
     setMessages((current) => {
@@ -344,18 +464,27 @@ export function useCommunityPage(options?: {
   const visibleConversations = useMemo(() => {
     const source =
       directoryView === "GROUPS" ? groupConversations : contactConversations;
-    const query = conversationFilterQuery.trim().toLowerCase();
+    // Apply both the old filter query and the new search query
+    const oldQuery = conversationFilterQuery.trim().toLowerCase();
+    const searchQuery = conversationSearchQuery.trim().toLowerCase();
+    const query = searchQuery || oldQuery;
     if (!query) return source;
     return source.filter((c) => {
       const displayName = c.otherParticipant.displayName?.toLowerCase() || "";
+      const groupName = c.group?.name?.toLowerCase() || "";
       const latestMessage = c.latestMessage?.content?.toLowerCase() || "";
-      return displayName.includes(query) || latestMessage.includes(query);
+      return (
+        displayName.includes(query) ||
+        groupName.includes(query) ||
+        latestMessage.includes(query)
+      );
     });
   }, [
     directoryView,
     contactConversations,
     groupConversations,
     conversationFilterQuery,
+    conversationSearchQuery,
   ]);
 
   const managedConversations = useMemo(() => {
@@ -369,6 +498,12 @@ export function useCommunityPage(options?: {
           : visibleConversations;
 
     return [...byMode].sort((a, b) => {
+      // Pinned conversations always come first
+      const aPinned = pinnedConversationIds.includes(a.id);
+      const bPinned = pinnedConversationIds.includes(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+
       if (a.status === "PENDING" && b.status !== "PENDING") return -1;
       if (a.status !== "PENDING" && b.status === "PENDING") return 1;
       if ((a.unreadCount || 0) !== (b.unreadCount || 0))
@@ -381,7 +516,7 @@ export function useCommunityPage(options?: {
         : 0;
       return bTime - aTime;
     });
-  }, [visibleConversations, conversationMode]);
+  }, [visibleConversations, conversationMode, pinnedConversationIds]);
 
   const hasConversationFilters =
     conversationMode !== "ALL" || !!conversationFilterQuery.trim();
@@ -461,9 +596,12 @@ export function useCommunityPage(options?: {
 
       setConversations((current) => {
         const safeCurrent = Array.isArray(current) ? current : [];
-        if (!append) return safeItems;
+        const processedItems = safeItems.map((c) => 
+          c.id === selectedConversationIdRef.current && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c
+        );
+        if (!append) return processedItems;
         const existingIds = new Set(safeCurrent.map((c) => c.id));
-        const nextItems = safeItems.filter((c) => !existingIds.has(c.id));
+        const nextItems = processedItems.filter((c) => !existingIds.has(c.id));
         return [...safeCurrent, ...nextItems];
       });
 
@@ -621,7 +759,7 @@ export function useCommunityPage(options?: {
         setConversations((current) =>
           Array.isArray(current)
             ? current.map((c) =>
-                c.id === conversationId ? { ...c, unreadCount: 0 } : c,
+                c.id === conversationId && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c,
               )
             : current,
         );
@@ -703,6 +841,12 @@ export function useCommunityPage(options?: {
       setMessages([]);
       return;
     }
+    
+    // Clear messages if switching to a new conversation to prevent stale data leaking
+    if (selectedConversationIdRef.current !== selectedConversationId) {
+      setMessages([]);
+    }
+    
     loadMessages(selectedConversationId);
   }, [loadMessages, selectedConversation, selectedConversationId]);
 
@@ -880,7 +1024,7 @@ export function useCommunityPage(options?: {
       const isGroup = selectedConversation.conversationType === "GROUP";
       setDirectoryView(isGroup ? "GROUPS" : "CONTACTS");
     }
-  }, [selectedConversation]);
+  }, [selectedConversation?.id, selectedConversation?.conversationType]);
 
   useEffect(() => {
     const query = playerSearchQuery.trim();
@@ -952,7 +1096,7 @@ export function useCommunityPage(options?: {
     const handleConnect = () => {
       setIsSocketConnected(true);
       const currentConversationId = selectedConversationIdRef.current;
-      if (currentConversationId && getConversationById(currentConversationId)) {
+      if (currentConversationId && safeConversationsRef.current.find((c) => c.id === currentConversationId)) {
         socket.emit("community:joinConversation", {
           conversationId: currentConversationId,
         });
@@ -973,6 +1117,11 @@ export function useCommunityPage(options?: {
         socket.emit("community:markRead", {
           conversationId: message.conversationId,
         });
+      } else {
+        // Notification for new messages in other chats
+        if (!mutedConversationIdsRef.current.includes(message.conversationId) && message.senderId !== profile?.userId) {
+          toast.success(`New message from ${message.senderDisplayName || "someone"}`);
+        }
       }
       queueConversationRefresh();
     };
@@ -1114,7 +1263,6 @@ export function useCommunityPage(options?: {
     queueConversationRefresh,
     loadMessages,
     refreshConversationsNow,
-    getConversationById,
   ]);
 
   useEffect(() => {
@@ -1530,6 +1678,13 @@ export function useCommunityPage(options?: {
     setActiveSidebarTab("conversations");
     setWorkspaceView("CHAT");
     setSidebarMode("INBOX");
+    setShowChatDetailsSidebar(false);
+    // Inline member profile reset (handleCloseMemberProfile is declared later)
+    memberProfileRequestIdRef.current = null;
+    setIsMemberProfileOpen(false);
+    setIsLoadingMemberProfile(false);
+    setMemberProfileError(null);
+    setSelectedMemberProfile(null);
   }, []);
 
   const handleCloseMemberProfile = useCallback(() => {
@@ -1543,6 +1698,7 @@ export function useCommunityPage(options?: {
   const handleOpenMemberProfile = useCallback(async (memberId: string) => {
     memberProfileRequestIdRef.current = memberId;
     setIsMemberProfileOpen(true);
+    setShowChatDetailsSidebar(true);
     setIsLoadingMemberProfile(true);
     setMemberProfileError(null);
     setSelectedMemberProfile(null);
@@ -1786,18 +1942,19 @@ export function useCommunityPage(options?: {
     }
   };
 
-  const handleDeleteMessage = async (message: ConversationMessage) => {
+  const handleDeleteMessage = (message: ConversationMessage) => {
     if (
       message.senderId !== profile?.userId ||
       message.isDeleted ||
       !isWithinMessageEditWindow(message.createdAt)
     )
       return;
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm("Delete this message for everyone?")
-    )
-      return;
+    setMessageToDelete(message);
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (!messageToDelete) return;
+    const message = messageToDelete;
     setIsMutatingMessageId(message.id);
     try {
       const deleted = await deleteMessageWithTransport(message.id);
@@ -1812,6 +1969,28 @@ export function useCommunityPage(options?: {
       toast.error(e instanceof Error ? e.message : "Failed to delete message");
     } finally {
       setIsMutatingMessageId(null);
+      setMessageToDelete(null);
+    }
+  };
+
+  const handleForwardMessages = async (chatIds: string[]) => {
+    if (forwardingMessages.length === 0 || chatIds.length === 0) return;
+    try {
+      for (const chatId of chatIds) {
+        for (const msg of forwardingMessages) {
+          optimisticUpdateConversationLatestMessage(chatId, msg.type === "IMAGE" ? "Image message" : msg.content, msg.type);
+          if (msg.type === "IMAGE") {
+            await communityService.sendImageMessage(chatId, msg.content, msg.metadata as any);
+          } else {
+            await communityService.sendMessage(chatId, msg.content);
+          }
+          // Add a small delay between each message to avoid hitting the API rate limit (429 Too Many Requests)
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to forward messages:", err);
+      throw err;
     }
   };
 
@@ -1851,6 +2030,7 @@ export function useCommunityPage(options?: {
     };
 
     appendMessage(optimisticMessage);
+    optimisticUpdateConversationLatestMessage(selectedConversation.id, content, "TEXT");
     setNewMessage("");
     setIsSending(true);
     try {
@@ -1910,6 +2090,7 @@ export function useCommunityPage(options?: {
     };
 
     appendMessage(optimisticMessage);
+    optimisticUpdateConversationLatestMessage(selectedConversation.id, "Image message", "IMAGE");
     setIsUploadingImage(true);
 
     try {
@@ -1981,6 +2162,68 @@ export function useCommunityPage(options?: {
       setIsUploadingImage(false);
     }
   };
+
+  // ── Chat Enhancement Handlers ──
+
+  const handleTogglePinConversation = useCallback(
+    (conversationId: string) => {
+      setPinnedConversationIds((prev) => {
+        const next = prev.includes(conversationId)
+          ? prev.filter((id) => id !== conversationId)
+          : [...prev, conversationId];
+        try {
+          localStorage.setItem(COMMUNITY_PINNED_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleToggleMuteConversation = useCallback(
+    (conversationId: string) => {
+      setMutedConversationIds((prev) => {
+        const next = prev.includes(conversationId)
+          ? prev.filter((id) => id !== conversationId)
+          : [...prev, conversationId];
+        try {
+          localStorage.setItem(COMMUNITY_MUTED_KEY, JSON.stringify(next));
+        } catch {}
+        toast.success(
+          next.includes(conversationId)
+            ? "Notifications muted"
+            : "Notifications unmuted",
+        );
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleMarkAllAsRead = useCallback(() => {
+    if (!selectedConversation) return;
+    // Optimistically set unread count to 0
+    setConversations((current) =>
+      (Array.isArray(current) ? current : []).map((c) =>
+        c.id === selectedConversation.id && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c,
+      ),
+    );
+    toast.success("Marked all as read");
+  }, [selectedConversation]);
+
+  const handleMarkConversationAsUnread = useCallback((conversationId: string) => {
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === conversationId ? { ...c, unreadCount: 1 } : c,
+      ),
+    );
+    toast.success("Marked as unread");
+  }, []);
+
+  const showDetailsSidebar =
+    isConversationsView &&
+    showChatDetailsSidebar &&
+    !!selectedConversation;
 
   return {
     prefersReducedMotion,
@@ -2061,6 +2304,25 @@ export function useCommunityPage(options?: {
     isUploadingImage,
     isConversationSidebarOpen,
     setIsConversationSidebarOpen,
+    blockedUserIds,
+    toggleBlockUserLocal,
+    pinnedMessages,
+    pinMessageLocal,
+    selectChatsMode,
+    setSelectChatsMode,
+    selectedChatIds,
+    toggleChatSelection,
+    clearChatSelection,
+    showBlockedUsersModal,
+    setShowBlockedUsersModal,
+    showAddChatModal,
+    setShowAddChatModal,
+    forwardingMessages,
+    setForwardingMessages,
+    handleForwardMessages,
+    messageToDelete,
+    setMessageToDelete,
+    confirmDeleteMessage,
     showGroupMembersPanel,
     setShowGroupMembersPanel,
     isMemberProfileOpen,
@@ -2127,6 +2389,20 @@ export function useCommunityPage(options?: {
     pendingImageFile,
     setPendingImageFile,
     imageInputRef,
+    // Chat Enhancement State
+    pinnedConversationIds,
+    mutedConversationIds,
+    conversationSearchQuery,
+    setConversationSearchQuery,
+    handleMarkAllAsRead,
+    handleMarkConversationAsUnread,
+    showChatDetailsSidebar,
+    setShowChatDetailsSidebar,
+    showDetailsSidebar,
+    showEmojiPicker,
+    setShowEmojiPicker,
+    handleTogglePinConversation,
+    handleToggleMuteConversation,
   };
 }
 

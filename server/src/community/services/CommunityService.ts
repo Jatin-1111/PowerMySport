@@ -437,17 +437,15 @@ export const CommunityService = {
             myVote: voteMap.get(String(post._id))?.value || 0,
             author: {
               id: isPostAnon ? "anon" : authorId,
-              displayName: isPostAnon
-                ? "Anonymous Parent"
+              displayName: post.isAnonymous
+                ? "Anonymous"
                 : isSelf
                   ? authorUser?.name || "Me"
                   : profile?.isIdentityPublic
                     ? authorUser?.name || "Player"
                     : profile?.anonymousAlias || "Anonymous Player",
-              isIdentityPublic: isPostAnon
-                ? false
-                : (profile?.isIdentityPublic ?? true),
-              photoUrl: isPostAnon
+              isIdentityPublic: post.isAnonymous ? false : (profile?.isIdentityPublic ?? true),
+              photoUrl: post.isAnonymous
                 ? null
                 : profile?.isIdentityPublic && authorUser
                   ? await resolveUserPhotoUrl(authorUser)
@@ -565,17 +563,15 @@ export const CommunityService = {
         myVote: myPostVote?.value || 0,
         author: {
           id: isPostAnon ? "anon" : postAuthorId,
-          displayName: isPostAnon
-            ? "Anonymous Parent"
+          displayName: post.isAnonymous
+            ? "Anonymous"
             : isPostAuthorSelf
               ? postAuthor?.name || "Me"
               : postAuthorProfile?.isIdentityPublic
                 ? postAuthor?.name || "Player"
                 : postAuthorProfile?.anonymousAlias || "Anonymous Player",
-          isIdentityPublic: isPostAnon
-            ? false
-            : (postAuthorProfile?.isIdentityPublic ?? true),
-          photoUrl: isPostAnon
+          isIdentityPublic: post.isAnonymous ? false : (postAuthorProfile?.isIdentityPublic ?? true),
+          photoUrl: post.isAnonymous
             ? null
             : postAuthorProfile?.isIdentityPublic && postAuthor
               ? await resolveUserPhotoUrl(postAuthor)
@@ -606,17 +602,15 @@ export const CommunityService = {
             myVote: answerVoteMap.get(String(answer._id))?.value || 0,
             author: {
               id: isAnswerAnon ? "anon" : answerAuthorId,
-              displayName: isAnswerAnon
-                ? "Anonymous Parent"
+              displayName: answer.isAnonymous
+                ? "Anonymous"
                 : isAnswerSelf
                   ? answerUser?.name || "Me"
                   : answerProfile?.isIdentityPublic
                     ? answerUser?.name || "Player"
                     : answerProfile?.anonymousAlias || "Anonymous Player",
-              isIdentityPublic: isAnswerAnon
-                ? false
-                : (answerProfile?.isIdentityPublic ?? true),
-              photoUrl: isAnswerAnon
+              isIdentityPublic: answer.isAnonymous ? false : (answerProfile?.isIdentityPublic ?? true),
+              photoUrl: answer.isAnonymous
                 ? null
                 : answerProfile?.isIdentityPublic && answerUser
                   ? await resolveUserPhotoUrl(answerUser)
@@ -2392,8 +2386,6 @@ export const CommunityService = {
     if (!isParticipant) {
       throw new Error("Access denied");
     }
-
-    await this.markConversationRead(userId, conversationId);
 
     const [messages, total] = await Promise.all([
       CommunityMessage.find({ conversationId })

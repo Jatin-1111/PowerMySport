@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   ArrowBigDown,
   ArrowBigUp,
   CalendarDays,
+  Dumbbell,
   LoaderCircle,
   MapPin,
   MessageCircle,
@@ -718,7 +718,7 @@ export default function QnAFeedClient() {
 
             <div className="flex flex-wrap items-center gap-2 self-end sm:gap-3">
               <Link
-                href="/"
+                href="/chats"
                 className="rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white"
               >
                 Back to Chat
@@ -814,7 +814,7 @@ export default function QnAFeedClient() {
 
                 <MultiCheckboxDropdown
                   label="Sport"
-                  icon={<Activity size={15} className="text-blue-500" />}
+                  icon={<Dumbbell size={15} className="text-blue-500" />}
                   options={sportOptions}
                   selected={selectedSports}
                   onToggle={toggleSport}
@@ -1079,12 +1079,9 @@ export default function QnAFeedClient() {
                       {/* Footer */}
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/50 pt-4">
                         <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <AuthorAvatar
-                            author={featuredPost.author}
-                            size={32}
-                          />
+                          <AuthorAvatar author={featuredPost.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : featuredPost.author} size={32} />
                           <span className="font-semibold text-slate-900">
-                            {featuredPost.author.displayName}
+                            {featuredPost.isAnonymous ? "Anonymous" : featuredPost.author.displayName}
                           </span>
                           {featuredPost.author.isVerifiedExpert ? (
                             <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
@@ -1203,9 +1200,9 @@ export default function QnAFeedClient() {
                           {/* Footer - Metadata & Actions */}
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                             <div className="flex items-center gap-2 text-xs text-slate-500">
-                              <AuthorAvatar author={post.author} size={26} />
+                              <AuthorAvatar author={post.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : post.author} size={26} />
                               <span className="font-medium text-slate-700">
-                                {post.author.displayName}
+                                {post.isAnonymous ? "Anonymous" : post.author.displayName}
                               </span>
                               {post.author.isVerifiedExpert ? (
                                 <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">

@@ -29,6 +29,32 @@ export const getMessageTimestamp = (value?: string | null) => {
   return messageTimeFormatter.format(date);
 };
 
+export const formatChatListDate = (value?: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffHours < 24 && now.getDate() === date.getDate()) {
+    return messageTimeFormatter.format(date);
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear()
+  ) {
+    return "Yesterday";
+  }
+
+  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
+};
+
 export const getAvatarCharacter = (value?: string | null): string => {
   const normalized = (value || "").trim();
   if (!normalized) return "?";
@@ -52,4 +78,33 @@ export const isWithinMessageEditWindow = (
   const created = new Date(createdAt).getTime();
   if (Number.isNaN(created)) return false;
   return Date.now() - created <= MESSAGE_EDIT_DELETE_WINDOW_MS;
+};
+
+export const getLastSeenTimestamp = (value?: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  const timeString = messageTimeFormatter.format(date);
+
+  if (diffHours < 24 && now.getDate() === date.getDate()) {
+    return `today at ${timeString}`;
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear()
+  ) {
+    return `yesterday at ${timeString}`;
+  }
+
+  const dateString = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
+  return `${dateString} at ${timeString}`;
 };
