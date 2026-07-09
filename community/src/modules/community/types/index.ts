@@ -56,6 +56,7 @@ export interface CommunityGroupSummary {
   memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
   sport: string;
   city: string;
+  profilePicture?: string;
   memberCount: number;
   isMember?: boolean;
   isAdmin?: boolean;

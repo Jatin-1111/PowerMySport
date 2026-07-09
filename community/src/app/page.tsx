@@ -6,6 +6,7 @@ import {
   Compass,
   Crown,
   HeartHandshake,
+  MessageCircle,
   MessageSquareQuote,
   Search,
   ShieldCheck,
@@ -13,6 +14,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { getMainAppUrl } from "@/lib/auth/redirect";
 import DynamicCommunityPosts from "@/modules/community/components/page/home/DynamicCommunityPosts";
 import DynamicCommunityPulse from "@/modules/community/components/page/home/DynamicCommunityPulse";
@@ -264,18 +266,18 @@ export default function CommunityLandingPage() {
                     Verified expert answers
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-200">
-                    <BrainCircuit className="h-4 w-4 text-sky-600" />
-                    AI-assisted planning
+                    <MessageCircle className="h-4 w-4 text-sky-600" />
+                    Ask the community
                   </span>
                 </div>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <a
-                    href={`${getMainAppUrl()}/guidance`}
+                  <Link
+                    href="/q"
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
                   >
-                    Get Personalised Plan <BrainCircuit className="h-4 w-4" />
-                  </a>
+                    Ask Question <MessageCircle className="h-4 w-4" />
+                  </Link>
                   <a
                     href={`${getMainAppUrl()}/roadmap`}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"

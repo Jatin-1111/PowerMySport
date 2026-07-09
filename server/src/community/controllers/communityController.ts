@@ -312,6 +312,33 @@ export const getConversationMessages = async (
   }
 };
 
+
+/**
+ * POST /community/groups/upload-url
+ */
+export const getGroupImageUploadUrl = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { contentType } = req.body as {
+      contentType: "image/jpeg" | "image/png" | "image/webp";
+    };
+    // Reusing the blog image generator for general public images
+    const { S3Service } = await import("../../shared/services/S3Service");
+    const s3Service = new S3Service();
+    const data = await s3Service.generateBlogImageUploadUrl(
+      getUserId(req),
+      contentType,
+    );
+    res
+      .status(200)
+      .json({ success: true, message: "Upload URL generated", data });
+  } catch (error) {
+    handleError(res, error, "Failed to generate upload URL");
+  }
+};
+
 export const sendMessage = async (
   req: Request,
   res: Response,
@@ -461,6 +488,49 @@ export const createGroup = async (
     });
   } catch (error) {
     handleError(res, error, "Failed to create group");
+  }
+};
+
+export const updateGroup = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const groupId = String(req.params.groupId || "");
+    const { name, description, sport, city, audience } = req.body as {
+      name?: string;
+      description?: string;
+      sport?: string;
+      city?: string;
+      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+    };
+
+    const payload: {
+      name?: string;
+      description?: string;
+      sport?: string;
+      city?: string;
+      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+    } = {};
+    if (typeof name === "string") payload.name = name;
+    if (typeof description === "string") payload.description = description;
+    if (typeof sport === "string") payload.sport = sport;
+    if (typeof city === "string") payload.city = city;
+    if (audience) payload.audience = audience;
+
+    const data = await CommunityService.updateGroup(
+      getUserId(req),
+      groupId,
+      payload,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Group updated",
+      data,
+    });
+  } catch (error) {
+    handleError(res, error, "Failed to update group");
   }
 };
 

@@ -136,7 +136,40 @@ export const communityCreateGroupSchema = z.object({
     .trim()
     .max(80, "City cannot exceed 80 characters")
     .optional(),
+  profilePicture: z.string().url("Must be a valid URL").optional(),
+  profilePictureKey: z.string().optional(),
   audience: z.enum(["ALL", "PLAYERS_ONLY", "COACHES_ONLY"]).optional(),
+});
+
+export const communityUpdateGroupSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Group name must be at least 2 characters")
+    .max(60, "Group name cannot exceed 60 characters")
+    .optional(),
+  description: z
+    .string()
+    .trim()
+    .max(240, "Description cannot exceed 240 characters")
+    .optional(),
+  sport: z
+    .string()
+    .trim()
+    .max(60, "Sport cannot exceed 60 characters")
+    .optional(),
+  city: z
+    .string()
+    .trim()
+    .max(80, "City cannot exceed 80 characters")
+    .optional(),
+  profilePicture: z.string().url("Must be a valid URL").optional(),
+  profilePictureKey: z.string().optional(),
+  audience: z.enum(["ALL", "PLAYERS_ONLY", "COACHES_ONLY"]).optional(),
+});
+
+export const communityGroupUploadUrlSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
 });
 
 export const communityAddGroupMemberSchema = z.object({

@@ -941,7 +941,7 @@ export default function QnAFeedClient() {
             ) : (
               <section className="space-y-4">
                 {urgentUnanswered.length > 0 ? (
-                  <div className="grid gap-3 xl:grid-cols-[1.35fr_minmax(0,1fr)]">
+                  <div className="grid gap-3">
                     <div className="rounded-2xl border border-amber-200/80 bg-[linear-gradient(120deg,#fff9ed_0%,#fff3dc_100%)] p-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">
                         Help Needed Now
@@ -959,40 +959,6 @@ export default function QnAFeedClient() {
                             </span>
                           </Link>
                         ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-sky-200/70 bg-[linear-gradient(125deg,#eef6ff_0%,#e4f0ff_100%)] p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700">
-                        Your Knowledge Impact
-                      </p>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        <div className="rounded-xl bg-white/85 p-3">
-                          <p className="text-[11px] text-slate-500">Points</p>
-                          <p className="text-lg font-bold text-slate-900">
-                            {summary.points}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-white/85 p-3">
-                          <p className="text-[11px] text-slate-500">Upvotes</p>
-                          <p className="text-lg font-bold text-slate-900">
-                            {summary.upvotes}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-white/85 p-3">
-                          <p className="text-[11px] text-slate-500">
-                            Questions
-                          </p>
-                          <p className="text-lg font-bold text-slate-900">
-                            {summary.q}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-white/85 p-3">
-                          <p className="text-[11px] text-slate-500">Answers</p>
-                          <p className="text-lg font-bold text-slate-900">
-                            {summary.a}
-                          </p>
-                        </div>
                       </div>
                     </div>
                   </div>

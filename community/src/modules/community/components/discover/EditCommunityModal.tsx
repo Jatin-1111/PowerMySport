@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
-import { CommunityGroupAudience } from "@/modules/community/types";
+import { CommunityGroupAudience, CommunityGroupSummary } from "@/modules/community/types";
 import SportsSelect from "@/modules/sports/components/SportsSelect";
 import {
   X,
@@ -14,28 +14,27 @@ import {
   AlignLeft,
   Shield,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
-interface CreateCommunityModalProps {
+interface EditCommunityModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialData: CommunityGroupSummary;
 }
 
-export default function CreateCommunityModal({
+export default function EditCommunityModal({
   isOpen,
   onClose,
   onSuccess,
-}: CreateCommunityModalProps) {
-  const router = useRouter();
+  initialData,
+}: EditCommunityModalProps) {
+  const [name, setName] = useState(initialData.name || "");
+  const [description, setDescription] = useState(initialData.description || "");
+  const [sport, setSport] = useState(initialData.sport || "");
+  const [city, setCity] = useState(initialData.city || "");
+  const [audience, setAudience] = useState<CommunityGroupAudience>(initialData.audience || "ALL");
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [sport, setSport] = useState("");
-  const [city, setCity] = useState("");
-  const [audience, setAudience] = useState<CommunityGroupAudience>("ALL");
-
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(initialData.profilePicture || null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,7 +85,7 @@ export default function CreateCommunityModal({
         finalProfilePictureKey = key;
       }
 
-      const newGroup = await communityService.createGroup({
+      await communityService.updateGroup(initialData.id, {
         name,
         description,
         sport,
@@ -98,11 +97,9 @@ export default function CreateCommunityModal({
 
       onSuccess();
       onClose();
-      // Optionally route them to the new group
-      // router.push(`/chats?sidebar=groups`);
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.message || "Failed to create community.");
+      setError(err.response?.data?.message || "Failed to update community.");
     } finally {
       setIsSubmitting(false);
     }
@@ -134,10 +131,10 @@ export default function CreateCommunityModal({
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="font-title text-xl font-bold tracking-tight text-slate-900">
-                      Create Community
+                      Edit Community
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
-                      Start a new group for your sport or city.
+                      Update the details of your community group.
                     </p>
                   </div>
                   <button
@@ -152,11 +149,11 @@ export default function CreateCommunityModal({
               {/* Form Body */}
               <div className="overflow-y-auto px-6 py-6 sm:px-8">
                 <form
-                  id="create-community-form"
+                  id="edit-community-form"
                   onSubmit={handleSubmit}
                   className="flex flex-col gap-6"
                 >
-                  {/* Profile Picture Mock */}
+                  {/* Community Icon Preview */}
                   <div className="flex flex-col items-center gap-4 sm:flex-row">
                     <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 ring-4 ring-white shadow-sm">
                       {profilePictureUrl ? (
@@ -166,7 +163,9 @@ export default function CreateCommunityModal({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <Users size={32} className="text-slate-300" />
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-power-orange/20 to-power-orange/5 text-3xl font-bold text-power-orange">
+                          {name ? name.charAt(0).toUpperCase() : "?"}
+                        </div>
                       )}
                     </div>
                     <div className="flex flex-col items-center sm:items-start">
@@ -314,17 +313,17 @@ export default function CreateCommunityModal({
                 </button>
                 <button
                   type="submit"
-                  form="create-community-form"
+                  form="edit-community-form"
                   disabled={isSubmitting}
                   className="inline-flex min-w-[140px] items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-power-orange/20 transition hover:bg-[#d96610] focus:outline-none focus:ring-4 focus:ring-power-orange/20 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      Creating...
+                      Saving...
                     </>
                   ) : (
-                    "Create Community"
+                    "Save Changes"
                   )}
                 </button>
               </div>

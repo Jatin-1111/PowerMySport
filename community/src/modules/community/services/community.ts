@@ -474,6 +474,15 @@ export const communityService = {
     return response.data.data;
   },
 
+  async getGroupImageUploadUrl(
+    contentType: "image/jpeg" | "image/png" | "image/webp",
+  ): Promise<{ uploadUrl: string; downloadUrl: string; key: string }> {
+    const response = await axiosInstance.post<
+      ApiResponse<{ uploadUrl: string; downloadUrl: string; key: string }>
+    >("/community/groups/upload-url", { contentType });
+    return response.data.data;
+  },
+
   /**
    * Persist an IMAGE message after the file is already uploaded to S3.
    * content = S3 object key. metadata = pixel dimensions for layout stability.
@@ -535,11 +544,32 @@ export const communityService = {
     description?: string;
     sport?: string;
     city?: string;
+    profilePicture?: string;
+    profilePictureKey?: string;
     audience?: CommunityGroupAudience;
   }): Promise<CommunityGroupSummary & { conversationId: string }> {
     const response = await axiosInstance.post<
       ApiResponse<CommunityGroupSummary & { conversationId: string }>
     >("/community/groups", payload);
+    clearCacheByPrefixes(["groups", "conversations"]);
+    return response.data.data;
+  },
+
+  async updateGroup(
+    groupId: string,
+    payload: {
+      name?: string;
+      description?: string;
+      sport?: string;
+      city?: string;
+      profilePicture?: string;
+      profilePictureKey?: string;
+      audience?: CommunityGroupAudience;
+    },
+  ): Promise<CommunityGroupSummary> {
+    const response = await axiosInstance.patch<
+      ApiResponse<CommunityGroupSummary>
+    >(`/community/groups/${groupId}`, payload);
     clearCacheByPrefixes(["groups", "conversations"]);
     return response.data.data;
   },

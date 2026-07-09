@@ -11,6 +11,8 @@ export interface CommunityGroupDocument extends Document {
   visibility: CommunityGroupVisibility;
   sport?: string;
   city?: string;
+  profilePicture?: string;
+  profilePictureKey?: string;
   memberAddPolicy: CommunityGroupMemberAddPolicy;
   audience: CommunityGroupAudience;
   createdBy: mongoose.Types.ObjectId;
@@ -52,6 +54,14 @@ const communityGroupSchema = new Schema<CommunityGroupDocument>(
       type: String,
       trim: true,
       maxlength: 80,
+      default: "",
+    },
+    profilePicture: {
+      type: String,
+      default: "",
+    },
+    profilePictureKey: {
+      type: String,
       default: "",
     },
     memberAddPolicy: {

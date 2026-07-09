@@ -75,7 +75,7 @@ export default function PlayerDetailsModal({
           >
             <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5">
               {/* Header / Hero Banner */}
-              <div className="relative h-28 bg-gradient-to-r from-blue-600 to-sky-400 overflow-hidden">
+              <div className="relative h-28 bg-orange-50 overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
                 <button
                   onClick={onClose}
@@ -87,7 +87,7 @@ export default function PlayerDetailsModal({
 
               {/* Profile Avatar Overlap */}
               <div className="relative px-6 pb-6 pt-0 sm:px-8">
-                <div className="absolute -top-14 left-1/2 -translate-x-1/2 sm:-translate-x-0 sm:left-8 flex h-28 w-28 items-center justify-center overflow-hidden rounded-[2rem] border-4 border-white bg-slate-100 font-title text-4xl font-bold text-slate-400 shadow-sm">
+                <div className="absolute -top-14 left-1/2 -translate-x-1/2 sm:-translate-x-0 sm:left-8 flex h-28 w-28 items-center justify-center overflow-hidden rounded-[2rem] border-4 border-white bg-orange-100 font-title text-4xl font-bold text-power-orange/60 shadow-sm ring-4 ring-orange-50">
                   {profile?.photoUrl ? (
                     <img
                       src={profile.photoUrl}
@@ -97,7 +97,7 @@ export default function PlayerDetailsModal({
                   ) : profile?.displayName ? (
                     getAvatarCharacter(profile.displayName)
                   ) : (
-                    <User size={40} className="text-slate-300" />
+                    <User size={40} className="text-power-orange/40" />
                   )}
                 </div>
 
@@ -118,8 +118,13 @@ export default function PlayerDetailsModal({
                       <h2 className="font-title text-2xl font-bold tracking-tight text-slate-900">
                         {profile.displayName}
                       </h2>
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-sky-500/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-sky-600">
+                      {profile.alias && (
+                        <p className="mt-0.5 text-sm font-medium text-slate-500">
+                          @{profile.alias}
+                        </p>
+                      )}
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           {profile.userType === "Parent"
                             ? "PARENT"
                             : profile.role === "Coach"
@@ -137,7 +142,7 @@ export default function PlayerDetailsModal({
                     {/* About & Stats */}
                     <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-6">
                       <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-turf-green/10 text-turf-green">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
                           <MapPin size={14} />
                         </div>
                         <div className="min-w-0">
@@ -151,7 +156,7 @@ export default function PlayerDetailsModal({
                       </div>
 
                       <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500/10 text-purple-500">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-500">
                           <Calendar size={14} />
                         </div>
                         <div className="min-w-0">
@@ -164,6 +169,21 @@ export default function PlayerDetailsModal({
                         </div>
                       </div>
                     </div>
+
+                    {profile.sports && profile.sports.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Sports
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {profile.sports.map((sport) => (
+                            <span key={sport} className="inline-flex rounded-lg bg-slate-50 border border-slate-200/60 px-2.5 py-1 text-xs font-medium text-slate-600">
+                              {sport}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : null}
               </div>
@@ -176,7 +196,7 @@ export default function PlayerDetailsModal({
                       onChat(profile.id);
                       onClose();
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-power-orange/90 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-power-orange"
                   >
                     <MessageSquare size={16} /> Send Message
                   </button>

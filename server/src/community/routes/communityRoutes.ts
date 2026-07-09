@@ -21,6 +21,7 @@ import {
   getGroupInviteCode,
   getGroupMembers,
   getChatImageUploadUrl,
+  getGroupImageUploadUrl,
   joinGroup,
   joinGroupByCode,
   leaveGroup,
@@ -36,6 +37,7 @@ import {
   updateCommunityAnswer,
   updateCommunityPost,
   unblockUser,
+  updateGroup,
   updateGroupSettings,
   updateCommunityProfile,
   voteCommunityTarget,
@@ -48,11 +50,13 @@ import {
   communityCreateGroupSchema,
   communityCreatePostSchema,
   communityReportSchema,
+  communityUpdateGroupSchema,
   communityUpdateGroupSettingsSchema,
   communityUpdateMessageSchema,
   communityUpdatePostSchema,
   communitySendMessageSchema,
   communityChatUploadUrlSchema,
+  communityGroupUploadUrlSchema,
   communityStartConversationSchema,
   communityUpdateProfileSchema,
   communityVoteSchema,
@@ -99,6 +103,11 @@ router.delete("/messages/:messageId", deleteMessage);
 
 router.get("/groups", listGroups);
 router.post(
+  "/groups/upload-url",
+  validateRequest(communityGroupUploadUrlSchema),
+  getGroupImageUploadUrl,
+);
+router.post(
   "/groups",
   validateRequest(communityCreateGroupSchema),
   createGroup,
@@ -107,6 +116,11 @@ router.post(
   "/groups/:groupId/members",
   validateRequest(communityAddGroupMemberSchema),
   addGroupMember,
+);
+router.patch(
+  "/groups/:groupId",
+  validateRequest(communityUpdateGroupSchema),
+  updateGroup,
 );
 router.patch(
   "/groups/:groupId/settings",

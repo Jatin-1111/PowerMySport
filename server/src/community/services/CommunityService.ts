@@ -1411,6 +1411,8 @@ export const CommunityService = {
       description?: string;
       sport?: string;
       city?: string;
+      profilePicture?: string;
+      profilePictureKey?: string;
       audience?: CommunityGroupAudience;
     },
   ) {
@@ -1429,8 +1431,10 @@ export const CommunityService = {
         $setOnInsert: {
           name,
           description: normalizeOptionalText(payload.description),
-          sport: normalizeOptionalText(payload.sport),
-          city: normalizeOptionalText(payload.city),
+          sport: payload.sport || "",
+          city: payload.city || "",
+          profilePicture: payload.profilePicture || "",
+          profilePictureKey: payload.profilePictureKey || "",
           visibility: "PUBLIC",
           memberAddPolicy: "ADMIN_ONLY",
           audience: payload.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
@@ -1473,9 +1477,57 @@ export const CommunityService = {
       audience: group.audience || COMMUNITY_DEFAULT_GROUP_AUDIENCE,
       sport: group.sport || "",
       city: group.city || "",
+      profilePicture: group.profilePicture || "",
       memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
       memberCount: group.members.length,
       conversationId: String(conversation._id),
+    };
+  },
+
+  async updateGroup(
+    userId: string,
+    groupId: string,
+    payload: {
+      name?: string;
+      description?: string;
+      sport?: string;
+      city?: string;
+      profilePicture?: string;
+      profilePictureKey?: string;
+      audience?: "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+    },
+  ) {
+    await ensureProfile(userId);
+
+    const group = await CommunityGroup.findById(groupId);
+    if (!group) {
+      throw new Error("Group not found");
+    }
+
+    const requesterIsAdmin = group.admins.some(
+      (adminId) => String(adminId) === userId,
+    );
+    if (!requesterIsAdmin) {
+      throw new Error("Only group admins can update the group");
+    }
+
+    if (payload.name) group.name = payload.name;
+    if (typeof payload.description === "string") group.description = payload.description;
+    if (typeof payload.sport === "string") group.sport = payload.sport;
+    if (typeof payload.city === "string") group.city = payload.city;
+    if (typeof payload.profilePicture === "string") group.profilePicture = payload.profilePicture;
+    if (typeof payload.profilePictureKey === "string") group.profilePictureKey = payload.profilePictureKey;
+    if (payload.audience) group.audience = payload.audience;
+
+    await group.save();
+
+    return {
+      groupId: String(group._id),
+      name: group.name,
+      description: group.description,
+      sport: group.sport,
+      city: group.city,
+      audience: group.audience,
     };
   },
 
