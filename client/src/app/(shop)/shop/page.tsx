@@ -1,7 +1,17 @@
 import { ShopCatalogClient } from "@/components/shop/ShopCatalogClient";
 import { listProducts, type Product } from "@/lib/shop/ecommerce-api";
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import ShopWaitlist from "../../../components/shop/ShopWaitlist";
+
+export const metadata: Metadata = {
+  title: "Shop — Sports Gear & Equipment",
+  description:
+    "Shop premium sports gear, customized equipment, and exclusive PowerMySport bundles.",
+  alternates: {
+    canonical: "/shop",
+  },
+};
 
 export default async function ShopPage({
   searchParams,

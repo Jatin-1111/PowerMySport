@@ -103,7 +103,7 @@ export function CookieConsentBanner() {
                   href="/cookies"
                   className="flex-1 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-center text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
                 >
-                  Learn more
+                  Read cookie policy
                 </Link>
               </div>
             </div>
