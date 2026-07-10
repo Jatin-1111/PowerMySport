@@ -290,7 +290,11 @@ export const User = mongoose.model<UserDocument>("User", userSchema);
 // Discriminators for Hierarchical User Collection
 export const ParentUser = User.discriminator(
   "ParentUser",
-  new Schema({}),
+  new Schema({
+    bio: { type: String, maxlength: 300 },
+    sportInterests: { type: [String], default: [] },
+    involvementYears: { type: Number, min: 0, max: 40 },
+  }),
   "Parent",
 );
 export const PlayerUser = User.discriminator(

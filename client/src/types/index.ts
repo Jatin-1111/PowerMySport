@@ -98,6 +98,11 @@ export interface User {
   photoS3Key?: string; // S3 key for profile picture
   googleId?: string;
   playerProfile?: IPlayerProfile;
+  parentProfile?: {
+    bio?: string;
+    sportInterests?: string[];
+    involvementYears?: number;
+  };
   venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];
   shippingAddress?: UserShippingAddress;

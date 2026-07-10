@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { Sport } from "../models/Sport";
-import { SportPathway, SportPathwayDocument } from "../models/SportPathway";
+import { SportPathway, SportPathwayDocument, ProgressionPlan, PathwayLevel } from "../models/SportPathway";
 import { Tournament } from "../models/Tournament";
 import { Scholarship } from "../models/Scholarship";
 import { University } from "../models/University";
@@ -195,6 +195,71 @@ If a state was provided, you MUST populate the \`localResources\` object for lev
 `;
 }
 
+function buildProgressionPrompt(
+  currentLevel: PathwayLevel,
+  nextLevel: PathwayLevel,
+  sportName: string,
+  state?: string,
+): string {
+  const stateContext = state
+    ? `The family is based in the Indian state/UT of ${state.trim()}.`
+    : "";
+
+  const benchmarkSummary =
+    currentLevel.benchmarks?.metrics
+      ?.slice(0, 3)
+      .map((m) => `${m.metric}: ${m.target}`)
+      .join("; ") || "No specific benchmarks listed";
+
+  return `You are an expert Indian sports development consultant advising an average Indian parent.
+Their child is currently at the "${currentLevel.label}" level of ${sportName} in India${state ? `, specifically in ${state}` : ""} and wants to reach the "${nextLevel.label}" level.
+${stateContext ? `\n${stateContext}` : ""}
+WRITE IN SIMPLE LANGUAGE — this is the most important rule: Every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use short sentences and everyday words.
+
+CONTEXT ABOUT THE CURRENT LEVEL ("${currentLevel.title}"):
+- What they focus on: ${currentLevel.keyFocus}
+- Current competitions: ${currentLevel.competitions}
+- Key benchmarks: ${benchmarkSummary}
+
+CONTEXT ABOUT THE NEXT LEVEL ("${nextLevel.title}"):
+- What they must compete in: ${nextLevel.competitions}
+- What it demands: ${nextLevel.keyFocus}
+
+Return ONLY a valid JSON object (no markdown, no code fences) with this exact structure:
+{
+  "gap": "The single biggest challenge in moving from ${currentLevel.label} to ${nextLevel.label} in ${sportName} — 1 to 2 plain sentences spoken directly to a parent",
+  "prerequisites": [
+    "Concrete thing the child must already be able to do — very specific",
+    "Another concrete requirement",
+    "A third requirement"
+  ],
+  "milestones": [
+    {
+      "title": "Short name for this checkpoint",
+      "description": "What the child must achieve at this checkpoint — one or two sentences",
+      "timeframe": "e.g. First 3 months"
+    }
+  ],
+  "targetCompetitions": [
+    "Name of a specific stepping-stone competition type to enter during this transition",
+    "Name of a second competition",
+    "Name of a third competition"
+  ],
+  "coachSignals": [
+    "One specific quality to look for in a coach for this exact transition",
+    "A second quality",
+    "A third quality"
+  ],
+  "commonMistakes": [
+    "The most common mistake families make at this transition — one sentence",
+    "A second common mistake"
+  ],
+  "typicalTimeline": "e.g. 12 to 18 months for most dedicated athletes in India"
+}
+
+All content must be specific to ${sportName} in India. Focus only on the ${currentLevel.label}-to-${nextLevel.label} transition. The milestones array must have exactly 3 or 4 items. The prerequisites array must have 3 to 5 items.`;
+}
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export class PathwayService {
@@ -202,6 +267,8 @@ export class PathwayService {
 
   /** Set of cacheKeys currently being refreshed — prevents duplicate Gemini calls */
   private refreshInProgressSet = new Set<string>();
+  /** Set of "cacheKey_level" strings currently generating a progression plan */
+  private progressionInProgressSet = new Set<string>();
   private sportValidationCache = new Map<string, boolean>();
 
   constructor() {
@@ -367,6 +434,113 @@ export class PathwayService {
       entitiesReady: enriched.entitiesReady,
       warnings: enriched.warnings,
     };
+  }
+
+  /**
+   * Return the progression plan for a given raw level, generating it lazily via Gemini
+   * if not yet stored. The result is persisted in the pathway document so repeat
+   * requests are free (no Gemini call).
+   */
+  async getOrGenerateProgressionPlan(
+    sportName: string,
+    state: string,
+    fromLevelNum: number,
+  ): Promise<ProgressionPlan | null> {
+    if (!this.genAI) return null;
+
+    const slug = toSlug(sportName);
+    const stateSlug = toSlug(state);
+    const cacheKey = `${slug}_${stateSlug}`;
+    const guardKey = `${cacheKey}_${fromLevelNum}`;
+
+    const pathway = await SportPathway.findOne({ cacheKey }).lean();
+    if (!pathway) return null;
+
+    const fromLevel = (pathway.levels as PathwayLevel[]).find(
+      (l) => l.level === fromLevelNum,
+    );
+    const nextLevel = (pathway.levels as PathwayLevel[]).find(
+      (l) => l.level === fromLevelNum + 1,
+    );
+    if (!fromLevel || !nextLevel) return null;
+
+    // Cache hit — already generated (gap being non-empty confirms it's real AI content, not a Mongoose default)
+    if (fromLevel.progressionPlan?.gap) {
+      return fromLevel.progressionPlan as ProgressionPlan;
+    }
+
+    // Prevent duplicate concurrent generation
+    if (this.progressionInProgressSet.has(guardKey)) {
+      return null;
+    }
+    this.progressionInProgressSet.add(guardKey);
+
+    try {
+      const modelCandidates = [
+        "gemini-2.5-flash",
+        "gemini-3.5-flash",
+        "gemini-2.5-flash-lite",
+      ];
+      const prompt = buildProgressionPrompt(fromLevel, nextLevel, sportName, state);
+      let plan: ProgressionPlan | null = null;
+
+      for (const modelName of modelCandidates) {
+        try {
+          const result = await Promise.race([
+            this.genAI.models.generateContent({
+              model: modelName,
+              contents: prompt,
+              config: {
+                responseMimeType: "application/json",
+                temperature: 0.4,
+                thinkingConfig: { thinkingBudget: 0 },
+                maxOutputTokens: 1024,
+              } as any,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("client_timeout")), 25000),
+            ),
+          ]);
+
+          const text = (result.text ?? "").trim();
+          const jsonText = text
+            .replace(/^```[a-z]*\n?/i, "")
+            .replace(/```$/i, "")
+            .trim();
+          const parsed = JSON.parse(jsonText) as ProgressionPlan;
+
+          if (
+            !parsed.gap ||
+            !Array.isArray(parsed.milestones) ||
+            !Array.isArray(parsed.prerequisites)
+          ) {
+            throw new Error("Invalid progression plan shape");
+          }
+
+          plan = parsed;
+          log.info(
+            `[PathwayService] Progression plan generated: ${guardKey} via ${modelName}`,
+          );
+          break;
+        } catch (err: any) {
+          log.warn(
+            `[PathwayService] Progression plan failed on ${modelName} for ${guardKey}: ${err.message}`,
+          );
+        }
+      }
+
+      if (!plan) return null;
+
+      const planWithDate: ProgressionPlan = { ...plan, generatedAt: new Date() };
+      await SportPathway.updateOne(
+        { cacheKey, "levels.level": fromLevelNum },
+        { $set: { "levels.$.progressionPlan": planWithDate } },
+      );
+
+      return planWithDate;
+    } finally {
+      this.progressionInProgressSet.delete(guardKey);
+    }
   }
 
   /**

@@ -648,6 +648,11 @@ export interface UpdateProfilePayload {
   dob?: string | Date;
   userType?:
     "Parent" | "Player" | "Coach" | "Academy" | "VenueLister" | "Admin";
+  parentProfile?: {
+    bio?: string;
+    sportInterests?: string[];
+    involvementYears?: number;
+  };
   playerProfile?: {
     sports?: string[];
     yearsPlaying?: number;
@@ -705,6 +710,15 @@ export const updateProfile = async (
   if (payload.email) user.email = payload.email;
   if (payload.phone) user.phone = payload.phone;
   if (payload.dob) user.dob = new Date(payload.dob);
+
+  // Update parent-specific fields
+  if (payload.parentProfile && user.userType === "Parent") {
+    const p = payload.parentProfile;
+    const parentDoc = user as any;
+    if (p.bio !== undefined) parentDoc.bio = p.bio;
+    if (p.sportInterests !== undefined) parentDoc.sportInterests = p.sportInterests;
+    if (p.involvementYears !== undefined) parentDoc.involvementYears = p.involvementYears;
+  }
 
   let userTypeToUpdate: any = undefined;
   if (payload.userType && payload.userType !== user.userType) {

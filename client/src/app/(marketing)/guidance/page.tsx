@@ -5,17 +5,13 @@ import {
     BrainCircuit,
     ChevronLeft,
     ChevronRight,
-    Download,
     Headphones,
     Info,
     Loader2,
-    MessageCircle,
     Sparkles,
     Star,
     Trophy,
-    Users,
 } from "lucide-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -43,7 +39,6 @@ import { useGuidanceForm } from "@/modules/guidance/hooks/useGuidanceForm";
 import { useGuidanceHistory } from "@/modules/guidance/hooks/useGuidanceHistory";
 import { downloadGuidanceReportPdf } from "@/modules/guidance/services/guidance";
 import type { GuidanceFormState } from "@/modules/guidance/types";
-import { WhatsAppIcon } from "@/components/layout/WhatsAppButton";
 
 function buildGuidanceWaUrl(q: GuidanceFormState): string {
   const lines: string[] = [
@@ -71,6 +66,7 @@ function GuidancePageInner() {
   const initialLevel = initialLevelRaw ? Number(initialLevelRaw) : undefined;
   const initialMode = searchParams.get("mode") ?? undefined;
   const initialLevelLabel = searchParams.get("levelLabel") ?? undefined;
+  const initialState = searchParams.get("state") ?? undefined;
   const isLevelPlan =
     initialMode === "level-plan" && !!initialSport && !!initialLevel;
   const levelContext =
@@ -107,7 +103,7 @@ function GuidancePageInner() {
     handleSubmit,
     resetForm,
     editInputs,
-  } = useGuidanceForm({ initialSport, initialLevel, initialLevelLabel });
+  } = useGuidanceForm({ initialSport, initialLevel, initialLevelLabel, initialState });
 
   // Mirrors Step1Profile's "Already here" toggle (which sets
   // current_pathway_level = initialLevel) so the header/subtitle framing
@@ -316,59 +312,13 @@ function GuidancePageInner() {
                       key={submission.id}
                       submission={submission}
                       levelContext={levelContext}
+                      actions={{
+                        onChatClick: handleChatClick,
+                        onDownloadPdf: handleDownloadPdf,
+                        downloadingPdf,
+                        waUrl: buildGuidanceWaUrl(submission.query),
+                      }}
                     />
-                  </div>
-
-                  {/* ── Action bar — inside the results container ── */}
-                  <div className="border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5 rounded-b-3xl">
-                    <div className="flex flex-col gap-3">
-                      {/* Primary Actions */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Link
-                          href="/experts"
-                          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-900/10 transition-all hover:opacity-90 active:scale-[0.98]"
-                        >
-                          <Users className="h-4 w-4" />
-                          <span>Talk to Expert</span>
-                        </Link>
-                        <button
-                          id="chat-with-coach-btn"
-                          type="button"
-                          onClick={handleChatClick}
-                          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3.5 text-sm font-bold text-white shadow-md shadow-orange-900/10 transition-all hover:opacity-90 active:scale-[0.98]"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          <span>Ask Powermysport AI</span>
-                        </button>
-                      </div>
-
-                      {/* Secondary Actions */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <a
-                          href={buildGuidanceWaUrl(submission.query)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-[#25D366] hover:bg-[#25D366]/5 hover:text-[#25D366]"
-                        >
-                          <WhatsAppIcon className="h-4 w-4 text-[#25D366]" />
-                          <span>Talk to Our Team</span>
-                        </a>
-                        <button
-                          type="button"
-                          onClick={handleDownloadPdf}
-                          disabled={downloadingPdf}
-                          className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-                          title="Download Detailed Plan"
-                        >
-                          {downloadingPdf ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-                          ) : (
-                            <Download className="h-4 w-4 text-slate-400" />
-                          )}
-                          <span>Download Detailed Plan</span>
-                        </button>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </motion.div>

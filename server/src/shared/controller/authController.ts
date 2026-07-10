@@ -273,7 +273,7 @@ export const updateProfileHandler = async (
       return;
     }
 
-    const { name, email, phone, dob, playerProfile, shippingAddress } =
+    const { name, email, phone, dob, parentProfile, playerProfile, shippingAddress } =
       req.body;
 
     const updatedUser = await updateProfile(req.user.id, {
@@ -281,6 +281,7 @@ export const updateProfileHandler = async (
       email,
       phone,
       dob,
+      parentProfile,
       playerProfile,
       shippingAddress,
     });

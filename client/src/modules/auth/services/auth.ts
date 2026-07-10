@@ -40,6 +40,11 @@ export const authApi = {
     phone?: string;
     dob?: string | Date;
     userType?: string;
+    parentProfile?: {
+      bio?: string;
+      sportInterests?: string[];
+      involvementYears?: number;
+    };
     playerProfile?: {
       sportsFocus?: string[];
       yearsPlaying?: number;

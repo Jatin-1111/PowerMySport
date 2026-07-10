@@ -21,6 +21,10 @@ export const guidanceRequestSchema = z.object({
   // specific formal tier — this tells the AI how much raw time-in-sport to assume, e.g. for injury
   // risk, technique habits already formed, and how aggressive a timeline is realistic.
   years_playing: z.number().min(0).max(20).optional(),
+  // Parent context — optional fields collected in the onboarding step
+  parent_bio: z.string().trim().max(300).optional(),
+  parent_sport_interest: z.array(z.string().trim()).optional(),
+  parent_involvement_years: z.number().min(0).max(40).optional(),
 });
 
 export const burnoutRiskSchema = z.object({
@@ -88,6 +92,7 @@ export const getYouthSportsGuidanceSystemPrompt = (
   hasSport: boolean,
   age: number,
   groundingContext?: string,
+  parentContext?: { bio?: string; sportInterests?: string[]; involvementYears?: number },
 ) => `You are an expert Youth Sports Consultant advising an Indian parent. You will receive a child's profile strictly in JSON format.
 ${groundingContext ? `\nGROUNDING CONTEXT (OFFICIAL PATHWAY DATA):\n${groundingContext}\n\nYou must anchor your journey phases to these official benchmarks. Do not invent contradictory timelines or criteria.\n` : ""}
 WRITE IN THE SIMPLEST POSSIBLE ENGLISH: every field must read like you are speaking out loud to a parent who has never played sport and does not use advanced English. Use only simple, everyday words — prefer short common words over long or formal ones (say "help" not "facilitate", "start" not "commence", "show" not "demonstrate", "use" not "utilize", "enough" not "sufficient"). Use short sentences and active voice. Never use a sport-federation acronym (AITA, ITF, FIDE, SAI, BCCI, WTA, etc.) without immediately explaining it in plain words the first time it appears. Avoid dense, jargon-heavy, or fancy/sophisticated phrasing anywhere in the response — this applies to every field, not just names and acronyms.
