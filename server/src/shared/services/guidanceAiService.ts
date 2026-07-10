@@ -320,6 +320,15 @@ export const sportMatchRequestSchema = z.object({
   budget_tier: z.string(),
   child_age: z.number(),
   location: z.string(),
+  gender: z.string().optional(),
+  height_cm: z.number().optional(),
+  weight_kg: z.number().optional(),
+  medical_conditions: z.array(z.string()).optional(),
+  team_preference: z.string().optional(),
+  indoor_outdoor_preference: z.string().optional(),
+  intensity_preference: z.string().optional(),
+  weekly_time_commitment: z.number().optional(),
+  school_sport_involvement: z.boolean().optional(),
 });
 
 export const sportMatchRecommendationSchema = z.object({
@@ -357,28 +366,50 @@ export const generateSportMatchRecommendation = async (
 
   const groundingData = JSON.stringify(topSports, null, 2);
 
+  const physicalProfile = [
+    request.height_cm ? `Height: ${request.height_cm} cm` : null,
+    request.weight_kg ? `Weight: ${request.weight_kg} kg` : null,
+    request.medical_conditions?.length
+      ? `Medical conditions: ${request.medical_conditions.join(", ")}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const preferences = [
+    request.team_preference ? `Team/individual preference: ${request.team_preference}` : null,
+    request.indoor_outdoor_preference ? `Indoor/outdoor: ${request.indoor_outdoor_preference}` : null,
+    request.intensity_preference ? `Intensity: ${request.intensity_preference}` : null,
+    request.weekly_time_commitment ? `Weekly time: ${request.weekly_time_commitment} hrs` : null,
+    request.school_sport_involvement !== undefined
+      ? `School sport involvement: ${request.school_sport_involvement ? "Yes" : "No"}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("; ");
+
   const systemPrompt = `You are an expert Indian sports development consultant advising a parent who is unsure what sport their child should play.
 You will receive context about 3 recommended sports and the child's profile.
 
 CHILD PROFILE:
-Age: ${request.child_age}
+Age: ${request.child_age}${request.gender ? `\nGender: ${request.gender}` : ""}
 Personality: ${request.personality_tags.join(", ")}
-Objective: ${request.primary_objective}
+Objective: ${request.primary_objective}${physicalProfile ? `\nPhysical profile: ${physicalProfile}` : ""}${preferences ? `\nPreferences: ${preferences}` : ""}
 
 GROUNDING CONTEXT (3 SPORTS):
 ${groundingData}
 
 INSTRUCTIONS:
-For each of these 3 sports, using ONLY the provided pathway data, write 3 short bullets explaining why THIS sport fits THIS child's personality_tags and primary_objective — name the child's actual traits (e.g. 'Your child's Focused and Patient traits suit archery's precision demands'), not generic sport praise. Never invent facts not present in the provided data.
+For each of these 3 sports, write 3 short bullets explaining why THIS sport fits THIS child's personality_tags, primary_objective, physical profile, and stated preferences — name the child's actual traits (e.g. 'Your child's Focused and Patient traits suit archery's precision demands') and physical attributes where relevant (e.g. height advantage for basketball, low-impact option given medical condition). Never invent facts. If a medical condition rules out or strongly cautions against a sport, mention it clearly.
 
-WRITE IN THE SIMPLEST POSSIBLE ENGLISH — short sentences, common everyday words only (say 'help' not 'facilitate', 'need' not 'require'). No sport-federation acronyms without explaining them. Each bullet max 12-15 words. If a reason needs a caveat to make sense, cut it — it isn't simple enough yet.
+WRITE IN THE SIMPLEST POSSIBLE ENGLISH — short sentences, common everyday words only. Each bullet max 12-15 words. If a reason needs a caveat to make sense, cut it.
 
-For any sport where hasGeneratedPathway is false, you have NO cost or talent-signal data — do not invent numbers or specifics for it. Ground each reason in that sport's sportDescription and attributes fields — reference the specific trait/motion/demand named there. Do not use the word 'individual', 'team', or the raw category name as the reason itself; name the concrete thing from sportDescription instead. Set monthlyCostRange and keyTalentSignal to null.
+For any sport where hasGeneratedPathway is false, ground each reason in that sport's sportDescription and attributes fields only. Do not use the word 'individual', 'team', or the raw category name as the reason itself; name the concrete motion/demand instead. Set monthlyCostRange and keyTalentSignal to null.
 For sports where hasGeneratedPathway is true, return the monthlyCostRange and one keyTalentSignal taken directly from the pathway data.
 
 Before finalizing, check each reason: if it could be copy-pasted onto a different sport in the same category by only swapping the sport name, rewrite it using a fact from sportDescription, keyFocus, or mentalSkillsFocus that is unique to this sport.
 
-Keep matchScore identical to the provided grounding context.
+MATCH SCORE: Compute a unique matchScore (0–100) for each sport that honestly reflects how well it fits THIS child's complete profile — personality, physical build, medical conditions, team/intensity preferences, age, objective, and budget. Scores MUST differ meaningfully between the 3 sports so the parent can distinguish between them. The top sport should score highest, but no sport should reach 100 unless it is a near-perfect fit on every dimension. A sport that matches on personality but conflicts on intensity preference or has a medical risk should score noticeably lower. Do NOT copy the matchScore from the grounding context — compute it fresh.
 
 Return ONLY a valid JSON object matching this schema exactly:
 {
@@ -386,7 +417,7 @@ Return ONLY a valid JSON object matching this schema exactly:
     {
       "sportSlug": "string",
       "sportName": "string",
-      "matchScore": number,
+      "matchScore": <your computed 0-100 score — must differ between sports>,
       "reasons": ["string", "string", "string"],
       "monthlyCostRange": "string or null",
       "keyTalentSignal": "string or null"

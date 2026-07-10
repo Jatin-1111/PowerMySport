@@ -28,7 +28,6 @@ import { User } from "@/types";
 import { cn } from "@/utils/cn";
 import {
     Calendar,
-    Dumbbell,
     Edit2,
     GraduationCap,
     Info,
@@ -141,13 +140,6 @@ export default function ProfilePage() {
   const [isEditingSports, setIsEditingSports] = useState(false);
   const [isSavingSports, setIsSavingSports] = useState(false);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
-  const [isEditingParent, setIsEditingParent] = useState(false);
-  const [isSavingParent, setIsSavingParent] = useState(false);
-  const [parentForm, setParentForm] = useState({
-    bio: "",
-    sportInterests: [] as string[],
-    involvementYears: "" as string | number,
-  });
   const [playerProfileForm, setPlayerProfileForm] = useState({
     yearsPlaying: undefined as number | undefined,
     personalityTags: [] as string[],
@@ -155,6 +147,9 @@ export default function ProfilePage() {
     weeklyTimeCommitment: 3,
     budgetTier: "Moderate" as "Budget" | "Moderate" | "Premium",
     location: "",
+    bio: "",
+    involvementYears: undefined as number | undefined,
+    sportInterests: [] as string[],
   });
 
   useEffect(() => {
@@ -272,6 +267,9 @@ export default function ProfilePage() {
     weeklyTimeCommitment?: number;
     budgetTier?: "Budget" | "Moderate" | "Premium";
     location?: string;
+    heightCm?: number;
+    weightKg?: number;
+    medicalConditions?: string[];
   }) => {
     try {
       if (dependentModalMode === "add") {
@@ -365,49 +363,6 @@ export default function ProfilePage() {
     }
   };
 
-  const resetParentForm = () => {
-    if (!user) return;
-    setParentForm({
-      bio: (user as any).bio ?? "",
-      sportInterests: (user as any).sportInterests ?? [],
-      involvementYears: (user as any).involvementYears ?? "",
-    });
-  };
-
-  const handleEditParentClick = () => {
-    resetParentForm();
-    setIsEditingParent(true);
-  };
-
-  const handleCancelParentEdit = () => {
-    resetParentForm();
-    setIsEditingParent(false);
-  };
-
-  const handleSaveParent = async () => {
-    setIsSavingParent(true);
-    try {
-      const bio = (parentForm.bio as string).trim();
-      const sportInterests = parentForm.sportInterests;
-      const involvementYears =
-        parentForm.involvementYears !== "" ? Number(parentForm.involvementYears) : undefined;
-      await authApi.updateProfile({
-        parentProfile: {
-          bio,
-          sportInterests,
-          ...(involvementYears !== undefined ? { involvementYears } : {}),
-        },
-      });
-      await fetchProfile();
-      setIsEditingParent(false);
-      toast.success("Parent profile updated successfully");
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error) || "Failed to update parent profile");
-    } finally {
-      setIsSavingParent(false);
-    }
-  };
-
   const resetSportsForm = () => {
     if (!user) return;
     setSelectedSports(user.playerProfile?.sportsFocus || []);
@@ -418,6 +373,9 @@ export default function ProfilePage() {
       weeklyTimeCommitment: user.playerProfile?.weeklyTimeCommitment || 3,
       budgetTier: user.playerProfile?.budgetTier || "Moderate",
       location: user.playerProfile?.location || "",
+      bio: user.parentProfile?.bio || "",
+      involvementYears: user.parentProfile?.involvementYears,
+      sportInterests: user.parentProfile?.sportInterests || [],
     });
   };
 
@@ -434,9 +392,8 @@ export default function ProfilePage() {
 
   const handleSaveSports = async () => {
     setIsSavingSports(true);
-
     try {
-      await authApi.updateProfile({
+      const updatePayload: Parameters<typeof authApi.updateProfile>[0] = {
         playerProfile: {
           sportsFocus: selectedSports,
           yearsPlaying: playerProfileForm.yearsPlaying,
@@ -446,12 +403,20 @@ export default function ProfilePage() {
           budgetTier: playerProfileForm.budgetTier,
           location: playerProfileForm.location || undefined,
         },
-      });
+      };
+      if (user?.userType === "Parent") {
+        updatePayload.parentProfile = {
+          bio: playerProfileForm.bio.trim() || undefined,
+          sportInterests: playerProfileForm.sportInterests,
+          involvementYears: playerProfileForm.involvementYears,
+        };
+      }
+      await authApi.updateProfile(updatePayload);
       await fetchProfile();
       setIsEditingSports(false);
-      toast.success("Player profile updated successfully!");
+      toast.success("Profile updated!");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error) || "Failed to update sports");
+      toast.error(getErrorMessage(error) || "Failed to update profile");
     } finally {
       setIsSavingSports(false);
     }
@@ -502,6 +467,7 @@ export default function ProfilePage() {
     );
   }
 
+  const isParent = user.userType === "Parent";
   const sportsCount = user.playerProfile?.sportsFocus?.length ?? 0;
   const dependentsCount = user.dependents?.length ?? 0;
   const userAge = user.dob ? getDependentAge(user.dob) : null;
@@ -720,8 +686,12 @@ export default function ProfilePage() {
       >
         <ProfileSectionHeader
           icon={Trophy}
-          title="Player Profile"
-          description="Your sports and AI guidance preferences."
+          title={isParent ? "Parent Profile" : "Player Profile"}
+          description={
+            isParent
+              ? "Your background and preferences — used to personalise AI guidance."
+              : "Your sports and AI guidance preferences."
+          }
           isEditing={isEditingSports}
           onEdit={handleEditSportsClick}
           onCancel={handleCancelSportsEdit}
@@ -736,66 +706,131 @@ export default function ProfilePage() {
         <CardContent className="px-6 py-6">
           {isEditingSports ? (
             <div className="space-y-6">
-              <ProfileEditPanel description="Choose the sports you play or are interested in. You can select multiple.">
-                <ProfileEditField
-                  label="Your sports"
-                  hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
+              {isParent ? (
+                <ProfileEditPanel
+                  title="About You"
+                  description="Your sports background as a parent — helps the AI understand your perspective."
                 >
-                  <SportsMultiSelect
-                    value={selectedSports}
-                    onChange={setSelectedSports}
-                  />
-                </ProfileEditField>
+                  <ProfileEditField
+                    label="About You"
+                    htmlFor="parent-bio"
+                    hint={`${playerProfileForm.bio.length}/300 — your background as a sports parent`}
+                  >
+                    <textarea
+                      id="parent-bio"
+                      rows={3}
+                      maxLength={300}
+                      value={playerProfileForm.bio}
+                      onChange={(e) =>
+                        setPlayerProfileForm((f) => ({ ...f, bio: e.target.value }))
+                      }
+                      placeholder="e.g., Former club cricketer, now focused on my daughter's tennis journey."
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 resize-none"
+                    />
+                  </ProfileEditField>
 
-                <ProfileEditField
-                  label="Experience (Years)"
-                  htmlFor="self-years-playing"
-                  hint="Leave blank if you haven't started playing yet"
-                >
-                  <Input
-                    id="self-years-playing"
-                    type="number"
-                    min="0"
-                    max="20"
-                    placeholder="e.g., 2"
-                    value={playerProfileForm.yearsPlaying ?? ""}
-                    onChange={(e) =>
-                      setPlayerProfileForm((f) => ({
-                        ...f,
-                        yearsPlaying:
-                          e.target.value === ""
-                            ? undefined
-                            : parseInt(e.target.value, 10),
-                      }))
-                    }
-                  />
-                </ProfileEditField>
+                  <ProfileEditField
+                    label="Sports You Follow or Have Played"
+                    hint="Helps the AI understand your perspective when asking about your child's sport"
+                  >
+                    <SportsMultiSelect
+                      value={playerProfileForm.sportInterests}
+                      onChange={(s) =>
+                        setPlayerProfileForm((f) => ({ ...f, sportInterests: s }))
+                      }
+                    />
+                  </ProfileEditField>
 
-                {selectedSports.length > 0 ? (
-                  <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Selected
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedSports.map((sport) => (
-                        <Badge
-                          key={sport}
-                          className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                        >
-                          {sport}
-                        </Badge>
-                      ))}
+                  <ProfileEditField
+                    label="Years Involved in Sport"
+                    htmlFor="parent-involvement-years"
+                    hint="How long you've been involved or interested in sport"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="parent-involvement-years"
+                        type="number"
+                        min="0"
+                        max="40"
+                        placeholder="e.g., 5"
+                        value={playerProfileForm.involvementYears ?? ""}
+                        onChange={(e) =>
+                          setPlayerProfileForm((f) => ({
+                            ...f,
+                            involvementYears:
+                              e.target.value === ""
+                                ? undefined
+                                : Math.min(40, parseInt(e.target.value, 10) || 0),
+                          }))
+                        }
+                        className="w-28"
+                      />
+                      <span className="text-sm text-slate-500">years</span>
                     </div>
-                  </div>
-                ) : (
-                  <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center">
-                    <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
-                    <p className="text-sm text-slate-500">
-                      No sports selected yet. Search above to add some.
-                    </p>
-                  </div>
-                )}
-              </ProfileEditPanel>
+                  </ProfileEditField>
+                </ProfileEditPanel>
+              ) : (
+                <ProfileEditPanel description="Choose the sports you play or are interested in. You can select multiple.">
+                  <ProfileEditField
+                    label="Your sports"
+                    hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
+                  >
+                    <SportsMultiSelect
+                      value={selectedSports}
+                      onChange={setSelectedSports}
+                    />
+                  </ProfileEditField>
+
+                  <ProfileEditField
+                    label="Experience (Years)"
+                    htmlFor="self-years-playing"
+                    hint="Leave blank if you haven't started playing yet"
+                  >
+                    <Input
+                      id="self-years-playing"
+                      type="number"
+                      min="0"
+                      max="20"
+                      placeholder="e.g., 2"
+                      value={playerProfileForm.yearsPlaying ?? ""}
+                      onChange={(e) =>
+                        setPlayerProfileForm((f) => ({
+                          ...f,
+                          yearsPlaying:
+                            e.target.value === ""
+                              ? undefined
+                              : parseInt(e.target.value, 10),
+                        }))
+                      }
+                    />
+                  </ProfileEditField>
+
+                  {selectedSports.length > 0 ? (
+                    <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Selected
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSports.map((sport) => (
+                          <Badge
+                            key={sport}
+                            className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                          >
+                            {sport}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center">
+                      <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
+                      <p className="text-sm text-slate-500">
+                        No sports selected yet. Search above to add some.
+                      </p>
+                    </div>
+                  )}
+                </ProfileEditPanel>
+              )}
 
               <ProfileEditPanel
                 title="AI Guidance Preferences"
@@ -925,49 +960,90 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-8">
-              <div>
-                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  My Sports
-                </h4>
-                {user.playerProfile?.sportsFocus &&
-                user.playerProfile.sportsFocus.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {user.playerProfile.sportsFocus.map((sport: string) => (
-                      <Badge
-                        key={sport}
-                        className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                      >
-                        {sport}
-                      </Badge>
-                    ))}
+              {isParent ? (
+                <div>
+                  <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    About You
+                  </h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <ProfileInfoField label="Background">
+                      {user.parentProfile?.bio ? (
+                        <p className="text-sm text-slate-700 leading-relaxed">
+                          {user.parentProfile.bio}
+                        </p>
+                      ) : (
+                        <span className="text-slate-400 italic text-sm">Not provided</span>
+                      )}
+                    </ProfileInfoField>
+                    <ProfileInfoField label="Years Involved in Sport">
+                      {user.parentProfile?.involvementYears !== undefined
+                        ? `${user.parentProfile.involvementYears} year${user.parentProfile.involvementYears === 1 ? "" : "s"}`
+                        : <span className="text-slate-400 italic text-sm">Not provided</span>}
+                    </ProfileInfoField>
+                    <ProfileInfoField label="Sports Followed">
+                      {user.parentProfile?.sportInterests &&
+                      user.parentProfile.sportInterests.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {user.parentProfile.sportInterests.map((sport) => (
+                            <Badge
+                              key={sport}
+                              className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                            >
+                              {sport}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-sm">Not provided</span>
+                      )}
+                    </ProfileInfoField>
                   </div>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center max-w-lg">
-                    <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
-                    <p className="text-sm font-medium text-slate-700">
-                      No sports added yet
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Add the sports you play to get better recommendations.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                      onClick={handleEditSportsClick}
-                    >
-                      Add Sports
-                    </Button>
-                  </div>
-                )}
-                <div className="mt-4">
-                  <ProfileInfoField label="Experience">
-                    {user.playerProfile?.yearsPlaying !== undefined
-                      ? `${user.playerProfile.yearsPlaying} year${user.playerProfile.yearsPlaying === 1 ? "" : "s"}`
-                      : "Not started yet"}
-                  </ProfileInfoField>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    My Sports
+                  </h4>
+                  {user.playerProfile?.sportsFocus &&
+                  user.playerProfile.sportsFocus.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {user.playerProfile.sportsFocus.map((sport: string) => (
+                        <Badge
+                          key={sport}
+                          className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
+                        >
+                          {sport}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center max-w-lg">
+                      <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
+                      <p className="text-sm font-medium text-slate-700">
+                        No sports added yet
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Add the sports you play to get better recommendations.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={handleEditSportsClick}
+                      >
+                        Add Sports
+                      </Button>
+                    </div>
+                  )}
+                  <div className="mt-4">
+                    <ProfileInfoField label="Experience">
+                      {user.playerProfile?.yearsPlaying !== undefined
+                        ? `${user.playerProfile.yearsPlaying} year${user.playerProfile.yearsPlaying === 1 ? "" : "s"}`
+                        : "Not started yet"}
+                    </ProfileInfoField>
+                  </div>
+                </div>
+              )}
 
               <div className="border-t border-slate-100 pt-6">
                 <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -1012,120 +1088,6 @@ export default function ProfilePage() {
           )}
         </CardContent>
       </Card>
-
-      {user.userType === "Parent" && (
-        <Card
-          className={cn(
-            "shop-surface premium-shadow overflow-hidden p-0 transition-shadow",
-            isEditingParent && "ring-2 ring-power-orange/20",
-          )}
-        >
-          <ProfileSectionHeader
-            icon={Dumbbell}
-            title="Parent Profile"
-            description="Your sports background and involvement — used to personalise AI guidance."
-            isEditing={isEditingParent}
-            onEdit={handleEditParentClick}
-            onCancel={handleCancelParentEdit}
-            onSave={handleSaveParent}
-            saving={isSavingParent}
-            saveLabel="Save Profile"
-          />
-
-          <CardContent className="px-6 py-6">
-            {isEditingParent ? (
-              <div className="space-y-5">
-                <ProfileEditField
-                  label="About You"
-                  htmlFor="parent-bio"
-                  hint={`${(parentForm.bio as string).length}/300 — your background as a sports parent helps the AI understand your perspective`}
-                >
-                  <textarea
-                    id="parent-bio"
-                    rows={3}
-                    maxLength={300}
-                    value={parentForm.bio as string}
-                    onChange={(e) => setParentForm((f) => ({ ...f, bio: e.target.value }))}
-                    placeholder="e.g., Former club cricketer, now focused on my daughter's tennis journey."
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 resize-none"
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField
-                  label="Sports You Follow or Have Played"
-                  hint="Helps the AI understand your sports perspective"
-                >
-                  <SportsMultiSelect
-                    value={parentForm.sportInterests}
-                    onChange={(s) => setParentForm((f) => ({ ...f, sportInterests: s }))}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField
-                  label="Years Involved in Sport"
-                  htmlFor="parent-involvement-years"
-                  hint="How long you've been involved or interested in sport"
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      id="parent-involvement-years"
-                      type="number"
-                      min={0}
-                      max={40}
-                      value={parentForm.involvementYears}
-                      onChange={(e) =>
-                        setParentForm((f) => ({
-                          ...f,
-                          involvementYears:
-                            e.target.value === ""
-                              ? ""
-                              : Math.min(40, parseInt(e.target.value, 10) || 0),
-                        }))
-                      }
-                      placeholder="e.g., 5"
-                      className="w-28 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
-                    />
-                    <span className="text-sm text-slate-500">years</span>
-                  </div>
-                </ProfileEditField>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                <ProfileInfoField label="About You">
-                  {(user as any).bio ? (
-                    <p className="text-sm text-slate-700 leading-relaxed">{(user as any).bio}</p>
-                  ) : (
-                    <span className="text-slate-400 italic text-sm">Not provided</span>
-                  )}
-                </ProfileInfoField>
-
-                <ProfileInfoField label="Sports Followed">
-                  {(user as any).sportInterests && (user as any).sportInterests.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {((user as any).sportInterests as string[]).map((sport) => (
-                        <Badge
-                          key={sport}
-                          className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                        >
-                          {sport}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className="text-slate-400 italic text-sm">Not provided</span>
-                  )}
-                </ProfileInfoField>
-
-                <ProfileInfoField label="Years Involved">
-                  {(user as any).involvementYears !== undefined
-                    ? `${(user as any).involvementYears} year${(user as any).involvementYears === 1 ? "" : "s"}`
-                    : <span className="text-slate-400 italic text-sm">Not provided</span>}
-                </ProfileInfoField>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {(user.userType === "Parent" ||
         (user.dependents && user.dependents.length > 0)) && (
@@ -1236,6 +1198,37 @@ export default function ProfilePage() {
                                   )}
                                 </div>
                               )}
+
+                            {((dependent as any).heightCm ||
+                              (dependent as any).weightKg) && (
+                              <p className="mt-2 text-xs text-slate-500">
+                                {(dependent as any).heightCm
+                                  ? `${(dependent as any).heightCm} cm`
+                                  : ""}
+                                {(dependent as any).heightCm &&
+                                (dependent as any).weightKg
+                                  ? " · "
+                                  : ""}
+                                {(dependent as any).weightKg
+                                  ? `${(dependent as any).weightKg} kg`
+                                  : ""}
+                              </p>
+                            )}
+
+                            {(dependent as any).medicalConditions?.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {(dependent as any).medicalConditions.map(
+                                  (cond: string) => (
+                                    <Badge
+                                      key={cond}
+                                      className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50 text-[11px]"
+                                    >
+                                      {cond}
+                                    </Badge>
+                                  ),
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 

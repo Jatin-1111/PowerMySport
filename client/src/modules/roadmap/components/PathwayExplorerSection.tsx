@@ -5,6 +5,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import { SportMatchModal } from "@/modules/guidance/components/wizard/SportMatchModal";
+import RoadmapIntroModal from "./RoadmapIntroModal";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { PathwayConciergeModal } from "@/modules/sports/components/PathwayConciergeModal";
 import { RoadmapChatDrawer } from "@/modules/sports/components/RoadmapChatDrawer";
@@ -14,10 +15,13 @@ import {
     groupLevelsIntoMacro,
 } from "@/modules/sports/config/macroLevels";
 import {
+    federationApi,
     pathwayApi,
+    type Federation,
     PathwayLevel,
     SportPathway,
 } from "@/modules/sports/services/pathway";
+import { FederationCard } from "./FederationCard";
 import {
     AthleteStory,
     pathwayProfileApi,
@@ -135,6 +139,7 @@ export function PathwayExplorerSection() {
     type: "tournament" | "scholarship" | "university";
   } | null>(null);
   const [detailTournament, setDetailTournament] = useState<any | null>(null);
+  const [federations, setFederations] = useState<Federation[]>([]);
 
   // P1: progress tracker state
   const [progress, setProgress] = useState<ProgressState>(DEFAULT_PROGRESS);
@@ -153,6 +158,7 @@ export function PathwayExplorerSection() {
   const [dbStories, setDbStories] = useState<AthleteStory[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatLoginModalOpen, setChatLoginModalOpen] = useState(false);
+  const [introModalOpen, setIntroModalOpen] = useState(false);
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
   const [isMatchModalCollapsed, setIsMatchModalCollapsed] = useState(false);
   const [previewSport, setPreviewSport] = useState<string | null>(null);
@@ -163,6 +169,7 @@ export function PathwayExplorerSection() {
   const [showReengagePrompt, setShowReengagePrompt] = useState(false);
   const [hasRunMatchThisSession, setHasRunMatchThisSession] = useState(false);
   const hasShownReengageRef = useRef(false);
+  const INTRO_KEY = "pms_roadmap_intro_v2";
 
   const searchParams = useSearchParams();
   const [contextBanner, setContextBanner] = useState<{
@@ -219,6 +226,12 @@ export function PathwayExplorerSection() {
     }
     return () => clearTimeout(timer);
   }, [isMatchModalCollapsed, activeIdx]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !localStorage.getItem(INTRO_KEY)) {
+      setIntroModalOpen(true);
+    }
+  }, []);
 
   const handleSavedChange = (items: SavedItem[]) => {
     setSavedItems(items);
@@ -306,6 +319,7 @@ export function PathwayExplorerSection() {
     setResult(null);
     setErrorMsg("");
     setEntitiesStatus("idle");
+    setFederations([]);
     setActiveIdx(0);
     setActiveTab("journey");
     setExpandedCards(new Set());
@@ -338,6 +352,12 @@ export function PathwayExplorerSection() {
       setResult(pr as any);
       setQuery(pr.pathway.sportName);
       setStatus("success");
+
+      // Fetch governing federation for this sport (fire-and-forget)
+      federationApi
+        .listBySport(pr.pathway.sportSlug ?? pr.pathway.sportName.toLowerCase())
+        .then((feds) => setFederations(feds))
+        .catch(() => {});
 
       // If entities (tournaments/scholarships/universities) weren't ready yet,
       // fetch them in the background and merge when done.
@@ -763,13 +783,6 @@ export function PathwayExplorerSection() {
               Popular in India
             </p>
             <div className="flex flex-col items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsMatchModalOpen(true)}
-                className="text-xs font-bold text-power-orange hover:text-orange-600 transition underline underline-offset-2 mb-2 cursor-pointer"
-              >
-                Still confused? Get a recommendation &rarr;
-              </button>
               <div className="flex flex-wrap justify-center gap-2">
                 {[
                   "Cricket",
@@ -792,6 +805,13 @@ export function PathwayExplorerSection() {
                   </button>
                 ))}
               </div>
+              <button
+                onClick={() => setIsMatchModalOpen(true)}
+                className="mt-2 flex items-center gap-2 rounded-full border border-power-orange/40 bg-orange-50 px-4 py-2 text-xs font-bold text-power-orange shadow-sm hover:bg-orange-100 hover:border-power-orange transition-colors"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Not sure which sport? Find the right fit
+              </button>
             </div>
             <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
@@ -1353,109 +1373,51 @@ export function PathwayExplorerSection() {
                       </div>
                     )}
 
-                    {/* Tournaments */}
+                    {/* Governing Federations */}
                     <div>
                       <div className="flex items-center gap-3 mb-5">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-power-orange">
-                          <Trophy className="h-4 w-4" />
+                          <Landmark className="h-4 w-4" />
                         </div>
                         <h3 className="font-title text-lg font-bold text-slate-900">
-                          Tournaments
+                          Governing Federation
                         </h3>
                         <div className="flex-1 h-px bg-slate-100" />
-                        {result.pathway.tournaments?.length > 0 && (
-                          <span className="rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-xs font-bold text-power-orange">
-                            {result.pathway.tournaments.length} found
-                          </span>
-                        )}
                       </div>
-                      {result.pathway.tournaments?.length > 0 ? (
-                        <>
+
+                      {federations.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          {federations.map((fed) => (
+                            <FederationCard
+                              key={fed.slug}
+                              federation={fed}
+                              tournamentCount={result.pathway.tournaments?.length}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4">
+                          <p className="text-sm font-semibold text-slate-700 mb-1">
+                            {result.pathway.levels?.[0]?.governingBody ?? `${result.pathway.sportName} Federation`}
+                          </p>
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            Full federation profile coming soon — including verified eligibility criteria, registration steps, and tournament calendar.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Tournament recommendations — kept for the personalised plan */}
+                      {result.pathway.tournaments?.length > 0 && (
+                        <div className="mt-6">
+                          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">
+                            Tournament recommendations
+                          </p>
                           <TournamentRecommendationPanel
                             tournaments={result.pathway.tournaments}
                             currentLevel={progress.currentLevel}
                             sportName={result.pathway.sportName}
                             onViewTournament={(t) => setDetailTournament(t)}
                           />
-                          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {result.pathway.tournaments.map(
-                              (t: any, i: number) => {
-                                const sid = `tournament:${t.name}:${result.pathway.sportName}`;
-                                const isSaved = savedItems.some(
-                                  (s) => s.id === sid,
-                                );
-                                return (
-                                  <div
-                                    key={i}
-                                    onClick={() => setDetailTournament(t)}
-                                    className="group relative cursor-pointer rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm transition-all duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.09)] hover:border-orange-200 hover:-translate-y-0.5"
-                                  >
-                                    {/* Thin orange top bar */}
-                                    <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
-                                    <div
-                                      className="flex flex-col p-4"
-                                      style={{ minHeight: "130px" }}
-                                    >
-                                      {/* Level + save */}
-                                      <div className="mb-3 flex items-start justify-between gap-2">
-                                        <span className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-power-orange">
-                                          {t.level}
-                                        </span>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleSavedChange(
-                                              isSaved
-                                                ? savedItems.filter(
-                                                    (s) => s.id !== sid,
-                                                  )
-                                                : [
-                                                    ...savedItems,
-                                                    {
-                                                      id: sid,
-                                                      type: "tournament" as const,
-                                                      name: t.name,
-                                                      sport:
-                                                        result.pathway
-                                                          .sportName,
-                                                      data: t,
-                                                      savedAt:
-                                                        new Date().toISOString(),
-                                                    },
-                                                  ],
-                                            );
-                                          }}
-                                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 transition"
-                                        >
-                                          <Heart
-                                            className={`h-3.5 w-3.5 transition-colors ${isSaved ? "fill-power-orange text-power-orange" : "text-slate-300"}`}
-                                          />
-                                        </button>
-                                      </div>
-                                      {/* Name */}
-                                      <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
-                                        {t.name}
-                                      </p>
-                                      {/* Footer */}
-                                      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-                                        <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
-                                          <Users className="h-3 w-3 shrink-0" />
-                                          <span className="truncate">
-                                            {t.ageGroup}
-                                          </span>
-                                        </div>
-                                        <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange group-hover:translate-x-0.5 transition-all shrink-0" />
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              },
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
-                          No tournaments found for this sport.
                         </div>
                       )}
                     </div>
@@ -2138,6 +2100,19 @@ export function PathwayExplorerSection() {
             }}
           />
         )}
+
+        <RoadmapIntroModal
+          isOpen={introModalOpen}
+          onYes={() => {
+            localStorage.setItem(INTRO_KEY, "1");
+            setIntroModalOpen(false);
+          }}
+          onNo={() => {
+            localStorage.setItem(INTRO_KEY, "1");
+            setIntroModalOpen(false);
+            setIsMatchModalOpen(true);
+          }}
+        />
 
         <SportMatchModal
           isOpen={isMatchModalOpen}

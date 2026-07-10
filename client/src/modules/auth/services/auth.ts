@@ -137,6 +137,9 @@ export const authApi = {
     weeklyTimeCommitment?: number;
     budgetTier?: "Budget" | "Moderate" | "Premium";
     location?: string;
+    heightCm?: number;
+    weightKg?: number;
+    medicalConditions?: string[];
   }): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.post("/auth/dependents", data);
     return response.data;
@@ -156,6 +159,9 @@ export const authApi = {
       weeklyTimeCommitment?: number;
       budgetTier?: "Budget" | "Moderate" | "Premium";
       location?: string;
+      heightCm?: number;
+      weightKg?: number;
+      medicalConditions?: string[];
     },
   ): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.put(

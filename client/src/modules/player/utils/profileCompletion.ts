@@ -16,7 +16,7 @@
 // experience).
 
 export interface CompletionProfile {
-  sports?: string[];
+  sportsFocus?: string[];
   yearsPlaying?: number;
   personalityTags?: string[];
   primaryObjective?: string;
@@ -32,10 +32,10 @@ export const PROFILE_COMPLETION_FIELDS: Array<{
   isFilled: (p: CompletionProfile) => boolean;
 }> = [
   {
-    field: "sports",
+    field: "sportsFocus",
     label: "Sports",
     weight: 25,
-    isFilled: (p) => (p.sports?.length ?? 0) > 0,
+    isFilled: (p) => (p.sportsFocus?.length ?? 0) > 0,
   },
   {
     field: "primaryObjective",

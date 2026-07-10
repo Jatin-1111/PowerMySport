@@ -16,7 +16,7 @@ import {
 import { Button } from "@/modules/shared/ui/Button";
 import { Modal } from "@/modules/shared/ui/Modal";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
-import { Calendar, UserRound } from "lucide-react";
+import { Calendar, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 interface Dependent {
@@ -32,6 +32,9 @@ interface Dependent {
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
+  heightCm?: number;
+  weightKg?: number;
+  medicalConditions?: string[];
 }
 
 interface DependentManagementModalProps {
@@ -54,6 +57,9 @@ const EMPTY_FORM: Dependent = {
   weeklyTimeCommitment: 3,
   budgetTier: "Moderate",
   location: "",
+  heightCm: undefined,
+  weightKg: undefined,
+  medicalConditions: [],
 };
 
 const PERSONALITY_OPTIONS = [
@@ -282,6 +288,105 @@ export default function DependentManagementModal({
                     />
                   </ProfileEditField>
                 </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <ProfileEditField
+                    label="Height (cm)"
+                    htmlFor="dependent-height"
+                    hint="Optional — improves sport matching"
+                  >
+                    <Input
+                      id="dependent-height"
+                      type="number"
+                      min="50"
+                      max="250"
+                      placeholder="e.g., 135"
+                      value={formData.heightCm ?? ""}
+                      onChange={(e) =>
+                        handleChange(
+                          "heightCm",
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value),
+                        )
+                      }
+                    />
+                  </ProfileEditField>
+
+                  <ProfileEditField
+                    label="Weight (kg)"
+                    htmlFor="dependent-weight"
+                    hint="Optional — improves sport matching"
+                  >
+                    <Input
+                      id="dependent-weight"
+                      type="number"
+                      min="10"
+                      max="200"
+                      placeholder="e.g., 32"
+                      value={formData.weightKg ?? ""}
+                      onChange={(e) =>
+                        handleChange(
+                          "weightKg",
+                          e.target.value === ""
+                            ? undefined
+                            : parseFloat(e.target.value),
+                        )
+                      }
+                    />
+                  </ProfileEditField>
+                </div>
+
+                <ProfileEditField
+                  label="Medical conditions / physical limitations"
+                  hint="Optional — helps avoid unsuitable sports"
+                >
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        placeholder="e.g., Asthma — press Enter to add"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const val = (e.target as HTMLInputElement).value.trim();
+                            if (val && !formData.medicalConditions?.includes(val)) {
+                              handleChange("medicalConditions", [
+                                ...(formData.medicalConditions || []),
+                                val,
+                              ]);
+                              (e.target as HTMLInputElement).value = "";
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    {(formData.medicalConditions?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {formData.medicalConditions?.map((cond) => (
+                          <span
+                            key={cond}
+                            className="flex items-center gap-1 rounded-full bg-orange-50 border border-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700"
+                          >
+                            {cond}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleChange(
+                                  "medicalConditions",
+                                  formData.medicalConditions?.filter((c) => c !== cond),
+                                )
+                              }
+                              className="ml-0.5 text-orange-400 hover:text-orange-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </ProfileEditField>
               </div>
             </ProfileEditPanel>
           </TabsContent>

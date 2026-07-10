@@ -16,6 +16,9 @@ export interface PlayerDocument extends Document {
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
+  heightCm?: number;
+  weightKg?: number;
+  medicalConditions?: string[];
   paymentHistory?: Array<{
     bookingId: mongoose.Types.ObjectId;
     amount: number;
@@ -92,6 +95,9 @@ const playerSchema = new Schema<PlayerDocument>(
       type: String,
       trim: true,
     },
+    heightCm: { type: Number, min: 50, max: 250 },
+    weightKg: { type: Number, min: 10, max: 200 },
+    medicalConditions: { type: [String], default: [] },
     paymentHistory: [
       {
         bookingId: {

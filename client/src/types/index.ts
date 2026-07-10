@@ -70,6 +70,9 @@ export interface Dependent {
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
+  heightCm?: number;
+  weightKg?: number;
+  medicalConditions?: string[];
 }
 
 export interface UserShippingAddress {

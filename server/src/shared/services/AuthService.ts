@@ -510,6 +510,9 @@ export interface AddDependentPayload {
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
+  heightCm?: number;
+  weightKg?: number;
+  medicalConditions?: string[];
 }
 
 function calculateAge(dob: Date): number {
@@ -559,6 +562,9 @@ export const addDependent = async (
     weeklyTimeCommitment: payload.weeklyTimeCommitment,
     budgetTier: payload.budgetTier,
     location: payload.location,
+    heightCm: payload.heightCm,
+    weightKg: payload.weightKg,
+    medicalConditions: payload.medicalConditions || [],
   });
 
   await newDependent.save();
@@ -606,6 +612,9 @@ export const updateDependent = async (
     dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
   if (payload.budgetTier) dependent.budgetTier = payload.budgetTier;
   if (payload.location !== undefined) dependent.location = payload.location;
+  if (payload.heightCm !== undefined) (dependent as any).heightCm = payload.heightCm;
+  if (payload.weightKg !== undefined) (dependent as any).weightKg = payload.weightKg;
+  if (payload.medicalConditions !== undefined) (dependent as any).medicalConditions = payload.medicalConditions;
 
   await dependent.save();
   return dependent;

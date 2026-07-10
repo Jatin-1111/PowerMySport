@@ -165,7 +165,9 @@ export const getProfile = async (
         name: p.name,
         dob: p.dob || null,
         age: p.age,
-        sports: p.sportsFocus || [],
+        gender: p.gender,
+        relation: p.relation,
+        sportsFocus: p.sportsFocus || [],
         skillLevel: p.skillLevel,
         yearsPlaying: p.yearsPlaying,
         personalityTags: p.personalityTags,
@@ -173,12 +175,15 @@ export const getProfile = async (
         weeklyTimeCommitment: p.weeklyTimeCommitment,
         budgetTier: p.budgetTier,
         location: p.location,
+        heightCm: p.heightCm,
+        weightKg: p.weightKg,
+        medicalConditions: p.medicalConditions || [],
       }));
 
     const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
     const playerProfile = selfPlayer
       ? {
-          sports: selfPlayer.sportsFocus || [],
+          sportsFocus: selfPlayer.sportsFocus || [],
           yearsPlaying: selfPlayer.yearsPlaying,
           personalityTags: selfPlayer.personalityTags,
           primaryObjective: selfPlayer.primaryObjective,
@@ -187,6 +192,15 @@ export const getProfile = async (
           location: selfPlayer.location,
         }
       : undefined;
+
+    const parentProfile =
+      user.userType === "Parent"
+        ? {
+            bio: (user as any).bio ?? undefined,
+            sportInterests: (user as any).sportInterests ?? [],
+            involvementYears: (user as any).involvementYears ?? undefined,
+          }
+        : undefined;
 
     res.status(200).json({
       success: true,
@@ -202,6 +216,7 @@ export const getProfile = async (
         photoUrl: user.photoUrl,
         photoS3Key: user.photoS3Key,
         playerProfile,
+        parentProfile,
         dependents,
         shippingAddress: user.shippingAddress,
         hasPassword: !!user.password,
@@ -286,6 +301,15 @@ export const updateProfileHandler = async (
       shippingAddress,
     });
 
+    const updatedParentProfile =
+      updatedUser.userType === "Parent"
+        ? {
+            bio: (updatedUser as any).bio ?? undefined,
+            sportInterests: (updatedUser as any).sportInterests ?? [],
+            involvementYears: (updatedUser as any).involvementYears ?? undefined,
+          }
+        : undefined;
+
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
@@ -300,6 +324,7 @@ export const updateProfileHandler = async (
         photoUrl: updatedUser.photoUrl,
         photoS3Key: updatedUser.photoS3Key,
         shippingAddress: updatedUser.shippingAddress,
+        parentProfile: updatedParentProfile,
       },
     });
   } catch (error) {

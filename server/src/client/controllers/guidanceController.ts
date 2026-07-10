@@ -553,33 +553,82 @@ const getCategoryScore = (tags: string[], attributes?: any): number => {
 
   for (const tag of tags) {
     const t = tag.toLowerCase();
-    if (t === "competitive" && attributes.interactionType === "head-to-head")
-      score += 1;
-    if (t === "social" && attributes.interactionType === "team") score += 2;
-    if (t === "team-oriented" && attributes.interactionType === "team")
-      score += 2;
-    if (t === "shy" && attributes.interactionType === "individual") score += 2;
+    if (t === "competitive" && attributes.interactionType === "head-to-head") score += 3;
+    if (t === "competitive" && attributes.interactionType === "individual") score += 1;
+    if (t === "social" && attributes.interactionType === "team") score += 3;
+    if (t === "team-oriented" && attributes.interactionType === "team") score += 3;
+    if (t === "team-oriented" && attributes.interactionType === "individual") score -= 1;
+    if (t === "shy" && attributes.interactionType === "individual") score += 3;
+    if (t === "shy" && attributes.interactionType === "team") score -= 1;
     if (
       t === "energetic" &&
-      (attributes.demand === "power" ||
-        attributes.demand === "reflex" ||
-        attributes.demand === "endurance")
-    )
-      score += 1;
+      (attributes.demand === "power" || attributes.demand === "reflex" || attributes.demand === "endurance")
+    ) score += 2;
+    if (t === "energetic" && attributes.demand === "precision") score -= 1;
     if (
       t === "focused" &&
       (attributes.demand === "precision" || attributes.demand === "strategy")
-    )
-      score += 2;
+    ) score += 3;
     if (
       t === "patient" &&
-      (attributes.demand === "strategy" ||
-        attributes.demand === "precision" ||
-        attributes.demand === "flexibility")
-    )
-      score += 1;
-    if (t === "curious") score += 1; // inquisitive for anything
+      (attributes.demand === "strategy" || attributes.demand === "precision" || attributes.demand === "flexibility")
+    ) score += 2;
+    if (t === "patient" && (attributes.demand === "power" || attributes.demand === "reflex")) score -= 1;
+    // curious suits technical / strategic sports, not brute-power sports
+    if (t === "curious" && (attributes.demand === "strategy" || attributes.demand === "precision")) score += 2;
+    if (t === "curious" && attributes.demand === "power") score -= 1;
   }
+  return score;
+};
+
+const getPreferenceScore = (
+  teamPreference: string | undefined,
+  intensityPreference: string | undefined,
+  attributes?: any,
+  age?: number,
+  medicalConditions?: string[],
+): number => {
+  if (!attributes) return 0;
+  let score = 0;
+
+  if (teamPreference) {
+    const tp = teamPreference.toLowerCase();
+    if (tp === "team" && attributes.interactionType === "team") score += 3;
+    if (tp === "team" && attributes.interactionType === "individual") score -= 2;
+    if (tp === "individual" && (attributes.interactionType === "individual" || attributes.interactionType === "head-to-head")) score += 3;
+    if (tp === "individual" && attributes.interactionType === "team") score -= 2;
+  }
+
+  if (intensityPreference) {
+    const ip = intensityPreference.toLowerCase();
+    if (ip === "high" && (attributes.demand === "power" || attributes.demand === "endurance" || attributes.demand === "reflex")) score += 2;
+    if (ip === "high" && (attributes.demand === "precision" || attributes.demand === "flexibility")) score -= 1;
+    if (ip === "medium" && (attributes.demand === "strategy" || attributes.demand === "reflex" || attributes.demand === "flexibility")) score += 2;
+    if (ip === "low" && (attributes.demand === "precision" || attributes.demand === "strategy" || attributes.demand === "flexibility")) score += 2;
+    if (ip === "low" && (attributes.demand === "power" || attributes.demand === "endurance")) score -= 2;
+  }
+
+  // Contact level scoring — differentiates high-contact (football, hockey) from
+  // low-contact (volleyball, badminton) using signals available without extra questions.
+  if (attributes.contactLevel) {
+    const cl = attributes.contactLevel; // "none" | "low" | "high"
+
+    // Young children (< 9) should lean toward low-contact sports
+    if (age !== undefined && age < 9 && cl === "high") score -= 2;
+    if (age !== undefined && age < 9 && cl === "none") score += 1;
+
+    // Medical conditions present → prefer lower-contact sports
+    if (medicalConditions && medicalConditions.length > 0) {
+      if (cl === "high") score -= 3;
+      if (cl === "none") score += 2;
+    }
+
+    // Low intensity preference → high contact is a mismatch
+    if (intensityPreference && intensityPreference.toLowerCase() === "low" && cl === "high") score -= 2;
+    // High intensity preference → slight bonus for high contact (physical engagement)
+    if (intensityPreference && intensityPreference.toLowerCase() === "high" && cl === "high") score += 1;
+  }
+
   return score;
 };
 
@@ -646,23 +695,32 @@ export const recommendSport = async (
       cacheKey: { $regex: new RegExp(`_${stateSlug}$`, "i") },
     }).lean();
 
-    // 3. Create a map of existing pathways by sport slug
+    // 3. Create a map of existing pathways by sport slug (state-specific)
     const pathwayBySlug = new Map<string, any>(
       existingPathways.map((p) => [(p as any).sportSlug, p]),
     );
+
+    // 4. Also fetch sport slugs that have a pathway in ANY state (national infra check)
+    const allPathwaySlugs = await SportPathway.distinct("sportSlug");
+    const sportsWithAnyPathway = new Set<string>(allPathwaySlugs);
 
     if (allSports.length === 0) {
       res.status(404).json({ success: false, message: "No sports available" });
       return;
     }
 
-    const scoredSports = allSports.map((sport) => {
+    const rawScoredSports = allSports.map((sport) => {
       let score = 0;
 
-      // Calculate category score (works without pathway data)
       score += getCategoryScore(parsed.data.personality_tags, sport.attributes);
+      score += getPreferenceScore(
+        parsed.data.team_preference,
+        parsed.data.intensity_preference,
+        sport.attributes,
+        parsed.data.child_age,
+        parsed.data.medical_conditions,
+      );
 
-      // Check if we have pathway data for this sport in this state
       const p = pathwayBySlug.get(sport.slug);
       const hasGeneratedPathway = !!p;
 
@@ -676,26 +734,17 @@ export const recommendSport = async (
         if (p.overview) overview = p.overview;
 
         if (equip1 && equip1.estimatedCost) {
-          score += getBudgetScore(
-            parsed.data.budget_tier,
-            equip1.estimatedCost,
-          );
+          score += getBudgetScore(parsed.data.budget_tier, equip1.estimatedCost);
         }
         if (level1 && level1.ageRange) {
           score += getAgeScore(parsed.data.child_age, level1.ageRange);
         }
       }
 
-      const MAX_POSSIBLE_SCORE = 10;
-      const normalizedScore = Math.max(
-        0,
-        Math.min(100, Math.round((score / MAX_POSSIBLE_SCORE) * 100)),
-      );
-
       return {
+        _rawScore: score,
         sportSlug: sport.slug,
         sportName: sport.name,
-        matchScore: normalizedScore,
         category: sport.category || "Other",
         sportDescription: sport.description || "",
         attributes: sport.attributes || null,
@@ -711,6 +760,15 @@ export const recommendSport = async (
       };
     });
 
+    // Dynamic normalization: scale relative to the actual highest raw score so
+    // differentiation is always visible. Floor at a minimum of 6 points to
+    // avoid dividing by near-zero when all sports lack pathway data.
+    const maxRaw = Math.max(...rawScoredSports.map((s) => s._rawScore), 6);
+    const scoredSports = rawScoredSports.map((s) => ({
+      ...s,
+      matchScore: Math.max(0, Math.min(95, Math.round((s._rawScore / maxRaw) * 95))),
+    }));
+
     scoredSports.sort((a, b) => b.matchScore - a.matchScore);
     const top3 = scoredSports.slice(0, 3);
 
@@ -719,6 +777,9 @@ export const recommendSport = async (
       parsed.data,
       top3,
     );
+
+    // Re-sort by AI-computed scores (AI may reorder relative to rule-based ranking)
+    recommendationResponse.recommendations.sort((a, b) => b.matchScore - a.matchScore);
 
     res.status(200).json({
       success: true,
