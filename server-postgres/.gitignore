@@ -6,8 +6,9 @@ dist/
 *.log
 .DS_Store
 debug_output.txt
-
+package.json
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+

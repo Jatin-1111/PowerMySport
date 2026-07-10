@@ -1,7 +1,7 @@
 import crypto from "crypto";
+import { RateLimitType } from "@prisma/client";
 import { sendEmail } from "../../utils/email";
-import { EmailVerification } from "../models/EmailVerification";
-import { RateLimit } from "../models/RateLimit";
+import prisma from "../../lib/prisma";
 
 // Configuration
 const CODE_EXPIRY_MINUTES = 5;
@@ -21,9 +21,13 @@ const generateOTP = (): string => {
  */
 export const checkRateLimit = async (email: string): Promise<boolean> => {
   const now = new Date();
-  const limit = await RateLimit.findOne({
-    key: email.toLowerCase(),
-    type: "EMAIL_VERIFICATION",
+  const limit = await prisma.rateLimit.findUnique({
+    where: {
+      unique_rate_limit: {
+        key: email.toLowerCase(),
+        type: RateLimitType.EMAIL_VERIFICATION,
+      },
+    },
   });
 
   if (!limit) {
@@ -32,7 +36,7 @@ export const checkRateLimit = async (email: string): Promise<boolean> => {
 
   if (now > limit.resetAt) {
     // Reset window has passed, delete old record
-    await RateLimit.deleteOne({ _id: limit._id });
+    await prisma.rateLimit.delete({ where: { id: limit.id } });
     return true;
   }
 
@@ -48,20 +52,27 @@ const incrementRateLimit = async (email: string): Promise<void> => {
     now.getTime() + RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000,
   );
 
-  await RateLimit.findOneAndUpdate(
-    {
+  // $inc count + $setOnInsert resetAt, upsert -> Prisma upsert on the
+  // (key, type) composite unique. On create, count starts at 1 (matching
+  // Mongo's upsert-insert behavior where $inc initializes the field to 1);
+  // resetAt is only set on insert, so an existing window is preserved.
+  await prisma.rateLimit.upsert({
+    where: {
+      unique_rate_limit: {
+        key: email.toLowerCase(),
+        type: RateLimitType.EMAIL_VERIFICATION,
+      },
+    },
+    update: {
+      count: { increment: 1 },
+    },
+    create: {
       key: email.toLowerCase(),
-      type: "EMAIL_VERIFICATION",
+      type: RateLimitType.EMAIL_VERIFICATION,
+      count: 1,
+      resetAt,
     },
-    {
-      $inc: { count: 1 },
-      $setOnInsert: { resetAt },
-    },
-    {
-      upsert: true,
-      new: true,
-    },
-  );
+  });
 };
 
 /**

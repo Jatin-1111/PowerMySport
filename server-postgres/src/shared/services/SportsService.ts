@@ -1,9 +1,12 @@
-import { Sport, SportDocument } from "../models/Sport";
+import type { Sport } from "@prisma/client";
 import { GoogleGenAI } from "@google/genai";
+import prisma from "../../lib/prisma";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
 import redis from "../../config/redis";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+const toSlug = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
 export class SportsService {
   private genAI: GoogleGenAI | null = null;
@@ -24,9 +27,12 @@ export class SportsService {
   /**
    * Get all available sports
    */
-  async getAllSports(): Promise<SportDocument[]> {
+  async getAllSports(): Promise<Sport[]> {
     try {
-      return await Sport.find({ isVerified: true }).sort({ name: 1 }).lean();
+      return await prisma.sport.findMany({
+        where: { isVerified: true },
+        orderBy: { name: "asc" },
+      });
     } catch (error) {
       console.error("Error fetching sports:", error);
       throw new Error("Failed to fetch sports");
@@ -34,20 +40,33 @@ export class SportsService {
   }
 
   /**
-   * Search sports by name (fuzzy match)
+   * Search sports by name (fuzzy match).
+   *
+   * NOTE (behavioral change): the Mongo version built a sanitized RegExp to
+   * guard against ReDoS on this public endpoint. Postgres `contains` compiles
+   * to a parameterized ILIKE, so there is no regex engine to attack — but we
+   * still length-cap the input via buildSafeSearchRegexSource() and pass the
+   * plain (regex-free) term, preserving the same length ceiling. `%`/`_` are
+   * treated literally by Prisma's `contains`, so no wildcard injection either.
    */
-  async searchSports(query: string): Promise<SportDocument[]> {
+  async searchSports(query: string): Promise<Sport[]> {
     try {
-      // Escape + length-cap the (unauthenticated) user input before building a
-      // regex to prevent regex injection and ReDoS DoS on this public endpoint.
-      const regex = new RegExp(buildSafeSearchRegexSource(query), "i");
-      return await Sport.find({
-        isVerified: true,
-        $or: [{ name: regex }, { slug: regex }],
-      })
-        .sort({ name: 1 })
-        .limit(20)
-        .lean();
+      // Reuse the existing helper only for its length-capping + trimming; strip
+      // the regex-escaping so we search on the raw (capped) term.
+      const term = buildSafeSearchRegexSource(query)
+        .replace(/\\/g, "")
+        .slice(0, 100);
+      return await prisma.sport.findMany({
+        where: {
+          isVerified: true,
+          OR: [
+            { name: { contains: term, mode: "insensitive" } },
+            { slug: { contains: term, mode: "insensitive" } },
+          ],
+        },
+        orderBy: { name: "asc" },
+        take: 20,
+      });
     } catch (error) {
       console.error("Error searching sports:", error);
       throw new Error("Failed to search sports");
@@ -123,26 +142,26 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
     sportName: string,
     coachId: string,
     isVerified: boolean = true,
-  ): Promise<SportDocument> {
+  ): Promise<Sport> {
     try {
+      const slug = toSlug(sportName);
+
       // Check if sport already exists
-      const existing = await Sport.findOne({
-        slug: sportName.toLowerCase().replace(/\s+/g, "-"),
-      });
+      const existing = await prisma.sport.findUnique({ where: { slug } });
 
       if (existing) {
         return existing;
       }
 
-      const sport = new Sport({
-        name: sportName,
-        slug: sportName.toLowerCase().replace(/\s+/g, "-"),
-        isVerified,
-        verifiedAt: isVerified ? new Date() : null,
-        addedBy: coachId,
+      const sport = await prisma.sport.create({
+        data: {
+          name: sportName,
+          slug,
+          isVerified,
+          verifiedAt: isVerified ? new Date() : null,
+          addedBy: coachId,
+        },
       });
-
-      const saved = await sport.save();
 
       // Invalidate the cached /sports listing + search results so the new
       // sport shows up immediately instead of waiting out the 1-hour TTL.
@@ -150,7 +169,7 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
         await this.invalidateSportsCache();
       }
 
-      return saved;
+      return sport;
     } catch (error) {
       console.error("Error adding custom sport:", error);
       throw new Error("Failed to add custom sport");
@@ -173,11 +192,9 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
   /**
    * Get sport by name
    */
-  async getSportByName(name: string): Promise<SportDocument | null> {
+  async getSportByName(name: string): Promise<Sport | null> {
     try {
-      return await Sport.findOne({
-        slug: name.toLowerCase().replace(/\s+/g, "-"),
-      }).lean();
+      return await prisma.sport.findUnique({ where: { slug: toSlug(name) } });
     } catch (error) {
       console.error("Error getting sport:", error);
       return null;
