@@ -29,6 +29,36 @@ export const getMessageTimestamp = (value?: string | null) => {
   return messageTimeFormatter.format(date);
 };
 
+export const formatLastSeen = (value?: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const timeStr = messageTimeFormatter.format(date);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  let dateStr = "";
+  if (diffHours < 24 && now.getDate() === date.getDate()) {
+    dateStr = "today";
+  } else {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (
+      date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear()
+    ) {
+      dateStr = "yesterday";
+    } else {
+      dateStr = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear().toString().slice(-2)}`;
+    }
+  }
+
+  return `last seen ${dateStr} at ${timeStr}`;
+};
+
 export const formatChatListDate = (value?: string | null) => {
   if (!value) return "";
   const date = new Date(value);

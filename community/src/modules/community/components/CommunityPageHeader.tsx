@@ -8,6 +8,7 @@ type CommunityPageHeaderProps = {
   subtitle?: string;
   badge?: string;
   action?: ReactNode;
+  size?: "default" | "lg";
 };
 
 export function CommunityPageHeader({
@@ -15,18 +16,24 @@ export function CommunityPageHeader({
   subtitle,
   badge,
   action,
+  size = "default",
 }: CommunityPageHeaderProps) {
   const prefersReducedMotion = useReducedMotion();
   const cardTransition = prefersReducedMotion
     ? { duration: 0.01 }
     : { duration: 0.45, ease: "easeOut" as const };
+  const isLarge = size === "lg";
 
   return (
     <motion.div
       initial={prefersReducedMotion ? false : { opacity: 0, y: 18 }}
       animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       transition={cardTransition}
-      className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-4 text-slate-900 shadow-sm sm:rounded-[4xl] sm:p-8"
+      className={`relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] text-slate-900 shadow-sm sm:rounded-[4xl] ${
+        isLarge
+          ? "flex min-h-[170px] flex-col justify-center p-5 sm:min-h-[210px] sm:p-8 lg:min-h-[230px] lg:p-9"
+          : "p-4 sm:p-8"
+      }`}
     >
       <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -35,11 +42,19 @@ export function CommunityPageHeader({
               {badge}
             </span>
           )}
-          <h1 className="font-title mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">
+          <h1
+            className={`font-title mt-2.5 font-semibold tracking-tight ${
+              isLarge ? "text-2xl sm:text-3xl lg:text-4xl" : "text-2xl sm:text-4xl"
+            }`}
+          >
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-700 sm:text-base">
+            <p
+              className={`mt-2 leading-relaxed text-slate-700 ${
+                isLarge ? "max-w-2xl text-sm sm:text-base" : "max-w-2xl text-sm sm:text-base"
+              }`}
+            >
               {subtitle}
             </p>
           )}

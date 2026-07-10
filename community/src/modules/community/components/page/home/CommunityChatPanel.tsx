@@ -26,7 +26,7 @@ import ConfirmActionModal from "@/modules/community/components/chat/ConfirmActio
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
 import { useRef, useEffect, useLayoutEffect, useCallback, useState, useMemo } from "react";
 import { getCommunitySocket } from "@/lib/realtime/socket";
-import { getMessageTimestamp } from "@/modules/community/utils/chatUtils";
+import { getMessageTimestamp, formatLastSeen } from "@/modules/community/utils/chatUtils";
 
 type Props = { page: CommunityPageViewModel };
 
@@ -326,7 +326,7 @@ export default function CommunityChatPanel({ page }: Props) {
   // Last seen for DM
   const lastSeenText =
     !isGroup && selectedConversation?.otherParticipant?.lastSeenAt
-      ? `last seen at ${getMessageTimestamp(selectedConversation.otherParticipant.lastSeenAt)}`
+      ? formatLastSeen(selectedConversation.otherParticipant.lastSeenAt)
       : null;
 
   // Empty state — no conversation selected

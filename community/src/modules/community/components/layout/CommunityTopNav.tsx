@@ -43,6 +43,7 @@ export default function CommunityTopNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadChatsCount, setUnreadChatsCount] = useState(0);
   const isMounted = typeof document !== "undefined";
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -58,15 +59,30 @@ export default function CommunityTopNav() {
       }
     };
 
+    const loadUnreadChatsCount = async () => {
+      try {
+        const count = await communityService.getUnreadConversationCount();
+        setUnreadChatsCount(count);
+      } catch {
+        setUnreadChatsCount(0);
+      }
+    };
+
     void loadUnreadCount();
+    void loadUnreadChatsCount();
 
     const socket = getCommunitySocket();
     const handleNewNotification = () => {
       void communityService.clearNotificationCache();
       void loadUnreadCount();
     };
+    const handleChatsChanged = () => {
+      void loadUnreadChatsCount();
+    };
 
     socket.on("notification:new", handleNewNotification);
+    socket.on("community:newMessage", handleChatsChanged);
+    socket.on("community:messagesRead", handleChatsChanged);
     if (!socket.connected) socket.connect();
 
     // Also update badge when notifications are marked read locally
@@ -77,6 +93,8 @@ export default function CommunityTopNav() {
 
     return () => {
       socket.off("notification:new", handleNewNotification);
+      socket.off("community:newMessage", handleChatsChanged);
+      socket.off("community:messagesRead", handleChatsChanged);
       window.removeEventListener(
         "community:notificationsRead",
         handleLocalRead,
@@ -152,15 +170,15 @@ export default function CommunityTopNav() {
 
             <Link
               href="/chats?sidebar=conversations"
-              className={navLinkCls(pathname.startsWith("/chats"))}
+              className={`relative ${navLinkCls(pathname.startsWith("/chats"))}`}
             >
               <MessagesSquare size={16} />
               Chats
-            </Link>
-
-            <Link href="/q" className={navLinkCls(pathname.startsWith("/q"))}>
-              <MessageSquare size={16} />
-              Knowledge
+              {unreadChatsCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-power-orange px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                  {unreadChatsCount > 99 ? "99+" : unreadChatsCount}
+                </span>
+              )}
             </Link>
 
             <Link
@@ -169,6 +187,11 @@ export default function CommunityTopNav() {
             >
               <Newspaper size={16} />
               Blog
+            </Link>
+
+            <Link href="/q" className={navLinkCls(pathname.startsWith("/q"))}>
+              <MessageSquare size={16} />
+              Knowledge
             </Link>
 
             <Link
@@ -348,25 +371,31 @@ export default function CommunityTopNav() {
                         href: "/chats?sidebar=conversations",
                         icon: MessagesSquare,
                         label: "Chats",
+                        badge: unreadChatsCount,
                       },
                       { href: "/discover", icon: Compass, label: "Discover" },
-                      { href: "/q", icon: MessageSquare, label: "Knowledge" },
                       { href: "/blog", icon: Newspaper, label: "Blog" },
+                      { href: "/q", icon: MessageSquare, label: "Knowledge" },
                       {
                         href: "/contributors",
                         icon: Trophy,
                         label: "Contributors",
                       },
                       { href: "/following", icon: Heart, label: "Following" },
-                    ].map(({ href, icon: Icon, label }) => (
+                    ].map(({ href, icon: Icon, label, badge }) => (
                       <Link
                         key={href}
                         href={href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                        className="relative inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                       >
                         <Icon size={15} />
                         {label}
+                        {!!badge && badge > 0 && (
+                          <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-power-orange px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                            {badge > 99 ? "99+" : badge}
+                          </span>
+                        )}
                       </Link>
                     ))}
 
